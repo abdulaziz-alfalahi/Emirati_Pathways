@@ -19,8 +19,9 @@ cv_upload_bp = Blueprint('cv_upload', __name__, url_prefix='/api/cv')
 # Configuration
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'txt'}
-UPLOAD_FOLDER = Path('/tmp/cv_uploads')
-UPLOAD_FOLDER.mkdir(exist_ok=True)
+# Create uploads directory relative to backend folder
+UPLOAD_FOLDER = Path('uploads/cv_uploads')
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
