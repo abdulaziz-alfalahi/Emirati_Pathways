@@ -52,17 +52,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Try to get from localStorage as fallback
     try {
       const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
         const userData = JSON.parse(storedUser);
-        if (userData.user_type) {
+        if (userData && userData.user_type) {
           return userData.user_type;
         }
-        if (userData.roles && userData.roles.length > 0) {
+        if (userData && userData.roles && userData.roles.length > 0) {
           return userData.roles[0];
         }
       }
     } catch (error) {
       console.error('Error parsing stored user data:', error);
+      // Clear invalid data
+      localStorage.removeItem('user');
     }
 
     return null;

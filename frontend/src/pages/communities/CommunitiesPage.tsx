@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, MessageCircle, Calendar, MapPin, Star, Plus, Search, Filter, Bookmark, Share2, Heart, Eye, Clock, Award, Building, Briefcase, GraduationCap } from 'lucide-react';
 
 interface Community {
@@ -53,6 +54,7 @@ interface Event {
 }
 
 const CommunitiesPage: React.FC = () => {
+  const { t } = useTranslation('communities');
   const [activeTab, setActiveTab] = useState<string>('discover');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');

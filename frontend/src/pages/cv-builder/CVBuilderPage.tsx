@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, Download, Eye, Edit3, Sparkles, CheckCircle, AlertCircle, FileText, User, Briefcase, GraduationCap, Award, Languages, Phone, Mail, MapPin, Calendar, Plus, Trash2, Save } from 'lucide-react';
 
 interface PersonalInfo {
@@ -44,6 +45,7 @@ interface Skill {
 }
 
 const CVBuilderPage: React.FC = () => {
+  const { t } = useTranslation('cv-builder');
   const [activeTab, setActiveTab] = useState<string>('personal');
   const [cvTemplate, setCvTemplate] = useState<string>('professional');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);

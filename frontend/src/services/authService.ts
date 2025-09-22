@@ -297,9 +297,15 @@ class AuthService {
   getUser(): any {
     try {
       const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
+      if (userStr && userStr !== 'undefined' && userStr !== 'null') {
+        return JSON.parse(userStr);
+      }
+      return null;
     } catch (error) {
       console.error('AuthService: Error parsing user data:', error);
+      // Clear invalid data
+      localStorage.removeItem('user');
+      localStorage.removeItem('access_token');
       return null;
     }
   }
@@ -321,7 +327,7 @@ class AuthService {
     try {
       // First try to get from stored user data
       const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
         const userData = JSON.parse(storedUser);
         
         // Check for roles array first
@@ -354,6 +360,9 @@ class AuthService {
       return null;
     } catch (error) {
       console.error('Error getting user role:', error);
+      // Clear invalid data on error
+      localStorage.removeItem('user');
+      localStorage.removeItem('access_token');
       return null;
     }
   }

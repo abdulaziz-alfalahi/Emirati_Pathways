@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Users, Briefcase, Target, Award, Calendar, Filter, Download, RefreshCw, Eye, Star, MapPin, Building } from 'lucide-react';
 
 const AnalyticsDashboard: React.FC = () => {
+  const { t } = useTranslation('analytics');
   const [timeRange, setTimeRange] = useState<string>('6months');
   const [selectedMetric, setSelectedMetric] = useState<string>('all');
   const [isLoading, setIsLoading] = useState<boolean>(false);
