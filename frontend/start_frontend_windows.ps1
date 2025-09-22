@@ -1,7 +1,7 @@
 # Emirati Journey Platform - Frontend Windows Startup Script
 
 Write-Host "🇦🇪 EMIRATI JOURNEY PLATFORM - FRONTEND STARTUP" -ForegroundColor Green
-Write-Host "=" * 50
+Write-Host "=================================================="
 
 # Check if we're in the frontend directory
 if (-not (Test-Path "package.json")) {
