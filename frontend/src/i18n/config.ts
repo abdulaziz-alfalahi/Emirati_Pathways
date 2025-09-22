@@ -33,19 +33,13 @@ i18n
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
     
-    detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'preferred-language',
-    },
+
 
     interpolation: {
       escapeValue: false, // React already does escaping
     },
 
-    react: {
-      useSuspense: false,
-    },
+
 
     // Language-specific configurations
     lng: 'en', // default language
