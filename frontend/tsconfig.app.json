@@ -10,11 +10,12 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "noEmit": true,
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/lib/*": ["./src/lib/*"],
-      "@/components/*": ["./src/components/*"]
+      "@/*": ["src/*"],
+      "@/components/*": ["src/components/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/utils": ["src/lib/utils"]
     },
     "types": ["vite/client", "node"]
   },
