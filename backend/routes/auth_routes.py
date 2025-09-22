@@ -398,6 +398,101 @@ def get_working_schedule():
             'message': 'Working schedule retrieval failed'
         }), 500
 
+@auth_bp.route('/roles', methods=['GET'])
+@jwt_required()
+def get_user_roles():
+    """
+    Get current user's roles and permissions
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Initialize authentication manager
+        auth_manager = AuthenticationManager()
+        
+        # Get user data
+        user_data = auth_manager.get_user_by_id(current_user_id)
+        
+        if not user_data:
+            return jsonify({
+                'success': False,
+                'message': 'User not found'
+            }), 404
+        
+        # Return user roles and permissions
+        roles_data = {
+            'user_id': str(user_data['id']),
+            'email': user_data['email'],
+            'role': user_data.get('role', 'candidate'),
+            'user_type': user_data.get('role', 'candidate'),
+            'permissions': _get_role_permissions(user_data.get('role', 'candidate')),
+            'is_active': user_data.get('is_active', True),
+            'is_verified': user_data.get('is_verified', False)
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': roles_data
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get roles error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get user roles'
+        }), 500
+
+def _get_role_permissions(role: str) -> list:
+    """Get permissions for a given role"""
+    role_permissions = {
+        'candidate': [
+            'view_dashboard',
+            'upload_cv',
+            'apply_jobs',
+            'view_profile',
+            'edit_profile',
+            'view_analytics'
+        ],
+        'hr_recruiter': [
+            'view_dashboard',
+            'view_candidates',
+            'post_jobs',
+            'manage_applications',
+            'view_analytics',
+            'conduct_interviews'
+        ],
+        'educator': [
+            'view_dashboard',
+            'manage_curriculum',
+            'track_students',
+            'view_analytics',
+            'create_programs'
+        ],
+        'mentor': [
+            'view_dashboard',
+            'mentor_candidates',
+            'track_progress',
+            'view_analytics',
+            'provide_guidance'
+        ],
+        'assessor': [
+            'view_dashboard',
+            'conduct_assessments',
+            'validate_competencies',
+            'view_analytics',
+            'certify_skills'
+        ],
+        'admin': [
+            'view_dashboard',
+            'manage_users',
+            'manage_system',
+            'view_all_analytics',
+            'system_configuration'
+        ]
+    }
+    
+    return role_permissions.get(role, role_permissions['candidate'])
+
 # Error handlers
 @auth_bp.errorhandler(400)
 def bad_request(error):
