@@ -1,0 +1,325 @@
+{
+  "title": "التحضير للمقابلات",
+  "description": "أتقن مهارات المقابلة من خلال جلسات التدريب ونصائح الخبراء والتقييم الشخصي",
+  "heroTitle": "التحضير للمقابلات",
+  "heroDescription": "أتقن مهارات المقابلة من خلال جلسات التدريب ونصائح الخبراء والتقييم الشخصي",
+  "primaryAction": "ابدأ التدريب",
+  "secondaryAction": "عرض النصائح",
+  "stats": {
+    "questions": "سؤال تدريبي",
+    "types": "نوع مقابلة",
+    "mockInterviews": "مقابلة تجريبية",
+    "successRate": "معدل النجاح"
+  },
+  "quote": "النجاح هو عندما يلتقي التحضير بالفرصة",
+  "attribution": "إيرل نايتنجيل",
+  "tabs": {
+    "preparation": {
+      "label": "التحضير",
+      "title": "التحضير للمقابلة",
+      "description": "تدرب على المقابلات واحصل على تقييم شخصي لتحسين مهاراتك"
+    },
+    "simulator": {
+      "label": "المحاكي",
+      "title": "محاكي المقابلات",
+      "description": "تدرب على المقابلات مع الذكاء الاصطناعي واحصل على تقييم فوري"
+    },
+    "questions": {
+      "label": "الأسئلة",
+      "title": "بنك الأسئلة",
+      "description": "استكشف مجموعة شاملة من أسئلة المقابلات حسب المجال والمستوى"
+    },
+    "tips": {
+      "label": "النصائح",
+      "title": "نصائح المقابلات",
+      "description": "احصل على نصائح الخبراء لإجراء مقابلات ناجحة"
+    },
+    "feedback": {
+      "label": "التقييم",
+      "title": "التقييم والتحليل",
+      "description": "راجع أداءك واحصل على تقييم مفصل لتحسين مهاراتك"
+    }
+  },
+  "sections": {
+    "practice": "التدريب",
+    "analysis": "التحليل",
+    "improvement": "التحسين",
+    "tracking": "التتبع"
+  },
+  "preparation": {
+    "title": "أدوات التحضير للمقابلات قريباً",
+    "description": "تدرب على المقابلات واحصل على تقييم وحسن مهارات المقابلة مع منصتنا الشاملة.",
+    "features": {
+      "practice": "جلسات تدريبية",
+      "feedback": "تقييم فوري",
+      "analysis": "تحليل الأداء",
+      "improvement": "خطط التحسين"
+    },
+    "comingSoon": "قريباً",
+    "notifyMe": "أعلمني عند الإطلاق"
+  },
+  "simulator": {
+    "title": "محاكي المقابلات بالذكاء الاصطناعي",
+    "description": "تدرب على المقابلات مع الذكاء الاصطناعي واحصل على تقييم فوري",
+    "setup": {
+      "title": "إعداد الجلسة",
+      "industry": "اختر المجال",
+      "position": "المنصب",
+      "level": "المستوى",
+      "duration": "مدة الجلسة",
+      "language": "لغة المقابلة"
+    },
+    "controls": {
+      "start": "بدء التسجيل",
+      "stop": "إيقاف التسجيل",
+      "pause": "إيقاف مؤقت",
+      "restart": "إعادة البدء",
+      "next": "السؤال التالي",
+      "previous": "السؤال السابق",
+      "finish": "إنهاء الجلسة"
+    },
+    "settings": {
+      "camera": "الكاميرا",
+      "microphone": "الميكروفون",
+      "quality": "جودة التسجيل",
+      "feedback": "نوع التقييم"
+    },
+    "progress": {
+      "current": "السؤال الحالي",
+      "remaining": "الأسئلة المتبقية",
+      "timeElapsed": "الوقت المنقضي",
+      "completion": "نسبة الإنجاز"
+    }
+  },
+  "questions": {
+    "title": "بنك الأسئلة",
+    "description": "استكشف مجموعة شاملة من أسئلة المقابلات حسب المجال والمستوى",
+    "categories": {
+      "behavioral": "سلوكية",
+      "technical": "تقنية",
+      "situational": "موقفية",
+      "cultural": "ثقافية",
+      "leadership": "قيادية",
+      "problemSolving": "حل المشكلات"
+    },
+    "industries": {
+      "banking": "المصرفية والمالية",
+      "technology": "التكنولوجيا",
+      "healthcare": "الرعاية الصحية",
+      "government": "الحكومة",
+      "oilGas": "النفط والغاز",
+      "aviation": "الطيران",
+      "tourism": "السياحة",
+      "realEstate": "العقارات",
+      "education": "التعليم",
+      "retail": "التجارة"
+    },
+    "levels": {
+      "entry": "مبتدئ",
+      "mid": "متوسط",
+      "senior": "متقدم",
+      "executive": "تنفيذي"
+    },
+    "types": {
+      "common": "أسئلة شائعة",
+      "challenging": "أسئلة صعبة",
+      "uae": "خاصة بدولة الإمارات",
+      "international": "دولية"
+    },
+    "filters": {
+      "category": "الفئة",
+      "industry": "المجال",
+      "level": "المستوى",
+      "difficulty": "الصعوبة",
+      "language": "اللغة"
+    }
+  },
+  "tips": {
+    "title": "نصائح المقابلات",
+    "description": "احصل على نصائح الخبراء لإجراء مقابلات ناجحة",
+    "categories": {
+      "preparation": "التحضير",
+      "presentation": "العرض",
+      "communication": "التواصل",
+      "followUp": "المتابعة"
+    },
+    "general": [
+      {
+        "title": "ابحث عن الشركة مسبقاً",
+        "description": "اطلع على تاريخ الشركة وقيمها ومشاريعها الحديثة قبل المقابلة"
+      },
+      {
+        "title": "تدرب على الأسئلة الشائعة",
+        "description": "حضر إجابات للأسئلة الشائعة مثل 'حدثني عن نفسك' و'ما نقاط قوتك وضعفك'"
+      },
+      {
+        "title": "اهتم بمظهرك المهني",
+        "description": "ارتد ملابس مناسبة للمقابلة واهتم بالنظافة الشخصية"
+      },
+      {
+        "title": "اطرح أسئلة ذكية",
+        "description": "حضر أسئلة مدروسة عن الوظيفة والشركة لتظهر اهتمامك الحقيقي"
+      },
+      {
+        "title": "تابع بعد المقابلة",
+        "description": "أرسل رسالة شكر خلال 24 ساعة من المقابلة"
+      },
+      {
+        "title": "كن صادقاً ومتفائلاً",
+        "description": "أظهر شخصيتك الحقيقية وحافظ على موقف إيجابي طوال المقابلة"
+      }
+    ],
+    "uae": [
+      {
+        "title": "فهم الثقافة الإماراتية",
+        "description": "تعرف على القيم والتقاليد الإماراتية وأظهر احترامك لها"
+      },
+      {
+        "title": "أظهر التزامك بالتطوير",
+        "description": "أكد على رغبتك في المساهمة في رؤية الإمارات D33"
+      },
+      {
+        "title": "تحدث عن التنوع",
+        "description": "أظهر قدرتك على العمل في بيئة متعددة الثقافات"
+      }
+    ]
+  },
+  "feedback": {
+    "title": "التقييم والتحليل",
+    "description": "راجع أداءك واحصل على تقييم مفصل لتحسين مهاراتك",
+    "metrics": {
+      "overall": "التقييم العام",
+      "communication": "التواصل",
+      "confidence": "الثقة",
+      "clarity": "الوضوح",
+      "relevance": "الصلة بالموضوع",
+      "professionalism": "المهنية"
+    },
+    "analysis": {
+      "strengths": "نقاط القوة",
+      "improvements": "مجالات التحسين",
+      "recommendations": "التوصيات",
+      "nextSteps": "الخطوات التالية"
+    },
+    "reports": {
+      "detailed": "تقرير مفصل",
+      "summary": "ملخص",
+      "comparison": "مقارنة",
+      "progress": "التقدم"
+    }
+  },
+  "sessions": {
+    "title": "جلسات التدريب",
+    "description": "تتبع جلسات التدريب السابقة وتقدمك",
+    "history": {
+      "date": "التاريخ",
+      "duration": "المدة",
+      "score": "النتيجة",
+      "industry": "المجال",
+      "feedback": "التقييم",
+      "improvement": "التحسن"
+    },
+    "statistics": {
+      "totalSessions": "إجمالي الجلسات",
+      "averageScore": "متوسط النتيجة",
+      "improvement": "نسبة التحسن",
+      "timeSpent": "الوقت المستغرق"
+    },
+    "actions": {
+      "review": "مراجعة",
+      "retake": "إعادة",
+      "share": "مشاركة",
+      "download": "تحميل"
+    }
+  },
+  "industries": {
+    "banking": "المصرفية والمالية",
+    "technology": "التكنولوجيا",
+    "healthcare": "الرعاية الصحية",
+    "government": "الحكومة",
+    "oilGas": "النفط والغاز",
+    "aviation": "الطيران",
+    "tourism": "السياحة",
+    "realEstate": "العقارات",
+    "education": "التعليم",
+    "retail": "التجارة",
+    "consulting": "الاستشارات",
+    "media": "الإعلام"
+  },
+  "positions": {
+    "analyst": "محلل",
+    "manager": "مدير",
+    "specialist": "أخصائي",
+    "coordinator": "منسق",
+    "supervisor": "مشرف",
+    "director": "مدير عام",
+    "executive": "تنفيذي",
+    "consultant": "استشاري"
+  },
+  "forms": {
+    "sessionSetup": {
+      "title": "إعداد جلسة المقابلة",
+      "industry": "المجال",
+      "position": "المنصب المستهدف",
+      "experience": "سنوات الخبرة",
+      "language": "لغة المقابلة",
+      "duration": "مدة الجلسة",
+      "difficulty": "مستوى الصعوبة",
+      "focus": "التركيز على"
+    },
+    "feedback": {
+      "rating": "التقييم",
+      "comments": "التعليقات",
+      "suggestions": "الاقتراحات",
+      "wouldRecommend": "هل توصي بهذه الخدمة؟"
+    }
+  },
+  "actions": {
+    "start": "بدء",
+    "stop": "إيقاف",
+    "pause": "إيقاف مؤقت",
+    "resume": "استكمال",
+    "restart": "إعادة البدء",
+    "save": "حفظ",
+    "share": "مشاركة",
+    "download": "تحميل",
+    "review": "مراجعة",
+    "practice": "تدريب",
+    "analyze": "تحليل",
+    "improve": "تحسين",
+    "schedule": "جدولة",
+    "cancel": "إلغاء",
+    "submit": "إرسال",
+    "back": "رجوع",
+    "next": "التالي",
+    "finish": "إنهاء"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "selectIndustry": "يرجى اختيار المجال",
+    "selectPosition": "يرجى اختيار المنصب",
+    "selectDuration": "يرجى اختيار مدة الجلسة",
+    "cameraPermission": "يرجى السماح بالوصول للكاميرا",
+    "microphonePermission": "يرجى السماح بالوصول للميكروفون"
+  },
+  "notifications": {
+    "sessionStarted": "تم بدء الجلسة بنجاح",
+    "sessionCompleted": "تم إكمال الجلسة بنجاح",
+    "feedbackSaved": "تم حفظ التقييم",
+    "sessionSaved": "تم حفظ الجلسة",
+    "error": "حدث خطأ. يرجى المحاولة مرة أخرى",
+    "permissionDenied": "تم رفض الإذن. يرجى السماح بالوصول للكاميرا والميكروفون"
+  },
+  "emptyState": {
+    "title": "لا توجد جلسات بعد",
+    "description": "لم تبدأ أي جلسة تدريب بعد. ابدأ جلستك الأولى الآن.",
+    "action": "بدء جلسة جديدة"
+  },
+  "loading": {
+    "preparing": "جاري التحضير...",
+    "analyzing": "جاري التحليل...",
+    "generating": "جاري إنشاء التقرير...",
+    "saving": "جاري الحفظ..."
+  }
+}
+

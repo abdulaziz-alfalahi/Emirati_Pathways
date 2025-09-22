@@ -1,0 +1,562 @@
+/* Enhanced RTL (Right-to-Left) Support for Arabic Language */
+/* Building upon existing RTL styles with comprehensive Arabic support */
+
+/* Arabic Font Families */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+
+/* Enhanced Root RTL Variables */
+:root {
+  --font-arabic: 'Noto Sans Arabic', 'Cairo', 'Dubai', 'Segoe UI Arabic', 'Tahoma', sans-serif;
+  --font-english: 'Dubai', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Enhanced RTL Body Styles */
+body.rtl {
+  font-family: var(--font-arabic);
+  direction: rtl;
+  text-align: right;
+}
+
+body.ltr {
+  font-family: var(--font-english);
+  direction: ltr;
+  text-align: left;
+}
+
+/* Enhanced Arabic Font Class */
+.font-arabic {
+  font-family: var(--font-arabic) !important;
+  font-weight: 500;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.font-english {
+  font-family: var(--font-english) !important;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+/* Enhanced RTL Flexbox Utilities */
+.rtl .flex-row {
+  flex-direction: row-reverse;
+}
+
+.rtl .flex-row-reverse {
+  flex-direction: row;
+}
+
+.rtl .items-center {
+  align-items: center;
+}
+
+.rtl .justify-between {
+  justify-content: space-between;
+}
+
+.rtl .justify-center {
+  justify-content: center;
+}
+
+/* Enhanced RTL Spacing Utilities */
+.rtl .space-x-1 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(0.25rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.25rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(0.75rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.75rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(1rem * var(--tw-space-x-reverse));
+  margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(1.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(1.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-8 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+  margin-right: calc(2rem * var(--tw-space-x-reverse));
+  margin-left: calc(2rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+.rtl .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(0.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
+/* Enhanced RTL Margin and Padding */
+.rtl .ml-1 { margin-left: 0; margin-right: 0.25rem; }
+.rtl .mr-1 { margin-right: 0; margin-left: 0.25rem; }
+.rtl .ml-2 { margin-left: 0; margin-right: 0.5rem; }
+.rtl .mr-2 { margin-right: 0; margin-left: 0.5rem; }
+.rtl .ml-3 { margin-left: 0; margin-right: 0.75rem; }
+.rtl .mr-3 { margin-right: 0; margin-left: 0.75rem; }
+.rtl .ml-4 { margin-left: 0; margin-right: 1rem; }
+.rtl .mr-4 { margin-right: 0; margin-left: 1rem; }
+.rtl .ml-5 { margin-left: 0; margin-right: 1.25rem; }
+.rtl .mr-5 { margin-right: 0; margin-left: 1.25rem; }
+.rtl .ml-6 { margin-left: 0; margin-right: 1.5rem; }
+.rtl .mr-6 { margin-right: 0; margin-left: 1.5rem; }
+.rtl .ml-8 { margin-left: 0; margin-right: 2rem; }
+.rtl .mr-8 { margin-right: 0; margin-left: 2rem; }
+.rtl .ml-auto { margin-left: 0; margin-right: auto; }
+.rtl .mr-auto { margin-right: 0; margin-left: auto; }
+
+.rtl .pl-1 { padding-left: 0; padding-right: 0.25rem; }
+.rtl .pr-1 { padding-right: 0; padding-left: 0.25rem; }
+.rtl .pl-2 { padding-left: 0; padding-right: 0.5rem; }
+.rtl .pr-2 { padding-right: 0; padding-left: 0.5rem; }
+.rtl .pl-3 { padding-left: 0; padding-right: 0.75rem; }
+.rtl .pr-3 { padding-right: 0; padding-left: 0.75rem; }
+.rtl .pl-4 { padding-left: 0; padding-right: 1rem; }
+.rtl .pr-4 { padding-right: 0; padding-left: 1rem; }
+.rtl .pl-6 { padding-left: 0; padding-right: 1.5rem; }
+.rtl .pr-6 { padding-right: 0; padding-left: 1.5rem; }
+.rtl .pl-8 { padding-left: 0; padding-right: 2rem; }
+.rtl .pr-8 { padding-right: 0; padding-left: 2rem; }
+
+/* Enhanced RTL Text Alignment */
+.rtl .text-left { text-align: right; }
+.rtl .text-right { text-align: left; }
+.rtl .text-center { text-align: center; }
+
+/* Enhanced RTL Positioning */
+.rtl .left-0 { left: auto; right: 0; }
+.rtl .right-0 { right: auto; left: 0; }
+.rtl .left-2 { left: auto; right: 0.5rem; }
+.rtl .right-2 { right: auto; left: 0.5rem; }
+.rtl .left-4 { left: auto; right: 1rem; }
+.rtl .right-4 { right: auto; left: 1rem; }
+.rtl .left-6 { left: auto; right: 1.5rem; }
+.rtl .right-6 { right: auto; left: 1.5rem; }
+
+/* Enhanced RTL Transforms */
+.rtl .translate-x-1 { transform: translateX(-0.25rem); }
+.rtl .-translate-x-1 { transform: translateX(0.25rem); }
+.rtl .translate-x-2 { transform: translateX(-0.5rem); }
+.rtl .-translate-x-2 { transform: translateX(0.5rem); }
+.rtl .translate-x-3 { transform: translateX(-0.75rem); }
+.rtl .-translate-x-3 { transform: translateX(0.75rem); }
+
+/* Enhanced RTL Borders */
+.rtl .border-l { border-left: 0; border-right: 1px solid; }
+.rtl .border-r { border-right: 0; border-left: 1px solid; }
+.rtl .border-l-2 { border-left: 0; border-right: 2px solid; }
+.rtl .border-r-2 { border-right: 0; border-left: 2px solid; }
+.rtl .border-l-4 { border-left: 0; border-right: 4px solid; }
+.rtl .border-r-4 { border-right: 0; border-left: 4px solid; }
+
+/* Enhanced RTL Rounded Corners */
+.rtl .rounded-l { border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0.25rem; border-bottom-right-radius: 0.25rem; }
+.rtl .rounded-r { border-top-right-radius: 0; border-bottom-right-radius: 0; border-top-left-radius: 0.25rem; border-bottom-left-radius: 0.25rem; }
+.rtl .rounded-l-lg { border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+.rtl .rounded-r-lg { border-top-right-radius: 0; border-bottom-right-radius: 0; border-top-left-radius: 0.5rem; border-bottom-left-radius: 0.5rem; }
+.rtl .rounded-tl { border-top-left-radius: 0; border-top-right-radius: 0.25rem; }
+.rtl .rounded-tr { border-top-right-radius: 0; border-top-left-radius: 0.25rem; }
+.rtl .rounded-bl { border-bottom-left-radius: 0; border-bottom-right-radius: 0.25rem; }
+.rtl .rounded-br { border-bottom-right-radius: 0; border-bottom-left-radius: 0.25rem; }
+
+/* Enhanced RTL Navigation */
+.rtl .nav-item {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+.rtl .nav-item:last-child {
+  margin-right: 0;
+}
+
+.rtl .nav-link {
+  text-align: right;
+}
+
+/* Enhanced RTL Form Elements */
+.rtl input[type="text"],
+.rtl input[type="email"],
+.rtl input[type="password"],
+.rtl input[type="search"],
+.rtl textarea,
+.rtl select {
+  text-align: right;
+  padding-left: 0.75rem;
+  padding-right: 2.5rem;
+}
+
+.rtl .form-icon {
+  left: auto;
+  right: 0.75rem;
+}
+
+.rtl .form-label {
+  text-align: right;
+}
+
+/* Enhanced RTL Buttons */
+.rtl .btn-icon-left {
+  flex-direction: row-reverse;
+}
+
+.rtl .btn-icon-left .icon {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+.rtl .btn-icon-right {
+  flex-direction: row;
+}
+
+.rtl .btn-icon-right .icon {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+/* Enhanced RTL Cards */
+.rtl .card-header {
+  text-align: right;
+}
+
+.rtl .card-body {
+  text-align: right;
+}
+
+.rtl .card-footer {
+  text-align: right;
+}
+
+/* Enhanced RTL Tables */
+.rtl table {
+  direction: rtl;
+}
+
+.rtl th,
+.rtl td {
+  text-align: right;
+}
+
+.rtl th:first-child,
+.rtl td:first-child {
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.rtl th:last-child,
+.rtl td:last-child {
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+/* Enhanced RTL Modal */
+.rtl .modal-header {
+  text-align: right;
+}
+
+.rtl .modal-body {
+  text-align: right;
+}
+
+.rtl .modal-footer {
+  text-align: right;
+  flex-direction: row-reverse;
+}
+
+.rtl .modal-close {
+  left: 1rem;
+  right: auto;
+}
+
+/* Enhanced RTL Breadcrumbs */
+.rtl .breadcrumb {
+  flex-direction: row-reverse;
+}
+
+.rtl .breadcrumb-separator {
+  transform: scaleX(-1);
+}
+
+.rtl .breadcrumb-item {
+  text-align: right;
+}
+
+/* Enhanced RTL Dropdown */
+.rtl .dropdown-menu {
+  left: auto;
+  right: 0;
+  text-align: right;
+}
+
+.rtl .dropdown-item {
+  text-align: right;
+}
+
+/* Enhanced RTL Progress Bars */
+.rtl .progress-bar {
+  direction: ltr;
+}
+
+.rtl .progress-text {
+  text-align: right;
+}
+
+/* Enhanced RTL Tooltips */
+.rtl .tooltip {
+  direction: ltr;
+}
+
+.rtl .tooltip-arrow {
+  transform: scaleX(-1);
+}
+
+/* Enhanced RTL Animations */
+.rtl .slide-in-right {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.rtl .slide-in-left {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.rtl .fade-in-right {
+  animation: fadeInLeft 0.5s ease-out;
+}
+
+.rtl .fade-in-left {
+  animation: fadeInRight 0.5s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Enhanced RTL Language Toggle */
+.rtl .language-toggle {
+  flex-direction: row-reverse;
+}
+
+.rtl .language-toggle .flag {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+.rtl .language-toggle .text {
+  text-align: right;
+}
+
+/* Enhanced RTL Number Formatting */
+.rtl .number {
+  direction: ltr;
+  display: inline-block;
+}
+
+.rtl .currency {
+  direction: ltr;
+  display: inline-block;
+}
+
+/* Enhanced RTL Code Blocks */
+.rtl pre,
+.rtl code {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Enhanced RTL Social Media Icons */
+.rtl .social-icons {
+  flex-direction: row-reverse;
+}
+
+.rtl .social-icon {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+.rtl .social-icon:first-child {
+  margin-left: 0;
+}
+
+.rtl .social-icon:last-child {
+  margin-right: 0.5rem;
+}
+
+/* Enhanced RTL Grid System */
+.rtl .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.rtl .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rtl .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rtl .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Enhanced RTL Responsive Design */
+@media (max-width: 640px) {
+  .rtl .sm\:text-right { text-align: right; }
+  .rtl .sm\:text-left { text-align: left; }
+  .rtl .sm\:flex-row-reverse { flex-direction: row-reverse; }
+}
+
+@media (max-width: 768px) {
+  .rtl .md\:text-right { text-align: right; }
+  .rtl .md\:text-left { text-align: left; }
+  .rtl .md\:flex-row-reverse { flex-direction: row-reverse; }
+  
+  .rtl .mobile-menu {
+    right: auto;
+    left: 0;
+  }
+  
+  .rtl .mobile-nav-item {
+    text-align: right;
+  }
+}
+
+@media (max-width: 1024px) {
+  .rtl .lg\:text-right { text-align: right; }
+  .rtl .lg\:text-left { text-align: left; }
+  .rtl .lg\:flex-row-reverse { flex-direction: row-reverse; }
+}
+
+/* Enhanced RTL Print Styles */
+@media print {
+  .rtl * {
+    direction: rtl !important;
+    text-align: right !important;
+  }
+  
+  .rtl .print\:text-right {
+    text-align: right !important;
+  }
+}
+
+/* Enhanced RTL Accessibility */
+.rtl [dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+.rtl .sr-only-rtl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Enhanced RTL Focus States */
+.rtl .focus\:ring-offset-2:focus {
+  --tw-ring-offset-width: 2px;
+}
+
+.rtl .focus\:ring-2:focus {
+  --tw-ring-width: 2px;
+}
+
+.rtl .focus\:outline-none:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Enhanced RTL Hover States */
+.rtl .hover\:translate-x-1:hover {
+  transform: translateX(-0.25rem);
+}
+
+.rtl .hover\:-translate-x-1:hover {
+  transform: translateX(0.25rem);
+}
+
+/* Enhanced RTL Group Hover States */
+.rtl .group:hover .group-hover\:translate-x-1 {
+  transform: translateX(-0.25rem);
+}
+
+.rtl .group:hover .group-hover\:-translate-x-1 {
+  transform: translateX(0.25rem);
+}
+
+/* Enhanced RTL Custom Scrollbar */
+.rtl ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rtl ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.rtl ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.rtl ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Enhanced RTL Selection */
+.rtl ::selection {
+  background-color: #0ea5e9;
+  color: white;
+}
+
+.rtl ::-moz-selection {
+  background-color: #0ea5e9;
+  color: white;
+}

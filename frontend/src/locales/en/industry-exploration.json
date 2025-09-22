@@ -1,0 +1,244 @@
+{
+  "title": "Industry Exploration",
+  "description": "Discover different industrial sectors and job opportunities available in the United Arab Emirates and the region",
+  "academicYear": "2024-2025",
+  "stats": {
+    "industries": {
+      "value": "25+",
+      "label": "Industries"
+    },
+    "companies": {
+      "value": "10,000+",
+      "label": "Companies"
+    },
+    "jobOpenings": {
+      "value": "50,000+",
+      "label": "Job Openings"
+    },
+    "averageSalary": {
+      "value": "AED 85K",
+      "label": "Average Salary"
+    }
+  },
+  "tabs": {
+    "overview": "Overview",
+    "sectors": "Sectors",
+    "trends": "Trends",
+    "opportunities": "Opportunities"
+  },
+  "buttons": {
+    "exploreIndustry": "Explore Industry",
+    "viewJobs": "View Jobs",
+    "learnMore": "Learn More",
+    "connectCompanies": "Connect with Companies",
+    "downloadReport": "Download Report",
+    "bookConsultation": "Book Consultation",
+    "joinNetwork": "Join Network",
+    "applyNow": "Apply Now"
+  },
+  "industries": {
+    "technology": {
+      "title": "Technology & Innovation",
+      "description": "A growing sector including software development, artificial intelligence, and digital transformation",
+      "growth": "18%",
+      "averageSalary": "AED 120,000",
+      "jobCount": "8,500+",
+      "keySkills": ["Programming", "Data Analysis", "Artificial Intelligence", "Cybersecurity"],
+      "majorCompanies": ["Microsoft", "Google", "Amazon", "Careem"]
+    },
+    "finance": {
+      "title": "Financial Services & Banking",
+      "description": "A strong financial sector including banks, insurance companies, and investment services",
+      "growth": "12%",
+      "averageSalary": "AED 95,000",
+      "jobCount": "6,200+",
+      "keySkills": ["Financial Analysis", "Risk Management", "Compliance", "Investment"],
+      "majorCompanies": ["Emirates NBD", "First Abu Dhabi Bank", "Rakez", "ADNOC Distribution"]
+    },
+    "healthcare": {
+      "title": "Healthcare & Medicine",
+      "description": "A vital sector including hospitals, clinics, and medical research",
+      "growth": "15%",
+      "averageSalary": "AED 110,000",
+      "jobCount": "4,800+",
+      "keySkills": ["Medicine", "Nursing", "Pharmacy", "Healthcare Management"],
+      "majorCompanies": ["Dubai Healthcare City", "Cleveland Clinic", "Al Jalila Hospital", "SEHA"]
+    },
+    "energy": {
+      "title": "Energy & Petroleum",
+      "description": "A strategic sector including oil, gas, and renewable energy",
+      "growth": "10%",
+      "averageSalary": "AED 130,000",
+      "jobCount": "5,500+",
+      "keySkills": ["Petroleum Engineering", "Renewable Energy", "Project Management", "Safety"],
+      "majorCompanies": ["ADNOC", "Emirates Global Aluminium", "Masdar", "TAQA"]
+    },
+    "tourism": {
+      "title": "Tourism & Hospitality",
+      "description": "A vital sector including hotels, restaurants, and tourism services",
+      "growth": "14%",
+      "averageSalary": "AED 65,000",
+      "jobCount": "7,200+",
+      "keySkills": ["Hospitality Management", "Customer Service", "Tourism Marketing", "Event Management"],
+      "majorCompanies": ["Jumeirah", "Rotana", "Emaar Hospitality", "Emirates Airlines"]
+    },
+    "construction": {
+      "title": "Construction & Development",
+      "description": "A fundamental sector including contracting, real estate development, and architecture",
+      "growth": "8%",
+      "averageSalary": "AED 75,000",
+      "jobCount": "9,800+",
+      "keySkills": ["Civil Engineering", "Project Management", "Architectural Design", "Safety"],
+      "majorCompanies": ["Emaar", "Arabtec", "BESIX", "Al-Futtaim"]
+    },
+    "retail": {
+      "title": "Retail & Commerce",
+      "description": "A diverse commercial sector including stores, e-commerce, and distribution",
+      "growth": "11%",
+      "averageSalary": "AED 55,000",
+      "jobCount": "12,000+",
+      "keySkills": ["Sales Management", "Marketing", "Customer Service", "Inventory Management"],
+      "majorCompanies": ["Majid Al Futtaim", "Lulu", "Carrefour", "Amazon"]
+    },
+    "education": {
+      "title": "Education & Training",
+      "description": "An advanced educational sector including schools, universities, and training centers",
+      "growth": "9%",
+      "averageSalary": "AED 70,000",
+      "jobCount": "3,500+",
+      "keySkills": ["Teaching", "Curriculum Development", "Educational Technology", "Educational Administration"],
+      "majorCompanies": ["UAE University", "American University", "GEMS Schools", "Emirates Foundation for Education"]
+    }
+  },
+  "trends": {
+    "title": "Market Trends",
+    "digitalTransformation": {
+      "title": "Digital Transformation",
+      "description": "Accelerated adoption of digital technologies across all sectors",
+      "impact": "High",
+      "timeline": "2024-2026"
+    },
+    "sustainability": {
+      "title": "Sustainability & Green Energy",
+      "description": "Focus on sustainable solutions and renewable energy",
+      "impact": "High",
+      "timeline": "2024-2030"
+    },
+    "artificialIntelligence": {
+      "title": "Artificial Intelligence",
+      "description": "Integration of AI technologies in business operations",
+      "impact": "Medium to High",
+      "timeline": "2024-2027"
+    },
+    "remoteWork": {
+      "title": "Remote Work",
+      "description": "Growth in flexible work opportunities and remote work",
+      "impact": "Medium",
+      "timeline": "Ongoing"
+    }
+  },
+  "opportunities": {
+    "title": "Emerging Opportunities",
+    "startups": {
+      "title": "Startups",
+      "description": "Supportive environment for startups and innovation",
+      "funding": "AED 2.5B",
+      "count": "3,000+"
+    },
+    "freelancing": {
+      "title": "Freelancing",
+      "description": "Growth in freelance opportunities and consulting",
+      "growth": "25%",
+      "professionals": "50,000+"
+    },
+    "internships": {
+      "title": "Internship Programs",
+      "description": "Comprehensive training programs for students and graduates",
+      "programs": "500+",
+      "participants": "15,000+"
+    }
+  },
+  "labels": {
+    "growth": "Growth",
+    "salary": "Salary",
+    "jobs": "Jobs",
+    "companies": "Companies",
+    "skills": "Skills",
+    "requirements": "Requirements",
+    "benefits": "Benefits",
+    "location": "Location",
+    "experience": "Experience",
+    "industry": "Industry",
+    "sector": "Sector",
+    "market": "Market",
+    "trends": "Trends",
+    "opportunities": "Opportunities",
+    "overview": "Overview",
+    "details": "Details",
+    "statistics": "Statistics",
+    "forecast": "Forecast",
+    "analysis": "Analysis",
+    "report": "Report",
+    "data": "Data",
+    "insights": "Insights",
+    "impact": "Impact",
+    "timeline": "Timeline",
+    "funding": "Funding",
+    "professionals": "Professionals",
+    "participants": "Participants",
+    "programs": "Programs"
+  },
+  "regions": {
+    "title": "Geographic Distribution",
+    "dubai": {
+      "name": "Dubai",
+      "industries": ["Technology", "Tourism", "Trade", "Financial Services"],
+      "jobCount": "25,000+",
+      "growth": "15%"
+    },
+    "abudhabi": {
+      "name": "Abu Dhabi",
+      "industries": ["Energy", "Government", "Healthcare", "Education"],
+      "jobCount": "18,000+",
+      "growth": "12%"
+    },
+    "sharjah": {
+      "name": "Sharjah",
+      "industries": ["Manufacturing", "Education", "Culture", "Logistics"],
+      "jobCount": "8,500+",
+      "growth": "10%"
+    },
+    "northernEmirates": {
+      "name": "Northern Emirates",
+      "industries": ["Agriculture", "Tourism", "Manufacturing", "Trade"],
+      "jobCount": "5,200+",
+      "growth": "8%"
+    }
+  },
+  "resources": {
+    "title": "Resources & Tools",
+    "industryReports": "Industry Reports",
+    "salaryGuides": "Salary Guides",
+    "companyProfiles": "Company Profiles",
+    "jobAlerts": "Job Alerts",
+    "networkingEvents": "Networking Events",
+    "careerAdvice": "Career Advice",
+    "skillAssessment": "Skill Assessment",
+    "mentorship": "Career Mentorship"
+  },
+  "filters": {
+    "title": "Filter Results",
+    "byIndustry": "By Industry",
+    "byLocation": "By Location",
+    "bySalary": "By Salary",
+    "byExperience": "By Experience",
+    "byCompanySize": "By Company Size",
+    "byJobType": "By Job Type"
+  },
+  "currency": {
+    "symbol": "AED",
+    "code": "AED",
+    "name": "UAE Dirham"
+  }
+}
+

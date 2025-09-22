@@ -1,0 +1,233 @@
+{
+  "title": "Resume Builder",
+  "description": "Create professional resumes that stand out with our intuitive builder and expert templates",
+  "heroTitle": "Resume Builder",
+  "heroDescription": "Create professional resumes that stand out with our intuitive builder and expert templates",
+  "primaryAction": "Start Building",
+  "secondaryAction": "View Templates",
+  "stats": {
+    "templates": "Professional Templates",
+    "created": "Resumes Created",
+    "formats": "Industry Formats",
+    "satisfaction": "User Satisfaction"
+  },
+  "quote": "Your resume is your first impression. Make it count.",
+  "attribution": "Career Success Principle",
+  "tabs": {
+    "builder": {
+      "label": "Resume Builder",
+      "title": "Resume Builder",
+      "description": "Create professional resumes with easy-to-use tools and specialized templates"
+    },
+    "templates": {
+      "label": "Templates",
+      "title": "Resume Templates",
+      "description": "Choose from a variety of professionally designed templates"
+    },
+    "analytics": {
+      "label": "Analytics",
+      "title": "Resume Analytics",
+      "description": "Track your resume performance, views, and downloads"
+    },
+    "tips": {
+      "label": "Tips",
+      "title": "Resume Writing Tips",
+      "description": "Get expert advice for writing effective and impactful resumes"
+    }
+  },
+  "sections": {
+    "personal": "Personal Information",
+    "summary": "Professional Summary",
+    "experience": "Work Experience",
+    "education": "Education",
+    "skills": "Skills",
+    "languages": "Languages",
+    "certifications": "Certifications",
+    "projects": "Projects",
+    "achievements": "Achievements",
+    "references": "References"
+  },
+  "builder": {
+    "title": "Resume Builder Coming Soon",
+    "description": "Create professional resumes with our easy-to-use builder and industry-specific templates.",
+    "features": {
+      "templates": "Multiple Templates",
+      "customizable": "Fully Customizable",
+      "export": "Multiple Export Options",
+      "ats": "ATS Compatible"
+    },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available"
+  },
+  "templates": {
+    "title": "Resume Templates",
+    "description": "Choose from a variety of professionally designed templates",
+    "categories": {
+      "classic": "Classic",
+      "modern": "Modern",
+      "creative": "Creative",
+      "minimalist": "Minimalist",
+      "executive": "Executive",
+      "technical": "Technical"
+    },
+    "features": {
+      "ats": "ATS Compatible",
+      "customizable": "Customizable",
+      "professional": "Professional",
+      "responsive": "Responsive"
+    }
+  },
+  "analytics": {
+    "title": "Resume Analytics",
+    "description": "Track your resume performance, views, and downloads",
+    "metrics": {
+      "views": "Views",
+      "downloads": "Downloads",
+      "applications": "Applications",
+      "responses": "Responses",
+      "interviews": "Interviews",
+      "success": "Success Rate"
+    },
+    "insights": {
+      "topSections": "Top Viewed Sections",
+      "viewTime": "View Time",
+      "devices": "Devices",
+      "locations": "Locations"
+    }
+  },
+  "tips": {
+    "title": "Resume Writing Tips",
+    "description": "Get expert advice for writing effective and impactful resumes",
+    "categories": {
+      "writing": "Writing",
+      "formatting": "Formatting",
+      "keywords": "Keywords",
+      "industry": "Industry Specific"
+    },
+    "general": [
+      {
+        "title": "Keep it concise and focused",
+        "description": "Limit your resume to one or two pages maximum"
+      },
+      {
+        "title": "Use relevant keywords",
+        "description": "Include keywords related to the target job position"
+      },
+      {
+        "title": "Quantify your achievements",
+        "description": "Use numbers and percentages to show your impact"
+      },
+      {
+        "title": "Tailor for each job",
+        "description": "Customize your resume for each job application"
+      }
+    ]
+  },
+  "forms": {
+    "personal": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "city": "City",
+      "country": "Country",
+      "website": "Website",
+      "linkedin": "LinkedIn",
+      "title": "Job Title"
+    },
+    "summary": {
+      "title": "Professional Summary",
+      "placeholder": "Write a brief professional summary highlighting your key experiences and skills..."
+    },
+    "experience": {
+      "company": "Company",
+      "position": "Position",
+      "location": "Location",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "current": "Currently Working",
+      "description": "Description",
+      "addExperience": "Add Experience",
+      "editExperience": "Edit Experience"
+    },
+    "education": {
+      "institution": "Institution",
+      "degree": "Degree",
+      "field": "Field of Study",
+      "location": "Location",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "current": "Currently Studying",
+      "description": "Description",
+      "addEducation": "Add Education",
+      "editEducation": "Edit Education"
+    },
+    "skills": {
+      "name": "Skill Name",
+      "level": "Level",
+      "levels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      },
+      "addSkill": "Add Skill",
+      "editSkill": "Edit Skill"
+    },
+    "languages": {
+      "name": "Language",
+      "proficiency": "Proficiency Level",
+      "levels": {
+        "basic": "Basic",
+        "conversational": "Conversational",
+        "fluent": "Fluent",
+        "native": "Native"
+      },
+      "addLanguage": "Add Language",
+      "editLanguage": "Edit Language"
+    }
+  },
+  "actions": {
+    "save": "Save",
+    "preview": "Preview",
+    "download": "Download",
+    "share": "Share",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish"
+  },
+  "export": {
+    "pdf": "Export PDF",
+    "word": "Export Word",
+    "txt": "Export Text",
+    "json": "Export JSON",
+    "downloading": "Downloading...",
+    "success": "Export successful",
+    "error": "Export error"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email",
+    "phone": "Please enter a valid phone number",
+    "url": "Please enter a valid URL",
+    "dateRange": "End date must be after start date"
+  },
+  "notifications": {
+    "saved": "Resume saved successfully",
+    "updated": "Resume updated successfully",
+    "deleted": "Resume deleted successfully",
+    "exported": "Resume exported successfully",
+    "error": "An error occurred. Please try again"
+  },
+  "emptyState": {
+    "title": "No Resume Yet",
+    "description": "Start creating your first professional resume.",
+    "createFirst": "Create Your First Resume"
+  }
+}
+

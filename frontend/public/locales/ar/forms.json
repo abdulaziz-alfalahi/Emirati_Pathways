@@ -1,0 +1,71 @@
+{
+  "labels": {
+    "title": "العنوان",
+    "company": "اسم الشركة",
+    "location": "الموقع",
+    "industry": "الصناعة",
+    "department": "القسم (اختياري)",
+    "educationLevel": "مستوى التعليم المطلوب",
+    "startDate": "تاريخ البداية (اختياري)",
+    "endDate": "تاريخ النهاية (اختياري)",
+    "applicationDeadline": "الموعد النهائي للتقديم",
+    "paidInternship": "تدريب مدفوع الأجر",
+    "stipendAmount": "مبلغ الراتب",
+    "currency": "العملة",
+    "description": "الوصف",
+    "requirements": "المتطلبات (واحد في كل سطر)",
+    "requiredSkills": "المهارات المطلوبة (مفصولة بفواصل)",
+    "contactEmail": "البريد الإلكتروني للتواصل (اختياري)",
+    "contactPhone": "رقم الهاتف للتواصل (اختياري)",
+    "websiteUrl": "رابط الموقع الإلكتروني (اختياري)",
+    "internshipTitle": "عنوان التدريب"
+  },
+  "placeholders": {
+    "internshipTitle": "مثال: متدرب تطوير البرمجيات",
+    "companyName": "مثال: شركة الابتكارات التقنية م.ذ.م",
+    "location": "مثال: دبي، الخليج التجاري",
+    "department": "مثال: الهندسة، التسويق",
+    "stipendAmount": "مثال: 3000",
+    "description": "قدم وصفاً مفصلاً للتدريب والمسؤوليات وفرص التعلم...",
+    "requirements": "مثال: مسجل حالياً في علوم الحاسوب أو مجال ذي صلة\nيجب أن يكون لديه معرفة أساسية بالبرمجة\nمهارات تواصل جيدة",
+    "requiredSkills": "مثال: JavaScript، HTML/CSS، React",
+    "contactEmail": "internships@company.com",
+    "contactPhone": "+971XXXXXXXXX",
+    "websiteUrl": "https://example.com/careers/internships",
+    "pickDate": "اختر تاريخ",
+    "searchInternships": "البحث في التدريبات...",
+    "selectIndustry": "اختر الصناعة",
+    "selectEducationLevel": "اختر مستوى التعليم",
+    "selectCurrency": "اختر العملة"
+  },
+  "educationLevels": {
+    "highSchool": "المدرسة الثانوية",
+    "undergraduate": "البكالوريوس",
+    "graduate": "الدراسات العليا",
+    "any": "أي مستوى"
+  },
+  "industries": {
+    "technology": "التكنولوجيا",
+    "marketing": "التسويق",
+    "banking": "المصرفية",
+    "healthcare": "الرعاية الصحية",
+    "education": "التعليم",
+    "retail": "التجارة",
+    "manufacturing": "التصنيع",
+    "media": "الإعلام",
+    "hospitality": "الضيافة"
+  },
+  "success": {
+    "internshipCreated": "تم إنشاء التدريب",
+    "internshipCreatedDesc": "تم إنشاء إعلان التدريب الخاص بك بنجاح"
+  },
+  "errors": {
+    "authRequired": "المصادقة مطلوبة",
+    "mustBeLoggedIn": "يجب أن تكون مسجل الدخول لإنشاء إعلان تدريب",
+    "error": "خطأ",
+    "createFailed": "فشل في إنشاء إعلان التدريب. يرجى المحاولة مرة أخرى."
+  },
+  "titles": {
+    "postNewInternship": "نشر تدريب جديد"
+  }
+}

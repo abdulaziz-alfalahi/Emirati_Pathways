@@ -1,0 +1,481 @@
+{
+  "title": "Jobs & Smart Matching",
+  "description": "Find your perfect career match with our intelligent job recommendation system",
+  "heroTitle": "Jobs & Smart Matching",
+  "heroDescription": "Find your perfect career match with our intelligent job recommendation system",
+  "primaryAction": "Start Matching",
+  "secondaryAction": "View Jobs",
+  "stats": {
+    "listings": "Active Job Listings",
+    "employers": "Partner Employers",
+    "successRate": "Match Success Rate",
+    "placements": "Successful Placements"
+  },
+  "quote": "The right job is not just about what you do, but who you become",
+  "attribution": "Career Philosophy",
+  "tabs": {
+    "matching": {
+      "label": "Job Matching",
+      "title": "Smart Job Matching",
+      "description": "Our AI-powered job matching system will connect you with opportunities that fit your skills and aspirations"
+    },
+    "search": {
+      "label": "Search",
+      "title": "Job Search",
+      "description": "Search for jobs using advanced filters and custom criteria"
+    },
+    "saved": {
+      "label": "Saved",
+      "title": "Saved Jobs",
+      "description": "Track your saved jobs and job applications"
+    },
+    "applications": {
+      "label": "Applications",
+      "title": "Job Applications",
+      "description": "Track the status of your job applications"
+    },
+    "recommendations": {
+      "label": "Recommendations",
+      "title": "Recommended Jobs",
+      "description": "Personalized job recommendations based on your profile and skills"
+    }
+  },
+  "sections": {
+    "search": "Search",
+    "filter": "Filter",
+    "results": "Results",
+    "details": "Details"
+  },
+  "matching": {
+    "title": "Smart Job Matching Coming Soon",
+    "description": "Our AI-powered job matching system will connect you with opportunities that fit your skills and aspirations.",
+    "features": {
+      "aiMatching": "AI Matching",
+      "skillAnalysis": "Skill Analysis",
+      "careerPath": "Career Path",
+      "realTime": "Real-time Updates"
+    },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available",
+    "stats": {
+      "totalMatches": "Total Matches",
+      "newThisWeek": "New This Week",
+      "profileCompleteness": "Profile Completeness",
+      "matchAccuracy": "Match Accuracy"
+    }
+  },
+  "search": {
+    "title": "Job Search",
+    "description": "Search for jobs using advanced filters and custom criteria",
+    "placeholder": "Search for jobs, companies, or skills...",
+    "filters": {
+      "location": "Location",
+      "industry": "Industry",
+      "jobType": "Job Type",
+      "experience": "Experience Level",
+      "salary": "Salary",
+      "company": "Company",
+      "skills": "Skills",
+      "education": "Education",
+      "language": "Language",
+      "workMode": "Work Mode"
+    },
+    "jobTypes": {
+      "fullTime": "Full-time",
+      "partTime": "Part-time",
+      "contract": "Contract",
+      "freelance": "Freelance",
+      "internship": "Internship",
+      "temporary": "Temporary",
+      "remote": "Remote",
+      "hybrid": "Hybrid"
+    },
+    "experienceLevels": {
+      "entry": "Entry Level",
+      "junior": "Junior",
+      "mid": "Mid Level",
+      "senior": "Senior",
+      "lead": "Lead",
+      "executive": "Executive"
+    },
+    "workModes": {
+      "onsite": "On-site",
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "flexible": "Flexible"
+    },
+    "sortBy": {
+      "relevance": "Relevance",
+      "date": "Date",
+      "salary": "Salary",
+      "company": "Company",
+      "location": "Location"
+    },
+    "results": {
+      "found": "jobs found",
+      "noResults": "No results found",
+      "loading": "Searching...",
+      "showMore": "Show More"
+    }
+  },
+  "jobCard": {
+    "company": "Company",
+    "location": "Location",
+    "salary": "Salary",
+    "type": "Type",
+    "posted": "Posted",
+    "deadline": "Application Deadline",
+    "applicants": "Applicants",
+    "match": "Match",
+    "skills": "Required Skills",
+    "experience": "Required Experience",
+    "education": "Required Education",
+    "languages": "Required Languages",
+    "benefits": "Benefits",
+    "description": "Description",
+    "requirements": "Requirements",
+    "responsibilities": "Responsibilities",
+    "actions": {
+      "apply": "Apply Now",
+      "save": "Save",
+      "share": "Share",
+      "viewDetails": "View Details",
+      "viewCompany": "View Company",
+      "similar": "Similar Jobs"
+    },
+    "status": {
+      "new": "New",
+      "urgent": "Urgent",
+      "featured": "Featured",
+      "hot": "Hot",
+      "closing": "Closing Soon"
+    }
+  },
+  "saved": {
+    "title": "Saved Jobs",
+    "description": "Track your saved jobs and job applications",
+    "empty": {
+      "title": "No Saved Jobs",
+      "description": "You haven't saved any jobs yet. Start searching for jobs and save the interesting ones.",
+      "action": "Search Jobs"
+    },
+    "categories": {
+      "all": "All",
+      "recent": "Recent",
+      "applied": "Applied",
+      "interested": "Interested",
+      "archived": "Archived"
+    },
+    "actions": {
+      "apply": "Apply Now",
+      "remove": "Remove",
+      "archive": "Archive",
+      "share": "Share",
+      "addNotes": "Add Notes"
+    }
+  },
+  "applications": {
+    "title": "Job Applications",
+    "description": "Track the status of your job applications",
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "inReview": "In Review",
+      "shortlisted": "Shortlisted",
+      "interview": "Interview",
+      "offer": "Offer",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "timeline": {
+      "applied": "Applied",
+      "reviewed": "Reviewed",
+      "interviewed": "Interviewed",
+      "decided": "Decision Made"
+    },
+    "details": {
+      "appliedDate": "Applied Date",
+      "lastUpdate": "Last Update",
+      "recruiter": "Recruiter",
+      "interviewDate": "Interview Date",
+      "feedback": "Feedback",
+      "nextSteps": "Next Steps"
+    },
+    "actions": {
+      "withdraw": "Withdraw",
+      "followUp": "Follow Up",
+      "viewJob": "View Job",
+      "updateApplication": "Update Application",
+      "scheduleInterview": "Schedule Interview"
+    },
+    "empty": {
+      "title": "No Applications",
+      "description": "You haven't applied to any jobs yet. Start searching for jobs and apply to suitable ones.",
+      "action": "Search Jobs"
+    }
+  },
+  "recommendations": {
+    "title": "Recommended Jobs",
+    "description": "Personalized job recommendations based on your profile and skills",
+    "categories": {
+      "perfectMatch": "Perfect Match",
+      "skillMatch": "Skill Match",
+      "careerGrowth": "Career Growth",
+      "trending": "Trending",
+      "newOpportunities": "New Opportunities",
+      "similarRoles": "Similar Roles"
+    },
+    "reasons": {
+      "skillMatch": "Matches your skills",
+      "experienceMatch": "Matches your experience",
+      "locationPreference": "Matches location preference",
+      "salaryRange": "Within salary range",
+      "careerGoals": "Aligns with career goals",
+      "companyInterest": "Company of interest"
+    },
+    "empty": {
+      "title": "No Recommendations Available",
+      "description": "Complete your profile to get personalized job recommendations.",
+      "action": "Complete Profile"
+    }
+  },
+  "companies": {
+    "title": "Companies",
+    "description": "Explore leading companies in the UAE",
+    "profile": {
+      "about": "About Company",
+      "industry": "Industry",
+      "size": "Company Size",
+      "founded": "Founded",
+      "headquarters": "Headquarters",
+      "website": "Website",
+      "employees": "Employees",
+      "openJobs": "Open Jobs",
+      "benefits": "Benefits",
+      "culture": "Company Culture",
+      "values": "Values",
+      "mission": "Mission",
+      "vision": "Vision"
+    },
+    "sizes": {
+      "startup": "Startup (1-10)",
+      "small": "Small (11-50)",
+      "medium": "Medium (51-200)",
+      "large": "Large (201-1000)",
+      "enterprise": "Enterprise (1000+)"
+    },
+    "actions": {
+      "follow": "Follow",
+      "viewJobs": "View Jobs",
+      "visitWebsite": "Visit Website",
+      "viewProfile": "View Profile"
+    }
+  },
+  "industries": {
+    "banking": "Banking & Finance",
+    "technology": "Technology",
+    "healthcare": "Healthcare",
+    "government": "Government",
+    "oilGas": "Oil & Gas",
+    "aviation": "Aviation",
+    "tourism": "Tourism",
+    "realEstate": "Real Estate",
+    "education": "Education",
+    "retail": "Retail",
+    "consulting": "Consulting",
+    "media": "Media",
+    "construction": "Construction",
+    "logistics": "Logistics",
+    "manufacturing": "Manufacturing",
+    "telecommunications": "Telecommunications",
+    "automotive": "Automotive",
+    "food": "Food & Beverage",
+    "fashion": "Fashion",
+    "sports": "Sports",
+    "entertainment": "Entertainment",
+    "agriculture": "Agriculture"
+  },
+  "locations": {
+    "dubai": "Dubai",
+    "abuDhabi": "Abu Dhabi",
+    "sharjah": "Sharjah",
+    "ajman": "Ajman",
+    "fujairah": "Fujairah",
+    "rasAlKhaimah": "Ras Al Khaimah",
+    "ummAlQuwain": "Umm Al Quwain",
+    "alAin": "Al Ain",
+    "remote": "Remote",
+    "uae": "United Arab Emirates"
+  },
+  "skills": {
+    "technical": "Technical",
+    "soft": "Soft Skills",
+    "leadership": "Leadership",
+    "communication": "Communication",
+    "analytical": "Analytical",
+    "creative": "Creative",
+    "management": "Management",
+    "sales": "Sales",
+    "marketing": "Marketing",
+    "finance": "Finance",
+    "hr": "Human Resources",
+    "operations": "Operations",
+    "strategy": "Strategy",
+    "project": "Project Management"
+  },
+  "benefits": {
+    "healthInsurance": "Health Insurance",
+    "lifeInsurance": "Life Insurance",
+    "retirement": "Retirement Plan",
+    "vacation": "Paid Vacation",
+    "flexibleHours": "Flexible Hours",
+    "remoteWork": "Remote Work",
+    "training": "Training & Development",
+    "education": "Education Assistance",
+    "gym": "Gym Membership",
+    "transport": "Transportation",
+    "housing": "Housing Allowance",
+    "meals": "Meal Allowance",
+    "bonus": "Performance Bonus",
+    "stockOptions": "Stock Options",
+    "childcare": "Childcare Support"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": {
+      "totalApplications": "Total Applications",
+      "activeApplications": "Active Applications",
+      "savedJobs": "Saved Jobs",
+      "profileViews": "Profile Views",
+      "interviewsScheduled": "Interviews Scheduled",
+      "offersReceived": "Offers Received"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "appliedTo": "Applied to",
+      "savedJob": "Saved job",
+      "profileViewed": "Profile viewed",
+      "interviewScheduled": "Interview scheduled"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "searchJobs": "Search Jobs",
+      "updateProfile": "Update Profile",
+      "viewApplications": "View Applications",
+      "browseCompanies": "Browse Companies",
+      "skillAssessment": "Skill Assessment",
+      "careerAdvice": "Career Advice"
+    }
+  },
+  "profile": {
+    "completeness": "Profile Completeness",
+    "sections": {
+      "basicInfo": "Basic Information",
+      "experience": "Experience",
+      "education": "Education",
+      "skills": "Skills",
+      "certifications": "Certifications",
+      "languages": "Languages",
+      "preferences": "Job Preferences"
+    },
+    "tips": {
+      "addPhoto": "Add profile photo",
+      "completeExperience": "Complete work experience",
+      "addSkills": "Add your skills",
+      "setPreferences": "Set job preferences"
+    }
+  },
+  "alerts": {
+    "title": "Job Alerts",
+    "description": "Get notified when jobs matching your criteria become available",
+    "create": "Create Alert",
+    "frequency": {
+      "immediate": "Immediate",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "criteria": {
+      "keywords": "Keywords",
+      "location": "Location",
+      "industry": "Industry",
+      "salary": "Salary",
+      "jobType": "Job Type"
+    }
+  },
+  "forms": {
+    "application": {
+      "title": "Job Application",
+      "personalInfo": "Personal Information",
+      "coverLetter": "Cover Letter",
+      "resume": "Resume",
+      "portfolio": "Portfolio",
+      "references": "References",
+      "additionalInfo": "Additional Information"
+    },
+    "jobAlert": {
+      "title": "Job Alert",
+      "name": "Alert Name",
+      "keywords": "Keywords",
+      "location": "Location",
+      "frequency": "Frequency"
+    }
+  },
+  "actions": {
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "apply": "Apply",
+    "save": "Save",
+    "share": "Share",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "update": "Update",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "refresh": "Refresh",
+    "reset": "Reset"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Invalid email address",
+    "phone": "Invalid phone number",
+    "minLength": "Minimum length required",
+    "maxLength": "Maximum length exceeded",
+    "selectOption": "Please select an option",
+    "uploadFile": "Please upload a file"
+  },
+  "notifications": {
+    "applicationSubmitted": "Application submitted successfully",
+    "jobSaved": "Job saved successfully",
+    "jobRemoved": "Job removed from saved",
+    "alertCreated": "Job alert created",
+    "profileUpdated": "Profile updated",
+    "error": "An error occurred. Please try again"
+  },
+  "loading": {
+    "searching": "Searching...",
+    "loading": "Loading...",
+    "applying": "Applying...",
+    "saving": "Saving...",
+    "processing": "Processing..."
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "showing": "Showing",
+    "results": "results"
+  }
+}
+

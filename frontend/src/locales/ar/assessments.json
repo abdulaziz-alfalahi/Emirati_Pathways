@@ -1,0 +1,601 @@
+{
+  "title": "التقييمات والقياس",
+  "description": "منصة تقييم شاملة تقيس المهارات والقدرات وتتبع التقدم التطويري عبر المجالات الأكاديمية والمهنية من خلال منهجيات التقييم المبتكرة",
+  "heroTitle": "التقييمات والقياس",
+  "heroDescription": "منصة تقييم شاملة تقيس المهارات والقدرات وتتبع التقدم التطويري",
+  "primaryAction": "ابدأ التقييم",
+  "secondaryAction": "عرض النتائج",
+  "contexts": {
+    "academic": {
+      "title": "التميز في التقييم الأكاديمي",
+      "description": "منصة تقييم أكاديمي شاملة مصممة لقياس نتائج التعلم وتحديد فرص النمو وتسريع التطوير التعليمي من خلال منهجيات التقييم المبنية على الأدلة"
+    },
+    "career": {
+      "title": "تقييم المهارات المهنية",
+      "description": "منصة تقييم مهارات متقدمة تقيس الكفاءات المهنية وتحدد فرص التطوير وتوفر مسارات تقدم مهني مخصصة من خلال تحليلات التقييم الشاملة"
+    },
+    "general": {
+      "title": "منصة التقييم الشاملة",
+      "description": "نظام تقييم موحد يقيم المهارات ويقيس القدرات ويتبع تقدم التطوير عبر المجالات الأكاديمية والمهنية من خلال منهجيات التقييم المبتكرة"
+    }
+  },
+  "stats": {
+    "assessments": "تقييم متاح",
+    "completionRate": "معدل الإكمال",
+    "categories": "فئة مهارات",
+    "access": "وصول للمنصة"
+  },
+  "quote": "التقييم الحقيقي لا يقيس ما تعرفه، بل كيف تطبق ما تعلمته",
+  "attribution": "فلسفة التقييم",
+  "tabs": {
+    "available": {
+      "label": "المتاحة",
+      "title": "التقييمات المتاحة",
+      "description": "اكتشف وأكمل التقييمات لتقييم مهاراتك وتتبع تقدمك"
+    },
+    "inProgress": {
+      "label": "قيد التنفيذ",
+      "title": "التقييمات قيد التنفيذ",
+      "description": "تابع جلسات التقييم الجارية وتتبع حالة الإكمال"
+    },
+    "completed": {
+      "label": "المكتملة",
+      "title": "التقييمات المكتملة",
+      "description": "راجع تقييماتك المكتملة وإنجازاتك"
+    },
+    "results": {
+      "label": "النتائج",
+      "title": "نتائج التقييم والتحليلات",
+      "description": "تحليل شامل لأداء التقييم واتجاهات تطوير المهارات"
+    },
+    "skills": {
+      "label": "تحليل المهارات",
+      "title": "تحليل فجوة المهارات",
+      "description": "تقييم شامل للمهارات وتحليل الفجوات لتحديد نقاط القوة ومجالات التحسين"
+    },
+    "cognitive": {
+      "label": "المعرفية",
+      "title": "مجموعة التقييم المعرفي",
+      "description": "تقييمات متقدمة للقدرات المعرفية والاستعداد لتقييم القدرات العقلية الشامل"
+    }
+  },
+  "assessmentTypes": {
+    "skills": "المهارات",
+    "behaviors": "السلوكيات",
+    "capabilities": "القدرات",
+    "cognitive": "المعرفية",
+    "personality": "الشخصية",
+    "aptitude": "الاستعداد",
+    "technical": "التقنية",
+    "leadership": "القيادة",
+    "communication": "التواصل",
+    "analytical": "التحليلية",
+    "creative": "الإبداعية",
+    "emotional": "الذكاء العاطفي"
+  },
+  "categories": {
+    "technical": "التقنية",
+    "soft": "المهارات الشخصية",
+    "leadership": "القيادة",
+    "communication": "التواصل",
+    "analytical": "التحليلية",
+    "creative": "الإبداعية",
+    "management": "الإدارة",
+    "sales": "المبيعات",
+    "marketing": "التسويق",
+    "finance": "المالية",
+    "hr": "الموارد البشرية",
+    "operations": "العمليات",
+    "strategy": "الاستراتيجية",
+    "project": "إدارة المشاريع",
+    "customer": "خدمة العملاء",
+    "innovation": "الابتكار"
+  },
+  "difficulty": {
+    "beginner": "مبتدئ",
+    "intermediate": "متوسط",
+    "advanced": "متقدم",
+    "expert": "خبير"
+  },
+  "status": {
+    "notStarted": "لم يبدأ",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "expired": "منتهي الصلاحية",
+    "paused": "متوقف مؤقتاً",
+    "submitted": "مرسل",
+    "graded": "مُقيم",
+    "passed": "نجح",
+    "failed": "فشل"
+  },
+  "assessmentCard": {
+    "duration": "المدة",
+    "questions": "الأسئلة",
+    "attempts": "المحاولات",
+    "passingScore": "درجة النجاح",
+    "category": "الفئة",
+    "difficulty": "المستوى",
+    "language": "اللغة",
+    "format": "التنسيق",
+    "prerequisites": "المتطلبات المسبقة",
+    "certification": "الشهادة",
+    "validUntil": "صالح حتى",
+    "createdBy": "أنشأ بواسطة",
+    "lastUpdated": "آخر تحديث",
+    "participants": "المشاركون",
+    "averageScore": "المتوسط",
+    "completionRate": "معدل الإكمال",
+    "actions": {
+      "start": "ابدأ التقييم",
+      "continue": "متابعة",
+      "retake": "إعادة المحاولة",
+      "viewResults": "عرض النتائج",
+      "viewDetails": "عرض التفاصيل",
+      "download": "تحميل",
+      "share": "مشاركة",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "duplicate": "نسخ"
+    },
+    "badges": {
+      "new": "جديد",
+      "popular": "شائع",
+      "featured": "مميز",
+      "trending": "رائج",
+      "recommended": "موصى به",
+      "mandatory": "إجباري",
+      "optional": "اختياري",
+      "timed": "محدد بوقت",
+      "unlimited": "غير محدود"
+    }
+  },
+  "available": {
+    "title": "التقييمات المتاحة",
+    "description": "اكتشف وأكمل التقييمات لتقييم مهاراتك وتتبع تقدمك",
+    "search": {
+      "placeholder": "البحث في التقييمات...",
+      "filters": {
+        "all": "الكل",
+        "category": "الفئة",
+        "difficulty": "المستوى",
+        "duration": "المدة",
+        "language": "اللغة",
+        "type": "النوع"
+      },
+      "sort": {
+        "newest": "الأحدث",
+        "popular": "الأكثر شعبية",
+        "difficulty": "المستوى",
+        "duration": "المدة",
+        "name": "الاسم"
+      }
+    },
+    "empty": {
+      "title": "لا توجد تقييمات متاحة",
+      "description": "لا توجد تقييمات متاحة حالياً. تحقق مرة أخرى لاحقاً أو اتصل بالمسؤول.",
+      "action": "تحديث"
+    },
+    "featured": {
+      "title": "التقييمات المميزة",
+      "description": "تقييمات موصى بها بناءً على ملفك الشخصي ومسارك المهني"
+    },
+    "categories": {
+      "title": "تصفح حسب الفئة",
+      "viewAll": "عرض الكل"
+    }
+  },
+  "inProgress": {
+    "title": "التقييمات قيد التنفيذ",
+    "description": "تابع جلسات التقييم الجارية وتتبع حالة الإكمال",
+    "progress": {
+      "completed": "مكتمل",
+      "remaining": "متبقي",
+      "timeLeft": "الوقت المتبقي",
+      "questionsAnswered": "الأسئلة المجابة",
+      "currentSection": "القسم الحالي",
+      "lastActivity": "آخر نشاط"
+    },
+    "actions": {
+      "continue": "متابعة التقييم",
+      "pause": "إيقاف مؤقت",
+      "save": "حفظ التقدم",
+      "submit": "إرسال",
+      "exit": "خروج"
+    },
+    "empty": {
+      "title": "لا توجد تقييمات قيد التنفيذ",
+      "description": "ابدأ تقييماً من علامة التبويب المتاحة لرؤية تقدمك هنا.",
+      "action": "تصفح التقييمات المتاحة"
+    },
+    "warnings": {
+      "timeRunningOut": "الوقت ينفد",
+      "autoSave": "حفظ تلقائي",
+      "connectionIssue": "مشكلة في الاتصال",
+      "sessionExpiring": "الجلسة تنتهي قريباً"
+    }
+  },
+  "completed": {
+    "title": "التقييمات المكتملة",
+    "description": "راجع تقييماتك المكتملة وإنجازاتك",
+    "summary": {
+      "totalCompleted": "إجمالي المكتملة",
+      "averageScore": "متوسط الدرجة",
+      "certificationsEarned": "الشهادات المكتسبة",
+      "timeSpent": "الوقت المستغرق",
+      "bestPerformance": "أفضل أداء",
+      "improvementAreas": "مجالات التحسين"
+    },
+    "filters": {
+      "all": "الكل",
+      "thisMonth": "هذا الشهر",
+      "lastMonth": "الشهر الماضي",
+      "thisYear": "هذا العام",
+      "passed": "نجح",
+      "failed": "فشل",
+      "certified": "معتمد"
+    },
+    "actions": {
+      "viewCertificate": "عرض الشهادة",
+      "downloadReport": "تحميل التقرير",
+      "retake": "إعادة المحاولة",
+      "shareResults": "مشاركة النتائج",
+      "viewFeedback": "عرض التعليقات"
+    },
+    "empty": {
+      "title": "لا توجد تقييمات مكتملة",
+      "description": "أكمل تقييماً لرؤية نتائجك وإنجازاتك هنا.",
+      "action": "ابدأ تقييماً"
+    }
+  },
+  "results": {
+    "title": "نتائج التقييم والتحليلات",
+    "description": "تحليل شامل لأداء التقييم واتجاهات تطوير المهارات",
+    "overview": {
+      "title": "نظرة عامة على الأداء",
+      "totalAssessments": "إجمالي التقييمات",
+      "averageScore": "متوسط الدرجة",
+      "improvementRate": "معدل التحسن",
+      "skillsAssessed": "المهارات المُقيمة",
+      "strongAreas": "المجالات القوية",
+      "developmentAreas": "مجالات التطوير"
+    },
+    "charts": {
+      "performanceTrend": "اتجاه الأداء",
+      "skillsBreakdown": "تفصيل المهارات",
+      "categoryComparison": "مقارنة الفئات",
+      "progressOverTime": "التقدم عبر الوقت",
+      "benchmarking": "المقارنة المرجعية",
+      "competencyMap": "خريطة الكفاءات"
+    },
+    "insights": {
+      "title": "رؤى الأداء",
+      "strengths": "نقاط القوة",
+      "weaknesses": "نقاط الضعف",
+      "recommendations": "التوصيات",
+      "nextSteps": "الخطوات التالية",
+      "learningPath": "مسار التعلم",
+      "skillGaps": "فجوات المهارات"
+    },
+    "reports": {
+      "detailed": "تقرير مفصل",
+      "summary": "تقرير موجز",
+      "comparative": "تقرير مقارن",
+      "progress": "تقرير التقدم",
+      "skills": "تقرير المهارات",
+      "certification": "تقرير الشهادة"
+    },
+    "export": {
+      "pdf": "تصدير PDF",
+      "excel": "تصدير Excel",
+      "csv": "تصدير CSV",
+      "json": "تصدير JSON"
+    },
+    "empty": {
+      "title": "لا توجد نتائج متاحة",
+      "description": "أكمل التقييمات لرؤية التحليلات المفصلة والرؤى هنا.",
+      "action": "عرض التحليلات المفصلة"
+    }
+  },
+  "skills": {
+    "title": "تحليل فجوة المهارات",
+    "description": "تقييم شامل للمهارات وتحليل الفجوات لتحديد نقاط القوة ومجالات التحسين",
+    "analysis": {
+      "current": "المهارات الحالية",
+      "target": "المهارات المستهدفة",
+      "gaps": "الفجوات",
+      "strengths": "نقاط القوة",
+      "development": "التطوير المطلوب",
+      "priority": "الأولوية"
+    },
+    "categories": {
+      "technical": "المهارات التقنية",
+      "soft": "المهارات الشخصية",
+      "leadership": "مهارات القيادة",
+      "communication": "مهارات التواصل",
+      "analytical": "المهارات التحليلية",
+      "creative": "المهارات الإبداعية"
+    },
+    "levels": {
+      "novice": "مبتدئ",
+      "beginner": "مبتدئ متقدم",
+      "intermediate": "متوسط",
+      "advanced": "متقدم",
+      "expert": "خبير",
+      "master": "متمكن"
+    },
+    "recommendations": {
+      "title": "توصيات التطوير",
+      "courses": "الدورات الموصى بها",
+      "certifications": "الشهادات المقترحة",
+      "projects": "المشاريع العملية",
+      "mentoring": "التوجيه والإرشاد",
+      "timeline": "الجدول الزمني المقترح"
+    },
+    "mapping": {
+      "title": "خريطة المهارات المتقدمة",
+      "description": "رسم خرائط المهارات المتقدم وتحليل الفجوات لإنشاء مسارات تطوير مخصصة"
+    },
+    "empty": {
+      "title": "تحليل فجوة المهارات",
+      "description": "رسم خرائط المهارات المتقدم وتحليل الفجوات لإنشاء مسارات تطوير مخصصة.",
+      "action": "قريباً"
+    }
+  },
+  "cognitive": {
+    "title": "مجموعة التقييم المعرفي",
+    "description": "تقييمات متقدمة للقدرات المعرفية والاستعداد لتقييم القدرات العقلية الشامل",
+    "types": {
+      "reasoning": "التفكير المنطقي",
+      "memory": "الذاكرة",
+      "attention": "الانتباه",
+      "processing": "سرعة المعالجة",
+      "spatial": "الذكاء المكاني",
+      "verbal": "القدرة اللفظية",
+      "numerical": "القدرة العددية",
+      "abstract": "التفكير المجرد"
+    },
+    "assessments": {
+      "iq": "اختبار الذكاء",
+      "aptitude": "اختبار الاستعداد",
+      "reasoning": "اختبار التفكير",
+      "memory": "اختبار الذاكرة",
+      "attention": "اختبار الانتباه",
+      "processing": "اختبار سرعة المعالجة"
+    },
+    "features": {
+      "scientificallyDesigned": "مصمم علمياً",
+      "standardized": "موحد ومعياري",
+      "adaptive": "تكيفي",
+      "comprehensive": "شامل",
+      "reliable": "موثوق",
+      "validated": "مُتحقق منه"
+    },
+    "empty": {
+      "title": "التقييمات المعرفية",
+      "description": "تقييمات معرفية مصممة علمياً لتقييم قدرات حل المشكلات والتفكير والتحليل.",
+      "action": "قريباً"
+    }
+  },
+  "create": {
+    "title": "إنشاء تقييم جديد",
+    "description": "إنشاء تقييم مخصص لمؤسستك أو فريقك",
+    "form": {
+      "basicInfo": {
+        "title": "المعلومات الأساسية",
+        "name": "اسم التقييم",
+        "description": "الوصف",
+        "category": "الفئة",
+        "type": "النوع",
+        "difficulty": "المستوى",
+        "language": "اللغة",
+        "tags": "العلامات"
+      },
+      "settings": {
+        "title": "الإعدادات",
+        "duration": "المدة (بالدقائق)",
+        "attempts": "عدد المحاولات المسموحة",
+        "passingScore": "درجة النجاح (%)",
+        "randomizeQuestions": "ترتيب الأسئلة عشوائياً",
+        "showResults": "إظهار النتائج فوراً",
+        "allowReview": "السماح بمراجعة الإجابات",
+        "timeLimit": "حد زمني",
+        "prerequisites": "المتطلبات المسبقة"
+      },
+      "questions": {
+        "title": "الأسئلة",
+        "addQuestion": "إضافة سؤال",
+        "questionType": "نوع السؤال",
+        "questionText": "نص السؤال",
+        "options": "الخيارات",
+        "correctAnswer": "الإجابة الصحيحة",
+        "explanation": "الشرح",
+        "points": "النقاط"
+      },
+      "review": {
+        "title": "المراجعة والنشر",
+        "preview": "معاينة",
+        "publish": "نشر",
+        "saveDraft": "حفظ كمسودة",
+        "schedule": "جدولة النشر"
+      }
+    },
+    "questionTypes": {
+      "multipleChoice": "اختيار من متعدد",
+      "trueFalse": "صح أم خطأ",
+      "shortAnswer": "إجابة قصيرة",
+      "essay": "مقال",
+      "matching": "مطابقة",
+      "fillInBlank": "ملء الفراغات",
+      "ordering": "ترتيب",
+      "rating": "تقييم"
+    }
+  },
+  "upload": {
+    "title": "رفع تقييمات جديدة",
+    "description": "إضافة مواد تقييم جديدة إلى كتالوج مؤسستك",
+    "formats": {
+      "supported": "التنسيقات المدعومة",
+      "excel": "Excel (.xlsx, .xls)",
+      "csv": "CSV (.csv)",
+      "json": "JSON (.json)",
+      "xml": "XML (.xml)",
+      "qti": "QTI (.zip)"
+    },
+    "steps": {
+      "selectFile": "اختيار الملف",
+      "mapFields": "ربط الحقول",
+      "validate": "التحقق",
+      "import": "الاستيراد"
+    },
+    "validation": {
+      "checking": "جاري التحقق من الملف...",
+      "valid": "الملف صالح",
+      "errors": "أخطاء في الملف",
+      "warnings": "تحذيرات"
+    }
+  },
+  "centerControls": {
+    "title": "ضوابط مركز التقييم",
+    "description": "إدارة التقييمات لمؤسستك",
+    "features": {
+      "createAssessment": "إنشاء تقييم",
+      "uploadAssessments": "رفع التقييمات",
+      "manageUsers": "إدارة المستخدمين",
+      "viewReports": "عرض التقارير",
+      "configureSettings": "تكوين الإعدادات",
+      "exportData": "تصدير البيانات"
+    }
+  },
+  "coaching": {
+    "title": "توصيات التدريب",
+    "description": "توصيات تدريب مخصصة بناءً على نتائج التقييم",
+    "recommendations": {
+      "courses": "الدورات الموصى بها",
+      "mentors": "المرشدون المقترحون",
+      "resources": "الموارد التعليمية",
+      "projects": "المشاريع العملية",
+      "certifications": "الشهادات المقترحة"
+    },
+    "empty": {
+      "title": "لا توجد توصيات متاحة",
+      "description": "أكمل المزيد من التقييمات للحصول على توصيات تدريب مخصصة.",
+      "action": "ابدأ تقييماً"
+    }
+  },
+  "progress": {
+    "step": "خطوة",
+    "of": "من",
+    "steps": {
+      "discovery": "اكتشاف التقييم",
+      "completion": "إكمال التقييم",
+      "analysis": "تحليل النتائج",
+      "development": "خطة التطوير"
+    }
+  },
+  "cta": {
+    "title": "مستعد لتطوير مهاراتك؟",
+    "description": "انضم إلى آلاف المهنيين الذين سرّعوا مسيرتهم المهنية من خلال تقييم المهارات الشامل ومسارات التطوير المخصصة.",
+    "action": "ابدأ رحلة التقييم"
+  },
+  "authentication": {
+    "required": "يرجى تسجيل الدخول للوصول إلى التقييمات وتتبع رحلة التطوير الخاصة بك",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب"
+  },
+  "navigation": {
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "finish": "إنهاء",
+    "submit": "إرسال",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "duplicate": "نسخ",
+    "share": "مشاركة",
+    "export": "تصدير",
+    "import": "استيراد",
+    "refresh": "تحديث",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب"
+  },
+  "time": {
+    "minutes": "دقيقة",
+    "hours": "ساعة",
+    "days": "يوم",
+    "weeks": "أسبوع",
+    "months": "شهر",
+    "years": "سنة",
+    "ago": "منذ",
+    "remaining": "متبقي",
+    "elapsed": "منقضي",
+    "estimated": "مقدر"
+  },
+  "scoring": {
+    "score": "الدرجة",
+    "percentage": "النسبة المئوية",
+    "points": "النقاط",
+    "grade": "التقدير",
+    "rank": "الترتيب",
+    "percentile": "المئوية",
+    "average": "المتوسط",
+    "median": "الوسيط",
+    "standardDeviation": "الانحراف المعياري"
+  },
+  "feedback": {
+    "excellent": "ممتاز",
+    "good": "جيد",
+    "satisfactory": "مرضي",
+    "needsImprovement": "يحتاج تحسين",
+    "unsatisfactory": "غير مرضي",
+    "strengths": "نقاط القوة",
+    "areasForImprovement": "مجالات التحسين",
+    "recommendations": "التوصيات",
+    "nextSteps": "الخطوات التالية"
+  },
+  "notifications": {
+    "assessmentStarted": "بدأ التقييم",
+    "assessmentCompleted": "اكتمل التقييم",
+    "assessmentSubmitted": "تم إرسال التقييم",
+    "resultsAvailable": "النتائج متاحة",
+    "certificateEarned": "تم الحصول على الشهادة",
+    "reminderDue": "تذكير بالموعد المحدد",
+    "timeWarning": "تحذير الوقت",
+    "sessionExpiring": "الجلسة تنتهي قريباً",
+    "autoSaved": "تم الحفظ التلقائي",
+    "error": "حدث خطأ",
+    "success": "تم بنجاح",
+    "warning": "تحذير",
+    "info": "معلومات"
+  },
+  "errors": {
+    "loadingFailed": "فشل في التحميل",
+    "savingFailed": "فشل في الحفظ",
+    "submissionFailed": "فشل في الإرسال",
+    "networkError": "خطأ في الشبكة",
+    "serverError": "خطأ في الخادم",
+    "validationError": "خطأ في التحقق",
+    "permissionDenied": "تم رفض الإذن",
+    "sessionExpired": "انتهت صلاحية الجلسة",
+    "fileNotFound": "الملف غير موجود",
+    "invalidFormat": "تنسيق غير صالح",
+    "tryAgain": "حاول مرة أخرى",
+    "contactSupport": "اتصل بالدعم"
+  },
+  "loading": {
+    "assessments": "جاري تحميل التقييمات...",
+    "results": "جاري تحميل النتائج...",
+    "analysis": "جاري تحليل البيانات...",
+    "saving": "جاري الحفظ...",
+    "submitting": "جاري الإرسال...",
+    "processing": "جاري المعالجة...",
+    "generating": "جاري الإنشاء...",
+    "uploading": "جاري الرفع...",
+    "downloading": "جاري التحميل...",
+    "please_wait": "يرجى الانتظار..."
+  }
+}
+

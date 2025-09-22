@@ -1,0 +1,225 @@
+{
+  "title": "Career Planning Hub",
+  "description": "Discover your career path and plan your professional future with comprehensive career guidance tools",
+  "academicYear": "2024-2025",
+  "stats": {
+    "careerPaths": {
+      "value": "150+",
+      "label": "Career Paths"
+    },
+    "jobOpportunities": {
+      "value": "5,000+",
+      "label": "Job Opportunities"
+    },
+    "industryPartners": {
+      "value": "200+",
+      "label": "Industry Partners"
+    },
+    "successStories": {
+      "value": "3,500+",
+      "label": "Success Stories"
+    }
+  },
+  "tabs": {
+    "careerExplorer": "Career Explorer",
+    "skillAssessment": "Skill Assessment",
+    "jobMarket": "Job Market",
+    "networking": "Professional Networking"
+  },
+  "buttons": {
+    "explorecareers": "Explore Careers",
+    "takeAssessment": "Take Assessment",
+    "viewJobs": "View Jobs",
+    "buildNetwork": "Build Network",
+    "createProfile": "Create Profile",
+    "applyNow": "Apply Now",
+    "saveJob": "Save Job",
+    "contactRecruiter": "Contact Recruiter"
+  },
+  "careerPaths": {
+    "technology": {
+      "title": "Technology & Programming",
+      "description": "Explore the technology and programming field with diverse job opportunities in software development and artificial intelligence",
+      "averageSalary": "AED 120,000",
+      "growthRate": "15%",
+      "jobCount": "1,200+"
+    },
+    "healthcare": {
+      "title": "Healthcare",
+      "description": "Join the growing healthcare sector with opportunities in medicine, nursing, and health administration",
+      "averageSalary": "AED 95,000",
+      "growthRate": "12%",
+      "jobCount": "800+"
+    },
+    "business": {
+      "title": "Business & Management",
+      "description": "Develop your skills in business management, marketing, and finance with outstanding leadership opportunities",
+      "averageSalary": "AED 85,000",
+      "growthRate": "8%",
+      "jobCount": "950+"
+    },
+    "engineering": {
+      "title": "Engineering & Design",
+      "description": "Discover various engineering fields from civil to electrical and mechanical engineering",
+      "averageSalary": "AED 110,000",
+      "growthRate": "10%",
+      "jobCount": "700+"
+    },
+    "education": {
+      "title": "Education & Training",
+      "description": "Contribute to building the future through education, training, and curriculum development",
+      "averageSalary": "AED 70,000",
+      "growthRate": "6%",
+      "jobCount": "600+"
+    },
+    "finance": {
+      "title": "Finance & Banking",
+      "description": "Join the thriving financial sector with opportunities in banking, investment, and insurance",
+      "averageSalary": "AED 100,000",
+      "growthRate": "9%",
+      "jobCount": "550+"
+    }
+  },
+  "skills": {
+    "technical": {
+      "title": "Technical Skills",
+      "items": [
+        "Programming and Software Development",
+        "Data Analysis and Artificial Intelligence",
+        "Cybersecurity",
+        "Database Management",
+        "Web and Mobile App Development"
+      ]
+    },
+    "soft": {
+      "title": "Soft Skills",
+      "items": [
+        "Effective Communication",
+        "Leadership and Team Management",
+        "Problem Solving",
+        "Critical Thinking",
+        "Time Management"
+      ]
+    },
+    "language": {
+      "title": "Language Skills",
+      "items": [
+        "Arabic Language",
+        "English Language",
+        "French Language",
+        "German Language",
+        "Chinese Language"
+      ]
+    }
+  },
+  "jobMarket": {
+    "title": "Job Market",
+    "trending": "Trending Jobs",
+    "remote": "Remote Work",
+    "partTime": "Part Time",
+    "fullTime": "Full Time",
+    "internship": "Internship",
+    "contract": "Contract",
+    "filters": {
+      "location": "Location",
+      "salary": "Salary",
+      "experience": "Experience",
+      "company": "Company",
+      "industry": "Industry"
+    }
+  },
+  "networking": {
+    "title": "Professional Networking",
+    "events": "Professional Events",
+    "mentorship": "Career Mentorship",
+    "alumni": "Alumni Network",
+    "professionals": "Professionals",
+    "companies": "Companies"
+  },
+  "labels": {
+    "salary": "Salary",
+    "growth": "Growth",
+    "jobs": "Jobs",
+    "experience": "Experience",
+    "location": "Location",
+    "company": "Company",
+    "industry": "Industry",
+    "skills": "Skills",
+    "requirements": "Requirements",
+    "benefits": "Benefits",
+    "description": "Description",
+    "responsibilities": "Responsibilities",
+    "qualifications": "Qualifications",
+    "deadline": "Deadline",
+    "posted": "Posted",
+    "applicants": "Applicants",
+    "status": "Status",
+    "level": "Level",
+    "type": "Type",
+    "remote": "Remote",
+    "onsite": "On-site",
+    "hybrid": "Hybrid",
+    "progress": "Progress"
+  },
+  "assessment": {
+    "title": "Professional Skills Assessment",
+    "description": "Discover your strengths and areas for development through a comprehensive assessment of your professional skills",
+    "categories": {
+      "personality": "Personality Assessment",
+      "skills": "Skills Assessment",
+      "interests": "Interests Assessment",
+      "values": "Values Assessment"
+    },
+    "results": {
+      "strengths": "Strengths",
+      "weaknesses": "Areas for Development",
+      "recommendations": "Recommendations",
+      "careerMatch": "Suitable Careers"
+    }
+  },
+  "resources": {
+    "title": "Career Resources",
+    "resumeBuilder": "Resume Builder",
+    "interviewPrep": "Interview Preparation",
+    "careerGuides": "Career Guides",
+    "salaryCalculator": "Salary Calculator",
+    "skillDevelopment": "Skill Development",
+    "industryReports": "Industry Reports"
+  },
+  "success": {
+    "title": "Success Stories",
+    "graduates": "Successful Graduates",
+    "testimonials": "Testimonials",
+    "achievements": "Achievements",
+    "inspiration": "Success is where preparation and opportunity meet"
+  },
+  "companies": {
+    "featured": "Featured Companies",
+    "startups": "Startups",
+    "multinational": "Multinational Companies",
+    "government": "Government Sector",
+    "nonprofit": "Non-profit Organizations"
+  },
+  "events": {
+    "title": "Professional Events",
+    "jobFairs": "Job Fairs",
+    "workshops": "Workshops",
+    "seminars": "Seminars",
+    "networking": "Networking Events",
+    "conferences": "Conferences"
+  },
+  "mentorship": {
+    "title": "Career Mentorship Program",
+    "findMentor": "Find a Mentor",
+    "becomeMentor": "Become a Mentor",
+    "sessions": "Sessions",
+    "guidance": "Guidance",
+    "support": "Support"
+  },
+  "currency": {
+    "symbol": "AED",
+    "code": "AED",
+    "name": "UAE Dirham"
+  }
+}
+

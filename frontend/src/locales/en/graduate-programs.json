@@ -1,0 +1,101 @@
+{
+  "title": "Graduate Programs",
+  "description": "Master's, PhD, and advanced degree programs from top universities across the UAE for continued academic excellence",
+  "academicYear": "2024-2025",
+  "stats": {
+    "graduatePrograms": {
+      "value": "100+",
+      "label": "Graduate Programs"
+    },
+    "partnerUniversities": {
+      "value": "25+",
+      "label": "Partner Universities"
+    },
+    "graduateStudents": {
+      "value": "2,500+",
+      "label": "Graduate Students"
+    },
+    "employmentRate": {
+      "value": "90%",
+      "label": "Employment Rate"
+    }
+  },
+  "tabs": {
+    "programs": "Available Programs",
+    "requirements": "Requirements",
+    "funding": "Funding & Aid"
+  },
+  "programs": {
+    "mba": {
+      "title": "Master of Business Administration (MBA)",
+      "university": "American University of Sharjah",
+      "duration": "18 months",
+      "type": "Full-time",
+      "specializations": ["Finance", "Marketing", "Operations"],
+      "tuition": "AED 85,000"
+    },
+    "dataScience": {
+      "title": "Master of Science in Data Science",
+      "university": "University of Dubai",
+      "duration": "24 months",
+      "type": "Part-time",
+      "specializations": ["Machine Learning", "Big Data", "Analytics"],
+      "tuition": "AED 72,000"
+    },
+    "engineeringManagement": {
+      "title": "Master of Engineering Management",
+      "university": "Khalifa University",
+      "duration": "20 months",
+      "type": "Executive",
+      "specializations": ["Project Management", "Innovation", "Leadership"],
+      "tuition": "AED 95,000"
+    },
+    "publicAdministration": {
+      "title": "Master of Public Administration",
+      "university": "UAE University",
+      "duration": "16 months",
+      "type": "Full-time",
+      "specializations": ["Policy Analysis", "Public Finance", "Governance"],
+      "tuition": "AED 68,000"
+    }
+  },
+  "requirements": {
+    "general": {
+      "title": "General Requirements",
+      "items": [
+        "Bachelor's degree from accredited institution",
+        "Minimum GPA of 3.0 (or equivalent)",
+        "English proficiency (IELTS 6.5+ or TOEFL 90+)",
+        "Statement of purpose",
+        "Two letters of recommendation",
+        "Updated CV/Resume"
+      ]
+    },
+    "programSpecific": {
+      "title": "Program-Specific Requirements",
+      "items": [
+        "MBA: GMAT/GRE scores, work experience",
+        "Data Science: Programming background",
+        "Engineering: Relevant technical degree",
+        "Public Admin: Government/NGO experience preferred",
+        "Portfolio submissions for creative programs",
+        "Interview rounds for select programs"
+      ]
+    }
+  },
+  "funding": {
+    "title": "Funding Opportunities Available",
+    "description": "Explore scholarships, grants, and financial aid options for graduate studies.",
+    "button": "View Funding Options"
+  },
+  "buttons": {
+    "applyNow": "Apply Now",
+    "explorePrograms": "Explore Programs"
+  },
+  "labels": {
+    "duration": "Duration",
+    "tuition": "Tuition",
+    "specializations": "Specializations"
+  }
+}
+

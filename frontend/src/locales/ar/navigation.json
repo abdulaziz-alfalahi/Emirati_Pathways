@@ -1,0 +1,148 @@
+{
+  "emiratiGateway": "البوابة الإماراتية",
+  "toggleLanguage": "تبديل اللغة",
+  "dashboard": "لوحة التحكم",
+  "groups": {
+    "education": {
+      "title": "المسار التعليمي",
+      "description": "استكشف الفرص التعليمية والمسارات الأكاديمية",
+      "items": {
+        "schoolPrograms": {
+          "title": "البرامج المدرسية",
+          "description": "البرامج الأكاديمية والمبادرات المدرسية"
+        },
+        "summerCamps": {
+          "title": "المخيمات الصيفية",
+          "description": "برامج صيفية تفاعلية للطلاب"
+        },
+        "scholarships": {
+          "title": "المنح الدراسية",
+          "description": "المساعدات المالية وفرص المنح الدراسية"
+        },
+        "universityPrograms": {
+          "title": "البرامج الجامعية",
+          "description": "التعليم العالي والمسارات الجامعية"
+        },
+        "graduatePrograms": {
+          "title": "برامج الدراسات العليا",
+          "description": "الدرجات المتقدمة وفرص الدراسات العليا"
+        },
+        "lms": {
+          "title": "نظام إدارة التعلم",
+          "description": "منصة تعلم شاملة"
+        }
+      }
+    },
+    "career": {
+      "title": "دخول سوق العمل",
+      "description": "ابدأ مسيرتك المهنية بثقة",
+      "items": {
+        "planningHub": {
+          "title": "مركز التخطيط المهني",
+          "description": "موارد شاملة للتخطيط المهني"
+        },
+        "industryExploration": {
+          "title": "استكشاف الصناعات",
+          "description": "اكتشف فرص الصناعات في دولة الإمارات"
+        },
+        "financialPlanning": {
+          "title": "التخطيط المالي",
+          "description": "أدوات شاملة للعافية والتخطيط المالي"
+        },
+        "resumeBuilder": {
+          "title": "منشئ السيرة الذاتية",
+          "description": "منصة حديثة لبناء السيرة الذاتية"
+        },
+        "cvbuilder": {
+          "title": "منشئ السيرة الذاتية المهنية",
+          "description": "أنشئ سيرة ذاتية مهنية مصممة خصيصاً لسوق العمل الإماراتي"
+        },
+        "portfolio": {
+          "title": "إدارة الملف الشخصي",
+          "description": "اعرض إنجازاتك المهنية"
+        },
+        "interviewPrep": {
+          "title": "التحضير للمقابلات",
+          "description": "تفوق في مقابلات العمل"
+        },
+        "internships": {
+          "title": "التدريب العملي",
+          "description": "فرص الخبرة العملية المباشرة"
+        },
+        "jobMatching": {
+          "title": "مطابقة الوظائف",
+          "description": "اعثر على الوظيفة المثالية لك"
+        },
+        "advisory": {
+          "title": "الاستشارات المهنية",
+          "description": "إرشاد مهني متخصص"
+        }
+      }
+    },
+    "professional": {
+      "title": "النمو المهني",
+      "description": "طور مهاراتك ونموك المهني",
+      "items": {
+        "assessments": {
+          "title": "التقييمات",
+          "description": "قيم وحسن مهاراتك"
+        },
+        "analytics": {
+          "title": "التحليلات",
+          "description": "اعرض الرؤى والتحليلات"
+        },
+        "digitalSkills": {
+          "title": "تطوير المهارات الرقمية",
+          "description": "أتقن التقنيات والأدوات الرقمية"
+        },
+        "training": {
+          "title": "برامج التدريب",
+          "description": "التطوير المهني والتدريب"
+        },
+        "certifications": {
+          "title": "الشهادات المهنية",
+          "description": "شهادات معترف بها في الصناعة"
+        },
+        "blockchainCredentials": {
+          "title": "أوراق الاعتماد الرقمية",
+          "description": "التحقق من الأوراق الاعتماد الرقمية"
+        },
+        "mentorship": {
+          "title": "الإرشاد",
+          "description": "تواصل مع مرشدين ذوي خبرة"
+        },
+        "communities": {
+          "title": "المجتمعات",
+          "description": "انضم إلى الشبكات المهنية"
+        }
+      }
+    },
+    "lifelong": {
+      "title": "المشاركة مدى الحياة",
+      "description": "التعلم المستمر والمشاركة المجتمعية",
+      "items": {
+        "youthDevelopment": {
+          "title": "تنمية الشباب",
+          "description": "برامج تمكين الشباب"
+        },
+        "nationalService": {
+          "title": "الخدمة الوطنية",
+          "description": "اخدم وطنك بفخر"
+        },
+        "thoughtLeadership": {
+          "title": "القيادة الفكرية",
+          "description": "رؤى الصناعة ووجهات نظر الخبراء"
+        },
+        "successStories": {
+          "title": "قصص النجاح",
+          "description": "شارك واحتفل بالإنجازات"
+        },
+        "retiree": {
+          "title": "خدمات المتقاعدين",
+          "description": "فرص ما بعد المهنة ومزايا التقاعد"
+        }
+      }
+    }
+  }
+}
+

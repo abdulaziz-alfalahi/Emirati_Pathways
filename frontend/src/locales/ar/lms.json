@@ -1,0 +1,146 @@
+{
+  "title": "نظام إدارة التعلم",
+  "description": "الوصول إلى موارد التعلم الإلكتروني الشاملة وتتبع تقدمك التعليمي",
+  "academicYear": "2024-2025",
+  "stats": {
+    "onlineCourses": {
+      "value": "500+",
+      "label": "دورة إلكترونية"
+    },
+    "activeLearners": {
+      "value": "10,000+",
+      "label": "متعلم نشط"
+    },
+    "subjects": {
+      "value": "50+",
+      "label": "مادة دراسية"
+    },
+    "certifications": {
+      "value": "1,200+",
+      "label": "شهادة صادرة"
+    }
+  },
+  "tabs": {
+    "myCourses": "دوراتي",
+    "catalog": "كتالوج الدورات",
+    "achievements": "الإنجازات",
+    "progress": "تتبع التقدم"
+  },
+  "buttons": {
+    "browseCourses": "تصفح الدورات",
+    "continueLearning": "متابعة التعلم",
+    "enrollNow": "سجل الآن",
+    "viewCertificate": "عرض الشهادة",
+    "startCourse": "ابدأ الدورة"
+  },
+  "courses": {
+    "digitalMarketing": {
+      "title": "أساسيات التسويق الرقمي",
+      "instructor": "د. أحمد الراشد",
+      "description": "تعلم أساسيات التسويق الرقمي بما في ذلك تحسين محركات البحث ووسائل التواصل الاجتماعي والتحليلات",
+      "duration": "6 أسابيع",
+      "level": "مبتدئ"
+    },
+    "dataScience": {
+      "title": "علوم البيانات باستخدام Python",
+      "instructor": "أ.د. سارة حسن",
+      "description": "إتقان تحليل البيانات والتعلم الآلي باستخدام برمجة Python",
+      "duration": "8 أسابيع",
+      "level": "متوسط"
+    },
+    "projectManagement": {
+      "title": "أساسيات إدارة المشاريع",
+      "instructor": "محمد المكتوم",
+      "description": "تعلم منهجيات إدارة المشاريع وأفضل الممارسات",
+      "duration": "4 أسابيع",
+      "level": "مبتدئ"
+    },
+    "webDevelopment": {
+      "title": "تطوير الويب الشامل",
+      "instructor": "فاطمة الزهراء",
+      "description": "بناء تطبيقات ويب حديثة باستخدام React و Node.js وقواعد البيانات",
+      "duration": "12 أسبوع",
+      "level": "متقدم"
+    },
+    "cybersecurity": {
+      "title": "أساسيات الأمن السيبراني",
+      "instructor": "عمر المنصوري",
+      "description": "تعلم المفاهيم والممارسات الأساسية للأمن السيبراني",
+      "duration": "6 أسابيع",
+      "level": "متوسط"
+    },
+    "artificialIntelligence": {
+      "title": "مقدمة في الذكاء الاصطناعي",
+      "instructor": "د. عائشة النعيمي",
+      "description": "استكشاف مفاهيم الذكاء الاصطناعي والتعلم الآلي والشبكات العصبية",
+      "duration": "10 أسابيع",
+      "level": "متقدم"
+    }
+  },
+  "labels": {
+    "progress": "التقدم",
+    "students": "طالب",
+    "instructor": "المدرب",
+    "duration": "المدة",
+    "level": "المستوى",
+    "enrolled": "مسجل",
+    "completed": "مكتمل",
+    "inProgress": "قيد التقدم",
+    "notStarted": "لم يبدأ",
+    "certificate": "الشهادة",
+    "quiz": "اختبار",
+    "assignment": "مهمة",
+    "lesson": "درس"
+  },
+  "achievements": {
+    "title": "إنجازاتك",
+    "coursesCompleted": "الدورات المكتملة",
+    "certificatesEarned": "الشهادات المحصلة",
+    "hoursLearned": "ساعات التعلم",
+    "streakDays": "سلسلة التعلم (أيام)",
+    "badges": {
+      "firstCourse": "أول دورة مكتملة",
+      "fastLearner": "متعلم سريع",
+      "dedicated": "طالب مجتهد",
+      "expert": "خبير في المادة",
+      "mentor": "موجه أقران"
+    }
+  },
+  "progress": {
+    "title": "تقدم التعلم",
+    "overallProgress": "التقدم العام",
+    "weeklyGoal": "الهدف الأسبوعي",
+    "monthlyGoal": "الهدف الشهري",
+    "completionRate": "معدل الإنجاز",
+    "averageScore": "المتوسط العام",
+    "timeSpent": "الوقت المستغرق في التعلم"
+  },
+  "catalog": {
+    "title": "كتالوج الدورات",
+    "searchPlaceholder": "البحث في الدورات...",
+    "filterBy": "تصفية حسب",
+    "category": "الفئة",
+    "level": "المستوى",
+    "duration": "المدة",
+    "rating": "التقييم",
+    "free": "مجاني",
+    "paid": "مدفوع",
+    "categories": {
+      "technology": "التكنولوجيا",
+      "business": "الأعمال",
+      "design": "التصميم",
+      "marketing": "التسويق",
+      "health": "الصحة",
+      "education": "التعليم",
+      "language": "اللغة",
+      "science": "العلوم"
+    },
+    "levels": {
+      "beginner": "مبتدئ",
+      "intermediate": "متوسط",
+      "advanced": "متقدم",
+      "expert": "خبير"
+    }
+  }
+}
+

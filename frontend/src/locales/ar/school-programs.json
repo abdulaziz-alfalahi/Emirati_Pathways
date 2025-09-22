@@ -1,0 +1,55 @@
+{
+  "title": "البرامج المدرسية",
+  "description": "برامج تعليمية متخصصة مصممة لتعزيز تجارب التعلم بالشراكة مع المدارس في جميع أنحاء دولة الإمارات العربية المتحدة",
+  "academicYear": "2024-2025",
+  "stats": {
+    "partnerSchools": {
+      "value": "50+",
+      "label": "مدرسة شريكة"
+    },
+    "studentsEnrolled": {
+      "value": "5,000+",
+      "label": "طالب مسجل"
+    },
+    "specializedPrograms": {
+      "value": "20+",
+      "label": "برنامج متخصص"
+    },
+    "successRate": {
+      "value": "95%",
+      "label": "معدل النجاح"
+    }
+  },
+  "tabs": {
+    "programs": "البرامج المتاحة"
+  },
+  "programs": {
+    "stemProgram": {
+      "title": "برنامج العلوم والتكنولوجيا والهندسة والرياضيات المتقدم",
+      "description": "منهج متسارع في العلوم والرياضيات للطلاب الموهوبين",
+      "grades": "الصفوف 9-12",
+      "schools": "15 مدرسة شريكة"
+    },
+    "leadershipDevelopment": {
+      "title": "تطوير القيادة",
+      "description": "بناء قادة المستقبل من خلال تجارب القيادة العملية",
+      "grades": "الصفوف 10-12",
+      "schools": "25 مدرسة شريكة"
+    },
+    "innovationLab": {
+      "title": "مختبر الابتكار",
+      "description": "مشاريع التكنولوجيا والهندسة العملية",
+      "grades": "الصفوف 6-12",
+      "schools": "30 مدرسة شريكة"
+    }
+  },
+  "buttons": {
+    "learnMore": "اعرف المزيد",
+    "explorePrograms": "استكشف البرامج"
+  },
+  "labels": {
+    "target": "الهدف",
+    "availability": "التوفر"
+  }
+}
+

@@ -1,0 +1,77 @@
+
+{
+  "hero": {
+    "badge": "Empowering Emirati Talent",
+    "title": {
+      "part1": "Shape Your",
+      "highlight": "Professional Future",
+      "part2": "with Confidence"
+    },
+    "description": "Discover opportunities, develop skills, and build a thriving career that contributes to the UAE's vision for the future.",
+    "buttons": {
+      "signIn": "Sign In",
+      "getStarted": "Get Started",
+      "dashboard": "Go to Dashboard"
+    }
+  },
+  "content": {
+    "pathways": {
+      "title": "Choose Your Pathway",
+      "subtitle": "Whether you're starting your education journey or advancing your career, we have the right path for you.",
+      "education": {
+        "title": "Education Pathway",
+        "description": "From summer camps to university programs, explore comprehensive educational opportunities."
+      },
+      "career": {
+        "title": "Career Entry",
+        "description": "Launch your professional journey with career planning, assessments, and job matching."
+      },
+      "growth": {
+        "title": "Professional Growth",
+        "description": "Advance your career through training, mentorship, and professional communities."
+      },
+      "lifelong": {
+        "title": "Lifelong Engagement",
+        "description": "Continue contributing through advisory roles, community leadership, and legacy projects."
+      }
+    },
+    "features": {
+      "title": "Comprehensive Career Support",
+      "subtitle": "Everything you need to succeed in your professional journey",
+      "aiPowered": {
+        "title": "AI-Powered Matching",
+        "description": "Advanced algorithms match you with the perfect opportunities"
+      },
+      "blockchain": {
+        "title": "Blockchain Credentials",
+        "description": "Secure, verifiable digital certificates and achievements"
+      },
+      "mentorship": {
+        "title": "Expert Mentorship",
+        "description": "Connect with industry leaders and experienced professionals"
+      }
+    }
+  },
+  "grid": {
+    "title": "Explore Our Services",
+    "subtitle": "Comprehensive tools and resources for every stage of your career",
+    "services": {
+      "assessments": {
+        "title": "Career Assessments",
+        "description": "Discover your strengths and career preferences"
+      },
+      "training": {
+        "title": "Training Programs",
+        "description": "Develop skills that matter in today's market"
+      },
+      "networking": {
+        "title": "Professional Networking",
+        "description": "Build meaningful professional relationships"
+      },
+      "analytics": {
+        "title": "Career Analytics",
+        "description": "Data-driven insights for better decisions"
+      }
+    }
+  }
+}

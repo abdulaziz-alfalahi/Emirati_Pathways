@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EHRDC Color Palette - Emirati Journey Platform</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            border-radius: 15px;
+            border: 2px solid #0d9488;
+        }
+        
+        .logo-section img {
+            height: 80px;
+            width: auto;
+        }
+        
+        .logo-info {
+            text-align: left;
+        }
+        
+        .logo-info h2 {
+            margin: 0;
+            color: #0d9488;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .logo-info p {
+            margin: 5px 0 0 0;
+            color: #64748b;
+            font-size: 16px;
+        }
+        
+        .palette-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #1e293b;
+            border-bottom: 3px solid #0d9488;
+            padding-bottom: 10px;
+        }
+        
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .color-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+        }
+        
+        .color-swatch {
+            height: 120px;
+            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .color-info {
+            padding: 20px;
+        }
+        
+        .color-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+        
+        .color-values {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .color-value {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            padding: 5px 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .usage-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 4px solid #0d9488;
+        }
+        
+        .usage-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #0d9488;
+        }
+        
+        .usage-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .usage-list li {
+            padding: 5px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .usage-list li:before {
+            content: "→";
+            color: #0d9488;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .gradient-demo {
+            height: 80px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .implementation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .implementation-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #0d9488;
+        }
+        
+        .implementation-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #0d9488;
+        }
+        
+        .color-contrast {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .contrast-demo {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="font-size: 36px; margin-bottom: 10px; color: #0d9488;">EHRDC Color Palette</h1>
+            <p style="font-size: 18px; color: #64748b; margin: 0;">Derived from Official Emirati Human Resources Development Council Logo</p>
+        </div>
+        
+        <div class="logo-section">
+            <img src="/ehrdc-logo.png" alt="EHRDC Logo">
+            <div class="logo-info">
+                <h2>Source Logo Analysis</h2>
+                <p>Official EHRDC logo with Arabic and English text</p>
+                <p>Primary teal color extracted: <strong>#0d9488</strong></p>
+            </div>
+        </div>
+        
+        <div class="palette-section">
+            <h2 class="section-title">Primary Teal Palette</h2>
+            <div class="color-grid">
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #f0fdfa;">
+                        <span style="color: #0d9488; font-weight: 600;">Teal 50</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Teal 50 - Very Light</div>
+                        <div class="color-values">
+                            <div class="color-value">HEX: #f0fdfa</div>
+                            <div class="color-value">RGB: 240, 253, 250</div>
+                            <div class="color-value">Tailwind: teal-50</div>
+                        </div>
+                        <div class="usage-section">
+                            <div class="usage-title">Usage</div>
+                            <ul class="usage-list">
+                                <li>Background highlights</li>
+                                <li>Subtle accents</li>
+                                <li>Card backgrounds</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #ccfbf1;">
+                        <span style="color: #0d9488; font-weight: 600;">Teal 100</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Teal 100 - Light</div>
+                        <div class="color-values">
+                            <div class="color-value">HEX: #ccfbf1</div>
+                            <div class="color-value">RGB: 204, 251, 241</div>
+                            <div class="color-value">Tailwind: teal-100</div>
+                        </div>
+                        <div class="usage-section">
+                            <div class="usage-title">Usage</div>
+                            <ul class="usage-list">
+                                <li>AI technology badge</li>
+                                <li>Section backgrounds</li>
+                                <li>Hover states</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #14b8a6;">
+                        <span style="color: white; font-weight: 600;">Teal 500</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Teal 500 - Medium</div>
+                        <div class="color-values">
+                            <div class="color-value">HEX: #14b8a6</div>
+                            <div class="color-value">RGB: 20, 184, 166</div>
+                            <div class="color-value">Tailwind: teal-500</div>
+                        </div>
+                        <div class="usage-section">
+                            <div class="usage-title">Usage</div>
+                            <ul class="usage-list">
+                                <li>Feature icons</li>
+                                <li>Interactive elements</li>
+                                <li>Gradient starts</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #0d9488;">
+                        <span style="color: white; font-weight: 600;">Teal 600 - PRIMARY</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Teal 600 - EHRDC Primary</div>
+                        <div class="color-values">
+                            <div class="color-value">HEX: #0d9488</div>
+                            <div class="color-value">RGB: 13, 148, 136</div>
+                            <div class="color-value">Tailwind: teal-600</div>
+                        </div>
+                        <div class="usage-section">
+                            <div class="usage-title">Primary Usage</div>
+                            <ul class="usage-list">
+                                <li>Main CTA buttons</li>
+                                <li>Navigation elements</li>
+                                <li>Brand accents</li>
+                                <li>Logo color match</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #0f766e;">
+                        <span style="color: white; font-weight: 600;">Teal 700</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Teal 700 - Dark</div>
+                        <div class="color-values">
+                            <div class="color-value">HEX: #0f766e</div>
+                            <div class="color-value">RGB: 15, 118, 110</div>
+                            <div class="color-value">Tailwind: teal-700</div>
+                        </div>
+                        <div class="usage-section">
+                            <div class="usage-title">Usage</div>
+                            <ul class="usage-list">
+                                <li>Button hover states</li>
+                                <li>Active elements</li>
+                                <li>Dark accents</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #10b981;">
+                        <span style="color: white; font-weight: 600;">Emerald 500</span>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">Emerald 500 - Complement</div>
+                        <div class="color-values">
+                            <div class="color-value">HEX: #10b981</div>
+                            <div class="color-value">RGB: 16, 185, 129</div>
+                            <div class="color-value">Tailwind: emerald-500</div>
+                        </div>
+                        <div class="usage-section">
+                            <div class="usage-title">Usage</div>
+                            <ul class="usage-list">
+                                <li>Gradient endings</li>
+                                <li>Success states</li>
+                                <li>Complementary accents</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="palette-section">
+            <h2 class="section-title">Gradient Combinations</h2>
+            <div class="gradient-demo" style="background: linear-gradient(135deg, #0d9488 0%, #10b981 100%);">
+                Primary Gradient: Teal 600 → Emerald 500
+            </div>
+            <div class="gradient-demo" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);">
+                Feature Icons: Teal 500 → Teal 600
+            </div>
+            <div class="gradient-demo" style="background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); color: #0d9488;">
+                Background Gradient: Teal 50 → Teal 100
+            </div>
+        </div>
+        
+        <div class="palette-section">
+            <h2 class="section-title">Platform Implementation</h2>
+            <div class="implementation-grid">
+                <div class="implementation-card">
+                    <div class="implementation-title">Navigation & Branding</div>
+                    <div class="color-contrast">
+                        <div class="contrast-demo" style="background: #0d9488; color: white;">
+                            Get Started Button
+                        </div>
+                        <div class="contrast-demo" style="background: #0f766e; color: white;">
+                            Hover State
+                        </div>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px; margin: 10px 0 0 0;">
+                        Primary teal (#0d9488) matches EHRDC logo exactly
+                    </p>
+                </div>
+                
+                <div class="implementation-card">
+                    <div class="implementation-title">Hero Section</div>
+                    <div class="color-contrast">
+                        <div class="contrast-demo" style="background: #ccfbf1; color: #0d9488;">
+                            AI Technology Badge
+                        </div>
+                        <div class="contrast-demo" style="background: linear-gradient(45deg, #0d9488, #10b981); color: white;">
+                            Career Excellence
+                        </div>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px; margin: 10px 0 0 0;">
+                        Teal gradients create professional government appearance
+                    </p>
+                </div>
+                
+                <div class="implementation-card">
+                    <div class="implementation-title">Platform Features</div>
+                    <div class="color-contrast">
+                        <div class="contrast-demo" style="background: linear-gradient(135deg, #14b8a6, #0d9488); color: white;">
+                            Feature Icons
+                        </div>
+                        <div class="contrast-demo" style="background: #f0fdfa; color: #0d9488;">
+                            Background
+                        </div>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px; margin: 10px 0 0 0;">
+                        Consistent teal theme across all interactive elements
+                    </p>
+                </div>
+                
+                <div class="implementation-card">
+                    <div class="implementation-title">Call-to-Action</div>
+                    <div class="color-contrast">
+                        <div class="contrast-demo" style="background: linear-gradient(90deg, #0d9488, #10b981); color: white;">
+                            CTA Background
+                        </div>
+                        <div class="contrast-demo" style="background: white; color: #0d9488; border: 2px solid #0d9488;">
+                            CTA Button
+                        </div>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px; margin: 10px 0 0 0;">
+                        Teal-emerald gradient maintains government authority
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="palette-section">
+            <h2 class="section-title">Color Psychology & Meaning</h2>
+            <div class="implementation-grid">
+                <div class="implementation-card">
+                    <div class="implementation-title">🌱 Growth & Development</div>
+                    <p style="color: #64748b; line-height: 1.6;">
+                        Teal represents growth and professional development, perfectly aligning with the platform's career advancement mission for UAE nationals.
+                    </p>
+                </div>
+                
+                <div class="implementation-card">
+                    <div class="implementation-title">🛡️ Trust & Reliability</div>
+                    <p style="color: #64748b; line-height: 1.6;">
+                        The professional teal color builds trust and credibility, essential for a government entity serving UAE citizens.
+                    </p>
+                </div>
+                
+                <div class="implementation-card">
+                    <div class="implementation-title">⚖️ Balance & Stability</div>
+                    <p style="color: #64748b; line-height: 1.6;">
+                        Teal conveys balance and stability, important qualities for professional career services and government platforms.
+                    </p>
+                </div>
+                
+                <div class="implementation-card">
+                    <div class="implementation-title">🚀 Innovation & Progress</div>
+                    <p style="color: #64748b; line-height: 1.6;">
+                        The modern teal palette supports the platform's AI-powered innovation while maintaining professional government standards.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 50px; padding: 30px; background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border-radius: 15px; border: 2px solid #0d9488;">
+            <h3 style="color: #0d9488; margin-bottom: 10px;">Official EHRDC Color Implementation</h3>
+            <p style="color: #64748b; margin: 0;">
+                This color palette ensures authentic representation of the Emirati Human Resources Development Council 
+                while maintaining modern design standards and accessibility requirements.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,451 @@
+{
+  "title": "Success Stories",
+  "description": "Share and celebrate achievements, inspire others, and build a community of success and learning",
+  "stats": {
+    "storiesLabel": "Shared Stories",
+    "stories": "5,000+",
+    "readersLabel": "Monthly Readers",
+    "readers": "100K+",
+    "categoriesLabel": "Story Categories",
+    "categories": "25+",
+    "engagementLabel": "Engagement Rate",
+    "engagement": "92%"
+  },
+  "tabs": {
+    "share": {
+      "label": "Share Your Story",
+      "content": {
+        "overview": {
+          "title": "Share Your Success Journey",
+          "description": "Inspire others by sharing your achievements, challenges overcome, and lessons learned"
+        },
+        "form": {
+          "title": "Story Submission",
+          "description": "Tell your story and inspire the community",
+          "fields": {
+            "title": {
+              "label": "Story Title",
+              "placeholder": "Give your story a compelling title"
+            },
+            "category": {
+              "label": "Category",
+              "options": {
+                "career": "Career Achievement",
+                "education": "Educational Success",
+                "entrepreneurship": "Entrepreneurship",
+                "innovation": "Innovation & Technology",
+                "community": "Community Impact",
+                "personal": "Personal Development",
+                "leadership": "Leadership Journey",
+                "other": "Other"
+              }
+            },
+            "story": {
+              "label": "Your Story",
+              "placeholder": "Share your journey, challenges, achievements, and lessons learned..."
+            },
+            "impact": {
+              "label": "Impact & Outcomes",
+              "placeholder": "Describe the impact of your success and what you achieved..."
+            },
+            "lessons": {
+              "label": "Key Lessons",
+              "placeholder": "What key lessons would you share with others?"
+            },
+            "advice": {
+              "label": "Advice for Others",
+              "placeholder": "What advice would you give to someone following a similar path?"
+            }
+          },
+          "guidelines": {
+            "title": "Submission Guidelines",
+            "rules": {
+              "authentic": "• Stories must be authentic and truthful",
+              "respectful": "• Maintain respectful and professional tone",
+              "inspiring": "• Focus on inspiring and motivating others",
+              "constructive": "• Include constructive lessons and advice",
+              "appropriate": "• Ensure content is appropriate for all audiences"
+            }
+          },
+          "action": "Submit Your Story"
+        },
+        "tips": {
+          "title": "Storytelling Tips",
+          "description": "How to craft an engaging and inspiring success story",
+          "suggestions": {
+            "structure": {
+              "title": "Story Structure",
+              "tips": {
+                "beginning": "• Start with your background and initial situation",
+                "challenge": "• Describe the challenges you faced",
+                "journey": "• Explain your journey and efforts",
+                "outcome": "• Share the successful outcome",
+                "reflection": "• Reflect on lessons learned"
+              }
+            },
+            "engagement": {
+              "title": "Reader Engagement",
+              "tips": {
+                "personal": "• Make it personal and relatable",
+                "specific": "• Include specific details and examples",
+                "emotional": "• Connect emotionally with readers",
+                "actionable": "• Provide actionable insights",
+                "inspiring": "• End with an inspiring message"
+              }
+            },
+            "impact": {
+              "title": "Maximizing Impact",
+              "tips": {
+                "authentic": "• Be authentic and genuine",
+                "humble": "• Stay humble while celebrating success",
+                "inclusive": "• Make your story inclusive and accessible",
+                "practical": "• Include practical advice and tips",
+                "encouraging": "• Encourage others to pursue their goals"
+              }
+            }
+          },
+          "action": "Learn More Tips"
+        }
+      }
+    },
+    "browse": {
+      "label": "Browse Stories",
+      "content": {
+        "overview": {
+          "title": "Inspiring Success Stories",
+          "description": "Discover amazing success stories from the community and get inspired"
+        },
+        "featured": {
+          "title": "Featured Stories",
+          "description": "Highlighted success stories that have inspired the community",
+          "stories": {
+            "entrepreneur": {
+              "title": "From Idea to Innovation",
+              "author": "Sarah Al-Mansouri",
+              "category": "Entrepreneurship",
+              "summary": "How a simple idea became a successful tech startup",
+              "reads": "15K reads",
+              "likes": "2.3K likes"
+            },
+            "education": {
+              "title": "Overcoming Educational Barriers",
+              "author": "Ahmed Al-Rashid",
+              "category": "Education",
+              "summary": "Journey from struggling student to academic excellence",
+              "reads": "12K reads",
+              "likes": "1.8K likes"
+            },
+            "leadership": {
+              "title": "Leading Through Change",
+              "author": "Fatima Al-Zahra",
+              "category": "Leadership",
+              "summary": "How young leadership transformed a community project",
+              "reads": "18K reads",
+              "likes": "2.7K likes"
+            }
+          },
+          "action": "Read Featured Stories"
+        },
+        "categories": {
+          "title": "Story Categories",
+          "description": "Browse stories by category to find inspiration in your area of interest",
+          "list": {
+            "career": {
+              "title": "Career Achievement",
+              "count": "450 stories",
+              "description": "Professional growth and career success stories"
+            },
+            "education": {
+              "title": "Educational Success",
+              "count": "380 stories",
+              "description": "Academic achievements and learning journeys"
+            },
+            "entrepreneurship": {
+              "title": "Entrepreneurship",
+              "count": "320 stories",
+              "description": "Business creation and entrepreneurial success"
+            },
+            "innovation": {
+              "title": "Innovation & Technology",
+              "count": "280 stories",
+              "description": "Technological innovation and creative solutions"
+            },
+            "community": {
+              "title": "Community Impact",
+              "count": "350 stories",
+              "description": "Making a difference in the community"
+            },
+            "personal": {
+              "title": "Personal Development",
+              "count": "420 stories",
+              "description": "Personal growth and self-improvement journeys"
+            }
+          },
+          "action": "Browse by Category"
+        },
+        "search": {
+          "title": "Find Stories",
+          "description": "Search for specific stories or topics that interest you",
+          "filters": {
+            "category": "Filter by category",
+            "date": "Filter by date",
+            "popularity": "Sort by popularity",
+            "recent": "Show recent stories"
+          },
+          "trending": {
+            "title": "Trending Topics",
+            "topics": {
+              "leadership": "• Youth Leadership",
+              "technology": "• Technology Innovation",
+              "sustainability": "• Sustainable Business",
+              "education": "• Online Learning Success",
+              "community": "• Community Building"
+            }
+          },
+          "action": "Search Stories"
+        }
+      }
+    },
+    "engagement": {
+      "label": "Community Engagement",
+      "content": {
+        "overview": {
+          "title": "Engage with the Community",
+          "description": "Connect with storytellers, share experiences, and build meaningful relationships"
+        },
+        "discussions": {
+          "title": "Story Discussions",
+          "description": "Join conversations about inspiring stories and share your thoughts",
+          "features": {
+            "comments": {
+              "title": "Story Comments",
+              "description": "Share your thoughts and reactions to stories",
+              "guidelines": {
+                "constructive": "• Provide constructive feedback",
+                "supportive": "• Be supportive and encouraging",
+                "respectful": "• Maintain respectful dialogue",
+                "relevant": "• Keep comments relevant to the story"
+              }
+            },
+            "questions": {
+              "title": "Ask Questions",
+              "description": "Ask storytellers about their experiences",
+              "types": {
+                "advice": "• Request specific advice",
+                "clarification": "• Ask for clarification",
+                "details": "• Request additional details",
+                "follow": "• Follow-up questions"
+              }
+            },
+            "sharing": {
+              "title": "Share Experiences",
+              "description": "Share related experiences and insights",
+              "approaches": {
+                "similar": "• Share similar experiences",
+                "lessons": "• Add your own lessons",
+                "resources": "• Recommend helpful resources",
+                "connections": "• Make valuable connections"
+              }
+            }
+          },
+          "action": "Join Discussions"
+        },
+        "mentorship": {
+          "title": "Mentorship Connections",
+          "description": "Connect with successful individuals for mentorship and guidance",
+          "opportunities": {
+            "mentors": {
+              "title": "Find Mentors",
+              "description": "Connect with experienced professionals who have shared their stories",
+              "benefits": {
+                "guidance": "• Personalized career guidance",
+                "insights": "• Industry insights and knowledge",
+                "networking": "• Professional networking opportunities",
+                "support": "• Ongoing support and encouragement"
+              }
+            },
+            "mentees": {
+              "title": "Become a Mentor",
+              "description": "Share your experience by mentoring others",
+              "benefits": {
+                "impact": "• Make a positive impact",
+                "leadership": "• Develop leadership skills",
+                "perspective": "• Gain fresh perspectives",
+                "fulfillment": "• Personal fulfillment"
+              }
+            },
+            "groups": {
+              "title": "Mentorship Groups",
+              "description": "Join group mentoring sessions and peer learning",
+              "benefits": {
+                "diverse": "• Diverse perspectives and experiences",
+                "collaborative": "• Collaborative learning environment",
+                "networking": "• Expanded professional network",
+                "support": "• Peer support system"
+              }
+            }
+          },
+          "action": "Explore Mentorship"
+        },
+        "events": {
+          "title": "Community Events",
+          "description": "Participate in events celebrating success and fostering connections",
+          "types": {
+            "storytelling": {
+              "title": "Storytelling Events",
+              "description": "Live storytelling sessions and presentations",
+              "features": {
+                "live": "• Live story presentations",
+                "interactive": "• Interactive Q&A sessions",
+                "networking": "• Networking opportunities",
+                "inspiration": "• Inspirational atmosphere"
+              }
+            },
+            "workshops": {
+              "title": "Success Workshops",
+              "description": "Workshops on achieving success in various fields",
+              "features": {
+                "skills": "• Skill development sessions",
+                "strategies": "• Success strategies",
+                "planning": "• Goal planning workshops",
+                "networking": "• Professional networking"
+              }
+            },
+            "celebrations": {
+              "title": "Success Celebrations",
+              "description": "Events celebrating community achievements",
+              "features": {
+                "recognition": "• Achievement recognition",
+                "inspiration": "• Inspirational speeches",
+                "community": "• Community building",
+                "motivation": "• Motivation and encouragement"
+              }
+            }
+          },
+          "action": "View Upcoming Events"
+        }
+      }
+    },
+    "moderation": {
+      "label": "Content Moderation",
+      "content": {
+        "overview": {
+          "title": "Community Standards & Moderation",
+          "description": "Maintaining a positive, safe, and inspiring environment for all community members"
+        },
+        "guidelines": {
+          "title": "Community Guidelines",
+          "description": "Standards and expectations for community participation",
+          "standards": {
+            "authenticity": {
+              "title": "Authenticity",
+              "description": "All stories must be genuine and truthful",
+              "requirements": {
+                "truthful": "• Stories must be based on real experiences",
+                "accurate": "• Information must be accurate and verifiable",
+                "honest": "• Honest representation of challenges and outcomes",
+                "original": "• Original content, not copied from other sources"
+              }
+            },
+            "respect": {
+              "title": "Respect & Inclusivity",
+              "description": "Maintaining respectful and inclusive communication",
+              "requirements": {
+                "respectful": "• Respectful language and tone",
+                "inclusive": "• Inclusive and welcoming content",
+                "discrimination": "• No discrimination or bias",
+                "harassment": "• Zero tolerance for harassment"
+              }
+            },
+            "quality": {
+              "title": "Content Quality",
+              "description": "Ensuring high-quality, valuable content",
+              "requirements": {
+                "constructive": "• Constructive and helpful content",
+                "relevant": "• Relevant to community interests",
+                "appropriate": "• Appropriate for all audiences",
+                "valuable": "• Provides value to readers"
+              }
+            }
+          },
+          "action": "Read Full Guidelines"
+        },
+        "reporting": {
+          "title": "Reporting System",
+          "description": "How to report inappropriate content or behavior",
+          "process": {
+            "identification": {
+              "title": "Identify Issues",
+              "description": "Recognizing content that violates community standards",
+              "examples": {
+                "inappropriate": "• Inappropriate or offensive content",
+                "spam": "• Spam or promotional content",
+                "false": "• False or misleading information",
+                "harassment": "• Harassment or bullying"
+              }
+            },
+            "reporting": {
+              "title": "Report Content",
+              "description": "How to submit reports for review",
+              "steps": {
+                "flag": "• Use the flag/report button",
+                "category": "• Select appropriate violation category",
+                "details": "• Provide specific details",
+                "submit": "• Submit the report for review"
+              }
+            },
+            "review": {
+              "title": "Review Process",
+              "description": "How reports are reviewed and addressed",
+              "timeline": {
+                "initial": "• Initial review within 24 hours",
+                "investigation": "• Detailed investigation if needed",
+                "decision": "• Decision and action taken",
+                "notification": "• Reporter notification of outcome"
+              }
+            }
+          },
+          "action": "Learn About Reporting"
+        },
+        "enforcement": {
+          "title": "Enforcement Actions",
+          "description": "Actions taken to maintain community standards",
+          "measures": {
+            "warnings": {
+              "title": "Warnings",
+              "description": "First-time or minor violations",
+              "actions": {
+                "notification": "• Warning notification sent",
+                "education": "• Educational resources provided",
+                "monitoring": "• Increased monitoring",
+                "guidance": "• Guidance on compliance"
+              }
+            },
+            "restrictions": {
+              "title": "Content Restrictions",
+              "description": "Temporary restrictions on posting or commenting",
+              "actions": {
+                "removal": "• Content removal",
+                "editing": "• Required content editing",
+                "approval": "• Pre-approval requirement",
+                "limitation": "• Posting limitations"
+              }
+            },
+            "suspension": {
+              "title": "Account Suspension",
+              "description": "Temporary or permanent account restrictions",
+              "actions": {
+                "temporary": "• Temporary suspension",
+                "permanent": "• Permanent account closure",
+                "appeal": "• Appeal process available",
+                "rehabilitation": "• Rehabilitation programs"
+              }
+            }
+          },
+          "action": "Understand Enforcement"
+        }
+      }
+    }
+  }
+}
+

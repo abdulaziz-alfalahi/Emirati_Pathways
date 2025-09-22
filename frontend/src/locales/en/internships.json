@@ -1,0 +1,257 @@
+{
+  "title": "Internships",
+  "description": "Gain valuable work experience through internships with leading companies across the UAE",
+  "heroTitle": "Internships",
+  "heroDescription": "Gain valuable work experience through internships with leading companies across the UAE",
+  "primaryAction": "Find Internships",
+  "secondaryAction": "Learn More",
+  "stats": {
+    "available": "Available Internships",
+    "companies": "Partner Companies",
+    "placements": "Successful Placements",
+    "conversion": "Full-time Conversion Rate"
+  },
+  "quote": "An internship is a bridge between learning and earning",
+  "attribution": "Career Development Wisdom",
+  "tabs": {
+    "opportunities": {
+      "label": "Opportunities",
+      "title": "Internship Opportunities",
+      "description": "Explore available internship opportunities across various sectors and companies"
+    },
+    "applications": {
+      "label": "My Applications",
+      "title": "Internship Applications",
+      "description": "Track the status of your submitted internship applications"
+    },
+    "saved": {
+      "label": "Saved",
+      "title": "Saved Opportunities",
+      "description": "Opportunities you've saved to apply to later"
+    },
+    "tips": {
+      "label": "Tips",
+      "title": "Internship Tips",
+      "description": "Get expert advice for securing the best internship opportunities"
+    }
+  },
+  "sections": {
+    "search": "Search",
+    "filters": "Filters",
+    "results": "Results",
+    "details": "Details"
+  },
+  "opportunities": {
+    "title": "Internship Platform Coming Soon",
+    "description": "We're building a comprehensive internship matching platform to connect you with the best opportunities.",
+    "features": {
+      "matching": "Smart Matching",
+      "tracking": "Application Tracking",
+      "networking": "Professional Networking",
+      "mentorship": "Career Mentorship"
+    },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available"
+  },
+  "search": {
+    "placeholder": "Search for internship opportunities...",
+    "filters": {
+      "industry": "Industry",
+      "location": "Location",
+      "duration": "Duration",
+      "type": "Type",
+      "company": "Company",
+      "paid": "Paid",
+      "remote": "Remote"
+    },
+    "sort": {
+      "newest": "Newest",
+      "deadline": "Deadline",
+      "company": "Company",
+      "location": "Location"
+    }
+  },
+  "internship": {
+    "details": {
+      "company": "Company",
+      "location": "Location",
+      "duration": "Duration",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "deadline": "Application Deadline",
+      "stipend": "Stipend",
+      "type": "Type",
+      "industry": "Industry",
+      "department": "Department",
+      "requirements": "Requirements",
+      "skills": "Required Skills",
+      "description": "Description",
+      "responsibilities": "Responsibilities",
+      "qualifications": "Qualifications",
+      "benefits": "Benefits"
+    },
+    "types": {
+      "paid": "Paid",
+      "unpaid": "Unpaid",
+      "partTime": "Part-time",
+      "fullTime": "Full-time",
+      "remote": "Remote",
+      "onsite": "On-site",
+      "hybrid": "Hybrid"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "expired": "Expired",
+      "filled": "Filled"
+    }
+  },
+  "applications": {
+    "title": "Internship Applications",
+    "description": "Track the status of your submitted internship applications",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "actions": {
+      "apply": "Apply",
+      "withdraw": "Withdraw",
+      "view": "View Details",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No Applications Yet",
+      "description": "You haven't applied to any internships yet. Start exploring available opportunities.",
+      "action": "Explore Opportunities"
+    }
+  },
+  "saved": {
+    "title": "Saved Opportunities",
+    "description": "Opportunities you've saved to apply to later",
+    "actions": {
+      "save": "Save",
+      "unsave": "Unsave",
+      "apply": "Apply"
+    },
+    "empty": {
+      "title": "No Saved Opportunities",
+      "description": "You haven't saved any internship opportunities yet. Save interesting opportunities to come back to them later.",
+      "action": "Explore Opportunities"
+    }
+  },
+  "tips": {
+    "title": "Internship Tips",
+    "description": "Get expert advice for securing the best internship opportunities",
+    "categories": {
+      "application": "Application",
+      "interview": "Interview",
+      "networking": "Networking",
+      "performance": "Performance"
+    },
+    "general": [
+      {
+        "title": "Start your search early",
+        "description": "Begin looking for internship opportunities 3-6 months before your desired start date"
+      },
+      {
+        "title": "Tailor your application",
+        "description": "Write a customized cover letter for each internship opportunity you apply to"
+      },
+      {
+        "title": "Showcase relevant skills",
+        "description": "Highlight projects and practical experiences relevant to the internship field"
+      },
+      {
+        "title": "Follow up after applying",
+        "description": "Follow up with the company one to two weeks after submitting your application"
+      }
+    ]
+  },
+  "companies": {
+    "title": "Partner Companies",
+    "description": "Explore companies that offer internship opportunities",
+    "filters": {
+      "industry": "Industry",
+      "size": "Company Size",
+      "location": "Location"
+    },
+    "details": {
+      "about": "About Company",
+      "culture": "Company Culture",
+      "benefits": "Benefits",
+      "openPositions": "Open Positions",
+      "contact": "Contact"
+    }
+  },
+  "forms": {
+    "application": {
+      "title": "Apply for Internship",
+      "personalInfo": "Personal Information",
+      "education": "Education",
+      "experience": "Experience",
+      "motivation": "Motivation",
+      "documents": "Documents",
+      "fields": {
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "email": "Email",
+        "phone": "Phone",
+        "university": "University",
+        "major": "Major",
+        "gpa": "GPA",
+        "graduationDate": "Graduation Date",
+        "coverLetter": "Cover Letter",
+        "resume": "Resume",
+        "portfolio": "Portfolio",
+        "references": "References"
+      }
+    }
+  },
+  "actions": {
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "apply": "Apply",
+    "save": "Save",
+    "share": "Share",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email",
+    "phone": "Please enter a valid phone number",
+    "gpa": "Please enter a valid GPA",
+    "date": "Please enter a valid date",
+    "file": "Please select a valid file"
+  },
+  "notifications": {
+    "applied": "Application submitted successfully",
+    "saved": "Opportunity saved successfully",
+    "unsaved": "Opportunity unsaved",
+    "withdrawn": "Application withdrawn successfully",
+    "error": "An error occurred. Please try again"
+  },
+  "emptyState": {
+    "title": "No Opportunities Available",
+    "description": "There are no internship opportunities currently available that match your search criteria.",
+    "action": "Modify Filters"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "results": "results"
+  }
+}
+

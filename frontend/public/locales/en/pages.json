@@ -1,0 +1,20 @@
+{
+  "hero": {
+    "badge": "The Complete Platform for Emirati Career Development",
+    "title": {
+      "part1": "Your",
+      "highlight": "Lifelong",
+      "part2": "Journey from Education to Retirement"
+    },
+    "description": "A unified platform supporting Emiratis through every stage of their professional development, connecting education, employment, and lifelong learning.",
+    "buttons": {
+      "dashboard": "Go to Dashboard",
+      "signIn": "Sign In",
+      "getStarted": "Get Started"
+    }
+  },
+  "home": {
+    "title": "Welcome to EHRDC Platform",
+    "subtitle": "Your gateway to career development"
+  }
+}

@@ -1,0 +1,163 @@
+
+{
+  "meta": {
+    "title": "المخيمات الصيفية",
+    "description": "شارك في برامج صيفية تعليمية مثيرة مصممة لإلهام التعلم والنمو الشخصي",
+    "pageTitle": "المخيمات الصيفية - البوابة الإماراتية"
+  },
+  "stats": {
+    "summerPrograms": {
+      "label": "البرامج الصيفية",
+      "value": "25+"
+    },
+    "studentsEnrolled": {
+      "label": "الطلاب المسجلين",
+      "value": "1,200+"
+    },
+    "partnerInstitutions": {
+      "label": "المؤسسات الشريكة",
+      "value": "15+"
+    },
+    "emiratesCovered": {
+      "label": "الإمارات المشمولة",
+      "value": "7"
+    }
+  },
+  "camps": {
+    "stemInnovation": {
+      "title": "مخيم الابتكار في العلوم والتكنولوجيا",
+      "description": "اكتشف العلوم والتكنولوجيا والهندسة والرياضيات من خلال المشاريع العملية",
+      "duration": "أسبوعان",
+      "ageGroup": "12-16 سنة",
+      "location": "دبي",
+      "price": "1,500 درهم"
+    },
+    "entrepreneurshipBootcamp": {
+      "title": "معسكر ريادة الأعمال",
+      "description": "تعلم أساسيات الأعمال وطور فكرة شركتك الناشئة",
+      "duration": "ثلاثة أسابيع",
+      "ageGroup": "16-18 سنة",
+      "location": "أبوظبي",
+      "price": "2,000 درهم"
+    },
+    "digitalArtsDesign": {
+      "title": "الفنون الرقمية والتصميم",
+      "description": "أتقن أدوات الإبداع الرقمي ومبادئ التصميم",
+      "duration": "أسبوعان",
+      "ageGroup": "14-18 سنة",
+      "location": "الشارقة",
+      "price": "1,800 درهم"
+    }
+  },
+  "ui": {
+    "buttons": {
+      "applyNow": "تقدم الآن",
+      "learnMore": "اعرف المزيد",
+      "viewDetails": "عرض التفاصيل",
+      "browseProgramsShort": "تصفح البرامج",
+      "registerEarly": "سجل مبكراً",
+      "enrollNow": "سجل الآن",
+      "cancelEnrollment": "إلغاء التسجيل",
+      "loadMore": "تحميل المزيد من الفرص",
+      "expressInterest": "أبدِ اهتماماً"
+    },
+    "filters": {
+      "title": "تصفية المخيمات",
+      "category": "الفئة",
+      "ageGroup": "الفئة العمرية",
+      "location": "الموقع",
+      "searchPlaceholder": "البحث في المخيمات...",
+      "clearFilters": "مسح الكل",
+      "applyFilters": "تطبيق المرشحات"
+    },
+    "search": {
+      "placeholder": "البحث في المخيمات الصيفية...",
+      "noResults": "لم يتم العثور على مخيمات",
+      "noResultsDescription": "حاول تعديل البحث أو معايير التصفية.",
+      "resultsCount": "تم العثور على مخيم واحد",
+      "resultsCount_plural": "تم العثور على {{count}} مخيمات"
+    },
+    "status": {
+      "registrationOpen": "التسجيل مفتوح",
+      "registrationClosed": "التسجيل مغلق",
+      "full": "مكتمل",
+      "spotsAvailable": "مقعد واحد متاح",
+      "spotsAvailable_plural": "{{count}} مقاعد متاحة",
+      "waitlist": "انضم لقائمة الانتظار"
+    }
+  },
+  "tabs": {
+    "programs": {
+      "label": "البرامج المتاحة",
+      "title": "برامج المخيمات الصيفية"
+    },
+    "myRegistrations": {
+      "label": "تسجيلاتي",
+      "title": "تسجيلات المخيمات الخاصة بي"
+    },
+    "resources": {
+      "label": "الموارد",
+      "title": "موارد المخيمات"
+    }
+  },
+  "forms": {
+    "registration": {
+      "title": "تسجيل المخيم",
+      "labels": {
+        "studentName": "اسم الطالب",
+        "parentName": "اسم الوالد/الوصي",
+        "email": "عنوان البريد الإلكتروني",
+        "phone": "رقم الهاتف",
+        "emergencyContact": "جهة الاتصال الطارئة",
+        "medicalInfo": "المعلومات الطبية",
+        "preferredCamp": "المخيم المفضل",
+        "specialRequests": "الطلبات الخاصة"
+      },
+      "placeholders": {
+        "studentName": "أدخل الاسم الكامل للطالب",
+        "parentName": "أدخل اسم الوالد/الوصي",
+        "email": "أدخل عنوان البريد الإلكتروني",
+        "phone": "أدخل رقم الهاتف",
+        "emergencyContact": "تفاصيل جهة الاتصال الطارئة",
+        "medicalInfo": "أي حالات طبية أو حساسية",
+        "specialRequests": "أي متطلبات أو طلبات خاصة"
+      },
+      "validation": {
+        "required": "هذا الحقل مطلوب",
+        "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صحيح",
+        "invalidPhone": "يرجى إدخال رقم هاتف صحيح"
+      },
+      "success": {
+        "title": "تم التسجيل بنجاح",
+        "message": "تم إرسال تسجيل المخيم بنجاح. ستتلقى رسالة تأكيد بالبريد الإلكتروني قريباً."
+      },
+      "errors": {
+        "title": "فشل التسجيل",
+        "message": "تعذر إرسال التسجيل. يرجى المحاولة مرة أخرى."
+      }
+    }
+  },
+  "announcements": {
+    "earlyBird": {
+      "title": "التسجيل المبكر مفتوح",
+      "message": "سجل قبل 1 مارس واحصل على خصم 20% على جميع برامج المخيمات الصيفية."
+    },
+    "newPrograms": {
+      "title": "برامج جديدة مضافة",
+      "message": "اطلع على أحدث مخيمات الروبوتات والبرمجة لعام 2024."
+    }
+  },
+  "info": {
+    "academicYear": "صيف 2024",
+    "registrationDeadline": "الموعد النهائي للتسجيل",
+    "startDate": "تاريخ البداية",
+    "endDate": "تاريخ النهاية",
+    "duration": "المدة",
+    "capacity": "السعة",
+    "enrolled": "المسجلين",
+    "organizer": "الجهة المنظمة",
+    "price": "السعر",
+    "includes": "يشمل البرنامج",
+    "requirements": "المتطلبات"
+  }
+}

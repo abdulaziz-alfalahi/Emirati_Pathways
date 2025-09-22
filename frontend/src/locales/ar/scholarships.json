@@ -1,0 +1,59 @@
+{
+  "title": "المنح الدراسية",
+  "description": "اكتشف فرص الدعم المالي لتحقيق أحلامك التعليمية والتميز الأكاديمي",
+  "academicYear": "2024-2025",
+  "stats": {
+    "availableScholarships": {
+      "value": "200+",
+      "label": "منحة متاحة"
+    },
+    "recipientsAnnually": {
+      "value": "1,500+",
+      "label": "مستفيد سنوياً"
+    },
+    "totalAwards": {
+      "value": "50+ مليون درهم",
+      "label": "إجمالي الجوائز"
+    },
+    "partnerUniversities": {
+      "value": "15+",
+      "label": "جامعة شريكة"
+    }
+  },
+  "tabs": {
+    "available": "المنح المتاحة"
+  },
+  "scholarships": {
+    "excellenceMerit": {
+      "title": "منحة التميز الأكاديمي",
+      "description": "تغطية كاملة للرسوم الدراسية للإنجاز الأكاديمي المتميز",
+      "amount": "الرسوم الدراسية كاملة",
+      "eligibility": "معدل 3.8+",
+      "deadline": "15 مارس 2024"
+    },
+    "stemInnovation": {
+      "title": "منحة الابتكار في العلوم والتكنولوجيا",
+      "description": "دعم الطلاب الذين يدرسون تخصصات العلوم والتكنولوجيا",
+      "amount": "75,000 درهم",
+      "eligibility": "تخصص علمي وتقني",
+      "deadline": "1 أبريل 2024"
+    },
+    "communityLeadership": {
+      "title": "جائزة القيادة المجتمعية",
+      "description": "تقدير الطلاب ذوي الخدمة المجتمعية الاستثنائية",
+      "amount": "50,000 درهم",
+      "eligibility": "100+ ساعة خدمة",
+      "deadline": "1 مايو 2024"
+    }
+  },
+  "buttons": {
+    "applyNow": "قدم الآن",
+    "browseScholarships": "تصفح المنح"
+  },
+  "labels": {
+    "awardAmount": "مبلغ الجائزة",
+    "eligibility": "الأهلية",
+    "deadline": "الموعد النهائي"
+  }
+}
+

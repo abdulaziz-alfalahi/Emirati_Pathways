@@ -1,0 +1,184 @@
+{
+  "title": "المحفظة المهنية",
+  "description": "أنشئ محافظ رقمية مذهلة لعرض أعمالك ومهاراتك وإنجازاتك المهنية",
+  "heroTitle": "المحفظة المهنية",
+  "heroDescription": "أنشئ محافظ رقمية مذهلة لعرض أعمالك ومهاراتك وإنجازاتك المهنية",
+  "primaryAction": "إنشاء محفظة",
+  "secondaryAction": "عرض الأمثلة",
+  "stats": {
+    "templates": "قالب محفظة",
+    "created": "محفظة تم إنشاؤها",
+    "industries": "قطاع مغطى",
+    "success": "نجاح في التوظيف"
+  },
+  "quote": "محفظتك هي قصتك. اجعلها مقنعة.",
+  "attribution": "فلسفة التصميم",
+  "tabs": {
+    "portfolio": {
+      "label": "محفظتي",
+      "title": "محفظة الأعمال",
+      "description": "عرض أعمالك وإنجازاتك بطريقة احترافية ومميزة"
+    },
+    "builder": {
+      "label": "منشئ المحفظة",
+      "title": "منشئ المحفظة",
+      "description": "أدوات سهلة الاستخدام لبناء محفظة مهنية متميزة"
+    },
+    "templates": {
+      "label": "القوالب",
+      "title": "قوالب المحفظة",
+      "description": "اختر من مجموعة متنوعة من القوالب المصممة بشكل احترافي"
+    },
+    "analytics": {
+      "label": "التحليلات",
+      "title": "تحليلات المحفظة",
+      "description": "تتبع أداء محفظتك وعدد المشاهدات والتفاعل"
+    },
+    "visibility": {
+      "label": "الخصوصية",
+      "title": "إعدادات الخصوصية",
+      "description": "تحكم في من يمكنه رؤية محفظتك ومشاركتها"
+    }
+  },
+  "sections": {
+    "myPortfolio": "محفظتي",
+    "createNew": "إنشاء جديد",
+    "templates": "القوالب",
+    "examples": "الأمثلة"
+  },
+  "builder": {
+    "title": "منشئ المحفظة قريباً",
+    "description": "اعرض أعمالك وإنجازاتك بمحافظ رقمية مذهلة.",
+    "features": {
+      "dragDrop": "السحب والإفلات",
+      "customizable": "قابل للتخصيص",
+      "responsive": "متجاوب مع الأجهزة",
+      "professional": "تصميم احترافي"
+    },
+    "comingSoon": "قريباً",
+    "notifyMe": "أعلمني عند الإطلاق"
+  },
+  "templates": {
+    "title": "قوالب المحفظة",
+    "description": "اختر من مجموعة متنوعة من القوالب المصممة بشكل احترافي",
+    "categories": {
+      "creative": "إبداعية",
+      "business": "أعمال",
+      "technical": "تقنية",
+      "academic": "أكاديمية"
+    },
+    "features": {
+      "responsive": "متجاوب",
+      "customizable": "قابل للتخصيص",
+      "modern": "عصري",
+      "professional": "احترافي"
+    }
+  },
+  "analytics": {
+    "title": "تحليلات المحفظة",
+    "description": "تتبع أداء محفظتك وعدد المشاهدات والتفاعل",
+    "metrics": {
+      "views": "المشاهدات",
+      "visitors": "الزوار",
+      "downloads": "التحميلات",
+      "shares": "المشاركات",
+      "contacts": "جهات الاتصال",
+      "engagement": "التفاعل"
+    },
+    "timeframes": {
+      "today": "اليوم",
+      "week": "هذا الأسبوع",
+      "month": "هذا الشهر",
+      "year": "هذا العام"
+    },
+    "insights": {
+      "topPages": "الصفحات الأكثر زيارة",
+      "referrers": "مصادر الزيارات",
+      "devices": "الأجهزة",
+      "locations": "المواقع الجغرافية"
+    }
+  },
+  "visibility": {
+    "title": "إعدادات الخصوصية",
+    "description": "تحكم في من يمكنه رؤية محفظتك ومشاركتها",
+    "options": {
+      "public": {
+        "title": "عام",
+        "description": "يمكن لأي شخص رؤية محفظتك"
+      },
+      "private": {
+        "title": "خاص",
+        "description": "أنت فقط يمكنك رؤية محفظتك"
+      },
+      "linkOnly": {
+        "title": "بالرابط فقط",
+        "description": "يمكن رؤية المحفظة لمن لديه الرابط فقط"
+      },
+      "password": {
+        "title": "محمي بكلمة مرور",
+        "description": "يتطلب كلمة مرور لعرض المحفظة"
+      }
+    },
+    "sharing": {
+      "title": "مشاركة المحفظة",
+      "copyLink": "نسخ الرابط",
+      "shareEmail": "مشاركة بالبريد الإلكتروني",
+      "shareLinkedIn": "مشاركة على لينكدإن",
+      "shareTwitter": "مشاركة على تويتر",
+      "downloadPDF": "تحميل PDF",
+      "embedCode": "كود التضمين"
+    }
+  },
+  "portfolio": {
+    "sections": {
+      "about": "نبذة عني",
+      "experience": "الخبرة",
+      "education": "التعليم",
+      "skills": "المهارات",
+      "projects": "المشاريع",
+      "certificates": "الشهادات",
+      "achievements": "الإنجازات",
+      "contact": "التواصل"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "preview": "معاينة",
+      "publish": "نشر",
+      "share": "مشاركة",
+      "download": "تحميل",
+      "delete": "حذف"
+    },
+    "status": {
+      "draft": "مسودة",
+      "published": "منشور",
+      "private": "خاص"
+    }
+  },
+  "viewer": {
+    "accessDenied": {
+      "title": "تم رفض الوصول",
+      "description": "ليس لديك إذن لعرض هذه المحفظة. يرجى الاتصال بصاحب المحفظة للحصول على إذن الوصول."
+    },
+    "error": {
+      "title": "خطأ",
+      "description": "حدثت مشكلة في تحميل هذه المحفظة. يرجى المحاولة مرة أخرى لاحقاً."
+    },
+    "loading": "جاري التحميل...",
+    "goBack": "العودة",
+    "editPortfolio": "تعديل المحفظة"
+  },
+  "emptyState": {
+    "title": "لا توجد محفظة بعد",
+    "description": "ابدأ في بناء محفظتك المهنية لعرض مهاراتك وإنجازاتك.",
+    "createFirst": "إنشاء أول محفظة"
+  },
+  "notifications": {
+    "portfolioCreated": "تم إنشاء المحفظة بنجاح",
+    "portfolioUpdated": "تم تحديث المحفظة بنجاح",
+    "portfolioDeleted": "تم حذف المحفظة بنجاح",
+    "linkCopied": "تم نسخ الرابط",
+    "emailSent": "تم إرسال البريد الإلكتروني",
+    "pdfDownloaded": "تم تحميل ملف PDF"
+  }
+}
+

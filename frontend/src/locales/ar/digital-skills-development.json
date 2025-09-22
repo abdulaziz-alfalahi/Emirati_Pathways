@@ -1,0 +1,181 @@
+{
+  "title": "تطوير المهارات الرقمية",
+  "description": "طور مهاراتك الرقمية من خلال دورات تدريبية متخصصة وورش عمل تفاعلية مصممة لسوق العمل الحديث",
+  "heroTitle": "تطوير المهارات الرقمية",
+  "heroDescription": "طور مهاراتك الرقمية من خلال دورات تدريبية متخصصة وورش عمل تفاعلية مصممة لسوق العمل الحديث",
+  "stats": {
+    "availableCourses": "دورة متاحة",
+    "certifiedLearners": "متعلم معتمد",
+    "skillTracks": "مسار مهاري",
+    "completionRate": "معدل الإنجاز"
+  },
+  "tabs": {
+    "courses": {
+      "label": "الدورات",
+      "title": "الدورات المتاحة",
+      "description": "استكشف مجموعة واسعة من الدورات التدريبية في المهارات الرقمية"
+    },
+    "skillTracks": {
+      "label": "المسارات المهارية",
+      "title": "المسارات المهارية",
+      "description": "مسارات تعليمية منظمة لتطوير مهارات محددة"
+    },
+    "certifications": {
+      "label": "الشهادات",
+      "title": "الشهادات المهنية",
+      "description": "احصل على شهادات معتمدة في المهارات الرقمية"
+    },
+    "progress": {
+      "label": "التقدم",
+      "title": "تتبع التقدم",
+      "description": "راقب تقدمك في الدورات والمسارات المهارية"
+    }
+  },
+  "skillCategories": {
+    "programming": "البرمجة",
+    "dataScience": "علم البيانات",
+    "digitalMarketing": "التسويق الرقمي",
+    "cybersecurity": "الأمن السيبراني",
+    "cloudComputing": "الحوسبة السحابية",
+    "artificialIntelligence": "الذكاء الاصطناعي",
+    "webDevelopment": "تطوير الويب",
+    "mobileApps": "تطبيقات الهاتف المحمول"
+  },
+  "courses": {
+    "title": "الدورات المتاحة",
+    "description": "اختر من مجموعة متنوعة من الدورات التدريبية",
+    "filters": {
+      "all": "جميع الدورات",
+      "beginner": "مبتدئ",
+      "intermediate": "متوسط",
+      "advanced": "متقدم",
+      "free": "مجاني",
+      "paid": "مدفوع"
+    },
+    "duration": "المدة",
+    "level": "المستوى",
+    "price": "السعر",
+    "enroll": "التسجيل",
+    "enrolled": "مسجل",
+    "completed": "مكتمل"
+  },
+  "skillTracks": {
+    "title": "المسارات المهارية",
+    "description": "مسارات تعليمية شاملة لتطوير مهارات محددة",
+    "startTrack": "ابدأ المسار",
+    "continueTrack": "متابعة المسار",
+    "completedTrack": "مسار مكتمل",
+    "coursesInTrack": "دورة في المسار",
+    "estimatedTime": "الوقت المقدر",
+    "skillLevel": "مستوى المهارة"
+  },
+  "certifications": {
+    "title": "الشهادات المهنية",
+    "description": "احصل على شهادات معتمدة تعزز من فرصك المهنية",
+    "available": "متاح",
+    "inProgress": "قيد التقدم",
+    "completed": "مكتمل",
+    "expired": "منتهي الصلاحية",
+    "requirements": "المتطلبات",
+    "examInfo": "معلومات الامتحان",
+    "startExam": "ابدأ الامتحان",
+    "retakeExam": "إعادة الامتحان",
+    "downloadCertificate": "تحميل الشهادة"
+  },
+  "progress": {
+    "title": "تتبع التقدم",
+    "description": "راقب تقدمك في جميع الدورات والمسارات",
+    "overallProgress": "التقدم العام",
+    "completedCourses": "الدورات المكتملة",
+    "inProgressCourses": "الدورات قيد التقدم",
+    "earnedCertificates": "الشهادات المكتسبة",
+    "studyTime": "وقت الدراسة",
+    "achievements": "الإنجازات",
+    "badges": "الشارات",
+    "leaderboard": "لوحة المتصدرين"
+  },
+  "learningPaths": {
+    "webDeveloper": {
+      "title": "مطور ويب",
+      "description": "تعلم تطوير مواقع الويب من الصفر إلى الاحتراف",
+      "skills": ["HTML", "CSS", "JavaScript", "React", "Node.js"]
+    },
+    "dataAnalyst": {
+      "title": "محلل بيانات",
+      "description": "تعلم تحليل البيانات واستخراج الرؤى القيمة",
+      "skills": ["Python", "SQL", "Excel", "Tableau", "Statistics"]
+    },
+    "digitalMarketer": {
+      "title": "مسوق رقمي",
+      "description": "أتقن فنون التسويق الرقمي والإعلان عبر الإنترنت",
+      "skills": ["SEO", "SEM", "Social Media", "Analytics", "Content Marketing"]
+    }
+  },
+  "instructors": {
+    "title": "المدربون",
+    "description": "تعلم من خبراء الصناعة",
+    "experience": "سنوات خبرة",
+    "students": "طالب",
+    "courses": "دورة",
+    "rating": "التقييم"
+  },
+  "resources": {
+    "title": "الموارد التعليمية",
+    "description": "موارد إضافية لدعم رحلتك التعليمية",
+    "articles": "المقالات",
+    "videos": "الفيديوهات",
+    "ebooks": "الكتب الإلكترونية",
+    "tools": "الأدوات",
+    "templates": "القوالب",
+    "cheatsheets": "أوراق المراجعة"
+  },
+  "community": {
+    "title": "المجتمع",
+    "description": "تواصل مع متعلمين آخرين وشارك خبراتك",
+    "forums": "المنتديات",
+    "studyGroups": "مجموعات الدراسة",
+    "mentorship": "التوجيه",
+    "events": "الفعاليات",
+    "networking": "التواصل المهني"
+  },
+  "assessment": {
+    "title": "التقييم",
+    "description": "اختبر مهاراتك وتتبع تقدمك",
+    "skillAssessment": "تقييم المهارات",
+    "practiceTests": "اختبارات تدريبية",
+    "finalExam": "الامتحان النهائي",
+    "results": "النتائج",
+    "feedback": "التغذية الراجعة",
+    "recommendations": "التوصيات"
+  },
+  "messages": {
+    "success": {
+      "enrolled": "تم التسجيل في الدورة بنجاح",
+      "completed": "تم إكمال الدورة بنجاح",
+      "certificateEarned": "تم الحصول على الشهادة بنجاح",
+      "progressSaved": "تم حفظ التقدم بنجاح"
+    },
+    "error": {
+      "enrollmentFailed": "فشل في التسجيل في الدورة",
+      "loadingFailed": "فشل في تحميل البيانات",
+      "saveFailed": "فشل في حفظ التقدم",
+      "examFailed": "فشل في إجراء الامتحان"
+    },
+    "info": {
+      "prerequisiteRequired": "يتطلب إكمال المتطلبات المسبقة",
+      "examScheduled": "تم جدولة الامتحان",
+      "certificateProcessing": "جاري معالجة الشهادة"
+    }
+  },
+  "actions": {
+    "start": "ابدأ",
+    "continue": "متابعة",
+    "complete": "إكمال",
+    "enroll": "التسجيل",
+    "download": "تحميل",
+    "share": "مشاركة",
+    "bookmark": "إضافة للمفضلة",
+    "review": "مراجعة"
+  }
+}
+

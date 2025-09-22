@@ -1,0 +1,210 @@
+{
+  "title": "Professional Certifications",
+  "description": "Earn professional certifications from top global institutions to advance your career",
+  "heroTitle": "Professional Certifications",
+  "heroDescription": "Earn professional certifications from top global institutions to advance your career",
+  "stats": {
+    "availableCertifications": "Available Certifications",
+    "certifiedProfessionals": "Certified Professionals",
+    "industryPartners": "Industry Partners",
+    "successRate": "Success Rate"
+  },
+  "tabs": {
+    "browse": {
+      "label": "Browse Certifications",
+      "title": "Available Certifications",
+      "description": "Explore a wide range of professional certifications"
+    },
+    "myProgress": {
+      "label": "My Progress",
+      "title": "Track Progress",
+      "description": "Monitor your certification journey"
+    },
+    "earned": {
+      "label": "Earned Certifications",
+      "title": "My Certifications",
+      "description": "View all your earned certifications"
+    },
+    "recommendations": {
+      "label": "Recommendations",
+      "title": "Recommended Certifications",
+      "description": "Certifications recommended based on your profile"
+    }
+  },
+  "categories": {
+    "technology": "Technology",
+    "business": "Business",
+    "finance": "Finance",
+    "healthcare": "Healthcare",
+    "education": "Education",
+    "engineering": "Engineering",
+    "marketing": "Marketing",
+    "projectManagement": "Project Management",
+    "dataScience": "Data Science",
+    "cybersecurity": "Cybersecurity"
+  },
+  "certificationTypes": {
+    "professional": "Professional",
+    "technical": "Technical",
+    "industry": "Industry",
+    "vendor": "Vendor",
+    "academic": "Academic",
+    "government": "Government"
+  },
+  "levels": {
+    "entry": "Entry",
+    "associate": "Associate",
+    "professional": "Professional",
+    "expert": "Expert",
+    "master": "Master"
+  },
+  "providers": {
+    "microsoft": "Microsoft",
+    "google": "Google",
+    "amazon": "Amazon",
+    "cisco": "Cisco",
+    "oracle": "Oracle",
+    "ibm": "IBM",
+    "salesforce": "Salesforce",
+    "adobe": "Adobe",
+    "pmi": "Project Management Institute",
+    "comptia": "CompTIA"
+  },
+  "certification": {
+    "overview": "Overview",
+    "requirements": "Requirements",
+    "examDetails": "Exam Details",
+    "preparation": "Preparation",
+    "schedule": "Schedule",
+    "cost": "Cost",
+    "validity": "Valid for",
+    "renewal": "Renewal",
+    "benefits": "Benefits",
+    "careerPaths": "Career Paths"
+  },
+  "examInfo": {
+    "duration": "Exam Duration",
+    "questions": "Number of Questions",
+    "passingScore": "Passing Score",
+    "format": "Exam Format",
+    "language": "Language",
+    "location": "Location",
+    "retakePolicy": "Retake Policy",
+    "prerequisites": "Prerequisites"
+  },
+  "preparation": {
+    "studyMaterials": "Study Materials",
+    "practiceTests": "Practice Tests",
+    "bootcamps": "Bootcamps",
+    "onlineCourses": "Online Courses",
+    "studyGroups": "Study Groups",
+    "mentorship": "Mentorship",
+    "labExercises": "Lab Exercises",
+    "simulators": "Simulators"
+  },
+  "progress": {
+    "enrolled": "Enrolled",
+    "studying": "Studying",
+    "scheduled": "Scheduled",
+    "completed": "Completed",
+    "passed": "Passed",
+    "failed": "Failed",
+    "expired": "Expired",
+    "renewed": "Renewed"
+  },
+  "benefits": {
+    "careerAdvancement": "Career Advancement",
+    "salaryIncrease": "Salary Increase",
+    "jobOpportunities": "Job Opportunities",
+    "skillValidation": "Skill Validation",
+    "industryRecognition": "Industry Recognition",
+    "networking": "Professional Networking",
+    "credibility": "Credibility",
+    "competitiveEdge": "Competitive Edge"
+  },
+  "studyPlan": {
+    "title": "Study Plan",
+    "description": "Customized study plan for certification",
+    "duration": "Duration",
+    "hoursPerWeek": "Hours per Week",
+    "milestones": "Milestones",
+    "resources": "Resources",
+    "schedule": "Schedule",
+    "deadlines": "Deadlines"
+  },
+  "community": {
+    "title": "Certification Community",
+    "description": "Connect with other professionals pursuing certifications",
+    "forums": "Forums",
+    "studyBuddies": "Study Buddies",
+    "expertAdvice": "Expert Advice",
+    "successStories": "Success Stories",
+    "tips": "Tips",
+    "experiences": "Experiences"
+  },
+  "employers": {
+    "title": "For Employers",
+    "description": "How companies benefit from certified employees",
+    "benefits": "Benefits",
+    "verification": "Verification",
+    "skillsMapping": "Skills Mapping",
+    "teamCertification": "Team Certification",
+    "trainingPrograms": "Training Programs",
+    "partnerships": "Partnerships"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "description": "Statistics and insights on professional certifications",
+    "popularCertifications": "Popular Certifications",
+    "industryTrends": "Industry Trends",
+    "salaryImpact": "Salary Impact",
+    "demandForecast": "Demand Forecast",
+    "skillsGap": "Skills Gap",
+    "marketInsights": "Market Insights"
+  },
+  "support": {
+    "title": "Support & Help",
+    "description": "Get help with your certification journey",
+    "faq": "FAQ",
+    "technicalSupport": "Technical Support",
+    "examSupport": "Exam Support",
+    "careerGuidance": "Career Guidance",
+    "financialAid": "Financial Aid",
+    "accessibility": "Accessibility"
+  },
+  "messages": {
+    "success": {
+      "enrolled": "Successfully enrolled in certification program",
+      "examScheduled": "Exam scheduled successfully",
+      "examPassed": "Congratulations! You passed the exam",
+      "certificateEarned": "Certificate earned successfully",
+      "progressSaved": "Progress saved successfully"
+    },
+    "error": {
+      "enrollmentFailed": "Failed to enroll in certification program",
+      "examFailed": "You did not pass the exam, please try again",
+      "schedulingFailed": "Failed to schedule exam",
+      "loadingFailed": "Failed to load data",
+      "paymentFailed": "Payment processing failed"
+    },
+    "info": {
+      "examReminder": "Reminder: Your exam is scheduled for",
+      "renewalDue": "Your certification expires on",
+      "prerequisiteRequired": "Prerequisites required",
+      "studyPlanRecommended": "We recommend creating a study plan"
+    }
+  },
+  "actions": {
+    "enroll": "Enroll",
+    "schedule": "Schedule",
+    "study": "Study",
+    "practice": "Practice",
+    "takeExam": "Take Exam",
+    "retake": "Retake",
+    "renew": "Renew",
+    "download": "Download",
+    "share": "Share",
+    "verify": "Verify"
+  }
+}
+

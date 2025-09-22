@@ -1,0 +1,403 @@
+{
+  "title": "الاستشارة المهنية",
+  "description": "احصل على إرشاد مهني شخصي من المهنيين ذوي الخبرة وخبراء الصناعة",
+  "heroTitle": "الاستشارة المهنية",
+  "heroDescription": "احصل على إرشاد مهني شخصي من المهنيين ذوي الخبرة وخبراء الصناعة",
+  "primaryAction": "البحث عن مستشار",
+  "secondaryAction": "اعرف المزيد",
+  "stats": {
+    "advisors": "مستشار خبير",
+    "sessions": "جلسة استشارية",
+    "satisfaction": "معدل الرضا",
+    "achievement": "تحقيق الأهداف"
+  },
+  "quote": "المرشد هو شخص يسمح لك برؤية الأمل بداخلك",
+  "attribution": "أوبرا وينفري",
+  "tabs": {
+    "advisory": {
+      "label": "الاستشارة",
+      "title": "الاستشارة المهنية",
+      "description": "تواصل مع مستشارين مهنيين ذوي خبرة للحصول على إرشاد شخصي وتوجيه مهني"
+    },
+    "advisors": {
+      "label": "المستشارون",
+      "title": "المستشارون المهنيون",
+      "description": "تصفح ملفات المستشارين المهنيين واختر الأنسب لاحتياجاتك"
+    },
+    "sessions": {
+      "label": "الجلسات",
+      "title": "جلساتي",
+      "description": "تتبع جلساتك الاستشارية السابقة والمجدولة"
+    },
+    "resources": {
+      "label": "الموارد",
+      "title": "مكتبة الموارد",
+      "description": "استكشف مجموعة شاملة من الموارد المهنية والتطويرية"
+    },
+    "goals": {
+      "label": "الأهداف",
+      "title": "أهدافي المهنية",
+      "description": "حدد وتتبع أهدافك المهنية مع خطط العمل"
+    }
+  },
+  "sections": {
+    "guidance": "الإرشاد",
+    "mentorship": "التوجيه",
+    "development": "التطوير",
+    "planning": "التخطيط"
+  },
+  "advisory": {
+    "title": "منصة الاستشارة المهنية قريباً",
+    "description": "تواصل مع مستشارين مهنيين ذوي خبرة للحصول على إرشاد شخصي وتوجيه مهني.",
+    "features": {
+      "matching": "مطابقة ذكية",
+      "scheduling": "جدولة مرنة",
+      "tracking": "تتبع التقدم",
+      "resources": "موارد شاملة"
+    },
+    "comingSoon": "قريباً",
+    "notifyMe": "أعلمني عند الإطلاق"
+  },
+  "advisors": {
+    "title": "المستشارون المهنيون",
+    "description": "تصفح ملفات المستشارين المهنيين واختر الأنسب لاحتياجاتك",
+    "filters": {
+      "industry": "المجال",
+      "experience": "سنوات الخبرة",
+      "specialization": "التخصص",
+      "language": "اللغة",
+      "rating": "التقييم",
+      "availability": "التوفر"
+    },
+    "specializations": {
+      "careerTransition": "التحول المهني",
+      "leadership": "القيادة",
+      "entrepreneurship": "ريادة الأعمال",
+      "skillDevelopment": "تطوير المهارات",
+      "workLifeBalance": "التوازن بين العمل والحياة",
+      "networking": "بناء الشبكات",
+      "negotiation": "التفاوض",
+      "personalBranding": "العلامة الشخصية"
+    },
+    "profile": {
+      "experience": "سنوات الخبرة",
+      "specialization": "التخصص",
+      "languages": "اللغات",
+      "rating": "التقييم",
+      "sessions": "عدد الجلسات",
+      "responseTime": "وقت الاستجابة",
+      "availability": "التوفر",
+      "hourlyRate": "السعر بالساعة"
+    },
+    "actions": {
+      "viewProfile": "عرض الملف الشخصي",
+      "bookSession": "حجز جلسة",
+      "sendMessage": "إرسال رسالة",
+      "addToFavorites": "إضافة للمفضلة"
+    }
+  },
+  "sessions": {
+    "title": "جلساتي الاستشارية",
+    "description": "تتبع جلساتك الاستشارية السابقة والمجدولة",
+    "status": {
+      "scheduled": "مجدولة",
+      "completed": "مكتملة",
+      "cancelled": "ملغية",
+      "rescheduled": "معاد جدولتها",
+      "pending": "قيد الانتظار"
+    },
+    "types": {
+      "video": "مكالمة فيديو",
+      "phone": "مكالمة هاتفية",
+      "inPerson": "شخصياً",
+      "chat": "محادثة نصية"
+    },
+    "details": {
+      "date": "التاريخ",
+      "time": "الوقت",
+      "duration": "المدة",
+      "advisor": "المستشار",
+      "type": "نوع الجلسة",
+      "status": "الحالة",
+      "notes": "الملاحظات",
+      "goals": "الأهداف"
+    },
+    "actions": {
+      "join": "انضمام",
+      "reschedule": "إعادة جدولة",
+      "cancel": "إلغاء",
+      "review": "مراجعة",
+      "feedback": "تقييم",
+      "notes": "إضافة ملاحظات"
+    },
+    "upcoming": {
+      "title": "الجلسات القادمة",
+      "empty": "لا توجد جلسات مجدولة",
+      "description": "لم تقم بجدولة أي جلسات بعد. ابحث عن مستشار وابدأ رحلتك المهنية."
+    },
+    "completed": {
+      "title": "الجلسات المكتملة",
+      "empty": "لا توجد جلسات مكتملة",
+      "description": "ستظهر هنا جلساتك المكتملة مع تقييماتك وملاحظاتك."
+    }
+  },
+  "resources": {
+    "title": "مكتبة الموارد المهنية",
+    "description": "استكشف مجموعة شاملة من الموارد المهنية والتطويرية",
+    "categories": {
+      "careerPlanning": "التخطيط المهني",
+      "skillDevelopment": "تطوير المهارات",
+      "leadership": "القيادة",
+      "networking": "بناء الشبكات",
+      "entrepreneurship": "ريادة الأعمال",
+      "workLifeBalance": "التوازن بين العمل والحياة",
+      "industryInsights": "رؤى الصناعة",
+      "personalBranding": "العلامة الشخصية"
+    },
+    "types": {
+      "articles": "مقالات",
+      "videos": "فيديوهات",
+      "podcasts": "بودكاست",
+      "ebooks": "كتب إلكترونية",
+      "templates": "قوالب",
+      "checklists": "قوائم مراجعة",
+      "assessments": "تقييمات",
+      "webinars": "ندوات ويب"
+    },
+    "filters": {
+      "category": "الفئة",
+      "type": "النوع",
+      "level": "المستوى",
+      "duration": "المدة",
+      "language": "اللغة",
+      "rating": "التقييم"
+    },
+    "levels": {
+      "beginner": "مبتدئ",
+      "intermediate": "متوسط",
+      "advanced": "متقدم",
+      "expert": "خبير"
+    }
+  },
+  "goals": {
+    "title": "أهدافي المهنية",
+    "description": "حدد وتتبع أهدافك المهنية مع خطط العمل",
+    "categories": {
+      "shortTerm": "قصيرة المدى",
+      "mediumTerm": "متوسطة المدى",
+      "longTerm": "طويلة المدى"
+    },
+    "status": {
+      "notStarted": "لم تبدأ",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتملة",
+      "onHold": "متوقفة",
+      "cancelled": "ملغية"
+    },
+    "types": {
+      "skillDevelopment": "تطوير المهارات",
+      "careerAdvancement": "التقدم المهني",
+      "networking": "بناء الشبكات",
+      "education": "التعليم",
+      "certification": "الحصول على شهادات",
+      "leadership": "تطوير القيادة",
+      "entrepreneurship": "ريادة الأعمال",
+      "workLifeBalance": "التوازن بين العمل والحياة"
+    },
+    "actions": {
+      "create": "إنشاء هدف جديد",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "complete": "تمييز كمكتمل",
+      "addMilestone": "إضافة معلم",
+      "viewProgress": "عرض التقدم"
+    },
+    "form": {
+      "title": "عنوان الهدف",
+      "description": "الوصف",
+      "category": "الفئة",
+      "priority": "الأولوية",
+      "deadline": "الموعد النهائي",
+      "milestones": "المعالم",
+      "resources": "الموارد المطلوبة",
+      "advisor": "المستشار المساعد"
+    }
+  },
+  "booking": {
+    "title": "حجز جلسة استشارية",
+    "steps": {
+      "selectAdvisor": "اختيار المستشار",
+      "selectDateTime": "اختيار التاريخ والوقت",
+      "sessionDetails": "تفاصيل الجلسة",
+      "payment": "الدفع",
+      "confirmation": "التأكيد"
+    },
+    "sessionTypes": {
+      "consultation": "استشارة عامة",
+      "careerPlanning": "تخطيط مهني",
+      "skillAssessment": "تقييم المهارات",
+      "interviewPrep": "التحضير للمقابلات",
+      "resumeReview": "مراجعة السيرة الذاتية",
+      "networkingAdvice": "نصائح التواصل",
+      "leadershipCoaching": "تدريب القيادة",
+      "careerTransition": "التحول المهني"
+    },
+    "duration": {
+      "30min": "30 دقيقة",
+      "45min": "45 دقيقة",
+      "60min": "60 دقيقة",
+      "90min": "90 دقيقة"
+    },
+    "form": {
+      "sessionType": "نوع الجلسة",
+      "duration": "المدة",
+      "preferredDate": "التاريخ المفضل",
+      "preferredTime": "الوقت المفضل",
+      "goals": "أهداف الجلسة",
+      "background": "خلفيتك المهنية",
+      "specificQuestions": "أسئلة محددة",
+      "additionalNotes": "ملاحظات إضافية"
+    }
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "overview": {
+      "totalSessions": "إجمالي الجلسات",
+      "upcomingSessions": "الجلسات القادمة",
+      "completedGoals": "الأهداف المكتملة",
+      "activeGoals": "الأهداف النشطة",
+      "favoriteAdvisors": "المستشارون المفضلون",
+      "resourcesViewed": "الموارد المشاهدة"
+    },
+    "recentActivity": {
+      "title": "النشاط الأخير",
+      "sessionCompleted": "جلسة مكتملة",
+      "goalCreated": "هدف جديد",
+      "resourceViewed": "مورد مشاهد",
+      "advisorFavorited": "مستشار مفضل"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "bookSession": "حجز جلسة",
+      "findAdvisor": "البحث عن مستشار",
+      "createGoal": "إنشاء هدف",
+      "browseResources": "تصفح الموارد",
+      "viewSchedule": "عرض الجدول",
+      "updateProfile": "تحديث الملف الشخصي"
+    }
+  },
+  "industries": {
+    "banking": "المصرفية والمالية",
+    "technology": "التكنولوجيا",
+    "healthcare": "الرعاية الصحية",
+    "government": "الحكومة",
+    "oilGas": "النفط والغاز",
+    "aviation": "الطيران",
+    "tourism": "السياحة",
+    "realEstate": "العقارات",
+    "education": "التعليم",
+    "retail": "التجارة",
+    "consulting": "الاستشارات",
+    "media": "الإعلام",
+    "construction": "البناء والتشييد",
+    "logistics": "اللوجستيات"
+  },
+  "languages": {
+    "arabic": "العربية",
+    "english": "الإنجليزية",
+    "french": "الفرنسية",
+    "german": "الألمانية",
+    "spanish": "الإسبانية",
+    "hindi": "الهندية",
+    "urdu": "الأردية"
+  },
+  "forms": {
+    "advisorSearch": {
+      "title": "البحث عن مستشار",
+      "industry": "المجال",
+      "specialization": "التخصص",
+      "experience": "سنوات الخبرة",
+      "language": "اللغة",
+      "availability": "التوفر",
+      "priceRange": "النطاق السعري"
+    },
+    "sessionFeedback": {
+      "title": "تقييم الجلسة",
+      "rating": "التقييم العام",
+      "advisorRating": "تقييم المستشار",
+      "sessionQuality": "جودة الجلسة",
+      "goalsAchieved": "تحقيق الأهداف",
+      "wouldRecommend": "هل توصي بهذا المستشار؟",
+      "comments": "التعليقات",
+      "suggestions": "اقتراحات للتحسين"
+    }
+  },
+  "actions": {
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "book": "حجز",
+    "cancel": "إلغاء",
+    "reschedule": "إعادة جدولة",
+    "join": "انضمام",
+    "complete": "إكمال",
+    "review": "مراجعة",
+    "save": "حفظ",
+    "share": "مشاركة",
+    "download": "تحميل",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "create": "إنشاء",
+    "view": "عرض",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "confirm": "تأكيد"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "selectAdvisor": "يرجى اختيار مستشار",
+    "selectDate": "يرجى اختيار تاريخ",
+    "selectTime": "يرجى اختيار وقت",
+    "selectSessionType": "يرجى اختيار نوع الجلسة",
+    "minLength": "الحد الأدنى للطول",
+    "maxLength": "الحد الأقصى للطول",
+    "invalidEmail": "بريد إلكتروني غير صحيح",
+    "invalidPhone": "رقم هاتف غير صحيح"
+  },
+  "notifications": {
+    "sessionBooked": "تم حجز الجلسة بنجاح",
+    "sessionCancelled": "تم إلغاء الجلسة",
+    "sessionRescheduled": "تم إعادة جدولة الجلسة",
+    "goalCreated": "تم إنشاء الهدف بنجاح",
+    "goalCompleted": "تم إكمال الهدف",
+    "feedbackSubmitted": "تم إرسال التقييم",
+    "profileUpdated": "تم تحديث الملف الشخصي",
+    "error": "حدث خطأ. يرجى المحاولة مرة أخرى"
+  },
+  "emptyState": {
+    "noSessions": {
+      "title": "لا توجد جلسات بعد",
+      "description": "لم تحجز أي جلسات استشارية بعد. ابحث عن مستشار وابدأ رحلتك المهنية.",
+      "action": "البحث عن مستشار"
+    },
+    "noGoals": {
+      "title": "لا توجد أهداف محددة",
+      "description": "لم تحدد أي أهداف مهنية بعد. ابدأ بإنشاء هدفك الأول.",
+      "action": "إنشاء هدف جديد"
+    },
+    "noAdvisors": {
+      "title": "لا توجد نتائج",
+      "description": "لم نجد مستشارين يطابقون معايير البحث. جرب تعديل الفلاتر.",
+      "action": "تعديل البحث"
+    }
+  },
+  "loading": {
+    "searching": "جاري البحث...",
+    "booking": "جاري الحجز...",
+    "loading": "جاري التحميل...",
+    "saving": "جاري الحفظ...",
+    "processing": "جاري المعالجة..."
+  }
+}
+

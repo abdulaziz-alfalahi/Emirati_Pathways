@@ -1,0 +1,497 @@
+{
+  "title": "Retiree Services",
+  "description": "Comprehensive support and services for retirees, ensuring a fulfilling and active retirement life",
+  "stats": {
+    "retireesLabel": "Active Retirees",
+    "retirees": "15,000+",
+    "servicesLabel": "Available Services",
+    "services": "50+",
+    "satisfactionLabel": "Satisfaction Rate",
+    "satisfaction": "96%",
+    "programsLabel": "Wellness Programs",
+    "programs": "30+"
+  },
+  "tabs": {
+    "services": {
+      "label": "Retirement Services",
+      "content": {
+        "overview": {
+          "title": "Comprehensive Retirement Support",
+          "description": "Complete range of services designed to support retirees in all aspects of their post-career life"
+        },
+        "financial": {
+          "title": "Financial Support",
+          "description": "Financial assistance and planning services for retirees",
+          "services": {
+            "pension": {
+              "title": "Pension Management",
+              "description": "Comprehensive pension administration and support",
+              "features": {
+                "calculation": "• Pension calculation and verification",
+                "payments": "• Regular payment processing",
+                "adjustments": "• Annual adjustments and updates",
+                "support": "• Dedicated pension support team"
+              }
+            },
+            "planning": {
+              "title": "Financial Planning",
+              "description": "Personalized financial planning for retirement",
+              "features": {
+                "consultation": "• Free financial consultation",
+                "budgeting": "• Retirement budgeting assistance",
+                "investment": "• Investment guidance",
+                "estate": "• Estate planning support"
+              }
+            },
+            "benefits": {
+              "title": "Additional Benefits",
+              "description": "Extra financial benefits and allowances",
+              "features": {
+                "healthcare": "• Healthcare allowances",
+                "housing": "• Housing assistance",
+                "transportation": "• Transportation subsidies",
+                "utilities": "• Utility bill support"
+              }
+            }
+          },
+          "action": "Access Financial Services"
+        },
+        "healthcare": {
+          "title": "Healthcare Services",
+          "description": "Comprehensive healthcare coverage and medical support",
+          "services": {
+            "coverage": {
+              "title": "Medical Coverage",
+              "description": "Complete healthcare coverage for retirees",
+              "features": {
+                "insurance": "• Comprehensive health insurance",
+                "specialists": "• Access to medical specialists",
+                "medications": "• Prescription medication coverage",
+                "emergency": "• Emergency medical services"
+              }
+            },
+            "preventive": {
+              "title": "Preventive Care",
+              "description": "Preventive healthcare and wellness programs",
+              "features": {
+                "checkups": "• Regular health checkups",
+                "screenings": "• Health screenings and tests",
+                "vaccinations": "• Vaccination programs",
+                "wellness": "• Wellness assessments"
+              }
+            },
+            "specialized": {
+              "title": "Specialized Care",
+              "description": "Specialized medical services for age-related needs",
+              "features": {
+                "geriatric": "• Geriatric medicine",
+                "chronic": "• Chronic disease management",
+                "mental": "• Mental health services",
+                "rehabilitation": "• Rehabilitation services"
+              }
+            }
+          },
+          "action": "Learn About Healthcare"
+        },
+        "social": {
+          "title": "Social Programs",
+          "description": "Social activities and community engagement programs",
+          "programs": {
+            "community": {
+              "title": "Community Centers",
+              "description": "Dedicated community centers for retirees",
+              "features": {
+                "activities": "• Daily social activities",
+                "events": "• Regular community events",
+                "clubs": "• Interest-based clubs",
+                "facilities": "• Modern facilities and amenities"
+              }
+            },
+            "cultural": {
+              "title": "Cultural Activities",
+              "description": "Cultural and educational programs",
+              "features": {
+                "classes": "• Art and craft classes",
+                "lectures": "• Educational lectures",
+                "trips": "• Cultural trips and tours",
+                "exhibitions": "• Art exhibitions and shows"
+              }
+            },
+            "recreation": {
+              "title": "Recreation Programs",
+              "description": "Recreational activities and entertainment",
+              "features": {
+                "sports": "• Senior-friendly sports",
+                "games": "• Board games and puzzles",
+                "entertainment": "• Entertainment programs",
+                "outings": "• Group outings and excursions"
+              }
+            }
+          },
+          "action": "Join Social Programs"
+        }
+      }
+    },
+    "opportunities": {
+      "label": "Engagement Opportunities",
+      "content": {
+        "overview": {
+          "title": "Stay Active & Engaged",
+          "description": "Opportunities for retirees to remain active, contribute to society, and pursue new interests"
+        },
+        "volunteer": {
+          "title": "Volunteer Opportunities",
+          "description": "Meaningful volunteer work that utilizes retiree experience and skills",
+          "areas": {
+            "education": {
+              "title": "Educational Support",
+              "description": "Supporting educational institutions and programs",
+              "roles": {
+                "mentoring": "• Student mentoring programs",
+                "tutoring": "• Academic tutoring",
+                "career": "• Career guidance",
+                "skills": "• Skills workshops"
+              }
+            },
+            "community": {
+              "title": "Community Service",
+              "description": "Contributing to community development and welfare",
+              "roles": {
+                "advisory": "• Community advisory roles",
+                "events": "• Event organization",
+                "support": "• Social support services",
+                "advocacy": "• Community advocacy"
+              }
+            },
+            "government": {
+              "title": "Government Support",
+              "description": "Supporting government initiatives and programs",
+              "roles": {
+                "consultation": "• Policy consultation",
+                "committees": "• Advisory committees",
+                "research": "• Research assistance",
+                "outreach": "• Public outreach programs"
+              }
+            }
+          },
+          "action": "Explore Volunteer Roles"
+        },
+        "mentoring": {
+          "title": "Mentoring Programs",
+          "description": "Sharing knowledge and experience with younger generations",
+          "programs": {
+            "professional": {
+              "title": "Professional Mentoring",
+              "description": "Career mentoring for young professionals",
+              "focus": {
+                "career": "• Career development guidance",
+                "skills": "• Professional skills development",
+                "networking": "• Professional networking",
+                "leadership": "• Leadership development"
+              }
+            },
+            "entrepreneurship": {
+              "title": "Entrepreneurship Mentoring",
+              "description": "Supporting young entrepreneurs and startups",
+              "focus": {
+                "business": "• Business planning and strategy",
+                "experience": "• Industry experience sharing",
+                "networks": "• Business network access",
+                "guidance": "• Strategic guidance"
+              }
+            },
+            "life": {
+              "title": "Life Skills Mentoring",
+              "description": "Sharing life experience and wisdom",
+              "focus": {
+                "wisdom": "• Life wisdom and experience",
+                "values": "• Cultural values transmission",
+                "guidance": "• Personal guidance",
+                "support": "• Emotional support"
+              }
+            }
+          },
+          "action": "Become a Mentor"
+        },
+        "consulting": {
+          "title": "Consulting Opportunities",
+          "description": "Utilizing professional expertise in consulting roles",
+          "areas": {
+            "business": {
+              "title": "Business Consulting",
+              "description": "Providing business expertise to organizations",
+              "services": {
+                "strategy": "• Strategic planning",
+                "operations": "• Operations improvement",
+                "management": "• Management consulting",
+                "advisory": "• Board advisory roles"
+              }
+            },
+            "technical": {
+              "title": "Technical Consulting",
+              "description": "Sharing technical expertise and knowledge",
+              "services": {
+                "engineering": "• Engineering consultation",
+                "technology": "• Technology advisory",
+                "research": "• Research collaboration",
+                "innovation": "• Innovation guidance"
+              }
+            },
+            "government": {
+              "title": "Government Consulting",
+              "description": "Supporting government projects and initiatives",
+              "services": {
+                "policy": "• Policy development",
+                "planning": "• Strategic planning",
+                "evaluation": "• Program evaluation",
+                "advisory": "• Expert advisory services"
+              }
+            }
+          },
+          "action": "Explore Consulting"
+        }
+      }
+    },
+    "benefits": {
+      "label": "Benefits & Perks",
+      "content": {
+        "overview": {
+          "title": "Exclusive Benefits & Perks",
+          "description": "Special benefits, discounts, and privileges designed specifically for retirees"
+        },
+        "discounts": {
+          "title": "Exclusive Discounts",
+          "description": "Special discounts and offers for retirees across various services",
+          "categories": {
+            "retail": {
+              "title": "Retail & Shopping",
+              "description": "Discounts at participating retail stores and shopping centers",
+              "offers": {
+                "groceries": "• 10-15% off groceries",
+                "clothing": "• 20% off clothing and accessories",
+                "electronics": "• Special pricing on electronics",
+                "pharmacy": "• Prescription medication discounts"
+              }
+            },
+            "services": {
+              "title": "Services",
+              "description": "Reduced rates for various professional services",
+              "offers": {
+                "banking": "• Free banking services",
+                "insurance": "• Reduced insurance premiums",
+                "utilities": "• Utility bill discounts",
+                "telecommunications": "• Phone and internet discounts"
+              }
+            },
+            "entertainment": {
+              "title": "Entertainment & Leisure",
+              "description": "Discounted entertainment and recreational activities",
+              "offers": {
+                "movies": "• Discounted movie tickets",
+                "restaurants": "• Restaurant meal discounts",
+                "travel": "• Travel and hotel discounts",
+                "events": "• Cultural event discounts"
+              }
+            }
+          },
+          "action": "View All Discounts"
+        },
+        "recreation": {
+          "title": "Recreation Benefits",
+          "description": "Access to recreational facilities and activities",
+          "facilities": {
+            "fitness": {
+              "title": "Fitness Centers",
+              "description": "Access to senior-friendly fitness facilities",
+              "features": {
+                "membership": "• Free or discounted membership",
+                "classes": "• Senior fitness classes",
+                "equipment": "• Age-appropriate equipment",
+                "trainers": "• Qualified fitness trainers"
+              }
+            },
+            "sports": {
+              "title": "Sports Facilities",
+              "description": "Access to various sports and recreational facilities",
+              "features": {
+                "swimming": "• Swimming pool access",
+                "tennis": "• Tennis court reservations",
+                "golf": "• Golf course privileges",
+                "walking": "• Walking and jogging tracks"
+              }
+            },
+            "cultural": {
+              "title": "Cultural Venues",
+              "description": "Access to cultural and educational venues",
+              "features": {
+                "museums": "• Free museum entry",
+                "libraries": "• Library privileges",
+                "theaters": "• Theater and concert discounts",
+                "galleries": "• Art gallery access"
+              }
+            }
+          },
+          "action": "Access Recreation"
+        },
+        "education": {
+          "title": "Educational Benefits",
+          "description": "Continuing education and learning opportunities",
+          "programs": {
+            "lifelong": {
+              "title": "Lifelong Learning",
+              "description": "Continuing education programs for personal enrichment",
+              "offerings": {
+                "courses": "• University courses and lectures",
+                "workshops": "• Skills workshops and seminars",
+                "languages": "• Language learning programs",
+                "technology": "• Technology training"
+              }
+            },
+            "professional": {
+              "title": "Professional Development",
+              "description": "Maintaining professional skills and knowledge",
+              "offerings": {
+                "certifications": "• Professional certifications",
+                "conferences": "• Industry conferences",
+                "networking": "• Professional networking events",
+                "updates": "• Industry updates and trends"
+              }
+            },
+            "personal": {
+              "title": "Personal Enrichment",
+              "description": "Programs for personal growth and interests",
+              "offerings": {
+                "arts": "• Arts and crafts classes",
+                "history": "• History and culture studies",
+                "wellness": "• Health and wellness education",
+                "hobbies": "• Hobby development programs"
+              }
+            }
+          },
+          "action": "Explore Education"
+        }
+      }
+    },
+    "wellness": {
+      "label": "Health & Wellness",
+      "content": {
+        "overview": {
+          "title": "Comprehensive Wellness Programs",
+          "description": "Holistic approach to health and wellness for active and healthy retirement"
+        },
+        "physical": {
+          "title": "Physical Health",
+          "description": "Programs and services supporting physical health and fitness",
+          "programs": {
+            "fitness": {
+              "title": "Senior Fitness",
+              "description": "Age-appropriate fitness programs and activities",
+              "activities": {
+                "aerobics": "• Low-impact aerobics",
+                "strength": "• Strength training",
+                "flexibility": "• Flexibility and stretching",
+                "balance": "• Balance and coordination"
+              }
+            },
+            "nutrition": {
+              "title": "Nutrition Programs",
+              "description": "Nutritional guidance and meal programs",
+              "services": {
+                "counseling": "• Nutritional counseling",
+                "planning": "• Meal planning assistance",
+                "education": "• Nutrition education",
+                "programs": "• Healthy meal programs"
+              }
+            },
+            "preventive": {
+              "title": "Preventive Care",
+              "description": "Preventive healthcare and early intervention",
+              "services": {
+                "screenings": "• Regular health screenings",
+                "checkups": "• Comprehensive health checkups",
+                "monitoring": "• Chronic condition monitoring",
+                "vaccinations": "• Vaccination programs"
+              }
+            }
+          },
+          "action": "Join Physical Programs"
+        },
+        "mental": {
+          "title": "Mental Wellness",
+          "description": "Mental health support and cognitive wellness programs",
+          "programs": {
+            "cognitive": {
+              "title": "Cognitive Health",
+              "description": "Programs to maintain and improve cognitive function",
+              "activities": {
+                "training": "• Memory training exercises",
+                "games": "• Brain games and puzzles",
+                "learning": "• Continuous learning programs",
+                "challenges": "• Mental challenges and activities"
+              }
+            },
+            "emotional": {
+              "title": "Emotional Support",
+              "description": "Emotional wellness and mental health support",
+              "services": {
+                "counseling": "• Professional counseling services",
+                "support": "• Peer support groups",
+                "therapy": "• Group therapy sessions",
+                "crisis": "• Crisis intervention services"
+              }
+            },
+            "stress": {
+              "title": "Stress Management",
+              "description": "Stress reduction and relaxation programs",
+              "techniques": {
+                "meditation": "• Meditation and mindfulness",
+                "relaxation": "• Relaxation techniques",
+                "yoga": "• Gentle yoga and tai chi",
+                "breathing": "• Breathing exercises"
+              }
+            }
+          },
+          "action": "Access Mental Wellness"
+        },
+        "social": {
+          "title": "Social Wellness",
+          "description": "Social connection and community engagement for overall wellness",
+          "programs": {
+            "connection": {
+              "title": "Social Connections",
+              "description": "Building and maintaining social relationships",
+              "activities": {
+                "groups": "• Social groups and clubs",
+                "events": "• Community social events",
+                "activities": "• Group activities and outings",
+                "networking": "• Social networking opportunities"
+              }
+            },
+            "community": {
+              "title": "Community Engagement",
+              "description": "Active participation in community life",
+              "opportunities": {
+                "volunteering": "• Community volunteering",
+                "leadership": "• Community leadership roles",
+                "advocacy": "• Community advocacy",
+                "service": "• Community service projects"
+              }
+            },
+            "intergenerational": {
+              "title": "Intergenerational Programs",
+              "description": "Programs connecting retirees with younger generations",
+              "activities": {
+                "mentoring": "• Youth mentoring programs",
+                "storytelling": "• Storytelling to children",
+                "teaching": "• Skills teaching",
+                "sharing": "• Experience sharing sessions"
+              }
+            }
+          },
+          "action": "Build Social Connections"
+        }
+      }
+    }
+  }
+}
+

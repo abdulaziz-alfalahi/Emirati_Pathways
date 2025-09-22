@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "dashboard": "لوحة التحكم",
+    "profile": "الملف الشخصي",
+    "training": "التدريب",
+    "jobMatching": "مطابقة الوظائف",
+    "cvBuilder": "بناء السيرة الذاتية",
+    "scholarships": "المنح الدراسية",
+    "careerJourney": "رحلة المهنة",
+    "communities": "المجتمعات",
+    "analytics": "التحليلات",
+    "messages": "الرسائل",
+    "jobs": "الوظائف",
+    "settings": "الإعدادات",
+    "helpCenter": "مركز المساعدة",
+    "internships": "التدريب الداخلي",
+    "logout": "تسجيل الخروج"
+  },
+  "buttons": {
+    "submit": "إرسال",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "signIn": "تسجيل الدخول",
+    "clear": "مسح",
+    "joinNow": "انضم الآن",
+    "goToDashboard": "انتقل إلى لوحة التحكم",
+    "postInternship": "نشر التدريب"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "search": "بحث",
+    "filter": "تصفية"
+  },
+  "toggleLanguage": "تبديل اللغة",
+  "menu": {
+    "mainMenu": "القائمة الرئيسية",
+    "support": "الدعم",
+    "application": "التطبيق",
+    "emiratiGateway": "البوابة الإماراتية",
+    "ehrdcPlatform": "منصة مجلس تنمية الموارد البشرية الإماراتية",
+    "forIndividuals": "للأفراد",
+    "forIndividualsDesc": "خدمات للمواطنين والمقيمين",
+    "forBusiness": "للأعمال",
+    "forBusinessDesc": "خدمات للشركات والمؤسسات",
+    "navItems": {
+      "cvBuilder": {
+        "name": "بناء السيرة الذاتية",
+        "description": "أنشئ سيرة ذاتية احترافية لتتميز."
+      },
+      "jobMatching": {
+        "name": "مطابقة الوظائف",
+        "description": "ابحث عن وظائف تتناسب مع مهاراتك."
+      },
+      "careerJourney": {
+        "name": "رحلة المهنة",
+        "description": "خطط لمسارك المهني نحو النجاح."
+      },
+      "training": {
+        "name": "برامج التدريب",
+        "description": "طور مهاراتك مع برامجنا التدريبية المتنوعة."
+      },
+      "internships": {
+        "name": "التدريب الداخلي",
+        "description": "اكتسب خبرة عملية من خلال التدريب الداخلي."
+      },
+      "scholarships": {
+        "name": "المنح الدراسية",
+        "description": "استكشف المنح الدراسية لتعليمك."
+      },
+      "communities": {
+        "name": "المجتمعات",
+        "description": "تواصل مع الأقران والمهنيين."
+      },
+      "postJob": {
+        "name": "نشر وظيفة",
+        "description": "ابحث عن أفضل المواهب لشركتك."
+      },
+      "talentSearch": {
+        "name": "البحث عن المواهب",
+        "description": "اكتشف المرشحين المهرة لأدوارك."
+      },
+      "analytics": {
+        "name": "التحليلات",
+        "description": "احصل على رؤى حول سوق العمل."
+      }
+    }
+  },
+  "training": {
+    "filters": {
+      "title": "فلترة البرامج",
+      "clear": "مسح",
+      "search": "البحث في البرامج",
+      "searchPlaceholder": "البحث بالعنوان أو الوصف...",
+      "category": "الفئة",
+      "allCategories": "جميع الفئات",
+      "trainingMode": "نمط التدريب",
+      "allModes": "جميع الأنماط",
+      "certificationOffered": "شهادة عند الإتمام",
+      "jobPlacementAssistance": "مساعدة في الحصول على وظيفة"
+    },
+    "categories": {
+      "technicalSkills": "المهارات التقنية",
+      "tradeSkills": "المهارات الحرفية",
+      "serviceSkills": "مهارات الخدمة",
+      "entrepreneurshipBusiness": "الأعمال وريادة الأعمال"
+    },
+    "modes": {
+      "inPerson": "حضوري",
+      "online": "عبر الإنترنت",
+      "hybrid": "مختلط"
+    },
+    "card": {
+      "featured": "مميز",
+      "weeks": "أسابيع",
+      "participants": "مشاركين",
+      "certificate": "شهادة",
+      "jobPlacement": "توظيف",
+      "viewDetails": "عرض التفاصيل",
+      "applyNow": "تقدم الآن"
+    }
+  }
+}

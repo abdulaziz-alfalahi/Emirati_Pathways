@@ -1,0 +1,316 @@
+
+/* Dubai Government Sticky Bar - Enhanced for EHRDC with Government Standards */
+.dubai-gov-sticky-bar {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 20px rgba(0, 110, 109, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 110, 109, 0.1);
+}
+
+.dubai-gov-sticky-bar.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.dubai-gov-sticky-bar.hidden {
+  transform: translateY(100px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dubai-gov-sticky-bar.minimized {
+  padding: 4px;
+}
+
+.dubai-gov-sticky-bar.minimized .dubai-gov-sticky-icons {
+  display: none;
+}
+
+/* Minimize/Expand Toggle */
+.minimize-toggle {
+  width: 32px;
+  height: 20px;
+  background: #006E6D;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.minimize-toggle:hover {
+  background: #005a59;
+  transform: translateY(-1px);
+}
+
+.minimize-toggle:focus {
+  outline: 2px solid #006E6D;
+  outline-offset: 2px;
+}
+
+.dubai-gov-sticky-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Increased from 12px for better government standard spacing */
+  padding: 8px 0;
+}
+
+.sticky-icon {
+  width: 52px; /* Increased from 48px for better touch targets */
+  height: 52px;
+  border-radius: 50%;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 12px rgba(0, 110, 109, 0.2); /* Enhanced shadow */
+  cursor: pointer;
+  position: relative;
+  border: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+  text-decoration: none;
+  border: 2px solid transparent;
+}
+
+.sticky-icon:hover, .sticky-icon:focus {
+  transform: translateY(-4px); /* Increased hover lift */
+  box-shadow: 0 6px 20px rgba(0, 110, 109, 0.3); /* Enhanced hover shadow */
+  border-color: rgba(0, 110, 109, 0.2);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fdfd 100%); /* Subtle gradient */
+}
+
+.sticky-icon:focus {
+  outline: 3px solid #006E6D;
+  outline-offset: 2px;
+}
+
+.sticky-icon:active {
+  transform: translateY(-2px);
+  transition: transform 0.1s ease;
+}
+
+.sticky-icon img {
+  width: 26px; /* Increased from 24px */
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* 04 Suggestions specific styling */
+.icon-04 {
+  font-weight: bold;
+  font-size: 18px; /* Increased from 16px */
+  color: #006E6D;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* EHRDC Contact Phone Icon */
+.icon-phone {
+  color: #006E6D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ehrdc-contact:hover .icon-phone {
+  color: #005a59;
+}
+
+/* Enhanced tooltip styling */
+.sticky-icon .tooltip {
+  position: absolute;
+  right: 64px; /* Adjusted for larger icons */
+  background: linear-gradient(135deg, #006E6D 0%, #005a59 100%);
+  color: white;
+  padding: 8px 12px; /* Increased padding */
+  border-radius: 6px; /* Increased border radius */
+  font-size: 13px; /* Slightly larger font */
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 110, 109, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.sticky-icon:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-4px); /* Slight slide-in effect */
+}
+
+/* Enhanced tooltip arrow */
+.sticky-icon .tooltip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -6px; /* Adjusted for larger tooltip */
+  transform: translateY(-50%);
+  border-width: 6px 0 6px 6px; /* Larger arrow */
+  border-style: solid;
+  border-color: transparent transparent transparent #005a59;
+  filter: drop-shadow(2px 0 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Government standard animations */
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+
+.sticky-icon:not(:hover) {
+  animation: gentleFloat 4s ease-in-out infinite;
+}
+
+.sticky-icon:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.sticky-icon:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.sticky-icon:nth-child(4) {
+  animation-delay: 1.5s;
+}
+
+.sticky-icon:nth-child(5) {
+  animation-delay: 2s;
+}
+
+/* Responsive adjustments with government standards */
+@media (max-width: 768px) {
+  .dubai-gov-sticky-bar {
+    bottom: 15px;
+    right: 15px;
+    padding: 6px;
+  }
+  
+  .sticky-icon {
+    width: 48px; /* Minimum 44px touch target */
+    height: 48px;
+  }
+  
+  .sticky-icon img {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .dubai-gov-sticky-icons {
+    gap: 14px;
+  }
+  
+  .icon-04 {
+    font-size: 16px;
+  }
+  
+  .sticky-icon .tooltip {
+    right: 56px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dubai-gov-sticky-bar {
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .sticky-icon {
+    width: 44px; /* Minimum touch target */
+    height: 44px;
+  }
+  
+  .sticky-icon img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .dubai-gov-sticky-icons {
+    gap: 12px;
+  }
+  
+  .icon-04 {
+    font-size: 14px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .sticky-icon {
+    border: 2px solid #000;
+  }
+  
+  .sticky-icon .tooltip {
+    border: 1px solid #fff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sticky-icon,
+  .minimize-toggle,
+  .sticky-icon .tooltip {
+    transition: none;
+  }
+  
+  .sticky-icon:not(:hover) {
+    animation: none;
+  }
+  
+  .sticky-icon:hover {
+    transform: none;
+  }
+}
+
+/* RTL support for Arabic users */
+[dir="rtl"] .dubai-gov-sticky-bar {
+  left: 20px;
+  right: auto;
+}
+
+[dir="rtl"] .sticky-icon .tooltip {
+  left: 64px;
+  right: auto;
+}
+
+[dir="rtl"] .sticky-icon .tooltip::after {
+  left: -6px;
+  right: auto;
+  border-color: transparent #005a59 transparent transparent;
+  border-width: 6px 6px 6px 0;
+}
+
+@media (max-width: 768px) {
+  [dir="rtl"] .dubai-gov-sticky-bar {
+    left: 15px;
+  }
+  
+  [dir="rtl"] .sticky-icon .tooltip {
+    left: 56px;
+  }
+}
+
+@media (max-width: 480px) {
+  [dir="rtl"] .dubai-gov-sticky-bar {
+    left: 10px;
+  }
+}

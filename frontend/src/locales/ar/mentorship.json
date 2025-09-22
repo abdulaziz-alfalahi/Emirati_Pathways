@@ -1,0 +1,186 @@
+{
+  "title": "برامج التوجيه والإرشاد",
+  "description": "تواصل مع المهنيين ذوي الخبرة والأقران من خلال برامج التوجيه المنظمة المصممة لتسريع نموك المهني والتطوير الشخصي",
+  "heroTitle": "برامج التوجيه والإرشاد",
+  "heroDescription": "تواصل مع المهنيين ذوي الخبرة والأقران من خلال برامج التوجيه المنظمة المصممة لتسريع نموك المهني والتطوير الشخصي",
+  "stats": {
+    "activeMentors": "موجه نشط",
+    "mentees": "متدرب",
+    "sessionsCompleted": "جلسة مكتملة",
+    "averageRating": "متوسط التقييم"
+  },
+  "tabs": {
+    "findMentors": {
+      "label": "البحث عن موجهين",
+      "title": "ابحث عن موجهك",
+      "description": "تواصل مع المهنيين ذوي الخبرة الذين يمكنهم توجيه تطويرك المهني ونموك الشخصي"
+    },
+    "myMentorships": {
+      "label": "علاقات التوجيه الخاصة بي",
+      "title": "علاقات التوجيه الخاصة بي",
+      "description": "إدارة علاقات التوجيه النشطة والجلسات وتتبع التقدم"
+    },
+    "mentorApplications": {
+      "label": "طلبات التوجيه",
+      "title": "طلبات التوجيه",
+      "description": "مراجعة وإدارة طلباتك لتصبح موجهاً أو متدرباً"
+    },
+    "resources": {
+      "label": "الموارد",
+      "title": "موارد التوجيه",
+      "description": "الوصول إلى الأدلة والقوالب والأدوات لعلاقات التوجيه الفعالة"
+    }
+  },
+  "cta": {
+    "title": "هل أنت مستعد لبدء رحلة التوجيه؟",
+    "description": "انضم إلى مجتمعنا من الموجهين والمتدربين لتسريع تطويرك المهني",
+    "actionLabel": "ابدأ الآن"
+  },
+  "findMentors": {
+    "title": "البحث عن موجهين",
+    "searchPlaceholder": "البحث عن موجهين حسب المهارة أو الصناعة...",
+    "filters": {
+      "industry": "الصناعة",
+      "expertise": "الخبرة",
+      "experience": "سنوات الخبرة",
+      "availability": "التوفر",
+      "language": "اللغة",
+      "location": "الموقع"
+    },
+    "mentorCard": {
+      "experience": "سنوات الخبرة",
+      "mentees": "متدرب",
+      "rating": "التقييم",
+      "responseTime": "وقت الاستجابة",
+      "expertise": "مجالات الخبرة",
+      "languages": "اللغات",
+      "availability": "التوفر",
+      "hourlyRate": "السعر بالساعة"
+    },
+    "actions": {
+      "viewProfile": "عرض الملف الشخصي",
+      "requestMentorship": "طلب التوجيه",
+      "sendMessage": "إرسال رسالة",
+      "bookSession": "حجز جلسة"
+    }
+  },
+  "myMentorships": {
+    "title": "علاقات التوجيه الخاصة بي",
+    "asMentee": "كمتدرب",
+    "asMentor": "كموجه",
+    "activeMentorships": "علاقات التوجيه النشطة",
+    "completedMentorships": "علاقات التوجيه المكتملة",
+    "upcomingSessions": "الجلسات القادمة",
+    "pastSessions": "الجلسات السابقة",
+    "sessionDetails": {
+      "date": "التاريخ",
+      "time": "الوقت",
+      "duration": "المدة",
+      "status": "الحالة",
+      "notes": "الملاحظات",
+      "feedback": "التعليقات"
+    },
+    "actions": {
+      "scheduleSession": "جدولة جلسة",
+      "viewProgress": "عرض التقدم",
+      "endMentorship": "إنهاء التوجيه",
+      "provideFeedback": "تقديم تعليقات",
+      "viewNotes": "عرض الملاحظات"
+    }
+  },
+  "applications": {
+    "title": "طلبات التوجيه",
+    "becomeMentor": "أصبح موجهاً",
+    "findMentee": "ابحث عن متدرب",
+    "applicationStatus": {
+      "pending": "في الانتظار",
+      "approved": "موافق عليه",
+      "rejected": "مرفوض",
+      "underReview": "قيد المراجعة"
+    },
+    "mentorApplication": {
+      "title": "طلب أن تصبح موجهاً",
+      "description": "شارك خبرتك وساعد الآخرين في تطوير مهاراتهم المهنية",
+      "requirements": "المتطلبات",
+      "benefits": "الفوائد",
+      "apply": "تقدم بطلب"
+    },
+    "menteeApplication": {
+      "title": "طلب أن تصبح متدرباً",
+      "description": "احصل على التوجيه من المهنيين ذوي الخبرة لتسريع نموك المهني",
+      "expectations": "التوقعات",
+      "commitment": "الالتزام",
+      "apply": "تقدم بطلب"
+    }
+  },
+  "resources": {
+    "title": "موارد التوجيه",
+    "categories": {
+      "guides": "الأدلة",
+      "templates": "القوالب",
+      "tools": "الأدوات",
+      "bestPractices": "أفضل الممارسات",
+      "successStories": "قصص النجاح"
+    },
+    "mentorGuides": {
+      "title": "أدلة الموجهين",
+      "effectiveMentoring": "التوجيه الفعال",
+      "settingGoals": "وضع الأهداف",
+      "givingFeedback": "تقديم التعليقات",
+      "buildingRelationships": "بناء العلاقات"
+    },
+    "menteeGuides": {
+      "title": "أدلة المتدربين",
+      "maximizingMentorship": "تعظيم فوائد التوجيه",
+      "preparingForSessions": "التحضير للجلسات",
+      "askingQuestions": "طرح الأسئلة",
+      "takingAction": "اتخاذ الإجراءات"
+    },
+    "templates": {
+      "sessionPlanning": "تخطيط الجلسة",
+      "goalSetting": "وضع الأهداف",
+      "progressTracking": "تتبع التقدم",
+      "feedbackForm": "نموذج التعليقات"
+    }
+  },
+  "matching": {
+    "title": "مطابقة التوجيه",
+    "algorithm": "خوارزمية المطابقة",
+    "compatibility": "التوافق",
+    "preferences": "التفضيلات",
+    "criteria": "المعايير"
+  },
+  "sessions": {
+    "title": "الجلسات",
+    "schedule": "الجدولة",
+    "duration": "المدة",
+    "format": "التنسيق",
+    "preparation": "التحضير",
+    "followUp": "المتابعة"
+  },
+  "progress": {
+    "title": "التقدم",
+    "goals": "الأهداف",
+    "milestones": "المعالم",
+    "achievements": "الإنجازات",
+    "feedback": "التعليقات",
+    "improvement": "التحسين"
+  },
+  "community": {
+    "title": "مجتمع التوجيه",
+    "events": "الفعاليات",
+    "workshops": "ورش العمل",
+    "networking": "التواصل",
+    "forums": "المنتديات",
+    "discussions": "المناقشات"
+  },
+  "support": {
+    "title": "الدعم",
+    "helpCenter": "مركز المساعدة",
+    "faq": "الأسئلة الشائعة",
+    "contactSupport": "اتصل بالدعم",
+    "guidelines": "الإرشادات",
+    "policies": "السياسات"
+  }
+}
+

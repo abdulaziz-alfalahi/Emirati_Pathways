@@ -1,0 +1,136 @@
+{
+  "title": "Analytics & Insights",
+  "description": "Comprehensive analytics across your citizen lifecycle journey with privacy-first data insights",
+  "heroTitle": "Analytics & Insights",
+  "heroDescription": "Comprehensive analytics platform that tracks your progress and provides actionable insights for career development",
+  "primaryAction": "View Analytics",
+  "secondaryAction": "Customize Insights",
+  "overview": {
+    "keyInsights": {
+      "title": "Key Insights",
+      "description": "Important insights from your analytics data"
+    },
+    "recommendations": {
+      "title": "Recommendations",
+      "description": "Personalized recommendations based on your data"
+    },
+    "performance": {
+      "title": "Performance Metrics",
+      "description": "Track your performance across key indicators"
+    }
+  },
+  "workforce": {
+    "marketNeeds": {
+      "title": "Market Needs Analysis",
+      "description": "Analysis of current market demands and skill requirements"
+    },
+    "industryGrowth": {
+      "title": "Industry Growth Trends",
+      "description": "Growth patterns across different industries in the UAE"
+    },
+    "emergingRoles": {
+      "title": "Emerging Roles",
+      "description": "New job roles emerging in the market"
+    }
+  },
+  "emergingRoles": {
+    "aiEthics": {
+      "title": "AI Ethics Specialist",
+      "growth": "+45%"
+    },
+    "digitalTransformation": {
+      "title": "Digital Transformation Manager",
+      "growth": "+38%"
+    },
+    "remoteWork": {
+      "title": "Remote Work Coordinator",
+      "growth": "+52%"
+    }
+  },
+  "skills": {
+    "gapAnalysis": {
+      "title": "Skills Gap Analysis",
+      "descriptions": {
+        "default": "Identify skill gaps in your profile",
+        "educator": "Analyze curriculum alignment with market needs",
+        "recruiter": "Understand talent pool skill distribution"
+      }
+    }
+  },
+  "talent": {
+    "poolAnalysis": {
+      "title": "Talent Pool Analysis",
+      "description": "Comprehensive analysis of available talent"
+    },
+    "candidateQualification": {
+      "title": "Candidate Qualification Metrics",
+      "description": "Track qualification levels of candidates"
+    },
+    "recruitmentFunnel": {
+      "title": "Recruitment Funnel",
+      "description": "Monitor your recruitment process efficiency"
+    }
+  },
+  "recommendations": {
+    "default": {
+      "title": "General Recommendations",
+      "description": "Personalized suggestions for your development"
+    },
+    "educator": {
+      "ai": {
+        "title": "AI Integration in Education",
+        "description": "Incorporate AI tools in your curriculum"
+      },
+      "cloud": {
+        "title": "Cloud Computing Skills",
+        "description": "Develop cloud technology expertise"
+      }
+    },
+    "recruiter": {
+      "dataScience": {
+        "title": "Data Science Talent",
+        "description": "Focus on recruiting data science professionals"
+      },
+      "technical": {
+        "title": "Technical Skills Assessment",
+        "description": "Improve technical evaluation processes"
+      }
+    }
+  },
+  "placeholders": {
+    "talentPool": "Talent pool data will be displayed here",
+    "candidateQualification": "Candidate qualification metrics will be shown here",
+    "recruitmentFunnel": "Recruitment funnel analytics will appear here",
+    "performanceMetrics": "Performance metrics will be displayed here"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "uaeWorkforce": "UAE Workforce",
+    "marketTrends": "Market Trends",
+    "skillsAnalysis": "Skills Analysis",
+    "talentPool": "Talent Pool"
+  },
+  "contexts": {
+    "personal": {
+      "title": "Personal Analytics",
+      "description": "Detailed personal insights into your academic and professional progress with customized recommendations for career development"
+    },
+    "organizational": {
+      "title": "Organizational Analytics",
+      "description": "Comprehensive organization-level analytics to track performance, measure outcomes, and optimize processes"
+    },
+    "platform": {
+      "title": "Platform Analytics",
+      "description": "Comprehensive insights into platform usage, engagement, and performance across all citizen journey phases"
+    }
+  },
+  "stats": {
+    "dataPoints": "Data Points Collected",
+    "insights": "Insights Generated",
+    "compliance": "Privacy Compliance Rate",
+    "engagement": "User Engagement Score"
+  },
+  "quote": "Data is the new oil, and analytics is the engine that transforms it into value",
+  "attribution": "Analytics Philosophy"
+}
+

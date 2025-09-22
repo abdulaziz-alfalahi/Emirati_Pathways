@@ -1,0 +1,327 @@
+{
+  "title": "Interview Preparation",
+  "description": "Master your interview skills with practice sessions, expert tips, and personalized feedback",
+  "heroTitle": "Interview Preparation",
+  "heroDescription": "Master your interview skills with practice sessions, expert tips, and personalized feedback",
+  "primaryAction": "Start Practicing",
+  "secondaryAction": "View Tips",
+  "stats": {
+    "questions": "Practice Questions",
+    "types": "Interview Types",
+    "mockInterviews": "Mock Interviews",
+    "successRate": "Success Rate"
+  },
+  "quote": "Success is when preparation meets opportunity",
+  "attribution": "Earl Nightingale",
+  "tabs": {
+    "preparation": {
+      "label": "Preparation",
+      "title": "Interview Preparation",
+      "description": "Practice interviews and get personalized feedback to improve your skills"
+    },
+    "simulator": {
+      "label": "Simulator",
+      "title": "Interview Simulator",
+      "description": "Practice interviews with AI and get instant feedback"
+    },
+    "questions": {
+      "label": "Questions",
+      "title": "Question Bank",
+      "description": "Explore comprehensive interview questions by industry and level"
+    },
+    "tips": {
+      "label": "Tips",
+      "title": "Interview Tips",
+      "description": "Get expert advice for successful interviews"
+    },
+    "feedback": {
+      "label": "Feedback",
+      "title": "Feedback & Analysis",
+      "description": "Review your performance and get detailed feedback to improve"
+    }
+  },
+  "sections": {
+    "practice": "Practice",
+    "analysis": "Analysis",
+    "improvement": "Improvement",
+    "tracking": "Tracking"
+  },
+  "preparation": {
+    "title": "Interview Preparation Tools Coming Soon",
+    "description": "Practice interviews, get feedback, and improve your interview skills with our comprehensive platform.",
+    "features": {
+      "practice": "Practice Sessions",
+      "feedback": "Instant Feedback",
+      "analysis": "Performance Analysis",
+      "improvement": "Improvement Plans"
+    },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available"
+  },
+  "simulator": {
+    "title": "AI Interview Simulator",
+    "description": "Practice interviews with AI and get instant feedback",
+    "setup": {
+      "title": "Session Setup",
+      "industry": "Select Industry",
+      "position": "Position",
+      "level": "Level",
+      "duration": "Session Duration",
+      "language": "Interview Language"
+    },
+    "controls": {
+      "start": "Start Recording",
+      "stop": "Stop Recording",
+      "pause": "Pause",
+      "restart": "Restart",
+      "next": "Next Question",
+      "previous": "Previous Question",
+      "finish": "Finish Session"
+    },
+    "settings": {
+      "camera": "Camera",
+      "microphone": "Microphone",
+      "quality": "Recording Quality",
+      "feedback": "Feedback Type"
+    },
+    "progress": {
+      "current": "Current Question",
+      "remaining": "Questions Remaining",
+      "timeElapsed": "Time Elapsed",
+      "completion": "Completion Rate"
+    }
+  },
+  "questions": {
+    "title": "Question Bank",
+    "description": "Explore comprehensive interview questions by industry and level",
+    "categories": {
+      "behavioral": "Behavioral",
+      "technical": "Technical",
+      "situational": "Situational",
+      "cultural": "Cultural",
+      "leadership": "Leadership",
+      "problemSolving": "Problem Solving"
+    },
+    "industries": {
+      "banking": "Banking & Finance",
+      "technology": "Technology",
+      "healthcare": "Healthcare",
+      "government": "Government",
+      "oilGas": "Oil & Gas",
+      "aviation": "Aviation",
+      "tourism": "Tourism",
+      "realEstate": "Real Estate",
+      "education": "Education",
+      "retail": "Retail",
+      "consulting": "Consulting",
+      "media": "Media"
+    },
+    "levels": {
+      "entry": "Entry Level",
+      "mid": "Mid Level",
+      "senior": "Senior Level",
+      "executive": "Executive"
+    },
+    "types": {
+      "common": "Common Questions",
+      "challenging": "Challenging Questions",
+      "uae": "UAE Specific",
+      "international": "International"
+    },
+    "filters": {
+      "category": "Category",
+      "industry": "Industry",
+      "level": "Level",
+      "difficulty": "Difficulty",
+      "language": "Language"
+    }
+  },
+  "tips": {
+    "title": "Interview Tips",
+    "description": "Get expert advice for successful interviews",
+    "categories": {
+      "preparation": "Preparation",
+      "presentation": "Presentation",
+      "communication": "Communication",
+      "followUp": "Follow Up"
+    },
+    "general": [
+      {
+        "title": "Research the company beforehand",
+        "description": "Learn about the company's history, values, and recent projects before the interview"
+      },
+      {
+        "title": "Practice common questions",
+        "description": "Prepare answers for common questions like 'Tell me about yourself' and 'What are your strengths and weaknesses'"
+      },
+      {
+        "title": "Dress professionally",
+        "description": "Wear appropriate attire for the interview and maintain good personal hygiene"
+      },
+      {
+        "title": "Ask thoughtful questions",
+        "description": "Prepare thoughtful questions about the role and company to show genuine interest"
+      },
+      {
+        "title": "Follow up after the interview",
+        "description": "Send a thank you message within 24 hours of the interview"
+      },
+      {
+        "title": "Be authentic and positive",
+        "description": "Show your true personality and maintain a positive attitude throughout the interview"
+      }
+    ],
+    "uae": [
+      {
+        "title": "Understand UAE culture",
+        "description": "Learn about Emirati values and traditions and show respect for them"
+      },
+      {
+        "title": "Show commitment to development",
+        "description": "Emphasize your desire to contribute to D33 and Talent33"
+      },
+      {
+        "title": "Discuss diversity",
+        "description": "Demonstrate your ability to work in a multicultural environment"
+      }
+    ]
+  },
+  "feedback": {
+    "title": "Feedback & Analysis",
+    "description": "Review your performance and get detailed feedback to improve",
+    "metrics": {
+      "overall": "Overall Score",
+      "communication": "Communication",
+      "confidence": "Confidence",
+      "clarity": "Clarity",
+      "relevance": "Relevance",
+      "professionalism": "Professionalism"
+    },
+    "analysis": {
+      "strengths": "Strengths",
+      "improvements": "Areas for Improvement",
+      "recommendations": "Recommendations",
+      "nextSteps": "Next Steps"
+    },
+    "reports": {
+      "detailed": "Detailed Report",
+      "summary": "Summary",
+      "comparison": "Comparison",
+      "progress": "Progress"
+    }
+  },
+  "sessions": {
+    "title": "Practice Sessions",
+    "description": "Track your previous practice sessions and progress",
+    "history": {
+      "date": "Date",
+      "duration": "Duration",
+      "score": "Score",
+      "industry": "Industry",
+      "feedback": "Feedback",
+      "improvement": "Improvement"
+    },
+    "statistics": {
+      "totalSessions": "Total Sessions",
+      "averageScore": "Average Score",
+      "improvement": "Improvement Rate",
+      "timeSpent": "Time Spent"
+    },
+    "actions": {
+      "review": "Review",
+      "retake": "Retake",
+      "share": "Share",
+      "download": "Download"
+    }
+  },
+  "industries": {
+    "banking": "Banking & Finance",
+    "technology": "Technology",
+    "healthcare": "Healthcare",
+    "government": "Government",
+    "oilGas": "Oil & Gas",
+    "aviation": "Aviation",
+    "tourism": "Tourism",
+    "realEstate": "Real Estate",
+    "education": "Education",
+    "retail": "Retail",
+    "consulting": "Consulting",
+    "media": "Media"
+  },
+  "positions": {
+    "analyst": "Analyst",
+    "manager": "Manager",
+    "specialist": "Specialist",
+    "coordinator": "Coordinator",
+    "supervisor": "Supervisor",
+    "director": "Director",
+    "executive": "Executive",
+    "consultant": "Consultant"
+  },
+  "forms": {
+    "sessionSetup": {
+      "title": "Interview Session Setup",
+      "industry": "Industry",
+      "position": "Target Position",
+      "experience": "Years of Experience",
+      "language": "Interview Language",
+      "duration": "Session Duration",
+      "difficulty": "Difficulty Level",
+      "focus": "Focus Area"
+    },
+    "feedback": {
+      "rating": "Rating",
+      "comments": "Comments",
+      "suggestions": "Suggestions",
+      "wouldRecommend": "Would you recommend this service?"
+    }
+  },
+  "actions": {
+    "start": "Start",
+    "stop": "Stop",
+    "pause": "Pause",
+    "resume": "Resume",
+    "restart": "Restart",
+    "save": "Save",
+    "share": "Share",
+    "download": "Download",
+    "review": "Review",
+    "practice": "Practice",
+    "analyze": "Analyze",
+    "improve": "Improve",
+    "schedule": "Schedule",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish"
+  },
+  "validation": {
+    "required": "This field is required",
+    "selectIndustry": "Please select an industry",
+    "selectPosition": "Please select a position",
+    "selectDuration": "Please select session duration",
+    "cameraPermission": "Please allow camera access",
+    "microphonePermission": "Please allow microphone access"
+  },
+  "notifications": {
+    "sessionStarted": "Session started successfully",
+    "sessionCompleted": "Session completed successfully",
+    "feedbackSaved": "Feedback saved",
+    "sessionSaved": "Session saved",
+    "error": "An error occurred. Please try again",
+    "permissionDenied": "Permission denied. Please allow camera and microphone access"
+  },
+  "emptyState": {
+    "title": "No Sessions Yet",
+    "description": "You haven't started any practice sessions yet. Start your first session now.",
+    "action": "Start New Session"
+  },
+  "loading": {
+    "preparing": "Preparing...",
+    "analyzing": "Analyzing...",
+    "generating": "Generating report...",
+    "saving": "Saving..."
+  }
+}
+

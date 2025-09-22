@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emirati Pathways Platform - Role Selector</title>
+    <meta name="description" content="Comprehensive platform for Emirati career development and opportunities">
+    <meta name="author" content="Emirates Human Resources Development Council">
+    <meta name="theme-color" content="#059669">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .header {
+            background: white;
+            color: #1e293b;
+            padding: 48px 40px;
+            text-align: center;
+            position: relative;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #dc2626 0%, #ffffff 25%, #000000 50%, #059669 75%, #dc2626 100%);
+        }
+
+        .ehrdc-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        .logo-text {
+            text-align: left;
+        }
+
+        .logo-text .main {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #059669;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-text .sub {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .header h1 {
+            font-size: 2.75rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: #1e293b;
+        }
+
+        .header .subtitle {
+            font-size: 1.25rem;
+            color: #64748b;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+
+        .ehrdc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1rem;
+            background: #f0fdf4;
+            color: #166534;
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0fdf4;
+            color: #166534;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #059669;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(5, 150, 105, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+        }
+
+        .roles-section {
+            padding: 60px 40px;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+
+        .section-description {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #64748b;
+            margin-bottom: 48px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+        }
+
+        .role-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 2px solid #f1f5f9;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(5, 150, 105, 0.05), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .role-card:hover::before {
+            left: 100%;
+        }
+
+        .role-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px rgba(5, 150, 105, 0.1);
+            border-color: #059669;
+        }
+
+        .role-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #059669, #047857);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            box-shadow: 0 8px 25px rgba(5, 150, 105, 0.2);
+        }
+
+        .role-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+
+        .role-description {
+            color: #64748b;
+            margin-bottom: 24px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .role-features {
+            list-style: none;
+            margin-bottom: 32px;
+            text-align: left;
+        }
+
+        .role-features li {
+            background: #f8fafc;
+            margin: 8px 0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: #475569;
+            border-left: 4px solid #059669;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .role-button {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+        }
+
+        .role-button:hover {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+        }
+
+        .role-button:active {
+            transform: translateY(0);
+        }
+
+        .candidate { border-top: 4px solid #059669; }
+        .recruiter { border-top: 4px solid #7c3aed; }
+        .hr-manager { border-top: 4px solid #dc2626; }
+        .administrator { border-top: 4px solid #d97706; }
+
+        .footer {
+            background: #f8fafc;
+            padding: 40px;
+            text-align: center;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .footer p {
+            margin-bottom: 8px;
+        }
+
+        .footer .highlight {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 32px 24px;
+            }
+            
+            .header h1 {
+                font-size: 2.25rem;
+            }
+            
+            .roles-section {
+                padding: 40px 24px;
+            }
+            
+            .roles-grid {
+                gap: 24px;
+            }
+            
+            .role-card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="ehrdc-logo">
+                <div class="logo-icon">🇦🇪</div>
+                <div class="logo-text">
+                    <div class="main">EHRDC</div>
+                    <div class="sub">Emirates Human Resources Development Council</div>
+                </div>
+            </div>
+            
+            <h1>Emirati Pathways Platform</h1>
+            <p class="subtitle">Comprehensive platform for Emirati career development and opportunities</p>
+            
+            <div class="ehrdc-badge">
+                <span>🏛️</span>
+                <span>Government Initiative</span>
+            </div>
+            
+            <div class="status-indicator">
+                <div class="pulse"></div>
+                <span>System Online - Ready for Showcase</span>
+            </div>
+        </div>
+
+        <div class="roles-section">
+            <h2 class="section-title">Select Your Role</h2>
+            <p class="section-description">
+                Choose your role to access specialized tools and services designed for your professional needs
+            </p>
+
+            <div class="roles-grid">
+                <!-- Job Seeker/Candidate -->
+                <div class="role-card candidate" onclick="selectRole('candidate')">
+                    <div class="role-icon">🔍</div>
+                    <h3 class="role-title">Job Seeker / Candidate</h3>
+                    <p class="role-description">UAE nationals seeking career opportunities and professional development</p>
+                    <ul class="role-features">
+                        <li>📄 CV Upload & AI Parsing</li>
+                        <li>🎯 Job Matching & Recommendations</li>
+                        <li>📊 Profile Analytics & Insights</li>
+                        <li>🚀 Career Development Tools</li>
+                        <li>📈 Application Tracking</li>
+                    </ul>
+                    <button class="role-button">Enter as Candidate</button>
+                </div>
+
+                <!-- Recruiter -->
+                <div class="role-card recruiter" onclick="selectRole('recruiter')">
+                    <div class="role-icon">💼</div>
+                    <h3 class="role-title">Recruiter</h3>
+                    <p class="role-description">Talent acquisition specialists and recruitment professionals</p>
+                    <ul class="role-features">
+                        <li>📋 Job Description Upload & AI Analysis</li>
+                        <li>🤖 CV-JD AI Matching Engine</li>
+                        <li>🏆 CV AI Ranking & Scoring</li>
+                        <li>👥 Candidate Pool Management</li>
+                        <li>📊 Recruitment Analytics</li>
+                    </ul>
+                    <button class="role-button">Enter as Recruiter</button>
+                </div>
+
+                <!-- HR Manager -->
+                <div class="role-card hr-manager" onclick="selectRole('hr_manager')">
+                    <div class="role-icon">👥</div>
+                    <h3 class="role-title">HR Manager</h3>
+                    <p class="role-description">Human resources managers overseeing talent management and development</p>
+                    <ul class="role-features">
+                        <li>🎯 Emiratization Compliance Tracking</li>
+                        <li>📈 Workforce Analytics & Reporting</li>
+                        <li>🔍 Advanced Candidate Screening</li>
+                        <li>📊 Performance Metrics Dashboard</li>
+                        <li>🏢 Department Management Tools</li>
+                    </ul>
+                    <button class="role-button">Enter as HR Manager</button>
+                </div>
+
+                <!-- Administrator -->
+                <div class="role-card administrator" onclick="selectRole('administrator')">
+                    <div class="role-icon">⚙️</div>
+                    <h3 class="role-title">Administrator</h3>
+                    <p class="role-description">System administrators and platform managers</p>
+                    <ul class="role-features">
+                        <li>🏛️ System Configuration & Settings</li>
+                        <li>📊 Platform-wide Analytics</li>
+                        <li>👤 User Management & Permissions</li>
+                        <li>🔧 AI Model Configuration</li>
+                        <li>📈 National Employment Statistics</li>
+                    </ul>
+                    <button class="role-button">Enter as Administrator</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>🚀 Showcase Mode:</strong> Authentication disabled for demonstration purposes</p>
+            <p>Backend API: <span class="highlight">✅ Running on localhost:5003</span></p>
+            <p>AI Services: <span class="highlight">✅ CV Parsing, JD Analysis, Matching Engine</span></p>
+            <p><em>Emirates Human Resources Development Council - Empowering Emirati Talent</em></p>
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            // Store selected role in localStorage
+            const roleData = {
+                role: role,
+                timestamp: new Date().toISOString(),
+                showcase_mode: true,
+                platform: 'ehrdc'
+            };
+            
+            localStorage.setItem('selected_role', JSON.stringify(roleData));
+            localStorage.setItem('showcase_mode', 'true');
+            
+            // Create mock user data based on role
+            const mockUsers = {
+                candidate: {
+                    id: 1,
+                    email: "ahmed.alemirati@ehrdc.ae",
+                    full_name: "Ahmed Al Emirati",
+                    first_name: "Ahmed",
+                    last_name: "Al Emirati",
+                    phone: "+971501234567",
+                    emirate: "Dubai",
+                    user_type: "job_seeker",
+                    roles: ["job_seeker"],
+                    department: "Candidate"
+                },
+                recruiter: {
+                    id: 2,
+                    email: "omar.alzaabi@ehrdc.ae",
+                    full_name: "Omar Al Zaabi",
+                    first_name: "Omar",
+                    last_name: "Al Zaabi",
+                    phone: "+971509876543",
+                    emirate: "Sharjah",
+                    user_type: "recruiter",
+                    roles: ["recruiter"],
+                    department: "Talent Acquisition"
+                },
+                hr_manager: {
+                    id: 3,
+                    email: "fatima.almansouri@ehrdc.ae",
+                    full_name: "Fatima Al Mansouri",
+                    first_name: "Fatima",
+                    last_name: "Al Mansouri",
+                    phone: "+971507654321",
+                    emirate: "Abu Dhabi",
+                    user_type: "hr_manager",
+                    roles: ["hr_manager"],
+                    department: "Human Resources"
+                },
+                administrator: {
+                    id: 4,
+                    email: "khalid.alrashid@ehrdc.ae",
+                    full_name: "Khalid Al Rashid",
+                    first_name: "Khalid",
+                    last_name: "Al Rashid",
+                    phone: "+971502468135",
+                    emirate: "Dubai",
+                    user_type: "administrator",
+                    roles: ["administrator"],
+                    department: "IT Administration"
+                }
+            };
+            
+            // Store mock user data
+            localStorage.setItem('user', JSON.stringify(mockUsers[role]));
+            localStorage.setItem('access_token', 'ehrdc_showcase_token_' + role);
+            
+            // Navigate to appropriate dashboard
+            const dashboardRoutes = {
+                candidate: 'candidate_dashboard.html',
+                recruiter: 'recruiter_dashboard.html',
+                hr_manager: 'hr_dashboard.html',
+                administrator: 'admin_dashboard.html'
+            };
+            
+            // Show loading animation
+            const card = event.currentTarget;
+            const button = card.querySelector('.role-button');
+            const originalText = button.textContent;
+            
+            button.textContent = 'Loading Dashboard...';
+            button.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            
+            // Simulate loading and redirect
+            setTimeout(() => {
+                // Navigate to the dashboard
+                window.location.href = dashboardRoutes[role];
+            }, 1500);
+        }
+
+        // Check if already in showcase mode
+        window.addEventListener('load', () => {
+            const showcaseMode = localStorage.getItem('showcase_mode');
+            if (showcaseMode === 'true') {
+                const selectedRole = JSON.parse(localStorage.getItem('selected_role') || '{}');
+                if (selectedRole.role) {
+                    console.log('EHRDC Showcase mode active. Current role:', selectedRole.role);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

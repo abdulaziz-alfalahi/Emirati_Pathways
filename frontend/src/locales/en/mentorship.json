@@ -1,0 +1,186 @@
+{
+  "title": "Mentorship Programs",
+  "description": "Connect with experienced professionals and peers through structured mentorship programs designed to accelerate your career growth and personal development",
+  "heroTitle": "Mentorship Programs",
+  "heroDescription": "Connect with experienced professionals and peers through structured mentorship programs designed to accelerate your career growth and personal development",
+  "stats": {
+    "activeMentors": "Active Mentors",
+    "mentees": "Mentees",
+    "sessionsCompleted": "Sessions Completed",
+    "averageRating": "Average Rating"
+  },
+  "tabs": {
+    "findMentors": {
+      "label": "Find Mentors",
+      "title": "Find Your Mentor",
+      "description": "Connect with experienced professionals who can guide your career development and personal growth"
+    },
+    "myMentorships": {
+      "label": "My Mentorships",
+      "title": "My Mentorship Relationships",
+      "description": "Manage your active mentorship relationships, sessions, and progress tracking"
+    },
+    "mentorApplications": {
+      "label": "Mentor Applications",
+      "title": "Mentor Applications",
+      "description": "Review and manage your applications to become a mentor or mentee"
+    },
+    "resources": {
+      "label": "Resources",
+      "title": "Mentorship Resources",
+      "description": "Access guides, templates, and tools for effective mentorship relationships"
+    }
+  },
+  "cta": {
+    "title": "Ready to Start Your Mentorship Journey?",
+    "description": "Join our community of mentors and mentees to accelerate your professional development",
+    "actionLabel": "Get Started"
+  },
+  "findMentors": {
+    "title": "Find Mentors",
+    "searchPlaceholder": "Search mentors by skill or industry...",
+    "filters": {
+      "industry": "Industry",
+      "expertise": "Expertise",
+      "experience": "Years of Experience",
+      "availability": "Availability",
+      "language": "Language",
+      "location": "Location"
+    },
+    "mentorCard": {
+      "experience": "Years of Experience",
+      "mentees": "Mentees",
+      "rating": "Rating",
+      "responseTime": "Response Time",
+      "expertise": "Areas of Expertise",
+      "languages": "Languages",
+      "availability": "Availability",
+      "hourlyRate": "Hourly Rate"
+    },
+    "actions": {
+      "viewProfile": "View Profile",
+      "requestMentorship": "Request Mentorship",
+      "sendMessage": "Send Message",
+      "bookSession": "Book Session"
+    }
+  },
+  "myMentorships": {
+    "title": "My Mentorships",
+    "asMentee": "As Mentee",
+    "asMentor": "As Mentor",
+    "activeMentorships": "Active Mentorships",
+    "completedMentorships": "Completed Mentorships",
+    "upcomingSessions": "Upcoming Sessions",
+    "pastSessions": "Past Sessions",
+    "sessionDetails": {
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "status": "Status",
+      "notes": "Notes",
+      "feedback": "Feedback"
+    },
+    "actions": {
+      "scheduleSession": "Schedule Session",
+      "viewProgress": "View Progress",
+      "endMentorship": "End Mentorship",
+      "provideFeedback": "Provide Feedback",
+      "viewNotes": "View Notes"
+    }
+  },
+  "applications": {
+    "title": "Mentorship Applications",
+    "becomeMentor": "Become a Mentor",
+    "findMentee": "Find a Mentee",
+    "applicationStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "underReview": "Under Review"
+    },
+    "mentorApplication": {
+      "title": "Apply to Become a Mentor",
+      "description": "Share your expertise and help others develop their professional skills",
+      "requirements": "Requirements",
+      "benefits": "Benefits",
+      "apply": "Apply Now"
+    },
+    "menteeApplication": {
+      "title": "Apply to Become a Mentee",
+      "description": "Get guidance from experienced professionals to accelerate your career growth",
+      "expectations": "Expectations",
+      "commitment": "Commitment",
+      "apply": "Apply Now"
+    }
+  },
+  "resources": {
+    "title": "Mentorship Resources",
+    "categories": {
+      "guides": "Guides",
+      "templates": "Templates",
+      "tools": "Tools",
+      "bestPractices": "Best Practices",
+      "successStories": "Success Stories"
+    },
+    "mentorGuides": {
+      "title": "Mentor Guides",
+      "effectiveMentoring": "Effective Mentoring",
+      "settingGoals": "Setting Goals",
+      "givingFeedback": "Giving Feedback",
+      "buildingRelationships": "Building Relationships"
+    },
+    "menteeGuides": {
+      "title": "Mentee Guides",
+      "maximizingMentorship": "Maximizing Mentorship",
+      "preparingForSessions": "Preparing for Sessions",
+      "askingQuestions": "Asking Questions",
+      "takingAction": "Taking Action"
+    },
+    "templates": {
+      "sessionPlanning": "Session Planning",
+      "goalSetting": "Goal Setting",
+      "progressTracking": "Progress Tracking",
+      "feedbackForm": "Feedback Form"
+    }
+  },
+  "matching": {
+    "title": "Mentorship Matching",
+    "algorithm": "Matching Algorithm",
+    "compatibility": "Compatibility",
+    "preferences": "Preferences",
+    "criteria": "Criteria"
+  },
+  "sessions": {
+    "title": "Sessions",
+    "schedule": "Schedule",
+    "duration": "Duration",
+    "format": "Format",
+    "preparation": "Preparation",
+    "followUp": "Follow-up"
+  },
+  "progress": {
+    "title": "Progress",
+    "goals": "Goals",
+    "milestones": "Milestones",
+    "achievements": "Achievements",
+    "feedback": "Feedback",
+    "improvement": "Improvement"
+  },
+  "community": {
+    "title": "Mentorship Community",
+    "events": "Events",
+    "workshops": "Workshops",
+    "networking": "Networking",
+    "forums": "Forums",
+    "discussions": "Discussions"
+  },
+  "support": {
+    "title": "Support",
+    "helpCenter": "Help Center",
+    "faq": "FAQ",
+    "contactSupport": "Contact Support",
+    "guidelines": "Guidelines",
+    "policies": "Policies"
+  }
+}
+

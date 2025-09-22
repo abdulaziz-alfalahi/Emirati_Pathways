@@ -1,0 +1,59 @@
+{
+  "title": "Scholarships",
+  "description": "Discover financial support opportunities to pursue your educational dreams and academic excellence",
+  "academicYear": "2024-2025",
+  "stats": {
+    "availableScholarships": {
+      "value": "200+",
+      "label": "Available Scholarships"
+    },
+    "recipientsAnnually": {
+      "value": "1,500+",
+      "label": "Recipients Annually"
+    },
+    "totalAwards": {
+      "value": "AED 50M+",
+      "label": "Total Awards"
+    },
+    "partnerUniversities": {
+      "value": "15+",
+      "label": "Partner Universities"
+    }
+  },
+  "tabs": {
+    "available": "Available Scholarships"
+  },
+  "scholarships": {
+    "excellenceMerit": {
+      "title": "Excellence Merit Scholarship",
+      "description": "Full tuition coverage for outstanding academic achievement",
+      "amount": "Full Tuition",
+      "eligibility": "GPA 3.8+",
+      "deadline": "March 15, 2024"
+    },
+    "stemInnovation": {
+      "title": "STEM Innovation Grant",
+      "description": "Supporting students pursuing science and technology degrees",
+      "amount": "AED 75,000",
+      "eligibility": "STEM Field",
+      "deadline": "April 1, 2024"
+    },
+    "communityLeadership": {
+      "title": "Community Leadership Award",
+      "description": "Recognizing students with exceptional community service",
+      "amount": "AED 50,000",
+      "eligibility": "100+ Service Hours",
+      "deadline": "May 1, 2024"
+    }
+  },
+  "buttons": {
+    "applyNow": "Apply Now",
+    "browseScholarships": "Browse Scholarships"
+  },
+  "labels": {
+    "awardAmount": "Award Amount",
+    "eligibility": "Eligibility",
+    "deadline": "Deadline"
+  }
+}
+

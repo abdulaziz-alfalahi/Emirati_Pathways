@@ -1,0 +1,163 @@
+
+{
+  "meta": {
+    "title": "Summer Camps",
+    "description": "Engage in exciting educational summer programs designed to inspire learning and personal growth",
+    "pageTitle": "Summer Camps - Emirati Gateway"
+  },
+  "stats": {
+    "summerPrograms": {
+      "label": "Summer Programs",
+      "value": "25+"
+    },
+    "studentsEnrolled": {
+      "label": "Students Enrolled", 
+      "value": "1,200+"
+    },
+    "partnerInstitutions": {
+      "label": "Partner Institutions",
+      "value": "15+"
+    },
+    "emiratesCovered": {
+      "label": "Emirates Covered",
+      "value": "7"
+    }
+  },
+  "camps": {
+    "stemInnovation": {
+      "title": "STEM Innovation Camp",
+      "description": "Explore science, technology, engineering, and math through hands-on projects",
+      "duration": "2 weeks",
+      "ageGroup": "12-16 years",
+      "location": "Dubai",
+      "price": "AED 1,500"
+    },
+    "entrepreneurshipBootcamp": {
+      "title": "Entrepreneurship Bootcamp", 
+      "description": "Learn business fundamentals and develop your own startup idea",
+      "duration": "3 weeks",
+      "ageGroup": "16-18 years",
+      "location": "Abu Dhabi",
+      "price": "AED 2,000"
+    },
+    "digitalArtsDesign": {
+      "title": "Digital Arts & Design",
+      "description": "Master digital creativity tools and design principles",
+      "duration": "2 weeks",
+      "ageGroup": "14-18 years",
+      "location": "Sharjah",
+      "price": "AED 1,800"
+    }
+  },
+  "ui": {
+    "buttons": {
+      "applyNow": "Apply Now",
+      "learnMore": "Learn More",
+      "viewDetails": "View Details",
+      "browseProgramsShort": "Browse Programs",
+      "registerEarly": "Register Early",
+      "enrollNow": "Enroll Now",
+      "cancelEnrollment": "Cancel Enrollment",
+      "loadMore": "Load More Opportunities",
+      "expressInterest": "Express Interest"
+    },
+    "filters": {
+      "title": "Filter Camps",
+      "category": "Category",
+      "ageGroup": "Age Group",
+      "location": "Location",
+      "searchPlaceholder": "Search camps...",
+      "clearFilters": "Clear All",
+      "applyFilters": "Apply Filters"
+    },
+    "search": {
+      "placeholder": "Search summer camps...",
+      "noResults": "No camps found",
+      "noResultsDescription": "Try adjusting your search or filter criteria.",
+      "resultsCount": "{{count}} camp found",
+      "resultsCount_plural": "{{count}} camps found"
+    },
+    "status": {
+      "registrationOpen": "Registration Open",
+      "registrationClosed": "Registration Closed",
+      "full": "Full",
+      "spotsAvailable": "{{count}} spot available",
+      "spotsAvailable_plural": "{{count}} spots available",
+      "waitlist": "Join Waitlist"
+    }
+  },
+  "tabs": {
+    "programs": {
+      "label": "Available Programs",
+      "title": "Summer Camp Programs"
+    },
+    "myRegistrations": {
+      "label": "My Registrations",
+      "title": "My Camp Registrations"
+    },
+    "resources": {
+      "label": "Resources",
+      "title": "Camp Resources"
+    }
+  },
+  "forms": {
+    "registration": {
+      "title": "Camp Registration",
+      "labels": {
+        "studentName": "Student Name",
+        "parentName": "Parent/Guardian Name",
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "emergencyContact": "Emergency Contact",
+        "medicalInfo": "Medical Information",
+        "preferredCamp": "Preferred Camp",
+        "specialRequests": "Special Requests"
+      },
+      "placeholders": {
+        "studentName": "Enter student's full name",
+        "parentName": "Enter parent/guardian name",
+        "email": "Enter email address",
+        "phone": "Enter phone number",
+        "emergencyContact": "Emergency contact details",
+        "medicalInfo": "Any medical conditions or allergies",
+        "specialRequests": "Any special requirements or requests"
+      },
+      "validation": {
+        "required": "This field is required",
+        "invalidEmail": "Please enter a valid email address",
+        "invalidPhone": "Please enter a valid phone number"
+      },
+      "success": {
+        "title": "Registration Successful",
+        "message": "Your camp registration has been submitted successfully. You will receive a confirmation email shortly."
+      },
+      "errors": {
+        "title": "Registration Failed",
+        "message": "Unable to submit registration. Please try again."
+      }
+    }
+  },
+  "announcements": {
+    "earlyBird": {
+      "title": "Early Bird Registration Open",
+      "message": "Register before March 1st and save 20% on all summer camp programs."
+    },
+    "newPrograms": {
+      "title": "New Programs Added",
+      "message": "Check out our latest robotics and coding camps for 2024."
+    }
+  },
+  "info": {
+    "academicYear": "Summer 2024",
+    "registrationDeadline": "Registration Deadline",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "duration": "Duration",
+    "capacity": "Capacity",
+    "enrolled": "Enrolled",
+    "organizer": "Organizer",
+    "price": "Price",
+    "includes": "Program Includes",
+    "requirements": "Requirements"
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "title": "Portfolio",
+  "description": "Create stunning digital portfolios to showcase your work, skills, and professional achievements",
+  "heroTitle": "Portfolio",
+  "heroDescription": "Create stunning digital portfolios to showcase your work, skills, and professional achievements",
+  "primaryAction": "Create Portfolio",
+  "secondaryAction": "View Examples",
+  "stats": {
+    "templates": "Portfolio Templates",
+    "created": "Portfolios Created",
+    "industries": "Industries Covered",
+    "success": "Employment Success"
+  },
+  "quote": "Your portfolio is your story. Make it compelling.",
+  "attribution": "Design Philosophy",
+  "tabs": {
+    "portfolio": {
+      "label": "My Portfolio",
+      "title": "Portfolio Showcase",
+      "description": "Display your work and achievements in a professional and distinctive way"
+    },
+    "builder": {
+      "label": "Portfolio Builder",
+      "title": "Portfolio Builder",
+      "description": "Easy-to-use tools for building an outstanding professional portfolio"
+    },
+    "templates": {
+      "label": "Templates",
+      "title": "Portfolio Templates",
+      "description": "Choose from a variety of professionally designed templates"
+    },
+    "analytics": {
+      "label": "Analytics",
+      "title": "Portfolio Analytics",
+      "description": "Track your portfolio performance, views, and engagement"
+    },
+    "visibility": {
+      "label": "Privacy",
+      "title": "Privacy Settings",
+      "description": "Control who can see and share your portfolio"
+    }
+  },
+  "sections": {
+    "myPortfolio": "My Portfolio",
+    "createNew": "Create New",
+    "templates": "Templates",
+    "examples": "Examples"
+  },
+  "builder": {
+    "title": "Portfolio Builder Coming Soon",
+    "description": "Showcase your work and achievements with stunning digital portfolios.",
+    "features": {
+      "dragDrop": "Drag & Drop",
+      "customizable": "Customizable",
+      "responsive": "Responsive Design",
+      "professional": "Professional Layout"
+    },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available"
+  },
+  "templates": {
+    "title": "Portfolio Templates",
+    "description": "Choose from a variety of professionally designed templates",
+    "categories": {
+      "creative": "Creative",
+      "business": "Business",
+      "technical": "Technical",
+      "academic": "Academic"
+    },
+    "features": {
+      "responsive": "Responsive",
+      "customizable": "Customizable",
+      "modern": "Modern",
+      "professional": "Professional"
+    }
+  },
+  "analytics": {
+    "title": "Portfolio Analytics",
+    "description": "Track your portfolio performance, views, and engagement",
+    "metrics": {
+      "views": "Views",
+      "visitors": "Visitors",
+      "downloads": "Downloads",
+      "shares": "Shares",
+      "contacts": "Contacts",
+      "engagement": "Engagement"
+    },
+    "timeframes": {
+      "today": "Today",
+      "week": "This Week",
+      "month": "This Month",
+      "year": "This Year"
+    },
+    "insights": {
+      "topPages": "Top Pages",
+      "referrers": "Traffic Sources",
+      "devices": "Devices",
+      "locations": "Locations"
+    }
+  },
+  "visibility": {
+    "title": "Privacy Settings",
+    "description": "Control who can see and share your portfolio",
+    "options": {
+      "public": {
+        "title": "Public",
+        "description": "Anyone can view your portfolio"
+      },
+      "private": {
+        "title": "Private",
+        "description": "Only you can view your portfolio"
+      },
+      "linkOnly": {
+        "title": "Link Only",
+        "description": "Portfolio can be viewed by anyone with the link"
+      },
+      "password": {
+        "title": "Password Protected",
+        "description": "Requires a password to view the portfolio"
+      }
+    },
+    "sharing": {
+      "title": "Share Portfolio",
+      "copyLink": "Copy Link",
+      "shareEmail": "Share via Email",
+      "shareLinkedIn": "Share on LinkedIn",
+      "shareTwitter": "Share on Twitter",
+      "downloadPDF": "Download PDF",
+      "embedCode": "Embed Code"
+    }
+  },
+  "portfolio": {
+    "sections": {
+      "about": "About Me",
+      "experience": "Experience",
+      "education": "Education",
+      "skills": "Skills",
+      "projects": "Projects",
+      "certificates": "Certificates",
+      "achievements": "Achievements",
+      "contact": "Contact"
+    },
+    "actions": {
+      "edit": "Edit",
+      "preview": "Preview",
+      "publish": "Publish",
+      "share": "Share",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "private": "Private"
+    }
+  },
+  "viewer": {
+    "accessDenied": {
+      "title": "Access Denied",
+      "description": "You don't have permission to view this portfolio. Please contact the portfolio owner for access."
+    },
+    "error": {
+      "title": "Error",
+      "description": "There was a problem loading this portfolio. Please try again later."
+    },
+    "loading": "Loading...",
+    "goBack": "Go Back",
+    "editPortfolio": "Edit Portfolio"
+  },
+  "emptyState": {
+    "title": "No Portfolio Yet",
+    "description": "Start building your professional portfolio to showcase your skills and achievements.",
+    "createFirst": "Create Your First Portfolio"
+  },
+  "notifications": {
+    "portfolioCreated": "Portfolio created successfully",
+    "portfolioUpdated": "Portfolio updated successfully",
+    "portfolioDeleted": "Portfolio deleted successfully",
+    "linkCopied": "Link copied to clipboard",
+    "emailSent": "Email sent successfully",
+    "pdfDownloaded": "PDF downloaded successfully"
+  }
+}
+

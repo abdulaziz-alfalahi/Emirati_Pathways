@@ -1,0 +1,481 @@
+{
+  "title": "الوظائف والمطابقة الذكية",
+  "description": "اعثر على الوظيفة المثالية مع نظام التوصيات الذكي للوظائف",
+  "heroTitle": "الوظائف والمطابقة الذكية",
+  "heroDescription": "اعثر على الوظيفة المثالية مع نظام التوصيات الذكي للوظائف",
+  "primaryAction": "ابدأ المطابقة",
+  "secondaryAction": "عرض الوظائف",
+  "stats": {
+    "listings": "إعلان وظيفي نشط",
+    "employers": "شريك توظيف",
+    "successRate": "معدل نجاح المطابقة",
+    "placements": "توظيف ناجح"
+  },
+  "quote": "الوظيفة المناسبة ليست فقط ما تفعله، بل من تصبح",
+  "attribution": "فلسفة مهنية",
+  "tabs": {
+    "matching": {
+      "label": "مطابقة الوظائف",
+      "title": "مطابقة الوظائف الذكية",
+      "description": "نظام المطابقة الذكي المدعوم بالذكاء الاصطناعي سيربطك بالفرص التي تناسب مهاراتك وطموحاتك"
+    },
+    "search": {
+      "label": "البحث",
+      "title": "البحث عن الوظائف",
+      "description": "ابحث عن الوظائف باستخدام فلاتر متقدمة ومعايير مخصصة"
+    },
+    "saved": {
+      "label": "المحفوظة",
+      "title": "الوظائف المحفوظة",
+      "description": "تتبع الوظائف التي حفظتها وطلبات التوظيف الخاصة بك"
+    },
+    "applications": {
+      "label": "طلباتي",
+      "title": "طلبات التوظيف",
+      "description": "تتبع حالة طلبات التوظيف الخاصة بك"
+    },
+    "recommendations": {
+      "label": "التوصيات",
+      "title": "الوظائف الموصى بها",
+      "description": "وظائف مخصصة بناءً على ملفك الشخصي ومهاراتك"
+    }
+  },
+  "sections": {
+    "search": "البحث",
+    "filter": "التصفية",
+    "results": "النتائج",
+    "details": "التفاصيل"
+  },
+  "matching": {
+    "title": "مطابقة الوظائف الذكية قريباً",
+    "description": "نظام المطابقة الذكي المدعوم بالذكاء الاصطناعي سيربطك بالفرص التي تناسب مهاراتك وطموحاتك.",
+    "features": {
+      "aiMatching": "مطابقة ذكية",
+      "skillAnalysis": "تحليل المهارات",
+      "careerPath": "مسار مهني",
+      "realTime": "تحديثات فورية"
+    },
+    "comingSoon": "قريباً",
+    "notifyMe": "أعلمني عند الإطلاق",
+    "stats": {
+      "totalMatches": "إجمالي المطابقات",
+      "newThisWeek": "جديد هذا الأسبوع",
+      "profileCompleteness": "اكتمال الملف الشخصي",
+      "matchAccuracy": "دقة المطابقة"
+    }
+  },
+  "search": {
+    "title": "البحث عن الوظائف",
+    "description": "ابحث عن الوظائف باستخدام فلاتر متقدمة ومعايير مخصصة",
+    "placeholder": "ابحث عن الوظائف، الشركات، أو المهارات...",
+    "filters": {
+      "location": "الموقع",
+      "industry": "المجال",
+      "jobType": "نوع الوظيفة",
+      "experience": "سنوات الخبرة",
+      "salary": "الراتب",
+      "company": "الشركة",
+      "skills": "المهارات",
+      "education": "التعليم",
+      "language": "اللغة",
+      "workMode": "نمط العمل"
+    },
+    "jobTypes": {
+      "fullTime": "دوام كامل",
+      "partTime": "دوام جزئي",
+      "contract": "عقد",
+      "freelance": "عمل حر",
+      "internship": "تدريب",
+      "temporary": "مؤقت",
+      "remote": "عن بُعد",
+      "hybrid": "مختلط"
+    },
+    "experienceLevels": {
+      "entry": "مبتدئ",
+      "junior": "مبتدئ متقدم",
+      "mid": "متوسط",
+      "senior": "كبير",
+      "lead": "قائد",
+      "executive": "تنفيذي"
+    },
+    "workModes": {
+      "onsite": "في المكتب",
+      "remote": "عن بُعد",
+      "hybrid": "مختلط",
+      "flexible": "مرن"
+    },
+    "sortBy": {
+      "relevance": "الصلة",
+      "date": "التاريخ",
+      "salary": "الراتب",
+      "company": "الشركة",
+      "location": "الموقع"
+    },
+    "results": {
+      "found": "وظيفة موجودة",
+      "noResults": "لا توجد نتائج",
+      "loading": "جاري البحث...",
+      "showMore": "عرض المزيد"
+    }
+  },
+  "jobCard": {
+    "company": "الشركة",
+    "location": "الموقع",
+    "salary": "الراتب",
+    "type": "النوع",
+    "posted": "تاريخ النشر",
+    "deadline": "آخر موعد للتقديم",
+    "applicants": "المتقدمون",
+    "match": "نسبة المطابقة",
+    "skills": "المهارات المطلوبة",
+    "experience": "الخبرة المطلوبة",
+    "education": "التعليم المطلوب",
+    "languages": "اللغات المطلوبة",
+    "benefits": "المزايا",
+    "description": "الوصف",
+    "requirements": "المتطلبات",
+    "responsibilities": "المسؤوليات",
+    "actions": {
+      "apply": "تقدم الآن",
+      "save": "حفظ",
+      "share": "مشاركة",
+      "viewDetails": "عرض التفاصيل",
+      "viewCompany": "عرض الشركة",
+      "similar": "وظائف مشابهة"
+    },
+    "status": {
+      "new": "جديد",
+      "urgent": "عاجل",
+      "featured": "مميز",
+      "hot": "ساخن",
+      "closing": "ينتهي قريباً"
+    }
+  },
+  "saved": {
+    "title": "الوظائف المحفوظة",
+    "description": "تتبع الوظائف التي حفظتها وطلبات التوظيف الخاصة بك",
+    "empty": {
+      "title": "لا توجد وظائف محفوظة",
+      "description": "لم تحفظ أي وظائف بعد. ابدأ بالبحث عن الوظائف واحفظ المثيرة للاهتمام.",
+      "action": "البحث عن الوظائف"
+    },
+    "categories": {
+      "all": "الكل",
+      "recent": "الأحدث",
+      "applied": "تم التقدم",
+      "interested": "مهتم",
+      "archived": "مؤرشف"
+    },
+    "actions": {
+      "apply": "تقدم الآن",
+      "remove": "إزالة",
+      "archive": "أرشفة",
+      "share": "مشاركة",
+      "addNotes": "إضافة ملاحظات"
+    }
+  },
+  "applications": {
+    "title": "طلبات التوظيف",
+    "description": "تتبع حالة طلبات التوظيف الخاصة بك",
+    "status": {
+      "draft": "مسودة",
+      "submitted": "مرسل",
+      "inReview": "قيد المراجعة",
+      "shortlisted": "في القائمة المختصرة",
+      "interview": "مقابلة",
+      "offer": "عرض",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "withdrawn": "منسحب"
+    },
+    "timeline": {
+      "applied": "تم التقديم",
+      "reviewed": "تمت المراجعة",
+      "interviewed": "تمت المقابلة",
+      "decided": "تم اتخاذ القرار"
+    },
+    "details": {
+      "appliedDate": "تاريخ التقديم",
+      "lastUpdate": "آخر تحديث",
+      "recruiter": "المسؤول عن التوظيف",
+      "interviewDate": "موعد المقابلة",
+      "feedback": "التعليقات",
+      "nextSteps": "الخطوات التالية"
+    },
+    "actions": {
+      "withdraw": "سحب الطلب",
+      "followUp": "متابعة",
+      "viewJob": "عرض الوظيفة",
+      "updateApplication": "تحديث الطلب",
+      "scheduleInterview": "جدولة مقابلة"
+    },
+    "empty": {
+      "title": "لا توجد طلبات توظيف",
+      "description": "لم تتقدم لأي وظائف بعد. ابدأ بالبحث عن الوظائف والتقدم للمناسبة منها.",
+      "action": "البحث عن الوظائف"
+    }
+  },
+  "recommendations": {
+    "title": "الوظائف الموصى بها",
+    "description": "وظائف مخصصة بناءً على ملفك الشخصي ومهاراتك",
+    "categories": {
+      "perfectMatch": "مطابقة مثالية",
+      "skillMatch": "مطابقة المهارات",
+      "careerGrowth": "نمو مهني",
+      "trending": "رائج",
+      "newOpportunities": "فرص جديدة",
+      "similarRoles": "أدوار مشابهة"
+    },
+    "reasons": {
+      "skillMatch": "تطابق مهاراتك",
+      "experienceMatch": "تطابق خبرتك",
+      "locationPreference": "يطابق تفضيل الموقع",
+      "salaryRange": "ضمن النطاق السعري المطلوب",
+      "careerGoals": "يتماشى مع أهدافك المهنية",
+      "companyInterest": "شركة في قائمة اهتماماتك"
+    },
+    "empty": {
+      "title": "لا توجد توصيات متاحة",
+      "description": "أكمل ملفك الشخصي للحصول على توصيات وظائف مخصصة.",
+      "action": "إكمال الملف الشخصي"
+    }
+  },
+  "companies": {
+    "title": "الشركات",
+    "description": "استكشف الشركات الرائدة في الإمارات",
+    "profile": {
+      "about": "نبذة عن الشركة",
+      "industry": "المجال",
+      "size": "حجم الشركة",
+      "founded": "تاريخ التأسيس",
+      "headquarters": "المقر الرئيسي",
+      "website": "الموقع الإلكتروني",
+      "employees": "عدد الموظفين",
+      "openJobs": "الوظائف المتاحة",
+      "benefits": "المزايا",
+      "culture": "ثقافة الشركة",
+      "values": "القيم",
+      "mission": "الرسالة",
+      "vision": "الرؤية"
+    },
+    "sizes": {
+      "startup": "ناشئة (1-10)",
+      "small": "صغيرة (11-50)",
+      "medium": "متوسطة (51-200)",
+      "large": "كبيرة (201-1000)",
+      "enterprise": "مؤسسة (1000+)"
+    },
+    "actions": {
+      "follow": "متابعة",
+      "viewJobs": "عرض الوظائف",
+      "visitWebsite": "زيارة الموقع",
+      "viewProfile": "عرض الملف الشخصي"
+    }
+  },
+  "industries": {
+    "banking": "المصرفية والمالية",
+    "technology": "التكنولوجيا",
+    "healthcare": "الرعاية الصحية",
+    "government": "الحكومة",
+    "oilGas": "النفط والغاز",
+    "aviation": "الطيران",
+    "tourism": "السياحة",
+    "realEstate": "العقارات",
+    "education": "التعليم",
+    "retail": "التجارة",
+    "consulting": "الاستشارات",
+    "media": "الإعلام",
+    "construction": "البناء والتشييد",
+    "logistics": "اللوجستيات",
+    "manufacturing": "التصنيع",
+    "telecommunications": "الاتصالات",
+    "automotive": "السيارات",
+    "food": "الأغذية والمشروبات",
+    "fashion": "الأزياء",
+    "sports": "الرياضة",
+    "entertainment": "الترفيه",
+    "agriculture": "الزراعة"
+  },
+  "locations": {
+    "dubai": "دبي",
+    "abuDhabi": "أبوظبي",
+    "sharjah": "الشارقة",
+    "ajman": "عجمان",
+    "fujairah": "الفجيرة",
+    "rasAlKhaimah": "رأس الخيمة",
+    "ummAlQuwain": "أم القيوين",
+    "alAin": "العين",
+    "remote": "عن بُعد",
+    "uae": "الإمارات العربية المتحدة"
+  },
+  "skills": {
+    "technical": "تقنية",
+    "soft": "شخصية",
+    "leadership": "قيادية",
+    "communication": "تواصل",
+    "analytical": "تحليلية",
+    "creative": "إبداعية",
+    "management": "إدارية",
+    "sales": "مبيعات",
+    "marketing": "تسويق",
+    "finance": "مالية",
+    "hr": "موارد بشرية",
+    "operations": "عمليات",
+    "strategy": "استراتيجية",
+    "project": "إدارة مشاريع"
+  },
+  "benefits": {
+    "healthInsurance": "تأمين صحي",
+    "lifeInsurance": "تأمين على الحياة",
+    "retirement": "تقاعد",
+    "vacation": "إجازات",
+    "flexibleHours": "ساعات مرنة",
+    "remoteWork": "عمل عن بُعد",
+    "training": "تدريب",
+    "education": "تعليم",
+    "gym": "نادي رياضي",
+    "transport": "مواصلات",
+    "housing": "سكن",
+    "meals": "وجبات",
+    "bonus": "مكافآت",
+    "stockOptions": "خيارات أسهم",
+    "childcare": "رعاية أطفال"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "overview": {
+      "totalApplications": "إجمالي الطلبات",
+      "activeApplications": "الطلبات النشطة",
+      "savedJobs": "الوظائف المحفوظة",
+      "profileViews": "مشاهدات الملف الشخصي",
+      "interviewsScheduled": "المقابلات المجدولة",
+      "offersReceived": "العروض المستلمة"
+    },
+    "recentActivity": {
+      "title": "النشاط الأخير",
+      "appliedTo": "تقدم لوظيفة",
+      "savedJob": "حفظ وظيفة",
+      "profileViewed": "تم عرض الملف الشخصي",
+      "interviewScheduled": "تم جدولة مقابلة"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "searchJobs": "البحث عن الوظائف",
+      "updateProfile": "تحديث الملف الشخصي",
+      "viewApplications": "عرض الطلبات",
+      "browseCompanies": "تصفح الشركات",
+      "skillAssessment": "تقييم المهارات",
+      "careerAdvice": "نصائح مهنية"
+    }
+  },
+  "profile": {
+    "completeness": "اكتمال الملف الشخصي",
+    "sections": {
+      "basicInfo": "المعلومات الأساسية",
+      "experience": "الخبرة",
+      "education": "التعليم",
+      "skills": "المهارات",
+      "certifications": "الشهادات",
+      "languages": "اللغات",
+      "preferences": "التفضيلات"
+    },
+    "tips": {
+      "addPhoto": "أضف صورة شخصية",
+      "completeExperience": "أكمل تفاصيل الخبرة",
+      "addSkills": "أضف مهاراتك",
+      "setPreferences": "حدد تفضيلاتك الوظيفية"
+    }
+  },
+  "alerts": {
+    "title": "تنبيهات الوظائف",
+    "description": "احصل على إشعارات عند توفر وظائف تطابق معاييرك",
+    "create": "إنشاء تنبيه",
+    "frequency": {
+      "immediate": "فوري",
+      "daily": "يومي",
+      "weekly": "أسبوعي",
+      "monthly": "شهري"
+    },
+    "criteria": {
+      "keywords": "الكلمات المفتاحية",
+      "location": "الموقع",
+      "industry": "المجال",
+      "salary": "الراتب",
+      "jobType": "نوع الوظيفة"
+    }
+  },
+  "forms": {
+    "application": {
+      "title": "طلب التوظيف",
+      "personalInfo": "المعلومات الشخصية",
+      "coverLetter": "خطاب التقديم",
+      "resume": "السيرة الذاتية",
+      "portfolio": "المحفظة",
+      "references": "المراجع",
+      "additionalInfo": "معلومات إضافية"
+    },
+    "jobAlert": {
+      "title": "تنبيه الوظائف",
+      "name": "اسم التنبيه",
+      "keywords": "الكلمات المفتاحية",
+      "location": "الموقع",
+      "frequency": "التكرار"
+    }
+  },
+  "actions": {
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "apply": "تقدم",
+    "save": "حفظ",
+    "share": "مشاركة",
+    "view": "عرض",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "cancel": "إلغاء",
+    "submit": "إرسال",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "close": "إغلاق",
+    "expand": "توسيع",
+    "collapse": "طي",
+    "refresh": "تحديث",
+    "reset": "إعادة تعيين"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "email": "بريد إلكتروني غير صحيح",
+    "phone": "رقم هاتف غير صحيح",
+    "minLength": "الحد الأدنى للطول",
+    "maxLength": "الحد الأقصى للطول",
+    "selectOption": "يرجى اختيار خيار",
+    "uploadFile": "يرجى رفع ملف"
+  },
+  "notifications": {
+    "applicationSubmitted": "تم إرسال طلب التوظيف بنجاح",
+    "jobSaved": "تم حفظ الوظيفة",
+    "jobRemoved": "تم إزالة الوظيفة",
+    "alertCreated": "تم إنشاء التنبيه",
+    "profileUpdated": "تم تحديث الملف الشخصي",
+    "error": "حدث خطأ. يرجى المحاولة مرة أخرى"
+  },
+  "loading": {
+    "searching": "جاري البحث...",
+    "loading": "جاري التحميل...",
+    "applying": "جاري التقديم...",
+    "saving": "جاري الحفظ...",
+    "processing": "جاري المعالجة..."
+  },
+  "pagination": {
+    "previous": "السابق",
+    "next": "التالي",
+    "page": "صفحة",
+    "of": "من",
+    "showing": "عرض",
+    "results": "نتيجة"
+  }
+}
+

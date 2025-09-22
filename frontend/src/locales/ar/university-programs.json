@@ -1,0 +1,74 @@
+{
+  "title": "البرامج الجامعية",
+  "description": "استكشف فرص التعليم العالي عالمية المستوى والشراكات المؤسسية عبر الجامعات المحلية والدولية",
+  "academicYear": "2024-2025",
+  "stats": {
+    "universityPrograms": {
+      "label": "برنامج جامعي"
+    },
+    "partnerUniversities": {
+      "label": "جامعة شريكة"
+    },
+    "fieldsOfStudy": {
+      "label": "مجال دراسي"
+    },
+    "internationalPrograms": {
+      "label": "برنامج دولي"
+    }
+  },
+  "tabs": {
+    "allPrograms": "كتالوج البرامج",
+    "recommended": "موصى بها",
+    "applications": "طلباتي",
+    "saved": "البرامج المحفوظة"
+  },
+  "buttons": {
+    "explorePrograms": "استكشف البرامج"
+  },
+  "filter": {
+    "search": "البحث في البرامج...",
+    "university": "الجامعة",
+    "degreeLevel": "مستوى الدرجة",
+    "fieldOfStudy": "مجال الدراسة",
+    "location": "الموقع",
+    "language": "اللغة",
+    "clearFilters": "مسح المرشحات",
+    "applyFilters": "تطبيق المرشحات"
+  },
+  "programs": {
+    "noResults": "لم يتم العثور على برامج تطابق معاييرك",
+    "loading": "جاري تحميل البرامج...",
+    "error": "خطأ في تحميل البرامج",
+    "viewDetails": "عرض التفاصيل",
+    "saveProgram": "حفظ البرنامج",
+    "applyNow": "قدم الآن",
+    "duration": "المدة",
+    "tuition": "الرسوم الدراسية",
+    "language": "اللغة",
+    "location": "الموقع",
+    "deadline": "الموعد النهائي للتقديم",
+    "requirements": "المتطلبات"
+  },
+  "applications": {
+    "title": "طلباتي",
+    "status": {
+      "pending": "قيد الانتظار",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "waitlisted": "في قائمة الانتظار"
+    },
+    "noApplications": "لم تقدم أي طلبات بعد",
+    "viewApplication": "عرض الطلب"
+  },
+  "saved": {
+    "title": "البرامج المحفوظة",
+    "noSaved": "لم تحفظ أي برامج بعد",
+    "removeFromSaved": "إزالة من المحفوظات"
+  },
+  "recommended": {
+    "title": "البرامج الموصى بها",
+    "basedOn": "بناءً على ملفك الشخصي واهتماماتك",
+    "noRecommendations": "لا توجد توصيات متاحة في الوقت الحالي"
+  }
+}
+

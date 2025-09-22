@@ -1,0 +1,210 @@
+{
+  "title": "الشهادات المهنية",
+  "description": "احصل على شهادات مهنية معتمدة من أفضل المؤسسات العالمية لتعزيز مسيرتك المهنية",
+  "heroTitle": "الشهادات المهنية",
+  "heroDescription": "احصل على شهادات مهنية معتمدة من أفضل المؤسسات العالمية لتعزيز مسيرتك المهنية",
+  "stats": {
+    "availableCertifications": "شهادة متاحة",
+    "certifiedProfessionals": "محترف معتمد",
+    "industryPartners": "شريك صناعي",
+    "successRate": "معدل النجاح"
+  },
+  "tabs": {
+    "browse": {
+      "label": "تصفح الشهادات",
+      "title": "الشهادات المتاحة",
+      "description": "استكشف مجموعة واسعة من الشهادات المهنية المعتمدة"
+    },
+    "myProgress": {
+      "label": "تقدمي",
+      "title": "تتبع التقدم",
+      "description": "راقب تقدمك في الحصول على الشهادات المهنية"
+    },
+    "earned": {
+      "label": "الشهادات المكتسبة",
+      "title": "شهاداتي",
+      "description": "عرض جميع الشهادات التي حصلت عليها"
+    },
+    "recommendations": {
+      "label": "التوصيات",
+      "title": "الشهادات المقترحة",
+      "description": "شهادات مقترحة بناءً على ملفك المهني"
+    }
+  },
+  "categories": {
+    "technology": "التكنولوجيا",
+    "business": "الأعمال",
+    "finance": "المالية",
+    "healthcare": "الرعاية الصحية",
+    "education": "التعليم",
+    "engineering": "الهندسة",
+    "marketing": "التسويق",
+    "projectManagement": "إدارة المشاريع",
+    "dataScience": "علم البيانات",
+    "cybersecurity": "الأمن السيبراني"
+  },
+  "certificationTypes": {
+    "professional": "مهنية",
+    "technical": "تقنية",
+    "industry": "صناعية",
+    "vendor": "من البائع",
+    "academic": "أكاديمية",
+    "government": "حكومية"
+  },
+  "levels": {
+    "entry": "مبتدئ",
+    "associate": "مشارك",
+    "professional": "محترف",
+    "expert": "خبير",
+    "master": "ماجستير"
+  },
+  "providers": {
+    "microsoft": "مايكروسوفت",
+    "google": "جوجل",
+    "amazon": "أمازون",
+    "cisco": "سيسكو",
+    "oracle": "أوراكل",
+    "ibm": "آي بي إم",
+    "salesforce": "سيلزفورس",
+    "adobe": "أدوبي",
+    "pmi": "معهد إدارة المشاريع",
+    "comptia": "كومبتيا"
+  },
+  "certification": {
+    "overview": "نظرة عامة",
+    "requirements": "المتطلبات",
+    "examDetails": "تفاصيل الامتحان",
+    "preparation": "التحضير",
+    "schedule": "الجدولة",
+    "cost": "التكلفة",
+    "validity": "صالحة لمدة",
+    "renewal": "التجديد",
+    "benefits": "الفوائد",
+    "careerPaths": "المسارات المهنية"
+  },
+  "examInfo": {
+    "duration": "مدة الامتحان",
+    "questions": "عدد الأسئلة",
+    "passingScore": "درجة النجاح",
+    "format": "تنسيق الامتحان",
+    "language": "اللغة",
+    "location": "الموقع",
+    "retakePolicy": "سياسة الإعادة",
+    "prerequisites": "المتطلبات المسبقة"
+  },
+  "preparation": {
+    "studyMaterials": "مواد الدراسة",
+    "practiceTests": "اختبارات تدريبية",
+    "bootcamps": "معسكرات تدريبية",
+    "onlineCourses": "دورات عبر الإنترنت",
+    "studyGroups": "مجموعات الدراسة",
+    "mentorship": "التوجيه",
+    "labExercises": "تمارين المختبر",
+    "simulators": "المحاكيات"
+  },
+  "progress": {
+    "enrolled": "مسجل",
+    "studying": "يدرس",
+    "scheduled": "مجدول",
+    "completed": "مكتمل",
+    "passed": "نجح",
+    "failed": "فشل",
+    "expired": "منتهي الصلاحية",
+    "renewed": "مجدد"
+  },
+  "benefits": {
+    "careerAdvancement": "التقدم المهني",
+    "salaryIncrease": "زيادة الراتب",
+    "jobOpportunities": "فرص عمل",
+    "skillValidation": "التحقق من المهارات",
+    "industryRecognition": "الاعتراف الصناعي",
+    "networking": "التواصل المهني",
+    "credibility": "المصداقية",
+    "competitiveEdge": "الميزة التنافسية"
+  },
+  "studyPlan": {
+    "title": "خطة الدراسة",
+    "description": "خطة دراسة مخصصة للحصول على الشهادة",
+    "duration": "المدة",
+    "hoursPerWeek": "ساعات في الأسبوع",
+    "milestones": "المعالم",
+    "resources": "الموارد",
+    "schedule": "الجدول الزمني",
+    "deadlines": "المواعيد النهائية"
+  },
+  "community": {
+    "title": "مجتمع الشهادات",
+    "description": "تواصل مع محترفين آخرين يسعون للحصول على شهادات",
+    "forums": "المنتديات",
+    "studyBuddies": "رفقاء الدراسة",
+    "expertAdvice": "نصائح الخبراء",
+    "successStories": "قصص النجاح",
+    "tips": "النصائح",
+    "experiences": "التجارب"
+  },
+  "employers": {
+    "title": "لأصحاب العمل",
+    "description": "كيف تستفيد الشركات من الموظفين المعتمدين",
+    "benefits": "الفوائد",
+    "verification": "التحقق",
+    "skillsMapping": "ربط المهارات",
+    "teamCertification": "شهادة الفريق",
+    "trainingPrograms": "برامج التدريب",
+    "partnerships": "الشراكات"
+  },
+  "analytics": {
+    "title": "التحليلات",
+    "description": "إحصائيات ورؤى حول الشهادات المهنية",
+    "popularCertifications": "الشهادات الشائعة",
+    "industryTrends": "اتجاهات الصناعة",
+    "salaryImpact": "تأثير الراتب",
+    "demandForecast": "توقعات الطلب",
+    "skillsGap": "فجوة المهارات",
+    "marketInsights": "رؤى السوق"
+  },
+  "support": {
+    "title": "الدعم والمساعدة",
+    "description": "احصل على المساعدة في رحلتك للحصول على الشهادات",
+    "faq": "الأسئلة الشائعة",
+    "technicalSupport": "الدعم التقني",
+    "examSupport": "دعم الامتحان",
+    "careerGuidance": "التوجيه المهني",
+    "financialAid": "المساعدة المالية",
+    "accessibility": "إمكانية الوصول"
+  },
+  "messages": {
+    "success": {
+      "enrolled": "تم التسجيل في برنامج الشهادة بنجاح",
+      "examScheduled": "تم جدولة الامتحان بنجاح",
+      "examPassed": "تهانينا! لقد نجحت في الامتحان",
+      "certificateEarned": "تم الحصول على الشهادة بنجاح",
+      "progressSaved": "تم حفظ التقدم بنجاح"
+    },
+    "error": {
+      "enrollmentFailed": "فشل في التسجيل في برنامج الشهادة",
+      "examFailed": "لم تنجح في الامتحان، يرجى المحاولة مرة أخرى",
+      "schedulingFailed": "فشل في جدولة الامتحان",
+      "loadingFailed": "فشل في تحميل البيانات",
+      "paymentFailed": "فشل في معالجة الدفع"
+    },
+    "info": {
+      "examReminder": "تذكير: امتحانك مجدول في",
+      "renewalDue": "تنتهي صلاحية شهادتك في",
+      "prerequisiteRequired": "يتطلب إكمال المتطلبات المسبقة",
+      "studyPlanRecommended": "ننصح بإنشاء خطة دراسة"
+    }
+  },
+  "actions": {
+    "enroll": "التسجيل",
+    "schedule": "جدولة",
+    "study": "دراسة",
+    "practice": "تدريب",
+    "takeExam": "إجراء الامتحان",
+    "retake": "إعادة",
+    "renew": "تجديد",
+    "download": "تحميل",
+    "share": "مشاركة",
+    "verify": "تحقق"
+  }
+}
+

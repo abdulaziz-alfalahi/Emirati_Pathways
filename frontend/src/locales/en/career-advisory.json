@@ -1,0 +1,403 @@
+{
+  "title": "Career Advisory",
+  "description": "Get personalized career guidance from experienced professionals and industry experts",
+  "heroTitle": "Career Advisory",
+  "heroDescription": "Get personalized career guidance from experienced professionals and industry experts",
+  "primaryAction": "Find Advisor",
+  "secondaryAction": "Learn More",
+  "stats": {
+    "advisors": "Expert Advisors",
+    "sessions": "Advisory Sessions",
+    "satisfaction": "Satisfaction Rate",
+    "achievement": "Goal Achievement"
+  },
+  "quote": "A mentor is someone who allows you to see the hope inside yourself",
+  "attribution": "Oprah Winfrey",
+  "tabs": {
+    "advisory": {
+      "label": "Advisory",
+      "title": "Career Advisory",
+      "description": "Connect with experienced career advisors for personalized guidance and mentorship"
+    },
+    "advisors": {
+      "label": "Advisors",
+      "title": "Career Advisors",
+      "description": "Browse professional advisor profiles and choose the best fit for your needs"
+    },
+    "sessions": {
+      "label": "Sessions",
+      "title": "My Sessions",
+      "description": "Track your past and scheduled advisory sessions"
+    },
+    "resources": {
+      "label": "Resources",
+      "title": "Resource Library",
+      "description": "Explore comprehensive career and development resources"
+    },
+    "goals": {
+      "label": "Goals",
+      "title": "Career Goals",
+      "description": "Set and track your career goals with action plans"
+    }
+  },
+  "sections": {
+    "guidance": "Guidance",
+    "mentorship": "Mentorship",
+    "development": "Development",
+    "planning": "Planning"
+  },
+  "advisory": {
+    "title": "Career Advisory Platform Coming Soon",
+    "description": "Connect with experienced career advisors for personalized guidance and mentorship.",
+    "features": {
+      "matching": "Smart Matching",
+      "scheduling": "Flexible Scheduling",
+      "tracking": "Progress Tracking",
+      "resources": "Comprehensive Resources"
+    },
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available"
+  },
+  "advisors": {
+    "title": "Career Advisors",
+    "description": "Browse professional advisor profiles and choose the best fit for your needs",
+    "filters": {
+      "industry": "Industry",
+      "experience": "Years of Experience",
+      "specialization": "Specialization",
+      "language": "Language",
+      "rating": "Rating",
+      "availability": "Availability"
+    },
+    "specializations": {
+      "careerTransition": "Career Transition",
+      "leadership": "Leadership",
+      "entrepreneurship": "Entrepreneurship",
+      "skillDevelopment": "Skill Development",
+      "workLifeBalance": "Work-Life Balance",
+      "networking": "Networking",
+      "negotiation": "Negotiation",
+      "personalBranding": "Personal Branding"
+    },
+    "profile": {
+      "experience": "Years of Experience",
+      "specialization": "Specialization",
+      "languages": "Languages",
+      "rating": "Rating",
+      "sessions": "Sessions Conducted",
+      "responseTime": "Response Time",
+      "availability": "Availability",
+      "hourlyRate": "Hourly Rate"
+    },
+    "actions": {
+      "viewProfile": "View Profile",
+      "bookSession": "Book Session",
+      "sendMessage": "Send Message",
+      "addToFavorites": "Add to Favorites"
+    }
+  },
+  "sessions": {
+    "title": "My Advisory Sessions",
+    "description": "Track your past and scheduled advisory sessions",
+    "status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "rescheduled": "Rescheduled",
+      "pending": "Pending"
+    },
+    "types": {
+      "video": "Video Call",
+      "phone": "Phone Call",
+      "inPerson": "In Person",
+      "chat": "Text Chat"
+    },
+    "details": {
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "advisor": "Advisor",
+      "type": "Session Type",
+      "status": "Status",
+      "notes": "Notes",
+      "goals": "Goals"
+    },
+    "actions": {
+      "join": "Join",
+      "reschedule": "Reschedule",
+      "cancel": "Cancel",
+      "review": "Review",
+      "feedback": "Feedback",
+      "notes": "Add Notes"
+    },
+    "upcoming": {
+      "title": "Upcoming Sessions",
+      "empty": "No scheduled sessions",
+      "description": "You haven't scheduled any sessions yet. Find an advisor and start your career journey."
+    },
+    "completed": {
+      "title": "Completed Sessions",
+      "empty": "No completed sessions",
+      "description": "Your completed sessions will appear here with your reviews and notes."
+    }
+  },
+  "resources": {
+    "title": "Career Resource Library",
+    "description": "Explore comprehensive career and development resources",
+    "categories": {
+      "careerPlanning": "Career Planning",
+      "skillDevelopment": "Skill Development",
+      "leadership": "Leadership",
+      "networking": "Networking",
+      "entrepreneurship": "Entrepreneurship",
+      "workLifeBalance": "Work-Life Balance",
+      "industryInsights": "Industry Insights",
+      "personalBranding": "Personal Branding"
+    },
+    "types": {
+      "articles": "Articles",
+      "videos": "Videos",
+      "podcasts": "Podcasts",
+      "ebooks": "E-books",
+      "templates": "Templates",
+      "checklists": "Checklists",
+      "assessments": "Assessments",
+      "webinars": "Webinars"
+    },
+    "filters": {
+      "category": "Category",
+      "type": "Type",
+      "level": "Level",
+      "duration": "Duration",
+      "language": "Language",
+      "rating": "Rating"
+    },
+    "levels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    }
+  },
+  "goals": {
+    "title": "Career Goals",
+    "description": "Set and track your career goals with action plans",
+    "categories": {
+      "shortTerm": "Short Term",
+      "mediumTerm": "Medium Term",
+      "longTerm": "Long Term"
+    },
+    "status": {
+      "notStarted": "Not Started",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "onHold": "On Hold",
+      "cancelled": "Cancelled"
+    },
+    "types": {
+      "skillDevelopment": "Skill Development",
+      "careerAdvancement": "Career Advancement",
+      "networking": "Networking",
+      "education": "Education",
+      "certification": "Certification",
+      "leadership": "Leadership Development",
+      "entrepreneurship": "Entrepreneurship",
+      "workLifeBalance": "Work-Life Balance"
+    },
+    "actions": {
+      "create": "Create New Goal",
+      "edit": "Edit",
+      "delete": "Delete",
+      "complete": "Mark Complete",
+      "addMilestone": "Add Milestone",
+      "viewProgress": "View Progress"
+    },
+    "form": {
+      "title": "Goal Title",
+      "description": "Description",
+      "category": "Category",
+      "priority": "Priority",
+      "deadline": "Deadline",
+      "milestones": "Milestones",
+      "resources": "Required Resources",
+      "advisor": "Supporting Advisor"
+    }
+  },
+  "booking": {
+    "title": "Book Advisory Session",
+    "steps": {
+      "selectAdvisor": "Select Advisor",
+      "selectDateTime": "Select Date & Time",
+      "sessionDetails": "Session Details",
+      "payment": "Payment",
+      "confirmation": "Confirmation"
+    },
+    "sessionTypes": {
+      "consultation": "General Consultation",
+      "careerPlanning": "Career Planning",
+      "skillAssessment": "Skill Assessment",
+      "interviewPrep": "Interview Preparation",
+      "resumeReview": "Resume Review",
+      "networkingAdvice": "Networking Advice",
+      "leadershipCoaching": "Leadership Coaching",
+      "careerTransition": "Career Transition"
+    },
+    "duration": {
+      "30min": "30 minutes",
+      "45min": "45 minutes",
+      "60min": "60 minutes",
+      "90min": "90 minutes"
+    },
+    "form": {
+      "sessionType": "Session Type",
+      "duration": "Duration",
+      "preferredDate": "Preferred Date",
+      "preferredTime": "Preferred Time",
+      "goals": "Session Goals",
+      "background": "Your Background",
+      "specificQuestions": "Specific Questions",
+      "additionalNotes": "Additional Notes"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": {
+      "totalSessions": "Total Sessions",
+      "upcomingSessions": "Upcoming Sessions",
+      "completedGoals": "Completed Goals",
+      "activeGoals": "Active Goals",
+      "favoriteAdvisors": "Favorite Advisors",
+      "resourcesViewed": "Resources Viewed"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "sessionCompleted": "Session Completed",
+      "goalCreated": "Goal Created",
+      "resourceViewed": "Resource Viewed",
+      "advisorFavorited": "Advisor Favorited"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "bookSession": "Book Session",
+      "findAdvisor": "Find Advisor",
+      "createGoal": "Create Goal",
+      "browseResources": "Browse Resources",
+      "viewSchedule": "View Schedule",
+      "updateProfile": "Update Profile"
+    }
+  },
+  "industries": {
+    "banking": "Banking & Finance",
+    "technology": "Technology",
+    "healthcare": "Healthcare",
+    "government": "Government",
+    "oilGas": "Oil & Gas",
+    "aviation": "Aviation",
+    "tourism": "Tourism",
+    "realEstate": "Real Estate",
+    "education": "Education",
+    "retail": "Retail",
+    "consulting": "Consulting",
+    "media": "Media",
+    "construction": "Construction",
+    "logistics": "Logistics"
+  },
+  "languages": {
+    "arabic": "Arabic",
+    "english": "English",
+    "french": "French",
+    "german": "German",
+    "spanish": "Spanish",
+    "hindi": "Hindi",
+    "urdu": "Urdu"
+  },
+  "forms": {
+    "advisorSearch": {
+      "title": "Find Advisor",
+      "industry": "Industry",
+      "specialization": "Specialization",
+      "experience": "Years of Experience",
+      "language": "Language",
+      "availability": "Availability",
+      "priceRange": "Price Range"
+    },
+    "sessionFeedback": {
+      "title": "Session Feedback",
+      "rating": "Overall Rating",
+      "advisorRating": "Advisor Rating",
+      "sessionQuality": "Session Quality",
+      "goalsAchieved": "Goals Achieved",
+      "wouldRecommend": "Would you recommend this advisor?",
+      "comments": "Comments",
+      "suggestions": "Suggestions for Improvement"
+    }
+  },
+  "actions": {
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "book": "Book",
+    "cancel": "Cancel",
+    "reschedule": "Reschedule",
+    "join": "Join",
+    "complete": "Complete",
+    "review": "Review",
+    "save": "Save",
+    "share": "Share",
+    "download": "Download",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "view": "View",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "confirm": "Confirm"
+  },
+  "validation": {
+    "required": "This field is required",
+    "selectAdvisor": "Please select an advisor",
+    "selectDate": "Please select a date",
+    "selectTime": "Please select a time",
+    "selectSessionType": "Please select session type",
+    "minLength": "Minimum length required",
+    "maxLength": "Maximum length exceeded",
+    "invalidEmail": "Invalid email address",
+    "invalidPhone": "Invalid phone number"
+  },
+  "notifications": {
+    "sessionBooked": "Session booked successfully",
+    "sessionCancelled": "Session cancelled",
+    "sessionRescheduled": "Session rescheduled",
+    "goalCreated": "Goal created successfully",
+    "goalCompleted": "Goal completed",
+    "feedbackSubmitted": "Feedback submitted",
+    "profileUpdated": "Profile updated",
+    "error": "An error occurred. Please try again"
+  },
+  "emptyState": {
+    "noSessions": {
+      "title": "No Sessions Yet",
+      "description": "You haven't booked any advisory sessions yet. Find an advisor and start your career journey.",
+      "action": "Find Advisor"
+    },
+    "noGoals": {
+      "title": "No Goals Set",
+      "description": "You haven't set any career goals yet. Start by creating your first goal.",
+      "action": "Create New Goal"
+    },
+    "noAdvisors": {
+      "title": "No Results Found",
+      "description": "We couldn't find advisors matching your search criteria. Try adjusting your filters.",
+      "action": "Modify Search"
+    }
+  },
+  "loading": {
+    "searching": "Searching...",
+    "booking": "Booking...",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "processing": "Processing..."
+  }
+}
+

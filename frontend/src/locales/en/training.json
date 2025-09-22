@@ -1,0 +1,58 @@
+{
+  "title": "Vocational Training Programs",
+  "description": "Develop practical skills and advance your career with industry-specific training programs designed for the UAE's growing economy",
+  "heroTitle": "Vocational Training Programs",
+  "heroDescription": "Develop practical skills and advance your career with industry-specific training programs designed for the UAE's growing economy",
+  "stats": {
+    "trainingPrograms": {
+      "value": "200+",
+      "label": "Training Programs"
+    },
+    "graduates": {
+      "value": "15,000+",
+      "label": "Graduates"
+    },
+    "jobPlacementRate": {
+      "value": "92%",
+      "label": "Job Placement Rate"
+    },
+    "trainingPartners": {
+      "value": "50+",
+      "label": "Training Partners"
+    }
+  },
+  "tabs": {
+    "availableCourses": {
+      "label": "Available Courses",
+      "title": "Training Programs",
+      "description": "Discover comprehensive vocational training programs designed for the UAE's growing economy"
+    },
+    "myLearning": {
+      "label": "My Learning",
+      "title": "My Learning Journey",
+      "description": "Track your current training programs and learning progress"
+    },
+    "completed": {
+      "label": "Completed",
+      "title": "Completed Training",
+      "description": "Review your completed training programs and achievements"
+    },
+    "certificates": {
+      "label": "Certificates",
+      "title": "My Certificates",
+      "description": "Access and manage your earned certificates and credentials"
+    }
+  },
+  "cta": {
+    "title": "Ready to Start Your Training Journey?",
+    "description": "Join thousands of professionals who have advanced their careers through our comprehensive training programs",
+    "actionLabel": "Browse All Programs"
+  },
+  "actions": {
+    "applicationStarted": "Application Started",
+    "redirectingToForm": "Redirecting to application form...",
+    "programDetails": "Program Details",
+    "openingDetails": "Opening program details..."
+  }
+}
+

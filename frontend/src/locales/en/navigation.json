@@ -1,0 +1,148 @@
+{
+  "emiratiGateway": "Emirati Gateway",
+  "toggleLanguage": "Toggle language",
+  "dashboard": "Dashboard",
+  "groups": {
+    "education": {
+      "title": "Education Pathway",
+      "description": "Explore educational opportunities and academic pathways",
+      "items": {
+        "schoolPrograms": {
+          "title": "School Programs",
+          "description": "Academic programs and school initiatives"
+        },
+        "summerCamps": {
+          "title": "Summer Camps",
+          "description": "Engaging summer programs for students"
+        },
+        "scholarships": {
+          "title": "Scholarships",
+          "description": "Financial aid and scholarship opportunities"
+        },
+        "universityPrograms": {
+          "title": "University Programs",
+          "description": "Higher education and university pathways"
+        },
+        "graduatePrograms": {
+          "title": "Graduate Programs",
+          "description": "Advanced degree and graduate opportunities"
+        },
+        "lms": {
+          "title": "Learning Management System",
+          "description": "Comprehensive learning platform"
+        }
+      }
+    },
+    "career": {
+      "title": "Career Entry",
+      "description": "Launch your professional career with confidence",
+      "items": {
+        "planningHub": {
+          "title": "Career Planning Hub",
+          "description": "Comprehensive career planning resources"
+        },
+        "industryExploration": {
+          "title": "Industry Exploration",
+          "description": "Discover UAE industry opportunities"
+        },
+        "financialPlanning": {
+          "title": "Financial Planning",
+          "description": "Comprehensive financial wellness and planning tools"
+        },
+        "resumeBuilder": {
+          "title": "Resume Builder",
+          "description": "Modern resume building platform"
+        },
+        "cvbuilder": {
+          "title": "CV Builder",
+          "description": "Create professional CVs tailored for the UAE job market"
+        },
+        "portfolio": {
+          "title": "Portfolio Management",
+          "description": "Showcase your professional achievements"
+        },
+        "interviewPrep": {
+          "title": "Interview Preparation",
+          "description": "Ace your job interviews"
+        },
+        "internships": {
+          "title": "Internships",
+          "description": "Hands-on work experience opportunities"
+        },
+        "jobMatching": {
+          "title": "Job Matching",
+          "description": "Find your perfect career match"
+        },
+        "advisory": {
+          "title": "Career Advisory",
+          "description": "Professional career guidance"
+        }
+      }
+    },
+    "professional": {
+      "title": "Professional Growth",
+      "description": "Advance your skills and professional development",
+      "items": {
+        "assessments": {
+          "title": "Assessments",
+          "description": "Evaluate and improve your skills"
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "View insights and analytics"
+        },
+        "digitalSkills": {
+          "title": "Digital Skills Development",
+          "description": "Master digital technologies and tools"
+        },
+        "training": {
+          "title": "Training Programs",
+          "description": "Professional development and training"
+        },
+        "certifications": {
+          "title": "Professional Certifications",
+          "description": "Industry-recognized certifications"
+        },
+        "blockchainCredentials": {
+          "title": "Blockchain Credentials",
+          "description": "Digital credential verification"
+        },
+        "mentorship": {
+          "title": "Mentorship",
+          "description": "Connect with experienced mentors"
+        },
+        "communities": {
+          "title": "Communities",
+          "description": "Join professional networks"
+        }
+      }
+    },
+    "lifelong": {
+      "title": "Lifelong Engagement",
+      "description": "Continuous learning and community engagement",
+      "items": {
+        "youthDevelopment": {
+          "title": "Youth Development",
+          "description": "Programs for youth empowerment"
+        },
+        "nationalService": {
+          "title": "National Service",
+          "description": "Serve your nation with pride"
+        },
+        "thoughtLeadership": {
+          "title": "Thought Leadership",
+          "description": "Industry insights and expert perspectives"
+        },
+        "successStories": {
+          "title": "Success Stories",
+          "description": "Share and celebrate achievements"
+        },
+        "retiree": {
+          "title": "Retiree Services",
+          "description": "Post-career opportunities and retirement benefits"
+        }
+      }
+    }
+  }
+}
+

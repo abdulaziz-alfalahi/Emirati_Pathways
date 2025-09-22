@@ -1,0 +1,70 @@
+{
+  "title": "Financial Planning & Wellness",
+  "description": "Build a secure financial future with comprehensive planning tools, expert guidance, and educational resources designed for UAE residents and professionals",
+  "heroTitle": "Financial Planning & Wellness",
+  "heroDescription": "Build a secure financial future with comprehensive planning tools, expert guidance, and educational resources designed for UAE residents and professionals",
+  "primaryAction": "Start Planning",
+  "secondaryAction": "View Resources",
+  "stats": {
+    "tools": "Financial Tools",
+    "guides": "Investment Guides",
+    "resources": "Planning Resources",
+    "users": "Active Users"
+  },
+  "quote": "Financial peace isn't the acquisition of stuff. It's learning to live on less than you make, so you can give money back and have money to invest. You can't win until you do this",
+  "attribution": "Dave Ramsey",
+  "tabs": {
+    "budgeting": {
+      "label": "Budgeting & Tracking",
+      "title": "Budgeting & Expense Tracking",
+      "description": "Master your finances with budgeting guides, savings strategies, and expense tracking tools designed for UAE residents."
+    },
+    "investments": {
+      "label": "Investment Planning",
+      "title": "Investment Planning",
+      "description": "Explore investment opportunities including stocks, real estate, Islamic finance, and more in the UAE market."
+    },
+    "retirement": {
+      "label": "Retirement & Savings",
+      "title": "Retirement & Savings",
+      "description": "Plan for your future with retirement guides, pension information, and long-term financial strategies."
+    },
+    "insurance": {
+      "label": "Insurance & Risk",
+      "title": "Insurance & Risk Management",
+      "description": "Protect your financial future with comprehensive insurance coverage and risk management strategies."
+    },
+    "education": {
+      "label": "Financial Education",
+      "title": "Financial Education & Literacy",
+      "description": "Build financial literacy with courses, webinars, and educational resources covering UAE-specific regulations and Islamic finance."
+    },
+    "advisory": {
+      "label": "Professional Services",
+      "title": "Professional Advisory Services",
+      "description": "Connect with certified financial planners and access professional advisory services for personalized financial guidance."
+    }
+  },
+  "filters": {
+    "search": "Search resources...",
+    "difficulty": "Difficulty",
+    "allLevels": "All Levels",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "sections": {
+    "featured": "Featured Resources",
+    "allResources": "All Resources"
+  },
+  "resourceCard": {
+    "featured": "Featured",
+    "readTime": "min read",
+    "viewResource": "View Resource"
+  },
+  "emptyState": {
+    "title": "No resources found",
+    "description": "Try adjusting your search terms or filters."
+  }
+}
+

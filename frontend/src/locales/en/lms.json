@@ -1,0 +1,146 @@
+{
+  "title": "Learning Management System",
+  "description": "Access comprehensive online learning resources and track your educational progress",
+  "academicYear": "2024-2025",
+  "stats": {
+    "onlineCourses": {
+      "value": "500+",
+      "label": "Online Courses"
+    },
+    "activeLearners": {
+      "value": "10,000+",
+      "label": "Active Learners"
+    },
+    "subjects": {
+      "value": "50+",
+      "label": "Subjects"
+    },
+    "certifications": {
+      "value": "1,200+",
+      "label": "Certifications Issued"
+    }
+  },
+  "tabs": {
+    "myCourses": "My Courses",
+    "catalog": "Course Catalog",
+    "achievements": "Achievements",
+    "progress": "Progress Tracking"
+  },
+  "buttons": {
+    "browseCourses": "Browse Courses",
+    "continueLearning": "Continue Learning",
+    "enrollNow": "Enroll Now",
+    "viewCertificate": "View Certificate",
+    "startCourse": "Start Course"
+  },
+  "courses": {
+    "digitalMarketing": {
+      "title": "Digital Marketing Fundamentals",
+      "instructor": "Dr. Ahmed Al-Rashid",
+      "description": "Learn the essentials of digital marketing including SEO, social media, and analytics",
+      "duration": "6 weeks",
+      "level": "Beginner"
+    },
+    "dataScience": {
+      "title": "Data Science with Python",
+      "instructor": "Prof. Sarah Hassan",
+      "description": "Master data analysis and machine learning using Python programming",
+      "duration": "8 weeks",
+      "level": "Intermediate"
+    },
+    "projectManagement": {
+      "title": "Project Management Essentials",
+      "instructor": "Mohammed Al-Maktoum",
+      "description": "Learn project management methodologies and best practices",
+      "duration": "4 weeks",
+      "level": "Beginner"
+    },
+    "webDevelopment": {
+      "title": "Full Stack Web Development",
+      "instructor": "Fatima Al-Zahra",
+      "description": "Build modern web applications using React, Node.js, and databases",
+      "duration": "12 weeks",
+      "level": "Advanced"
+    },
+    "cybersecurity": {
+      "title": "Cybersecurity Fundamentals",
+      "instructor": "Omar Al-Mansouri",
+      "description": "Learn essential cybersecurity concepts and practices",
+      "duration": "6 weeks",
+      "level": "Intermediate"
+    },
+    "artificialIntelligence": {
+      "title": "Introduction to Artificial Intelligence",
+      "instructor": "Dr. Aisha Al-Nuaimi",
+      "description": "Explore AI concepts, machine learning, and neural networks",
+      "duration": "10 weeks",
+      "level": "Advanced"
+    }
+  },
+  "labels": {
+    "progress": "Progress",
+    "students": "students",
+    "instructor": "Instructor",
+    "duration": "Duration",
+    "level": "Level",
+    "enrolled": "Enrolled",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "notStarted": "Not Started",
+    "certificate": "Certificate",
+    "quiz": "Quiz",
+    "assignment": "Assignment",
+    "lesson": "Lesson"
+  },
+  "achievements": {
+    "title": "Your Achievements",
+    "coursesCompleted": "Courses Completed",
+    "certificatesEarned": "Certificates Earned",
+    "hoursLearned": "Hours Learned",
+    "streakDays": "Learning Streak (Days)",
+    "badges": {
+      "firstCourse": "First Course Completed",
+      "fastLearner": "Fast Learner",
+      "dedicated": "Dedicated Student",
+      "expert": "Subject Expert",
+      "mentor": "Peer Mentor"
+    }
+  },
+  "progress": {
+    "title": "Learning Progress",
+    "overallProgress": "Overall Progress",
+    "weeklyGoal": "Weekly Goal",
+    "monthlyGoal": "Monthly Goal",
+    "completionRate": "Completion Rate",
+    "averageScore": "Average Score",
+    "timeSpent": "Time Spent Learning"
+  },
+  "catalog": {
+    "title": "Course Catalog",
+    "searchPlaceholder": "Search courses...",
+    "filterBy": "Filter by",
+    "category": "Category",
+    "level": "Level",
+    "duration": "Duration",
+    "rating": "Rating",
+    "free": "Free",
+    "paid": "Paid",
+    "categories": {
+      "technology": "Technology",
+      "business": "Business",
+      "design": "Design",
+      "marketing": "Marketing",
+      "health": "Health",
+      "education": "Education",
+      "language": "Language",
+      "science": "Science"
+    },
+    "levels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    }
+  }
+}
+

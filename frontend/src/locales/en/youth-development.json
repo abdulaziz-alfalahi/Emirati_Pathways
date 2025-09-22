@@ -1,0 +1,429 @@
+{
+  "title": "Youth Development",
+  "description": "Empowering young Emiratis through comprehensive development programs, leadership training, and skill-building initiatives",
+  "stats": {
+    "participantsLabel": "Active Participants",
+    "participants": "25,000+",
+    "programsLabel": "Development Programs",
+    "programs": "150+",
+    "mentorsLabel": "Youth Mentors",
+    "mentors": "500+",
+    "successRateLabel": "Success Rate",
+    "successRate": "94%"
+  },
+  "tabs": {
+    "programs": {
+      "label": "Programs",
+      "content": {
+        "overview": {
+          "title": "Comprehensive Youth Development",
+          "description": "Structured programs designed to develop leadership skills, personal growth, and career readiness"
+        },
+        "leadership": {
+          "title": "Leadership Development",
+          "description": "Building tomorrow's leaders through structured training and mentorship",
+          "programs": {
+            "emerging": {
+              "title": "Emerging Leaders Program",
+              "description": "12-month intensive leadership development for high-potential youth",
+              "features": {
+                "training": "• Leadership skills training",
+                "mentorship": "• Executive mentorship",
+                "projects": "• Real-world project assignments",
+                "networking": "• Professional networking opportunities"
+              }
+            },
+            "youth": {
+              "title": "Youth Leadership Academy",
+              "description": "Comprehensive academy focusing on civic leadership and community engagement",
+              "features": {
+                "civic": "• Civic engagement workshops",
+                "public": "• Public speaking training",
+                "community": "• Community service projects",
+                "government": "• Government shadowing programs"
+              }
+            },
+            "entrepreneurship": {
+              "title": "Young Entrepreneurs Initiative",
+              "description": "Supporting youth in developing entrepreneurial skills and launching ventures",
+              "features": {
+                "business": "• Business plan development",
+                "funding": "• Seed funding opportunities",
+                "incubation": "• Startup incubation support",
+                "mentorship": "• Entrepreneur mentorship"
+              }
+            }
+          },
+          "action": "Explore Leadership Programs"
+        },
+        "skills": {
+          "title": "Skills Development",
+          "description": "Essential skills training for personal and professional growth",
+          "categories": {
+            "technical": {
+              "title": "Technical Skills",
+              "description": "Modern technical competencies for the digital age",
+              "skills": {
+                "digital": "• Digital literacy and technology",
+                "coding": "• Programming and coding basics",
+                "data": "• Data analysis and interpretation",
+                "ai": "• AI and machine learning fundamentals"
+              }
+            },
+            "soft": {
+              "title": "Soft Skills",
+              "description": "Essential interpersonal and communication abilities",
+              "skills": {
+                "communication": "• Communication and presentation",
+                "teamwork": "• Teamwork and collaboration",
+                "problem": "• Problem-solving and critical thinking",
+                "emotional": "• Emotional intelligence"
+              }
+            },
+            "life": {
+              "title": "Life Skills",
+              "description": "Practical skills for independent living and success",
+              "skills": {
+                "financial": "• Financial literacy and planning",
+                "time": "• Time management and organization",
+                "goal": "• Goal setting and achievement",
+                "resilience": "• Resilience and adaptability"
+              }
+            }
+          },
+          "action": "Browse Skills Training"
+        },
+        "mentorship": {
+          "title": "Mentorship Programs",
+          "description": "Connecting youth with experienced professionals for guidance and support",
+          "programs": {
+            "professional": {
+              "title": "Professional Mentorship",
+              "description": "One-on-one mentoring with industry professionals",
+              "benefits": {
+                "career": "• Career guidance and planning",
+                "industry": "• Industry insights and knowledge",
+                "networking": "• Professional network expansion",
+                "skills": "• Skill development recommendations"
+              }
+            },
+            "peer": {
+              "title": "Peer Mentorship",
+              "description": "Youth-to-youth mentoring for shared learning experiences",
+              "benefits": {
+                "support": "• Peer support and encouragement",
+                "experience": "• Shared learning experiences",
+                "friendship": "• Lasting friendships and connections",
+                "growth": "• Mutual personal growth"
+              }
+            },
+            "group": {
+              "title": "Group Mentoring",
+              "description": "Small group mentoring sessions with expert facilitators",
+              "benefits": {
+                "diverse": "• Diverse perspectives and insights",
+                "collaborative": "• Collaborative learning environment",
+                "topics": "• Focused topic discussions",
+                "community": "• Strong community building"
+              }
+            }
+          },
+          "action": "Find a Mentor"
+        }
+      }
+    },
+    "leadership": {
+      "label": "Leadership",
+      "content": {
+        "overview": {
+          "title": "Leadership Excellence",
+          "description": "Developing the next generation of Emirati leaders through comprehensive training and real-world experience"
+        },
+        "training": {
+          "title": "Leadership Training Modules",
+          "description": "Structured training covering all aspects of effective leadership",
+          "modules": {
+            "foundations": {
+              "title": "Leadership Foundations",
+              "description": "Core principles and theories of effective leadership",
+              "topics": {
+                "principles": "• Leadership principles and ethics",
+                "styles": "• Leadership styles and approaches",
+                "communication": "• Effective communication strategies",
+                "decision": "• Decision-making frameworks"
+              }
+            },
+            "team": {
+              "title": "Team Leadership",
+              "description": "Building and leading high-performing teams",
+              "topics": {
+                "building": "• Team building and dynamics",
+                "motivation": "• Motivation and engagement",
+                "conflict": "• Conflict resolution",
+                "performance": "• Performance management"
+              }
+            },
+            "strategic": {
+              "title": "Strategic Leadership",
+              "description": "Long-term thinking and strategic planning skills",
+              "topics": {
+                "vision": "• Vision and strategic planning",
+                "innovation": "• Innovation and change management",
+                "stakeholder": "• Stakeholder management",
+                "sustainability": "• Sustainable leadership practices"
+              }
+            }
+          },
+          "action": "Start Leadership Training"
+        },
+        "opportunities": {
+          "title": "Leadership Opportunities",
+          "description": "Real-world leadership experiences and positions",
+          "positions": {
+            "student": {
+              "title": "Student Government",
+              "description": "Leadership roles in educational institutions",
+              "roles": {
+                "president": "• Student council president",
+                "representative": "• Class representative",
+                "committee": "• Committee leadership",
+                "events": "• Event organization"
+              }
+            },
+            "community": {
+              "title": "Community Leadership",
+              "description": "Leading community initiatives and projects",
+              "roles": {
+                "volunteer": "• Volunteer coordinator",
+                "project": "• Project manager",
+                "advocate": "• Community advocate",
+                "organizer": "• Event organizer"
+              }
+            },
+            "professional": {
+              "title": "Professional Leadership",
+              "description": "Early career leadership opportunities",
+              "roles": {
+                "intern": "• Leadership internships",
+                "trainee": "• Management trainee programs",
+                "junior": "• Junior leadership roles",
+                "rotation": "• Leadership rotation programs"
+              }
+            }
+          },
+          "action": "Apply for Positions"
+        }
+      }
+    },
+    "skills": {
+      "label": "Skills",
+      "content": {
+        "overview": {
+          "title": "21st Century Skills",
+          "description": "Essential skills for success in the modern world and future careers"
+        },
+        "digital": {
+          "title": "Digital Skills",
+          "description": "Technology and digital literacy for the digital age",
+          "areas": {
+            "literacy": {
+              "title": "Digital Literacy",
+              "description": "Fundamental digital skills and computer proficiency",
+              "skills": {
+                "basic": "• Basic computer operations",
+                "internet": "• Internet navigation and safety",
+                "office": "• Office software proficiency",
+                "cloud": "• Cloud computing basics"
+              }
+            },
+            "programming": {
+              "title": "Programming & Coding",
+              "description": "Introduction to programming languages and software development",
+              "skills": {
+                "python": "• Python programming",
+                "web": "• Web development (HTML, CSS, JavaScript)",
+                "mobile": "• Mobile app development basics",
+                "databases": "• Database fundamentals"
+              }
+            },
+            "emerging": {
+              "title": "Emerging Technologies",
+              "description": "Cutting-edge technologies shaping the future",
+              "skills": {
+                "ai": "• Artificial Intelligence basics",
+                "blockchain": "• Blockchain and cryptocurrency",
+                "iot": "• Internet of Things (IoT)",
+                "vr": "• Virtual and Augmented Reality"
+              }
+            }
+          },
+          "action": "Start Digital Learning"
+        },
+        "creative": {
+          "title": "Creative Skills",
+          "description": "Artistic and creative abilities for innovation and expression",
+          "areas": {
+            "design": {
+              "title": "Design & Visual Arts",
+              "description": "Visual design and artistic expression skills",
+              "skills": {
+                "graphic": "• Graphic design principles",
+                "photography": "• Photography and videography",
+                "illustration": "• Digital illustration",
+                "ui": "• UI/UX design basics"
+              }
+            },
+            "media": {
+              "title": "Media & Content Creation",
+              "description": "Creating engaging content across various media",
+              "skills": {
+                "writing": "• Creative writing and storytelling",
+                "video": "• Video production and editing",
+                "podcast": "• Podcast creation",
+                "social": "• Social media content"
+              }
+            },
+            "innovation": {
+              "title": "Innovation & Creativity",
+              "description": "Developing innovative thinking and creative problem-solving",
+              "skills": {
+                "thinking": "• Creative thinking techniques",
+                "brainstorming": "• Brainstorming and ideation",
+                "prototyping": "• Rapid prototyping",
+                "design": "• Design thinking methodology"
+              }
+            }
+          },
+          "action": "Explore Creative Programs"
+        }
+      }
+    },
+    "mentorship": {
+      "label": "Mentorship",
+      "content": {
+        "overview": {
+          "title": "Comprehensive Mentorship",
+          "description": "Connecting youth with experienced mentors for guidance, support, and career development"
+        },
+        "programs": {
+          "title": "Mentorship Programs",
+          "description": "Various mentorship formats to suit different needs and preferences",
+          "types": {
+            "individual": {
+              "title": "One-on-One Mentorship",
+              "description": "Personalized mentoring relationships with dedicated mentors",
+              "features": {
+                "personal": "• Personalized guidance and support",
+                "flexible": "• Flexible meeting schedules",
+                "focused": "• Focused on individual goals",
+                "longterm": "• Long-term relationship building"
+              },
+              "duration": "6-12 months",
+              "commitment": "2-4 hours/month"
+            },
+            "group": {
+              "title": "Group Mentorship",
+              "description": "Small group mentoring with peer learning opportunities",
+              "features": {
+                "peer": "• Peer learning and support",
+                "diverse": "• Diverse perspectives",
+                "structured": "• Structured group activities",
+                "networking": "• Expanded networking"
+              },
+              "duration": "3-6 months",
+              "commitment": "2-3 hours/month"
+            },
+            "virtual": {
+              "title": "Virtual Mentorship",
+              "description": "Online mentoring for flexible and accessible guidance",
+              "features": {
+                "accessible": "• Accessible from anywhere",
+                "flexible": "• Flexible scheduling",
+                "digital": "• Digital communication tools",
+                "global": "• Global mentor network"
+              },
+              "duration": "3-12 months",
+              "commitment": "1-2 hours/month"
+            }
+          },
+          "action": "Join Mentorship Program"
+        },
+        "mentors": {
+          "title": "Our Mentors",
+          "description": "Experienced professionals from various industries ready to guide and support youth",
+          "categories": {
+            "business": {
+              "title": "Business & Entrepreneurship",
+              "description": "Successful entrepreneurs and business leaders",
+              "expertise": {
+                "startup": "• Startup development",
+                "strategy": "• Business strategy",
+                "finance": "• Financial management",
+                "marketing": "• Marketing and sales"
+              }
+            },
+            "technology": {
+              "title": "Technology & Innovation",
+              "description": "Tech industry professionals and innovators",
+              "expertise": {
+                "software": "• Software development",
+                "data": "• Data science and analytics",
+                "cybersecurity": "• Cybersecurity",
+                "emerging": "• Emerging technologies"
+              }
+            },
+            "government": {
+              "title": "Government & Public Service",
+              "description": "Government officials and public service leaders",
+              "expertise": {
+                "policy": "• Policy development",
+                "administration": "• Public administration",
+                "diplomacy": "• International relations",
+                "service": "• Community service"
+              }
+            }
+          },
+          "action": "Browse Mentors"
+        },
+        "resources": {
+          "title": "Mentorship Resources",
+          "description": "Tools and resources to maximize the mentorship experience",
+          "tools": {
+            "platform": {
+              "title": "Mentorship Platform",
+              "description": "Digital platform for mentor-mentee communication and tracking",
+              "features": {
+                "messaging": "• Secure messaging system",
+                "scheduling": "• Meeting scheduling tools",
+                "progress": "• Progress tracking",
+                "resources": "• Resource library"
+              }
+            },
+            "guidelines": {
+              "title": "Mentorship Guidelines",
+              "description": "Best practices and guidelines for successful mentoring relationships",
+              "features": {
+                "expectations": "• Setting expectations",
+                "communication": "• Communication tips",
+                "goals": "• Goal setting framework",
+                "evaluation": "• Relationship evaluation"
+              }
+            },
+            "training": {
+              "title": "Mentee Training",
+              "description": "Training for mentees to maximize their mentorship experience",
+              "features": {
+                "preparation": "• Meeting preparation",
+                "questions": "• Effective questioning",
+                "feedback": "• Receiving feedback",
+                "networking": "• Professional networking"
+              }
+            }
+          },
+          "action": "Access Resources"
+        }
+      }
+    }
+  }
+}
+

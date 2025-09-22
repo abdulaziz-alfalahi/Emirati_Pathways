@@ -1,0 +1,74 @@
+{
+  "title": "University Programs",
+  "description": "Explore world-class higher education opportunities and institutional partnerships across local and international universities",
+  "academicYear": "2024-2025",
+  "stats": {
+    "universityPrograms": {
+      "label": "University Programs"
+    },
+    "partnerUniversities": {
+      "label": "Partner Universities"
+    },
+    "fieldsOfStudy": {
+      "label": "Fields of Study"
+    },
+    "internationalPrograms": {
+      "label": "International Programs"
+    }
+  },
+  "tabs": {
+    "allPrograms": "Program Catalog",
+    "recommended": "Recommended",
+    "applications": "My Applications",
+    "saved": "Saved Programs"
+  },
+  "buttons": {
+    "explorePrograms": "Explore Programs"
+  },
+  "filter": {
+    "search": "Search programs...",
+    "university": "University",
+    "degreeLevel": "Degree Level",
+    "fieldOfStudy": "Field of Study",
+    "location": "Location",
+    "language": "Language",
+    "clearFilters": "Clear Filters",
+    "applyFilters": "Apply Filters"
+  },
+  "programs": {
+    "noResults": "No programs found matching your criteria",
+    "loading": "Loading programs...",
+    "error": "Error loading programs",
+    "viewDetails": "View Details",
+    "saveProgram": "Save Program",
+    "applyNow": "Apply Now",
+    "duration": "Duration",
+    "tuition": "Tuition",
+    "language": "Language",
+    "location": "Location",
+    "deadline": "Application Deadline",
+    "requirements": "Requirements"
+  },
+  "applications": {
+    "title": "My Applications",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "waitlisted": "Waitlisted"
+    },
+    "noApplications": "You haven't submitted any applications yet",
+    "viewApplication": "View Application"
+  },
+  "saved": {
+    "title": "Saved Programs",
+    "noSaved": "You haven't saved any programs yet",
+    "removeFromSaved": "Remove from Saved"
+  },
+  "recommended": {
+    "title": "Recommended Programs",
+    "basedOn": "Based on your profile and interests",
+    "noRecommendations": "No recommendations available at this time"
+  }
+}
+

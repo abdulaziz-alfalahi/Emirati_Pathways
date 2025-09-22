@@ -1,0 +1,181 @@
+{
+  "title": "Digital Skills Development",
+  "description": "Develop your digital skills through specialized training courses and interactive workshops designed for the modern job market",
+  "heroTitle": "Digital Skills Development",
+  "heroDescription": "Develop your digital skills through specialized training courses and interactive workshops designed for the modern job market",
+  "stats": {
+    "availableCourses": "Available Courses",
+    "certifiedLearners": "Certified Learners",
+    "skillTracks": "Skill Tracks",
+    "completionRate": "Completion Rate"
+  },
+  "tabs": {
+    "courses": {
+      "label": "Courses",
+      "title": "Available Courses",
+      "description": "Explore a wide range of digital skills training courses"
+    },
+    "skillTracks": {
+      "label": "Skill Tracks",
+      "title": "Skill Tracks",
+      "description": "Structured learning paths to develop specific skills"
+    },
+    "certifications": {
+      "label": "Certifications",
+      "title": "Professional Certifications",
+      "description": "Earn certified credentials in digital skills"
+    },
+    "progress": {
+      "label": "Progress",
+      "title": "Track Progress",
+      "description": "Monitor your progress in courses and skill tracks"
+    }
+  },
+  "skillCategories": {
+    "programming": "Programming",
+    "dataScience": "Data Science",
+    "digitalMarketing": "Digital Marketing",
+    "cybersecurity": "Cybersecurity",
+    "cloudComputing": "Cloud Computing",
+    "artificialIntelligence": "Artificial Intelligence",
+    "webDevelopment": "Web Development",
+    "mobileApps": "Mobile Apps"
+  },
+  "courses": {
+    "title": "Available Courses",
+    "description": "Choose from a variety of training courses",
+    "filters": {
+      "all": "All Courses",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "free": "Free",
+      "paid": "Paid"
+    },
+    "duration": "Duration",
+    "level": "Level",
+    "price": "Price",
+    "enroll": "Enroll",
+    "enrolled": "Enrolled",
+    "completed": "Completed"
+  },
+  "skillTracks": {
+    "title": "Skill Tracks",
+    "description": "Comprehensive learning paths to develop specific skills",
+    "startTrack": "Start Track",
+    "continueTrack": "Continue Track",
+    "completedTrack": "Completed Track",
+    "coursesInTrack": "Courses in Track",
+    "estimatedTime": "Estimated Time",
+    "skillLevel": "Skill Level"
+  },
+  "certifications": {
+    "title": "Professional Certifications",
+    "description": "Earn certified credentials that enhance your career opportunities",
+    "available": "Available",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "expired": "Expired",
+    "requirements": "Requirements",
+    "examInfo": "Exam Information",
+    "startExam": "Start Exam",
+    "retakeExam": "Retake Exam",
+    "downloadCertificate": "Download Certificate"
+  },
+  "progress": {
+    "title": "Track Progress",
+    "description": "Monitor your progress across all courses and tracks",
+    "overallProgress": "Overall Progress",
+    "completedCourses": "Completed Courses",
+    "inProgressCourses": "In Progress Courses",
+    "earnedCertificates": "Earned Certificates",
+    "studyTime": "Study Time",
+    "achievements": "Achievements",
+    "badges": "Badges",
+    "leaderboard": "Leaderboard"
+  },
+  "learningPaths": {
+    "webDeveloper": {
+      "title": "Web Developer",
+      "description": "Learn web development from scratch to professional level",
+      "skills": ["HTML", "CSS", "JavaScript", "React", "Node.js"]
+    },
+    "dataAnalyst": {
+      "title": "Data Analyst",
+      "description": "Learn data analysis and extract valuable insights",
+      "skills": ["Python", "SQL", "Excel", "Tableau", "Statistics"]
+    },
+    "digitalMarketer": {
+      "title": "Digital Marketer",
+      "description": "Master the art of digital marketing and online advertising",
+      "skills": ["SEO", "SEM", "Social Media", "Analytics", "Content Marketing"]
+    }
+  },
+  "instructors": {
+    "title": "Instructors",
+    "description": "Learn from industry experts",
+    "experience": "Years Experience",
+    "students": "Students",
+    "courses": "Courses",
+    "rating": "Rating"
+  },
+  "resources": {
+    "title": "Learning Resources",
+    "description": "Additional resources to support your learning journey",
+    "articles": "Articles",
+    "videos": "Videos",
+    "ebooks": "E-books",
+    "tools": "Tools",
+    "templates": "Templates",
+    "cheatsheets": "Cheat Sheets"
+  },
+  "community": {
+    "title": "Community",
+    "description": "Connect with other learners and share your experiences",
+    "forums": "Forums",
+    "studyGroups": "Study Groups",
+    "mentorship": "Mentorship",
+    "events": "Events",
+    "networking": "Professional Networking"
+  },
+  "assessment": {
+    "title": "Assessment",
+    "description": "Test your skills and track your progress",
+    "skillAssessment": "Skill Assessment",
+    "practiceTests": "Practice Tests",
+    "finalExam": "Final Exam",
+    "results": "Results",
+    "feedback": "Feedback",
+    "recommendations": "Recommendations"
+  },
+  "messages": {
+    "success": {
+      "enrolled": "Successfully enrolled in course",
+      "completed": "Course completed successfully",
+      "certificateEarned": "Certificate earned successfully",
+      "progressSaved": "Progress saved successfully"
+    },
+    "error": {
+      "enrollmentFailed": "Failed to enroll in course",
+      "loadingFailed": "Failed to load data",
+      "saveFailed": "Failed to save progress",
+      "examFailed": "Failed to take exam"
+    },
+    "info": {
+      "prerequisiteRequired": "Prerequisites required",
+      "examScheduled": "Exam scheduled",
+      "certificateProcessing": "Certificate processing"
+    }
+  },
+  "actions": {
+    "start": "Start",
+    "continue": "Continue",
+    "complete": "Complete",
+    "enroll": "Enroll",
+    "download": "Download",
+    "share": "Share",
+    "bookmark": "Bookmark",
+    "review": "Review"
+  }
+}
+

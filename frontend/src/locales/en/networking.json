@@ -1,0 +1,196 @@
+{
+  "title": "Networking Events",
+  "description": "Build meaningful professional connections through structured networking events, industry meetups, and collaborative opportunities across various sectors",
+  "heroTitle": "Networking Events",
+  "heroDescription": "Build meaningful professional connections through structured networking events, industry meetups, and collaborative opportunities across various sectors",
+  "stats": {
+    "monthlyEvents": "Monthly Events",
+    "activeMembers": "Active Members",
+    "industryPartners": "Industry Partners",
+    "eventRating": "Event Rating"
+  },
+  "tabs": {
+    "events": {
+      "label": "Upcoming Events",
+      "title": "Upcoming Networking Events",
+      "description": "Discover and register for upcoming professional networking events"
+    },
+    "myEvents": {
+      "label": "My Events",
+      "title": "My Registered Events",
+      "description": "Manage your event registrations and track attendance"
+    },
+    "meetups": {
+      "label": "Informal Meetups",
+      "title": "Informal Networking Meetups",
+      "description": "Join casual networking meetups and coffee chats"
+    },
+    "virtual": {
+      "label": "Virtual Networking",
+      "title": "Virtual Networking",
+      "description": "Connect with professionals through online networking platforms"
+    }
+  },
+  "events": {
+    "title": "Upcoming Events",
+    "description": "Explore upcoming networking events, conferences, and professional gatherings across the UAE",
+    "actionLabel": "View Events",
+    "filters": {
+      "category": "Category",
+      "location": "Location",
+      "date": "Date",
+      "industry": "Industry",
+      "format": "Format"
+    },
+    "categories": {
+      "conference": "Conference",
+      "workshop": "Workshop",
+      "seminar": "Seminar",
+      "meetup": "Meetup",
+      "panel": "Panel Discussion",
+      "networking": "Networking",
+      "exhibition": "Exhibition",
+      "webinar": "Webinar"
+    },
+    "formats": {
+      "inPerson": "In-Person",
+      "virtual": "Virtual",
+      "hybrid": "Hybrid"
+    }
+  },
+  "myEvents": {
+    "title": "My Events",
+    "description": "View your registered events, past attendance, and networking achievements",
+    "actionLabel": "View My Events",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "registered": "Registered",
+    "attended": "Attended",
+    "cancelled": "Cancelled"
+  },
+  "meetups": {
+    "title": "Informal Meetups",
+    "description": "Participate in casual networking opportunities like coffee chats and informal industry meetups",
+    "actionLabel": "Find Meetups",
+    "types": {
+      "coffee": "Coffee Chats",
+      "lunch": "Lunch Meetups",
+      "afterWork": "After-Work Meetups",
+      "weekend": "Weekend Meetups",
+      "industry": "Industry Meetups",
+      "hobby": "Hobby Meetups"
+    }
+  },
+  "virtual": {
+    "title": "Virtual Networking",
+    "description": "Join virtual networking sessions and connect with professionals from around the world",
+    "actionLabel": "Join Virtual Events",
+    "platforms": {
+      "videoCall": "Video Call",
+      "webinar": "Webinar",
+      "chatRoom": "Chat Room",
+      "forum": "Forum",
+      "socialMedia": "Social Media"
+    }
+  },
+  "eventDetails": {
+    "date": "Date",
+    "time": "Time",
+    "location": "Location",
+    "duration": "Duration",
+    "capacity": "Capacity",
+    "registered": "Registered",
+    "available": "Available",
+    "price": "Price",
+    "free": "Free",
+    "organizer": "Organizer",
+    "speakers": "Speakers",
+    "agenda": "Agenda",
+    "requirements": "Requirements"
+  },
+  "registration": {
+    "register": "Register",
+    "unregister": "Unregister",
+    "waitlist": "Waitlist",
+    "full": "Full",
+    "closed": "Closed",
+    "confirmation": "Confirmation",
+    "reminder": "Reminder",
+    "certificate": "Certificate"
+  },
+  "networking": {
+    "connections": "Connections",
+    "contacts": "Contacts",
+    "followUp": "Follow-up",
+    "businessCards": "Business Cards",
+    "linkedIn": "LinkedIn",
+    "exchange": "Exchange",
+    "introduction": "Introduction",
+    "conversation": "Conversation"
+  },
+  "benefits": {
+    "title": "Networking Benefits",
+    "careerGrowth": "Career Growth",
+    "knowledgeSharing": "Knowledge Sharing",
+    "opportunities": "Opportunities",
+    "mentorship": "Mentorship",
+    "collaboration": "Collaboration",
+    "innovation": "Innovation",
+    "partnerships": "Partnerships",
+    "visibility": "Visibility"
+  },
+  "tips": {
+    "title": "Networking Tips",
+    "preparation": "Preparation",
+    "elevator": "Elevator Pitch",
+    "listening": "Active Listening",
+    "questions": "Asking Questions",
+    "followUp": "Follow-up",
+    "authenticity": "Authenticity",
+    "value": "Adding Value",
+    "patience": "Patience"
+  },
+  "industries": {
+    "technology": "Technology",
+    "finance": "Finance",
+    "healthcare": "Healthcare",
+    "education": "Education",
+    "government": "Government",
+    "energy": "Energy",
+    "tourism": "Tourism",
+    "retail": "Retail",
+    "manufacturing": "Manufacturing",
+    "consulting": "Consulting",
+    "media": "Media",
+    "realestate": "Real Estate"
+  },
+  "locations": {
+    "dubai": "Dubai",
+    "abudhabi": "Abu Dhabi",
+    "sharjah": "Sharjah",
+    "ajman": "Ajman",
+    "fujairah": "Fujairah",
+    "rak": "Ras Al Khaimah",
+    "uaq": "Umm Al Quwain",
+    "online": "Online"
+  },
+  "actions": {
+    "register": "Register",
+    "attend": "Attend",
+    "share": "Share",
+    "save": "Save",
+    "remind": "Remind",
+    "cancel": "Cancel",
+    "reschedule": "Reschedule",
+    "feedback": "Feedback"
+  },
+  "status": {
+    "upcoming": "Upcoming",
+    "ongoing": "Ongoing",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "postponed": "Postponed",
+    "rescheduled": "Rescheduled"
+  }
+}
+

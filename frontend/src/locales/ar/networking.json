@@ -1,0 +1,196 @@
+{
+  "title": "فعاليات التواصل المهني",
+  "description": "بناء علاقات مهنية ذات معنى من خلال فعاليات التواصل المنظمة واللقاءات الصناعية والفرص التعاونية عبر القطاعات المختلفة",
+  "heroTitle": "فعاليات التواصل المهني",
+  "heroDescription": "بناء علاقات مهنية ذات معنى من خلال فعاليات التواصل المنظمة واللقاءات الصناعية والفرص التعاونية عبر القطاعات المختلفة",
+  "stats": {
+    "monthlyEvents": "فعالية شهرية",
+    "activeMembers": "عضو نشط",
+    "industryPartners": "شريك صناعي",
+    "eventRating": "تقييم الفعاليات"
+  },
+  "tabs": {
+    "events": {
+      "label": "الفعاليات القادمة",
+      "title": "فعاليات التواصل القادمة",
+      "description": "اكتشف وسجل في فعاليات التواصل المهني القادمة"
+    },
+    "myEvents": {
+      "label": "فعالياتي",
+      "title": "فعالياتي المسجلة",
+      "description": "إدارة تسجيلاتك في الفعاليات وتتبع الحضور"
+    },
+    "meetups": {
+      "label": "اللقاءات غير الرسمية",
+      "title": "لقاءات التواصل غير الرسمية",
+      "description": "انضم إلى لقاءات التواصل غير الرسمية ومحادثات القهوة"
+    },
+    "virtual": {
+      "label": "التواصل الافتراضي",
+      "title": "التواصل الافتراضي",
+      "description": "تواصل مع المهنيين من خلال منصات التواصل الإلكترونية"
+    }
+  },
+  "events": {
+    "title": "الفعاليات القادمة",
+    "description": "استكشف فعاليات التواصل القادمة والمؤتمرات والتجمعات المهنية في جميع أنحاء الإمارات",
+    "actionLabel": "عرض الفعاليات",
+    "filters": {
+      "category": "الفئة",
+      "location": "الموقع",
+      "date": "التاريخ",
+      "industry": "الصناعة",
+      "format": "التنسيق"
+    },
+    "categories": {
+      "conference": "مؤتمر",
+      "workshop": "ورشة عمل",
+      "seminar": "ندوة",
+      "meetup": "لقاء",
+      "panel": "لجنة نقاش",
+      "networking": "تواصل",
+      "exhibition": "معرض",
+      "webinar": "ندوة إلكترونية"
+    },
+    "formats": {
+      "inPerson": "حضوري",
+      "virtual": "افتراضي",
+      "hybrid": "مختلط"
+    }
+  },
+  "myEvents": {
+    "title": "فعالياتي",
+    "description": "عرض فعالياتك المسجلة والحضور السابق وإنجازات التواصل",
+    "actionLabel": "عرض فعالياتي",
+    "upcoming": "القادمة",
+    "past": "السابقة",
+    "registered": "مسجلة",
+    "attended": "حضرت",
+    "cancelled": "ملغاة"
+  },
+  "meetups": {
+    "title": "اللقاءات غير الرسمية",
+    "description": "شارك في فرص التواصل غير الرسمية مثل محادثات القهوة ولقاءات الصناعة غير الرسمية",
+    "actionLabel": "البحث عن لقاءات",
+    "types": {
+      "coffee": "محادثات القهوة",
+      "lunch": "لقاءات الغداء",
+      "afterWork": "لقاءات ما بعد العمل",
+      "weekend": "لقاءات نهاية الأسبوع",
+      "industry": "لقاءات الصناعة",
+      "hobby": "لقاءات الهوايات"
+    }
+  },
+  "virtual": {
+    "title": "التواصل الافتراضي",
+    "description": "انضم إلى جلسات التواصل الافتراضية وتواصل مع المهنيين من جميع أنحاء العالم",
+    "actionLabel": "انضم للفعاليات الافتراضية",
+    "platforms": {
+      "videoCall": "مكالمة فيديو",
+      "webinar": "ندوة إلكترونية",
+      "chatRoom": "غرفة دردشة",
+      "forum": "منتدى",
+      "socialMedia": "وسائل التواصل الاجتماعي"
+    }
+  },
+  "eventDetails": {
+    "date": "التاريخ",
+    "time": "الوقت",
+    "location": "الموقع",
+    "duration": "المدة",
+    "capacity": "السعة",
+    "registered": "مسجل",
+    "available": "متاح",
+    "price": "السعر",
+    "free": "مجاني",
+    "organizer": "المنظم",
+    "speakers": "المتحدثون",
+    "agenda": "جدول الأعمال",
+    "requirements": "المتطلبات"
+  },
+  "registration": {
+    "register": "تسجيل",
+    "unregister": "إلغاء التسجيل",
+    "waitlist": "قائمة الانتظار",
+    "full": "مكتمل",
+    "closed": "مغلق",
+    "confirmation": "تأكيد",
+    "reminder": "تذكير",
+    "certificate": "شهادة"
+  },
+  "networking": {
+    "connections": "الاتصالات",
+    "contacts": "جهات الاتصال",
+    "followUp": "المتابعة",
+    "businessCards": "بطاقات العمل",
+    "linkedIn": "لينكد إن",
+    "exchange": "التبادل",
+    "introduction": "التعريف",
+    "conversation": "المحادثة"
+  },
+  "benefits": {
+    "title": "فوائد التواصل",
+    "careerGrowth": "النمو المهني",
+    "knowledgeSharing": "تبادل المعرفة",
+    "opportunities": "الفرص",
+    "mentorship": "التوجيه",
+    "collaboration": "التعاون",
+    "innovation": "الابتكار",
+    "partnerships": "الشراكات",
+    "visibility": "الظهور"
+  },
+  "tips": {
+    "title": "نصائح التواصل",
+    "preparation": "التحضير",
+    "elevator": "العرض المختصر",
+    "listening": "الاستماع",
+    "questions": "الأسئلة",
+    "followUp": "المتابعة",
+    "authenticity": "الأصالة",
+    "value": "القيمة",
+    "patience": "الصبر"
+  },
+  "industries": {
+    "technology": "التكنولوجيا",
+    "finance": "المالية",
+    "healthcare": "الرعاية الصحية",
+    "education": "التعليم",
+    "government": "الحكومة",
+    "energy": "الطاقة",
+    "tourism": "السياحة",
+    "retail": "التجارة",
+    "manufacturing": "التصنيع",
+    "consulting": "الاستشارات",
+    "media": "الإعلام",
+    "realestate": "العقارات"
+  },
+  "locations": {
+    "dubai": "دبي",
+    "abudhabi": "أبوظبي",
+    "sharjah": "الشارقة",
+    "ajman": "عجمان",
+    "fujairah": "الفجيرة",
+    "rak": "رأس الخيمة",
+    "uaq": "أم القيوين",
+    "online": "عبر الإنترنت"
+  },
+  "actions": {
+    "register": "تسجيل",
+    "attend": "حضور",
+    "share": "مشاركة",
+    "save": "حفظ",
+    "remind": "تذكير",
+    "cancel": "إلغاء",
+    "reschedule": "إعادة جدولة",
+    "feedback": "تعليقات"
+  },
+  "status": {
+    "upcoming": "قادم",
+    "ongoing": "جاري",
+    "completed": "مكتمل",
+    "cancelled": "ملغى",
+    "postponed": "مؤجل",
+    "rescheduled": "معاد جدولته"
+  }
+}
+

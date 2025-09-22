@@ -1,0 +1,120 @@
+{
+  "title": "Communities",
+  "description": "Join vibrant communities of professionals and enthusiasts. Network, learn, and grow together in your field of interest",
+  "heroTitle": "Communities: Connect, Collaborate, Grow",
+  "heroDescription": "Join vibrant communities of professionals and enthusiasts. Network, learn, and grow together in your field of interest",
+  "stats": {
+    "activeCommunities": "Active Communities",
+    "totalMembers": "Total Members",
+    "focusAreas": "Focus Areas"
+  },
+  "filters": {
+    "title": "Find Your Community",
+    "searchPlaceholder": "Search communities...",
+    "focusAreaFilter": "Filter by focus area",
+    "communityTypeFilter": "Filter by community type",
+    "allFocusAreas": "All Focus Areas",
+    "allCommunityTypes": "All Community Types"
+  },
+  "community": {
+    "members": "members",
+    "member": "member",
+    "joinCommunity": "Join Community",
+    "visitWebsite": "Visit Website",
+    "contactEmail": "Contact Email",
+    "focusArea": "Focus Area",
+    "communityType": "Community Type",
+    "createdAt": "Created At",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "focusAreas": {
+    "technology": "Technology",
+    "business": "Business",
+    "healthcare": "Healthcare",
+    "education": "Education",
+    "finance": "Finance",
+    "engineering": "Engineering",
+    "marketing": "Marketing",
+    "design": "Design",
+    "entrepreneurship": "Entrepreneurship",
+    "leadership": "Leadership",
+    "innovation": "Innovation",
+    "sustainability": "Sustainability",
+    "digitalTransformation": "Digital Transformation",
+    "artificialIntelligence": "Artificial Intelligence",
+    "cybersecurity": "Cybersecurity",
+    "dataScience": "Data Science",
+    "cloudComputing": "Cloud Computing",
+    "blockchain": "Blockchain",
+    "iot": "Internet of Things",
+    "mobileApps": "Mobile Apps"
+  },
+  "communityTypes": {
+    "professional": "Professional",
+    "academic": "Academic",
+    "industry": "Industry",
+    "startup": "Startup",
+    "nonprofit": "Non-profit",
+    "government": "Government",
+    "student": "Student",
+    "alumni": "Alumni",
+    "women": "Women",
+    "youth": "Youth",
+    "senior": "Senior",
+    "international": "International",
+    "local": "Local",
+    "virtual": "Virtual",
+    "hybrid": "Hybrid"
+  },
+  "actions": {
+    "join": "Join",
+    "leave": "Leave",
+    "visit": "Visit",
+    "contact": "Contact",
+    "share": "Share",
+    "report": "Report",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite"
+  },
+  "messages": {
+    "loading": "Loading communities...",
+    "noResults": "No communities found",
+    "errorLoading": "Failed to load communities",
+    "joinSuccess": "Successfully joined community",
+    "leaveSuccess": "Successfully left community",
+    "joinError": "Failed to join community",
+    "leaveError": "Failed to leave community"
+  },
+  "empty": {
+    "title": "No Communities Found",
+    "description": "No communities match your search criteria",
+    "suggestion": "Try adjusting your search filters or create a new community"
+  },
+  "createCommunity": {
+    "title": "Create New Community",
+    "description": "Start your own community and bring together people with shared interests",
+    "button": "Create Community"
+  },
+  "membershipStatus": {
+    "member": "Member",
+    "pending": "Pending",
+    "invited": "Invited",
+    "admin": "Admin",
+    "moderator": "Moderator"
+  },
+  "privacy": {
+    "public": "Public",
+    "private": "Private",
+    "inviteOnly": "Invite Only"
+  },
+  "navigation": {
+    "overview": "Overview",
+    "members": "Members",
+    "discussions": "Discussions",
+    "events": "Events",
+    "resources": "Resources",
+    "settings": "Settings"
+  }
+}
+

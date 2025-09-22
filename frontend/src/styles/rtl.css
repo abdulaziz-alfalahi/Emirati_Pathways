@@ -1,0 +1,178 @@
+/* RTL Support Styles for Summer Camps Page - Font Consistent Version */
+
+/* Global font consistency - Apply Dubai font uniformly regardless of direction */
+html {
+  font-family: 'Dubai', Arial, sans-serif;
+}
+
+body {
+  font-family: 'Dubai', Arial, sans-serif;
+}
+
+/* Base RTL styles - Layout only, no font changes */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Text alignment for Arabic - consistent line height */
+[dir="rtl"] .rtl-text {
+  text-align: right;
+  /* Removed line-height override to prevent size changes */
+}
+
+[dir="ltr"] .rtl-text {
+  text-align: left;
+}
+
+/* Flex direction adjustments - layout only */
+[dir="rtl"] .rtl-flex {
+  flex-direction: row-reverse;
+}
+
+[dir="ltr"] .rtl-flex {
+  flex-direction: row;
+}
+
+/* Card content adjustments - no font changes */
+[dir="rtl"] .rtl-card {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl-card .card-header {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl-card .card-content {
+  text-align: right;
+}
+
+/* Button text alignment - no font changes */
+[dir="rtl"] .rtl-button {
+  /* Removed font-family override */
+}
+
+[dir="ltr"] .rtl-button {
+  /* Removed font-family override */
+}
+
+/* Stats grid adjustments - no font changes */
+[dir="rtl"] .rtl-stats {
+  text-align: center;
+  /* Removed font-family override */
+}
+
+/* Arabic numerals display - minimal changes */
+[dir="rtl"] .arabic-numerals {
+  font-feature-settings: "tnum" 1;
+  /* Removed font-family override */
+}
+
+/* Badge positioning - layout only */
+[dir="rtl"] .rtl-badge {
+  margin-left: 0;
+  margin-right: auto;
+  /* Removed font-family override */
+}
+
+/* Icon spacing adjustments for RTL - layout only */
+[dir="rtl"] .rtl-icon {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+[dir="ltr"] .rtl-icon {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+/* Form field adjustments - no font changes */
+[dir="rtl"] .rtl-form-field {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl-form-field input,
+[dir="rtl"] .rtl-form-field textarea,
+[dir="rtl"] .rtl-form-field select {
+  text-align: right;
+  /* Inherit font from global styles */
+}
+
+/* Navigation adjustments - layout only */
+[dir="rtl"] .rtl-nav {
+  flex-direction: row-reverse;
+}
+
+/* Table adjustments for RTL */
+[dir="rtl"] .rtl-table {
+  direction: rtl;
+}
+
+[dir="rtl"] .rtl-table th,
+[dir="rtl"] .rtl-table td {
+  text-align: right;
+}
+
+/* Search field adjustments */
+[dir="rtl"] .rtl-search {
+  text-align: right;
+}
+
+/* Dropdown menu adjustments */
+[dir="rtl"] .rtl-dropdown {
+  right: 0;
+  left: auto;
+}
+
+[dir="ltr"] .rtl-dropdown {
+  left: 0;
+  right: auto;
+}
+
+/* Tooltip positioning */
+[dir="rtl"] .rtl-tooltip {
+  right: 0;
+  left: auto;
+}
+
+/* Modal content alignment */
+[dir="rtl"] .rtl-modal {
+  text-align: right;
+}
+
+/* Breadcrumb navigation */
+[dir="rtl"] .rtl-breadcrumb {
+  flex-direction: row-reverse;
+}
+
+/* Pagination controls */
+[dir="rtl"] .rtl-pagination {
+  flex-direction: row-reverse;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  [dir="rtl"] .rtl-mobile {
+    text-align: right;
+  }
+  
+  [dir="ltr"] .rtl-mobile {
+    text-align: left;
+  }
+}
+
+/* Print styles */
+@media print {
+  [dir="rtl"] {
+    direction: rtl;
+  }
+  
+  [dir="ltr"] {
+    direction: ltr;
+  }
+}

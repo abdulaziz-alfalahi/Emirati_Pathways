@@ -1,0 +1,71 @@
+{
+  "labels": {
+    "title": "Title",
+    "company": "Company Name",
+    "location": "Location",
+    "industry": "Industry",
+    "department": "Department (Optional)",
+    "educationLevel": "Required Education Level",
+    "startDate": "Start Date (Optional)",
+    "endDate": "End Date (Optional)",
+    "applicationDeadline": "Application Deadline",
+    "paidInternship": "Paid Internship",
+    "stipendAmount": "Stipend Amount",
+    "currency": "Currency",
+    "description": "Description",
+    "requirements": "Requirements (One per line)",
+    "requiredSkills": "Required Skills (Comma separated)",
+    "contactEmail": "Contact Email (Optional)",
+    "contactPhone": "Contact Phone (Optional)",
+    "websiteUrl": "Website URL (Optional)",
+    "internshipTitle": "Internship Title"
+  },
+  "placeholders": {
+    "internshipTitle": "e.g. Software Development Intern",
+    "companyName": "e.g. Tech Innovations LLC",
+    "location": "e.g. Dubai, Business Bay",
+    "department": "e.g. Engineering, Marketing",
+    "stipendAmount": "e.g. 3000",
+    "description": "Provide a detailed description of the internship, responsibilities, and learning opportunities...",
+    "requirements": "e.g. Currently enrolled in Computer Science or related field\nMust have basic programming knowledge\nGood communication skills",
+    "requiredSkills": "e.g. JavaScript, HTML/CSS, React",
+    "contactEmail": "internships@company.com",
+    "contactPhone": "+971XXXXXXXXX",
+    "websiteUrl": "https://example.com/careers/internships",
+    "pickDate": "Pick a date",
+    "searchInternships": "Search internships...",
+    "selectIndustry": "Select industry",
+    "selectEducationLevel": "Select education level",
+    "selectCurrency": "Select currency"
+  },
+  "educationLevels": {
+    "highSchool": "High School",
+    "undergraduate": "Undergraduate",
+    "graduate": "Graduate",
+    "any": "Any Level"
+  },
+  "industries": {
+    "technology": "Technology",
+    "marketing": "Marketing",
+    "banking": "Banking",
+    "healthcare": "Healthcare",
+    "education": "Education",
+    "retail": "Retail",
+    "manufacturing": "Manufacturing",
+    "media": "Media",
+    "hospitality": "Hospitality"
+  },
+  "success": {
+    "internshipCreated": "Internship created",
+    "internshipCreatedDesc": "Your internship listing has been successfully created"
+  },
+  "errors": {
+    "authRequired": "Authentication required",
+    "mustBeLoggedIn": "You must be logged in to create an internship listing",
+    "error": "Error",
+    "createFailed": "Failed to create internship listing. Please try again."
+  },
+  "titles": {
+    "postNewInternship": "Post New Internship"
+  }
+}

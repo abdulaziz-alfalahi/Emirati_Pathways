@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+*.min.js
+*.min.css
+public/
+*.config.js
+*.config.ts
+package-lock.json
+bun.lockb

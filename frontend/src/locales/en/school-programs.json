@@ -1,0 +1,55 @@
+{
+  "title": "School Programs",
+  "description": "Specialized educational programs designed to enhance learning experiences in partnership with schools across the UAE",
+  "academicYear": "2024-2025",
+  "stats": {
+    "partnerSchools": {
+      "value": "50+",
+      "label": "Partner Schools"
+    },
+    "studentsEnrolled": {
+      "value": "5,000+",
+      "label": "Students Enrolled"
+    },
+    "specializedPrograms": {
+      "value": "20+",
+      "label": "Specialized Programs"
+    },
+    "successRate": {
+      "value": "95%",
+      "label": "Success Rate"
+    }
+  },
+  "tabs": {
+    "programs": "Available Programs"
+  },
+  "programs": {
+    "stemProgram": {
+      "title": "Advanced STEM Program",
+      "description": "Accelerated science and mathematics curriculum for gifted students",
+      "grades": "Grades 9-12",
+      "schools": "15 Partner Schools"
+    },
+    "leadershipDevelopment": {
+      "title": "Leadership Development",
+      "description": "Building tomorrow's leaders through practical leadership experiences",
+      "grades": "Grades 10-12",
+      "schools": "25 Partner Schools"
+    },
+    "innovationLab": {
+      "title": "Innovation Lab",
+      "description": "Hands-on technology and engineering projects",
+      "grades": "Grades 6-12",
+      "schools": "30 Partner Schools"
+    }
+  },
+  "buttons": {
+    "learnMore": "Learn More",
+    "explorePrograms": "Explore Programs"
+  },
+  "labels": {
+    "target": "Target",
+    "availability": "Availability"
+  }
+}
+

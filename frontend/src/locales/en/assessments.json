@@ -1,0 +1,601 @@
+{
+  "title": "Assessments & Evaluation",
+  "description": "Comprehensive assessment ecosystem that evaluates skills, measures capabilities, and tracks development progress across academic and professional domains through innovative evaluation methodologies",
+  "heroTitle": "Assessments & Evaluation",
+  "heroDescription": "Comprehensive assessment platform that evaluates skills, measures capabilities, and tracks development progress",
+  "primaryAction": "Start Assessment",
+  "secondaryAction": "View Results",
+  "contexts": {
+    "academic": {
+      "title": "Academic Assessment Excellence",
+      "description": "Comprehensive academic evaluation platform designed to measure learning outcomes, identify growth opportunities, and accelerate educational development through evidence-based assessment methodologies"
+    },
+    "career": {
+      "title": "Professional Skills Assessment",
+      "description": "Advanced skills evaluation platform that measures professional competencies, identifies development opportunities, and provides personalized career advancement pathways through comprehensive assessment analytics"
+    },
+    "general": {
+      "title": "Comprehensive Assessment Platform",
+      "description": "Unified assessment ecosystem that evaluates skills, measures capabilities, and tracks development progress across academic and professional domains through innovative evaluation methodologies"
+    }
+  },
+  "stats": {
+    "assessments": "Available Assessments",
+    "completionRate": "Completion Rate",
+    "categories": "Skill Categories",
+    "access": "Platform Access"
+  },
+  "quote": "True assessment doesn't measure what you know, but how you apply what you've learned",
+  "attribution": "Assessment Philosophy",
+  "tabs": {
+    "available": {
+      "label": "Available",
+      "title": "Available Assessments",
+      "description": "Discover and complete assessments to evaluate your skills and track your progress"
+    },
+    "inProgress": {
+      "label": "In Progress",
+      "title": "Assessments In Progress",
+      "description": "Continue with your ongoing assessment sessions and track completion status"
+    },
+    "completed": {
+      "label": "Completed",
+      "title": "Completed Assessments",
+      "description": "Review your completed assessments and achievements"
+    },
+    "results": {
+      "label": "Results",
+      "title": "Assessment Results & Analytics",
+      "description": "Comprehensive analysis of your assessment performance and skill development trends"
+    },
+    "skills": {
+      "label": "Skills Analysis",
+      "title": "Skills Gap Analysis",
+      "description": "Comprehensive skills assessment and gap analysis to identify your strengths and areas for improvement"
+    },
+    "cognitive": {
+      "label": "Cognitive",
+      "title": "Cognitive Assessment Suite",
+      "description": "Advanced cognitive abilities and aptitude evaluations for comprehensive mental capability assessment"
+    }
+  },
+  "assessmentTypes": {
+    "skills": "Skills",
+    "behaviors": "Behaviors",
+    "capabilities": "Capabilities",
+    "cognitive": "Cognitive",
+    "personality": "Personality",
+    "aptitude": "Aptitude",
+    "technical": "Technical",
+    "leadership": "Leadership",
+    "communication": "Communication",
+    "analytical": "Analytical",
+    "creative": "Creative",
+    "emotional": "Emotional Intelligence"
+  },
+  "categories": {
+    "technical": "Technical",
+    "soft": "Soft Skills",
+    "leadership": "Leadership",
+    "communication": "Communication",
+    "analytical": "Analytical",
+    "creative": "Creative",
+    "management": "Management",
+    "sales": "Sales",
+    "marketing": "Marketing",
+    "finance": "Finance",
+    "hr": "Human Resources",
+    "operations": "Operations",
+    "strategy": "Strategy",
+    "project": "Project Management",
+    "customer": "Customer Service",
+    "innovation": "Innovation"
+  },
+  "difficulty": {
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "expert": "Expert"
+  },
+  "status": {
+    "notStarted": "Not Started",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "expired": "Expired",
+    "paused": "Paused",
+    "submitted": "Submitted",
+    "graded": "Graded",
+    "passed": "Passed",
+    "failed": "Failed"
+  },
+  "assessmentCard": {
+    "duration": "Duration",
+    "questions": "Questions",
+    "attempts": "Attempts",
+    "passingScore": "Passing Score",
+    "category": "Category",
+    "difficulty": "Difficulty",
+    "language": "Language",
+    "format": "Format",
+    "prerequisites": "Prerequisites",
+    "certification": "Certification",
+    "validUntil": "Valid Until",
+    "createdBy": "Created By",
+    "lastUpdated": "Last Updated",
+    "participants": "Participants",
+    "averageScore": "Average Score",
+    "completionRate": "Completion Rate",
+    "actions": {
+      "start": "Start Assessment",
+      "continue": "Continue",
+      "retake": "Retake",
+      "viewResults": "View Results",
+      "viewDetails": "View Details",
+      "download": "Download",
+      "share": "Share",
+      "edit": "Edit",
+      "delete": "Delete",
+      "duplicate": "Duplicate"
+    },
+    "badges": {
+      "new": "New",
+      "popular": "Popular",
+      "featured": "Featured",
+      "trending": "Trending",
+      "recommended": "Recommended",
+      "mandatory": "Mandatory",
+      "optional": "Optional",
+      "timed": "Timed",
+      "unlimited": "Unlimited"
+    }
+  },
+  "available": {
+    "title": "Available Assessments",
+    "description": "Discover and complete assessments to evaluate your skills and track your progress",
+    "search": {
+      "placeholder": "Search assessments...",
+      "filters": {
+        "all": "All",
+        "category": "Category",
+        "difficulty": "Difficulty",
+        "duration": "Duration",
+        "language": "Language",
+        "type": "Type"
+      },
+      "sort": {
+        "newest": "Newest",
+        "popular": "Most Popular",
+        "difficulty": "Difficulty",
+        "duration": "Duration",
+        "name": "Name"
+      }
+    },
+    "empty": {
+      "title": "No Assessments Available",
+      "description": "No assessments are currently available. Check back later or contact your administrator.",
+      "action": "Refresh"
+    },
+    "featured": {
+      "title": "Featured Assessments",
+      "description": "Recommended assessments based on your profile and career path"
+    },
+    "categories": {
+      "title": "Browse by Category",
+      "viewAll": "View All"
+    }
+  },
+  "inProgress": {
+    "title": "Assessments In Progress",
+    "description": "Continue with your ongoing assessment sessions and track completion status",
+    "progress": {
+      "completed": "Completed",
+      "remaining": "Remaining",
+      "timeLeft": "Time Left",
+      "questionsAnswered": "Questions Answered",
+      "currentSection": "Current Section",
+      "lastActivity": "Last Activity"
+    },
+    "actions": {
+      "continue": "Continue Assessment",
+      "pause": "Pause",
+      "save": "Save Progress",
+      "submit": "Submit",
+      "exit": "Exit"
+    },
+    "empty": {
+      "title": "No Assessments In Progress",
+      "description": "Start an assessment from the Available tab to see your progress here.",
+      "action": "Browse Available Assessments"
+    },
+    "warnings": {
+      "timeRunningOut": "Time Running Out",
+      "autoSave": "Auto Save",
+      "connectionIssue": "Connection Issue",
+      "sessionExpiring": "Session Expiring Soon"
+    }
+  },
+  "completed": {
+    "title": "Completed Assessments",
+    "description": "Review your completed assessments and achievements",
+    "summary": {
+      "totalCompleted": "Total Completed",
+      "averageScore": "Average Score",
+      "certificationsEarned": "Certifications Earned",
+      "timeSpent": "Time Spent",
+      "bestPerformance": "Best Performance",
+      "improvementAreas": "Improvement Areas"
+    },
+    "filters": {
+      "all": "All",
+      "thisMonth": "This Month",
+      "lastMonth": "Last Month",
+      "thisYear": "This Year",
+      "passed": "Passed",
+      "failed": "Failed",
+      "certified": "Certified"
+    },
+    "actions": {
+      "viewCertificate": "View Certificate",
+      "downloadReport": "Download Report",
+      "retake": "Retake",
+      "shareResults": "Share Results",
+      "viewFeedback": "View Feedback"
+    },
+    "empty": {
+      "title": "No Completed Assessments",
+      "description": "Complete an assessment to see your results and achievements here.",
+      "action": "Start an Assessment"
+    }
+  },
+  "results": {
+    "title": "Assessment Results & Analytics",
+    "description": "Comprehensive analysis of your assessment performance and skill development trends",
+    "overview": {
+      "title": "Performance Overview",
+      "totalAssessments": "Total Assessments",
+      "averageScore": "Average Score",
+      "improvementRate": "Improvement Rate",
+      "skillsAssessed": "Skills Assessed",
+      "strongAreas": "Strong Areas",
+      "developmentAreas": "Development Areas"
+    },
+    "charts": {
+      "performanceTrend": "Performance Trend",
+      "skillsBreakdown": "Skills Breakdown",
+      "categoryComparison": "Category Comparison",
+      "progressOverTime": "Progress Over Time",
+      "benchmarking": "Benchmarking",
+      "competencyMap": "Competency Map"
+    },
+    "insights": {
+      "title": "Performance Insights",
+      "strengths": "Strengths",
+      "weaknesses": "Weaknesses",
+      "recommendations": "Recommendations",
+      "nextSteps": "Next Steps",
+      "learningPath": "Learning Path",
+      "skillGaps": "Skill Gaps"
+    },
+    "reports": {
+      "detailed": "Detailed Report",
+      "summary": "Summary Report",
+      "comparative": "Comparative Report",
+      "progress": "Progress Report",
+      "skills": "Skills Report",
+      "certification": "Certification Report"
+    },
+    "export": {
+      "pdf": "Export PDF",
+      "excel": "Export Excel",
+      "csv": "Export CSV",
+      "json": "Export JSON"
+    },
+    "empty": {
+      "title": "No Results Available",
+      "description": "Complete assessments to see detailed analytics and insights here.",
+      "action": "View Detailed Analytics"
+    }
+  },
+  "skills": {
+    "title": "Skills Gap Analysis",
+    "description": "Comprehensive skills assessment and gap analysis to identify your strengths and areas for improvement",
+    "analysis": {
+      "current": "Current Skills",
+      "target": "Target Skills",
+      "gaps": "Gaps",
+      "strengths": "Strengths",
+      "development": "Development Needed",
+      "priority": "Priority"
+    },
+    "categories": {
+      "technical": "Technical Skills",
+      "soft": "Soft Skills",
+      "leadership": "Leadership Skills",
+      "communication": "Communication Skills",
+      "analytical": "Analytical Skills",
+      "creative": "Creative Skills"
+    },
+    "levels": {
+      "novice": "Novice",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert",
+      "master": "Master"
+    },
+    "recommendations": {
+      "title": "Development Recommendations",
+      "courses": "Recommended Courses",
+      "certifications": "Suggested Certifications",
+      "projects": "Practical Projects",
+      "mentoring": "Mentoring & Coaching",
+      "timeline": "Suggested Timeline"
+    },
+    "mapping": {
+      "title": "Advanced Skills Mapping",
+      "description": "Advanced skills mapping and gap analysis to create personalized development pathways"
+    },
+    "empty": {
+      "title": "Skills Gap Analysis",
+      "description": "Advanced skills mapping and gap analysis to create personalized development pathways.",
+      "action": "Coming Soon"
+    }
+  },
+  "cognitive": {
+    "title": "Cognitive Assessment Suite",
+    "description": "Advanced cognitive abilities and aptitude evaluations for comprehensive mental capability assessment",
+    "types": {
+      "reasoning": "Logical Reasoning",
+      "memory": "Memory",
+      "attention": "Attention",
+      "processing": "Processing Speed",
+      "spatial": "Spatial Intelligence",
+      "verbal": "Verbal Ability",
+      "numerical": "Numerical Ability",
+      "abstract": "Abstract Thinking"
+    },
+    "assessments": {
+      "iq": "IQ Test",
+      "aptitude": "Aptitude Test",
+      "reasoning": "Reasoning Test",
+      "memory": "Memory Test",
+      "attention": "Attention Test",
+      "processing": "Processing Speed Test"
+    },
+    "features": {
+      "scientificallyDesigned": "Scientifically Designed",
+      "standardized": "Standardized",
+      "adaptive": "Adaptive",
+      "comprehensive": "Comprehensive",
+      "reliable": "Reliable",
+      "validated": "Validated"
+    },
+    "empty": {
+      "title": "Cognitive Assessments",
+      "description": "Scientifically-designed cognitive assessments to evaluate problem-solving, reasoning, and analytical capabilities.",
+      "action": "Coming Soon"
+    }
+  },
+  "create": {
+    "title": "Create New Assessment",
+    "description": "Create a custom assessment for your organization or team",
+    "form": {
+      "basicInfo": {
+        "title": "Basic Information",
+        "name": "Assessment Name",
+        "description": "Description",
+        "category": "Category",
+        "type": "Type",
+        "difficulty": "Difficulty",
+        "language": "Language",
+        "tags": "Tags"
+      },
+      "settings": {
+        "title": "Settings",
+        "duration": "Duration (minutes)",
+        "attempts": "Allowed Attempts",
+        "passingScore": "Passing Score (%)",
+        "randomizeQuestions": "Randomize Questions",
+        "showResults": "Show Results Immediately",
+        "allowReview": "Allow Answer Review",
+        "timeLimit": "Time Limit",
+        "prerequisites": "Prerequisites"
+      },
+      "questions": {
+        "title": "Questions",
+        "addQuestion": "Add Question",
+        "questionType": "Question Type",
+        "questionText": "Question Text",
+        "options": "Options",
+        "correctAnswer": "Correct Answer",
+        "explanation": "Explanation",
+        "points": "Points"
+      },
+      "review": {
+        "title": "Review & Publish",
+        "preview": "Preview",
+        "publish": "Publish",
+        "saveDraft": "Save as Draft",
+        "schedule": "Schedule Publication"
+      }
+    },
+    "questionTypes": {
+      "multipleChoice": "Multiple Choice",
+      "trueFalse": "True/False",
+      "shortAnswer": "Short Answer",
+      "essay": "Essay",
+      "matching": "Matching",
+      "fillInBlank": "Fill in the Blank",
+      "ordering": "Ordering",
+      "rating": "Rating"
+    }
+  },
+  "upload": {
+    "title": "Upload New Assessments",
+    "description": "Add new assessment materials to your organization's catalog",
+    "formats": {
+      "supported": "Supported Formats",
+      "excel": "Excel (.xlsx, .xls)",
+      "csv": "CSV (.csv)",
+      "json": "JSON (.json)",
+      "xml": "XML (.xml)",
+      "qti": "QTI (.zip)"
+    },
+    "steps": {
+      "selectFile": "Select File",
+      "mapFields": "Map Fields",
+      "validate": "Validate",
+      "import": "Import"
+    },
+    "validation": {
+      "checking": "Checking file...",
+      "valid": "File is valid",
+      "errors": "File has errors",
+      "warnings": "File has warnings"
+    }
+  },
+  "centerControls": {
+    "title": "Assessment Center Controls",
+    "description": "Manage assessments for your organization",
+    "features": {
+      "createAssessment": "Create Assessment",
+      "uploadAssessments": "Upload Assessments",
+      "manageUsers": "Manage Users",
+      "viewReports": "View Reports",
+      "configureSettings": "Configure Settings",
+      "exportData": "Export Data"
+    }
+  },
+  "coaching": {
+    "title": "Coaching Recommendations",
+    "description": "Personalized coaching recommendations based on assessment results",
+    "recommendations": {
+      "courses": "Recommended Courses",
+      "mentors": "Suggested Mentors",
+      "resources": "Learning Resources",
+      "projects": "Practical Projects",
+      "certifications": "Suggested Certifications"
+    },
+    "empty": {
+      "title": "No Recommendations Available",
+      "description": "Complete more assessments to get personalized coaching recommendations.",
+      "action": "Start an Assessment"
+    }
+  },
+  "progress": {
+    "step": "Step",
+    "of": "of",
+    "steps": {
+      "discovery": "Assessment Discovery",
+      "completion": "Assessment Completion",
+      "analysis": "Results Analysis",
+      "development": "Development Plan"
+    }
+  },
+  "cta": {
+    "title": "Ready to Advance Your Skills?",
+    "description": "Join thousands of professionals who have accelerated their careers through comprehensive skills assessment and personalized development pathways.",
+    "action": "Start Your Assessment Journey"
+  },
+  "authentication": {
+    "required": "Please log in to access assessments and track your development journey",
+    "login": "Log In",
+    "register": "Sign Up"
+  },
+  "navigation": {
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Finish",
+    "submit": "Submit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "share": "Share",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort"
+  },
+  "time": {
+    "minutes": "minutes",
+    "hours": "hours",
+    "days": "days",
+    "weeks": "weeks",
+    "months": "months",
+    "years": "years",
+    "ago": "ago",
+    "remaining": "remaining",
+    "elapsed": "elapsed",
+    "estimated": "estimated"
+  },
+  "scoring": {
+    "score": "Score",
+    "percentage": "Percentage",
+    "points": "Points",
+    "grade": "Grade",
+    "rank": "Rank",
+    "percentile": "Percentile",
+    "average": "Average",
+    "median": "Median",
+    "standardDeviation": "Standard Deviation"
+  },
+  "feedback": {
+    "excellent": "Excellent",
+    "good": "Good",
+    "satisfactory": "Satisfactory",
+    "needsImprovement": "Needs Improvement",
+    "unsatisfactory": "Unsatisfactory",
+    "strengths": "Strengths",
+    "areasForImprovement": "Areas for Improvement",
+    "recommendations": "Recommendations",
+    "nextSteps": "Next Steps"
+  },
+  "notifications": {
+    "assessmentStarted": "Assessment Started",
+    "assessmentCompleted": "Assessment Completed",
+    "assessmentSubmitted": "Assessment Submitted",
+    "resultsAvailable": "Results Available",
+    "certificateEarned": "Certificate Earned",
+    "reminderDue": "Reminder Due",
+    "timeWarning": "Time Warning",
+    "sessionExpiring": "Session Expiring Soon",
+    "autoSaved": "Auto Saved",
+    "error": "Error Occurred",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "errors": {
+    "loadingFailed": "Loading Failed",
+    "savingFailed": "Saving Failed",
+    "submissionFailed": "Submission Failed",
+    "networkError": "Network Error",
+    "serverError": "Server Error",
+    "validationError": "Validation Error",
+    "permissionDenied": "Permission Denied",
+    "sessionExpired": "Session Expired",
+    "fileNotFound": "File Not Found",
+    "invalidFormat": "Invalid Format",
+    "tryAgain": "Try Again",
+    "contactSupport": "Contact Support"
+  },
+  "loading": {
+    "assessments": "Loading assessments...",
+    "results": "Loading results...",
+    "analysis": "Analyzing data...",
+    "saving": "Saving...",
+    "submitting": "Submitting...",
+    "processing": "Processing...",
+    "generating": "Generating...",
+    "uploading": "Uploading...",
+    "downloading": "Downloading...",
+    "please_wait": "Please wait..."
+  }
+}
+

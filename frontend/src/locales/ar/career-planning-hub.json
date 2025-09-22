@@ -1,0 +1,224 @@
+{
+  "title": "مركز التخطيط المهني",
+  "description": "اكتشف مسارك المهني وخطط لمستقبلك الوظيفي مع أدوات التوجيه المهني الشاملة",
+  "academicYear": "2024-2025",
+  "stats": {
+    "careerPaths": {
+      "value": "150+",
+      "label": "مسار مهني"
+    },
+    "jobOpportunities": {
+      "value": "5,000+",
+      "label": "فرصة وظيفية"
+    },
+    "industryPartners": {
+      "value": "200+",
+      "label": "شريك صناعي"
+    },
+    "successStories": {
+      "value": "3,500+",
+      "label": "قصة نجاح"
+    }
+  },
+  "tabs": {
+    "careerExplorer": "استكشاف المهن",
+    "skillAssessment": "تقييم المهارات",
+    "jobMarket": "سوق العمل",
+    "networking": "التواصل المهني"
+  },
+  "buttons": {
+    "explorecareers": "استكشف المهن",
+    "takeAssessment": "ابدأ التقييم",
+    "viewJobs": "عرض الوظائف",
+    "buildNetwork": "بناء الشبكة",
+    "createProfile": "إنشاء الملف الشخصي",
+    "applyNow": "تقدم الآن",
+    "saveJob": "حفظ الوظيفة",
+    "contactRecruiter": "تواصل مع المسؤول"
+  },
+  "careerPaths": {
+    "technology": {
+      "title": "التكنولوجيا والبرمجة",
+      "description": "استكشف مجال التكنولوجيا والبرمجة مع فرص وظيفية متنوعة في تطوير البرمجيات والذكاء الاصطناعي",
+      "averageSalary": "120,000 درهم",
+      "growthRate": "15%",
+      "jobCount": "1,200+"
+    },
+    "healthcare": {
+      "title": "الرعاية الصحية",
+      "description": "انضم إلى قطاع الرعاية الصحية المتنامي مع فرص في الطب والتمريض والإدارة الصحية",
+      "averageSalary": "95,000 درهم",
+      "growthRate": "12%",
+      "jobCount": "800+"
+    },
+    "business": {
+      "title": "الأعمال والإدارة",
+      "description": "طور مهاراتك في إدارة الأعمال والتسويق والمالية مع فرص قيادية متميزة",
+      "averageSalary": "85,000 درهم",
+      "growthRate": "8%",
+      "jobCount": "950+"
+    },
+    "engineering": {
+      "title": "الهندسة والتصميم",
+      "description": "اكتشف مجالات الهندسة المختلفة من المدنية إلى الكهربائية والميكانيكية",
+      "averageSalary": "110,000 درهم",
+      "growthRate": "10%",
+      "jobCount": "700+"
+    },
+    "education": {
+      "title": "التعليم والتدريب",
+      "description": "ساهم في بناء المستقبل من خلال التعليم والتدريب وتطوير المناهج",
+      "averageSalary": "70,000 درهم",
+      "growthRate": "6%",
+      "jobCount": "600+"
+    },
+    "finance": {
+      "title": "المالية والمصرفية",
+      "description": "انضم إلى القطاع المالي المزدهر مع فرص في البنوك والاستثمار والتأمين",
+      "averageSalary": "100,000 درهم",
+      "growthRate": "9%",
+      "jobCount": "550+"
+    }
+  },
+  "skills": {
+    "technical": {
+      "title": "المهارات التقنية",
+      "items": [
+        "البرمجة وتطوير البرمجيات",
+        "تحليل البيانات والذكاء الاصطناعي",
+        "الأمن السيبراني",
+        "إدارة قواعد البيانات",
+        "تطوير المواقع والتطبيقات"
+      ]
+    },
+    "soft": {
+      "title": "المهارات الشخصية",
+      "items": [
+        "التواصل الفعال",
+        "القيادة وإدارة الفرق",
+        "حل المشكلات",
+        "التفكير النقدي",
+        "إدارة الوقت"
+      ]
+    },
+    "language": {
+      "title": "المهارات اللغوية",
+      "items": [
+        "اللغة العربية",
+        "اللغة الإنجليزية",
+        "اللغة الفرنسية",
+        "اللغة الألمانية",
+        "اللغة الصينية"
+      ]
+    }
+  },
+  "jobMarket": {
+    "title": "سوق العمل",
+    "trending": "الوظائف الرائجة",
+    "remote": "العمل عن بُعد",
+    "partTime": "دوام جزئي",
+    "fullTime": "دوام كامل",
+    "internship": "تدريب",
+    "contract": "عقد مؤقت",
+    "filters": {
+      "location": "الموقع",
+      "salary": "الراتب",
+      "experience": "الخبرة",
+      "company": "الشركة",
+      "industry": "الصناعة"
+    }
+  },
+  "networking": {
+    "title": "التواصل المهني",
+    "events": "الفعاليات المهنية",
+    "mentorship": "الإرشاد المهني",
+    "alumni": "شبكة الخريجين",
+    "professionals": "المهنيون",
+    "companies": "الشركات"
+  },
+  "labels": {
+    "salary": "الراتب",
+    "growth": "النمو",
+    "jobs": "وظيفة",
+    "experience": "الخبرة",
+    "location": "الموقع",
+    "company": "الشركة",
+    "industry": "الصناعة",
+    "skills": "المهارات",
+    "requirements": "المتطلبات",
+    "benefits": "المزايا",
+    "description": "الوصف",
+    "responsibilities": "المسؤوليات",
+    "qualifications": "المؤهلات",
+    "deadline": "آخر موعد",
+    "posted": "تاريخ النشر",
+    "applicants": "المتقدمون",
+    "status": "الحالة",
+    "level": "المستوى",
+    "type": "النوع",
+    "remote": "عن بُعد",
+    "onsite": "في الموقع",
+    "hybrid": "مختلط"
+  },
+  "assessment": {
+    "title": "تقييم المهارات المهنية",
+    "description": "اكتشف نقاط قوتك ومجالات التطوير من خلال تقييم شامل لمهاراتك المهنية",
+    "categories": {
+      "personality": "تقييم الشخصية",
+      "skills": "تقييم المهارات",
+      "interests": "تقييم الاهتمامات",
+      "values": "تقييم القيم"
+    },
+    "results": {
+      "strengths": "نقاط القوة",
+      "weaknesses": "مجالات التطوير",
+      "recommendations": "التوصيات",
+      "careerMatch": "المهن المناسبة"
+    }
+  },
+  "resources": {
+    "title": "الموارد المهنية",
+    "resumeBuilder": "بناء السيرة الذاتية",
+    "interviewPrep": "التحضير للمقابلات",
+    "careerGuides": "أدلة المهن",
+    "salaryCalculator": "حاسبة الراتب",
+    "skillDevelopment": "تطوير المهارات",
+    "industryReports": "تقارير الصناعة"
+  },
+  "success": {
+    "title": "قصص النجاح",
+    "graduates": "خريجون ناجحون",
+    "testimonials": "شهادات",
+    "achievements": "الإنجازات",
+    "inspiration": "الإلهام"
+  },
+  "companies": {
+    "featured": "الشركات المميزة",
+    "startups": "الشركات الناشئة",
+    "multinational": "الشركات متعددة الجنسيات",
+    "government": "القطاع الحكومي",
+    "nonprofit": "المنظمات غير الربحية"
+  },
+  "events": {
+    "title": "الفعاليات المهنية",
+    "jobFairs": "معارض التوظيف",
+    "workshops": "ورش العمل",
+    "seminars": "الندوات",
+    "networking": "فعاليات التواصل",
+    "conferences": "المؤتمرات"
+  },
+  "mentorship": {
+    "title": "برنامج الإرشاد المهني",
+    "findMentor": "العثور على مرشد",
+    "becomeMentor": "كن مرشداً",
+    "sessions": "الجلسات",
+    "guidance": "التوجيه",
+    "support": "الدعم"
+  },
+  "currency": {
+    "symbol": "د.إ",
+    "code": "AED",
+    "name": "درهم إماراتي"
+  }
+}
+

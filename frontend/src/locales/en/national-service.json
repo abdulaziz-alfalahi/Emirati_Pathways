@@ -1,0 +1,503 @@
+{
+  "title": "National Service",
+  "description": "Serving the nation through dedicated service programs, community engagement, and environmental stewardship",
+  "stats": {
+    "participantsLabel": "Service Participants",
+    "participants": "50,000+",
+    "programsLabel": "Service Programs",
+    "programs": "75+",
+    "hoursLabel": "Service Hours",
+    "hours": "2M+",
+    "impactLabel": "Community Impact",
+    "impact": "98%"
+  },
+  "tabs": {
+    "programs": {
+      "label": "Service Programs",
+      "content": {
+        "overview": {
+          "title": "National Service Excellence",
+          "description": "Comprehensive service programs designed to build character, serve the community, and protect the nation"
+        },
+        "defense": {
+          "title": "Defense & Security",
+          "description": "Military and security service programs for national protection",
+          "programs": {
+            "military": {
+              "title": "Military Service",
+              "description": "Mandatory military service for young Emirati men",
+              "components": {
+                "basic": "• Basic military training",
+                "specialized": "• Specialized skill development",
+                "leadership": "• Leadership development",
+                "values": "• National values education"
+              }
+            },
+            "reserves": {
+              "title": "Reserve Forces",
+              "description": "Part-time military service and emergency response",
+              "components": {
+                "training": "• Weekend training programs",
+                "emergency": "• Emergency response readiness",
+                "skills": "• Specialized skills training",
+                "community": "• Community support roles"
+              }
+            },
+            "security": {
+              "title": "Security Services",
+              "description": "Civilian security and safety programs",
+              "components": {
+                "cyber": "• Cybersecurity awareness",
+                "emergency": "• Emergency preparedness",
+                "safety": "• Public safety education",
+                "intelligence": "• Intelligence awareness"
+              }
+            }
+          },
+          "action": "Learn About Defense Programs"
+        },
+        "community": {
+          "title": "Community Service",
+          "description": "Civilian service programs focused on community development and social welfare",
+          "programs": {
+            "social": {
+              "title": "Social Welfare",
+              "description": "Supporting vulnerable populations and social causes",
+              "areas": {
+                "elderly": "• Elderly care and support",
+                "children": "• Children's programs",
+                "disabled": "• Disability support services",
+                "poverty": "• Poverty alleviation"
+              }
+            },
+            "education": {
+              "title": "Educational Support",
+              "description": "Supporting educational institutions and literacy programs",
+              "areas": {
+                "tutoring": "• Student tutoring programs",
+                "literacy": "• Adult literacy classes",
+                "technology": "• Digital skills training",
+                "libraries": "• Library assistance"
+              }
+            },
+            "healthcare": {
+              "title": "Healthcare Assistance",
+              "description": "Supporting healthcare facilities and public health initiatives",
+              "areas": {
+                "hospitals": "• Hospital volunteer work",
+                "awareness": "• Health awareness campaigns",
+                "elderly": "• Elderly care facilities",
+                "mental": "• Mental health support"
+              }
+            }
+          },
+          "action": "Join Community Service"
+        },
+        "environmental": {
+          "title": "Environmental Protection",
+          "description": "Environmental conservation and sustainability programs",
+          "programs": {
+            "conservation": {
+              "title": "Conservation Projects",
+              "description": "Protecting and preserving natural resources",
+              "activities": {
+                "wildlife": "• Wildlife protection",
+                "marine": "• Marine conservation",
+                "desert": "• Desert preservation",
+                "water": "• Water conservation"
+              }
+            },
+            "sustainability": {
+              "title": "Sustainability Initiatives",
+              "description": "Promoting sustainable practices and green living",
+              "activities": {
+                "renewable": "• Renewable energy projects",
+                "recycling": "• Recycling programs",
+                "green": "• Green building initiatives",
+                "education": "• Environmental education"
+              }
+            },
+            "cleanup": {
+              "title": "Cleanup Campaigns",
+              "description": "Community cleanup and beautification efforts",
+              "activities": {
+                "beach": "• Beach cleanup drives",
+                "parks": "• Park maintenance",
+                "urban": "• Urban beautification",
+                "waste": "• Waste reduction campaigns"
+              }
+            }
+          },
+          "action": "Join Environmental Programs"
+        }
+      }
+    },
+    "volunteering": {
+      "label": "Volunteering",
+      "content": {
+        "overview": {
+          "title": "Volunteer Opportunities",
+          "description": "Making a difference through volunteer service and community engagement"
+        },
+        "opportunities": {
+          "title": "Current Opportunities",
+          "description": "Active volunteer positions available across various sectors",
+          "categories": {
+            "emergency": {
+              "title": "Emergency Response",
+              "description": "Supporting emergency services and disaster response",
+              "roles": {
+                "first": "• First aid assistance",
+                "disaster": "• Disaster relief support",
+                "search": "• Search and rescue support",
+                "coordination": "• Emergency coordination"
+              },
+              "commitment": "On-call basis",
+              "training": "Required"
+            },
+            "events": {
+              "title": "Event Support",
+              "description": "Assisting with national and community events",
+              "roles": {
+                "logistics": "• Event logistics",
+                "registration": "• Registration assistance",
+                "guidance": "• Visitor guidance",
+                "translation": "• Translation services"
+              },
+              "commitment": "Event-based",
+              "training": "Basic orientation"
+            },
+            "ongoing": {
+              "title": "Ongoing Programs",
+              "description": "Regular volunteer commitments with consistent impact",
+              "roles": {
+                "mentoring": "• Youth mentoring",
+                "teaching": "• Skills teaching",
+                "support": "• Administrative support",
+                "outreach": "• Community outreach"
+              },
+              "commitment": "Weekly/Monthly",
+              "training": "Comprehensive"
+            }
+          },
+          "action": "Browse Opportunities"
+        },
+        "impact": {
+          "title": "Volunteer Impact",
+          "description": "The meaningful difference volunteers make in communities",
+          "stories": {
+            "education": {
+              "title": "Educational Impact",
+              "description": "Volunteers helping improve educational outcomes",
+              "achievements": {
+                "students": "• 10,000+ students supported",
+                "literacy": "• 85% literacy improvement",
+                "programs": "• 200+ educational programs",
+                "schools": "• 150+ schools reached"
+              }
+            },
+            "community": {
+              "title": "Community Development",
+              "description": "Building stronger, more resilient communities",
+              "achievements": {
+                "projects": "• 500+ community projects",
+                "families": "• 5,000+ families helped",
+                "infrastructure": "• 100+ infrastructure improvements",
+                "events": "• 300+ community events"
+              }
+            },
+            "environment": {
+              "title": "Environmental Progress",
+              "description": "Protecting and preserving the environment",
+              "achievements": {
+                "trees": "• 50,000+ trees planted",
+                "cleanup": "• 1,000+ cleanup events",
+                "waste": "• 500 tons waste recycled",
+                "awareness": "• 100,000+ people reached"
+              }
+            }
+          },
+          "action": "Read Impact Stories"
+        },
+        "recognition": {
+          "title": "Volunteer Recognition",
+          "description": "Celebrating and honoring outstanding volunteer contributions",
+          "programs": {
+            "awards": {
+              "title": "Volunteer Awards",
+              "description": "Annual recognition for exceptional volunteer service",
+              "categories": {
+                "outstanding": "• Outstanding Volunteer of the Year",
+                "youth": "• Youth Volunteer Excellence",
+                "team": "• Best Volunteer Team",
+                "innovation": "• Innovation in Volunteering"
+              }
+            },
+            "benefits": {
+              "title": "Volunteer Benefits",
+              "description": "Special benefits and privileges for active volunteers",
+              "perks": {
+                "certificate": "• Service certificates",
+                "training": "• Free training opportunities",
+                "events": "• Exclusive volunteer events",
+                "references": "• Professional references"
+              }
+            },
+            "development": {
+              "title": "Skill Development",
+              "description": "Professional development opportunities for volunteers",
+              "opportunities": {
+                "leadership": "• Leadership training",
+                "technical": "• Technical skills workshops",
+                "communication": "• Communication skills",
+                "project": "• Project management"
+              }
+            }
+          },
+          "action": "Learn About Recognition"
+        }
+      }
+    },
+    "community": {
+      "label": "Community Service",
+      "content": {
+        "overview": {
+          "title": "Community Engagement",
+          "description": "Building stronger communities through dedicated service and social responsibility"
+        },
+        "social": {
+          "title": "Social Welfare Programs",
+          "description": "Supporting vulnerable populations and addressing social needs",
+          "programs": {
+            "elderly": {
+              "title": "Elderly Care",
+              "description": "Comprehensive support for senior citizens",
+              "services": {
+                "home": "• Home visit programs",
+                "health": "• Health monitoring",
+                "social": "• Social companionship",
+                "assistance": "• Daily living assistance"
+              }
+            },
+            "children": {
+              "title": "Children's Support",
+              "description": "Programs supporting children's development and welfare",
+              "services": {
+                "education": "• Educational support",
+                "recreation": "• Recreational activities",
+                "nutrition": "• Nutrition programs",
+                "protection": "• Child protection services"
+              }
+            },
+            "families": {
+              "title": "Family Support",
+              "description": "Strengthening families and providing essential support",
+              "services": {
+                "counseling": "• Family counseling",
+                "financial": "• Financial assistance",
+                "housing": "• Housing support",
+                "employment": "• Employment assistance"
+              }
+            }
+          },
+          "action": "Join Social Programs"
+        },
+        "youth": {
+          "title": "Youth Programs",
+          "description": "Engaging youth in community service and leadership development",
+          "initiatives": {
+            "leadership": {
+              "title": "Youth Leadership",
+              "description": "Developing young community leaders",
+              "components": {
+                "training": "• Leadership training workshops",
+                "projects": "• Community project leadership",
+                "mentoring": "• Peer mentoring programs",
+                "advocacy": "• Youth advocacy initiatives"
+              }
+            },
+            "skills": {
+              "title": "Skills Development",
+              "description": "Building practical skills for community service",
+              "components": {
+                "communication": "• Communication skills",
+                "organization": "• Event organization",
+                "fundraising": "• Fundraising techniques",
+                "teamwork": "• Teamwork and collaboration"
+              }
+            },
+            "projects": {
+              "title": "Youth-Led Projects",
+              "description": "Community projects designed and led by youth",
+              "components": {
+                "planning": "• Project planning and design",
+                "implementation": "• Project implementation",
+                "evaluation": "• Impact evaluation",
+                "sustainability": "• Sustainability planning"
+              }
+            }
+          },
+          "action": "Join Youth Programs"
+        },
+        "cultural": {
+          "title": "Cultural Preservation",
+          "description": "Preserving and promoting Emirati culture and heritage",
+          "activities": {
+            "heritage": {
+              "title": "Heritage Conservation",
+              "description": "Protecting and preserving cultural heritage sites",
+              "tasks": {
+                "documentation": "• Heritage documentation",
+                "restoration": "• Site restoration support",
+                "education": "• Heritage education",
+                "promotion": "• Cultural promotion"
+              }
+            },
+            "arts": {
+              "title": "Arts & Crafts",
+              "description": "Promoting traditional arts and crafts",
+              "tasks": {
+                "workshops": "• Traditional craft workshops",
+                "exhibitions": "• Cultural exhibitions",
+                "teaching": "• Skills teaching",
+                "preservation": "• Technique preservation"
+              }
+            },
+            "language": {
+              "title": "Language Preservation",
+              "description": "Promoting Arabic language and local dialects",
+              "tasks": {
+                "classes": "• Arabic language classes",
+                "storytelling": "• Traditional storytelling",
+                "literature": "• Literature promotion",
+                "documentation": "• Dialect documentation"
+              }
+            }
+          },
+          "action": "Support Cultural Programs"
+        }
+      }
+    },
+    "environmental": {
+      "label": "Environmental",
+      "content": {
+        "overview": {
+          "title": "Environmental Stewardship",
+          "description": "Protecting the environment and promoting sustainable practices for future generations"
+        },
+        "conservation": {
+          "title": "Conservation Initiatives",
+          "description": "Protecting and preserving natural resources and ecosystems",
+          "projects": {
+            "wildlife": {
+              "title": "Wildlife Protection",
+              "description": "Protecting native wildlife and their habitats",
+              "activities": {
+                "monitoring": "• Wildlife monitoring programs",
+                "habitat": "• Habitat restoration",
+                "research": "• Conservation research",
+                "education": "• Wildlife education"
+              }
+            },
+            "marine": {
+              "title": "Marine Conservation",
+              "description": "Protecting marine ecosystems and coastal areas",
+              "activities": {
+                "coral": "• Coral reef protection",
+                "cleanup": "• Beach and ocean cleanup",
+                "monitoring": "• Marine life monitoring",
+                "awareness": "• Marine conservation awareness"
+              }
+            },
+            "desert": {
+              "title": "Desert Preservation",
+              "description": "Protecting desert ecosystems and preventing degradation",
+              "activities": {
+                "restoration": "• Desert restoration projects",
+                "research": "• Ecosystem research",
+                "protection": "• Habitat protection",
+                "education": "• Desert ecology education"
+              }
+            }
+          },
+          "action": "Join Conservation"
+        },
+        "sustainability": {
+          "title": "Sustainability Programs",
+          "description": "Promoting sustainable practices and green technologies",
+          "initiatives": {
+            "renewable": {
+              "title": "Renewable Energy",
+              "description": "Supporting renewable energy adoption and education",
+              "programs": {
+                "solar": "• Solar energy projects",
+                "wind": "• Wind energy initiatives",
+                "education": "• Renewable energy education",
+                "advocacy": "• Clean energy advocacy"
+              }
+            },
+            "waste": {
+              "title": "Waste Reduction",
+              "description": "Reducing waste and promoting circular economy principles",
+              "programs": {
+                "recycling": "• Recycling programs",
+                "composting": "• Composting initiatives",
+                "reduction": "• Waste reduction campaigns",
+                "education": "• Waste management education"
+              }
+            },
+            "water": {
+              "title": "Water Conservation",
+              "description": "Protecting water resources and promoting conservation",
+              "programs": {
+                "conservation": "• Water conservation projects",
+                "quality": "• Water quality monitoring",
+                "education": "• Conservation education",
+                "technology": "• Water-saving technology"
+              }
+            }
+          },
+          "action": "Support Sustainability"
+        },
+        "green": {
+          "title": "Green Initiatives",
+          "description": "Creating greener communities and promoting environmental awareness",
+          "programs": {
+            "urban": {
+              "title": "Urban Greening",
+              "description": "Increasing green spaces in urban areas",
+              "activities": {
+                "planting": "• Tree planting campaigns",
+                "gardens": "• Community gardens",
+                "parks": "• Park development",
+                "rooftops": "• Green roof initiatives"
+              }
+            },
+            "education": {
+              "title": "Environmental Education",
+              "description": "Raising awareness about environmental issues",
+              "activities": {
+                "workshops": "• Environmental workshops",
+                "campaigns": "• Awareness campaigns",
+                "schools": "• School programs",
+                "community": "• Community education"
+              }
+            },
+            "innovation": {
+              "title": "Green Innovation",
+              "description": "Promoting innovative environmental solutions",
+              "activities": {
+                "technology": "• Green technology development",
+                "research": "• Environmental research",
+                "startups": "• Green startup support",
+                "competitions": "• Innovation competitions"
+              }
+            }
+          },
+          "action": "Join Green Initiatives"
+        }
+      }
+    }
+  }
+}
+

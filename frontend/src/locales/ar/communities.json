@@ -1,0 +1,120 @@
+{
+  "title": "المجتمعات",
+  "description": "انضم إلى مجتمعات نابضة بالحياة من المهنيين والمتحمسين. تواصل وتعلم وانمُ معاً في مجال اهتمامك",
+  "heroTitle": "المجتمعات: تواصل، تعاون، انمُ",
+  "heroDescription": "انضم إلى مجتمعات نابضة بالحياة من المهنيين والمتحمسين. تواصل وتعلم وانمُ معاً في مجال اهتمامك",
+  "stats": {
+    "activeCommunities": "مجتمع نشط",
+    "totalMembers": "إجمالي الأعضاء",
+    "focusAreas": "مجالات التركيز"
+  },
+  "filters": {
+    "title": "ابحث عن مجتمعك",
+    "searchPlaceholder": "البحث في المجتمعات...",
+    "focusAreaFilter": "تصفية حسب مجال التركيز",
+    "communityTypeFilter": "تصفية حسب نوع المجتمع",
+    "allFocusAreas": "جميع مجالات التركيز",
+    "allCommunityTypes": "جميع أنواع المجتمعات"
+  },
+  "community": {
+    "members": "عضو",
+    "member": "عضو",
+    "joinCommunity": "انضم للمجتمع",
+    "visitWebsite": "زيارة الموقع",
+    "contactEmail": "البريد الإلكتروني",
+    "focusArea": "مجال التركيز",
+    "communityType": "نوع المجتمع",
+    "createdAt": "تاريخ الإنشاء",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "focusAreas": {
+    "technology": "التكنولوجيا",
+    "business": "الأعمال",
+    "healthcare": "الرعاية الصحية",
+    "education": "التعليم",
+    "finance": "المالية",
+    "engineering": "الهندسة",
+    "marketing": "التسويق",
+    "design": "التصميم",
+    "entrepreneurship": "ريادة الأعمال",
+    "leadership": "القيادة",
+    "innovation": "الابتكار",
+    "sustainability": "الاستدامة",
+    "digitalTransformation": "التحول الرقمي",
+    "artificialIntelligence": "الذكاء الاصطناعي",
+    "cybersecurity": "الأمن السيبراني",
+    "dataScience": "علوم البيانات",
+    "cloudComputing": "الحوسبة السحابية",
+    "blockchain": "البلوك تشين",
+    "iot": "إنترنت الأشياء",
+    "mobileApps": "تطبيقات الهاتف المحمول"
+  },
+  "communityTypes": {
+    "professional": "مهني",
+    "academic": "أكاديمي",
+    "industry": "صناعي",
+    "startup": "ناشئة",
+    "nonprofit": "غير ربحي",
+    "government": "حكومي",
+    "student": "طلابي",
+    "alumni": "خريجين",
+    "women": "نسائي",
+    "youth": "شبابي",
+    "senior": "كبار السن",
+    "international": "دولي",
+    "local": "محلي",
+    "virtual": "افتراضي",
+    "hybrid": "مختلط"
+  },
+  "actions": {
+    "join": "انضم",
+    "leave": "اترك",
+    "visit": "زيارة",
+    "contact": "اتصل",
+    "share": "مشاركة",
+    "report": "إبلاغ",
+    "favorite": "مفضلة",
+    "unfavorite": "إلغاء المفضلة"
+  },
+  "messages": {
+    "loading": "جارٍ تحميل المجتمعات...",
+    "noResults": "لم يتم العثور على مجتمعات",
+    "errorLoading": "فشل في تحميل المجتمعات",
+    "joinSuccess": "تم الانضمام للمجتمع بنجاح",
+    "leaveSuccess": "تم ترك المجتمع بنجاح",
+    "joinError": "فشل في الانضمام للمجتمع",
+    "leaveError": "فشل في ترك المجتمع"
+  },
+  "empty": {
+    "title": "لا توجد مجتمعات",
+    "description": "لم يتم العثور على مجتمعات تطابق معايير البحث الخاصة بك",
+    "suggestion": "جرب تعديل مرشحات البحث أو إنشاء مجتمع جديد"
+  },
+  "createCommunity": {
+    "title": "إنشاء مجتمع جديد",
+    "description": "ابدأ مجتمعك الخاص واجمع الأشخاص ذوي الاهتمامات المشتركة",
+    "button": "إنشاء مجتمع"
+  },
+  "membershipStatus": {
+    "member": "عضو",
+    "pending": "في الانتظار",
+    "invited": "مدعو",
+    "admin": "مدير",
+    "moderator": "مشرف"
+  },
+  "privacy": {
+    "public": "عام",
+    "private": "خاص",
+    "inviteOnly": "بالدعوة فقط"
+  },
+  "navigation": {
+    "overview": "نظرة عامة",
+    "members": "الأعضاء",
+    "discussions": "المناقشات",
+    "events": "الفعاليات",
+    "resources": "الموارد",
+    "settings": "الإعدادات"
+  }
+}
+

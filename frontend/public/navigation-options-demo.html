@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Options Demo - Emirati Journey Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'teal': {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .dropdown-content {
+            display: none;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-7xl mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-900">Navigation Options Comparison</h1>
+        <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">
+            Choose the best navigation approach for the Emirati Journey Platform. Each option maintains the EHRDC government branding while providing access to all 25+ platform pages.
+        </p>
+
+        <!-- Option 1: Enhanced Government Header -->
+        <div class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="bg-teal-600 text-white p-4">
+                    <h2 class="text-xl font-bold">Option 1: Enhanced Government Header</h2>
+                    <p class="text-teal-100">Adds dropdown navigation directly to the existing government header</p>
+                </div>
+                
+                <!-- Demo Header -->
+                <div class="bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-20">
+                            <!-- Government Logos -->
+                            <div class="flex items-center space-x-6">
+                                <div class="flex items-center space-x-4">
+                                    <div class="h-14 w-16 bg-gradient-to-r from-red-500 to-green-500 rounded flex items-center justify-center text-white text-xs font-bold">DUBAI</div>
+                                    <div class="w-px h-12 bg-slate-300"></div>
+                                    <div class="h-12 w-16 bg-teal-600 rounded flex items-center justify-center text-white text-xs font-bold">EHRDC</div>
+                                </div>
+                                <div>
+                                    <h1 class="text-xl font-bold text-slate-900">Emirati Journey Platform</h1>
+                                    <p class="text-sm text-slate-600">UAE Nationals Career Development</p>
+                                </div>
+                            </div>
+
+                            <!-- Navigation Dropdowns -->
+                            <div class="hidden lg:flex items-center space-x-1">
+                                <div class="dropdown relative">
+                                    <button class="text-slate-700 hover:text-teal-600 font-medium px-3 py-2 rounded-md transition-colors flex items-center">
+                                        Education Pathway
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="dropdown-content absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50">
+                                        <div class="p-4">
+                                            <div class="mb-3">
+                                                <h3 class="font-semibold text-slate-900">Education Pathway</h3>
+                                                <p class="text-sm text-slate-600">Educational programs and learning opportunities</p>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">📚 School Programs</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">🏕️ Summer Camps</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">🎓 Scholarships</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">🏛️ University Programs</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">📖 Graduate Programs</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">💻 Learning Management System</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="dropdown relative">
+                                    <button class="text-slate-700 hover:text-teal-600 font-medium px-3 py-2 rounded-md transition-colors flex items-center">
+                                        Career Entry
+                                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="dropdown-content absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50">
+                                        <div class="p-4">
+                                            <div class="mb-3">
+                                                <h3 class="font-semibold text-slate-900">Career Entry</h3>
+                                                <p class="text-sm text-slate-600">Professional growth and career opportunities</p>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">🧭 Career Planning Hub</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">🏭 Industry Exploration</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">💰 Financial Planning</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">📄 CV Builder</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm">👤 Portfolio</div>
+                                                <div class="p-2 hover:bg-teal-50 rounded text-sm text-teal-600 font-medium">+4 more options →</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-slate-700 hover:text-teal-600 font-medium px-3 py-2">Professional Growth</div>
+                                <div class="text-slate-700 hover:text-teal-600 font-medium px-3 py-2">Lifelong Engagement</div>
+                            </div>
+
+                            <!-- Auth Buttons -->
+                            <div class="flex items-center space-x-4">
+                                <a href="#" class="text-slate-600 hover:text-slate-900 font-medium">Sign In</a>
+                                <a href="#" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center">
+                                    Get Started
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <h3 class="font-semibold text-lg mb-4">✅ Pros:</h3>
+                    <ul class="space-y-2 text-sm text-gray-600 mb-6">
+                        <li>• Maintains current government header design</li>
+                        <li>• Minimal changes to existing structure</li>
+                        <li>• Clean, professional appearance</li>
+                        <li>• All navigation in one header row</li>
+                    </ul>
+                    
+                    <h3 class="font-semibold text-lg mb-4">⚠️ Cons:</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• Header becomes quite wide with all elements</li>
+                        <li>• Limited space for dropdown content</li>
+                        <li>• May feel cramped on smaller screens</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option 2: Enhanced Layout Component -->
+        <div class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="bg-blue-600 text-white p-4">
+                    <h2 class="text-xl font-bold">Option 2: Enhanced Layout Component</h2>
+                    <p class="text-blue-100">Uses the existing layout system with EHRDC theme and dual government logos</p>
+                </div>
+                
+                <!-- Demo Header -->
+                <div class="bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-20">
+                            <!-- Government Logos -->
+                            <div class="flex items-center space-x-6">
+                                <div class="flex items-center space-x-4">
+                                    <div class="h-14 w-16 bg-gradient-to-r from-red-500 to-green-500 rounded flex items-center justify-center text-white text-xs font-bold">DUBAI</div>
+                                    <div class="w-px h-12 bg-slate-300"></div>
+                                    <div class="h-12 w-16 bg-teal-600 rounded flex items-center justify-center text-white text-xs font-bold">EHRDC</div>
+                                </div>
+                                <div>
+                                    <h1 class="text-xl font-bold text-slate-900">Emirati Journey Platform</h1>
+                                    <p class="text-sm text-slate-600">UAE Nationals Career Development</p>
+                                </div>
+                            </div>
+                            
+                            <!-- User Actions Only -->
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-2 h-2 bg-teal-500 rounded-full"></div>
+                                    <span class="text-sm text-slate-600">Job Seeker</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">U</span>
+                                    </div>
+                                    <span class="text-sm text-slate-700">UAE National</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Separate Navigation Bar -->
+                <div class="bg-white border-b border-teal-100 shadow-sm">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex h-16 items-center justify-center space-x-8">
+                            <div class="dropdown relative">
+                                <button class="text-slate-700 hover:text-teal-600 font-medium px-4 py-2 rounded-md transition-colors flex items-center">
+                                    Education Pathway
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="dropdown relative">
+                                <button class="text-slate-700 hover:text-teal-600 font-medium px-4 py-2 rounded-md transition-colors flex items-center">
+                                    Career Entry
+                                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="text-slate-700 hover:text-teal-600 font-medium px-4 py-2">Professional Growth</div>
+                            <div class="text-slate-700 hover:text-teal-600 font-medium px-4 py-2">Lifelong Engagement</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <h3 class="font-semibold text-lg mb-4">✅ Pros:</h3>
+                    <ul class="space-y-2 text-sm text-gray-600 mb-6">
+                        <li>• Uses existing, tested navigation system</li>
+                        <li>• Separate navigation bar provides more space</li>
+                        <li>• Clean separation of branding and navigation</li>
+                        <li>• Comprehensive dropdown support</li>
+                        <li>• Mobile-responsive design included</li>
+                    </ul>
+                    
+                    <h3 class="font-semibold text-lg mb-4">⚠️ Cons:</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• Takes up more vertical space (two header rows)</li>
+                        <li>• Requires updating existing Layout component</li>
+                        <li>• More complex component structure</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Option 3: Hybrid Approach -->
+        <div class="mb-16">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="bg-purple-600 text-white p-4">
+                    <h2 class="text-xl font-bold">Option 3: Hybrid Government Navigation</h2>
+                    <p class="text-purple-100">Combines government branding with a dedicated teal navigation bar</p>
+                </div>
+                
+                <!-- Demo Header -->
+                <div class="bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between items-center h-20">
+                            <!-- Government Logos -->
+                            <div class="flex items-center space-x-6">
+                                <div class="flex items-center space-x-4">
+                                    <div class="h-14 w-16 bg-gradient-to-r from-red-500 to-green-500 rounded flex items-center justify-center text-white text-xs font-bold">DUBAI</div>
+                                    <div class="w-px h-12 bg-slate-300"></div>
+                                    <div class="h-12 w-16 bg-teal-600 rounded flex items-center justify-center text-white text-xs font-bold">EHRDC</div>
+                                </div>
+                                <div>
+                                    <h1 class="text-xl font-bold text-slate-900">Emirati Journey Platform</h1>
+                                    <p class="text-sm text-slate-600">UAE Nationals Career Development</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Auth Actions -->
+                            <div class="flex items-center space-x-4">
+                                <a href="#" class="text-slate-600 hover:text-slate-900 font-medium">Sign In</a>
+                                <a href="#" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center">
+                                    Get Started
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dedicated Teal Navigation Bar -->
+                <div class="bg-teal-600 text-white shadow-lg">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex items-center justify-center space-x-8 h-14">
+                            <div class="dropdown relative">
+                                <button class="flex items-center space-x-1 px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium">
+                                    <span>Education Pathway</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="dropdown relative">
+                                <button class="flex items-center space-x-1 px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium">
+                                    <span>Career Entry</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <button class="px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium">Professional Growth</button>
+                            <button class="px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium">Lifelong Engagement</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <h3 class="font-semibold text-lg mb-4">✅ Pros:</h3>
+                    <ul class="space-y-2 text-sm text-gray-600 mb-6">
+                        <li>• Clear visual separation between government branding and navigation</li>
+                        <li>• Teal navigation bar reinforces EHRDC theme</li>
+                        <li>• Professional government appearance</li>
+                        <li>• Easy to implement and maintain</li>
+                        <li>• Excellent mobile responsiveness</li>
+                    </ul>
+                    
+                    <h3 class="font-semibold text-lg mb-4">⚠️ Cons:</h3>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li>• Uses two header rows (more vertical space)</li>
+                        <li>• Teal bar might feel separate from main header</li>
+                        <li>• Requires new component development</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg p-8 text-center">
+            <h2 class="text-2xl font-bold mb-4">🎯 Recommendation</h2>
+            <p class="text-lg mb-6 text-teal-100">
+                Based on government standards, user experience, and technical feasibility, I recommend <strong>Option 3: Hybrid Government Navigation</strong>
+            </p>
+            <div class="grid md:grid-cols-3 gap-6 text-left">
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h3 class="font-semibold mb-2">🏛️ Government Standards</h3>
+                    <p class="text-sm text-teal-100">Maintains official dual-logo branding while providing clear navigation hierarchy</p>
+                </div>
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h3 class="font-semibold mb-2">👥 User Experience</h3>
+                    <p class="text-sm text-teal-100">Clear separation makes navigation intuitive and accessible to all users</p>
+                </div>
+                <div class="bg-white/10 rounded-lg p-4">
+                    <h3 class="font-semibold mb-2">⚡ Implementation</h3>
+                    <p class="text-sm text-teal-100">Clean architecture that's easy to maintain and extend</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
