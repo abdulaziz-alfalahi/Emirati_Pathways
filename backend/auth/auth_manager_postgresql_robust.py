@@ -58,7 +58,7 @@ class AuthenticationManager:
             self.logger.error(f"Error getting table columns: {e}")
             return []
     
-    def authenticate_user(self, email: str, password: str) -> Tuple[bool, str, Optional[Dict]]:
+    def authenticate_user(self, email: str, password: str, mfa_code: str = None) -> Tuple[bool, str, Optional[Dict]]:
         """
         Authenticate user with email and password - Robust version
         Returns: (success, message, user_data)
