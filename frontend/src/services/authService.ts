@@ -121,13 +121,14 @@ class AuthService {
       console.log('AuthService: Login response data:', {
         success: data.success,
         hasAccessToken: !!data.data?.access_token,
-        userType: data.data?.user?.user_type
+        userType: data.data?.user_type
       });
 
             if (data.success && data.data) {
         localStorage.setItem('access_token', data.data.access_token);
         localStorage.setItem('refresh_token', data.data.refresh_token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        // Store the user data directly from data.data (not data.data.user)
+        localStorage.setItem('user', JSON.stringify(data.data));
       }
       return data;
     } catch (error) {
@@ -169,7 +170,8 @@ class AuthService {
             if (data.success && data.data) {
         localStorage.setItem('access_token', data.data.access_token);
         localStorage.setItem('refresh_token', data.data.refresh_token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        // Store the user data directly from data.data (not data.data.user)
+        localStorage.setItem('user', JSON.stringify(data.data));
       }
       return data;
     } catch (error) {
@@ -341,20 +343,23 @@ class AuthService {
         }
       }
 
-      // If not found, try to fetch from API
-      try {
-        const response = await this.getUserRoles();
-        if (response.success && response.data?.roles && response.data.roles.length > 0) {
-          return response.data.roles[0];
-        }
-      } catch (apiError) {
-        console.warn('Could not fetch roles from API, using fallback logic');
-      }
-
       // Final fallback - try to get from current user object
       const currentUser = this.getUser();
       if (currentUser?.user_type) {
         return currentUser.user_type;
+      }
+
+      // Only try API if we have a valid token and are authenticated
+      const token = localStorage.getItem('access_token');
+      if (token && this.isAuthenticated()) {
+        try {
+          const response = await this.getUserRoles();
+          if (response.success && response.data?.user_type) {
+            return response.data.user_type;
+          }
+        } catch (apiError) {
+          console.warn('Could not fetch roles from API, using fallback logic');
+        }
       }
 
       return null;
@@ -476,7 +481,8 @@ class AuthService {
             if (data.success && data.data) {
         localStorage.setItem('access_token', data.data.access_token);
         localStorage.setItem('refresh_token', data.data.refresh_token);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        // Store the user data directly from data.data (not data.data.user)
+        localStorage.setItem('user', JSON.stringify(data.data));
       }
       return data;
     } catch (error) {
