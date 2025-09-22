@@ -1,0 +1,590 @@
+{
+  "test_timestamp": "2025-09-20T23:30:50.203433",
+  "base_url": "http://localhost:8080",
+  "total_tests": 26,
+  "passed_tests": 26,
+  "failed_tests": 0,
+  "test_results": [
+    {
+      "page": "Career Planning Hub",
+      "url": "http://localhost:8080/career-planning-hub",
+      "status_code": 200,
+      "response_time": 0.009303,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "Industry Exploration",
+      "url": "http://localhost:8080/industry-exploration",
+      "status_code": 200,
+      "response_time": 0.009334,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "Financial Planning",
+      "url": "http://localhost:8080/financial-planning",
+      "status_code": 200,
+      "response_time": 0.009276,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "CV Builder",
+      "url": "http://localhost:8080/cv-builder",
+      "status_code": 200,
+      "response_time": 0.006713,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "Portfolio",
+      "url": "http://localhost:8080/portfolio",
+      "status_code": 200,
+      "response_time": 0.007671,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "Interview Preparation",
+      "url": "http://localhost:8080/interview-preparation",
+      "status_code": 200,
+      "response_time": 0.006773,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "Internships",
+      "url": "http://localhost:8080/internships",
+      "status_code": 200,
+      "response_time": 0.007795,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "Job Matching",
+      "url": "http://localhost:8080/job-matching",
+      "status_code": 200,
+      "response_time": 0.006925,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Career Entry"
+    },
+    {
+      "page": "School Programs",
+      "url": "http://localhost:8080/school-programs",
+      "status_code": 200,
+      "response_time": 0.005752,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Education Pathway"
+    },
+    {
+      "page": "Summer Camps",
+      "url": "http://localhost:8080/summer-camps",
+      "status_code": 200,
+      "response_time": 0.006708,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Education Pathway"
+    },
+    {
+      "page": "Scholarships",
+      "url": "http://localhost:8080/scholarships",
+      "status_code": 200,
+      "response_time": 0.006466,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Education Pathway"
+    },
+    {
+      "page": "University Programs",
+      "url": "http://localhost:8080/university-programs",
+      "status_code": 200,
+      "response_time": 0.006923,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Education Pathway"
+    },
+    {
+      "page": "Graduate Programs",
+      "url": "http://localhost:8080/graduate-programs",
+      "status_code": 200,
+      "response_time": 0.006846,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Education Pathway"
+    },
+    {
+      "page": "Learning Management System",
+      "url": "http://localhost:8080/learning-management",
+      "status_code": 200,
+      "response_time": 0.006992,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Education Pathway"
+    },
+    {
+      "page": "Analytics",
+      "url": "http://localhost:8080/analytics",
+      "status_code": 200,
+      "response_time": 0.005737,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Professional Growth"
+    },
+    {
+      "page": "Training Programs",
+      "url": "http://localhost:8080/training-programs",
+      "status_code": 200,
+      "response_time": 0.006311,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Professional Growth"
+    },
+    {
+      "page": "Certifications",
+      "url": "http://localhost:8080/certifications",
+      "status_code": 200,
+      "response_time": 0.007025,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Professional Growth"
+    },
+    {
+      "page": "Skill Assessments",
+      "url": "http://localhost:8080/skill-assessments",
+      "status_code": 200,
+      "response_time": 0.006469,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Professional Growth"
+    },
+    {
+      "page": "Mentorship",
+      "url": "http://localhost:8080/mentorship",
+      "status_code": 200,
+      "response_time": 0.00641,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Professional Growth"
+    },
+    {
+      "page": "Leadership Development",
+      "url": "http://localhost:8080/leadership-development",
+      "status_code": 200,
+      "response_time": 0.005833,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Professional Growth"
+    },
+    {
+      "page": "Communities",
+      "url": "http://localhost:8080/communities",
+      "status_code": 200,
+      "response_time": 0.00584,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Lifelong Engagement"
+    },
+    {
+      "page": "Networking",
+      "url": "http://localhost:8080/networking",
+      "status_code": 200,
+      "response_time": 0.006634,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Lifelong Engagement"
+    },
+    {
+      "page": "Alumni Network",
+      "url": "http://localhost:8080/alumni-network",
+      "status_code": 200,
+      "response_time": 0.00654,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Lifelong Engagement"
+    },
+    {
+      "page": "Events",
+      "url": "http://localhost:8080/events",
+      "status_code": 200,
+      "response_time": 0.005753,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Lifelong Engagement"
+    },
+    {
+      "page": "Volunteer Opportunities",
+      "url": "http://localhost:8080/volunteer-opportunities",
+      "status_code": 200,
+      "response_time": 0.00612,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Lifelong Engagement"
+    },
+    {
+      "page": "Retirement Planning",
+      "url": "http://localhost:8080/retirement-planning",
+      "status_code": 200,
+      "response_time": 0.005735,
+      "content_length": 6573,
+      "has_content": true,
+      "passed": true,
+      "design_elements": {
+        "has_navigation": true,
+        "has_header": false,
+        "has_footer": false,
+        "has_modern_styling": false,
+        "has_responsive_design": true,
+        "has_uae_branding": true,
+        "has_arabic_support": true
+      },
+      "design_score": 57.14285714285714,
+      "category": "Lifelong Engagement"
+    }
+  ],
+  "design_consistency_score": 78.57142857142856,
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "Inconsistent design elements",
+      "description": "Average design score is 57.1%",
+      "solution": "Implement unified design system across all pages"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Poor design consistency in Career Entry",
+      "description": "Career Entry pages have average score of 57.1%",
+      "solution": "Update Career Entry pages to use modern design components"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Poor design consistency in Education Pathway",
+      "description": "Education Pathway pages have average score of 57.1%",
+      "solution": "Update Education Pathway pages to use modern design components"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Poor design consistency in Professional Growth",
+      "description": "Professional Growth pages have average score of 57.1%",
+      "solution": "Update Professional Growth pages to use modern design components"
+    },
+    {
+      "priority": "MEDIUM",
+      "issue": "Poor design consistency in Lifelong Engagement",
+      "description": "Lifelong Engagement pages have average score of 57.1%",
+      "solution": "Update Lifelong Engagement pages to use modern design components"
+    }
+  ],
+  "success_rate": 100.0,
+  "average_design_score": 57.14285714285712,
+  "category_breakdown": {
+    "Career Entry": {
+      "average_score": 57.142857142857125,
+      "pages_tested": 8,
+      "min_score": 57.14285714285714,
+      "max_score": 57.14285714285714
+    },
+    "Education Pathway": {
+      "average_score": 57.14285714285713,
+      "pages_tested": 6,
+      "min_score": 57.14285714285714,
+      "max_score": 57.14285714285714
+    },
+    "Professional Growth": {
+      "average_score": 57.14285714285713,
+      "pages_tested": 6,
+      "min_score": 57.14285714285714,
+      "max_score": 57.14285714285714
+    },
+    "Lifelong Engagement": {
+      "average_score": 57.14285714285713,
+      "pages_tested": 6,
+      "min_score": 57.14285714285714,
+      "max_score": 57.14285714285714
+    }
+  }
+}

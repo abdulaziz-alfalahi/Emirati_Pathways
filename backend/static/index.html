@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emirati Journey Platform - Production Ready</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold text-blue-600">🇦🇪 Emirati Journey</div>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="#" onclick="showSection('dashboard')" class="text-gray-700 hover:text-blue-600">Dashboard</a>
+                        <a href="#" onclick="showSection('jobs')" class="text-gray-700 hover:text-blue-600">Jobs</a>
+                        <a href="#" onclick="showSection('applications')" class="text-gray-700 hover:text-blue-600">Applications</a>
+                        <a href="#" onclick="showSection('companies')" class="text-gray-700 hover:text-blue-600">Companies</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="userInfo" class="hidden">
+                        <span id="userName" class="text-gray-700"></span>
+                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>
+                    </div>
+                    <div id="authButtons">
+                        <button onclick="showLogin()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Login</button>
+                        <button onclick="showRegister()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Register</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Welcome Section -->
+        <div id="welcome" class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome to Emirati Journey Platform</h1>
+            <p class="text-xl text-gray-600 mb-8">Production-Ready Career Ecosystem for UAE Nationals</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="card-hover bg-white p-6 rounded-lg shadow">
+                    <div class="text-blue-500 mb-4">
+                        <i data-lucide="briefcase" class="w-12 h-12 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Live Job Postings</h3>
+                    <p class="text-gray-600">Real job opportunities from verified UAE employers</p>
+                </div>
+                <div class="card-hover bg-white p-6 rounded-lg shadow">
+                    <div class="text-green-500 mb-4">
+                        <i data-lucide="users" class="w-12 h-12 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Candidate Management</h3>
+                    <p class="text-gray-600">Complete application tracking and career development</p>
+                </div>
+                <div class="card-hover bg-white p-6 rounded-lg shadow">
+                    <div class="text-purple-500 mb-4">
+                        <i data-lucide="trending-up" class="w-12 h-12 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Emiratization Focus</h3>
+                    <p class="text-gray-600">Supporting UAE Vision 2071 workforce goals</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Total Jobs</p>
+                            <p id="totalJobs" class="text-2xl font-bold text-blue-600">0</p>
+                        </div>
+                        <i data-lucide="briefcase" class="w-8 h-8 text-blue-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Active Applications</p>
+                            <p id="totalApplications" class="text-2xl font-bold text-green-600">0</p>
+                        </div>
+                        <i data-lucide="file-text" class="w-8 h-8 text-green-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Companies</p>
+                            <p id="totalCompanies" class="text-2xl font-bold text-purple-600">0</p>
+                        </div>
+                        <i data-lucide="building" class="w-8 h-8 text-purple-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Emiratization Rate</p>
+                            <p id="emiratizationRate" class="text-2xl font-bold text-orange-600">67.3%</p>
+                        </div>
+                        <i data-lucide="flag" class="w-8 h-8 text-orange-500"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Role-specific content will be loaded here -->
+            <div id="roleSpecificContent"></div>
+        </div>
+
+        <!-- Jobs Section -->
+        <div id="jobs" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Job Opportunities</h2>
+                <button onclick="showCreateJob()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>Post New Job
+                </button>
+            </div>
+            
+            <!-- Job Search -->
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <div class="grid md:grid-cols-4 gap-4">
+                    <input type="text" id="jobSearch" placeholder="Search jobs..." class="border rounded px-3 py-2">
+                    <select id="emirateFilter" class="border rounded px-3 py-2">
+                        <option value="">All Emirates</option>
+                        <option value="Dubai">Dubai</option>
+                        <option value="Abu Dhabi">Abu Dhabi</option>
+                        <option value="Sharjah">Sharjah</option>
+                        <option value="Ajman">Ajman</option>
+                        <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                        <option value="Fujairah">Fujairah</option>
+                        <option value="Umm Al Quwain">Umm Al Quwain</option>
+                    </select>
+                    <select id="employmentTypeFilter" class="border rounded px-3 py-2">
+                        <option value="">All Types</option>
+                        <option value="full_time">Full Time</option>
+                        <option value="part_time">Part Time</option>
+                        <option value="contract">Contract</option>
+                        <option value="internship">Internship</option>
+                    </select>
+                    <button onclick="searchJobs()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Search</button>
+                </div>
+            </div>
+            
+            <!-- Jobs List -->
+            <div id="jobsList" class="space-y-4"></div>
+        </div>
+
+        <!-- Applications Section -->
+        <div id="applications" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">My Applications</h2>
+            <div id="applicationsList" class="space-y-4"></div>
+        </div>
+
+        <!-- Companies Section -->
+        <div id="companies" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">Companies</h2>
+                <button onclick="showCreateCompany()" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
+                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>Add Company
+                </button>
+            </div>
+            <div id="companiesList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold mb-4">Login</h3>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Email</label>
+                    <input type="email" id="loginEmail" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2">Password</label>
+                    <input type="password" id="loginPassword" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div class="flex justify-between">
+                    <button type="button" onclick="hideModal('loginModal')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold mb-4">Register</h3>
+            <form id="registerForm">
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">First Name</label>
+                        <input type="text" id="registerFirstName" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Last Name</label>
+                        <input type="text" id="registerLastName" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Email</label>
+                    <input type="email" id="registerEmail" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Phone</label>
+                    <input type="tel" id="registerPhone" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Emirate</label>
+                    <select id="registerEmirate" class="w-full border rounded px-3 py-2" required>
+                        <option value="">Select Emirate</option>
+                        <option value="Dubai">Dubai</option>
+                        <option value="Abu Dhabi">Abu Dhabi</option>
+                        <option value="Sharjah">Sharjah</option>
+                        <option value="Ajman">Ajman</option>
+                        <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                        <option value="Fujairah">Fujairah</option>
+                        <option value="Umm Al Quwain">Umm Al Quwain</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2">Password</label>
+                    <input type="password" id="registerPassword" class="w-full border rounded px-3 py-2" required>
+                </div>
+                <div class="flex justify-between">
+                    <button type="button" onclick="hideModal('registerModal')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Job Modal -->
+    <div id="createJobModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+            <h3 class="text-2xl font-bold mb-4">Create New Job</h3>
+            <form id="createJobForm">
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Job Title</label>
+                        <input type="text" id="jobTitle" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Company</label>
+                        <select id="jobCompany" class="w-full border rounded px-3 py-2" required>
+                            <option value="">Select Company</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Job Description</label>
+                    <textarea id="jobDescription" rows="4" class="w-full border rounded px-3 py-2" required></textarea>
+                </div>
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Employment Type</label>
+                        <select id="jobEmploymentType" class="w-full border rounded px-3 py-2" required>
+                            <option value="full_time">Full Time</option>
+                            <option value="part_time">Part Time</option>
+                            <option value="contract">Contract</option>
+                            <option value="internship">Internship</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Experience Level</label>
+                        <select id="jobExperienceLevel" class="w-full border rounded px-3 py-2" required>
+                            <option value="entry_level">Entry Level</option>
+                            <option value="junior">Junior</option>
+                            <option value="mid_level">Mid Level</option>
+                            <option value="senior">Senior</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Industry</label>
+                        <input type="text" id="jobIndustry" class="w-full border rounded px-3 py-2">
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Emirate</label>
+                        <select id="jobEmirate" class="w-full border rounded px-3 py-2" required>
+                            <option value="Dubai">Dubai</option>
+                            <option value="Abu Dhabi">Abu Dhabi</option>
+                            <option value="Sharjah">Sharjah</option>
+                            <option value="Ajman">Ajman</option>
+                            <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                            <option value="Fujairah">Fujairah</option>
+                            <option value="Umm Al Quwain">Umm Al Quwain</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">City</label>
+                        <input type="text" id="jobCity" class="w-full border rounded px-3 py-2" required>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Min Salary (AED)</label>
+                        <input type="number" id="jobMinSalary" class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Max Salary (AED)</label>
+                        <input type="number" id="jobMaxSalary" class="w-full border rounded px-3 py-2">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Required Skills (comma separated)</label>
+                    <input type="text" id="jobSkills" class="w-full border rounded px-3 py-2" placeholder="JavaScript, React, Node.js">
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="jobEmiratizationPriority" class="mr-2">
+                        <span class="text-gray-700">Emiratization Priority</span>
+                    </label>
+                </div>
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="jobVisaSponsorship" class="mr-2" checked>
+                        <span class="text-gray-700">Visa Sponsorship Available</span>
+                    </label>
+                </div>
+                <div class="flex justify-between">
+                    <button type="button" onclick="hideModal('createJobModal')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Cancel</button>
+                    <div class="space-x-2">
+                        <button type="button" onclick="createJob('draft')" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">Save as Draft</button>
+                        <button type="button" onclick="createJob('published')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Publish Job</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let authToken = null;
+        let currentSection = 'welcome';
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+            checkAuthStatus();
+            loadDashboardStats();
+        });
+
+        // Authentication functions
+        function checkAuthStatus() {
+            authToken = localStorage.getItem('authToken');
+            if (authToken) {
+                // Verify token with backend
+                fetch('/api/auth/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentUser = data.user;
+                        showUserInfo();
+                        if (currentSection === 'welcome') {
+                            showSection('dashboard');
+                        }
+                    } else {
+                        logout();
+                    }
+                })
+                .catch(() => logout());
+            }
+        }
+
+        function showUserInfo() {
+            document.getElementById('authButtons').classList.add('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('userName').textContent = currentUser.first_name + ' ' + currentUser.last_name;
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            authToken = null;
+            currentUser = null;
+            document.getElementById('authButtons').classList.remove('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            showSection('welcome');
+        }
+
+        // Modal functions
+        function showLogin() {
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('registerModal').classList.remove('hidden');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showCreateJob() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            loadCompaniesForJob();
+            document.getElementById('createJobModal').classList.remove('hidden');
+        }
+
+        // Section navigation
+        function showSection(section) {
+            // Hide all sections
+            const sections = ['welcome', 'dashboard', 'jobs', 'applications', 'companies'];
+            sections.forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(section).classList.remove('hidden');
+            currentSection = section;
+            
+            // Load section-specific data
+            switch(section) {
+                case 'dashboard':
+                    loadDashboardStats();
+                    break;
+                case 'jobs':
+                    loadJobs();
+                    break;
+                case 'applications':
+                    loadApplications();
+                    break;
+                case 'companies':
+                    loadCompanies();
+                    break;
+            }
+        }
+
+        // Form handlers
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    authToken = data.access_token;
+                    localStorage.setItem('authToken', authToken);
+                    currentUser = data.user;
+                    showUserInfo();
+                    hideModal('loginModal');
+                    showSection('dashboard');
+                } else {
+                    alert(data.message || 'Login failed');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                alert('Login failed');
+            });
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = {
+                first_name: document.getElementById('registerFirstName').value,
+                last_name: document.getElementById('registerLastName').value,
+                email: document.getElementById('registerEmail').value,
+                phone: document.getElementById('registerPhone').value,
+                emirate: document.getElementById('registerEmirate').value,
+                password: document.getElementById('registerPassword').value
+            };
+            
+            fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Registration successful! Please login.');
+                    hideModal('registerModal');
+                    showLogin();
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
+            })
+            .catch(error => {
+                console.error('Registration error:', error);
+                alert('Registration failed');
+            });
+        });
+
+        // Dashboard functions
+        function loadDashboardStats() {
+            // Load job stats
+            fetch('/api/jobs/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('totalJobs').textContent = data.data.active_jobs;
+                    }
+                })
+                .catch(error => console.error('Error loading job stats:', error));
+
+            // Load application stats
+            if (authToken) {
+                fetch('/api/applications/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('totalApplications').textContent = data.data.total_applications;
+                    }
+                })
+                .catch(error => console.error('Error loading application stats:', error));
+            }
+
+            // Load company stats
+            fetch('/api/companies/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('totalCompanies').textContent = data.data.active_companies;
+                    }
+                })
+                .catch(error => console.error('Error loading company stats:', error));
+        }
+
+        // Job functions
+        function loadJobs() {
+            fetch('/api/jobs/search')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayJobs(data.data.jobs);
+                    }
+                })
+                .catch(error => console.error('Error loading jobs:', error));
+        }
+
+        function displayJobs(jobs) {
+            const jobsList = document.getElementById('jobsList');
+            jobsList.innerHTML = '';
+            
+            jobs.forEach(job => {
+                const jobCard = document.createElement('div');
+                jobCard.className = 'bg-white p-6 rounded-lg shadow card-hover';
+                jobCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">${job.title}</h3>
+                            <p class="text-gray-600">${job.company_name || 'Company Name'}</p>
+                            <p class="text-sm text-gray-500">${job.location_display}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-3 py-1 text-sm rounded-full ${job.emiratization_priority ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}">
+                                ${job.emiratization_priority ? '🇦🇪 UAE Priority' : job.employment_type.replace('_', ' ').toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">${job.summary || job.description.substring(0, 150) + '...'}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            ${job.required_skills.slice(0, 3).map(skill => 
+                                `<span class="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded">${skill}</span>`
+                            ).join('')}
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="viewJob('${job.id}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">View</button>
+                            ${authToken ? `<button onclick="applyToJob('${job.id}')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Apply</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                jobsList.appendChild(jobCard);
+            });
+        }
+
+        function searchJobs() {
+            const query = document.getElementById('jobSearch').value;
+            const emirate = document.getElementById('emirateFilter').value;
+            const employmentType = document.getElementById('employmentTypeFilter').value;
+            
+            const params = new URLSearchParams();
+            if (query) params.append('q', query);
+            if (emirate) params.append('emirate', emirate);
+            if (employmentType) params.append('employment_type', employmentType);
+            
+            fetch(`/api/jobs/search?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayJobs(data.data.jobs);
+                    }
+                })
+                .catch(error => console.error('Error searching jobs:', error));
+        }
+
+        function loadCompaniesForJob() {
+            if (!authToken) return;
+            
+            fetch(`/api/companies/user/${currentUser.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const select = document.getElementById('jobCompany');
+                    select.innerHTML = '<option value="">Select Company</option>';
+                    data.data.companies.forEach(company => {
+                        select.innerHTML += `<option value="${company.id}">${company.name}</option>`;
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading companies:', error));
+        }
+
+        function createJob(status) {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            const formData = {
+                title: document.getElementById('jobTitle').value,
+                description: document.getElementById('jobDescription').value,
+                company_id: document.getElementById('jobCompany').value,
+                employment_type: document.getElementById('jobEmploymentType').value,
+                experience_level: document.getElementById('jobExperienceLevel').value,
+                industry: document.getElementById('jobIndustry').value,
+                location: {
+                    emirate: document.getElementById('jobEmirate').value,
+                    city: document.getElementById('jobCity').value
+                },
+                salary: {
+                    min_salary: parseInt(document.getElementById('jobMinSalary').value) || null,
+                    max_salary: parseInt(document.getElementById('jobMaxSalary').value) || null,
+                    currency: 'AED'
+                },
+                required_skills: document.getElementById('jobSkills').value.split(',').map(s => s.trim()).filter(s => s),
+                emiratization_priority: document.getElementById('jobEmiratizationPriority').checked,
+                visa_sponsorship_available: document.getElementById('jobVisaSponsorship').checked
+            };
+            
+            fetch('/api/jobs/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (status === 'published') {
+                        // Publish the job immediately
+                        return fetch(`/api/jobs/${data.data.job_id}/publish`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                            }
+                        });
+                    }
+                    return Promise.resolve({json: () => data});
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Job ${status === 'published' ? 'published' : 'saved as draft'} successfully!`);
+                    hideModal('createJobModal');
+                    loadJobs();
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error creating job:', error);
+                alert('Failed to create job: ' + error.message);
+            });
+        }
+
+        function applyToJob(jobId) {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            const coverLetter = prompt('Enter a cover letter (optional):');
+            
+            fetch('/api/applications/apply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    job_id: jobId,
+                    cover_letter: coverLetter
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Application submitted successfully!');
+                } else {
+                    alert(data.message || 'Failed to submit application');
+                }
+            })
+            .catch(error => {
+                console.error('Error applying to job:', error);
+                alert('Failed to submit application');
+            });
+        }
+
+        // Application functions
+        function loadApplications() {
+            if (!authToken || !currentUser) return;
+            
+            fetch(`/api/applications/candidate/${currentUser.id}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayApplications(data.data.applications);
+                }
+            })
+            .catch(error => console.error('Error loading applications:', error));
+        }
+
+        function displayApplications(applications) {
+            const applicationsList = document.getElementById('applicationsList');
+            applicationsList.innerHTML = '';
+            
+            applications.forEach(app => {
+                const appCard = document.createElement('div');
+                appCard.className = 'bg-white p-6 rounded-lg shadow card-hover';
+                appCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">${app.job?.title || 'Job Title'}</h3>
+                            <p class="text-gray-600">${app.job?.company_name || 'Company Name'}</p>
+                            <p class="text-sm text-gray-500">Applied: ${new Date(app.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-3 py-1 text-sm rounded-full bg-${app.status_color}-100 text-${app.status_color}-800">
+                                ${app.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <div class="mt-2">
+                                <div class="w-32 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${app.progress_percentage}%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">${app.progress_percentage}% Complete</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">${app.next_step}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            ${app.match_score ? `Match Score: ${app.match_score}%` : ''}
+                        </div>
+                        <button onclick="viewApplication('${app.id}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">View Details</button>
+                    </div>
+                `;
+                applicationsList.appendChild(appCard);
+            });
+        }
+
+        // Company functions
+        function loadCompanies() {
+            fetch('/api/companies/search')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayCompanies(data.data.companies);
+                    }
+                })
+                .catch(error => console.error('Error loading companies:', error));
+        }
+
+        function displayCompanies(companies) {
+            const companiesList = document.getElementById('companiesList');
+            companiesList.innerHTML = '';
+            
+            companies.forEach(company => {
+                const companyCard = document.createElement('div');
+                companyCard.className = 'bg-white p-6 rounded-lg shadow card-hover';
+                companyCard.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                            <i data-lucide="building" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">${company.name}</h3>
+                            <p class="text-sm text-gray-500">${company.location_display}</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">${company.description.substring(0, 100) + '...'}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="text-sm text-gray-500">
+                            <span class="inline-block px-2 py-1 bg-gray-100 rounded">${company.size_display}</span>
+                            ${company.verification?.is_verified ? '<span class="inline-block px-2 py-1 bg-green-100 text-green-800 rounded ml-2">✓ Verified</span>' : ''}
+                        </div>
+                        <button onclick="viewCompany('${company.id}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">View</button>
+                    </div>
+                `;
+                companiesList.appendChild(companyCard);
+            });
+            
+            // Re-initialize Lucide icons
+            lucide.createIcons();
+        }
+
+        // Placeholder functions for detailed views
+        function viewJob(jobId) {
+            alert('Job details view - to be implemented');
+        }
+
+        function viewApplication(applicationId) {
+            alert('Application details view - to be implemented');
+        }
+
+        function viewCompany(companyId) {
+            alert('Company details view - to be implemented');
+        }
+
+        function showCreateCompany() {
+            alert('Create company form - to be implemented');
+        }
+    </script>
+</body>
+</html>
+

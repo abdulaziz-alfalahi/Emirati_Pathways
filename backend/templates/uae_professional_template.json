@@ -1,0 +1,670 @@
+{
+  "template_id": "uae_professional",
+  "name": "UAE Professional",
+  "description": "Clean, professional template optimized for UAE corporate environment",
+  "category": "professional",
+  "industry": "general",
+  "language": "english",
+  "version": "1.0",
+  "created_at": "2025-08-31T00:00:00Z",
+  "updated_at": "2025-08-31T00:00:00Z",
+  "is_premium": false,
+  "is_active": true,
+  "preview_image": "/templates/previews/uae_professional.png",
+  
+  "style": {
+    "font_family": "Arial, sans-serif",
+    "font_size": 11,
+    "line_height": 1.4,
+    "color_primary": "#1B4F72",
+    "color_secondary": "#34495E",
+    "color_accent": "#FFD700",
+    "background_color": "#FFFFFF",
+    "header_style": "professional",
+    "layout_type": "single_column",
+    "spacing": "normal",
+    "border_style": "none",
+    "page_margins": {
+      "top": "2cm",
+      "bottom": "2cm",
+      "left": "2cm",
+      "right": "2cm"
+    }
+  },
+  
+  "sections": [
+    {
+      "id": "header",
+      "name": "header",
+      "display_name": "Header",
+      "type": "header",
+      "required": true,
+      "order": 1,
+      "style": {
+        "background_color": "#F8F9FA",
+        "text_align": "center",
+        "padding": "20px",
+        "border_bottom": "3px solid #FFD700"
+      },
+      "fields": [
+        {
+          "name": "full_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "24px",
+            "font_weight": "bold",
+            "color": "#1B4F72",
+            "margin_bottom": "10px"
+          }
+        },
+        {
+          "name": "professional_title",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "16px",
+            "color": "#34495E",
+            "font_style": "italic",
+            "margin_bottom": "15px"
+          }
+        },
+        {
+          "name": "contact_info",
+          "type": "contact_group",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "color": "#34495E",
+            "display": "flex",
+            "justify_content": "center",
+            "gap": "20px"
+          },
+          "subfields": [
+            {
+              "name": "email",
+              "type": "email",
+              "required": true,
+              "icon": "envelope"
+            },
+            {
+              "name": "phone",
+              "type": "phone",
+              "required": true,
+              "icon": "phone",
+              "validation": "uae_phone"
+            },
+            {
+              "name": "location",
+              "type": "location",
+              "required": true,
+              "icon": "map-marker",
+              "format": "{city}, {emirate}"
+            },
+            {
+              "name": "linkedin",
+              "type": "url",
+              "required": false,
+              "icon": "linkedin"
+            }
+          ]
+        }
+      ]
+    },
+    
+    {
+      "id": "professional_summary",
+      "name": "professional_summary",
+      "display_name": "Professional Summary",
+      "type": "text_section",
+      "required": true,
+      "order": 2,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "content_style": {
+        "font_size": "11px",
+        "line_height": "1.6",
+        "text_align": "justify",
+        "color": "#2C3E50"
+      },
+      "ai_suggestions": {
+        "enabled": true,
+        "prompt_template": "Generate a professional summary for a {industry} professional in the UAE with {years_experience} years of experience, highlighting {key_skills} and career achievements.",
+        "max_length": 150,
+        "tone": "professional"
+      }
+    },
+    
+    {
+      "id": "experience",
+      "name": "experience",
+      "display_name": "Work Experience",
+      "type": "list_section",
+      "required": true,
+      "order": 3,
+      "max_items": 10,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "item_style": {
+        "margin_bottom": "20px",
+        "padding_bottom": "15px",
+        "border_bottom": "1px solid #E8E8E8"
+      },
+      "fields": [
+        {
+          "name": "job_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "14px",
+            "font_weight": "bold",
+            "color": "#1B4F72",
+            "margin_bottom": "5px"
+          }
+        },
+        {
+          "name": "company",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "13px",
+            "color": "#34495E",
+            "font_weight": "600"
+          }
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#7F8C8D",
+            "font_style": "italic"
+          }
+        },
+        {
+          "name": "date_range",
+          "type": "date_range",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "color": "#7F8C8D",
+            "float": "right"
+          },
+          "format": "{start_date} - {end_date}",
+          "current_text": "Present"
+        },
+        {
+          "name": "description",
+          "type": "bullet_list",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "line_height": "1.5",
+            "margin_top": "10px",
+            "margin_left": "20px"
+          },
+          "bullet_style": "•"
+        },
+        {
+          "name": "achievements",
+          "type": "bullet_list",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "line_height": "1.5",
+            "margin_top": "5px",
+            "margin_left": "20px",
+            "color": "#27AE60"
+          },
+          "bullet_style": "★",
+          "prefix": "Key Achievement: "
+        },
+        {
+          "name": "skills_used",
+          "type": "tag_list",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "margin_top": "10px"
+          },
+          "tag_style": {
+            "background_color": "#E8F4FD",
+            "color": "#1B4F72",
+            "padding": "3px 8px",
+            "border_radius": "12px",
+            "margin_right": "5px",
+            "display": "inline-block"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "education",
+      "name": "education",
+      "display_name": "Education",
+      "type": "list_section",
+      "required": true,
+      "order": 4,
+      "max_items": 5,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "item_style": {
+        "margin_bottom": "15px"
+      },
+      "fields": [
+        {
+          "name": "degree",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "13px",
+            "font_weight": "bold",
+            "color": "#1B4F72"
+          }
+        },
+        {
+          "name": "institution",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "color": "#34495E",
+            "margin_left": "10px"
+          }
+        },
+        {
+          "name": "graduation_year",
+          "type": "year",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        },
+        {
+          "name": "gpa",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#27AE60",
+            "margin_top": "5px"
+          },
+          "prefix": "GPA: "
+        },
+        {
+          "name": "honors",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#E74C3C",
+            "font_style": "italic",
+            "margin_top": "5px"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "skills",
+      "name": "skills",
+      "display_name": "Skills",
+      "type": "skills_section",
+      "required": true,
+      "order": 5,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "layout": "categorized",
+      "categories": [
+        {
+          "name": "technical",
+          "display_name": "Technical Skills",
+          "style": {
+            "margin_bottom": "15px"
+          }
+        },
+        {
+          "name": "soft",
+          "display_name": "Soft Skills",
+          "style": {
+            "margin_bottom": "15px"
+          }
+        },
+        {
+          "name": "language",
+          "display_name": "Language Skills",
+          "style": {
+            "margin_bottom": "15px"
+          }
+        }
+      ],
+      "skill_style": {
+        "display": "inline-block",
+        "background_color": "#F8F9FA",
+        "color": "#1B4F72",
+        "padding": "5px 12px",
+        "margin": "3px",
+        "border_radius": "15px",
+        "font_size": "11px",
+        "border": "1px solid #E8E8E8"
+      },
+      "proficiency_display": "dots",
+      "proficiency_style": {
+        "color": "#FFD700",
+        "margin_left": "8px"
+      }
+    },
+    
+    {
+      "id": "languages",
+      "name": "languages",
+      "display_name": "Languages",
+      "type": "list_section",
+      "required": false,
+      "order": 6,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "layout": "horizontal",
+      "fields": [
+        {
+          "name": "language",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "font_weight": "600",
+            "color": "#1B4F72"
+          }
+        },
+        {
+          "name": "proficiency",
+          "type": "select",
+          "required": true,
+          "options": ["Native", "Fluent", "Advanced", "Intermediate", "Basic"],
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E",
+            "margin_left": "10px"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "certifications",
+      "name": "certifications",
+      "display_name": "Certifications",
+      "type": "list_section",
+      "required": false,
+      "order": 7,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "fields": [
+        {
+          "name": "certification_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "font_weight": "600",
+            "color": "#1B4F72"
+          }
+        },
+        {
+          "name": "issuing_organization",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E"
+          }
+        },
+        {
+          "name": "issue_date",
+          "type": "date",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "projects",
+      "name": "projects",
+      "display_name": "Key Projects",
+      "type": "list_section",
+      "required": false,
+      "order": 8,
+      "max_items": 5,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "fields": [
+        {
+          "name": "project_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "13px",
+            "font_weight": "bold",
+            "color": "#1B4F72"
+          }
+        },
+        {
+          "name": "description",
+          "type": "textarea",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "line_height": "1.5",
+            "margin_top": "5px",
+            "color": "#2C3E50"
+          }
+        },
+        {
+          "name": "technologies",
+          "type": "tag_list",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "margin_top": "8px"
+          },
+          "tag_style": {
+            "background_color": "#E8F4FD",
+            "color": "#1B4F72",
+            "padding": "2px 6px",
+            "border_radius": "10px",
+            "margin_right": "4px"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "awards",
+      "name": "awards",
+      "display_name": "Awards & Achievements",
+      "type": "list_section",
+      "required": false,
+      "order": 9,
+      "style": {
+        "margin_top": "25px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#1B4F72",
+        "border_left": "4px solid #FFD700",
+        "padding_left": "15px",
+        "margin_bottom": "15px"
+      },
+      "fields": [
+        {
+          "name": "award_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "font_weight": "600",
+            "color": "#E74C3C"
+          }
+        },
+        {
+          "name": "awarding_organization",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E"
+          }
+        },
+        {
+          "name": "award_date",
+          "type": "date",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        }
+      ]
+    }
+  ],
+  
+  "uae_specific": {
+    "emirates_validation": true,
+    "phone_validation": "uae_format",
+    "visa_status_field": true,
+    "emirates_id_field": true,
+    "arabic_name_support": true,
+    "cultural_considerations": {
+      "professional_photo": "optional_recommended",
+      "references": "contact_before_providing",
+      "salary_expectations": "discuss_during_interview"
+    },
+    "industry_alignment": {
+      "government": {
+        "security_clearance": true,
+        "emirates_id_required": true
+      },
+      "finance": {
+        "regulatory_compliance": true,
+        "certifications_emphasis": true
+      },
+      "healthcare": {
+        "medical_licenses": true,
+        "continuing_education": true
+      }
+    }
+  },
+  
+  "export_settings": {
+    "pdf": {
+      "page_size": "A4",
+      "orientation": "portrait",
+      "quality": "high",
+      "fonts_embedded": true
+    },
+    "docx": {
+      "compatibility": "office_2016",
+      "track_changes": false,
+      "comments": false
+    },
+    "json": {
+      "include_metadata": true,
+      "include_template_info": true
+    }
+  },
+  
+  "ai_integration": {
+    "content_suggestions": true,
+    "skill_recommendations": true,
+    "industry_optimization": true,
+    "ats_optimization": true,
+    "gemini_prompts": {
+      "professional_summary": "Create a professional summary for a {industry} professional in the UAE with {years_experience} years of experience. Highlight {key_skills} and align with UAE Vision D33 goals.",
+      "achievement_enhancement": "Enhance this achievement with quantifiable metrics and UAE market context: {achievement}",
+      "skill_suggestions": "Suggest relevant skills for a {job_title} position in {industry} within the UAE market, considering current trends and requirements."
+    }
+  }
+}
+

@@ -1,0 +1,92 @@
+{
+  "timestamp": "2025-09-20T23:10:21.179266",
+  "total_tests": 14,
+  "passed_tests": 0,
+  "failed_tests": 14,
+  "test_details": [
+    {
+      "test_name": "Home Page Bilingual Test",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168663bd50>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.181423"
+    },
+    {
+      "test_name": "Navigation Bilingual Test",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168664e150>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.182454"
+    },
+    {
+      "test_name": "Persona Page Test - /career-planning-hub",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /career-planning-hub (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f1686650510>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.183468"
+    },
+    {
+      "test_name": "Persona Page Test - /industry-exploration",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /industry-exploration (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f16865f8790>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.184629"
+    },
+    {
+      "test_name": "Persona Page Test - /cv-builder",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /cv-builder (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168664e710>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.185573"
+    },
+    {
+      "test_name": "Persona Page Test - /job-matching",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /job-matching (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168663b8d0>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.186475"
+    },
+    {
+      "test_name": "Persona Page Test - /analytics",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /analytics (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f1686653090>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.187402"
+    },
+    {
+      "test_name": "Persona Page Test - /mentorship",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /mentorship (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168645d410>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.188442"
+    },
+    {
+      "test_name": "RTL CSS File - /src/styles/rtl.css",
+      "status": "SKIP",
+      "details": "CSS file not directly accessible",
+      "timestamp": "2025-09-20T23:10:21.189368"
+    },
+    {
+      "test_name": "RTL CSS File - /src/styles/enhanced-rtl.css",
+      "status": "SKIP",
+      "details": "CSS file not directly accessible",
+      "timestamp": "2025-09-20T23:10:21.190489"
+    },
+    {
+      "test_name": "Translation File Test - /src/locales/en.json",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /src/locales/en.json (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168645d7d0>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.191352"
+    },
+    {
+      "test_name": "Translation File Test - /src/locales/ar.json",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /src/locales/ar.json (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168663be10>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.192260"
+    },
+    {
+      "test_name": "Responsive Design Test",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f168664f710>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.193187"
+    },
+    {
+      "test_name": "Accessibility Test",
+      "status": "FAIL",
+      "details": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f1686653590>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-20T23:10:21.194029"
+    }
+  ]
+}

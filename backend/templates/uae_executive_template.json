@@ -1,0 +1,776 @@
+{
+  "template_id": "uae_executive",
+  "name": "UAE Executive",
+  "description": "Premium template for senior executives and leadership roles in the UAE",
+  "category": "executive",
+  "industry": "general",
+  "language": "english",
+  "version": "1.0",
+  "created_at": "2025-08-31T00:00:00Z",
+  "updated_at": "2025-08-31T00:00:00Z",
+  "is_premium": true,
+  "is_active": true,
+  "preview_image": "/templates/previews/uae_executive.png",
+  
+  "style": {
+    "font_family": "Georgia, serif",
+    "font_size": 12,
+    "line_height": 1.5,
+    "color_primary": "#C41E3A",
+    "color_secondary": "#00732F",
+    "color_accent": "#FFD700",
+    "background_color": "#FFFFFF",
+    "header_style": "executive",
+    "layout_type": "two_column",
+    "spacing": "generous",
+    "border_style": "elegant",
+    "page_margins": {
+      "top": "2.5cm",
+      "bottom": "2.5cm",
+      "left": "2.5cm",
+      "right": "2.5cm"
+    }
+  },
+  
+  "layout": {
+    "type": "two_column",
+    "left_column_width": "35%",
+    "right_column_width": "65%",
+    "column_gap": "30px",
+    "left_column_sections": [
+      "contact_info",
+      "executive_summary",
+      "core_competencies",
+      "languages",
+      "education",
+      "certifications"
+    ],
+    "right_column_sections": [
+      "leadership_experience",
+      "board_positions",
+      "key_achievements",
+      "strategic_initiatives",
+      "awards"
+    ]
+  },
+  
+  "sections": [
+    {
+      "id": "header",
+      "name": "header",
+      "display_name": "Executive Header",
+      "type": "executive_header",
+      "required": true,
+      "order": 1,
+      "style": {
+        "background_color": "#F8F9FA",
+        "text_align": "left",
+        "padding": "30px",
+        "border_left": "8px solid #C41E3A",
+        "margin_bottom": "30px"
+      },
+      "fields": [
+        {
+          "name": "full_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "28px",
+            "font_weight": "bold",
+            "color": "#C41E3A",
+            "margin_bottom": "8px",
+            "letter_spacing": "1px"
+          }
+        },
+        {
+          "name": "executive_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "18px",
+            "color": "#00732F",
+            "font_weight": "600",
+            "margin_bottom": "15px"
+          }
+        },
+        {
+          "name": "tagline",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "14px",
+            "color": "#34495E",
+            "font_style": "italic",
+            "margin_bottom": "20px"
+          },
+          "placeholder": "Transformational Leader | Strategic Visionary | UAE Market Expert"
+        }
+      ]
+    },
+    
+    {
+      "id": "contact_info",
+      "name": "contact_info",
+      "display_name": "Contact Information",
+      "type": "contact_section",
+      "required": true,
+      "order": 2,
+      "column": "left",
+      "style": {
+        "background_color": "#FAFAFA",
+        "padding": "20px",
+        "border_radius": "8px",
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px"
+      },
+      "fields": [
+        {
+          "name": "email",
+          "type": "email",
+          "required": true,
+          "icon": "envelope",
+          "style": {
+            "font_size": "11px",
+            "margin_bottom": "8px"
+          }
+        },
+        {
+          "name": "phone",
+          "type": "phone",
+          "required": true,
+          "icon": "phone",
+          "validation": "uae_phone",
+          "style": {
+            "font_size": "11px",
+            "margin_bottom": "8px"
+          }
+        },
+        {
+          "name": "location",
+          "type": "location",
+          "required": true,
+          "icon": "map-marker",
+          "format": "{city}, {emirate}",
+          "style": {
+            "font_size": "11px",
+            "margin_bottom": "8px"
+          }
+        },
+        {
+          "name": "linkedin",
+          "type": "url",
+          "required": true,
+          "icon": "linkedin",
+          "style": {
+            "font_size": "11px",
+            "margin_bottom": "8px"
+          }
+        },
+        {
+          "name": "website",
+          "type": "url",
+          "required": false,
+          "icon": "globe",
+          "style": {
+            "font_size": "11px"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "executive_summary",
+      "name": "executive_summary",
+      "display_name": "Executive Summary",
+      "type": "text_section",
+      "required": true,
+      "order": 3,
+      "column": "left",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "content_style": {
+        "font_size": "11px",
+        "line_height": "1.6",
+        "text_align": "justify",
+        "color": "#2C3E50"
+      },
+      "ai_suggestions": {
+        "enabled": true,
+        "prompt_template": "Generate an executive summary for a senior {title} in the UAE with {years_experience}+ years of leadership experience. Emphasize strategic vision, transformation leadership, and UAE market expertise. Include quantifiable achievements and alignment with UAE Vision D33.",
+        "max_length": 200,
+        "tone": "executive"
+      }
+    },
+    
+    {
+      "id": "core_competencies",
+      "name": "core_competencies",
+      "display_name": "Core Competencies",
+      "type": "competency_section",
+      "required": true,
+      "order": 4,
+      "column": "left",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "layout": "vertical_list",
+      "competency_style": {
+        "font_size": "11px",
+        "color": "#2C3E50",
+        "margin_bottom": "6px",
+        "padding_left": "15px",
+        "position": "relative"
+      },
+      "bullet_style": {
+        "content": "▶",
+        "color": "#00732F",
+        "position": "absolute",
+        "left": "0"
+      },
+      "categories": [
+        "Strategic Leadership",
+        "Digital Transformation",
+        "Organizational Development",
+        "Stakeholder Management",
+        "Financial Oversight",
+        "Market Expansion",
+        "Cultural Intelligence",
+        "Innovation Management"
+      ]
+    },
+    
+    {
+      "id": "leadership_experience",
+      "name": "leadership_experience",
+      "display_name": "Leadership Experience",
+      "type": "executive_experience",
+      "required": true,
+      "order": 5,
+      "column": "right",
+      "max_items": 8,
+      "style": {
+        "margin_bottom": "30px"
+      },
+      "header_style": {
+        "font_size": "18px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "20px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "3px solid #FFD700",
+        "padding_bottom": "8px"
+      },
+      "item_style": {
+        "margin_bottom": "25px",
+        "padding_bottom": "20px",
+        "border_bottom": "1px solid #E8E8E8"
+      },
+      "fields": [
+        {
+          "name": "executive_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "16px",
+            "font_weight": "bold",
+            "color": "#C41E3A",
+            "margin_bottom": "5px"
+          }
+        },
+        {
+          "name": "company",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "14px",
+            "color": "#00732F",
+            "font_weight": "600",
+            "margin_bottom": "3px"
+          }
+        },
+        {
+          "name": "company_description",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#7F8C8D",
+            "font_style": "italic",
+            "margin_bottom": "8px"
+          }
+        },
+        {
+          "name": "date_range",
+          "type": "date_range",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "color": "#34495E",
+            "font_weight": "600",
+            "float": "right",
+            "margin_top": "-40px"
+          },
+          "format": "{start_date} - {end_date}",
+          "current_text": "Present"
+        },
+        {
+          "name": "reporting_structure",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E",
+            "margin_bottom": "10px"
+          },
+          "prefix": "Reporting to: "
+        },
+        {
+          "name": "team_size",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E",
+            "margin_bottom": "10px"
+          },
+          "prefix": "Team Size: "
+        },
+        {
+          "name": "budget_responsibility",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E",
+            "margin_bottom": "10px"
+          },
+          "prefix": "Budget: "
+        },
+        {
+          "name": "key_responsibilities",
+          "type": "bullet_list",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "line_height": "1.5",
+            "margin_top": "10px",
+            "margin_left": "20px"
+          },
+          "bullet_style": "•",
+          "max_items": 4
+        },
+        {
+          "name": "strategic_achievements",
+          "type": "bullet_list",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "line_height": "1.5",
+            "margin_top": "8px",
+            "margin_left": "20px",
+            "color": "#27AE60"
+          },
+          "bullet_style": "★",
+          "prefix": "Strategic Impact: ",
+          "max_items": 3
+        }
+      ]
+    },
+    
+    {
+      "id": "board_positions",
+      "name": "board_positions",
+      "display_name": "Board Positions & Directorships",
+      "type": "list_section",
+      "required": false,
+      "order": 6,
+      "column": "right",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "fields": [
+        {
+          "name": "position_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "13px",
+            "font_weight": "bold",
+            "color": "#C41E3A"
+          }
+        },
+        {
+          "name": "organization",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "color": "#00732F",
+            "margin_left": "10px"
+          }
+        },
+        {
+          "name": "tenure",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "11px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "key_achievements",
+      "name": "key_achievements",
+      "display_name": "Key Achievements & Impact",
+      "type": "achievement_section",
+      "required": true,
+      "order": 7,
+      "column": "right",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "layout": "highlight_boxes",
+      "achievement_style": {
+        "background_color": "#F8F9FA",
+        "border_left": "4px solid #00732F",
+        "padding": "15px",
+        "margin_bottom": "15px",
+        "border_radius": "5px"
+      },
+      "fields": [
+        {
+          "name": "achievement_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "13px",
+            "font_weight": "bold",
+            "color": "#C41E3A",
+            "margin_bottom": "8px"
+          }
+        },
+        {
+          "name": "impact_description",
+          "type": "textarea",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "line_height": "1.5",
+            "color": "#2C3E50"
+          }
+        },
+        {
+          "name": "metrics",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "12px",
+            "color": "#27AE60",
+            "font_weight": "600",
+            "margin_top": "8px"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "education",
+      "name": "education",
+      "display_name": "Education",
+      "type": "list_section",
+      "required": true,
+      "order": 8,
+      "column": "left",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "fields": [
+        {
+          "name": "degree",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "font_weight": "bold",
+            "color": "#C41E3A"
+          }
+        },
+        {
+          "name": "institution",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "color": "#00732F",
+            "margin_top": "3px"
+          }
+        },
+        {
+          "name": "graduation_year",
+          "type": "year",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "languages",
+      "name": "languages",
+      "display_name": "Languages",
+      "type": "language_section",
+      "required": false,
+      "order": 9,
+      "column": "left",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "layout": "proficiency_bars",
+      "fields": [
+        {
+          "name": "language",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "font_weight": "600",
+            "color": "#2C3E50"
+          }
+        },
+        {
+          "name": "proficiency",
+          "type": "select",
+          "required": true,
+          "options": ["Native", "Fluent", "Advanced", "Intermediate", "Basic"],
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D"
+          }
+        }
+      ],
+      "proficiency_bar_style": {
+        "height": "6px",
+        "background_color": "#E8E8E8",
+        "border_radius": "3px",
+        "margin_top": "5px",
+        "margin_bottom": "10px"
+      },
+      "proficiency_fill_style": {
+        "background_color": "#00732F",
+        "height": "100%",
+        "border_radius": "3px"
+      }
+    },
+    
+    {
+      "id": "awards",
+      "name": "awards",
+      "display_name": "Awards & Recognition",
+      "type": "list_section",
+      "required": false,
+      "order": 10,
+      "column": "right",
+      "style": {
+        "margin_bottom": "25px"
+      },
+      "header_style": {
+        "font_size": "16px",
+        "font_weight": "bold",
+        "color": "#C41E3A",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #FFD700",
+        "padding_bottom": "5px"
+      },
+      "fields": [
+        {
+          "name": "award_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "font_weight": "600",
+            "color": "#E74C3C"
+          }
+        },
+        {
+          "name": "awarding_organization",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "color": "#34495E"
+          }
+        },
+        {
+          "name": "award_date",
+          "type": "date",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        },
+        {
+          "name": "significance",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "font_style": "italic",
+            "margin_top": "5px"
+          }
+        }
+      ]
+    }
+  ],
+  
+  "uae_specific": {
+    "emirates_validation": true,
+    "phone_validation": "uae_format",
+    "visa_status_field": true,
+    "emirates_id_field": true,
+    "arabic_name_support": true,
+    "executive_features": {
+      "board_positions": true,
+      "strategic_achievements": true,
+      "budget_responsibility": true,
+      "team_leadership": true,
+      "stakeholder_management": true
+    },
+    "cultural_considerations": {
+      "professional_photo": "recommended",
+      "references": "senior_level_contacts",
+      "salary_expectations": "executive_compensation",
+      "cultural_intelligence": "emphasized"
+    },
+    "industry_alignment": {
+      "government": {
+        "security_clearance": true,
+        "public_service_emphasis": true
+      },
+      "finance": {
+        "regulatory_oversight": true,
+        "risk_management": true
+      },
+      "energy": {
+        "sustainability_focus": true,
+        "vision_D33_alignment": true
+      }
+    }
+  },
+  
+  "export_settings": {
+    "pdf": {
+      "page_size": "A4",
+      "orientation": "portrait",
+      "quality": "premium",
+      "fonts_embedded": true,
+      "color_profile": "executive"
+    },
+    "docx": {
+      "compatibility": "office_2019",
+      "track_changes": false,
+      "comments": false,
+      "executive_formatting": true
+    },
+    "json": {
+      "include_metadata": true,
+      "include_template_info": true,
+      "executive_fields": true
+    }
+  },
+  
+  "ai_integration": {
+    "content_suggestions": true,
+    "executive_coaching": true,
+    "strategic_language": true,
+    "leadership_emphasis": true,
+    "gemini_prompts": {
+      "executive_summary": "Create an executive summary for a {title} with {years_experience}+ years of leadership experience in the UAE. Emphasize strategic vision, transformation leadership, cultural intelligence, and alignment with UAE Vision D33. Include quantifiable business impact and stakeholder management expertise.",
+      "achievement_enhancement": "Transform this achievement into executive-level language with strategic impact and quantifiable business results: {achievement}. Focus on leadership, transformation, and UAE market context.",
+      "competency_suggestions": "Suggest core competencies for a senior {title} in {industry} within the UAE market, emphasizing strategic leadership, digital transformation, and cultural intelligence."
+    }
+  }
+}
+

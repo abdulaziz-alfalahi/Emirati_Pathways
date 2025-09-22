@@ -1,0 +1,292 @@
+{
+  "summary": {
+    "total_tests": 19,
+    "passed_tests": 15,
+    "failed_tests": 4,
+    "success_rate": 78.94736842105263,
+    "test_duration_seconds": 0.864888,
+    "timestamp": "2025-09-20T12:55:37.482462"
+  },
+  "test_details": [
+    {
+      "test_name": "HR Registration",
+      "status": "\u2705 PASS",
+      "message": "HR user registered successfully",
+      "details": "User ID: None",
+      "timestamp": "2025-09-20T12:55:37.793782"
+    },
+    {
+      "test_name": "HR Login",
+      "status": "\u2705 PASS",
+      "message": "HR user logged in successfully",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.104840"
+    },
+    {
+      "test_name": "HR Profile Health Check",
+      "status": "\u2705 PASS",
+      "message": "HR Profile API is operational",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.108307"
+    },
+    {
+      "test_name": "HR Profile Creation",
+      "status": "\u2705 PASS",
+      "message": "HR profile created successfully",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.129766"
+    },
+    {
+      "test_name": "HR Profile Retrieval",
+      "status": "\u2705 PASS",
+      "message": "HR profile retrieved successfully",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.146844"
+    },
+    {
+      "test_name": "Company Creation",
+      "status": "\u274c FAIL",
+      "message": "Company creation failed: 500",
+      "details": "{\n  \"message\": \"Failed to save company profile\",\n  \"success\": false\n}\n",
+      "timestamp": "2025-09-20T12:55:38.164879"
+    },
+    {
+      "test_name": "Company Retrieval",
+      "status": "\u274c FAIL",
+      "message": "Company retrieval failed: 404",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.181830"
+    },
+    {
+      "test_name": "Job Posting Health Check",
+      "status": "\u2705 PASS",
+      "message": "Job Posting API is operational",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.184900"
+    },
+    {
+      "test_name": "Job Posting Creation",
+      "status": "\u274c FAIL",
+      "message": "Job creation failed: 400",
+      "details": "{\n  \"message\": \"No company associated with your profile\",\n  \"success\": false\n}\n",
+      "timestamp": "2025-09-20T12:55:38.199600"
+    },
+    {
+      "test_name": "Job Postings Retrieval",
+      "status": "\u274c FAIL",
+      "message": "Job retrieval failed: 400",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.213558"
+    },
+    {
+      "test_name": "Candidate Search Health Check",
+      "status": "\u2705 PASS",
+      "message": "Candidate Search API is operational",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.216597"
+    },
+    {
+      "test_name": "Basic Candidate Search",
+      "status": "\u2705 PASS",
+      "message": "Found 17 candidates",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.235679"
+    },
+    {
+      "test_name": "Filtered Candidate Search",
+      "status": "\u2705 PASS",
+      "message": "Found 0 candidates with filters: {'education_level': ['Bachelor'], 'emirate': ['Dubai'], 'is_uae_national': True, 'min_experience': 3, 'sort_by': 'registered_at', 'sort_order': 'desc'}",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.253633"
+    },
+    {
+      "test_name": "Filter Options Retrieval",
+      "status": "\u2705 PASS",
+      "message": "Retrieved filter options: ['activity_status_options', 'education_levels', 'emirates', 'experience_range', 'nationalities', 'popular_skills', 'salary_ranges', 'sort_options']",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.276001"
+    },
+    {
+      "test_name": "Interview Scheduling Health Check",
+      "status": "\u2705 PASS",
+      "message": "Interview Scheduling API is operational",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.278761"
+    },
+    {
+      "test_name": "Interview Calendar",
+      "status": "\u2705 PASS",
+      "message": "Retrieved calendar with 0 events",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.295236"
+    },
+    {
+      "test_name": "Interview Retrieval",
+      "status": "\u2705 PASS",
+      "message": "Retrieved 0 interviews",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.314904"
+    },
+    {
+      "test_name": "Dashboard Statistics",
+      "status": "\u2705 PASS",
+      "message": "Retrieved dashboard stats: ['active_job_postings', 'new_applications', 'total_applications', 'total_interviews', 'total_job_postings', 'upcoming_interviews']",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.331944"
+    },
+    {
+      "test_name": "Team Management",
+      "status": "\u2705 PASS",
+      "message": "Retrieved 0 team members",
+      "details": null,
+      "timestamp": "2025-09-20T12:55:38.347297"
+    }
+  ],
+  "categories": {
+    "Authentication": [
+      {
+        "test_name": "HR Registration",
+        "status": "\u2705 PASS",
+        "message": "HR user registered successfully",
+        "details": "User ID: None",
+        "timestamp": "2025-09-20T12:55:37.793782"
+      },
+      {
+        "test_name": "HR Login",
+        "status": "\u2705 PASS",
+        "message": "HR user logged in successfully",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.104840"
+      }
+    ],
+    "Profile Management": [
+      {
+        "test_name": "HR Profile Health Check",
+        "status": "\u2705 PASS",
+        "message": "HR Profile API is operational",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.108307"
+      },
+      {
+        "test_name": "HR Profile Creation",
+        "status": "\u2705 PASS",
+        "message": "HR profile created successfully",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.129766"
+      },
+      {
+        "test_name": "HR Profile Retrieval",
+        "status": "\u2705 PASS",
+        "message": "HR profile retrieved successfully",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.146844"
+      },
+      {
+        "test_name": "Company Creation",
+        "status": "\u274c FAIL",
+        "message": "Company creation failed: 500",
+        "details": "{\n  \"message\": \"Failed to save company profile\",\n  \"success\": false\n}\n",
+        "timestamp": "2025-09-20T12:55:38.164879"
+      },
+      {
+        "test_name": "Company Retrieval",
+        "status": "\u274c FAIL",
+        "message": "Company retrieval failed: 404",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.181830"
+      }
+    ],
+    "Job Posting": [
+      {
+        "test_name": "Job Posting Health Check",
+        "status": "\u2705 PASS",
+        "message": "Job Posting API is operational",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.184900"
+      },
+      {
+        "test_name": "Job Posting Creation",
+        "status": "\u274c FAIL",
+        "message": "Job creation failed: 400",
+        "details": "{\n  \"message\": \"No company associated with your profile\",\n  \"success\": false\n}\n",
+        "timestamp": "2025-09-20T12:55:38.199600"
+      },
+      {
+        "test_name": "Job Postings Retrieval",
+        "status": "\u274c FAIL",
+        "message": "Job retrieval failed: 400",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.213558"
+      }
+    ],
+    "Candidate Search": [
+      {
+        "test_name": "Candidate Search Health Check",
+        "status": "\u2705 PASS",
+        "message": "Candidate Search API is operational",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.216597"
+      },
+      {
+        "test_name": "Basic Candidate Search",
+        "status": "\u2705 PASS",
+        "message": "Found 17 candidates",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.235679"
+      },
+      {
+        "test_name": "Filtered Candidate Search",
+        "status": "\u2705 PASS",
+        "message": "Found 0 candidates with filters: {'education_level': ['Bachelor'], 'emirate': ['Dubai'], 'is_uae_national': True, 'min_experience': 3, 'sort_by': 'registered_at', 'sort_order': 'desc'}",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.253633"
+      },
+      {
+        "test_name": "Filter Options Retrieval",
+        "status": "\u2705 PASS",
+        "message": "Retrieved filter options: ['activity_status_options', 'education_levels', 'emirates', 'experience_range', 'nationalities', 'popular_skills', 'salary_ranges', 'sort_options']",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.276001"
+      }
+    ],
+    "Interview Scheduling": [
+      {
+        "test_name": "Interview Scheduling Health Check",
+        "status": "\u2705 PASS",
+        "message": "Interview Scheduling API is operational",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.278761"
+      },
+      {
+        "test_name": "Interview Calendar",
+        "status": "\u2705 PASS",
+        "message": "Retrieved calendar with 0 events",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.295236"
+      },
+      {
+        "test_name": "Interview Retrieval",
+        "status": "\u2705 PASS",
+        "message": "Retrieved 0 interviews",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.314904"
+      }
+    ],
+    "Dashboard & Analytics": [
+      {
+        "test_name": "Dashboard Statistics",
+        "status": "\u2705 PASS",
+        "message": "Retrieved dashboard stats: ['active_job_postings', 'new_applications', 'total_applications', 'total_interviews', 'total_job_postings', 'upcoming_interviews']",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.331944"
+      },
+      {
+        "test_name": "Team Management",
+        "status": "\u2705 PASS",
+        "message": "Retrieved 0 team members",
+        "details": null,
+        "timestamp": "2025-09-20T12:55:38.347297"
+      }
+    ]
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "timestamp": "2025-09-20T12:11:35.873596",
+  "test_type": "System Integration",
+  "tests": {
+    "Backend Server Health": {
+      "status": "PASS",
+      "details": "Server responding correctly",
+      "score": 10,
+      "critical": true,
+      "timestamp": "2025-09-20T12:11:35.877458"
+    },
+    "Database Connectivity": {
+      "status": "PASS",
+      "details": "Database responding through auth endpoint",
+      "score": 10,
+      "critical": true,
+      "timestamp": "2025-09-20T12:11:35.893769"
+    },
+    "AI Integration (Gemini)": {
+      "status": "WARN",
+      "details": "AI status endpoint not available",
+      "score": 5,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:35.896109"
+    },
+    "CORS Configuration": {
+      "status": "PASS",
+      "details": "CORS headers properly configured",
+      "score": 5,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:35.898054"
+    },
+    "User Registration": {
+      "status": "PASS",
+      "details": "Registration successful",
+      "score": 15,
+      "critical": true,
+      "timestamp": "2025-09-20T12:11:36.202122"
+    },
+    "User Login": {
+      "status": "PASS",
+      "details": "Login successful with token",
+      "score": 15,
+      "critical": true,
+      "timestamp": "2025-09-20T12:11:36.507553"
+    },
+    "Token Validation": {
+      "status": "PASS",
+      "details": "Token accepted by protected endpoint",
+      "score": 10,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.510531"
+    },
+    "Profile Management": {
+      "status": "PASS",
+      "details": "Profile endpoint accessible",
+      "score": 10,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.512789"
+    },
+    "CV Parsing": {
+      "status": "WARN",
+      "details": "CV parsing issue: 400",
+      "score": 5,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.515011"
+    },
+    "Job Application": {
+      "status": "PASS",
+      "details": "Job application working correctly",
+      "score": 15,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.517073"
+    },
+    "Application Tracking": {
+      "status": "PASS",
+      "details": "Application tracking working",
+      "score": 10,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.519149"
+    },
+    "HR/Recruiter Functionality": {
+      "status": "FAIL",
+      "details": "Endpoints not implemented",
+      "score": 0,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.520902"
+    },
+    "Educator Functionality": {
+      "status": "WARN",
+      "details": "Unexpected response: 405",
+      "score": 2,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.522804"
+    },
+    "Mentor Functionality": {
+      "status": "WARN",
+      "details": "Unexpected response: 405",
+      "score": 2,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.525808"
+    },
+    "Assessor Functionality": {
+      "status": "FAIL",
+      "details": "Endpoints not implemented",
+      "score": 0,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.527569"
+    },
+    "API Response Format": {
+      "status": "PASS",
+      "details": "JSON responses properly formatted",
+      "score": 5,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.529250"
+    },
+    "Error Handling": {
+      "status": "PASS",
+      "details": "404 errors properly handled",
+      "score": 5,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.530954"
+    },
+    "Response Time": {
+      "status": "PASS",
+      "details": "Response time: 2ms",
+      "score": 10,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.532641"
+    },
+    "Concurrent Requests": {
+      "status": "PASS",
+      "details": "Success rate: 100%",
+      "score": 10,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.548387"
+    },
+    "Protected Endpoints": {
+      "status": "PASS",
+      "details": "Unauthorized access properly blocked",
+      "score": 10,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.550422"
+    },
+    "Input Validation": {
+      "status": "PASS",
+      "details": "Invalid input properly rejected",
+      "score": 5,
+      "critical": false,
+      "timestamp": "2025-09-20T12:11:36.552430"
+    }
+  },
+  "overall_score": 79.5,
+  "critical_issues": [],
+  "recommendations": [
+    "\u2705 System is functional but could benefit from enhancements"
+  ]
+}

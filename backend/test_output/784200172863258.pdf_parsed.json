@@ -1,0 +1,62 @@
+{
+    "source_file": "resume_text",
+    "raw_text": "نيهاش دمحم  لصيف... (rest of the text)",
+    "contact_info": {
+        "name": "Faisal Mohammed Shahin",
+        "email": "faaamm200198@gmail.com",
+        "phone": "0556697018",
+        "location": "Ajman",
+        "linkedin": "",
+        "github": "",
+        "portfolio": ""
+    },
+    "summary": "To expand and contribute my expertise and skills with a nature excellence providing good quality of professional services on whatever field it will serve its.",
+    "total_experience_years": 3,
+    "work_experience": [
+        {
+            "job_title": "Armed Forces",
+            "company": "Armed Forces",
+            "location": "UAE",
+            "start_date": "08/09/2001",
+            "end_date": "08/09/2004",
+            "duration_months": 36,
+            "responsibilities": "3 years of experience in the Armed Forces."
+        },
+        {
+            "job_title": "Call Centers",
+            "company": "Call Centers",
+            "location": "UAE",
+            "start_date": "08/09/2004",
+            "end_date": "08/09/2007",
+            "duration_months": 36,
+            "responsibilities": "Experience in call centers"
+        }
+    ],
+    "education": [
+        {
+            "institution": "Grade 8",
+            "degree": "",
+            "major": "",
+            "graduation_date": "",
+            "degree_level": ""
+        }
+    ],
+    "skills": [
+        "Computer courses",
+        "Self-motivated, self-confident and decisive.",
+        "Ability to communicate well and easily",
+        "Ready to take on major responsibilities",
+        "Able to learn any new work experience",
+        "Ability to take responsibility for the work",
+        "Respect the directions of the organization"
+    ],
+    "certifications": [],
+    "languages": [
+        "Arabic",
+        "English"
+    ],
+    "projects": [],
+    "_raw_text_preview": "نيهاش دمحم  لصيف\nيفيظولا فدهلا\nيتارامإةيسنجلا\n08/09/2001دلايملا خيرات\n بزعأةيعامتجلاا ةلاحلا\nنامجعناونعلا\nةيصخشلا تامولعملا\nعلطتأىلإةفيظويفةئيبلمعةفرتحمىظحتمارتحاببكري\nةعجشموىلع،ريوطتلامتتاهيفميدقتلكن...",
+    "_groq_model_used": "llama3-8b-8192",
+    "_extraction_method": "simplified_groq_parser"
+}

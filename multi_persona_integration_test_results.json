@@ -1,0 +1,252 @@
+{
+  "summary": {
+    "total_tests": 17,
+    "passed_tests": 13,
+    "failed_tests": 4,
+    "success_rate": 76.47058823529412,
+    "integration_score": 76.92307692307693,
+    "test_duration_seconds": 1.463775,
+    "timestamp": "2025-09-20T13:15:57.331043",
+    "average_response_time": 0.10792307692307691,
+    "max_response_time": 0.323
+  },
+  "test_details": [
+    {
+      "test_name": "HR Registration",
+      "status": "\u2705 PASS",
+      "message": "HR user registered successfully",
+      "details": "User ID: None",
+      "performance_data": "0.311s",
+      "timestamp": "2025-09-20T13:15:57.642477"
+    },
+    {
+      "test_name": "HR Login",
+      "status": "\u2705 PASS",
+      "message": "HR user logged in successfully",
+      "details": null,
+      "performance_data": "0.308s",
+      "timestamp": "2025-09-20T13:15:57.950251"
+    },
+    {
+      "test_name": "HR Profile Creation",
+      "status": "\u2705 PASS",
+      "message": "HR profile created successfully",
+      "details": null,
+      "performance_data": "0.019s",
+      "timestamp": "2025-09-20T13:15:57.969160"
+    },
+    {
+      "test_name": "Candidate Registration",
+      "status": "\u2705 PASS",
+      "message": "Candidate user registered successfully",
+      "details": "User ID: None",
+      "performance_data": "0.323s",
+      "timestamp": "2025-09-20T13:15:58.292222"
+    },
+    {
+      "test_name": "Candidate Login",
+      "status": "\u2705 PASS",
+      "message": "Candidate user logged in successfully",
+      "details": null,
+      "performance_data": "0.311s",
+      "timestamp": "2025-09-20T13:15:58.603401"
+    },
+    {
+      "test_name": "Candidate Profile Creation",
+      "status": "\u2705 PASS",
+      "message": "Candidate profile created successfully",
+      "details": null,
+      "performance_data": "0.017s",
+      "timestamp": "2025-09-20T13:15:58.620139"
+    },
+    {
+      "test_name": "Company Creation",
+      "status": "\u2705 PASS",
+      "message": "Company profile created successfully",
+      "details": "Company ID: 8df949ed-79d5-457e-a5f5-3a17092a0a5d",
+      "performance_data": "0.017s",
+      "timestamp": "2025-09-20T13:15:58.637713"
+    },
+    {
+      "test_name": "Job Posting Creation",
+      "status": "\u2705 PASS",
+      "message": "Job posting created successfully",
+      "details": "Job ID: 243fcde0-eff8-4377-890f-22e462795f12, Compliance: 100",
+      "performance_data": "0.018s",
+      "timestamp": "2025-09-20T13:15:58.656212"
+    },
+    {
+      "test_name": "Job Publishing",
+      "status": "\u2705 PASS",
+      "message": "Job published successfully",
+      "details": null,
+      "performance_data": "0.018s",
+      "timestamp": "2025-09-20T13:15:58.674442"
+    },
+    {
+      "test_name": "Job Search",
+      "status": "\u2705 PASS",
+      "message": "Found 0 jobs matching criteria",
+      "details": "Search filters: {'location': 'Dubai', 'experience_level': 'senior', 'remote_work': 'true', 'limit': 10}",
+      "performance_data": "0.003s",
+      "timestamp": "2025-09-20T13:15:58.677113"
+    },
+    {
+      "test_name": "Job Discovery",
+      "status": "\u274c FAIL",
+      "message": "Target job not found in search results",
+      "details": "Job may not be published or indexed yet",
+      "performance_data": null,
+      "timestamp": "2025-09-20T13:15:58.677152"
+    },
+    {
+      "test_name": "Job Application Submission",
+      "status": "\u2705 PASS",
+      "message": "Application submitted successfully",
+      "details": "Application ID: 45ce436e-253b-4e6a-9451-186227f3208f",
+      "performance_data": "0.018s",
+      "timestamp": "2025-09-20T13:15:58.694890"
+    },
+    {
+      "test_name": "Interview Scheduling",
+      "status": "\u274c FAIL",
+      "message": "Scheduling failed: 400",
+      "details": "{\n  \"message\": \"Missing required field: interviewer_id\",\n  \"success\": false\n}\n",
+      "performance_data": null,
+      "timestamp": "2025-09-20T13:15:58.698542"
+    },
+    {
+      "test_name": "HR Candidate Search",
+      "status": "\u2705 PASS",
+      "message": "Found 0 candidates",
+      "details": "Target candidate found: False",
+      "performance_data": "0.020s",
+      "timestamp": "2025-09-20T13:15:58.719052"
+    },
+    {
+      "test_name": "Job Candidate Matching",
+      "status": "\u274c FAIL",
+      "message": "Matching failed: 500",
+      "details": "{\n  \"message\": \"Failed to match candidates to job\",\n  \"success\": false\n}\n",
+      "performance_data": null,
+      "timestamp": "2025-09-20T13:15:58.738458"
+    },
+    {
+      "test_name": "Concurrent Access",
+      "status": "\u2705 PASS",
+      "message": "Concurrent API calls: 2/2 successful",
+      "details": "Results: [('hr_dashboard', 200, 1758388558.7570918), ('candidate_profile', 200, 1758388558.758144)]",
+      "performance_data": "0.020s",
+      "timestamp": "2025-09-20T13:15:58.758275"
+    },
+    {
+      "test_name": "Data Consistency",
+      "status": "\u274c FAIL",
+      "message": "Application not found in candidate's view",
+      "details": "Application ID: 45ce436e-253b-4e6a-9451-186227f3208f",
+      "performance_data": null,
+      "timestamp": "2025-09-20T13:15:58.794740"
+    }
+  ],
+  "shared_data": {
+    "job_posting": {
+      "application_count": 0,
+      "application_deadline": "Mon, 20 Oct 2025 04:00:00 GMT",
+      "benefits": [
+        "Competitive salary package",
+        "Health insurance",
+        "Annual leave (30 days)",
+        "Professional development opportunities",
+        "Flexible working arrangements",
+        "Visa sponsorship available"
+      ],
+      "closed_at": null,
+      "company_id": "8df949ed-79d5-457e-a5f5-3a17092a0a5d",
+      "created_at": "Sat, 20 Sep 2025 17:15:58 GMT",
+      "created_by": "47f953b9-3a45-41ee-954e-409bed81f922",
+      "currency": "AED",
+      "description": "We are seeking a talented Senior Software Engineer to join our dynamic team in Dubai. \n                \nThe ideal candidate will have strong experience in full-stack development with modern technologies and a passion for innovation. You will be working on cutting-edge projects that shape the digital landscape of the UAE.\n\nKey Responsibilities:\n- Design and develop scalable web applications using Python and React\n- Collaborate with cross-functional teams to deliver high-quality solutions\n- Mentor junior developers and contribute to technical decision-making\n- Participate in code reviews and maintain high coding standards\n- Work with cloud technologies (AWS) and containerization (Docker, Kubernetes)\n\nWhat We Offer:\n- Competitive salary package (20,000 - 30,000 AED)\n- Comprehensive health insurance\n- 30 days annual leave\n- Professional development opportunities\n- Flexible working arrangements including remote work\n- Visa sponsorship for qualified candidates",
+      "emiratization_target": "10.00",
+      "employment_type": "full-time",
+      "experience_level": "senior",
+      "expires_at": null,
+      "external_job_id": null,
+      "id": "243fcde0-eff8-4377-890f-22e462795f12",
+      "location": "Dubai, UAE",
+      "priority_level": "normal",
+      "published_at": null,
+      "remote_work_allowed": true,
+      "requirements": {
+        "certifications": [
+          "AWS certification preferred"
+        ],
+        "education_level": "Bachelor",
+        "languages": [
+          "English",
+          "Arabic (preferred)"
+        ],
+        "min_experience": 5,
+        "skills": [
+          "Python",
+          "React",
+          "Node.js",
+          "AWS",
+          "Docker",
+          "Kubernetes"
+        ]
+      },
+      "responsibilities": [
+        "Design and develop scalable web applications",
+        "Collaborate with cross-functional teams",
+        "Mentor junior developers",
+        "Participate in code reviews and technical discussions",
+        "Work with cloud technologies and DevOps practices"
+      ],
+      "salary_range_max": "30000.00",
+      "salary_range_min": "20000.00",
+      "seo_keywords": [],
+      "status": "draft",
+      "tags": [
+        "software",
+        "engineering",
+        "full-stack",
+        "senior",
+        "python",
+        "react"
+      ],
+      "title": "Senior Software Engineer",
+      "uae_compliance_checked": true,
+      "updated_at": "Sat, 20 Sep 2025 17:15:58 GMT",
+      "view_count": 0,
+      "visa_sponsorship_available": true
+    },
+    "application": {
+      "application_id": "45ce436e-253b-4e6a-9451-186227f3208f",
+      "documents_uploaded": 0,
+      "next_steps": [
+        "Your application has been received and assigned a unique ID",
+        "HR team will review your application within 3-5 business days",
+        "You will receive email notifications for any status updates",
+        "You can track your application status in your dashboard"
+      ],
+      "status": "submitted",
+      "submitted_at": "2025-09-20T13:15:58.688964-04:00",
+      "uploaded_documents": []
+    },
+    "interview": null
+  },
+  "user_data": {
+    "hr_user": {
+      "user_id": null,
+      "email": "fatima.alzahra.4aeb0916@emiratesdigital.ae",
+      "company_id": "8df949ed-79d5-457e-a5f5-3a17092a0a5d",
+      "job_posting_id": "243fcde0-eff8-4377-890f-22e462795f12"
+    },
+    "candidate_user": {
+      "user_id": null,
+      "email": "omar.almansouri.fa761945@gmail.com",
+      "application_id": "45ce436e-253b-4e6a-9451-186227f3208f",
+      "interview_id": null
+    }
+  }
+}

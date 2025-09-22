@@ -1,0 +1,805 @@
+{
+  "template_id": "uae_technology",
+  "name": "UAE Technology",
+  "description": "Modern template for IT and technology professionals in the UAE",
+  "category": "modern",
+  "industry": "technology",
+  "language": "english",
+  "version": "1.0",
+  "created_at": "2025-08-31T00:00:00Z",
+  "updated_at": "2025-08-31T00:00:00Z",
+  "is_premium": false,
+  "is_active": true,
+  "preview_image": "/templates/previews/uae_technology.png",
+  
+  "style": {
+    "font_family": "Roboto, sans-serif",
+    "font_size": 10,
+    "line_height": 1.4,
+    "color_primary": "#17A2B8",
+    "color_secondary": "#2C3E50",
+    "color_accent": "#E74C3C",
+    "background_color": "#FFFFFF",
+    "header_style": "modern",
+    "layout_type": "single_column",
+    "spacing": "compact",
+    "border_style": "subtle",
+    "page_margins": {
+      "top": "1.5cm",
+      "bottom": "1.5cm",
+      "left": "1.5cm",
+      "right": "1.5cm"
+    }
+  },
+  
+  "sections": [
+    {
+      "id": "header",
+      "name": "header",
+      "display_name": "Tech Header",
+      "type": "tech_header",
+      "required": true,
+      "order": 1,
+      "style": {
+        "background": "linear-gradient(135deg, #17A2B8 0%, #2C3E50 100%)",
+        "color": "#FFFFFF",
+        "text_align": "center",
+        "padding": "25px",
+        "border_radius": "8px 8px 0 0",
+        "margin_bottom": "20px"
+      },
+      "fields": [
+        {
+          "name": "full_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "26px",
+            "font_weight": "300",
+            "color": "#FFFFFF",
+            "margin_bottom": "8px",
+            "letter_spacing": "2px"
+          }
+        },
+        {
+          "name": "tech_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "16px",
+            "color": "#FFD700",
+            "font_weight": "400",
+            "margin_bottom": "15px",
+            "text_transform": "uppercase",
+            "letter_spacing": "1px"
+          }
+        },
+        {
+          "name": "specialization",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "12px",
+            "color": "#E8F4FD",
+            "margin_bottom": "20px"
+          },
+          "placeholder": "Full Stack Development | Cloud Architecture | AI/ML"
+        },
+        {
+          "name": "contact_info",
+          "type": "contact_group",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "color": "#FFFFFF",
+            "display": "flex",
+            "justify_content": "center",
+            "gap": "25px",
+            "flex_wrap": "wrap"
+          },
+          "subfields": [
+            {
+              "name": "email",
+              "type": "email",
+              "required": true,
+              "icon": "envelope",
+              "icon_color": "#FFD700"
+            },
+            {
+              "name": "phone",
+              "type": "phone",
+              "required": true,
+              "icon": "phone",
+              "validation": "uae_phone",
+              "icon_color": "#FFD700"
+            },
+            {
+              "name": "location",
+              "type": "location",
+              "required": true,
+              "icon": "map-marker",
+              "format": "{city}, {emirate}",
+              "icon_color": "#FFD700"
+            },
+            {
+              "name": "github",
+              "type": "url",
+              "required": false,
+              "icon": "github",
+              "icon_color": "#FFD700"
+            },
+            {
+              "name": "linkedin",
+              "type": "url",
+              "required": false,
+              "icon": "linkedin",
+              "icon_color": "#FFD700"
+            },
+            {
+              "name": "portfolio",
+              "type": "url",
+              "required": false,
+              "icon": "globe",
+              "icon_color": "#FFD700"
+            }
+          ]
+        }
+      ]
+    },
+    
+    {
+      "id": "professional_summary",
+      "name": "professional_summary",
+      "display_name": "Professional Summary",
+      "type": "text_section",
+      "required": true,
+      "order": 2,
+      "style": {
+        "margin_bottom": "20px",
+        "background_color": "#F8F9FA",
+        "padding": "15px",
+        "border_radius": "5px",
+        "border_left": "4px solid #17A2B8"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "12px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px"
+      },
+      "content_style": {
+        "font_size": "10px",
+        "line_height": "1.5",
+        "text_align": "justify",
+        "color": "#2C3E50"
+      },
+      "ai_suggestions": {
+        "enabled": true,
+        "prompt_template": "Generate a professional summary for a {specialization} with {years_experience} years of experience in the UAE tech industry. Highlight technical expertise in {key_technologies}, problem-solving abilities, and contribution to digital transformation initiatives in the UAE.",
+        "max_length": 120,
+        "tone": "technical_professional"
+      }
+    },
+    
+    {
+      "id": "technical_skills",
+      "name": "technical_skills",
+      "display_name": "Technical Skills",
+      "type": "tech_skills_section",
+      "required": true,
+      "order": 3,
+      "style": {
+        "margin_bottom": "20px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #17A2B8",
+        "padding_bottom": "5px"
+      },
+      "layout": "categorized_with_proficiency",
+      "categories": [
+        {
+          "name": "programming_languages",
+          "display_name": "Programming Languages",
+          "icon": "code",
+          "style": {
+            "margin_bottom": "12px"
+          }
+        },
+        {
+          "name": "frameworks_libraries",
+          "display_name": "Frameworks & Libraries",
+          "icon": "cogs",
+          "style": {
+            "margin_bottom": "12px"
+          }
+        },
+        {
+          "name": "databases",
+          "display_name": "Databases",
+          "icon": "database",
+          "style": {
+            "margin_bottom": "12px"
+          }
+        },
+        {
+          "name": "cloud_platforms",
+          "display_name": "Cloud Platforms",
+          "icon": "cloud",
+          "style": {
+            "margin_bottom": "12px"
+          }
+        },
+        {
+          "name": "tools_technologies",
+          "display_name": "Tools & Technologies",
+          "icon": "wrench",
+          "style": {
+            "margin_bottom": "12px"
+          }
+        },
+        {
+          "name": "methodologies",
+          "display_name": "Methodologies",
+          "icon": "sitemap",
+          "style": {
+            "margin_bottom": "12px"
+          }
+        }
+      ],
+      "skill_style": {
+        "display": "inline-flex",
+        "align_items": "center",
+        "background_color": "#E8F4FD",
+        "color": "#17A2B8",
+        "padding": "4px 10px",
+        "margin": "2px",
+        "border_radius": "12px",
+        "font_size": "9px",
+        "font_weight": "500",
+        "border": "1px solid #17A2B8"
+      },
+      "proficiency_display": "progress_bar",
+      "proficiency_style": {
+        "width": "60px",
+        "height": "4px",
+        "background_color": "#E8E8E8",
+        "border_radius": "2px",
+        "margin_left": "8px",
+        "overflow": "hidden"
+      },
+      "proficiency_fill_style": {
+        "height": "100%",
+        "background": "linear-gradient(90deg, #17A2B8 0%, #E74C3C 100%)",
+        "border_radius": "2px"
+      }
+    },
+    
+    {
+      "id": "experience",
+      "name": "experience",
+      "display_name": "Professional Experience",
+      "type": "tech_experience",
+      "required": true,
+      "order": 4,
+      "max_items": 8,
+      "style": {
+        "margin_bottom": "20px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #17A2B8",
+        "padding_bottom": "5px"
+      },
+      "item_style": {
+        "margin_bottom": "18px",
+        "padding": "15px",
+        "background_color": "#FAFAFA",
+        "border_radius": "5px",
+        "border_left": "3px solid #E74C3C"
+      },
+      "fields": [
+        {
+          "name": "job_title",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "13px",
+            "font_weight": "600",
+            "color": "#17A2B8",
+            "margin_bottom": "3px"
+          }
+        },
+        {
+          "name": "company",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "color": "#2C3E50",
+            "font_weight": "500"
+          }
+        },
+        {
+          "name": "company_type",
+          "type": "select",
+          "required": false,
+          "options": ["Startup", "SME", "Enterprise", "Government", "Consultancy", "Freelance"],
+          "style": {
+            "font_size": "9px",
+            "color": "#7F8C8D",
+            "background_color": "#E8E8E8",
+            "padding": "2px 6px",
+            "border_radius": "8px",
+            "margin_left": "8px"
+          }
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "margin_top": "2px"
+          }
+        },
+        {
+          "name": "date_range",
+          "type": "date_range",
+          "required": true,
+          "style": {
+            "font_size": "10px",
+            "color": "#7F8C8D",
+            "float": "right",
+            "margin_top": "-35px"
+          },
+          "format": "{start_date} - {end_date}",
+          "current_text": "Present"
+        },
+        {
+          "name": "tech_stack",
+          "type": "tag_list",
+          "required": false,
+          "style": {
+            "font_size": "8px",
+            "margin_top": "8px",
+            "margin_bottom": "8px"
+          },
+          "tag_style": {
+            "background_color": "#17A2B8",
+            "color": "#FFFFFF",
+            "padding": "2px 6px",
+            "border_radius": "8px",
+            "margin_right": "3px",
+            "margin_bottom": "3px",
+            "display": "inline-block"
+          }
+        },
+        {
+          "name": "responsibilities",
+          "type": "bullet_list",
+          "required": true,
+          "style": {
+            "font_size": "10px",
+            "line_height": "1.4",
+            "margin_top": "8px",
+            "margin_left": "15px"
+          },
+          "bullet_style": "▶",
+          "bullet_color": "#17A2B8",
+          "max_items": 4
+        },
+        {
+          "name": "achievements",
+          "type": "bullet_list",
+          "required": false,
+          "style": {
+            "font_size": "10px",
+            "line_height": "1.4",
+            "margin_top": "5px",
+            "margin_left": "15px",
+            "color": "#27AE60"
+          },
+          "bullet_style": "★",
+          "bullet_color": "#E74C3C",
+          "prefix": "Achievement: ",
+          "max_items": 3
+        }
+      ]
+    },
+    
+    {
+      "id": "projects",
+      "name": "projects",
+      "display_name": "Key Projects",
+      "type": "tech_projects",
+      "required": true,
+      "order": 5,
+      "max_items": 6,
+      "style": {
+        "margin_bottom": "20px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "15px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #17A2B8",
+        "padding_bottom": "5px"
+      },
+      "item_style": {
+        "margin_bottom": "15px",
+        "padding": "12px",
+        "border": "1px solid #E8E8E8",
+        "border_radius": "5px",
+        "background_color": "#FAFAFA"
+      },
+      "fields": [
+        {
+          "name": "project_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "12px",
+            "font_weight": "600",
+            "color": "#17A2B8",
+            "margin_bottom": "5px"
+          }
+        },
+        {
+          "name": "project_type",
+          "type": "select",
+          "required": false,
+          "options": ["Web Application", "Mobile App", "API", "Desktop Application", "Machine Learning", "DevOps", "Database", "Other"],
+          "style": {
+            "font_size": "8px",
+            "color": "#FFFFFF",
+            "background_color": "#E74C3C",
+            "padding": "2px 6px",
+            "border_radius": "8px",
+            "float": "right",
+            "margin_top": "-20px"
+          }
+        },
+        {
+          "name": "description",
+          "type": "textarea",
+          "required": true,
+          "style": {
+            "font_size": "10px",
+            "line_height": "1.4",
+            "color": "#2C3E50",
+            "margin_bottom": "8px"
+          },
+          "max_length": 200
+        },
+        {
+          "name": "technologies",
+          "type": "tag_list",
+          "required": true,
+          "style": {
+            "font_size": "8px",
+            "margin_bottom": "8px"
+          },
+          "tag_style": {
+            "background_color": "#2C3E50",
+            "color": "#FFFFFF",
+            "padding": "2px 5px",
+            "border_radius": "6px",
+            "margin_right": "3px",
+            "margin_bottom": "3px",
+            "display": "inline-block"
+          }
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "9px",
+            "color": "#7F8C8D",
+            "margin_bottom": "5px"
+          },
+          "prefix": "Role: "
+        },
+        {
+          "name": "github_url",
+          "type": "url",
+          "required": false,
+          "style": {
+            "font_size": "9px",
+            "color": "#17A2B8"
+          },
+          "prefix": "GitHub: "
+        },
+        {
+          "name": "live_url",
+          "type": "url",
+          "required": false,
+          "style": {
+            "font_size": "9px",
+            "color": "#27AE60",
+            "margin_left": "10px"
+          },
+          "prefix": "Live: "
+        }
+      ]
+    },
+    
+    {
+      "id": "education",
+      "name": "education",
+      "display_name": "Education",
+      "type": "list_section",
+      "required": true,
+      "order": 6,
+      "style": {
+        "margin_bottom": "20px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "12px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #17A2B8",
+        "padding_bottom": "5px"
+      },
+      "item_style": {
+        "margin_bottom": "10px",
+        "padding": "10px",
+        "background_color": "#F8F9FA",
+        "border_radius": "3px"
+      },
+      "fields": [
+        {
+          "name": "degree",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "11px",
+            "font_weight": "600",
+            "color": "#17A2B8"
+          }
+        },
+        {
+          "name": "institution",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "10px",
+            "color": "#2C3E50",
+            "margin_top": "2px"
+          }
+        },
+        {
+          "name": "graduation_year",
+          "type": "year",
+          "required": false,
+          "style": {
+            "font_size": "9px",
+            "color": "#7F8C8D",
+            "float": "right"
+          }
+        },
+        {
+          "name": "relevant_coursework",
+          "type": "tag_list",
+          "required": false,
+          "style": {
+            "font_size": "8px",
+            "margin_top": "5px"
+          },
+          "tag_style": {
+            "background_color": "#E8F4FD",
+            "color": "#17A2B8",
+            "padding": "1px 4px",
+            "border_radius": "6px",
+            "margin_right": "2px",
+            "display": "inline-block"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "certifications",
+      "name": "certifications",
+      "display_name": "Certifications",
+      "type": "cert_section",
+      "required": false,
+      "order": 7,
+      "style": {
+        "margin_bottom": "20px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "12px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #17A2B8",
+        "padding_bottom": "5px"
+      },
+      "layout": "grid",
+      "grid_columns": 2,
+      "item_style": {
+        "margin_bottom": "8px",
+        "padding": "8px",
+        "border": "1px solid #E8E8E8",
+        "border_radius": "3px",
+        "background_color": "#FAFAFA"
+      },
+      "fields": [
+        {
+          "name": "certification_name",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "10px",
+            "font_weight": "600",
+            "color": "#17A2B8"
+          }
+        },
+        {
+          "name": "issuing_organization",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "9px",
+            "color": "#2C3E50"
+          }
+        },
+        {
+          "name": "issue_date",
+          "type": "date",
+          "required": false,
+          "style": {
+            "font_size": "8px",
+            "color": "#7F8C8D"
+          }
+        },
+        {
+          "name": "credential_id",
+          "type": "text",
+          "required": false,
+          "style": {
+            "font_size": "8px",
+            "color": "#7F8C8D",
+            "font_family": "monospace"
+          }
+        }
+      ]
+    },
+    
+    {
+      "id": "languages",
+      "name": "languages",
+      "display_name": "Languages",
+      "type": "language_section",
+      "required": false,
+      "order": 8,
+      "style": {
+        "margin_bottom": "20px"
+      },
+      "header_style": {
+        "font_size": "14px",
+        "font_weight": "600",
+        "color": "#17A2B8",
+        "margin_bottom": "12px",
+        "text_transform": "uppercase",
+        "letter_spacing": "1px",
+        "border_bottom": "2px solid #17A2B8",
+        "padding_bottom": "5px"
+      },
+      "layout": "horizontal_compact",
+      "fields": [
+        {
+          "name": "language",
+          "type": "text",
+          "required": true,
+          "style": {
+            "font_size": "10px",
+            "font_weight": "600",
+            "color": "#2C3E50"
+          }
+        },
+        {
+          "name": "proficiency",
+          "type": "select",
+          "required": true,
+          "options": ["Native", "Fluent", "Advanced", "Intermediate", "Basic"],
+          "style": {
+            "font_size": "9px",
+            "color": "#7F8C8D",
+            "margin_left": "5px"
+          }
+        }
+      ],
+      "separator": " | "
+    }
+  ],
+  
+  "uae_specific": {
+    "emirates_validation": true,
+    "phone_validation": "uae_format",
+    "visa_status_field": true,
+    "tech_focus": {
+      "github_integration": true,
+      "portfolio_emphasis": true,
+      "tech_stack_highlighting": true,
+      "project_showcase": true
+    },
+    "cultural_considerations": {
+      "professional_photo": "optional",
+      "remote_work_mention": "encouraged",
+      "continuous_learning": "emphasized"
+    },
+    "industry_alignment": {
+      "fintech": {
+        "regulatory_awareness": true,
+        "security_emphasis": true
+      },
+      "healthtech": {
+        "compliance_focus": true,
+        "data_privacy": true
+      },
+      "govtech": {
+        "digital_transformation": true,
+        "smart_city_initiatives": true
+      }
+    }
+  },
+  
+  "export_settings": {
+    "pdf": {
+      "page_size": "A4",
+      "orientation": "portrait",
+      "quality": "high",
+      "fonts_embedded": true,
+      "tech_optimized": true
+    },
+    "docx": {
+      "compatibility": "office_2016",
+      "track_changes": false,
+      "comments": false,
+      "code_formatting": true
+    },
+    "json": {
+      "include_metadata": true,
+      "include_template_info": true,
+      "tech_fields": true
+    }
+  },
+  
+  "ai_integration": {
+    "content_suggestions": true,
+    "tech_skill_recommendations": true,
+    "project_descriptions": true,
+    "achievement_quantification": true,
+    "gemini_prompts": {
+      "professional_summary": "Create a professional summary for a {specialization} with {years_experience} years of experience in the UAE tech industry. Highlight expertise in {key_technologies}, problem-solving abilities, and contributions to digital transformation in the UAE.",
+      "project_description": "Enhance this project description with technical details and impact: {project_name} - {basic_description}. Focus on technologies used, challenges solved, and measurable outcomes.",
+      "achievement_enhancement": "Transform this technical achievement into a compelling bullet point with metrics and business impact: {achievement}",
+      "skill_suggestions": "Suggest relevant technical skills for a {job_title} specializing in {specialization} within the UAE tech market, considering current industry trends and emerging technologies."
+    }
+  }
+}
+

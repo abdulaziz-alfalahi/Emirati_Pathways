@@ -1,0 +1,136 @@
+{
+  "summary": {
+    "total_tests": 14,
+    "passed": 12,
+    "failed": 2,
+    "skipped": 0,
+    "success_rate": 85.71428571428571
+  },
+  "detailed_results": [
+    {
+      "timestamp": "2025-09-20T16:01:03.258868",
+      "page": "Career Planning Hub",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:03.588343",
+      "page": "Career Planning Hub",
+      "test": "Career Paths API",
+      "status": "PASS",
+      "details": "API responds correctly"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:03.672808",
+      "page": "Career Planning Hub",
+      "test": "Skills Assessment API",
+      "status": "PASS",
+      "details": "Skills API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:03.983011",
+      "page": "CV Builder",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:05.193313",
+      "page": "CV Builder",
+      "test": "Resume Templates API",
+      "status": "PASS",
+      "details": "Templates API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:05.232418",
+      "page": "CV Builder",
+      "test": "Resume Generation",
+      "status": "FAIL",
+      "details": "Generation HTTP 404"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:06.205535",
+      "page": "Job Matching",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.526663",
+      "page": "Job Matching",
+      "test": "Job Search API",
+      "status": "PASS",
+      "details": "Job search API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.531076",
+      "page": "Job Matching",
+      "test": "Job Matching Algorithm",
+      "status": "FAIL",
+      "details": "Matching HTTP 404"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.540491",
+      "page": "Applications",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.546841",
+      "page": "Applications",
+      "test": "Applications API",
+      "status": "PASS",
+      "details": "Applications API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.552292",
+      "page": "Applications",
+      "test": "Status Tracking",
+      "status": "PASS",
+      "details": "Status tracking endpoint accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.557311",
+      "page": "Candidate Dashboard",
+      "test": "Dashboard Accessibility",
+      "status": "PASS",
+      "details": "Dashboard endpoint accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:01:07.561456",
+      "page": "Candidate Dashboard",
+      "test": "Dashboard Data API",
+      "status": "PASS",
+      "details": "Dashboard API accessible"
+    }
+  ],
+  "per_page_summary": {
+    "Career Planning Hub": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "CV Builder": {
+      "PASS": 2,
+      "FAIL": 1,
+      "SKIP": 0
+    },
+    "Job Matching": {
+      "PASS": 2,
+      "FAIL": 1,
+      "SKIP": 0
+    },
+    "Applications": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Candidate Dashboard": {
+      "PASS": 2,
+      "FAIL": 0,
+      "SKIP": 0
+    }
+  }
+}

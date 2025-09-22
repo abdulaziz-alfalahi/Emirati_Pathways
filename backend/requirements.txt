@@ -1,0 +1,92 @@
+# Core Framework
+Flask==3.0.2
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-JWT-Extended==4.6.0
+Flask-Limiter==3.5.0
+Flask-Caching==2.1.0
+
+# Database
+SQLAlchemy==2.0.27
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Redis
+redis==5.0.1
+hiredis==2.3.2
+
+# AI/ML Libraries
+google-generativeai==0.4.0
+groq==0.4.2
+openai==1.12.0
+langchain==0.1.9
+langchain-community==0.0.24
+
+# HTTP and API
+requests==2.31.0
+urllib3==2.2.1
+httpx==0.27.0
+
+# Data Processing
+pandas==2.2.1
+numpy==1.26.4
+python-dateutil==2.8.2
+pytz==2024.1
+
+# File Processing
+PyPDF2==3.0.1
+python-docx==1.1.0
+openpyxl==3.1.2
+Pillow==10.2.0
+
+# Security
+cryptography==42.0.4
+bcrypt==4.1.2
+PyJWT==2.8.0
+python-dotenv==1.0.1
+passlib==1.7.4
+
+# Validation and Serialization
+marshmallow==3.20.2
+pydantic==2.6.1
+cerberus==1.3.5
+
+# Monitoring and Logging
+sentry-sdk==1.40.6
+structlog==24.1.0
+python-json-logger==2.0.7
+
+# Email
+Flask-Mail==0.9.1
+
+# Testing
+pytest==8.0.2
+pytest-flask==1.3.0
+pytest-cov==4.0.0
+factory-boy==3.3.0
+
+# Development
+black==24.2.0
+flake8==7.0.0
+mypy==1.8.0
+pre-commit==3.6.2
+
+# Production Server
+gunicorn==21.2.0
+gevent==24.2.1
+
+# Environment and Configuration
+python-decouple==3.8
+click==8.1.7
+
+# UAE Specific
+arabic-reshaper==3.0.0
+python-bidi==0.4.2
+hijri-converter==2.3.1
+
+# Performance
+cachetools==5.3.3
+
+redis>=4.5.0
+sqlalchemy>=1.4.0

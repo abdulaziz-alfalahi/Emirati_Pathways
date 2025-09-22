@@ -1,0 +1,169 @@
+{
+  "summary": {
+    "total_tests": 18,
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0,
+    "success_rate": 100.0
+  },
+  "detailed_results": [
+    {
+      "timestamp": "2025-09-20T16:13:07.598819",
+      "page": "Assessments",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.604190",
+      "page": "Assessments",
+      "test": "Assessment Planning API",
+      "status": "PASS",
+      "details": "Assessment planning API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.608998",
+      "page": "Assessments",
+      "test": "Competency Validation",
+      "status": "PASS",
+      "details": "Competency validation API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.613600",
+      "page": "Professional Certifications (Assessor)",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.617446",
+      "page": "Professional Certifications (Assessor)",
+      "test": "Certification Assessment",
+      "status": "PASS",
+      "details": "Certification assessment API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.621514",
+      "page": "Professional Certifications (Assessor)",
+      "test": "Quality Assurance System",
+      "status": "PASS",
+      "details": "Quality assurance API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.626103",
+      "page": "Blockchain Credentials",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.630572",
+      "page": "Blockchain Credentials",
+      "test": "Digital Credential Verification",
+      "status": "PASS",
+      "details": "Digital credential verification API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.634816",
+      "page": "Blockchain Credentials",
+      "test": "UAE NQF Integration",
+      "status": "PASS",
+      "details": "UAE NQF integration API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.638674",
+      "page": "Assessor Core Systems",
+      "test": "Assessment Planning System",
+      "status": "PASS",
+      "details": "Assessment planning system accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.642673",
+      "page": "Assessor Core Systems",
+      "test": "Competency Validation Framework",
+      "status": "PASS",
+      "details": "Competency validation framework accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.646869",
+      "page": "Assessor Core Systems",
+      "test": "UAE NQF Integration System",
+      "status": "PASS",
+      "details": "UAE NQF integration system accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.650952",
+      "page": "Assessor Core Systems",
+      "test": "Quality Assurance Monitoring",
+      "status": "PASS",
+      "details": "Quality assurance monitoring accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.655050",
+      "page": "Analytics (Assessor)",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.658744",
+      "page": "Analytics (Assessor)",
+      "test": "Assessment Analytics",
+      "status": "PASS",
+      "details": "Assessment analytics API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.662577",
+      "page": "Analytics (Assessor)",
+      "test": "Quality Metrics Dashboard",
+      "status": "PASS",
+      "details": "Quality metrics dashboard accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.666845",
+      "page": "Assessor Dashboard",
+      "test": "Dashboard Accessibility",
+      "status": "PASS",
+      "details": "Dashboard endpoint accessible or properly protected"
+    },
+    {
+      "timestamp": "2025-09-20T16:13:07.671068",
+      "page": "Assessor Dashboard",
+      "test": "Assessor Dashboard Data API",
+      "status": "PASS",
+      "details": "Assessor Dashboard API accessible"
+    }
+  ],
+  "per_page_summary": {
+    "Assessments": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Professional Certifications (Assessor)": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Blockchain Credentials": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Assessor Core Systems": {
+      "PASS": 4,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Analytics (Assessor)": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Assessor Dashboard": {
+      "PASS": 2,
+      "FAIL": 0,
+      "SKIP": 0
+    }
+  }
+}

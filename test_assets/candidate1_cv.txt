@@ -1,0 +1,47 @@
+Ahmed Al Emirati
+Software Developer
+Email: ahmed.candidate1@example.com
+Phone: +971 50 123 4567
+Location: Dubai, UAE
+
+PROFESSIONAL SUMMARY
+Experienced Software Developer with 5+ years in full-stack development, specializing in React, Node.js, and cloud technologies. UAE National with strong commitment to digital transformation initiatives.
+
+WORK EXPERIENCE
+Senior Software Developer | Emirates NBD | 2021 - Present
+- Developed customer-facing banking applications using React and TypeScript
+- Implemented microservices architecture using Node.js and Docker
+- Led team of 4 developers in agile development environment
+- Improved application performance by 40% through optimization
+
+Software Developer | Etisalat Digital | 2019 - 2021
+- Built mobile applications using React Native
+- Integrated payment gateways and third-party APIs
+- Collaborated with cross-functional teams on digital products
+- Mentored junior developers in best practices
+
+EDUCATION
+Bachelor of Computer Science | American University of Sharjah | 2019
+- Graduated Magna Cum Laude
+- Relevant Coursework: Data Structures, Algorithms, Database Systems
+
+TECHNICAL SKILLS
+- Programming Languages: JavaScript, TypeScript, Python, Java
+- Frontend: React, Vue.js, HTML5, CSS3, Tailwind CSS
+- Backend: Node.js, Express.js, Django, Spring Boot
+- Databases: PostgreSQL, MongoDB, Redis
+- Cloud: AWS, Azure, Docker, Kubernetes
+- Tools: Git, Jenkins, JIRA, Figma
+
+CERTIFICATIONS
+- AWS Certified Solutions Architect (2022)
+- Certified Scrum Master (2021)
+
+LANGUAGES
+- Arabic (Native)
+- English (Fluent)
+
+ACHIEVEMENTS
+- Led digital transformation project that increased customer satisfaction by 25%
+- Contributed to open-source projects with 1000+ GitHub stars
+- Speaker at Dubai Tech Summit 2023

@@ -1,0 +1,136 @@
+{
+  "summary": {
+    "total_tests": 14,
+    "passed": 13,
+    "failed": 1,
+    "skipped": 0,
+    "success_rate": 92.85714285714286
+  },
+  "detailed_results": [
+    {
+      "timestamp": "2025-09-20T16:09:23.383130",
+      "page": "Analytics",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.392992",
+      "page": "Analytics",
+      "test": "HR Analytics API",
+      "status": "PASS",
+      "details": "HR Analytics API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.401010",
+      "page": "Analytics",
+      "test": "Recruitment Metrics",
+      "status": "PASS",
+      "details": "Recruitment metrics API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.406455",
+      "page": "Assessments",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.410944",
+      "page": "Assessments",
+      "test": "Assessment Management API",
+      "status": "PASS",
+      "details": "Assessment API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.412647",
+      "page": "Assessments",
+      "test": "Assessment Creation",
+      "status": "FAIL",
+      "details": "Assessment creation HTTP 404"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.417060",
+      "page": "HR Dashboard",
+      "test": "Dashboard Accessibility",
+      "status": "PASS",
+      "details": "Dashboard endpoint accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.421643",
+      "page": "HR Dashboard",
+      "test": "HR Dashboard Data API",
+      "status": "PASS",
+      "details": "HR Dashboard API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.426419",
+      "page": "HR Dashboard",
+      "test": "Job Posting Management",
+      "status": "PASS",
+      "details": "Job posting API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.431206",
+      "page": "Recruiter Dashboard",
+      "test": "Dashboard Accessibility",
+      "status": "PASS",
+      "details": "Recruiter dashboard accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.435752",
+      "page": "Recruiter Dashboard",
+      "test": "Candidate Search",
+      "status": "PASS",
+      "details": "Candidate search API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.439682",
+      "page": "Recruiter Dashboard",
+      "test": "Interview Scheduling",
+      "status": "PASS",
+      "details": "Interview scheduling API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.444185",
+      "page": "Professional Certifications",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:09:23.448568",
+      "page": "Professional Certifications",
+      "test": "Certification Management",
+      "status": "PASS",
+      "details": "Certification API responds"
+    }
+  ],
+  "per_page_summary": {
+    "Analytics": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Assessments": {
+      "PASS": 2,
+      "FAIL": 1,
+      "SKIP": 0
+    },
+    "HR Dashboard": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Recruiter Dashboard": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Professional Certifications": {
+      "PASS": 2,
+      "FAIL": 0,
+      "SKIP": 0
+    }
+  }
+}

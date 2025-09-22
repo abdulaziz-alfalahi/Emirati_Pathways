@@ -1,0 +1,68 @@
+[
+  {
+    "test": "Backend Health Check",
+    "status": "PASS",
+    "details": "Backend is running",
+    "timestamp": "2025-09-19T16:55:29.782077"
+  },
+  {
+    "test": "HR Profile Creation",
+    "status": "PASS",
+    "details": "Profile created successfully",
+    "timestamp": "2025-09-19T16:55:29.785007"
+  },
+  {
+    "test": "HR Profile Retrieval",
+    "status": "FAIL",
+    "details": "Status: 404",
+    "timestamp": "2025-09-19T16:55:29.788849"
+  },
+  {
+    "test": "Company Profile Creation",
+    "status": "PASS",
+    "details": "Company profile created",
+    "timestamp": "2025-09-19T16:55:29.791068"
+  },
+  {
+    "test": "Educator Profile Creation",
+    "status": "PASS",
+    "details": "Educator profile created",
+    "timestamp": "2025-09-19T16:55:29.793427"
+  },
+  {
+    "test": "Institution Profile Creation",
+    "status": "PASS",
+    "details": "Institution profile created",
+    "timestamp": "2025-09-19T16:55:29.795539"
+  },
+  {
+    "test": "Assessor Profile Creation",
+    "status": "PASS",
+    "details": "Assessor profile created",
+    "timestamp": "2025-09-19T16:55:29.797722"
+  },
+  {
+    "test": "Certification Tracking",
+    "status": "PASS",
+    "details": "Certifications tracked successfully",
+    "timestamp": "2025-09-19T16:55:29.799874"
+  },
+  {
+    "test": "Role Switching",
+    "status": "PASS",
+    "details": "Role switched successfully",
+    "timestamp": "2025-09-19T16:55:29.801865"
+  },
+  {
+    "test": "Profile Completion",
+    "status": "PASS",
+    "details": "Completion: 0%",
+    "timestamp": "2025-09-19T16:55:29.803703"
+  },
+  {
+    "test": "Profile Page Access",
+    "status": "PASS",
+    "details": "Profile page accessible",
+    "timestamp": "2025-09-19T16:55:29.810426"
+  }
+]

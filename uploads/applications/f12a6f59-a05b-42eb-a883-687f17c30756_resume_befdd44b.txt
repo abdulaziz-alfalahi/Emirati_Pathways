@@ -1,0 +1,17 @@
+
+APPLY NOW TESTER
+Software Engineer
+
+EXPERIENCE:
+- 5 years in Python development
+- 3 years in React.js
+- Experience with Flask and Django
+
+EDUCATION:
+- Bachelor's in Computer Science
+- UAE University
+
+SKILLS:
+- Python, JavaScript, React
+- Database design
+- API development

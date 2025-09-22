@@ -1,0 +1,77 @@
+{
+  "timestamp": "2025-09-20T12:02:37.064112",
+  "persona": "Mentor",
+  "tests": {
+    "Server Connectivity": {
+      "status": "PASS",
+      "details": "Backend server accessible",
+      "score": 10,
+      "timestamp": "2025-09-20T12:02:37.068064"
+    },
+    "Mentor Registration": {
+      "status": "PASS",
+      "details": "Mentor account created successfully",
+      "score": 15,
+      "timestamp": "2025-09-20T12:02:37.373361"
+    },
+    "Mentor Profile Creation": {
+      "status": "FAIL",
+      "details": "Profile creation failed: {\n  \"error\": \"Missing required field: user_id\",\n  \"message\": \"Field user_id is required for mentor profile creation\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.376319"
+    },
+    "Mentee Matching": {
+      "status": "FAIL",
+      "details": "Matching failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.380040"
+    },
+    "Session Scheduling": {
+      "status": "FAIL",
+      "details": "Scheduling failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.382111"
+    },
+    "Goal Setting": {
+      "status": "FAIL",
+      "details": "Goal setting failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.384037"
+    },
+    "Send Message": {
+      "status": "FAIL",
+      "details": "Message sending failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.385838"
+    },
+    "Resource Creation": {
+      "status": "FAIL",
+      "details": "Resource creation failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.387743"
+    },
+    "Mentoring Analytics": {
+      "status": "FAIL",
+      "details": "Analytics failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.389404"
+    },
+    "UAE Career Guidance": {
+      "status": "FAIL",
+      "details": "UAE guidance failed: {\n  \"message\": \"Endpoint not found\",\n  \"success\": false\n}\n",
+      "score": 0,
+      "timestamp": "2025-09-20T12:02:37.391167"
+    }
+  },
+  "overall_score": 13.5,
+  "issues": [],
+  "recommendations": [
+    "Implement missing backend endpoints for mentor functionality",
+    "Add comprehensive mentee matching and management system",
+    "Develop progress tracking and goal setting tools",
+    "Focus on core mentoring functionality implementation",
+    "Integrate UAE-specific career guidance features",
+    "Implement real-time communication tools",
+    "Add performance analytics and reporting capabilities"
+  ]
+}

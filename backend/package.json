@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@capacitor/device": "^7.0.1",
+    "@capacitor/geolocation": "^7.1.2",
+    "@capacitor/push-notifications": "^7.0.1"
+  }
+}

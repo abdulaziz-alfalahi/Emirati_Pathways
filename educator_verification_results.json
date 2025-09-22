@@ -1,0 +1,169 @@
+{
+  "summary": {
+    "total_tests": 18,
+    "passed": 18,
+    "failed": 0,
+    "skipped": 0,
+    "success_rate": 100.0
+  },
+  "detailed_results": [
+    {
+      "timestamp": "2025-09-20T16:12:07.541050",
+      "page": "Educator Dashboard",
+      "test": "Dashboard Accessibility",
+      "status": "PASS",
+      "details": "Dashboard endpoint accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.545430",
+      "page": "Educator Dashboard",
+      "test": "Educator Dashboard Data API",
+      "status": "PASS",
+      "details": "Educator Dashboard API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.549924",
+      "page": "Educator Dashboard",
+      "test": "Student Tracking System",
+      "status": "PASS",
+      "details": "Student tracking API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.554474",
+      "page": "Training Programs",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.558485",
+      "page": "Training Programs",
+      "test": "Educator Training API",
+      "status": "PASS",
+      "details": "Educator training API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.562333",
+      "page": "Training Programs",
+      "test": "Curriculum Planning",
+      "status": "PASS",
+      "details": "Curriculum planning API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.566369",
+      "page": "Digital Skills Development",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.570753",
+      "page": "Digital Skills Development",
+      "test": "Digital Skills Curriculum",
+      "status": "PASS",
+      "details": "Digital skills curriculum API responds"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.574888",
+      "page": "Digital Skills Development",
+      "test": "Digital Skills Progress",
+      "status": "PASS",
+      "details": "Digital skills progress API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.578999",
+      "page": "Learning Management System",
+      "test": "LMS Page Accessibility",
+      "status": "PASS",
+      "details": "LMS page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.582621",
+      "page": "Learning Management System",
+      "test": "Course Management",
+      "status": "PASS",
+      "details": "Course management API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.586420",
+      "page": "Learning Management System",
+      "test": "Student Enrollment",
+      "status": "PASS",
+      "details": "Student enrollment API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.591054",
+      "page": "Educator Core Systems",
+      "test": "Performance Analytics",
+      "status": "PASS",
+      "details": "Performance analytics API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.595179",
+      "page": "Educator Core Systems",
+      "test": "Resource Management",
+      "status": "PASS",
+      "details": "Resource management API accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.599164",
+      "page": "Educator Core Systems",
+      "test": "Curriculum Planning System",
+      "status": "PASS",
+      "details": "Curriculum planning system accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.602870",
+      "page": "Educator Core Systems",
+      "test": "Student Tracking System",
+      "status": "PASS",
+      "details": "Student tracking system accessible"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.606820",
+      "page": "Professional Certifications (Educator)",
+      "test": "Page Accessibility",
+      "status": "PASS",
+      "details": "Page loads successfully"
+    },
+    {
+      "timestamp": "2025-09-20T16:12:07.610696",
+      "page": "Professional Certifications (Educator)",
+      "test": "Educator Certification Management",
+      "status": "PASS",
+      "details": "Educator certification API accessible"
+    }
+  ],
+  "per_page_summary": {
+    "Educator Dashboard": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Training Programs": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Digital Skills Development": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Learning Management System": {
+      "PASS": 3,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Educator Core Systems": {
+      "PASS": 4,
+      "FAIL": 0,
+      "SKIP": 0
+    },
+    "Professional Certifications (Educator)": {
+      "PASS": 2,
+      "FAIL": 0,
+      "SKIP": 0
+    }
+  }
+}
