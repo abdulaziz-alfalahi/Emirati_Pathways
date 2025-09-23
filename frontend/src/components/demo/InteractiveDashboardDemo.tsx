@@ -136,13 +136,10 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
       const newStep = currentStep + 1;
       setCurrentStep(newStep);
       
-      // Navigate to appropriate dashboard
+      // Update dashboard state for preview (but don't navigate)
       const step = demoSteps[newStep];
-      if (step.dashboard !== currentDashboard && step.dashboard !== 'intro' && step.dashboard !== 'complete') {
+      if (step.dashboard !== currentDashboard) {
         setCurrentDashboard(step.dashboard);
-        if (dashboardRoutes[step.dashboard as keyof typeof dashboardRoutes]) {
-          window.location.href = dashboardRoutes[step.dashboard as keyof typeof dashboardRoutes];
-        }
       }
     }
   };
@@ -152,13 +149,10 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
       const newStep = currentStep - 1;
       setCurrentStep(newStep);
       
-      // Navigate to appropriate dashboard
+      // Update dashboard state for preview (but don't navigate)
       const step = demoSteps[newStep];
-      if (step.dashboard !== currentDashboard && step.dashboard !== 'intro' && step.dashboard !== 'complete') {
+      if (step.dashboard !== currentDashboard) {
         setCurrentDashboard(step.dashboard);
-        if (dashboardRoutes[step.dashboard as keyof typeof dashboardRoutes]) {
-          window.location.href = dashboardRoutes[step.dashboard as keyof typeof dashboardRoutes];
-        }
       }
     }
   };
@@ -237,6 +231,122 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
             </div>
           )}
 
+          {/* Candidate Dashboard Preview */}
+          {currentStepData.dashboard === 'candidate' && (
+            <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4">
+                  <Users className="text-white" size={24} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Ahmed Al Mansouri</h4>
+                  <p className="text-gray-600 text-sm">Engineering Graduate</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600">95%</div>
+                  <div className="text-sm text-gray-600">Job Match Score</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">12</div>
+                  <div className="text-sm text-gray-600">Active Applications</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-600">3</div>
+                  <div className="text-sm text-gray-600">Interview Invites</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* HR Dashboard Preview */}
+          {currentStepData.dashboard === 'hr' && (
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4">
+                  <BarChart3 className="text-white" size={24} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Sara Saeed</h4>
+                  <p className="text-gray-600 text-sm">HR Manager - Emirates NBD</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">156</div>
+                  <div className="text-sm text-gray-600">Hires This Year</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600">24</div>
+                  <div className="text-sm text-gray-600">Active Searches</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-600">30d</div>
+                  <div className="text-sm text-gray-600">Avg. Time to Fill</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recruiter Dashboard Preview */}
+          {currentStepData.dashboard === 'recruiter' && (
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mr-4">
+                  <Users className="text-white" size={24} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Omar Al Rashid</h4>
+                  <p className="text-gray-600 text-sm">Senior Recruiter</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-orange-600">89</div>
+                  <div className="text-sm text-gray-600">Placements YTD</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600">1,250</div>
+                  <div className="text-sm text-gray-600">Candidate Pool</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">92%</div>
+                  <div className="text-sm text-gray-600">Success Rate</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mentor Dashboard Preview */}
+          {currentStepData.dashboard === 'mentor' && (
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mr-4">
+                  <UserCheck className="text-white" size={24} />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Khalid Waleed</h4>
+                  <p className="text-gray-600 text-sm">Senior Mentor</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-600">18</div>
+                  <div className="text-sm text-gray-600">Active Mentees</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">89%</div>
+                  <div className="text-sm text-gray-600">Success Rate</div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-600">156</div>
+                  <div className="text-sm text-gray-600">Total Mentored</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentStepData.dashboard === 'complete' && (
             <div className="text-center py-8">
               <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg p-8 mb-6">
@@ -257,12 +367,23 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
                   </div>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-teal-700 hover:to-emerald-700 transition-all"
-              >
-                Start Your Journey
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={onClose}
+                  className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-teal-700 hover:to-emerald-700 transition-all"
+                >
+                  Start Your Journey
+                </button>
+                <button
+                  onClick={() => {
+                    onClose();
+                    window.location.href = '/candidate-dashboard';
+                  }}
+                  className="bg-white border-2 border-teal-600 text-teal-600 px-8 py-3 rounded-lg font-semibold hover:bg-teal-50 transition-all"
+                >
+                  Explore Dashboards
+                </button>
+              </div>
             </div>
           )}
 
@@ -295,12 +416,12 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
             </button>
           </div>
 
-          {/* Dashboard Navigation Hint */}
+          {/* Demo Tip */}
           {currentStepData.dashboard !== 'intro' && currentStepData.dashboard !== 'complete' && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg text-center">
               <p className="text-blue-800 text-sm">
-                💡 <strong>Tip:</strong> This demo will automatically navigate between dashboards. 
-                You can also explore each dashboard manually using the persona switcher.
+                💡 <strong>Tip:</strong> This demo shows previews of each dashboard. 
+                Click "Explore Dashboards" at the end to interact with the real platform.
               </p>
             </div>
           )}
