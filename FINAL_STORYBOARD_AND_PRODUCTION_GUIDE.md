@@ -53,7 +53,7 @@
 **Scene 3.2: Advanced Candidate Sourcing (0:30 - 1:15)**
 *   **Visuals**: Recruiter dashboard with candidate pipeline and advanced filters.
 *   **Narration**: "Sara accesses a curated pool of pre-screened Emirati candidates..."
-*   **Assets**: `/home/ubuntu/emirati-platform/video-assets/scene2-hr-dashboard.png`
+*   **Assets**: `/home/ubuntu/emirati-platform/video-assets/hr-dashboard-traditional.png`
 
 **Scene 3.3: Streamlined Hiring Process (1:15 - 2:15)**
 *   **Visuals**: Automated interview scheduling and collaborative evaluation tools.
