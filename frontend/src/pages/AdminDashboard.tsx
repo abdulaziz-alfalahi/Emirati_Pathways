@@ -566,6 +566,7 @@ const AdminDashboard = () => {
           </Tabs>
         </div>
       </div>
+      </div>
     </div>
   );
 };
