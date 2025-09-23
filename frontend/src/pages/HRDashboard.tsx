@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MockAuthService } from '@/services/mockAuthService';
-import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +31,7 @@ import {
   Star,
   RotateCcw
 } from 'lucide-react';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 
 // Role Switcher Button Component
 const RoleSwitcherButton = () => {
@@ -87,11 +85,8 @@ const RoleSwitcherButton = () => {
   );
 };
 
-const HRDashboard = () => {
+const HRDashboard: React.FC = () => {
   const { t } = useTranslation('hr-dashboard');
-  const navigate = useNavigate();
-  const user = MockAuthService.getCurrentUser();
-  const isAuthenticated = MockAuthService.isAuthenticated();
   const [activeTab, setActiveTab] = useState("overview");
   const [dashboardData, setDashboardData] = useState({
     candidates: {
@@ -115,62 +110,12 @@ const HRDashboard = () => {
     activity: []
   });
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
-      return;
-    }
-    loadDashboardData();
-  }, [isAuthenticated, navigate]);
+  // Initialize with mock data
+  React.useEffect(() => {
+    setMockData();
+  }, []);
 
-  // Get user display name from mock user data
-  const getUserDisplayName = () => {
-    if (!user) return 'HR Manager';
-    return user.full_name || 'HR Manager';
-  };
 
-  // Logout functionality
-  const handleLogout = async () => {
-    try {
-      console.log('🚪 HR Manager logout process...');
-      MockAuthService.logout();
-      console.log('✅ HR Manager logout completed');
-      navigate('/auth');
-    } catch (error) {
-      console.error('HR Manager logout error:', error);
-      navigate('/auth');
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      if (!token) {
-        console.log('No token found, using mock data');
-        setMockData();
-        return;
-      }
-
-      const response = await fetch('http://localhost:5003/api/hr/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      } );
-
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data.data || {});
-      } else {
-        console.log('API call failed, using mock data');
-        setMockData();
-      }
-    } catch (error) {
-      console.error('Error loading HR dashboard data:', error);
-      setMockData();
-    }
-  };
 
   const setMockData = () => {
     setDashboardData({
@@ -211,49 +156,34 @@ const HRDashboard = () => {
     });
   };
 
-  // Show loading if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <Layout>
+    <div className="min-h-screen bg-gray-50">
+      <HybridGovernmentNavFixed />
       {/* Role Switcher Button */}
       <RoleSwitcherButton />
       
-      <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 mt-16">
         {/* Header */}
-        <div className="bg-card border-b">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  HR Management Dashboard
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Welcome back, {getUserDisplayName()}
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Badge variant="secondary" className="bg-ehrdc-teal/10 text-ehrdc-teal">
-                  HR Manager
-                </Badge>
-                <Button variant="outline" onClick={handleLogout}>
-                  Sign Out
-                </Button>
-              </div>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                HR Management Dashboard
+              </h1>
+              <p className="text-gray-600">
+                Welcome back, Sara Saeed - Manage UAE National talent acquisition
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                HR Manager
+              </Badge>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                Talent33 Aligned
+              </Badge>
             </div>
           </div>
         </div>
-
-        <div className="container mx-auto px-4 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -617,7 +547,7 @@ const HRDashboard = () => {
           </Tabs>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
