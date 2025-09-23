@@ -16,7 +16,7 @@ import {
   Play
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
-import DemoVideoModal from '@/components/demo/DemoVideoModal';
+import InteractiveDashboardDemo from '@/components/demo/InteractiveDashboardDemo';
 
 // Import translations
 import enTranslations from '@/locales/en/home-complete.json';
@@ -280,8 +280,8 @@ const BilingualHomePage: React.FC = () => {
         <span className="sr-only">Toggle Language</span>
       </button>
 
-      {/* Demo Video Modal */}
-      <DemoVideoModal 
+      {/* Interactive Dashboard Demo */}
+      <InteractiveDashboardDemo 
         isOpen={isDemoModalOpen} 
         onClose={() => setIsDemoModalOpen(false)} 
       />
