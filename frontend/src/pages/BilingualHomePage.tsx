@@ -131,8 +131,8 @@ const BilingualHomePage: React.FC = () => {
     },
     {
       icon: TrendingUp,
-      title: translations.features?.careerExcellence?.title || 'Career Excellence',
-      description: translations.features?.careerExcellence?.description || 'Comprehensive career development ecosystem supporting professional growth'
+      title: translations.features?.professionalGrowth?.title || 'Professional Growth',
+      description: translations.features?.professionalGrowth?.description || 'Comprehensive development programs and mentorship opportunities for career advancement'
     }
   ];
 
