@@ -47,10 +47,10 @@ export const MOCK_USERS: Record<string, MockUser> = {
 
   hr_manager: {
     id: '2',
-    email: 'sarah.alzahra@company.ae',
-    first_name: 'Sarah',
-    last_name: 'Al Zahra',
-    full_name: 'Sarah Al Zahra',
+    email: 'sara.saeed@company.ae',
+    first_name: 'Sara',
+    last_name: 'Saeed',
+    full_name: 'Sara Saeed',
     user_type: 'hr_manager',
     role: 'hr_manager',
     phone: '+971 50 234 5678',
@@ -64,9 +64,9 @@ export const MOCK_USERS: Record<string, MockUser> = {
       specializations: ['Talent Acquisition', 'Performance Management', 'UAE Nationals Development'],
       certifications: ['CIPD Level 7', 'UAE HR Excellence Certificate'],
       location: 'Abu Dhabi, UAE',
-      linkedin: 'https://linkedin.com/in/sarah-alzahra'
+      linkedin: 'https://linkedin.com/in/sara-saeed'
     },
-    avatar: 'SAZ'
+    avatar: 'SSA'
   },
 
   recruiter: {
@@ -120,10 +120,10 @@ export const MOCK_USERS: Record<string, MockUser> = {
 
   mentor: {
     id: '5',
-    email: 'khalid.almaktoum@mentor.ae',
+    email: 'khalid.waleed@mentor.ae',
     first_name: 'Khalid',
-    last_name: 'Al Maktoum',
-    full_name: 'Khalid Al Maktoum',
+    last_name: 'Waleed',
+    full_name: 'Khalid Waleed',
     user_type: 'mentor',
     role: 'mentor',
     phone: '+971 50 567 8901',
@@ -138,9 +138,9 @@ export const MOCK_USERS: Record<string, MockUser> = {
       success_stories: 15,
       expertise: ['Blockchain', 'Fintech', 'Digital Transformation', 'Leadership'],
       location: 'Dubai, UAE',
-      linkedin: 'https://linkedin.com/in/khalid-almaktoum'
+      linkedin: 'https://linkedin.com/in/khalid-waleed'
     },
-    avatar: 'KAM'
+    avatar: 'KWA'
   },
 
   assessor: {
