@@ -161,7 +161,7 @@ const BilingualHomePage: React.FC = () => {
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-dubai-bold text-slate-900 mb-6 leading-tight">
               {currentLanguage === 'ar' ? (
                 <>
-                  تمكين المواطنين الإماراتيين لتحقيق <span className="text-green-600">التميز المهني</span>
+                  تمكين المواطنين الإماراتيين لتحقيق <span className="text-teal-600">التميز المهني</span>
                 </>
               ) : (
                 (translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence').length > 1 ? (

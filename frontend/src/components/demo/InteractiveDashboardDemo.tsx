@@ -112,6 +112,65 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentDashboard, setCurrentDashboard] = useState('intro');
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+
+  // Detect language from parent component or localStorage
+  useEffect(() => {
+    const detectedLanguage = localStorage.getItem('language') || 'en';
+    setCurrentLanguage(detectedLanguage);
+  }, []);
+
+  // Demo steps with bilingual content
+  const demoSteps = [
+    {
+      id: 1,
+      title: currentLanguage === 'ar' ? "مرحباً بكم في منصة الرحلة الإماراتية" : "Welcome to Emirati Pathways",
+      description: currentLanguage === 'ar' ? 
+        "اكتشف المنصة المدعومة بالذكاء الاصطناعي التي تربط المهنيين الإماراتيين وأصحاب العمل والمعلمين والموجهين والمقيمين في نظام بيئي موحد لتطوير ونمو المسيرة المهنية. منصة شاملة تدعم رؤية دبي D33 ومبادرة Talent33 لبناء اقتصاد معرفي متقدم." :
+        "Discover the AI-powered platform that connects UAE professionals, employers, educators, mentors, and assessors in one unified ecosystem for career development and growth.",
+      dashboard: "intro"
+    },
+    {
+      id: 2,
+      title: currentLanguage === 'ar' ? "لوحة تحكم المرشح - رحلة أحمد المنصوري" : "Candidate Dashboard - Ahmed's Journey",
+      description: currentLanguage === 'ar' ? 
+        "تعرف على أحمد المنصوري، خريج الهندسة الطموح. شاهد كيف تقوم منصتنا المدعومة بالذكاء الاصطناعي بإنشاء ملفات مهنية شخصية، ومطابقته مع الفرص ذات الصلة، وتتبع تطوره المهني. يستفيد أحمد من أدوات بناء السيرة الذاتية المتقدمة، وتقييمات المهارات الشاملة، والتوجيه المهني المخصص لتحقيق أهدافه المهنية." :
+        "Meet Ahmed Al Mansouri, an engineering graduate. See how our AI-powered platform creates personalized career profiles, matches him with relevant opportunities, and tracks his professional development.",
+      dashboard: "candidate"
+    },
+    {
+      id: 3,
+      title: currentLanguage === 'ar' ? "تميز مدير الموارد البشرية - نجاح سارة سعيد" : "HR Manager Excellence - Sara's Success",
+      description: currentLanguage === 'ar' ? 
+        "سارة سعيد من بنك الإمارات دبي الوطني تستخدم أدوات التوظيف المتقدمة لدينا لتبسيط عمليات التوظيف، وتحليل خطوط أنابيب المرشحين، وتحقيق معدلات نجاح رائعة في التوظيف. تدير سارة 156 عملية توظيف ناجحة هذا العام مع 24 بحث نشط ومتوسط وقت ملء الوظائف 30 يوماً فقط." :
+        "Sara Saeed from Emirates NBD uses our advanced recruitment tools to streamline hiring processes, analyze candidate pipelines, and achieve remarkable placement success rates.",
+      dashboard: "hr"
+    },
+    {
+      id: 4,
+      title: currentLanguage === 'ar' ? "ابتكار التوظيف - تأثير عمر الراشد" : "Recruitment Innovation - Omar's Impact",
+      description: currentLanguage === 'ar' ? 
+        "عمر الراشد يستفيد من أدوات البحث الذكية وتحليلات التنوع لدينا لبناء خطوط مواهب قوية وتحقيق نتائج توظيف استثنائية. حقق عمر 89 عملية توظيف ناجحة هذا العام مع إدارة مجموعة مرشحين تضم 1,250 مرشح ومعدل نجاح 92%. يستخدم تقنيات الذكاء الاصطناعي المتقدمة لمطابقة المواهب مع الفرص المناسبة." :
+        "Omar Al Rashid leverages our intelligent sourcing tools and diversity analytics to build strong talent pipelines and achieve exceptional recruitment outcomes.",
+      dashboard: "recruiter"
+    },
+    {
+      id: 5,
+      title: currentLanguage === 'ar' ? "تميز الإرشاد - توجيه خالد وليد" : "Mentoring Excellence - Khalid's Guidance",
+      description: currentLanguage === 'ar' ? 
+        "خالد وليد يستخدم أدوات الإرشاد المدعومة بالذكاء الاصطناعي لتوجيه الجيل القادم من المهنيين الإماراتيين، وتتبع تقدم المتدربين، وقياس تأثيره على تطوير المسيرة المهنية. يدير خالد حالياً 18 متدرب نشط مع معدل نجاح 89% وإجمالي 156 مهني تم توجيههم بنجاح. يوفر برامج إرشاد مخصصة تتماشى مع احتياجات السوق الإماراتي." :
+        "Khalid Waleed uses AI-powered mentoring tools to guide the next generation of UAE professionals, track mentee progress, and measure his impact on career development.",
+      dashboard: "mentor"
+    },
+    {
+      id: 6,
+      title: currentLanguage === 'ar' ? "تأثير المنصة والنجاح المحقق" : "Platform Impact & Success",
+      description: currentLanguage === 'ar' ? 
+        "انضم إلى آلاف المهنيين الإماراتيين الذين حولوا مسيراتهم المهنية من خلال منصتنا. اختبر مستقبل تطوير المسيرة المهنية المتماشي مع مبادرات D33 وTalent33. منصتنا حققت 15,000+ عملية توظيف ناجحة، معدل رضا 94%، وشراكة مع 500+ شركة إماراتية رائدة. كن جزءاً من التحول الرقمي في سوق العمل الإماراتي." :
+        "Join thousands of UAE professionals who have transformed their careers through our platform. Experience the future of career development aligned with D33 and Talent33 initiatives.",
+      dashboard: "complete"
+    }
+  ];
 
   useEffect(() => {
     if (!isOpen) {
