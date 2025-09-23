@@ -141,7 +141,11 @@ const BilingualHomePage: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl arabic-text' : 'ltr english-text'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Navigation */}
-      <HybridGovernmentNavFixed showAuthButtons={true} />
+      <HybridGovernmentNavFixed 
+        showAuthButtons={true} 
+        onLanguageToggle={toggleLanguage}
+        currentLanguage={currentLanguage}
+      />
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
@@ -155,14 +159,20 @@ const BilingualHomePage: React.FC = () => {
 
             {/* Main Heading */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-dubai-bold text-slate-900 mb-6 leading-tight">
-              {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence').length > 1 ? (
+              {currentLanguage === 'ar' ? (
                 <>
-                  {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[0]}
-                  <span className="text-teal-600">Career Excellence</span>
-                  {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[1]}
+                  تمكين المواطنين الإماراتيين لتحقيق <span className="text-green-600">التميز المهني</span>
                 </>
               ) : (
-                translations.hero?.title || 'Empowering UAE Nationals for Career Excellence'
+                (translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence').length > 1 ? (
+                  <>
+                    {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[0]}
+                    <span className="text-teal-600">Career Excellence</span>
+                    {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[1]}
+                  </>
+                ) : (
+                  translations.hero?.title || 'Empowering UAE Nationals for Career Excellence'
+                )
               )}
             </h1>
 
