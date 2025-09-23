@@ -278,3 +278,6 @@ export class MockAuthService {
 
 // Initialize on import
 MockAuthService.initialize();
+
+// Export the service
+export { MockAuthService };
