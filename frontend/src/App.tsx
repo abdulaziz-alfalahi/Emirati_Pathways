@@ -25,6 +25,8 @@ const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const EmployerDashboard = lazy(() => import('@/pages/EmployerDashboard'));
 const EducatorDashboard = lazy(() => import('@/pages/EducatorDashboard'));
 const MentorDashboard = lazy(() => import('@/pages/MentorDashboard'));
+const RecruiterDashboard = lazy(() => import('@/pages/RecruiterDashboard'));
+const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
 // Resume Builder
@@ -63,7 +65,7 @@ const NotFound = lazy(() => import('@/pages/not-found'));
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 // Role-based Dashboard Components
-const RecruiterDashboard = lazy(() => import('@/components/dashboard/role-dashboards/RecruiterDashboard'));
+// Removed old RecruiterDashboard import - now using the new one from pages
 
 // Global Styles
 import './index.css';
@@ -120,7 +122,16 @@ const AppContent: React.FC = () => {
                   path="/recruiter-dashboard" 
                   element={
                     <ProtectedRoute allowedRoles={['recruiter']}>
-                      <RecruiterDashboard activeTab="overview" />
+                      <RecruiterDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                <Route 
+                  path="/assessor-dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['assessor']}>
+                      <AssessorDashboard />
                     </ProtectedRoute>
                   } 
                 />

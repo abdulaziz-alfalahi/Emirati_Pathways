@@ -8,9 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { 
-  GraduationCap, 
   Users, 
-  BookOpen, 
+  Target, 
+  Briefcase, 
   TrendingUp, 
   Calendar,
   Search,
@@ -18,51 +18,42 @@ import {
   Eye,
   CheckCircle,
   Clock,
-  UserCheck,
+  UserPlus,
   Building,
   Award,
   MessageSquare,
   Download,
   Upload,
   BarChart3,
-  PieChart,
-  Target,
+  Phone,
+  Mail,
+  MapPin,
   Star,
   RotateCcw,
   Settings,
   Bell,
   Plus,
-  Edit,
-  FileText,
-  Lightbulb,
-  Globe,
-  Briefcase
+  Edit
 } from 'lucide-react';
 
-interface EducatorData {
-  students: {
-    totalEnrolled: number;
-    activeStudents: number;
-    graduatingStudents: number;
+interface RecruiterData {
+  placements: {
+    thisMonth: number;
+    thisQuarter: number;
+    thisYear: number;
+    target: number;
+  };
+  pipeline: {
+    activeSearches: number;
+    candidatesInProcess: number;
+    interviewsScheduled: number;
+    offersExtended: number;
+  };
+  performance: {
     placementRate: number;
-  };
-  programs: {
-    totalPrograms: number;
-    activePrograms: number;
-    industryPartnerships: number;
-    certificationPrograms: number;
-  };
-  outcomes: {
-    employmentRate: number;
-    averageSalary: number;
-    skillsMatchRate: number;
-    industryReadiness: number;
-  };
-  research: {
-    publications: number;
-    ongoingProjects: number;
-    grants: number;
-    collaborations: number;
+    averageTimeToFill: number;
+    clientSatisfaction: number;
+    candidateQuality: number;
   };
   activity: Array<{
     id: number;
@@ -77,7 +68,7 @@ interface EducatorData {
 // Role Switcher Button Component
 const RoleSwitcherButton = () => {
   const handleRoleSwitch = () => {
-    console.log('🔄 Switching to role selector from Educator Dashboard');
+    console.log('🔄 Switching to role selector from Recruiter Dashboard');
     
     // Clear authentication state to allow role switching
     localStorage.removeItem('user');
@@ -126,32 +117,26 @@ const RoleSwitcherButton = () => {
   );
 };
 
-const EducatorDashboard: React.FC = () => {
+const RecruiterDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [dashboardData, setDashboardData] = useState<EducatorData>({
-    students: {
-      totalEnrolled: 0,
-      activeStudents: 0,
-      graduatingStudents: 0,
-      placementRate: 0
+  const [dashboardData, setDashboardData] = useState<RecruiterData>({
+    placements: {
+      thisMonth: 0,
+      thisQuarter: 0,
+      thisYear: 0,
+      target: 0
     },
-    programs: {
-      totalPrograms: 0,
-      activePrograms: 0,
-      industryPartnerships: 0,
-      certificationPrograms: 0
+    pipeline: {
+      activeSearches: 0,
+      candidatesInProcess: 0,
+      interviewsScheduled: 0,
+      offersExtended: 0
     },
-    outcomes: {
-      employmentRate: 0,
-      averageSalary: 0,
-      skillsMatchRate: 0,
-      industryReadiness: 0
-    },
-    research: {
-      publications: 0,
-      ongoingProjects: 0,
-      grants: 0,
-      collaborations: 0
+    performance: {
+      placementRate: 0,
+      averageTimeToFill: 0,
+      clientSatisfaction: 0,
+      candidateQuality: 0
     },
     activity: []
   });
@@ -163,60 +148,54 @@ const EducatorDashboard: React.FC = () => {
 
   const setMockData = () => {
     setDashboardData({
-      students: {
-        totalEnrolled: 245,
-        activeStudents: 198,
-        graduatingStudents: 47,
-        placementRate: 89
+      placements: {
+        thisMonth: 12,
+        thisQuarter: 34,
+        thisYear: 156,
+        target: 180
       },
-      programs: {
-        totalPrograms: 8,
-        activePrograms: 6,
-        industryPartnerships: 12,
-        certificationPrograms: 4
+      pipeline: {
+        activeSearches: 24,
+        candidatesInProcess: 89,
+        interviewsScheduled: 18,
+        offersExtended: 7
       },
-      outcomes: {
-        employmentRate: 92,
-        averageSalary: 85000,
-        skillsMatchRate: 87,
-        industryReadiness: 91
-      },
-      research: {
-        publications: 45,
-        ongoingProjects: 8,
-        grants: 3,
-        collaborations: 15
+      performance: {
+        placementRate: 78,
+        averageTimeToFill: 21,
+        clientSatisfaction: 4.6,
+        candidateQuality: 4.4
       },
       activity: [
         {
           id: 1,
-          type: 'student_placement',
-          title: 'Student Placement Success',
-          description: 'Fatima Al Zahra secured position as AI Engineer at ADNOC Digital',
+          type: 'placement_success',
+          title: 'Successful Placement',
+          description: 'Ahmed Al Emirati placed as Senior Developer at ADNOC Digital',
           timestamp: new Date().toISOString(),
           priority: 'high'
         },
         {
           id: 2,
-          type: 'industry_partnership',
-          title: 'New Industry Partnership',
-          description: 'Signed collaboration agreement with Emirates NBD for fintech program',
+          type: 'interview_scheduled',
+          title: 'Interview Scheduled',
+          description: 'Technical interview for Blockchain Developer at Emirates NBD',
           timestamp: new Date(Date.now() - 86400000).toISOString(),
-          priority: 'high'
-        },
-        {
-          id: 3,
-          type: 'research_publication',
-          title: 'Research Publication',
-          description: 'Paper on "AI in UAE Education" accepted by IEEE Conference',
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
           priority: 'medium'
         },
         {
+          id: 3,
+          type: 'new_requirement',
+          title: 'New Search Assignment',
+          description: 'AI Engineer position for Dubai Future Foundation',
+          timestamp: new Date(Date.now() - 172800000).toISOString(),
+          priority: 'high'
+        },
+        {
           id: 4,
-          type: 'curriculum_update',
-          title: 'Curriculum Enhancement',
-          description: 'Updated Machine Learning course with latest industry requirements',
+          type: 'candidate_sourced',
+          title: 'Candidate Sourced',
+          description: 'Found 5 qualified UAE National candidates for Fintech role',
           timestamp: new Date(Date.now() - 259200000).toISOString(),
           priority: 'medium'
         }
@@ -240,18 +219,18 @@ const EducatorDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
-                  Educator Dashboard
+                  Recruitment Dashboard
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  Welcome back, Dr. Fatima Al Qasimi - Computer Science & AI Education
+                  Welcome back, Omar Al Rashid - UAE National Talent Specialist
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 font-dubai-medium">
-                  Professor
+                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-dubai-medium">
+                  Senior Recruiter
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
-                  AI Specialist
+                  Tech Specialist
                 </Badge>
                 <Button variant="outline" size="sm">
                   <Settings className="h-4 w-4 mr-2" />
@@ -266,15 +245,15 @@ const EducatorDashboard: React.FC = () => {
             <div className="flex flex-wrap gap-4">
               <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
                 <Plus className="h-4 w-4 mr-2" />
-                Create Course
+                New Search Assignment
               </Button>
               <Button variant="outline" className="font-dubai-medium">
                 <Users className="h-4 w-4 mr-2" />
-                Manage Students
+                Source Candidates
               </Button>
               <Button variant="outline" className="font-dubai-medium">
-                <Building className="h-4 w-4 mr-2" />
-                Industry Partnerships
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Interviews
               </Button>
               <Button variant="outline" className="font-dubai-medium">
                 <Download className="h-4 w-4 mr-2" />
@@ -287,10 +266,10 @@ const EducatorDashboard: React.FC = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
-              <TabsTrigger value="students" className="font-dubai-medium">Students</TabsTrigger>
-              <TabsTrigger value="programs" className="font-dubai-medium">Programs</TabsTrigger>
-              <TabsTrigger value="research" className="font-dubai-medium">Research</TabsTrigger>
-              <TabsTrigger value="outcomes" className="font-dubai-medium">Outcomes</TabsTrigger>
+              <TabsTrigger value="searches" className="font-dubai-medium">Active Searches</TabsTrigger>
+              <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
+              <TabsTrigger value="performance" className="font-dubai-medium">Performance</TabsTrigger>
+              <TabsTrigger value="reports" className="font-dubai-medium">Reports</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -299,136 +278,137 @@ const EducatorDashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Total Students</CardTitle>
-                    <Users className="h-4 w-4 text-blue-600" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Placements This Year</CardTitle>
+                    <Target className="h-4 w-4 text-green-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.students.totalEnrolled}</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      {dashboardData.students.activeStudents} currently active
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Programs</CardTitle>
-                    <BookOpen className="h-4 w-4 text-purple-600" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.programs.activePrograms}</div>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.placements.thisYear}</div>
                     <p className="text-xs text-slate-500 font-dubai-medium">
-                      {dashboardData.programs.totalPrograms} total programs
+                      Target: {dashboardData.placements.target} ({Math.round((dashboardData.placements.thisYear / dashboardData.placements.target) * 100)}%)
+                    </p>
+                    <Progress value={(dashboardData.placements.thisYear / dashboardData.placements.target) * 100} className="mt-2" />
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Searches</CardTitle>
+                    <Briefcase className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.pipeline.activeSearches}</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
+                      +3 new this week
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Employment Rate</CardTitle>
-                    <Briefcase className="h-4 w-4 text-green-600" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Avg. Time to Fill</CardTitle>
+                    <Clock className="h-4 w-4 text-orange-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.outcomes.employmentRate}%</div>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.performance.averageTimeToFill} days</div>
                     <p className="text-xs text-green-600 font-dubai-medium">
-                      +3% from last year
+                      -3 days from last month
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Research Publications</CardTitle>
-                    <FileText className="h-4 w-4 text-orange-600" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Placement Rate</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-green-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.research.publications}</div>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.performance.placementRate}%</div>
                     <p className="text-xs text-green-600 font-dubai-medium">
-                      +8 this year
+                      +5% from last quarter
                     </p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Student Outcomes */}
+              {/* Recruitment Pipeline */}
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Student Outcomes</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">Recruitment Pipeline</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Key performance indicators for student success
+                    Current status of your recruitment activities
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.outcomes.employmentRate}%</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Employment Rate</p>
-                    </div>
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-blue-600">AED {dashboardData.outcomes.averageSalary.toLocaleString()}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Average Salary</p>
+                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.pipeline.activeSearches}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Active Searches</p>
+                    </div>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-yellow-600">{dashboardData.pipeline.candidatesInProcess}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Candidates in Process</p>
                     </div>
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.outcomes.skillsMatchRate}%</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Skills Match Rate</p>
+                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.pipeline.interviewsScheduled}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Interviews Scheduled</p>
                     </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-orange-600">{dashboardData.outcomes.industryReadiness}%</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Industry Readiness</p>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.pipeline.offersExtended}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Offers Extended</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Research & Industry Collaboration */}
+              {/* Performance Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-white shadow-sm">
                   <CardHeader>
-                    <CardTitle className="font-dubai-bold text-slate-900">Research Activity</CardTitle>
+                    <CardTitle className="font-dubai-bold text-slate-900">Client Satisfaction</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
-                      Current research projects and publications
+                      Average rating from hiring managers
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Ongoing Projects</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.ongoingProjects}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Active Grants</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.grants}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Collaborations</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.collaborations}</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-3xl font-dubai-bold text-slate-900">{dashboardData.performance.clientSatisfaction}</div>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`h-5 w-5 ${star <= dashboardData.performance.clientSatisfaction ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          />
+                        ))}
                       </div>
                     </div>
+                    <p className="text-sm text-green-600 font-dubai-medium mt-2">
+                      +0.2 from last quarter
+                    </p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white shadow-sm">
                   <CardHeader>
-                    <CardTitle className="font-dubai-bold text-slate-900">Industry Partnerships</CardTitle>
+                    <CardTitle className="font-dubai-bold text-slate-900">Candidate Quality Score</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
-                      Active collaborations with industry partners
+                      Average quality rating of placed candidates
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Active Partnerships</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.programs.industryPartnerships}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Certification Programs</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.programs.certificationPrograms}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Placement Rate</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.students.placementRate}%</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-3xl font-dubai-bold text-slate-900">{dashboardData.performance.candidateQuality}</div>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`h-5 w-5 ${star <= dashboardData.performance.candidateQuality ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          />
+                        ))}
                       </div>
                     </div>
+                    <p className="text-sm text-green-600 font-dubai-medium mt-2">
+                      +0.1 from last quarter
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -438,7 +418,7 @@ const EducatorDashboard: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Latest updates from your educational activities
+                    Latest updates from your recruitment activities
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -447,17 +427,17 @@ const EducatorDashboard: React.FC = () => {
                       dashboardData.activity.map((activity) => (
                         <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
                           <div className="flex-shrink-0">
-                            {activity.type === 'student_placement' && (
+                            {activity.type === 'placement_success' && (
                               <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
                             )}
-                            {activity.type === 'industry_partnership' && (
-                              <Building className="h-5 w-5 text-blue-500 mt-1" />
+                            {activity.type === 'interview_scheduled' && (
+                              <Calendar className="h-5 w-5 text-blue-500 mt-1" />
                             )}
-                            {activity.type === 'research_publication' && (
-                              <FileText className="h-5 w-5 text-purple-500 mt-1" />
+                            {activity.type === 'new_requirement' && (
+                              <Briefcase className="h-5 w-5 text-purple-500 mt-1" />
                             )}
-                            {activity.type === 'curriculum_update' && (
-                              <BookOpen className="h-5 w-5 text-orange-500 mt-1" />
+                            {activity.type === 'candidate_sourced' && (
+                              <UserPlus className="h-5 w-5 text-orange-500 mt-1" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -491,90 +471,97 @@ const EducatorDashboard: React.FC = () => {
               </Card>
             </TabsContent>
 
-            {/* Students Tab */}
-            <TabsContent value="students" className="space-y-6">
+            {/* Active Searches Tab */}
+            <TabsContent value="searches" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Student Management</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">Active Search Assignments</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Manage student enrollment and progress tracking
+                    Manage your current recruitment searches
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Briefcase className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Search Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Advanced search assignment tracking and management</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Search
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Candidates Tab */}
+            <TabsContent value="candidates" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Candidate Pipeline</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Manage candidates across all your searches
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-12">
                     <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Student Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive student tracking and progress management</p>
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Candidate Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Advanced candidate tracking and pipeline management</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      View All Students
+                      View All Candidates
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Programs Tab */}
-            <TabsContent value="programs" className="space-y-6">
+            {/* Performance Tab */}
+            <TabsContent value="performance" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Program Management</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">Performance Analytics</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Manage courses, curricula, and educational programs
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <BookOpen className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Program Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Create and manage educational programs and curricula</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Program
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Research Tab */}
-            <TabsContent value="research" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Research & Publications</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Manage research projects, publications, and collaborations
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Lightbulb className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Research Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Track research projects, publications, and academic collaborations</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      View Research Portfolio
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Outcomes Tab */}
-            <TabsContent value="outcomes" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Student Outcomes & Analytics</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Track student success metrics and employment outcomes
+                    Detailed performance metrics and insights
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-12">
                     <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Outcomes Analytics</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive analytics on student success and employment outcomes</p>
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Performance Analytics</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive recruitment performance insights</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
                       View Analytics Dashboard
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Reports Tab */}
+            <TabsContent value="reports" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Reports & Analytics</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Generate and download recruitment reports
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Download className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Report Generation</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Generate detailed recruitment reports and analytics</p>
+                    <div className="flex justify-center space-x-4">
+                      <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                        <Download className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </Button>
+                      <Button variant="outline" className="font-dubai-medium">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Templates
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -586,4 +573,4 @@ const EducatorDashboard: React.FC = () => {
   );
 };
 
-export default EducatorDashboard;
+export default RecruiterDashboard;

@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { 
   Users, 
   FileText, 
@@ -29,9 +31,41 @@ import {
   PieChart,
   Target,
   Star,
-  RotateCcw
+  RotateCcw,
+  Settings,
+  Bell,
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
-import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+
+interface DashboardData {
+  candidates: {
+    total: number;
+    active: number;
+    shortlisted: number;
+    interviewed: number;
+    hired: number;
+  };
+  positions: {
+    total: number;
+    open: number;
+    filled: number;
+    pending: number;
+  };
+  recruitment: {
+    averageTimeToHire: number;
+    successRate: number;
+    candidateQuality: number;
+  };
+  activity: Array<{
+    id: number;
+    type: string;
+    title: string;
+    description: string;
+    timestamp: string;
+  }>;
+}
 
 // Role Switcher Button Component
 const RoleSwitcherButton = () => {
@@ -88,7 +122,7 @@ const RoleSwitcherButton = () => {
 const HRDashboard: React.FC = () => {
   const { t } = useTranslation('hr-dashboard');
   const [activeTab, setActiveTab] = useState("overview");
-  const [dashboardData, setDashboardData] = useState({
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
     candidates: {
       total: 0,
       active: 0,
@@ -114,8 +148,6 @@ const HRDashboard: React.FC = () => {
   React.useEffect(() => {
     setMockData();
   }, []);
-
-
 
   const setMockData = () => {
     setDashboardData({
@@ -151,99 +183,138 @@ const HRDashboard: React.FC = () => {
           title: 'Interview Scheduled',
           description: 'Technical interview for Frontend Developer position',
           timestamp: new Date(Date.now() - 86400000).toISOString()
+        },
+        {
+          id: 3,
+          type: 'application_received',
+          title: 'New Application',
+          description: 'Fatima Al Zahra applied for Marketing Manager',
+          timestamp: new Date(Date.now() - 172800000).toISOString()
         }
       ]
     });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <HybridGovernmentNavFixed />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+      {/* Navigation */}
+      <HybridGovernmentNavFixed showAuthButtons={true} />
+      
       {/* Role Switcher Button */}
       <RoleSwitcherButton />
       
-      <div className="container mx-auto px-4 py-8 mt-16">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                HR Management Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Welcome back, Sara Saeed - Manage UAE National talent acquisition
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                HR Manager
-              </Badge>
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                Talent33 Aligned
-              </Badge>
+      {/* Main Content */}
+      <div className="pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
+                  HR Management Dashboard
+                </h1>
+                <p className="text-slate-600 font-dubai-medium">
+                  Welcome back, Sara Saeed - Manage UAE National talent acquisition
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-dubai-medium">
+                  HR Manager
+                </Badge>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
+                  Talent33 Aligned
+                </Badge>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-4">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                <Plus className="h-4 w-4 mr-2" />
+                Post New Job
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Upload className="h-4 w-4 mr-2" />
+                Import Candidates
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Download className="h-4 w-4 mr-2" />
+                Export Reports
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Interviews
+              </Button>
+            </div>
+          </div>
+
+          {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="candidates">Candidates</TabsTrigger>
-              <TabsTrigger value="positions">Positions</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
+              <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
+              <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
+              <TabsTrigger value="positions" className="font-dubai-medium">Positions</TabsTrigger>
+              <TabsTrigger value="analytics" className="font-dubai-medium">Analytics</TabsTrigger>
+              <TabsTrigger value="reports" className="font-dubai-medium">Reports</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Candidates</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Total Candidates</CardTitle>
+                    <Users className="h-4 w-4 text-teal-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.candidates.total}</div>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.candidates.total}</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
                       +12% from last month
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Positions</CardTitle>
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Positions</CardTitle>
+                    <Briefcase className="h-4 w-4 text-blue-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.positions.open}</div>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.positions.open}</div>
+                    <p className="text-xs text-slate-500 font-dubai-medium">
                       {dashboardData.positions.pending} pending approval
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Avg. Time to Hire</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Avg. Time to Hire</CardTitle>
+                    <Clock className="h-4 w-4 text-orange-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.recruitment.averageTimeToHire} days</div>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.recruitment.averageTimeToHire} days</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
                       -5 days from last quarter
                     </p>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Success Rate</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-green-600" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData.recruitment.successRate}%</div>
-                    <p className="text-xs text-muted-foreground">
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.recruitment.successRate}%</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
                       +8% from last quarter
                     </p>
                   </CardContent>
@@ -251,44 +322,44 @@ const HRDashboard: React.FC = () => {
               </div>
 
               {/* Recruitment Pipeline */}
-              <Card>
+              <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle>Recruitment Pipeline</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="font-dubai-bold text-slate-900">Recruitment Pipeline</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
                     Current status of candidates in the recruitment process
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{dashboardData.candidates.total}</div>
-                      <p className="text-sm text-gray-600">Total Candidates</p>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.candidates.total}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Total Candidates</p>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">{dashboardData.candidates.active}</div>
-                      <p className="text-sm text-gray-600">Active</p>
+                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-yellow-600">{dashboardData.candidates.active}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Active</p>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-600">{dashboardData.candidates.shortlisted}</div>
-                      <p className="text-sm text-gray-600">Shortlisted</p>
+                    <div className="text-center p-4 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-orange-600">{dashboardData.candidates.shortlisted}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Shortlisted</p>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">{dashboardData.candidates.interviewed}</div>
-                      <p className="text-sm text-gray-600">Interviewed</p>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.candidates.interviewed}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Interviewed</p>
                     </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{dashboardData.candidates.hired}</div>
-                      <p className="text-sm text-gray-600">Hired</p>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.candidates.hired}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Hired</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Recent Activity */}
-              <Card>
+              <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
                     Latest updates from your recruitment activities
                   </CardDescription>
                 </CardHeader>
@@ -296,33 +367,33 @@ const HRDashboard: React.FC = () => {
                   <div className="space-y-4">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3">
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
                           <div className="flex-shrink-0">
                             {activity.type === 'candidate_hired' && (
-                              <CheckCircle className="h-4 w-4 text-green-500 mt-1" />
+                              <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
                             )}
                             {activity.type === 'interview_scheduled' && (
-                              <Calendar className="h-4 w-4 text-blue-500 mt-1" />
+                              <Calendar className="h-5 w-5 text-blue-500 mt-1" />
                             )}
                             {activity.type === 'application_received' && (
-                              <FileText className="h-4 w-4 text-purple-500 mt-1" />
+                              <FileText className="h-5 w-5 text-purple-500 mt-1" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-dubai-medium text-slate-900">
                               {activity.title}
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-slate-600 font-dubai">
                               {activity.description}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-slate-400 mt-1 font-dubai">
                               {new Date(activity.timestamp).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500">No recent activity</p>
+                      <p className="text-sm text-slate-500 font-dubai-medium">No recent activity</p>
                     )}
                   </div>
                 </CardContent>
@@ -331,20 +402,20 @@ const HRDashboard: React.FC = () => {
 
             {/* Candidates Tab */}
             <TabsContent value="candidates" className="space-y-6">
-              <Card>
+              <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle>Candidate Management</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="font-dubai-bold text-slate-900">Candidate Management</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
                     Manage and review candidate applications
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-4 mb-6">
                     <div className="flex-1">
-                      <Input placeholder="Search candidates..." className="max-w-sm" />
+                      <Input placeholder="Search candidates..." className="max-w-sm font-dubai" />
                     </div>
                     <Select>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[180px] font-dubai">
                         <SelectValue placeholder="Filter by status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -354,17 +425,19 @@ const HRDashboard: React.FC = () => {
                         <SelectItem value="interviewed">Interviewed</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button>
+                    <Button className="font-dubai-medium">
                       <Filter className="h-4 w-4 mr-2" />
                       Filter
                     </Button>
                   </div>
 
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Candidate Management</h3>
-                    <p className="text-gray-500 mb-4">Advanced candidate filtering and management tools</p>
-                    <Button>View All Candidates</Button>
+                  <div className="text-center py-12">
+                    <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Candidate Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Advanced candidate filtering and management tools</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View All Candidates
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -372,51 +445,54 @@ const HRDashboard: React.FC = () => {
 
             {/* Positions Tab */}
             <TabsContent value="positions" className="space-y-6">
-              <Card>
+              <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle>Position Management</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="font-dubai-bold text-slate-900">Position Management</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
                     Manage job positions and requirements
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <Card>
+                    <Card className="bg-green-50 border-green-200">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Open Positions</CardTitle>
+                        <CardTitle className="text-lg font-dubai-bold text-green-800">Open Positions</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-green-600">{dashboardData.positions.open}</div>
-                        <p className="text-sm text-gray-600">Currently recruiting</p>
+                        <div className="text-3xl font-dubai-bold text-green-600">{dashboardData.positions.open}</div>
+                        <p className="text-sm text-green-700 font-dubai-medium">Currently recruiting</p>
                       </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card className="bg-blue-50 border-blue-200">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Filled Positions</CardTitle>
+                        <CardTitle className="text-lg font-dubai-bold text-blue-800">Filled Positions</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-blue-600">{dashboardData.positions.filled}</div>
-                        <p className="text-sm text-gray-600">Successfully filled</p>
+                        <div className="text-3xl font-dubai-bold text-blue-600">{dashboardData.positions.filled}</div>
+                        <p className="text-sm text-blue-700 font-dubai-medium">Successfully filled</p>
                       </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card className="bg-orange-50 border-orange-200">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Pending Approval</CardTitle>
+                        <CardTitle className="text-lg font-dubai-bold text-orange-800">Pending Approval</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-orange-600">{dashboardData.positions.pending}</div>
-                        <p className="text-sm text-gray-600">Awaiting approval</p>
+                        <div className="text-3xl font-dubai-bold text-orange-600">{dashboardData.positions.pending}</div>
+                        <p className="text-sm text-orange-700 font-dubai-medium">Awaiting approval</p>
                       </CardContent>
                     </Card>
                   </div>
 
-                  <div className="text-center py-8">
-                    <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Position Management</h3>
-                    <p className="text-gray-500 mb-4">Create and manage job positions</p>
-                    <Button>Create New Position</Button>
+                  <div className="text-center py-12">
+                    <Briefcase className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Position Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Create and manage job positions</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Position
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -424,125 +500,53 @@ const HRDashboard: React.FC = () => {
 
             {/* Analytics Tab */}
             <TabsContent value="analytics" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BarChart3 className="h-5 w-5 mr-2" />
-                      Recruitment Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Candidate Quality Score</span>
-                        <span className="text-sm font-bold">{dashboardData.recruitment.candidateQuality}/10</span>
-                      </div>
-                      <Progress value={dashboardData.recruitment.candidateQuality * 10} className="w-full" />
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Success Rate</span>
-                        <span className="text-sm font-bold">{dashboardData.recruitment.successRate}%</span>
-                      </div>
-                      <Progress value={dashboardData.recruitment.successRate} className="w-full" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <PieChart className="h-5 w-5 mr-2" />
-                      Department Distribution
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                          <span className="text-sm">Technology</span>
-                        </div>
-                        <span className="text-sm font-medium">45%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                          <span className="text-sm">Operations</span>
-                        </div>
-                        <span className="text-sm font-medium">30%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                          <span className="text-sm">Marketing</span>
-                        </div>
-                        <span className="text-sm font-medium">15%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                          <span className="text-sm">Finance</span>
-                        </div>
-                        <span className="text-sm font-medium">10%</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Recruitment Analytics</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Insights and metrics for data-driven decisions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Advanced Analytics</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive recruitment analytics and insights</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View Analytics Dashboard
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Reports Tab */}
             <TabsContent value="reports" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <FileText className="h-5 w-5" />
-                      <span>Monthly Report</span>
-                    </CardTitle>
-                    <CardDescription>Comprehensive monthly recruitment summary</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Users className="h-5 w-5" />
-                      <span>Candidate Report</span>
-                    </CardTitle>
-                    <CardDescription>Detailed candidate analytics and insights</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Target className="h-5 w-5" />
-                      <span>Performance Report</span>
-                    </CardTitle>
-                    <CardDescription>Recruitment team performance metrics</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Reports & Exports</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Generate and download recruitment reports
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <FileText className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Report Generation</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Generate detailed recruitment reports</p>
+                    <div className="flex justify-center space-x-4">
+                      <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                        <Download className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </Button>
+                      <Button variant="outline" className="font-dubai-medium">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Templates
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
