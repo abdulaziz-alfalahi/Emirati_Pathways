@@ -58,16 +58,18 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
             {/* Navigation Actions */}
             <div className="flex items-center space-x-4">
               {/* Language Toggle */}
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                title="Switch Language"
-              >
-                <Globe className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {currentLanguage === 'en' ? 'العربية' : 'English'}
-                </span>
-              </button>
+              {onLanguageToggle && (
+                <button
+                  onClick={onLanguageToggle}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title="Switch Language"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {currentLanguage === 'en' ? 'العربية' : 'English'}
+                  </span>
+                </button>
+              )}
 
               {/* Mobile Menu Button */}
               <button
