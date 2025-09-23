@@ -16,6 +16,7 @@ import {
   Play
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import DemoVideoModal from '@/components/demo/DemoVideoModal';
 
 // Import translations
 import enTranslations from '@/locales/en/home-complete.json';
@@ -28,6 +29,7 @@ interface Translation {
 const BilingualHomePage: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
   const [translations, setTranslations] = useState<Translation>(enTranslations);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   useEffect(() => {
     setTranslations(currentLanguage === 'en' ? enTranslations : arTranslations);
@@ -178,7 +180,10 @@ const BilingualHomePage: React.FC = () => {
                 {translations.hero?.startJourney || 'Start Your Journey'}
                 <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2' : 'ml-2'}`} />
               </Link>
-              <button className="flex items-center text-slate-600 hover:text-slate-900 font-dubai-medium text-lg transition-colors">
+              <button 
+                onClick={() => setIsDemoModalOpen(true)}
+                className="flex items-center text-slate-600 hover:text-slate-900 font-dubai-medium text-lg transition-colors"
+              >
                 <Play className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {translations.hero?.watchDemo || 'Watch Demo'}
               </button>
@@ -274,6 +279,12 @@ const BilingualHomePage: React.FC = () => {
         <Globe className="w-6 h-6" />
         <span className="sr-only">Toggle Language</span>
       </button>
+
+      {/* Demo Video Modal */}
+      <DemoVideoModal 
+        isOpen={isDemoModalOpen} 
+        onClose={() => setIsDemoModalOpen(false)} 
+      />
     </div>
   );
 };
