@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { MockAuthService } from '@/services/mockAuthService';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,8 +88,10 @@ const RoleSwitcherButton = () => {
 };
 
 const HRDashboard = () => {
-  const { user, signOut, isAuthenticated } = useAuth();
+  const { t } = useTranslation('hr-dashboard');
   const navigate = useNavigate();
+  const user = MockAuthService.getCurrentUser();
+  const isAuthenticated = MockAuthService.isAuthenticated();
   const [activeTab, setActiveTab] = useState("overview");
   const [dashboardData, setDashboardData] = useState({
     candidates: {
@@ -121,37 +124,22 @@ const HRDashboard = () => {
     loadDashboardData();
   }, [isAuthenticated, navigate]);
 
-  // Get user display name from various possible sources
+  // Get user display name from mock user data
   const getUserDisplayName = () => {
     if (!user) return 'HR Manager';
-    
-    // Try user_metadata first (common in Supabase)
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
-    if (user.user_metadata?.name) return user.user_metadata.name;
-    
-    // Try direct properties
-    if (user.full_name) return user.full_name;
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    
-    // Fallback to email-based name
-    if (user.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-    
-    return 'HR Manager';
+    return user.full_name || 'HR Manager';
   };
 
   // Logout functionality
   const handleLogout = async () => {
     try {
       console.log('🚪 HR Manager logout process...');
-      await signOut();
+      MockAuthService.logout();
       console.log('✅ HR Manager logout completed');
-      window.location.replace('/auth');
+      navigate('/auth');
     } catch (error) {
       console.error('HR Manager logout error:', error);
-      window.location.href = '/auth';
+      navigate('/auth');
     }
   };
 
