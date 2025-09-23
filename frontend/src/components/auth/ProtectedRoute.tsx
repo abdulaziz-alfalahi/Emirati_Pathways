@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { AuthService } from '@/services/authService';
+import authService from '@/services/authService';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,8 +23,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Get user data from AuthService
-  const userData = AuthService.getUser();
+  // Get user data from authService
+  const userData = authService.getUser();
   if (!userData) {
     console.log('❌ No user data found, redirecting to auth');
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
