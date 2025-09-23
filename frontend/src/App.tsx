@@ -2,16 +2,21 @@ import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
+import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
 import { Toaster } from 'react-hot-toast';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
+
+// Development components
+import PersonaSwitcher from '@/components/dev/PersonaSwitcher';
 
 // Loading component
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
 
 // Auth Pages (not lazy loaded for faster initial access)
 import AuthPage from '@/pages/auth';
+import MockLogin from '@/pages/auth/MockLogin';
 
 // Lazy loaded components for better performance
 const CandidateDashboard = lazy(() => import('@/pages/CandidateDashboard'));
@@ -90,7 +95,7 @@ const AppContent: React.FC = () => {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<BilingualHomePage />} />
-                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth" element={<MockLogin />} />
                 
                 {/* Protected Dashboard Routes */}
                 <Route 
@@ -332,13 +337,16 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Main App Component with Enhanced Language Provider
+// Main App Component with Enhanced Language Provider and Mock Auth
 function App() {
   return (
     <LanguageProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <MockAuthProvider>
+        <AuthProvider>
+          <AppContent />
+          <PersonaSwitcher />
+        </AuthProvider>
+      </MockAuthProvider>
     </LanguageProvider>
   );
 }
