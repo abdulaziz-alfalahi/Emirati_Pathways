@@ -6,8 +6,7 @@
 /* Import RTL support styles */
 @import './styles/rtl.css';
 
-/* Import Dubai Font */
-@import url('https://fonts.googleapis.com/css2?family=Dubai:wght@300;400;500;700&display=swap');
+/* Dubai font removed - using system fonts for reliability */
 
 @layer base {
   :root {
@@ -88,7 +87,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Dubai', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 }
 
@@ -97,25 +96,20 @@
   transition: all 0.3s ease-in-out;
 }
 
-/* Ensure proper font loading for Arabic and English - Using Dubai font for both */
-@font-face {
-  font-family: 'Dubai';
-  src: url('https://fonts.googleapis.com/css2?family=Dubai:wght@300;400;500;700&display=swap');
-}
-
+/* System fonts for reliable rendering - Dubai font removed */
 /* RTL-specific adjustments for better Arabic text rendering */
 [dir="rtl"] {
   font-variant-numeric: lining-nums;
   text-rendering: optimizeLegibility;
-  font-family: 'Dubai', Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
 }
 
 [dir="ltr"] {
-  font-family: 'Dubai', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Smooth direction changes */
 html {
   transition: direction 0.3s ease-in-out;
-  font-family: 'Dubai', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
