@@ -48,16 +48,35 @@ const EnhancedAuthPage: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
+      // Add a small delay to prevent immediate redirect loops
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       if (authService.isAuthenticated()) {
         console.log('User already authenticated, determining dashboard route...');
         try {
+          const user = authService.getUser();
+          if (!user) {
+            console.log('No user data found, clearing auth state');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            return;
+          }
+          
           const dashboardRoute = await authService.getDashboardRoute();
           const from = location.state?.from?.pathname || dashboardRoute;
           console.log('Redirecting to:', from);
-          navigate(from, { replace: true });
+          
+          // Prevent redirect to auth page
+          if (from !== '/auth') {
+            navigate(from, { replace: true });
+          }
         } catch (error) {
           console.error('Error determining dashboard route:', error);
-          navigate('/candidate-dashboard', { replace: true }); // Fallback
+          // Clear auth state on error to prevent loops
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
         }
       }
     };

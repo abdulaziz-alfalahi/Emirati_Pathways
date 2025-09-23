@@ -293,7 +293,9 @@ class AuthService {
 
   isAuthenticated(): boolean {
     const token = localStorage.getItem('access_token');
-    return !!token;
+    const user = this.getUser();
+    // Both token and user data must be present for authenticated state
+    return !!(token && user);
   }
 
   getUser(): any {
