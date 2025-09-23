@@ -28,7 +28,7 @@ import {
   PieChart,
   Target,
   Star,
-  RotateCcw,
+
   Settings,
   Bell,
   Plus,
@@ -74,57 +74,7 @@ interface EducatorData {
   }>;
 }
 
-// Role Switcher Button Component
-const RoleSwitcherButton = () => {
-  const handleRoleSwitch = () => {
-    console.log('🔄 Switching to role selector from Educator Dashboard');
-    
-    // Clear authentication state to allow role switching
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('auth_token');
-    
-    // Force navigation to HTML role selector
-    window.location.href = '/role_selector.html';
-  };
 
-  return (
-    <button 
-      onClick={handleRoleSwitch}
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-        color: 'white',
-        border: 'none',
-        padding: '12px 24px',
-        borderRadius: '25px',
-        fontWeight: '600',
-        cursor: 'pointer',
-        zIndex: 1000,
-        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-        fontSize: '14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        transition: 'all 0.3s ease'
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
-      }}
-    >
-      <RotateCcw size={16} />
-      Switch Role
-    </button>
-  );
-};
 
 const EducatorDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -229,8 +179,7 @@ const EducatorDashboard: React.FC = () => {
       {/* Navigation */}
       <HybridGovernmentNavFixed showAuthButtons={true} />
       
-      {/* Role Switcher Button */}
-      <RoleSwitcherButton />
+
       
       {/* Main Content */}
       <div className="pt-20 pb-8">

@@ -153,7 +153,15 @@ const BilingualHomePage: React.FC = () => {
 
             {/* Main Heading */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-dubai-bold text-slate-900 mb-6 leading-tight">
-              {translations.hero?.title || 'Empowering UAE Nationals for Career Excellence'}
+              {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence').length > 1 ? (
+                <>
+                  {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[0]}
+                  <span className="text-teal-600">Career Excellence</span>
+                  {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[1]}
+                </>
+              ) : (
+                translations.hero?.title || 'Empowering UAE Nationals for Career Excellence'
+              )}
             </h1>
 
             {/* Subtitle */}

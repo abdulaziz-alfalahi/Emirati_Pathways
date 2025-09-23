@@ -158,9 +158,9 @@ const PersonaSwitcher: React.FC = () => {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   {Object.entries(MOCK_USERS).map(([key, user]) => (
-                    <SelectItem key={key} value={key}>
+                    <SelectItem key={key} value={key} className="bg-white hover:bg-gray-50">
                       <div className="flex items-center space-x-2">
                         {getRoleIcon(user.user_type)}
                         <span>{user.full_name}</span>
