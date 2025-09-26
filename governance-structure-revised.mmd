@@ -1,0 +1,83 @@
+graph TD
+    %% Tier 1: Strategic Level
+    subgraph "🏛️ Tier 1: Strategic Governance"
+        A[👑 Content Steering Committee<br/>Chair: Undersecretary KHDA<br/>Monthly Meetings]
+        B[🎯 Advisory Board<br/>Education Experts<br/>Industry Leaders<br/>Parent Representatives]
+        A -.-> B
+    end
+    
+    %% Tier 2: Operational Level
+    subgraph "⚙️ Tier 2: Operational Management"
+        C[🏢 Content Management Office<br/>Director: Senior KHDA Official<br/>Daily Operations]
+        D[📝 Editorial Review Board<br/>Lead Editor<br/>Subject Specialists<br/>Quality Controllers]
+        A --> C
+        C --> D
+    end
+    
+    %% Tier 3: Functional Level
+    subgraph "🔧 Tier 3: Functional Working Groups"
+        E[💻 Technical Content Team<br/>Platform Managers<br/>UX/UI Specialists<br/>Data Analysts]
+        F[📚 Educational Standards Group<br/>Curriculum Officers<br/>Assessment Specialists<br/>Cultural Advisors]
+        G[🤝 Stakeholder Liaison Network<br/>School Relations<br/>Parent Community Managers<br/>Student Representatives]
+        C --> E
+        C --> F
+        C --> G
+    end
+    
+    %% Tier 4: Contributors Level
+    subgraph "👥 Tier 4: Content Contributors"
+        H[🏫 Institutional Creators<br/>School Coordinators<br/>Department Heads<br/>Teachers]
+        I[🔍 External Validators<br/>Education Consultants<br/>Industry Experts<br/>Parent Focus Groups]
+        F --> H
+        G --> I
+    end
+    
+    %% Decision Authority Matrix
+    subgraph "⚖️ Decision Authority Levels"
+        J[Level 1: CMO Authority<br/>✅ Routine Approvals<br/>📋 Minor Policy Interpretations<br/>💰 Resource Allocation]
+        K[Level 2: Editorial Board<br/>📊 Quality Standards<br/>❌ Content Rejections<br/>🏷️ Categorization Systems]
+        L[Level 3: Steering Committee<br/>📈 Major Policy Changes<br/>💼 Budget Approvals<br/>🤝 Stakeholder Agreements]
+        M[Level 4: KHDA Leadership<br/>🎯 Platform Strategy<br/>🤝 Major Partnerships<br/>🚨 Crisis Management]
+    end
+    
+    %% Quality Assurance Framework
+    subgraph "🛡️ Quality Assurance"
+        N[📋 Content Standards Board<br/>Senior Educators<br/>Policy Experts<br/>Technical Specialists]
+        O[🔍 Audit & Compliance Unit<br/>Internal Auditors<br/>Compliance Officers<br/>Risk Managers]
+        D --> N
+        N --> O
+    end
+    
+    %% Performance Governance
+    subgraph "📊 Performance Monitoring"
+        P[📈 KPI Dashboard<br/>Content Quality Metrics<br/>Process Efficiency<br/>User Engagement]
+        Q[🔄 Review Cycles<br/>Daily: Operations<br/>Weekly: Performance<br/>Monthly: Strategic<br/>Quarterly: Assessment]
+        O --> P
+        P --> Q
+    end
+    
+    %% Communication Flow
+    C -.->|Reports| A
+    D -.->|Feedback| C
+    E -.->|Technical Updates| D
+    F -.->|Standards Updates| D
+    G -.->|Stakeholder Input| C
+    H -.->|Content Submissions| F
+    I -.->|Validation Reports| G
+    
+    %% Styling
+    classDef tier1 fill:#1a237e,color:#ffffff,stroke:#000051,stroke-width:3px
+    classDef tier2 fill:#283593,color:#ffffff,stroke:#1a237e,stroke-width:2px
+    classDef tier3 fill:#3949ab,color:#ffffff,stroke:#283593,stroke-width:2px
+    classDef tier4 fill:#5c6bc0,color:#ffffff,stroke:#3949ab,stroke-width:2px
+    classDef decision fill:#ff8f00,color:#ffffff,stroke:#e65100,stroke-width:2px
+    classDef quality fill:#2e7d32,color:#ffffff,stroke:#1b5e20,stroke-width:2px
+    classDef performance fill:#c62828,color:#ffffff,stroke:#b71c1c,stroke-width:2px
+    
+    class A,B tier1
+    class C,D tier2
+    class E,F,G tier3
+    class H,I tier4
+    class J,K,L,M decision
+    class N,O quality
+    class P,Q performance

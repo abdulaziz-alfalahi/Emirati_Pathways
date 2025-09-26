@@ -44,7 +44,8 @@ const IndustryExplorationPage = lazy(() => import('./pages/industry-exploration/
 const CVBuilderPage = lazy(() => import('./pages/cv-builder/CVBuilderPage'));
 const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard'));
 const CommunitiesPage = lazy(() => import('./pages/communities/CommunitiesPage'));
-const SchoolProgramsPage = lazy(() => import('./pages/education/SchoolProgramsPage'));
+const SchoolProgramsPage = lazy(() => import('./pages/SchoolProgramsPage'));
+const SchoolProgramsAdmin = lazy(() => import('./pages/admin/SchoolProgramsAdmin'));
 const UniversityProgramsPage = lazy(() => import('./pages/education/UniversityProgramsPage'));
 
 // Other key pages
@@ -141,6 +142,15 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute allowedRoles={['administrator', 'admin']}>
                       <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/admin/school-programs" 
+                  element={
+                    <ProtectedRoute allowedRoles={['administrator', 'admin', 'khda_staff', 'content_manager']}>
+                      <SchoolProgramsAdmin />
                     </ProtectedRoute>
                   } 
                 />

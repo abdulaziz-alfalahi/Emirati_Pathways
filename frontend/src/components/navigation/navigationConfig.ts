@@ -33,7 +33,7 @@ export const navigationGroups: NavGroup[] = [
       {
         name: 'School Programs',
         href: '/school-programs',
-        description: 'Special programs for school students',
+        description: 'Discover innovative educational programs across Dubai schools',
         icon: BookOpen
       },
       {

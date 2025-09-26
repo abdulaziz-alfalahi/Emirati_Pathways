@@ -1,0 +1,103 @@
+flowchart TD
+    %% Phase 1: Content Creation
+    A[🏫 School Identifies Program] --> B[📝 Program Coordinator Assessment]
+    B --> C[📋 Content Development]
+    C --> D[👥 Stakeholder Input Collection]
+    D --> E[📸 Visual Assets Creation]
+    
+    %% Phase 2: Submission
+    E --> F[💻 Digital Submission via Portal]
+    F --> G[🔍 Automated Validation]
+    G --> H[🏷️ Content Categorization]
+    H --> I[✅ Initial Quality Check]
+    
+    %% Phase 3: Review Process
+    I --> J{📚 Educational Review}
+    J -->|Pass| K{⚖️ Policy & Compliance}
+    J -->|Fail| L[❌ Return with Feedback]
+    K -->|Pass| M{🎯 Strategic Alignment}
+    K -->|Fail| L
+    M -->|Pass| N[✅ Approved]
+    M -->|Fail| L
+    
+    %% Revision Cycle
+    L --> O[📝 School Revisions]
+    O --> P{🔄 Re-submission Type}
+    P -->|Minor Changes| Q[⚡ Fast-track Review]
+    P -->|Major Changes| J
+    Q --> N
+    
+    %% Phase 4: Publication
+    N --> R[🎨 Content Formatting]
+    R --> S[📱 Mobile Optimization]
+    S --> T[🔍 SEO Configuration]
+    T --> U[👀 Internal Preview]
+    U --> V[🏫 School Verification]
+    V --> W[🧪 Soft Launch Testing]
+    W --> X[🚀 Full Publication]
+    
+    %% Phase 5: Post-Publication
+    X --> Y[📊 Performance Monitoring]
+    Y --> Z[💬 User Feedback Collection]
+    Z --> AA[📈 Analytics Review]
+    AA --> BB[🔄 Content Updates]
+    BB --> CC{📅 Update Type}
+    CC -->|Regular| DD[📝 Quarterly Refresh]
+    CC -->|Emergency| EE[🚨 Immediate Update]
+    DD --> Y
+    EE --> Y
+    
+    %% Stakeholders
+    subgraph "👥 Key Stakeholders"
+        FF[🏫 Schools]
+        GG[👨‍🏫 Teachers]
+        HH[👨‍👩‍👧‍👦 Parents]
+        II[👨‍🎓 Students]
+        JJ[🏛️ MOE Officials]
+        KK[💼 Industry Partners]
+    end
+    
+    %% Review Teams
+    subgraph "🔍 Review Teams"
+        LL[📚 Curriculum Specialists]
+        MM[⚖️ Policy Team]
+        NN[🎯 Senior Officials]
+        OO[🔧 Technical Team]
+        PP[🛡️ Quality Assurance]
+    end
+    
+    %% Timeline Indicators
+    subgraph "⏱️ Timeline"
+        QQ["Days 1-5: Creation"]
+        RR["Days 6-8: Submission"]
+        SS["Days 9-18: Review"]
+        TT["Days 19-21: Approval"]
+        UU["Days 22-25: Publication"]
+        VV["Ongoing: Maintenance"]
+    end
+    
+    %% Success Metrics
+    subgraph "📊 Success Metrics"
+        WW["⏱️ 21-day Average Approval"]
+        XX["⭐ 4.5/5.0 Quality Score"]
+        YY["📈 75% Engagement Rate"]
+        ZZ["🎯 25% Enrollment Conversion"]
+    end
+    
+    %% Styling
+    classDef creation fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef submission fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef review fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef approval fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef publication fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef maintenance fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef stakeholder fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef decision fill:#fff8e1,stroke:#f57f17,stroke-width:3px
+    
+    class A,B,C,D,E creation
+    class F,G,H,I submission
+    class J,K,M,L,O,P,Q review
+    class N,R,S,T,U,V,W,X approval
+    class Y,Z,AA,BB,CC,DD,EE maintenance
+    class FF,GG,HH,II,JJ,KK stakeholder
+    class J,K,M,P,CC decision
