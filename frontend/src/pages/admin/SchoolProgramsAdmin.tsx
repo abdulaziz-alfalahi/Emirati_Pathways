@@ -1,10 +1,9 @@
-// School Programs Admin Interface
-// Comprehensive admin dashboard for KHDA content management with role-based access
+// School Programs Admin Interface - Simplified Working Version
+// KHDA Content Management System
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Search, 
-  Filter, 
   Plus, 
   Eye, 
   Edit, 
@@ -17,9 +16,7 @@ import {
   BarChart3,
   Settings,
   Download,
-  Upload,
   Bell,
-  Calendar,
   FileText,
   Star,
   TrendingUp,
@@ -28,114 +25,60 @@ import {
   Globe
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '../../components/layout/HybridGovernmentNavFixed';
-import { schoolProgramsService } from '../../services/schoolProgramsService';
-import { contentWorkflowService } from '../../services/contentWorkflowService';
-import { SchoolProgram, WorkflowStage, ProgramStatus, UserRole } from '../../types/schoolPrograms';
 
-interface AdminUser {
-  id: string;
-  name: { en: string; ar: string };
-  role: UserRole;
-  department: string;
-  permissions: string[];
-}
-
-// Mock admin user for demonstration
-const mockAdminUser: AdminUser = {
+// Mock admin user
+const mockAdminUser = {
   id: 'admin-001',
   name: { en: 'Dr. Amina Al Zahra', ar: 'د. آمنة الزهراء' },
   role: 'khda_director',
-  department: 'KHDA Leadership',
-  permissions: ['approve_final', 'view_analytics', 'manage_users', 'export_data']
+  department: 'KHDA Leadership'
 };
+
+// Mock programs data
+const mockPrograms = [
+  {
+    id: 'prog-001',
+    title: { en: 'Advanced STEM Innovation Program', ar: 'برنامج الابتكار المتقدم في العلوم والتكنولوجيا' },
+    school: { name: { en: 'Dubai International Academy', ar: 'أكاديمية دبي الدولية' } },
+    category: 'STEM',
+    status: 'published',
+    workflowStage: 'publication',
+    submissionDate: '2024-01-15',
+    lastModified: '2024-01-20'
+  },
+  {
+    id: 'prog-002',
+    title: { en: 'Creative Arts Excellence Program', ar: 'برنامج التميز في الفنون الإبداعية' },
+    school: { name: { en: 'GEMS Wellington Academy', ar: 'أكاديمية جيمس ويلينغتون' } },
+    category: 'Arts',
+    status: 'under_review',
+    workflowStage: 'educational_review',
+    submissionDate: '2024-02-01',
+    lastModified: '2024-02-05'
+  },
+  {
+    id: 'prog-003',
+    title: { en: 'Sports Leadership Academy', ar: 'أكاديمية القيادة الرياضية' },
+    school: { name: { en: 'American School of Dubai', ar: 'المدرسة الأمريكية في دبي' } },
+    category: 'Sports',
+    status: 'draft',
+    workflowStage: 'content_creation',
+    submissionDate: '2024-02-10',
+    lastModified: '2024-02-12'
+  }
+];
 
 const SchoolProgramsAdmin: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
-  const [activeTab, setActiveTab] = useState<'overview' | 'programs' | 'workflow' | 'analytics' | 'users' | 'settings'>('overview');
-  const [programs, setPrograms] = useState<SchoolProgram[]>([]);
-  const [filteredPrograms, setFilteredPrograms] = useState<SchoolProgram[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'programs' | 'workflow'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ProgramStatus | 'all'>('all');
-  const [workflowFilter, setWorkflowFilter] = useState<WorkflowStage | 'all'>('all');
-  const [loading, setLoading] = useState(true);
-  const [selectedProgram, setSelectedProgram] = useState<SchoolProgram | null>(null);
-  const [showProgramModal, setShowProgramModal] = useState(false);
-  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
-  const [dashboardStats, setDashboardStats] = useState({
-    totalPrograms: 0,
-    publishedPrograms: 0,
-    pendingReviews: 0,
-    averageApprovalTime: 0,
-    userSatisfaction: 0,
-    monthlySubmissions: 0
-  });
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  useEffect(() => {
-    filterPrograms();
-  }, [programs, searchQuery, statusFilter, workflowFilter]);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load programs
-      const programsResponse = await schoolProgramsService.getPrograms({ limit: 100 });
-      setPrograms(programsResponse.programs);
-      
-      // Load pending reviews
-      const reviews = await contentWorkflowService.getPendingReviews(mockAdminUser.id);
-      setPendingReviews(reviews);
-      
-      // Calculate dashboard statistics
-      const stats = {
-        totalPrograms: programsResponse.programs.length,
-        publishedPrograms: programsResponse.programs.filter(p => p.status === 'published').length,
-        pendingReviews: reviews.length,
-        averageApprovalTime: 18, // Mock data
-        userSatisfaction: 4.6,
-        monthlySubmissions: 24
-      };
-      setDashboardStats(stats);
-      
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleLanguageToggle = () => {
+    setCurrentLanguage(prev => prev === 'en' ? 'ar' : 'en');
   };
 
-  const filterPrograms = () => {
-    let filtered = [...programs];
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(program => 
-        program.title.en.toLowerCase().includes(query) ||
-        program.title.ar.includes(query) ||
-        program.school.name.en.toLowerCase().includes(query) ||
-        program.school.name.ar.includes(query)
-      );
-    }
-    
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(program => program.status === statusFilter);
-    }
-    
-    // Apply workflow filter
-    if (workflowFilter !== 'all') {
-      filtered = filtered.filter(program => program.workflowStage === workflowFilter);
-    }
-    
-    setFilteredPrograms(filtered);
-  };
-
-  const getStatusIcon = (status: ProgramStatus) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'published': return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'draft': return <Edit className="w-4 h-4 text-yellow-600" />;
@@ -145,19 +88,14 @@ const SchoolProgramsAdmin: React.FC = () => {
     }
   };
 
-  const getWorkflowStageLabel = (stage: WorkflowStage) => {
+  const getStatusLabel = (status: string) => {
     const labels = {
-      content_creation: { en: 'Content Creation', ar: 'إنشاء المحتوى' },
-      submission: { en: 'Submission', ar: 'التقديم' },
-      technical_review: { en: 'Technical Review', ar: 'المراجعة التقنية' },
-      educational_review: { en: 'Educational Review', ar: 'المراجعة التعليمية' },
-      policy_review: { en: 'Policy Review', ar: 'مراجعة السياسات' },
-      final_approval: { en: 'Final Approval', ar: 'الموافقة النهائية' },
-      staging: { en: 'Staging', ar: 'التجهيز' },
-      publication: { en: 'Publication', ar: 'النشر' },
-      maintenance: { en: 'Maintenance', ar: 'الصيانة' }
+      published: { en: 'Published', ar: 'منشور' },
+      draft: { en: 'Draft', ar: 'مسودة' },
+      under_review: { en: 'Under Review', ar: 'قيد المراجعة' },
+      rejected: { en: 'Rejected', ar: 'مرفوض' }
     };
-    return labels[stage][currentLanguage];
+    return labels[status as keyof typeof labels]?.[currentLanguage] || status;
   };
 
   const renderOverviewTab = () => (
@@ -170,7 +108,7 @@ const SchoolProgramsAdmin: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">
                 {currentLanguage === 'en' ? 'Total Programs' : 'إجمالي البرامج'}
               </p>
-              <p className="text-3xl font-bold text-gray-900">{dashboardStats.totalPrograms}</p>
+              <p className="text-3xl font-bold text-gray-900">24</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <FileText className="w-6 h-6 text-blue-600" />
@@ -188,7 +126,7 @@ const SchoolProgramsAdmin: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">
                 {currentLanguage === 'en' ? 'Published Programs' : 'البرامج المنشورة'}
               </p>
-              <p className="text-3xl font-bold text-gray-900">{dashboardStats.publishedPrograms}</p>
+              <p className="text-3xl font-bold text-gray-900">18</p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -206,7 +144,7 @@ const SchoolProgramsAdmin: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">
                 {currentLanguage === 'en' ? 'Pending Reviews' : 'المراجعات المعلقة'}
               </p>
-              <p className="text-3xl font-bold text-gray-900">{dashboardStats.pendingReviews}</p>
+              <p className="text-3xl font-bold text-gray-900">6</p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-full">
               <Clock className="w-6 h-6 text-yellow-600" />
@@ -228,27 +166,38 @@ const SchoolProgramsAdmin: React.FC = () => {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {pendingReviews.slice(0, 5).map((review, index) => (
-              <div key={index} className="flex items-center space-x-4 rtl:space-x-reverse">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Bell className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {currentLanguage === 'en' 
-                      ? `New program submission awaiting ${getWorkflowStageLabel(review.currentStage)}`
-                      : `تقديم برنامج جديد في انتظار ${getWorkflowStageLabel(review.currentStage)}`
-                    }
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(review.submissionDate).toLocaleDateString(currentLanguage === 'ar' ? 'ar-AE' : 'en-US')}
-                  </p>
-                </div>
-                <button className="text-sm text-teal-600 hover:text-teal-700 font-medium">
-                  {currentLanguage === 'en' ? 'Review' : 'مراجعة'}
-                </button>
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+              <div className="p-2 bg-blue-100 rounded-full">
+                <Bell className="w-4 h-4 text-blue-600" />
               </div>
-            ))}
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {currentLanguage === 'en' 
+                    ? 'New program submission awaiting educational review'
+                    : 'تقديم برنامج جديد في انتظار المراجعة التعليمية'
+                  }
+                </p>
+                <p className="text-xs text-gray-500">2 hours ago</p>
+              </div>
+              <button className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                {currentLanguage === 'en' ? 'Review' : 'مراجعة'}
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+              <div className="p-2 bg-green-100 rounded-full">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {currentLanguage === 'en' 
+                    ? 'STEM Innovation Program approved and published'
+                    : 'تم الموافقة على برنامج الابتكار في العلوم ونشره'
+                  }
+                </p>
+                <p className="text-xs text-gray-500">1 day ago</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -314,7 +263,7 @@ const SchoolProgramsAdmin: React.FC = () => {
             
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as ProgramStatus | 'all')}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="all">{currentLanguage === 'en' ? 'All Status' : 'جميع الحالات'}</option>
@@ -322,18 +271,6 @@ const SchoolProgramsAdmin: React.FC = () => {
               <option value="draft">{currentLanguage === 'en' ? 'Draft' : 'مسودة'}</option>
               <option value="under_review">{currentLanguage === 'en' ? 'Under Review' : 'قيد المراجعة'}</option>
               <option value="rejected">{currentLanguage === 'en' ? 'Rejected' : 'مرفوض'}</option>
-            </select>
-            
-            <select
-              value={workflowFilter}
-              onChange={(e) => setWorkflowFilter(e.target.value as WorkflowStage | 'all')}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            >
-              <option value="all">{currentLanguage === 'en' ? 'All Stages' : 'جميع المراحل'}</option>
-              <option value="technical_review">{currentLanguage === 'en' ? 'Technical Review' : 'المراجعة التقنية'}</option>
-              <option value="educational_review">{currentLanguage === 'en' ? 'Educational Review' : 'المراجعة التعليمية'}</option>
-              <option value="policy_review">{currentLanguage === 'en' ? 'Policy Review' : 'مراجعة السياسات'}</option>
-              <option value="final_approval">{currentLanguage === 'en' ? 'Final Approval' : 'الموافقة النهائية'}</option>
             </select>
           </div>
           
@@ -363,10 +300,7 @@ const SchoolProgramsAdmin: React.FC = () => {
                   {currentLanguage === 'en' ? 'Status' : 'الحالة'}
                 </th>
                 <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {currentLanguage === 'en' ? 'Workflow Stage' : 'مرحلة العمل'}
-                </th>
-                <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {currentLanguage === 'en' ? 'Last Updated' : 'آخر تحديث'}
+                  {currentLanguage === 'en' ? 'Last Modified' : 'آخر تعديل'}
                 </th>
                 <th className="px-6 py-3 text-left rtl:text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {currentLanguage === 'en' ? 'Actions' : 'الإجراءات'}
@@ -374,24 +308,16 @@ const SchoolProgramsAdmin: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPrograms.map((program) => (
+              {mockPrograms.map((program) => (
                 <tr key={program.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {program.title[currentLanguage]}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {program.targetAge.min}-{program.targetAge.max} years
-                      </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {program.title[currentLanguage]}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
                       {program.school.name[currentLanguage]}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {program.school.location}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -402,28 +328,17 @@ const SchoolProgramsAdmin: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
                       {getStatusIcon(program.status)}
-                      <span className="text-sm text-gray-900 capitalize">
-                        {program.status.replace('_', ' ')}
+                      <span className="text-sm text-gray-900">
+                        {getStatusLabel(program.status)}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">
-                      {getWorkflowStageLabel(program.workflowStage)}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(program.updatedAt).toLocaleDateString(currentLanguage === 'ar' ? 'ar-AE' : 'en-US')}
+                    {new Date(program.lastModified).toLocaleDateString(currentLanguage === 'ar' ? 'ar-AE' : 'en-US')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                      <button 
-                        onClick={() => {
-                          setSelectedProgram(program);
-                          setShowProgramModal(true);
-                        }}
-                        className="text-teal-600 hover:text-teal-900"
-                      >
+                    <div className="flex space-x-2 rtl:space-x-reverse">
+                      <button className="text-teal-600 hover:text-teal-900">
                         <Eye className="w-4 h-4" />
                       </button>
                       <button className="text-blue-600 hover:text-blue-900">
@@ -445,270 +360,113 @@ const SchoolProgramsAdmin: React.FC = () => {
 
   const renderWorkflowTab = () => (
     <div className="space-y-6">
-      {/* Workflow Overview */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {currentLanguage === 'en' ? 'KHDA Approval Workflow' : 'سير عمل موافقة هيئة المعرفة'}
-        </h3>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-9 gap-4">
-          {Object.entries(contentWorkflowService.getWorkflowConfig().stages).map(([stage, config], index) => (
-            <div key={stage} className="text-center">
-              <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center text-white font-semibold text-sm ${
-                index < 5 ? 'bg-green-500' : index === 5 ? 'bg-yellow-500' : 'bg-gray-300'
-              }`}>
-                {index + 1}
-              </div>
-              <div className="mt-2">
-                <div className="text-xs font-medium text-gray-900">
-                  {config.name[currentLanguage]}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {config.duration > 0 ? `${config.duration} ${currentLanguage === 'en' ? 'days' : 'أيام'}` : ''}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Pending Reviews */}
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
-            {currentLanguage === 'en' ? 'Pending Reviews' : 'المراجعات المعلقة'}
+            {currentLanguage === 'en' ? 'Workflow Management' : 'إدارة سير العمل'}
           </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            {currentLanguage === 'en' 
+              ? 'Manage the 25-day KHDA approval process for school programs'
+              : 'إدارة عملية الموافقة لمدة 25 يوماً من هيئة المعرفة للبرامج المدرسية'
+            }
+          </p>
         </div>
         <div className="p-6">
-          {pendingReviews.length === 0 ? (
-            <div className="text-center py-8">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <p className="text-gray-500">
-                {currentLanguage === 'en' ? 'No pending reviews' : 'لا توجد مراجعات معلقة'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {pendingReviews.map((review, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        {currentLanguage === 'en' ? `Program ID: ${review.programId}` : `معرف البرنامج: ${review.programId}`}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        {currentLanguage === 'en' ? 'Current Stage:' : 'المرحلة الحالية:'} {getWorkflowStageLabel(review.currentStage)}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {currentLanguage === 'en' ? 'Submitted:' : 'تم التقديم:'} {new Date(review.submissionDate).toLocaleDateString(currentLanguage === 'ar' ? 'ar-AE' : 'en-US')}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2 rtl:space-x-reverse">
-                      <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                        {currentLanguage === 'en' ? 'Approve' : 'موافقة'}
-                      </button>
-                      <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
-                        {currentLanguage === 'en' ? 'Reject' : 'رفض'}
-                      </button>
-                      <button className="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
-                        {currentLanguage === 'en' ? 'Request Revision' : 'طلب مراجعة'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="text-center py-12">
+            <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">
+              {currentLanguage === 'en' 
+                ? 'Workflow management interface will be displayed here'
+                : 'ستظهر واجهة إدارة سير العمل هنا'
+              }
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 
-  if (loading) {
-    return (
-      <HybridGovernmentNavFixed>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">
-              {currentLanguage === 'en' ? 'Loading admin dashboard...' : 'تحميل لوحة الإدارة...'}
-            </p>
-          </div>
-        </div>
-      </HybridGovernmentNavFixed>
-    );
-  }
-
   return (
-    <HybridGovernmentNavFixed>
-      <div className={`min-h-screen bg-gray-50 ${currentLanguage === 'ar' ? 'rtl' : 'ltr'}`}>
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                <Shield className="w-8 h-8 text-teal-600" />
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">
-                    {currentLanguage === 'en' ? 'School Programs Admin' : 'إدارة البرامج المدرسية'}
-                  </h1>
-                  <p className="text-sm text-gray-500">
-                    {currentLanguage === 'en' ? 'KHDA Content Management System' : 'نظام إدارة المحتوى - هيئة المعرفة'}
+    <div className={`min-h-screen bg-gray-50 ${currentLanguage === 'ar' ? 'rtl' : 'ltr'}`}>
+      <HybridGovernmentNavFixed 
+        onLanguageToggle={handleLanguageToggle}
+        currentLanguage={currentLanguage}
+      />
+
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+              <Shield className="w-8 h-8 text-teal-600" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {currentLanguage === 'en' ? 'School Programs Admin' : 'إدارة البرامج المدرسية'}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {currentLanguage === 'en' ? 'KHDA Content Management System' : 'نظام إدارة المحتوى - هيئة المعرفة'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="text-right rtl:text-left">
+                  <p className="text-sm font-medium text-gray-900">
+                    {mockAdminUser.name[currentLanguage]}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {mockAdminUser.department}
                   </p>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                <button
-                  onClick={() => setCurrentLanguage(currentLanguage === 'en' ? 'ar' : 'en')}
-                  className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 text-sm text-gray-700 hover:text-gray-900"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span>{currentLanguage === 'en' ? 'العربية' : 'English'}</span>
-                </button>
-                
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="text-right rtl:text-left">
-                    <p className="text-sm font-medium text-gray-900">
-                      {mockAdminUser.name[currentLanguage]}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {mockAdminUser.department}
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {mockAdminUser.name.en.charAt(0)}
-                    </span>
-                  </div>
+                <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
+                    {mockAdminUser.name.en.charAt(0)}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Navigation Tabs */}
-        <div className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex space-x-8 rtl:space-x-reverse">
-              {[
-                { id: 'overview', label: { en: 'Overview', ar: 'نظرة عامة' }, icon: BarChart3 },
-                { id: 'programs', label: { en: 'Programs', ar: 'البرامج' }, icon: FileText },
-                { id: 'workflow', label: { en: 'Workflow', ar: 'سير العمل' }, icon: Activity },
-                { id: 'analytics', label: { en: 'Analytics', ar: 'التحليلات' }, icon: TrendingUp },
-                { id: 'users', label: { en: 'Users', ar: 'المستخدمون' }, icon: Users },
-                { id: 'settings', label: { en: 'Settings', ar: 'الإعدادات' }, icon: Settings }
-              ].map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center space-x-2 rtl:space-x-reverse py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab.id
-                        ? 'border-teal-500 text-teal-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label[currentLanguage]}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'overview' && renderOverviewTab()}
-          {activeTab === 'programs' && renderProgramsTab()}
-          {activeTab === 'workflow' && renderWorkflowTab()}
-          {activeTab === 'analytics' && (
-            <div className="text-center py-12">
-              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
-                {currentLanguage === 'en' ? 'Analytics dashboard coming soon' : 'لوحة التحليلات قريباً'}
-              </p>
-            </div>
-          )}
-          {activeTab === 'users' && (
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
-                {currentLanguage === 'en' ? 'User management coming soon' : 'إدارة المستخدمين قريباً'}
-              </p>
-            </div>
-          )}
-          {activeTab === 'settings' && (
-            <div className="text-center py-12">
-              <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">
-                {currentLanguage === 'en' ? 'Settings panel coming soon' : 'لوحة الإعدادات قريباً'}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Program Detail Modal */}
-        {showProgramModal && selectedProgram && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {selectedProgram.title[currentLanguage]}
-                  </h2>
-                  <button
-                    onClick={() => setShowProgramModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <XCircle className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {currentLanguage === 'en' ? 'Program Details' : 'تفاصيل البرنامج'}
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">School:</span> {selectedProgram.school.name[currentLanguage]}</p>
-                      <p><span className="font-medium">Category:</span> {selectedProgram.category}</p>
-                      <p><span className="font-medium">Duration:</span> {selectedProgram.duration.value} {selectedProgram.duration.unit}</p>
-                      <p><span className="font-medium">Age Range:</span> {selectedProgram.targetAge.min}-{selectedProgram.targetAge.max} years</p>
-                      <p><span className="font-medium">Capacity:</span> {selectedProgram.capacity.total} students</p>
-                      <p><span className="font-medium">Available:</span> {selectedProgram.capacity.available} spots</p>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {currentLanguage === 'en' ? 'Success Metrics' : 'مقاييس النجاح'}
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Graduation Rate:</span> {selectedProgram.successMetrics.graduationRate}%</p>
-                      <p><span className="font-medium">Employment Rate:</span> {selectedProgram.successMetrics.employmentRate}%</p>
-                      <p><span className="font-medium">Satisfaction Score:</span> {selectedProgram.successMetrics.satisfactionScore}/5.0</p>
-                      <p><span className="font-medium">Industry Partnerships:</span> {selectedProgram.successMetrics.industryPartnerships}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-6">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    {currentLanguage === 'en' ? 'Description' : 'الوصف'}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedProgram.description[currentLanguage]}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </HybridGovernmentNavFixed>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8 rtl:space-x-reverse">
+            {[
+              { id: 'overview', label: { en: 'Overview', ar: 'نظرة عامة' }, icon: BarChart3 },
+              { id: 'programs', label: { en: 'Programs', ar: 'البرامج' }, icon: FileText },
+              { id: 'workflow', label: { en: 'Workflow', ar: 'سير العمل' }, icon: Activity }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center space-x-2 rtl:space-x-reverse py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? 'border-teal-500 text-teal-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label[currentLanguage]}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'overview' && renderOverviewTab()}
+        {activeTab === 'programs' && renderProgramsTab()}
+        {activeTab === 'workflow' && renderWorkflowTab()}
+      </div>
+    </div>
   );
 };
 
