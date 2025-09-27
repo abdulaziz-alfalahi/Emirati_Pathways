@@ -1,4 +1,4 @@
-// School Programs Page - Simplified working version
+// School Programs Page - Fixed version
 // Comprehensive user interface with search, filtering, and interactive features
 
 import React, { useState, useEffect } from 'react';

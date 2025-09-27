@@ -177,7 +177,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <span className="text-sm font-medium text-slate-700">Language</span>
                 <button
-                  onClick={toggleLanguage}
+                  onClick={onLanguageToggle}
                   className="flex items-center space-x-2 px-3 py-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                 >
                   <Globe className="h-4 w-4" />
