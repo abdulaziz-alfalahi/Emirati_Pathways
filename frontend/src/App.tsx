@@ -46,6 +46,7 @@ const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboa
 const CommunitiesPage = lazy(() => import('./pages/communities/CommunitiesPage'));
 const SchoolProgramsPage = lazy(() => import('./pages/SchoolProgramsPage'));
 const SchoolProgramsAdmin = lazy(() => import('./pages/admin/SchoolProgramsAdmin'));
+const SchoolProgramsAdminAPI = lazy(() => import('./pages/admin/SchoolProgramsAdminAPI'));
 const UniversityProgramsPage = lazy(() => import('./pages/education/UniversityProgramsPage'));
 
 // Other key pages
@@ -150,7 +151,7 @@ const AppContent: React.FC = () => {
                   path="/admin/school-programs" 
                   element={
                     <ProtectedRoute allowedRoles={['administrator', 'admin', 'khda_staff', 'content_manager']}>
-                      <SchoolProgramsAdmin />
+                      <SchoolProgramsAdminAPI />
                     </ProtectedRoute>
                   } 
                 />

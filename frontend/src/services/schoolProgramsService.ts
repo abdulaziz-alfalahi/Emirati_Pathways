@@ -1,5 +1,5 @@
 // School Programs Service
-// Mock data service with realistic Dubai school programs aligned with KHDA standards
+// API-connected service for real database integration with fallback to mock data
 
 import { 
   SchoolProgram, 
@@ -9,6 +9,8 @@ import {
   ProgramAnalytics,
   ProgramCategory 
 } from '../types/schoolPrograms';
+
+const API_BASE_URL = 'http://localhost:5001/api';
 
 // Mock data for Dubai school programs
 const mockPrograms: SchoolProgram[] = [

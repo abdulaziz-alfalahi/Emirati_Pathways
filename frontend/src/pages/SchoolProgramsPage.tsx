@@ -33,6 +33,7 @@ import {
   X
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '../components/layout/HybridGovernmentNavFixed';
+import { schoolProgramsAPIService } from '../services/schoolProgramsServiceAPI';
 
 // Simplified mock data for testing
 const mockPrograms = [
@@ -118,9 +119,9 @@ const mockPrograms = [
 
 const SchoolProgramsPage: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
-  const [programs] = useState(mockPrograms);
-  const [filteredPrograms, setFilteredPrograms] = useState(mockPrograms);
-  const [loading, setLoading] = useState(false);
+  const [programs, setPrograms] = useState<any[]>([]);
+  const [filteredPrograms, setFilteredPrograms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
@@ -136,9 +137,50 @@ const SchoolProgramsPage: React.FC = () => {
     { id: 'Languages', name: { en: 'Languages', ar: 'اللغات' } }
   ];
 
+  // Load programs from API
+  useEffect(() => {
+    const loadPrograms = async () => {
+      try {
+        setLoading(true);
+        const response = await schoolProgramsAPIService.getPrograms({ status: 'published' });
+        
+        // Transform API data to match component interface
+        const transformedPrograms = response.programs.map(program => ({
+          id: program.id,
+          title: program.title,
+          description: program.description,
+          school: {
+            name: program.school.name,
+            location: program.school.location
+          },
+          category: program.category,
+          ageRange: program.targetAge,
+          duration: `${program.duration.value} ${program.duration.unit}`,
+          fees: program.fees,
+          rating: program.successMetrics?.satisfactionScore || 4.5,
+          enrolledStudents: program.capacity.total - program.capacity.available,
+          maxCapacity: program.capacity.total,
+          featured: program.featured || false
+        }));
+        
+        setPrograms(transformedPrograms);
+        setFilteredPrograms(transformedPrograms);
+      } catch (error) {
+        console.error('Error loading programs:', error);
+        // Fallback to mock data
+        setPrograms(mockPrograms);
+        setFilteredPrograms(mockPrograms);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPrograms();
+  }, []);
+
   useEffect(() => {
     filterPrograms();
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, programs]);
 
   const filterPrograms = () => {
     let filtered = programs;
