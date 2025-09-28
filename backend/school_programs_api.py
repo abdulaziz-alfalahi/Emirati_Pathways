@@ -324,6 +324,75 @@ def get_dashboard_stats():
         print(f"Error in get_dashboard_stats: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/school-programs', methods=['POST'])
+def create_school_program():
+    """Create a new school program"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        # Validate required fields
+        required_fields = ['title_en', 'school_id', 'category', 'description_en']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Insert new program
+        insert_query = """
+            INSERT INTO school_programs (
+                title_en, title_ar, school_id, category, status,
+                description_en, description_ar, target_age_min, target_age_max,
+                capacity_total, capacity_available, fees_amount, fees_currency,
+                created_at, updated_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) RETURNING id
+        """
+        
+        params = (
+            data['title_en'],
+            data.get('title_ar', data['title_en']),  # Fallback to English
+            data['school_id'],
+            data['category'],
+            data.get('status', 'draft'),
+            data['description_en'],
+            data.get('description_ar', data['description_en']),  # Fallback to English
+            data.get('target_age_min', 5),
+            data.get('target_age_max', 18),
+            data.get('capacity_total', 50),
+            data.get('capacity_available', data.get('capacity_total', 50)),
+            data.get('fees_amount', 0),
+            data.get('fees_currency', 'AED')
+        )
+        
+        result = execute_query(insert_query, params, fetch_one=True)
+        
+        if not result:
+            return jsonify({'error': 'Failed to create program'}), 500
+            
+        program_id = result['id']
+        
+        # Create success metrics record
+        metrics_query = """
+            INSERT INTO program_success_metrics (
+                program_id, completion_rate, satisfaction_rating, 
+                employment_rate, skill_improvement_score, created_at
+            ) VALUES (%s, 0, 0, 0, 0, CURRENT_TIMESTAMP)
+        """
+        execute_query(metrics_query, (program_id,))
+        
+        return jsonify({
+            'message': 'Program created successfully',
+            'program_id': program_id
+        }), 201
+        
+    except Exception as e:
+        print(f"Error in create_school_program: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""

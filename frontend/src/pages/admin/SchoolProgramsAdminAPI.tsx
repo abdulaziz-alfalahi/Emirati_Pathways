@@ -34,6 +34,19 @@ const SchoolProgramsAdminAPI: React.FC = () => {
   const [showAddProgramModal, setShowAddProgramModal] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [schools, setSchools] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    titleEn: '',
+    titleAr: '',
+    schoolId: '',
+    category: '',
+    status: 'draft',
+    descriptionEn: '',
+    descriptionAr: '',
+    minAge: '',
+    maxAge: '',
+    capacity: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load data from API
   useEffect(() => {
@@ -61,6 +74,92 @@ const SchoolProgramsAdminAPI: React.FC = () => {
 
   const handleLanguageToggle = () => {
     setCurrentLanguage(prev => prev === 'en' ? 'ar' : 'en');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      titleEn: '',
+      titleAr: '',
+      schoolId: '',
+      category: '',
+      status: 'draft',
+      descriptionEn: '',
+      descriptionAr: '',
+      minAge: '',
+      maxAge: '',
+      capacity: ''
+    });
+  };
+
+  const handleSubmitProgram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Create program data object
+      const programData = {
+        title_en: formData.titleEn,
+        title_ar: formData.titleAr || formData.titleEn, // Fallback to English if Arabic not provided
+        school_id: formData.schoolId,
+        category: formData.category,
+        status: formData.status,
+        description_en: formData.descriptionEn,
+        description_ar: formData.descriptionAr || formData.descriptionEn,
+        target_age_min: parseInt(formData.minAge) || 5,
+        target_age_max: parseInt(formData.maxAge) || 18,
+        capacity_total: parseInt(formData.capacity) || 50,
+        capacity_available: parseInt(formData.capacity) || 50,
+        fees_amount: 0,
+        fees_currency: 'AED'
+      };
+
+      // Send POST request to API
+      const response = await fetch('http://localhost:5001/api/school-programs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(programData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Success - reload programs and close modal
+      alert(currentLanguage === 'en' ? 'Program created successfully!' : 'تم إنشاء البرنامج بنجاح!');
+      
+      // Reload programs list
+      const updatedResponse = await schoolProgramsAPIService.getPrograms({});
+      setPrograms(updatedResponse.programs);
+      
+      // Update dashboard stats
+      const stats = await schoolProgramsAPIService.getAnalytics();
+      setDashboardStats(stats);
+      
+      // Close modal and reset form
+      setShowAddProgramModal(false);
+      resetForm();
+
+    } catch (error) {
+      console.error('Error creating program:', error);
+      alert(currentLanguage === 'en' 
+        ? 'Error creating program. Please try again.' 
+        : 'خطأ في إنشاء البرنامج. يرجى المحاولة مرة أخرى.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredPrograms = programs.filter(program => {
@@ -623,7 +722,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                 </button>
               </div>
 
-              <form className="space-y-4">
+              <form onSubmit={handleSubmitProgram} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -631,6 +730,10 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      name="titleEn"
+                      value={formData.titleEn}
+                      onChange={handleInputChange}
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       placeholder={currentLanguage === 'en' ? 'Enter program title...' : 'أدخل عنوان البرنامج...'}
                     />
@@ -641,6 +744,9 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     </label>
                     <input
                       type="text"
+                      name="titleAr"
+                      value={formData.titleAr}
+                      onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       placeholder={currentLanguage === 'en' ? 'Enter Arabic title...' : 'أدخل العنوان العربي...'}
                     />
@@ -651,11 +757,17 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {currentLanguage === 'en' ? 'School' : 'المدرسة'}
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                  <select 
+                    name="schoolId"
+                    value={formData.schoolId}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
                     <option value="">{currentLanguage === 'en' ? 'Select a school...' : 'اختر مدرسة...'}</option>
-                    <option value="school-001">Dubai International Academy</option>
-                    <option value="school-002">GEMS Wellington Academy</option>
-                    <option value="school-003">American School of Dubai</option>
+                    <option value="1">Dubai International Academy</option>
+                    <option value="2">GEMS Wellington Academy</option>
+                    <option value="3">American School of Dubai</option>
                   </select>
                 </div>
 
@@ -664,7 +776,13 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {currentLanguage === 'en' ? 'Category' : 'الفئة'}
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                    <select 
+                      name="category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    >
                       <option value="">{currentLanguage === 'en' ? 'Select category...' : 'اختر الفئة...'}</option>
                       <option value="STEM">STEM</option>
                       <option value="Arts">Arts</option>
@@ -677,7 +795,12 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {currentLanguage === 'en' ? 'Status' : 'الحالة'}
                     </label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                    <select 
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    >
                       <option value="draft">{currentLanguage === 'en' ? 'Draft' : 'مسودة'}</option>
                       <option value="under_review">{currentLanguage === 'en' ? 'Under Review' : 'قيد المراجعة'}</option>
                       <option value="published">{currentLanguage === 'en' ? 'Published' : 'منشور'}</option>
@@ -690,6 +813,10 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     {currentLanguage === 'en' ? 'Description (English)' : 'الوصف (إنجليزي)'}
                   </label>
                   <textarea
+                    name="descriptionEn"
+                    value={formData.descriptionEn}
+                    onChange={handleInputChange}
+                    required
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     placeholder={currentLanguage === 'en' ? 'Enter program description...' : 'أدخل وصف البرنامج...'}
@@ -701,6 +828,9 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     {currentLanguage === 'en' ? 'Description (Arabic)' : 'الوصف (عربي)'}
                   </label>
                   <textarea
+                    name="descriptionAr"
+                    value={formData.descriptionAr}
+                    onChange={handleInputChange}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     placeholder={currentLanguage === 'en' ? 'Enter Arabic description...' : 'أدخل الوصف العربي...'}
@@ -714,8 +844,12 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     </label>
                     <input
                       type="number"
+                      name="minAge"
+                      value={formData.minAge}
+                      onChange={handleInputChange}
                       min="5"
                       max="18"
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>
@@ -725,8 +859,12 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     </label>
                     <input
                       type="number"
+                      name="maxAge"
+                      value={formData.maxAge}
+                      onChange={handleInputChange}
                       min="5"
                       max="18"
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>
@@ -736,7 +874,11 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     </label>
                     <input
                       type="number"
+                      name="capacity"
+                      value={formData.capacity}
+                      onChange={handleInputChange}
                       min="1"
+                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
                   </div>
@@ -745,16 +887,29 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setShowAddProgramModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    onClick={() => {
+                      setShowAddProgramModal(false);
+                      resetForm();
+                    }}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
                   >
                     {currentLanguage === 'en' ? 'Cancel' : 'إلغاء'}
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    {currentLanguage === 'en' ? 'Create Program' : 'إنشاء البرنامج'}
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    )}
+                    <span>
+                      {isSubmitting 
+                        ? (currentLanguage === 'en' ? 'Creating...' : 'جاري الإنشاء...')
+                        : (currentLanguage === 'en' ? 'Create Program' : 'إنشاء البرنامج')
+                      }
+                    </span>
                   </button>
                 </div>
               </form>
