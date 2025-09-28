@@ -107,7 +107,7 @@ def ensure_fallback_schools_exist():
                 # Insert school if it doesn't exist
                 insert_query = """
                     INSERT INTO schools (id, name_en, name_ar, code, location, district, is_active)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s::uuid, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO NOTHING
                 """
                 execute_query(insert_query, (
@@ -390,7 +390,7 @@ def create_school_program():
         # Ensure fallback schools exist in database
         ensure_fallback_schools_exist()
         
-        # Insert new program
+        # Insert new program with proper UUID casting
         insert_query = """
             INSERT INTO school_programs (
                 title_en, title_ar, school_id, category, status,
@@ -398,7 +398,7 @@ def create_school_program():
                 capacity_total, capacity_available, fees_amount, fees_currency,
                 created_at, updated_at
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                %s, %s, %s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             ) RETURNING id
         """
@@ -406,7 +406,7 @@ def create_school_program():
         params = (
             data['title_en'],
             data.get('title_ar', data['title_en']),  # Fallback to English
-            data['school_id'],
+            data['school_id'],  # This will be cast to UUID in the query
             data['category'],
             data.get('status', 'draft'),
             data['description_en'],
