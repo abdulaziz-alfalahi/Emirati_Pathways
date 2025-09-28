@@ -1,0 +1,155 @@
+/* Demo Highlight Styles */
+.demo-highlight {
+  position: relative;
+  z-index: 1000;
+}
+
+.demo-highlight::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: rgba(20, 184, 166, 0.2);
+  border: 3px solid #14b8a6;
+  border-radius: 12px;
+  animation: demo-pulse 2s infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes demo-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(20, 184, 166, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+  }
+}
+
+.demo-tooltip {
+  position: fixed;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 320px;
+  z-index: 1001;
+  animation: demo-tooltip-appear 0.3s ease-out;
+}
+
+@keyframes demo-tooltip-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.demo-tooltip::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.demo-tooltip.position-top::before {
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
+  border-color: white transparent transparent transparent;
+}
+
+.demo-tooltip.position-bottom::before {
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 8px 8px 8px;
+  border-color: transparent transparent white transparent;
+}
+
+.demo-tooltip.position-left::before {
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 8px 0 8px 8px;
+  border-color: transparent transparent transparent white;
+}
+
+.demo-tooltip.position-right::before {
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 8px 8px 8px 0;
+  border-color: transparent white transparent transparent;
+}
+
+.demo-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.demo-spotlight {
+  position: absolute;
+  background: transparent;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Dashboard specific highlights */
+.dashboard-header {
+  transition: all 0.3s ease;
+}
+
+.profile-section {
+  transition: all 0.3s ease;
+}
+
+.job-recommendations {
+  transition: all 0.3s ease;
+}
+
+.pipeline-section {
+  transition: all 0.3s ease;
+}
+
+.analytics-section {
+  transition: all 0.3s ease;
+}
+
+/* Demo navigation styles */
+.demo-nav-highlight {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+  color: white;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-weight: 600;
+  animation: demo-nav-glow 2s infinite alternate;
+}
+
+@keyframes demo-nav-glow {
+  from {
+    box-shadow: 0 0 5px rgba(20, 184, 166, 0.5);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.8);
+  }
+}

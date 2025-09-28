@@ -9,26 +9,22 @@ interface HybridGovernmentNavProps {
   showAuthButtons?: boolean;
   currentPage?: string;
   userRole?: string;
+  onLanguageToggle?: () => void;
+  currentLanguage?: 'en' | 'ar';
 }
 
 const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({ 
   showAuthButtons = true, 
   currentPage = '',
-  userRole = ''
+  userRole = '',
+  onLanguageToggle,
+  currentLanguage = 'en'
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
   
   // Get authentication state
   const { user, isAuthenticated } = useAuth();
-
-  const toggleLanguage = () => {
-    const newLanguage = currentLanguage === 'en' ? 'ar' : 'en';
-    setCurrentLanguage(newLanguage);
-    // Here you would typically update the i18n context
-    console.log('Language switched to:', newLanguage);
-  };
 
   return (
     <>
@@ -62,16 +58,18 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
             {/* Navigation Actions */}
             <div className="flex items-center space-x-4">
               {/* Language Toggle */}
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                title="Switch Language"
-              >
-                <Globe className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {currentLanguage === 'en' ? 'العربية' : 'English'}
-                </span>
-              </button>
+              {onLanguageToggle && (
+                <button
+                  onClick={onLanguageToggle}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title="Switch Language"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {currentLanguage === 'en' ? 'العربية' : 'English'}
+                  </span>
+                </button>
+              )}
 
               {/* Mobile Menu Button */}
               <button
@@ -80,6 +78,8 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               >
                 {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
+
+
 
               {/* Authentication Section */}
               {isAuthenticated && user ? (
@@ -177,7 +177,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <span className="text-sm font-medium text-slate-700">Language</span>
                 <button
-                  onClick={toggleLanguage}
+                  onClick={onLanguageToggle}
                   className="flex items-center space-x-2 px-3 py-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                 >
                   <Globe className="h-4 w-4" />

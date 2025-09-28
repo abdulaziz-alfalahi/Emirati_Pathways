@@ -16,6 +16,7 @@ import {
   Play
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import InteractiveDashboardDemo from '@/components/demo/InteractiveDashboardDemo';
 
 // Import translations
 import enTranslations from '@/locales/en/home-complete.json';
@@ -28,6 +29,7 @@ interface Translation {
 const BilingualHomePage: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
   const [translations, setTranslations] = useState<Translation>(enTranslations);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   useEffect(() => {
     setTranslations(currentLanguage === 'en' ? enTranslations : arTranslations);
@@ -131,15 +133,19 @@ const BilingualHomePage: React.FC = () => {
     },
     {
       icon: TrendingUp,
-      title: translations.features?.careerExcellence?.title || 'Career Excellence',
-      description: translations.features?.careerExcellence?.description || 'Comprehensive career development ecosystem supporting professional growth'
+      title: translations.features?.professionalGrowth?.title || 'Professional Growth',
+      description: translations.features?.professionalGrowth?.description || 'Comprehensive development programs and mentorship opportunities for career advancement'
     }
   ];
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl arabic-text' : 'ltr english-text'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Navigation */}
-      <HybridGovernmentNavFixed showAuthButtons={true} />
+      <HybridGovernmentNavFixed 
+        showAuthButtons={true} 
+        onLanguageToggle={toggleLanguage}
+        currentLanguage={currentLanguage}
+      />
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32">
@@ -153,10 +159,21 @@ const BilingualHomePage: React.FC = () => {
 
             {/* Main Heading */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-dubai-bold text-slate-900 mb-6 leading-tight">
-              {translations.hero?.title || 'Empowering UAE Nationals for '}
-              <span className="text-teal-600">
-                {currentLanguage === 'en' ? 'Career Excellence' : 'التميز المهني'}
-              </span>
+              {currentLanguage === 'ar' ? (
+                <>
+                  تمكين المواطنين الإماراتيين لتحقيق <span className="text-teal-600">التميز المهني</span>
+                </>
+              ) : (
+                (translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence').length > 1 ? (
+                  <>
+                    {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[0]}
+                    <span className="text-teal-600">Career Excellence</span>
+                    {(translations.hero?.title || 'Empowering UAE Nationals for Career Excellence').split('Career Excellence')[1]}
+                  </>
+                ) : (
+                  translations.hero?.title || 'Empowering UAE Nationals for Career Excellence'
+                )
+              )}
             </h1>
 
             {/* Subtitle */}
@@ -173,7 +190,10 @@ const BilingualHomePage: React.FC = () => {
                 {translations.hero?.startJourney || 'Start Your Journey'}
                 <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2' : 'ml-2'}`} />
               </Link>
-              <button className="flex items-center text-slate-600 hover:text-slate-900 font-dubai-medium text-lg transition-colors">
+              <button 
+                onClick={() => setIsDemoModalOpen(true)}
+                className="flex items-center text-slate-600 hover:text-slate-900 font-dubai-medium text-lg transition-colors"
+              >
                 <Play className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {translations.hero?.watchDemo || 'Watch Demo'}
               </button>
@@ -269,6 +289,12 @@ const BilingualHomePage: React.FC = () => {
         <Globe className="w-6 h-6" />
         <span className="sr-only">Toggle Language</span>
       </button>
+
+      {/* Interactive Dashboard Demo */}
+      <InteractiveDashboardDemo 
+        isOpen={isDemoModalOpen} 
+        onClose={() => setIsDemoModalOpen(false)} 
+      />
     </div>
   );
 };

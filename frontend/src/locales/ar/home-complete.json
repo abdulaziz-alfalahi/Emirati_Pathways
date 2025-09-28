@@ -13,7 +13,7 @@
     }
   },
   "whyChoose": {
-    "title": "لماذا تختار منصة الرحلة الإماراتية؟",
+    "title": "لماذا تختار منصة رحلة المورد البشري الإماراتي؟",
     "subtitle": "مبنية خصيصاً للسوق الإماراتي بتقنية الذكاء الاصطناعي المتقدمة والذكاء الثقافي"
   },
   "features": {
@@ -82,7 +82,7 @@
       "getStarted": "ابدأ كباحث عن عمل"
     },
     "hrRecruiter": {
-      "title": "موارد بشرية / مجند",
+      "title": "مسؤول توظيف",
       "description": "بسّط عملية التوظيف بأدوات التوظيف المتقدمة وتحليلات المرشحين",
       "features": {
         "talentPipeline": "خط أنابيب المواهب",
@@ -90,10 +90,10 @@
         "analyticsDashboard": "لوحة التحليلات",
         "complianceTools": "أدوات الامتثال"
       },
-      "getStarted": "ابدأ كموارد بشرية / مجند"
+      "getStarted": "ابدأ كمسؤول توظيف"
     },
     "educator": {
-      "title": "معلم",
+      "title": "مُعلِّم",
       "description": "عزز نتائج الطلاب مع إدارة المناهج والتكامل الصناعي",
       "features": {
         "curriculumTools": "أدوات المناهج",
@@ -101,10 +101,10 @@
         "industryPartnerships": "الشراكات الصناعية",
         "careerGuidance": "الإرشاد المهني"
       },
-      "getStarted": "ابدأ كمعلم"
+      "getStarted": "ابدأ كمُعلِّم"
     },
     "mentor": {
-      "title": "موجه",
+      "title": "مُوجِّه",
       "description": "وجه الجيل القادم من المهنيين مع مطابقة التوجيه المدعومة بالذكاء الاصطناعي",
       "features": {
         "smartMatching": "المطابقة الذكية",
@@ -112,10 +112,10 @@
         "resourceLibrary": "مكتبة الموارد",
         "impactAnalytics": "تحليلات التأثير"
       },
-      "getStarted": "ابدأ كموجه"
+      "getStarted": "ابدأ كمُوجِّه"
     },
     "assessor": {
-      "title": "مقيم",
+      "title": "مُقيِّم",
       "description": "قيم وتحقق من الكفاءات المهنية بأدوات التقييم المتقدمة",
       "features": {
         "competencyValidation": "التحقق من الكفاءة",
@@ -123,7 +123,7 @@
         "qualityAssurance": "ضمان الجودة",
         "analytics": "التحليلات"
       },
-      "getStarted": "ابدأ كمقيم"
+      "getStarted": "ابدأ كمُقيِّم"
     }
   },
   "grid": {
