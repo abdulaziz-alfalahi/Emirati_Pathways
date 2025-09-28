@@ -17,7 +17,8 @@ import {
   Settings,
   BarChart3,
   FileText,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '../../components/layout/HybridGovernmentNavFixed';
 import { schoolProgramsAPIService } from '../../services/schoolProgramsServiceAPI';
@@ -428,6 +429,178 @@ const SchoolProgramsAdminAPI: React.FC = () => {
             <div className="mt-8 text-center text-gray-500">
               <Clock className="mx-auto h-12 w-12 mb-4" />
               <p>{currentLanguage === 'en' ? 'Workflow management interface coming soon' : 'واجهة إدارة سير العمل قريباً'}</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                {currentLanguage === 'en' ? 'Program Analytics' : 'تحليلات البرامج'}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    {currentLanguage === 'en' ? 'Category Distribution' : 'توزيع الفئات'}
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">STEM</span>
+                      <span className="text-sm font-medium">40%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Arts</span>
+                      <span className="text-sm font-medium">25%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Sports</span>
+                      <span className="text-sm font-medium">20%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Languages</span>
+                      <span className="text-sm font-medium">15%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    {currentLanguage === 'en' ? 'Monthly Trends' : 'الاتجاهات الشهرية'}
+                  </h3>
+                  <div className="text-center text-gray-500">
+                    <BarChart3 className="mx-auto h-8 w-8 mb-2" />
+                    <p className="text-sm">{currentLanguage === 'en' ? 'Chart coming soon' : 'الرسم البياني قريباً'}</p>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    {currentLanguage === 'en' ? 'Performance Metrics' : 'مقاييس الأداء'}
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">{currentLanguage === 'en' ? 'Avg. Rating' : 'التقييم المتوسط'}</span>
+                      <span className="text-sm font-medium">4.5/5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">{currentLanguage === 'en' ? 'Completion Rate' : 'معدل الإنجاز'}</span>
+                      <span className="text-sm font-medium">85%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {currentLanguage === 'en' ? 'User Management' : 'إدارة المستخدمين'}
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">KHDA Staff</p>
+                    <p className="text-sm text-gray-500">Content reviewers and approvers</p>
+                  </div>
+                </div>
+                <span className="text-sm text-gray-500">12 users</span>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">School Administrators</p>
+                    <p className="text-sm text-gray-500">Program creators and managers</p>
+                  </div>
+                </div>
+                <span className="text-sm text-gray-500">45 users</span>
+              </div>
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Content Managers</p>
+                    <p className="text-sm text-gray-500">Content editors and coordinators</p>
+                  </div>
+                </div>
+                <span className="text-sm text-gray-500">8 users</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {currentLanguage === 'en' ? 'System Settings' : 'إعدادات النظام'}
+            </h2>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">
+                  {currentLanguage === 'en' ? 'Workflow Settings' : 'إعدادات سير العمل'}
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {currentLanguage === 'en' ? 'Auto-approval for minor edits' : 'الموافقة التلقائية للتعديلات البسيطة'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {currentLanguage === 'en' ? 'Automatically approve minor content changes' : 'الموافقة التلقائية على تغييرات المحتوى البسيطة'}
+                      </p>
+                    </div>
+                    <input type="checkbox" className="h-4 w-4 text-teal-600" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {currentLanguage === 'en' ? 'Email notifications' : 'إشعارات البريد الإلكتروني'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {currentLanguage === 'en' ? 'Send email updates for workflow changes' : 'إرسال تحديثات البريد الإلكتروني لتغييرات سير العمل'}
+                      </p>
+                    </div>
+                    <input type="checkbox" className="h-4 w-4 text-teal-600" defaultChecked />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">
+                  {currentLanguage === 'en' ? 'Content Settings' : 'إعدادات المحتوى'}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Default program duration' : 'مدة البرنامج الافتراضية'}
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
+                      <option>1 year</option>
+                      <option>2 years</option>
+                      <option>3 years</option>
+                      <option>4 years</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Maximum program capacity' : 'الحد الأقصى لسعة البرنامج'}
+                    </label>
+                    <input 
+                      type="number" 
+                      defaultValue="200"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
