@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import fitz  # PyMuPDF
-from groq import Groq
+import google.generativeai as genai
 
 # Load environment variables from .env file
 try:
@@ -35,17 +35,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # GROQ Configuration - Using exact same settings as working CV parser
-GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GEMINI_MODEL = "gemini-2.0-flash-exp"
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 class JobDescriptionParser:
     def __init__(self):
-        """Initialize the JD parser with GROQ client and Windows-safe output."""
-        if not GROQ_API_KEY:
-            raise ValueError("GROQ_API_KEY environment variable is required")
-        
-        self.groq_client = Groq(api_key=GROQ_API_KEY)
-        logger.info("SUCCESS: JD Parser initialized with GROQ client")
+        """Initialize the JD parser with Gemini client and Windows-safe output."""
+        if not GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY environment variable is required")
+        genai.configure(api_key=GEMINI_API_KEY)
+        self.model = genai.GenerativeModel(GEMINI_MODEL)
+        logger.info("SUCCESS: JD Parser initialized with Gemini client")
     
     def safe_console_output(self, text: str) -> str:
         """Convert text to Windows-safe console output."""
@@ -228,34 +228,12 @@ Job Description Text:
         
         try:
             start_time = time.time()
-            
-            # Use exact same GROQ configuration as working CV parser
-            response = self.groq_client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": full_prompt
-                    }
-                ],
-                temperature=0.1,
-                max_completion_tokens=4451,  # Correct parameter name
-                top_p=1,
-                stream=False,  # CRITICAL: No streaming
-                response_format={"type": "json_object"},  # CRITICAL: JSON mode
-                stop=None
-            )
-            
+            response = self.model.generate_content(full_prompt)
             processing_time = time.time() - start_time
-            
-            # Extract response content
-            response_content = response.choices[0].message.content
-            
+            response_content = response.text if hasattr(response, 'text') else ''
             if not response_content:
                 logger.warning(f"WARNING: Empty response for section {section_name}")
                 return {"data": {}, "success": False, "processing_time": processing_time}
-            
-            # Parse JSON response
             try:
                 parsed_data = json.loads(response_content)
                 logger.info(f"SUCCESS: Parsed section {section_name} in {processing_time:.2f}s")
@@ -263,9 +241,8 @@ Job Description Text:
             except json.JSONDecodeError as e:
                 logger.error(f"ERROR: Invalid JSON in section {section_name}: {str(e)}")
                 return {"data": {}, "success": False, "processing_time": processing_time}
-                
         except Exception as e:
-            logger.error(f"ERROR: GROQ API call failed for section {section_name}: {str(e)}")
+            logger.error(f"ERROR: Gemini API call failed for section {section_name}: {str(e)}")
             return {"data": {}, "success": False, "processing_time": 0}
     
     def fix_arabic_text_direction(self, text: str) -> str:

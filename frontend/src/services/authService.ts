@@ -96,7 +96,7 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 class AuthService {
-  private readonly API_BASE_URL = 'http://localhost:5003/api';
+  private readonly API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ? `${(import.meta as any).env.VITE_API_BASE_URL}/api` : 'http://localhost:5003/api';
 
   async login(credentials: LoginData ): Promise<AuthResponse> {
     try {
@@ -121,14 +121,15 @@ class AuthService {
       console.log('AuthService: Login response data:', {
         success: data.success,
         hasAccessToken: !!data.data?.access_token,
-        userType: data.data?.user_type
+        userRole: data.data?.user?.user_type || data.data?.user?.role
       });
 
-            if (data.success && data.data) {
+      if (data.success && data.data) {
         localStorage.setItem('access_token', data.data.access_token);
         localStorage.setItem('refresh_token', data.data.refresh_token);
-        // Store the user data directly from data.data (not data.data.user)
-        localStorage.setItem('user', JSON.stringify(data.data));
+        // Store the user object under 'user'
+        const userObj = data.data.user || data.data;
+        localStorage.setItem('user', JSON.stringify(userObj));
       }
       return data;
     } catch (error) {
@@ -167,11 +168,8 @@ class AuthService {
         message: data.message
       });
 
-            if (data.success && data.data) {
-        localStorage.setItem('access_token', data.data.access_token);
-        localStorage.setItem('refresh_token', data.data.refresh_token);
-        // Store the user data directly from data.data (not data.data.user)
-        localStorage.setItem('user', JSON.stringify(data.data));
+      if (data.success && data.data) {
+        // Optional: auto-login will handle tokens after register
       }
       return data;
     } catch (error) {
@@ -195,7 +193,11 @@ class AuthService {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const refreshed = await response.json();
+      if (refreshed?.data?.access_token) {
+        localStorage.setItem('access_token', refreshed.data.access_token);
+      }
+      return refreshed;
     } catch (error) {
       console.error('AuthService: Refresh token error:', error);
       throw error;
@@ -356,8 +358,11 @@ class AuthService {
       if (token && this.isAuthenticated()) {
         try {
           const response = await this.getUserRoles();
-          if (response.success && response.data?.user_type) {
-            return response.data.user_type;
+          if (response.success && response.data) {
+            const roles = (response as any).data.roles;
+            const user_type = (response as any).data.user_type;
+            if (user_type) return user_type;
+            if (Array.isArray(roles) && roles.length > 0) return roles[0];
           }
         } catch (apiError) {
           console.warn('Could not fetch roles from API, using fallback logic');

@@ -17,7 +17,7 @@ import {
   BookOpen,
   Users
 } from 'lucide-react';
-import { useCareerAdvice, useGroqConfig, useConversationHistory, CVData } from '@/integrations/groq';
+import { CVData } from '@/integrations/groq';
 import { useToast } from '@/hooks/use-toast';
 
 interface Message {

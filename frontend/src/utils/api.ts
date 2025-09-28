@@ -7,10 +7,8 @@ import type { CV } from '@/types/cv'
  *  - VITE_API_BASE_URL: your main backend (Node, Rails, etc.)
  *  - VITE_FLASK_API_URL: your Python/Flask microservice (for NLP/matching, etc.)
  */
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'
-const FLASK_API_URL =
-  import.meta.env.VITE_FLASK_API_URL || 'http://localhost:5003'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'
+const FLASK_API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'
 
 export interface ApiResponse<T = any> {
   success: boolean
