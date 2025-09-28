@@ -393,22 +393,7 @@ def create_school_program():
         print(f"Error in create_school_program: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/schools', methods=['GET'])
-def get_schools():
-    """Get list of schools for dropdowns"""
-    try:
-        query = "SELECT id, name_en, name_ar, location FROM schools WHERE is_active = true ORDER BY name_en"
-        schools = execute_query(query)
-        
-        if schools is None:
-            return jsonify({'error': 'Database error'}), 500
-            
-        result = [dict(school) for school in schools]
-        return jsonify(result)
-        
-    except Exception as e:
-        print(f"Error in get_schools: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
