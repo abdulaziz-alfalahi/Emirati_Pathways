@@ -422,9 +422,11 @@ def create_school_program():
         result = execute_query(insert_query, params, fetch_one=True)
         
         if not result:
+            print("ERROR: Failed to insert program - no result returned")
             return jsonify({'error': 'Failed to create program'}), 500
             
         program_id = result['id']
+        print(f"Program created successfully with ID: {program_id}")
         
         # Create success metrics record
         metrics_query = """
@@ -433,16 +435,31 @@ def create_school_program():
                 employment_rate, skill_improvement_score, created_at
             ) VALUES (%s, 0, 0, 0, 0, CURRENT_TIMESTAMP)
         """
-        execute_query(metrics_query, (program_id,))
+        metrics_result = execute_query(metrics_query, (program_id,))
         
-        return jsonify({
+        if metrics_result is not None:
+            print(f"Success metrics created for program: {program_id}")
+        else:
+            print(f"WARNING: Failed to create success metrics for program: {program_id}")
+        
+        response_data = {
             'message': 'Program created successfully',
-            'program_id': program_id
-        }), 201
+            'program_id': str(program_id),
+            'success': True
+        }
+        print(f"Sending response: {response_data}")
+        
+        return jsonify(response_data), 201
         
     except Exception as e:
         print(f"Error in create_school_program: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e),
+            'success': False
+        }), 500
 
 
 

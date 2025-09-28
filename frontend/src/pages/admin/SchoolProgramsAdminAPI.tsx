@@ -191,11 +191,15 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         body: JSON.stringify(programData)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       const result = await response.json();
+      console.log('Response data:', result);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}, message: ${result.error || 'Unknown error'}`);
+      }
       
       // Success - reload programs and close modal
       alert(currentLanguage === 'en' ? 'Program created successfully!' : 'تم إنشاء البرنامج بنجاح!');
