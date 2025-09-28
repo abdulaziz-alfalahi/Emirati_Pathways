@@ -182,20 +182,32 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         throw new Error(`HTTP error! status: ${response.status}, message: ${result.error || 'Unknown error'}`);
       }
       
-      // Success - reload programs and close modal
+      // Success - show success message and close modal
       alert(currentLanguage === 'en' ? 'Program created successfully!' : 'تم إنشاء البرنامج بنجاح!');
       
-      // Reload programs list
-      const updatedResponse = await schoolProgramsAPIService.getPrograms({});
-      setPrograms(updatedResponse.programs);
-      
-      // Update dashboard stats
-      const stats = await schoolProgramsAPIService.getAnalytics();
-      setDashboardStats(stats);
-      
-      // Close modal and reset form
+      // Close modal and reset form first
       setShowAddProgramModal(false);
       resetForm();
+      
+      // Try to reload programs list (don't fail if this doesn't work)
+      try {
+        const updatedResponse = await schoolProgramsAPIService.getPrograms({});
+        setPrograms(updatedResponse.programs);
+        console.log('Programs list updated successfully');
+      } catch (reloadError) {
+        console.log('Failed to reload programs list, but program was created successfully:', reloadError);
+        // Don't throw error - the program was created successfully
+      }
+      
+      // Try to update dashboard stats (don't fail if this doesn't work)
+      try {
+        const stats = await schoolProgramsAPIService.getAnalytics();
+        setDashboardStats(stats);
+        console.log('Dashboard stats updated successfully');
+      } catch (statsError) {
+        console.log('Failed to update dashboard stats, but program was created successfully:', statsError);
+        // Don't throw error - the program was created successfully
+      }
 
     } catch (error) {
       console.error('Error creating program:', error);
