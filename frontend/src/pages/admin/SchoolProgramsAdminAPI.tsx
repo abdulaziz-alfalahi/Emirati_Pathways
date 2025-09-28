@@ -120,6 +120,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    console.log(`Input changed: name=${name}, value=${value}`);
     setFormData(prev => ({
       ...prev,
       [name]: value

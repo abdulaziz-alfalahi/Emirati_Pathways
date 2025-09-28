@@ -16,9 +16,8 @@ import json
 app = Flask(__name__)
 
 # Configure CORS to allow frontend access
-CORS(app, origins=['http://localhost:8080', 'http://127.0.0.1:8080'], 
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     allow_headers=['Content-Type', 'Authorization'])
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -46,7 +45,7 @@ def close_db(e=None):
         db.close()
 
 @app.teardown_appcontext
-def close_db(error):
+def close_db_teardown(error):
     close_db()
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True):
@@ -162,22 +161,23 @@ def get_school_programs():
         param_count = 1
         
         if search:
-            query += f" AND (sp.title_en ILIKE ${param_count} OR sp.description_en ILIKE ${param_count})"
+            query += f" AND (sp.title_en ILIKE %s OR sp.description_en ILIKE %s)"
+            params.append(f'%{search}%')
             params.append(f'%{search}%')
             param_count += 1
             
         if category:
-            query += f" AND sp.category = ${param_count}"
+            query += f" AND sp.category = %s"
             params.append(category)
             param_count += 1
             
         if status:
-            query += f" AND sp.status = ${param_count}"
+            query += f" AND sp.status = %s"
             params.append(status)
             param_count += 1
             
         if featured:
-            query += f" AND sp.featured = ${param_count}"
+            query += f" AND sp.featured = %s"
             params.append(featured.lower() == 'true')
             param_count += 1
             
@@ -453,7 +453,7 @@ def create_school_program():
         }
         print(f"Sending response: {response_data}")
         
-        return jsonify(response_data), 201
+        return jsonify({'id': str(program_id)}), 201
         
     except Exception as e:
         print(f"Error in create_school_program: {e}")
