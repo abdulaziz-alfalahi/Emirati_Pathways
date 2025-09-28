@@ -62,6 +62,23 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         const response = await schoolProgramsAPIService.getPrograms({});
         setPrograms(response.programs);
         
+        // Load schools for the dropdown
+        try {
+          const schoolsResponse = await fetch('http://localhost:5001/api/schools');
+          if (schoolsResponse.ok) {
+            const schoolsData = await schoolsResponse.json();
+            setSchools(schoolsData);
+          }
+        } catch (schoolError) {
+          console.error('Error loading schools:', schoolError);
+          // Fallback to hardcoded schools if API fails
+          setSchools([
+            { id: '1', name_en: 'Dubai International Academy', name_ar: 'أكاديمية دبي الدولية' },
+            { id: '2', name_en: 'GEMS Wellington Academy', name_ar: 'أكاديمية جيمس ويلينغتون' },
+            { id: '3', name_en: 'American School of Dubai', name_ar: 'المدرسة الأمريكية في دبي' }
+          ]);
+        }
+        
       } catch (error) {
         console.error('Error loading admin data:', error);
       } finally {
@@ -765,9 +782,11 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   >
                     <option value="">{currentLanguage === 'en' ? 'Select a school...' : 'اختر مدرسة...'}</option>
-                    <option value="1">Dubai International Academy</option>
-                    <option value="2">GEMS Wellington Academy</option>
-                    <option value="3">American School of Dubai</option>
+                    {schools.map(school => (
+                      <option key={school.id} value={school.id}>
+                        {currentLanguage === 'en' ? school.name_en : school.name_ar}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
