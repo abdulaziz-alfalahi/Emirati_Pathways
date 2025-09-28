@@ -30,6 +30,9 @@ const SchoolProgramsAdminAPI: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dashboardStats, setDashboardStats] = useState<any>({});
+  const [showAddProgramModal, setShowAddProgramModal] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [schools, setSchools] = useState<any[]>([]);
 
   // Load data from API
   useEffect(() => {
@@ -273,7 +276,10 @@ const SchoolProgramsAdminAPI: React.FC = () => {
                 </p>
               </div>
               <div className="flex space-x-3">
-                <button className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center space-x-2">
+                <button 
+                  onClick={() => setShowAddProgramModal(true)}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 flex items-center space-x-2"
+                >
                   <Plus className="h-5 w-5" />
                   <span>{currentLanguage === 'en' ? 'Add Program' : 'إضافة برنامج'}</span>
                 </button>
@@ -426,6 +432,163 @@ const SchoolProgramsAdminAPI: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add Program Modal */}
+      {showAddProgramModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {currentLanguage === 'en' ? 'Add New Program' : 'إضافة برنامج جديد'}
+                </h3>
+                <button
+                  onClick={() => setShowAddProgramModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Program Title (English)' : 'عنوان البرنامج (إنجليزي)'}
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      placeholder={currentLanguage === 'en' ? 'Enter program title...' : 'أدخل عنوان البرنامج...'}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Program Title (Arabic)' : 'عنوان البرنامج (عربي)'}
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      placeholder={currentLanguage === 'en' ? 'Enter Arabic title...' : 'أدخل العنوان العربي...'}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {currentLanguage === 'en' ? 'School' : 'المدرسة'}
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                    <option value="">{currentLanguage === 'en' ? 'Select a school...' : 'اختر مدرسة...'}</option>
+                    <option value="school-001">Dubai International Academy</option>
+                    <option value="school-002">GEMS Wellington Academy</option>
+                    <option value="school-003">American School of Dubai</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Category' : 'الفئة'}
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                      <option value="">{currentLanguage === 'en' ? 'Select category...' : 'اختر الفئة...'}</option>
+                      <option value="STEM">STEM</option>
+                      <option value="Arts">Arts</option>
+                      <option value="Sports">Sports</option>
+                      <option value="Languages">Languages</option>
+                      <option value="Business">Business</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Status' : 'الحالة'}
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                      <option value="draft">{currentLanguage === 'en' ? 'Draft' : 'مسودة'}</option>
+                      <option value="under_review">{currentLanguage === 'en' ? 'Under Review' : 'قيد المراجعة'}</option>
+                      <option value="published">{currentLanguage === 'en' ? 'Published' : 'منشور'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {currentLanguage === 'en' ? 'Description (English)' : 'الوصف (إنجليزي)'}
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder={currentLanguage === 'en' ? 'Enter program description...' : 'أدخل وصف البرنامج...'}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {currentLanguage === 'en' ? 'Description (Arabic)' : 'الوصف (عربي)'}
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder={currentLanguage === 'en' ? 'Enter Arabic description...' : 'أدخل الوصف العربي...'}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Min Age' : 'العمر الأدنى'}
+                    </label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="18"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Max Age' : 'العمر الأقصى'}
+                    </label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="18"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {currentLanguage === 'en' ? 'Capacity' : 'السعة'}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddProgramModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    {currentLanguage === 'en' ? 'Cancel' : 'إلغاء'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                  >
+                    {currentLanguage === 'en' ? 'Create Program' : 'إنشاء البرنامج'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
