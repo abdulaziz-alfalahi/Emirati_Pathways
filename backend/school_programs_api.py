@@ -14,7 +14,11 @@ from datetime import datetime
 import json
 
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS to allow frontend access
+CORS(app, origins=['http://localhost:8080', 'http://127.0.0.1:8080'], 
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'])
 
 # Database configuration
 DATABASE_CONFIG = {
