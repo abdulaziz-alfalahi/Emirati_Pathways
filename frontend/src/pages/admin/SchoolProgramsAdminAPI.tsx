@@ -64,19 +64,28 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         
         // Load schools for the dropdown
         try {
+          console.log('Loading schools from API...');
           const schoolsResponse = await fetch('http://localhost:5001/api/schools');
+          console.log('Schools response status:', schoolsResponse.status);
+          
           if (schoolsResponse.ok) {
             const schoolsData = await schoolsResponse.json();
+            console.log('Schools data received:', schoolsData);
             setSchools(schoolsData);
+          } else {
+            console.error('Schools API response not ok:', schoolsResponse.status);
+            throw new Error('Schools API failed');
           }
         } catch (schoolError) {
           console.error('Error loading schools:', schoolError);
           // Fallback to hardcoded schools if API fails
-          setSchools([
+          const fallbackSchools = [
             { id: '1', name_en: 'Dubai International Academy', name_ar: 'أكاديمية دبي الدولية' },
             { id: '2', name_en: 'GEMS Wellington Academy', name_ar: 'أكاديمية جيمس ويلينغتون' },
             { id: '3', name_en: 'American School of Dubai', name_ar: 'المدرسة الأمريكية في دبي' }
-          ]);
+          ];
+          console.log('Using fallback schools:', fallbackSchools);
+          setSchools(fallbackSchools);
         }
         
       } catch (error) {
