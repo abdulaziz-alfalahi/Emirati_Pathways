@@ -147,6 +147,13 @@ const SchoolProgramsAdminAPI: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      console.log('Form data before submission:', formData);
+      
+      // Validate required fields
+      if (!formData.titleEn || !formData.schoolId || !formData.category || !formData.descriptionEn) {
+        throw new Error('Please fill in all required fields');
+      }
+      
       // Create program data object
       const programData = {
         title_en: formData.titleEn,
@@ -164,6 +171,8 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         fees_currency: 'AED'
       };
 
+      console.log('Sending program data:', programData);
+      
       // Send POST request to API
       const response = await fetch('http://localhost:5001/api/school-programs', {
         method: 'POST',
@@ -175,12 +184,18 @@ const SchoolProgramsAdminAPI: React.FC = () => {
 
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       const result = await response.json();
       console.log('Response data:', result);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}, message: ${result.error || 'Unknown error'}`);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${result.error || result.message || 'Unknown error'}`);
+      }
+      
+      // Check if the response indicates success
+      if (result.success === false) {
+        throw new Error(result.message || result.error || 'Program creation failed');
       }
       
       // Success - show success message and close modal
