@@ -449,11 +449,12 @@ def create_school_program():
         response_data = {
             'message': 'Program created successfully',
             'program_id': str(program_id),
+            'id': str(program_id),
             'success': True
         }
         print(f"Sending response: {response_data}")
         
-        return jsonify({'id': str(program_id)}), 201
+        return jsonify(response_data), 201
         
     except Exception as e:
         print(f"Error in create_school_program: {e}")
