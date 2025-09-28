@@ -62,31 +62,66 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         const response = await schoolProgramsAPIService.getPrograms({});
         setPrograms(response.programs);
         
-        // Load schools for the dropdown
-        try {
-          console.log('Loading schools from API...');
-          const schoolsResponse = await fetch('http://localhost:5001/api/schools');
-          console.log('Schools response status:', schoolsResponse.status);
-          
-          if (schoolsResponse.ok) {
-            const schoolsData = await schoolsResponse.json();
-            console.log('Schools data received:', schoolsData);
-            setSchools(schoolsData);
-          } else {
-            console.error('Schools API response not ok:', schoolsResponse.status);
-            throw new Error('Schools API failed');
+        // Load schools for the dropdown with retry mechanism
+        const loadSchools = async (retryCount = 0) => {
+          try {
+            console.log(`Loading schools from API... (attempt ${retryCount + 1})`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const schoolsResponse = await fetch('http://localhost:5001/api/schools', {
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            console.log('Schools response status:', schoolsResponse.status);
+            
+            if (schoolsResponse.ok) {
+              const schoolsData = await schoolsResponse.json();
+              console.log('Schools data received:', schoolsData);
+              if (schoolsData && schoolsData.length > 0) {
+                setSchools(schoolsData);
+                return;
+              }
+            }
+            throw new Error(`Schools API failed with status: ${schoolsResponse.status}`);
+          } catch (schoolError) {
+            console.error(`Error loading schools (attempt ${retryCount + 1}):`, schoolError);
+            
+            // Retry once after 2 seconds
+            if (retryCount < 1) {
+              console.log('Retrying schools API in 2 seconds...');
+              setTimeout(() => loadSchools(retryCount + 1), 2000);
+              return;
+            }
+            
+            // Use fallback schools with proper UUIDs (these should match your actual database)
+            console.log('Using fallback schools with proper UUIDs...');
+            const fallbackSchools = [
+              { 
+                id: '550e8400-e29b-41d4-a716-446655440001', 
+                name_en: 'Dubai International Academy', 
+                name_ar: 'أكاديمية دبي الدولية',
+                location: 'Dubai'
+              },
+              { 
+                id: '550e8400-e29b-41d4-a716-446655440002', 
+                name_en: 'GEMS Wellington Academy', 
+                name_ar: 'أكاديمية جيمس ويلينغتون',
+                location: 'Dubai'
+              },
+              { 
+                id: '550e8400-e29b-41d4-a716-446655440003', 
+                name_en: 'American School of Dubai', 
+                name_ar: 'المدرسة الأمريكية في دبي',
+                location: 'Dubai'
+              }
+            ];
+            setSchools(fallbackSchools);
           }
-        } catch (schoolError) {
-          console.error('Error loading schools:', schoolError);
-          // Fallback to hardcoded schools if API fails
-          const fallbackSchools = [
-            { id: '1', name_en: 'Dubai International Academy', name_ar: 'أكاديمية دبي الدولية' },
-            { id: '2', name_en: 'GEMS Wellington Academy', name_ar: 'أكاديمية جيمس ويلينغتون' },
-            { id: '3', name_en: 'American School of Dubai', name_ar: 'المدرسة الأمريكية في دبي' }
-          ];
-          console.log('Using fallback schools:', fallbackSchools);
-          setSchools(fallbackSchools);
-        }
+        };
+        
+        await loadSchools();
         
       } catch (error) {
         console.error('Error loading admin data:', error);

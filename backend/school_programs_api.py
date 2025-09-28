@@ -71,6 +71,54 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True):
             db.rollback()
         return None
 
+def ensure_fallback_schools_exist():
+    """Ensure fallback schools exist in database for form functionality"""
+    try:
+        fallback_schools = [
+            {
+                'id': '550e8400-e29b-41d4-a716-446655440001',
+                'name_en': 'Dubai International Academy',
+                'name_ar': 'أكاديمية دبي الدولية',
+                'code': 'DIA001',
+                'location': 'Dubai'
+            },
+            {
+                'id': '550e8400-e29b-41d4-a716-446655440002',
+                'name_en': 'GEMS Wellington Academy',
+                'name_ar': 'أكاديمية جيمس ويلينغتون',
+                'code': 'GWA002',
+                'location': 'Dubai'
+            },
+            {
+                'id': '550e8400-e29b-41d4-a716-446655440003',
+                'name_en': 'American School of Dubai',
+                'name_ar': 'المدرسة الأمريكية في دبي',
+                'code': 'ASD003',
+                'location': 'Dubai'
+            }
+        ]
+        
+        for school in fallback_schools:
+            # Check if school exists
+            check_query = "SELECT id FROM schools WHERE id = %s"
+            existing = execute_query(check_query, (school['id'],), fetch_one=True)
+            
+            if not existing:
+                # Insert school if it doesn't exist
+                insert_query = """
+                    INSERT INTO schools (id, name_en, name_ar, code, location, district, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO NOTHING
+                """
+                execute_query(insert_query, (
+                    school['id'], school['name_en'], school['name_ar'], 
+                    school['code'], school['location'], school['location'], True
+                ))
+                print(f"Inserted fallback school: {school['name_en']}")
+                
+    except Exception as e:
+        print(f"Error ensuring fallback schools: {e}")
+
 # API Endpoints
 
 @app.route('/api/school-programs', methods=['GET'])
@@ -338,6 +386,9 @@ def create_school_program():
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Ensure fallback schools exist in database
+        ensure_fallback_schools_exist()
         
         # Insert new program
         insert_query = """
