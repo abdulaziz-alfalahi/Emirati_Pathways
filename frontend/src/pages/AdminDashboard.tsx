@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,61 +20,10 @@ import {
   UserCheck,
   FileText,
   MessageSquare,
-  Activity,
-  RotateCcw
+  Activity
 } from 'lucide-react';
 
-// Role Switcher Button Component
-const RoleSwitcherButton = () => {
-  const handleRoleSwitch = () => {
-    console.log('🔄 Switching to role selector from Admin Dashboard');
-    
-    // Clear authentication state to allow role switching
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('auth_token');
-    
-    // Force navigation to HTML role selector
-    window.location.href = '/role_selector.html';
-  };
 
-  return (
-    <button 
-      onClick={handleRoleSwitch}
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-        color: 'white',
-        border: 'none',
-        padding: '12px 24px',
-        borderRadius: '25px',
-        fontWeight: '600',
-        cursor: 'pointer',
-        zIndex: 1000,
-        boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-        fontSize: '14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        transition: 'all 0.3s ease'
-      }}
-      onMouseOver={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(5, 150, 105, 0.4)';
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(5, 150, 105, 0.3)';
-      }}
-    >
-      <RotateCcw size={16} />
-      Switch Role
-    </button>
-  );
-};
 
 const AdminDashboard = () => {
   const { user, signOut, isAuthenticated } = useAuth();
@@ -234,11 +183,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <Layout>
-      {/* Role Switcher Button */}
-      <RoleSwitcherButton />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+      {/* Navigation */}
+      <HybridGovernmentNavFixed showAuthButtons={true} />
       
-      <div className="min-h-screen bg-background">
+      {/* Main Content */}
+      <div className="pt-20 pb-8">
+        <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="bg-card border-b">
           <div className="container mx-auto px-4 py-6">
@@ -615,7 +566,8 @@ const AdminDashboard = () => {
           </Tabs>
         </div>
       </div>
-    </Layout>
+      </div>
+    </div>
   );
 };
 

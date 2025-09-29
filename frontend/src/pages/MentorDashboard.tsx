@@ -1,444 +1,539 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { 
+  UserCheck, 
+  Users, 
+  Target, 
+  TrendingUp, 
+  Calendar,
+  Search,
+  Filter,
+  Eye,
+  CheckCircle,
+  Clock,
+  Heart,
+  Building,
+  Award,
+  MessageSquare,
+  Download,
+  Upload,
+  BarChart3,
+  PieChart,
+  Star,
 
-const MentorDashboard = () => {
-  const { user, signOut, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const [dashboardData, setDashboardData] = useState({
-    mentoring: {
-      activeMentees: 0,
+  Settings,
+  Bell,
+  Plus,
+  Edit,
+  FileText,
+  Lightbulb,
+  Globe,
+  Briefcase,
+  BookOpen,
+  Video,
+  Coffee
+} from 'lucide-react';
+
+interface MentorData {
+  mentees: {
+    totalMentees: number;
+    activeMentees: number;
+    successfulPlacements: number;
+    averageSessionRating: number;
+  };
+  sessions: {
+    totalSessions: number;
+    thisMonth: number;
+    upcomingSessions: number;
+    completedGoals: number;
+  };
+  impact: {
+    careerAdvancement: number;
+    skillImprovement: number;
+    networkGrowth: number;
+    confidenceBoost: number;
+  };
+  expertise: {
+    primaryAreas: string[];
+    yearsExperience: number;
+    industryConnections: number;
+    successStories: number;
+  };
+  activity: Array<{
+    id: number;
+    type: string;
+    title: string;
+    description: string;
+    timestamp: string;
+    priority?: string;
+  }>;
+}
+
+
+
+const MentorDashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [dashboardData, setDashboardData] = useState<MentorData>({
+    mentees: {
       totalMentees: 0,
-      sessionsThisMonth: 0,
-      averageRating: 0
+      activeMentees: 0,
+      successfulPlacements: 0,
+      averageSessionRating: 0
+    },
+    sessions: {
+      totalSessions: 0,
+      thisMonth: 0,
+      upcomingSessions: 0,
+      completedGoals: 0
     },
     impact: {
-      successfulPlacements: 0,
-      careerTransitions: 0,
-      skillsDeveloped: 0,
-      networkConnections: 0
+      careerAdvancement: 0,
+      skillImprovement: 0,
+      networkGrowth: 0,
+      confidenceBoost: 0
     },
-    schedule: {
-      upcomingSessions: 0,
-      availableSlots: 0,
-      completedSessions: 0,
-      cancelledSessions: 0
+    expertise: {
+      primaryAreas: [],
+      yearsExperience: 0,
+      industryConnections: 0,
+      successStories: 0
     },
     activity: []
   });
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
-      return;
-    }
-    loadDashboardData();
-  }, [isAuthenticated, navigate]);
+  // Initialize with mock data
+  React.useEffect(() => {
+    setMockData();
+  }, []);
 
-  // Get user display name
-  const getUserDisplayName = () => {
-    if (!user) return 'Mentor';
-    
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
-    if (user.user_metadata?.name) return user.user_metadata.name;
-    if (user.full_name) return user.full_name;
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    
-    if (user.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-    
-    return 'Mentor';
-  };
-
-  // Logout functionality
-  const handleLogout = async () => {
-    try {
-      console.log('🚪 Mentor logout process...');
-      await signOut();
-      console.log('✅ Mentor logout completed');
-      window.location.replace('/auth');
-    } catch (error) {
-      console.error('Mentor logout error:', error);
-      window.location.href = '/auth';
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      if (!token) return;
-
-      const response = await fetch('http://localhost:5001/api/mentor/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+  const setMockData = () => {
+    setDashboardData({
+      mentees: {
+        totalMentees: 28,
+        activeMentees: 18,
+        successfulPlacements: 15,
+        averageSessionRating: 4.8
+      },
+      sessions: {
+        totalSessions: 156,
+        thisMonth: 24,
+        upcomingSessions: 8,
+        completedGoals: 42
+      },
+      impact: {
+        careerAdvancement: 89,
+        skillImprovement: 94,
+        networkGrowth: 76,
+        confidenceBoost: 92
+      },
+      expertise: {
+        primaryAreas: ['Technology Leadership', 'Fintech Innovation', 'Career Development', 'Digital Transformation'],
+        yearsExperience: 15,
+        industryConnections: 250,
+        successStories: 15
+      },
+      activity: [
+        {
+          id: 1,
+          type: 'mentee_success',
+          title: 'Mentee Career Advancement',
+          description: 'Sara Al Mansoori promoted to Senior Product Manager at Careem',
+          timestamp: new Date().toISOString(),
+          priority: 'high'
+        },
+        {
+          id: 2,
+          type: 'session_completed',
+          title: 'Mentoring Session Completed',
+          description: 'Career planning session with Ahmed focusing on leadership skills',
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          priority: 'medium'
+        },
+        {
+          id: 3,
+          type: 'goal_achieved',
+          title: 'Goal Achievement',
+          description: 'Mentee completed blockchain certification program',
+          timestamp: new Date(Date.now() - 172800000).toISOString(),
+          priority: 'medium'
+        },
+        {
+          id: 4,
+          type: 'new_mentee',
+          title: 'New Mentee Onboarded',
+          description: 'Started mentoring relationship with Fatima Al Zahra',
+          timestamp: new Date(Date.now() - 259200000).toISOString(),
+          priority: 'high'
         }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      }
-    } catch (error) {
-      console.error('Error loading mentor dashboard data:', error);
-      // Set mock data for demonstration
-      setDashboardData({
-        mentoring: {
-          activeMentees: 12,
-          totalMentees: 47,
-          sessionsThisMonth: 28,
-          averageRating: 4.8
-        },
-        impact: {
-          successfulPlacements: 23,
-          careerTransitions: 15,
-          skillsDeveloped: 89,
-          networkConnections: 156
-        },
-        schedule: {
-          upcomingSessions: 8,
-          availableSlots: 15,
-          completedSessions: 234,
-          cancelledSessions: 3
-        },
-        activity: [
-          { type: 'session', message: 'Mentoring session with Sara Al-Mahmoud completed', time: '2h ago' },
-          { type: 'placement', message: 'Mentee Ahmed secured position at ADNOC', time: '1d ago' },
-          { type: 'feedback', message: 'Received 5-star rating from Fatima Al-Zahra', time: '2d ago' },
-          { type: 'connection', message: 'Connected mentee with industry expert', time: '3d ago' }
-        ]
-      });
-    }
+      ]
+    });
   };
-
-  const quickActions = [
-    {
-      title: 'My Mentees',
-      description: 'View and manage mentee relationships',
-      icon: '👥',
-      action: () => navigate('/mentor/mentees'),
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Schedule Sessions',
-      description: 'Manage mentoring calendar',
-      icon: '📅',
-      action: () => navigate('/mentor/schedule'),
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Resource Library',
-      description: 'Access mentoring resources',
-      icon: '📚',
-      action: () => navigate('/mentor/resources'),
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Network Hub',
-      description: 'Connect with industry professionals',
-      icon: '🌐',
-      action: () => navigate('/mentor/network'),
-      color: 'bg-orange-500'
-    },
-    {
-      title: 'Impact Reports',
-      description: 'View mentoring impact analytics',
-      icon: '📊',
-      action: () => navigate('/mentor/analytics'),
-      color: 'bg-indigo-500'
-    },
-    {
-      title: 'Logout',
-      description: 'Sign out of mentor portal',
-      icon: '🚪',
-      action: handleLogout,
-      color: 'bg-red-500'
-    }
-  ];
-
-  // Show loading if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <Layout>
-      {/* Mentor Dashboard Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+      {/* Navigation */}
+      <HybridGovernmentNavFixed showAuthButtons={true} />
+      
+
+      
+      {/* Main Content */}
+      <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Mentor Portal
-              </h1>
-              <span className="ml-3 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
-                Career Mentor
-              </span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {getUserDisplayName().charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {getUserDisplayName()}
-                </span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Welcome Section */}
+          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome, {getUserDisplayName()}!
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Guide and empower the next generation of Emirati professionals
-            </p>
-          </div>
-
-          {/* Key Mentoring Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <span className="text-2xl">👥</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Mentees</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.mentoring.activeMentees}</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
+                  Mentor Dashboard
+                </h1>
+                <p className="text-slate-600 font-dubai-medium">
+                  Welcome back, Khalid Waleed - Technology Leadership Mentor
+                </p>
               </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <span className="text-2xl">📅</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Sessions This Month</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.mentoring.sessionsThisMonth}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <span className="text-2xl">⭐</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Average Rating</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.mentoring.averageRating}/5</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <span className="text-2xl">🎯</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Successful Placements</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.impact.successfulPlacements}</p>
-                </div>
+              <div className="flex items-center space-x-3">
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-dubai-medium">
+                  Senior Mentor
+                </Badge>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
+                  Tech Leader
+                </Badge>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Mentoring Impact */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Mentoring Impact & Achievements</h2>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Career Transitions</p>
-                        <p className="text-sm text-gray-600">Mentees who changed career paths</p>
-                      </div>
-                      <span className="text-2xl font-bold text-blue-600">{dashboardData.impact.careerTransitions}</span>
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-4">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Session
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Users className="h-4 w-4 mr-2" />
+                View Mentees
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Send Message
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Download className="h-4 w-4 mr-2" />
+                Export Reports
+              </Button>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
+              <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
+              <TabsTrigger value="mentees" className="font-dubai-medium">Mentees</TabsTrigger>
+              <TabsTrigger value="sessions" className="font-dubai-medium">Sessions</TabsTrigger>
+              <TabsTrigger value="impact" className="font-dubai-medium">Impact</TabsTrigger>
+              <TabsTrigger value="resources" className="font-dubai-medium">Resources</TabsTrigger>
+            </TabsList>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Mentees</CardTitle>
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.mentees.activeMentees}</div>
+                    <p className="text-xs text-slate-500 font-dubai-medium">
+                      {dashboardData.mentees.totalMentees} total mentees
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Sessions This Month</CardTitle>
+                    <Calendar className="h-4 w-4 text-purple-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.sessions.thisMonth}</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
+                      {dashboardData.sessions.upcomingSessions} upcoming
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Success Stories</CardTitle>
+                    <Award className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.expertise.successStories}</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
+                      Career advancements achieved
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Session Rating</CardTitle>
+                    <Star className="h-4 w-4 text-yellow-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.mentees.averageSessionRating}</div>
+                    <div className="flex mt-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          className={`h-3 w-3 ${star <= dashboardData.mentees.averageSessionRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                        />
+                      ))}
                     </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Skills Developed</p>
-                        <p className="text-sm text-gray-600">New skills acquired by mentees</p>
-                      </div>
-                      <span className="text-2xl font-bold text-green-600">{dashboardData.impact.skillsDeveloped}</span>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Mentoring Impact */}
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Mentoring Impact</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Positive outcomes achieved through your mentoring
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.impact.careerAdvancement}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Career Advancement</p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Network Connections</p>
-                        <p className="text-sm text-gray-600">Professional connections facilitated</p>
-                      </div>
-                      <span className="text-2xl font-bold text-purple-600">{dashboardData.impact.networkConnections}</span>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.impact.skillImprovement}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Skill Improvement</p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Total Mentees Guided</p>
-                        <p className="text-sm text-gray-600">Lifetime mentoring relationships</p>
-                      </div>
-                      <span className="text-2xl font-bold text-orange-600">{dashboardData.mentoring.totalMentees}</span>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.impact.networkGrowth}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Network Growth</p>
+                    </div>
+                    <div className="text-center p-4 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-orange-600">{dashboardData.impact.confidenceBoost}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Confidence Boost</p>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                </CardContent>
+              </Card>
 
-            {/* Quick Actions */}
-            <div>
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
-                </div>
-                <div className="p-6">
+              {/* Expertise & Experience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-white shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="font-dubai-bold text-slate-900">Expertise Areas</CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-600">
+                      Your primary mentoring specializations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {dashboardData.expertise.primaryAreas.map((area, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                          <span className="text-sm font-dubai-medium text-slate-700">{area}</span>
+                          <Badge variant="secondary" className="text-xs">Expert</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="font-dubai-bold text-slate-900">Professional Profile</CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-600">
+                      Your mentoring credentials and experience
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Years of Experience</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.expertise.yearsExperience}+</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Industry Connections</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.expertise.industryConnections}+</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Completed Goals</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.sessions.completedGoals}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity */}
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Latest updates from your mentoring activities
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-4">
-                    {quickActions.map((action, index) => (
-                      <button
-                        key={index}
-                        onClick={action.action}
-                        className={`w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 ${
-                          action.title === 'Logout' ? 'bg-red-50 hover:bg-red-100 hover:border-red-300' : ''
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                            <span className="text-lg">{action.icon}</span>
+                    {dashboardData.activity.length > 0 ? (
+                      dashboardData.activity.map((activity) => (
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+                          <div className="flex-shrink-0">
+                            {activity.type === 'mentee_success' && (
+                              <Award className="h-5 w-5 text-green-500 mt-1" />
+                            )}
+                            {activity.type === 'session_completed' && (
+                              <CheckCircle className="h-5 w-5 text-blue-500 mt-1" />
+                            )}
+                            {activity.type === 'goal_achieved' && (
+                              <Target className="h-5 w-5 text-purple-500 mt-1" />
+                            )}
+                            {activity.type === 'new_mentee' && (
+                              <UserCheck className="h-5 w-5 text-orange-500 mt-1" />
+                            )}
                           </div>
-                          <div className="ml-4">
-                            <p className="font-medium text-gray-900">{action.title}</p>
-                            <p className="text-sm text-gray-600">{action.description}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-dubai-medium text-slate-900">
+                                {activity.title}
+                              </p>
+                              {activity.priority && (
+                                <Badge 
+                                  variant={activity.priority === 'high' ? 'destructive' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {activity.priority}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-600 font-dubai">
+                              {activity.description}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1 font-dubai">
+                              {new Date(activity.timestamp).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
-                      </button>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-500 font-dubai-medium">No recent activity</p>
+                    )}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              {/* Schedule Overview */}
-              <div className="bg-white rounded-lg shadow mt-6">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Schedule Overview</h2>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Upcoming Sessions</span>
-                      <span className="text-sm font-medium text-blue-600">
-                        {dashboardData.schedule.upcomingSessions} sessions
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Available Slots</span>
-                      <span className="text-sm font-medium text-green-600">
-                        {dashboardData.schedule.availableSlots} slots
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Completed Sessions</span>
-                      <span className="text-sm font-medium text-purple-600">
-                        {dashboardData.schedule.completedSessions} total
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Cancelled Sessions</span>
-                      <span className="text-sm font-medium text-orange-600">
-                        {dashboardData.schedule.cancelledSessions} this month
-                      </span>
-                    </div>
+            {/* Mentees Tab */}
+            <TabsContent value="mentees" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Mentee Management</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Manage your current and past mentees
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Mentee Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Track progress and manage relationships with your mentees</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View All Mentees
+                    </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                  <button className="w-full mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200">
-                    Manage Schedule
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+            {/* Sessions Tab */}
+            <TabsContent value="sessions" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Session Management</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Schedule and manage mentoring sessions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Session Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Schedule, conduct, and track mentoring sessions</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Schedule New Session
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Recent Mentoring Activity */}
-          <div className="mt-8">
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Mentoring Activity</h2>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {dashboardData.activity.map((activity, index) => (
-                    <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
-                      <div className="flex-shrink-0">
-                        <div className={`w-3 h-3 rounded-full ${
-                          activity.type === 'session' ? 'bg-blue-500' :
-                          activity.type === 'placement' ? 'bg-green-500' :
-                          activity.type === 'feedback' ? 'bg-purple-500' :
-                          'bg-orange-500'
-                        }`}></div>
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+            {/* Impact Tab */}
+            <TabsContent value="impact" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Impact Analytics</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Measure and track your mentoring impact
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Impact Analytics</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive analytics on your mentoring impact and success stories</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View Impact Dashboard
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Resources Tab */}
+            <TabsContent value="resources" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Mentoring Resources</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Access tools and resources for effective mentoring
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <BookOpen className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Resource Library</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Access mentoring guides, templates, and best practices</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      Browse Resources
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
 export default MentorDashboard;
-

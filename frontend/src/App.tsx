@@ -2,16 +2,21 @@ import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
+import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
 import { Toaster } from 'react-hot-toast';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
+
+// Development components
+import PersonaSwitcher from '@/components/dev/PersonaSwitcher';
 
 // Loading component
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
 
 // Auth Pages (not lazy loaded for faster initial access)
 import AuthPage from '@/pages/auth';
+import MockLogin from '@/pages/auth/MockLogin';
 
 // Lazy loaded components for better performance
 const CandidateDashboard = lazy(() => import('@/pages/CandidateDashboard'));
@@ -20,6 +25,8 @@ const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const EmployerDashboard = lazy(() => import('@/pages/EmployerDashboard'));
 const EducatorDashboard = lazy(() => import('@/pages/EducatorDashboard'));
 const MentorDashboard = lazy(() => import('@/pages/MentorDashboard'));
+const RecruiterDashboard = lazy(() => import('@/pages/RecruiterDashboard'));
+const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
 // Resume Builder
@@ -37,7 +44,9 @@ const IndustryExplorationPage = lazy(() => import('./pages/industry-exploration/
 const CVBuilderPage = lazy(() => import('./pages/cv-builder/CVBuilderPage'));
 const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard'));
 const CommunitiesPage = lazy(() => import('./pages/communities/CommunitiesPage'));
-const SchoolProgramsPage = lazy(() => import('./pages/education/SchoolProgramsPage'));
+const SchoolProgramsPage = lazy(() => import('./pages/SchoolProgramsPage'));
+const SchoolProgramsAdmin = lazy(() => import('./pages/admin/SchoolProgramsAdmin'));
+const SchoolProgramsAdminAPI = lazy(() => import('./pages/admin/SchoolProgramsAdminAPI'));
 const UniversityProgramsPage = lazy(() => import('./pages/education/UniversityProgramsPage'));
 
 // Other key pages
@@ -58,7 +67,7 @@ const NotFound = lazy(() => import('@/pages/not-found'));
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 // Role-based Dashboard Components
-const RecruiterDashboard = lazy(() => import('@/components/dashboard/role-dashboards/RecruiterDashboard'));
+// Removed old RecruiterDashboard import - now using the new one from pages
 
 // Global Styles
 import './index.css';
@@ -90,7 +99,7 @@ const AppContent: React.FC = () => {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<BilingualHomePage />} />
-                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/auth" element={<MockLogin />} />
                 
                 {/* Protected Dashboard Routes */}
                 <Route 
@@ -115,7 +124,16 @@ const AppContent: React.FC = () => {
                   path="/recruiter-dashboard" 
                   element={
                     <ProtectedRoute allowedRoles={['recruiter']}>
-                      <RecruiterDashboard activeTab="overview" />
+                      <RecruiterDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                <Route 
+                  path="/assessor-dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['assessor']}>
+                      <AssessorDashboard />
                     </ProtectedRoute>
                   } 
                 />
@@ -125,6 +143,15 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute allowedRoles={['administrator', 'admin']}>
                       <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/admin/school-programs" 
+                  element={
+                    <ProtectedRoute allowedRoles={['administrator', 'admin', 'khda_staff', 'content_manager']}>
+                      <SchoolProgramsAdminAPI />
                     </ProtectedRoute>
                   } 
                 />
@@ -332,13 +359,16 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Main App Component with Enhanced Language Provider
+// Main App Component with Enhanced Language Provider and Mock Auth
 function App() {
   return (
     <LanguageProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <MockAuthProvider>
+        <AuthProvider>
+          <AppContent />
+          <PersonaSwitcher />
+        </AuthProvider>
+      </MockAuthProvider>
     </LanguageProvider>
   );
 }

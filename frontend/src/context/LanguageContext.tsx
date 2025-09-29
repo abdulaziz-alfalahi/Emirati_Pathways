@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import i18n from '../lib/i18n';
+import i18n from '../i18n/config';
 
 type Language = 'en' | 'ar';
 type Direction = 'ltr' | 'rtl';

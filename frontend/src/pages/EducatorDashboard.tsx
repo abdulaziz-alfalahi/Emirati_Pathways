@@ -1,14 +1,86 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { 
+  GraduationCap, 
+  Users, 
+  BookOpen, 
+  TrendingUp, 
+  Calendar,
+  Search,
+  Filter,
+  Eye,
+  CheckCircle,
+  Clock,
+  UserCheck,
+  Building,
+  Award,
+  MessageSquare,
+  Download,
+  Upload,
+  BarChart3,
+  PieChart,
+  Target,
+  Star,
 
-const EducatorDashboard = () => {
-  const { user, signOut, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const [dashboardData, setDashboardData] = useState({
+  Settings,
+  Bell,
+  Plus,
+  Edit,
+  FileText,
+  Lightbulb,
+  Globe,
+  Briefcase
+} from 'lucide-react';
+
+interface EducatorData {
+  students: {
+    totalEnrolled: number;
+    activeStudents: number;
+    graduatingStudents: number;
+    placementRate: number;
+  };
+  programs: {
+    totalPrograms: number;
+    activePrograms: number;
+    industryPartnerships: number;
+    certificationPrograms: number;
+  };
+  outcomes: {
+    employmentRate: number;
+    averageSalary: number;
+    skillsMatchRate: number;
+    industryReadiness: number;
+  };
+  research: {
+    publications: number;
+    ongoingProjects: number;
+    grants: number;
+    collaborations: number;
+  };
+  activity: Array<{
+    id: number;
+    type: string;
+    title: string;
+    description: string;
+    timestamp: string;
+    priority?: string;
+  }>;
+}
+
+
+
+const EducatorDashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [dashboardData, setDashboardData] = useState<EducatorData>({
     students: {
-      totalStudents: 0,
+      totalEnrolled: 0,
       activeStudents: 0,
       graduatingStudents: 0,
       placementRate: 0
@@ -25,420 +97,442 @@ const EducatorDashboard = () => {
       skillsMatchRate: 0,
       industryReadiness: 0
     },
+    research: {
+      publications: 0,
+      ongoingProjects: 0,
+      grants: 0,
+      collaborations: 0
+    },
     activity: []
   });
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
-      return;
-    }
-    loadDashboardData();
-  }, [isAuthenticated, navigate]);
+  // Initialize with mock data
+  React.useEffect(() => {
+    setMockData();
+  }, []);
 
-  // Get user display name
-  const getUserDisplayName = () => {
-    if (!user) return 'Educator';
-    
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
-    if (user.user_metadata?.name) return user.user_metadata.name;
-    if (user.full_name) return user.full_name;
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    
-    if (user.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-    
-    return 'Educator';
-  };
-
-  // Logout functionality
-  const handleLogout = async () => {
-    try {
-      console.log('🚪 Educator logout process...');
-      await signOut();
-      console.log('✅ Educator logout completed');
-      window.location.replace('/auth');
-    } catch (error) {
-      console.error('Educator logout error:', error);
-      window.location.href = '/auth';
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      if (!token) return;
-
-      const response = await fetch('http://localhost:5001/api/educator/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+  const setMockData = () => {
+    setDashboardData({
+      students: {
+        totalEnrolled: 245,
+        activeStudents: 198,
+        graduatingStudents: 47,
+        placementRate: 89
+      },
+      programs: {
+        totalPrograms: 8,
+        activePrograms: 6,
+        industryPartnerships: 12,
+        certificationPrograms: 4
+      },
+      outcomes: {
+        employmentRate: 92,
+        averageSalary: 85000,
+        skillsMatchRate: 87,
+        industryReadiness: 91
+      },
+      research: {
+        publications: 45,
+        ongoingProjects: 8,
+        grants: 3,
+        collaborations: 15
+      },
+      activity: [
+        {
+          id: 1,
+          type: 'student_placement',
+          title: 'Student Placement Success',
+          description: 'Fatima Al Zahra secured position as AI Engineer at ADNOC Digital',
+          timestamp: new Date().toISOString(),
+          priority: 'high'
+        },
+        {
+          id: 2,
+          type: 'industry_partnership',
+          title: 'New Industry Partnership',
+          description: 'Signed collaboration agreement with Emirates NBD for fintech program',
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          priority: 'high'
+        },
+        {
+          id: 3,
+          type: 'research_publication',
+          title: 'Research Publication',
+          description: 'Paper on "AI in UAE Education" accepted by IEEE Conference',
+          timestamp: new Date(Date.now() - 172800000).toISOString(),
+          priority: 'medium'
+        },
+        {
+          id: 4,
+          type: 'curriculum_update',
+          title: 'Curriculum Enhancement',
+          description: 'Updated Machine Learning course with latest industry requirements',
+          timestamp: new Date(Date.now() - 259200000).toISOString(),
+          priority: 'medium'
         }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      }
-    } catch (error) {
-      console.error('Error loading educator dashboard data:', error);
-      // Set mock data for demonstration
-      setDashboardData({
-        students: {
-          totalStudents: 2847,
-          activeStudents: 2634,
-          graduatingStudents: 456,
-          placementRate: 87.3
-        },
-        programs: {
-          totalPrograms: 34,
-          activePrograms: 28,
-          industryPartnerships: 67,
-          certificationPrograms: 15
-        },
-        outcomes: {
-          employmentRate: 89.2,
-          averageSalary: 8500,
-          skillsMatchRate: 78.4,
-          industryReadiness: 82.1
-        },
-        activity: [
-          { type: 'partnership', message: 'New partnership with Emirates NBD for fintech program', time: '2h ago' },
-          { type: 'graduation', message: '45 students graduated from AI & Data Science program', time: '1d ago' },
-          { type: 'placement', message: '23 students placed in government positions', time: '2d ago' },
-          { type: 'program', message: 'Cybersecurity certification program launched', time: '3d ago' }
-        ]
-      });
-    }
+      ]
+    });
   };
-
-  const quickActions = [
-    {
-      title: 'Student Management',
-      description: 'Manage student records and progress',
-      icon: '👨‍🎓',
-      action: () => navigate('/educator/students'),
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Program Development',
-      description: 'Create and manage academic programs',
-      icon: '📚',
-      action: () => navigate('/educator/programs'),
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Industry Partnerships',
-      description: 'Manage employer partnerships',
-      icon: '🤝',
-      action: () => navigate('/educator/partnerships'),
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Career Services',
-      description: 'Student placement and career support',
-      icon: '💼',
-      action: () => navigate('/educator/career-services'),
-      color: 'bg-orange-500'
-    },
-    {
-      title: 'Analytics',
-      description: 'View educational outcomes',
-      icon: '📊',
-      action: () => navigate('/educator/analytics'),
-      color: 'bg-indigo-500'
-    },
-    {
-      title: 'Logout',
-      description: 'Sign out of educator portal',
-      icon: '🚪',
-      action: handleLogout,
-      color: 'bg-red-500'
-    }
-  ];
-
-  // Show loading if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <Layout>
-      {/* Educator Dashboard Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+      {/* Navigation */}
+      <HybridGovernmentNavFixed showAuthButtons={true} />
+      
+
+      
+      {/* Main Content */}
+      <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Education Portal
-              </h1>
-              <span className="ml-3 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
-                Educational Institution
-              </span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {getUserDisplayName().charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {getUserDisplayName()}
-                </span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Welcome Section */}
+          {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome, {getUserDisplayName()}!
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Monitor student progress and educational outcomes
-            </p>
-          </div>
-
-          {/* Key Educational Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <span className="text-2xl">👨‍🎓</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Students</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.students.totalStudents.toLocaleString()}</p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
+                  Educator Dashboard
+                </h1>
+                <p className="text-slate-600 font-dubai-medium">
+                  Welcome back, Dr. Fatima Al Qasimi - Computer Science & AI Education
+                </p>
               </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <span className="text-2xl">📚</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Programs</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.programs.activePrograms}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <span className="text-2xl">💼</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Employment Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.outcomes.employmentRate}%</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <span className="text-2xl">🤝</span>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Industry Partners</p>
-                  <p className="text-2xl font-bold text-gray-900">{dashboardData.programs.industryPartnerships}</p>
-                </div>
+              <div className="flex items-center space-x-3">
+                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 font-dubai-medium">
+                  Professor
+                </Badge>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
+                  AI Specialist
+                </Badge>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Student Outcomes */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Student Outcomes & Performance</h2>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Employment Rate</p>
-                        <p className="text-sm text-gray-600">Graduates employed within 6 months</p>
-                      </div>
-                      <span className="text-2xl font-bold text-green-600">{dashboardData.outcomes.employmentRate}%</span>
+          {/* Quick Actions */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-4">
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Course
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Users className="h-4 w-4 mr-2" />
+                Manage Students
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Building className="h-4 w-4 mr-2" />
+                Industry Partnerships
+              </Button>
+              <Button variant="outline" className="font-dubai-medium">
+                <Download className="h-4 w-4 mr-2" />
+                Export Reports
+              </Button>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
+              <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
+              <TabsTrigger value="students" className="font-dubai-medium">Students</TabsTrigger>
+              <TabsTrigger value="programs" className="font-dubai-medium">Programs</TabsTrigger>
+              <TabsTrigger value="research" className="font-dubai-medium">Research</TabsTrigger>
+              <TabsTrigger value="outcomes" className="font-dubai-medium">Outcomes</TabsTrigger>
+            </TabsList>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Total Students</CardTitle>
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.students.totalEnrolled}</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
+                      {dashboardData.students.activeStudents} currently active
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Programs</CardTitle>
+                    <BookOpen className="h-4 w-4 text-purple-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.programs.activePrograms}</div>
+                    <p className="text-xs text-slate-500 font-dubai-medium">
+                      {dashboardData.programs.totalPrograms} total programs
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Employment Rate</CardTitle>
+                    <Briefcase className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.outcomes.employmentRate}%</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
+                      +3% from last year
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Research Publications</CardTitle>
+                    <FileText className="h-4 w-4 text-orange-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.research.publications}</div>
+                    <p className="text-xs text-green-600 font-dubai-medium">
+                      +8 this year
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Student Outcomes */}
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Student Outcomes</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Key performance indicators for student success
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.outcomes.employmentRate}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Employment Rate</p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Average Starting Salary</p>
-                        <p className="text-sm text-gray-600">Monthly salary in AED</p>
-                      </div>
-                      <span className="text-2xl font-bold text-blue-600">{dashboardData.outcomes.averageSalary.toLocaleString()} AED</span>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-blue-600">AED {dashboardData.outcomes.averageSalary.toLocaleString()}</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Average Salary</p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Skills Match Rate</p>
-                        <p className="text-sm text-gray-600">Job-skill alignment percentage</p>
-                      </div>
-                      <span className="text-2xl font-bold text-purple-600">{dashboardData.outcomes.skillsMatchRate}%</span>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.outcomes.skillsMatchRate}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Skills Match Rate</p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900">Industry Readiness</p>
-                        <p className="text-sm text-gray-600">Employer satisfaction score</p>
-                      </div>
-                      <span className="text-2xl font-bold text-orange-600">{dashboardData.outcomes.industryReadiness}%</span>
+                    <div className="text-center p-4 bg-orange-50 rounded-lg">
+                      <div className="text-2xl font-dubai-bold text-orange-600">{dashboardData.outcomes.industryReadiness}%</div>
+                      <p className="text-sm text-slate-600 font-dubai-medium">Industry Readiness</p>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                </CardContent>
+              </Card>
 
-            {/* Quick Actions */}
-            <div>
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Quick Actions</h2>
-                </div>
-                <div className="p-6">
+              {/* Research & Industry Collaboration */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-white shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="font-dubai-bold text-slate-900">Research Activity</CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-600">
+                      Current research projects and publications
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Ongoing Projects</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.ongoingProjects}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Active Grants</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.grants}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Collaborations</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.research.collaborations}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="font-dubai-bold text-slate-900">Industry Partnerships</CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-600">
+                      Active collaborations with industry partners
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Active Partnerships</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.programs.industryPartnerships}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Certification Programs</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.programs.certificationPrograms}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-dubai-medium text-slate-600">Placement Rate</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.students.placementRate}%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent Activity */}
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Latest updates from your educational activities
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-4">
-                    {quickActions.map((action, index) => (
-                      <button
-                        key={index}
-                        onClick={action.action}
-                        className={`w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 ${
-                          action.title === 'Logout' ? 'bg-red-50 hover:bg-red-100 hover:border-red-300' : ''
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                            <span className="text-lg">{action.icon}</span>
+                    {dashboardData.activity.length > 0 ? (
+                      dashboardData.activity.map((activity) => (
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+                          <div className="flex-shrink-0">
+                            {activity.type === 'student_placement' && (
+                              <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
+                            )}
+                            {activity.type === 'industry_partnership' && (
+                              <Building className="h-5 w-5 text-blue-500 mt-1" />
+                            )}
+                            {activity.type === 'research_publication' && (
+                              <FileText className="h-5 w-5 text-purple-500 mt-1" />
+                            )}
+                            {activity.type === 'curriculum_update' && (
+                              <BookOpen className="h-5 w-5 text-orange-500 mt-1" />
+                            )}
                           </div>
-                          <div className="ml-4">
-                            <p className="font-medium text-gray-900">{action.title}</p>
-                            <p className="text-sm text-gray-600">{action.description}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-dubai-medium text-slate-900">
+                                {activity.title}
+                              </p>
+                              {activity.priority && (
+                                <Badge 
+                                  variant={activity.priority === 'high' ? 'destructive' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {activity.priority}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-600 font-dubai">
+                              {activity.description}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1 font-dubai">
+                              {new Date(activity.timestamp).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
-                      </button>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-500 font-dubai-medium">No recent activity</p>
+                    )}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              {/* Program Statistics */}
-              <div className="bg-white rounded-lg shadow mt-6">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Program Statistics</h2>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Active Students</span>
-                      <span className="text-sm font-medium text-blue-600">
-                        {dashboardData.students.activeStudents.toLocaleString()}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Graduating This Year</span>
-                      <span className="text-sm font-medium text-green-600">
-                        {dashboardData.students.graduatingStudents}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Certification Programs</span>
-                      <span className="text-sm font-medium text-purple-600">
-                        {dashboardData.programs.certificationPrograms}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Placement Rate</span>
-                      <span className="text-sm font-medium text-orange-600">
-                        {dashboardData.students.placementRate}%
-                      </span>
-                    </div>
+            {/* Students Tab */}
+            <TabsContent value="students" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Student Management</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Manage student enrollment and progress tracking
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Student Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive student tracking and progress management</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View All Students
+                    </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                  <button className="w-full mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200">
-                    View Detailed Reports
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+            {/* Programs Tab */}
+            <TabsContent value="programs" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Program Management</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Manage courses, curricula, and educational programs
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <BookOpen className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Program Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Create and manage educational programs and curricula</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Program
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* Recent Educational Activity */}
-          <div className="mt-8">
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Educational Activity</h2>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {dashboardData.activity.map((activity, index) => (
-                    <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
-                      <div className="flex-shrink-0">
-                        <div className={`w-3 h-3 rounded-full ${
-                          activity.type === 'partnership' ? 'bg-blue-500' :
-                          activity.type === 'graduation' ? 'bg-green-500' :
-                          activity.type === 'placement' ? 'bg-purple-500' :
-                          'bg-orange-500'
-                        }`}></div>
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+            {/* Research Tab */}
+            <TabsContent value="research" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Research & Publications</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Manage research projects, publications, and collaborations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <Lightbulb className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Research Management</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Track research projects, publications, and academic collaborations</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View Research Portfolio
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Outcomes Tab */}
+            <TabsContent value="outcomes" className="space-y-6">
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Student Outcomes & Analytics</CardTitle>
+                  <CardDescription className="font-dubai-medium text-slate-600">
+                    Track student success metrics and employment outcomes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Outcomes Analytics</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive analytics on student success and employment outcomes</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                      View Analytics Dashboard
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 
 export default EducatorDashboard;
-

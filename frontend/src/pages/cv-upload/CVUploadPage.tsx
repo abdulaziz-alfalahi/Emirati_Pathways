@@ -136,12 +136,12 @@ const CVUploadPage: React.FC = () => {
 
       // Call backend API for CV analysis
       const formData = new FormData();
-      formData.append('cv', cvFile.file);
+      formData.append('cv_file', cvFile.file);
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/cv/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         body: formData
       });

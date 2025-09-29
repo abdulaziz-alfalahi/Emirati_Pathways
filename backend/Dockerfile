@@ -19,6 +19,7 @@ COPY . .
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-EXPOSE 5001
+EXPOSE 5003
 
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5001"]
+# Run the fixed app entrypoint directly on port 5003
+CMD ["python", "app_fixed_v2.py"]
