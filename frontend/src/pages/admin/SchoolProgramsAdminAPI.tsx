@@ -23,6 +23,8 @@ import {
 import HybridGovernmentNavFixed from '../../components/layout/HybridGovernmentNavFixed';
 import { schoolProgramsAPIService } from '../../services/schoolProgramsServiceAPI';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+
 const SchoolProgramsAdminAPI: React.FC = () => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
   const [activeTab, setActiveTab] = useState<'overview' | 'programs' | 'workflow' | 'analytics' | 'users' | 'settings'>('overview');
@@ -65,7 +67,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         // Load schools for the dropdown (simplified - no retry to prevent issues)
         try {
           console.log('Loading schools from API...');
-          const schoolsResponse = await fetch('http://localhost:5001/api/schools');
+          const schoolsResponse = await fetch(`${API_BASE}/api/schools`);
           
           if (schoolsResponse.ok) {
             const schoolsData = await schoolsResponse.json();
@@ -174,7 +176,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
       console.log('Sending program data:', programData);
       
       // Send POST request to API
-      const response = await fetch('http://localhost:5001/api/school-programs', {
+      const response = await fetch(`${API_BASE}/api/school-programs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
