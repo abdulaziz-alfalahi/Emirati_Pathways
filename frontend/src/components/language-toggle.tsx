@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { Languages } from "lucide-react";
-import { useLanguage } from "@/context/LanguageContext";
+import { useLanguage } from "@/context/EnhancedLanguageContext";
 import { useTranslation } from 'react-i18next';
 
 import { Button } from "@/components/ui/button";
