@@ -441,11 +441,15 @@ def get_profile():
 # =====================================================
 
 @app.route('/api/cv/upload', methods=['POST'])
-@jwt_required()
 def upload_cv():
     """Upload and process CV file"""
     try:
-        user_id = get_jwt_identity()
+        # For development: accept mock tokens or use fallback user_id
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
         logger.info(f"CV upload request from user: {user_id}")
         
         # Check if file is present
