@@ -67,7 +67,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
         // Load schools for the dropdown (simplified - no retry to prevent issues)
         try {
           console.log('Loading schools from API...');
-          const schoolsResponse = await fetch(`${API_BASE}/api/schools`);
+          const schoolsResponse = await fetch('${API_BASE}/api/schools');
           
           if (schoolsResponse.ok) {
             const schoolsData = await schoolsResponse.json();
@@ -176,7 +176,7 @@ const SchoolProgramsAdminAPI: React.FC = () => {
       console.log('Sending program data:', programData);
       
       // Send POST request to API
-      const response = await fetch(`${API_BASE}/api/school-programs`, {
+      const response = await fetch(API_BASE + '/api/school-programs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1000,3 +1000,6 @@ const SchoolProgramsAdminAPI: React.FC = () => {
 };
 
 export default SchoolProgramsAdminAPI;
+
+
+

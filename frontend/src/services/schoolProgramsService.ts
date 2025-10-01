@@ -10,7 +10,7 @@ import {
   ProgramCategory 
 } from '../types/schoolPrograms';
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'}/api`;
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://localhost:5003/api');
 
 // Mock data for Dubai school programs
 const mockPrograms: SchoolProgram[] = [
@@ -749,3 +749,4 @@ export class SchoolProgramsService {
 }
 
 export const schoolProgramsService = SchoolProgramsService.getInstance();
+
