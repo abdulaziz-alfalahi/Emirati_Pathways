@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 // Production Parser API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
 
 // Enhanced interfaces matching your production parser output
 interface ProductionParserContactInfo {
@@ -169,10 +169,13 @@ const mapProductionParserToCVContext = (parsedData: ProductionParserResponse): P
 // Production parser API call
 const callProductionParser = async (file: File): Promise<ProductionParserResponse> => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('cv_file', file);
 
-  const response = await fetch(`${API_BASE_URL}/parse_resume`, {
+  const response = await fetch(`${API_BASE_URL}/api/cv/upload`, {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+    },
     body: formData,
   });
 
@@ -206,9 +209,9 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Allow upload even without existing CV - we'll create one from the parsed data
     if (!currentCV?.id) {
-      toast.error('Open or create a CV first before uploading.');
-      return;
+      console.log('No existing CV found, will create new one from uploaded data');
     }
 
     // Enhanced file validation
