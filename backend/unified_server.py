@@ -287,16 +287,28 @@ def extract_text_from_docx(file_stream):
 
 def extract_text_from_file(file):
     """Extract text from uploaded file based on type"""
-    file_stream = io.BytesIO(file.read())
-    file.seek(0)  # Reset file pointer
-    
-    if file.content_type == 'application/pdf':
-        return extract_text_from_pdf(file_stream)
-    elif file.content_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']:
-        return extract_text_from_docx(file_stream)
-    elif file.content_type == 'text/plain':
-        return file_stream.read().decode('utf-8')
-    else:
+    try:
+        # Read file content into memory
+        file_content = file.read()
+        file.seek(0)  # Reset file pointer for saving
+        
+        if not file_content:
+            logger.error("File is empty or could not be read")
+            return ""
+        
+        file_stream = io.BytesIO(file_content)
+        
+        if file.content_type == 'application/pdf':
+            return extract_text_from_pdf(file_stream)
+        elif file.content_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']:
+            return extract_text_from_docx(file_stream)
+        elif file.content_type == 'text/plain':
+            return file_content.decode('utf-8')
+        else:
+            logger.warning(f"Unsupported file type: {file.content_type}")
+            return ""
+    except Exception as e:
+        logger.error(f"Error in extract_text_from_file: {e}")
         return ""
 
 def parse_cv_with_gemini(cv_text: str) -> dict:
@@ -653,6 +665,12 @@ def upload_cv():
         # Extract text from the uploaded file
         cv_text = extract_text_from_file(file)
         logger.info(f"Extracted {len(cv_text)} characters from CV")
+        
+        # Debug: log first 200 characters if extraction worked
+        if cv_text:
+            logger.info(f"CV text preview: {cv_text[:200]}...")
+        else:
+            logger.warning("No text extracted from CV file")
         
         # Parse CV with Gemini AI
         gemini_analysis = parse_cv_with_gemini(cv_text) if cv_text else None
