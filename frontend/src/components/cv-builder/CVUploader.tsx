@@ -169,13 +169,10 @@ const mapProductionParserToCVContext = (parsedData: ProductionParserResponse): P
 // Production parser API call
 const callProductionParser = async (file: File): Promise<ProductionParserResponse> => {
   const formData = new FormData();
-  formData.append('cv_file', file);
+  formData.append('file', file);
 
   const response = await fetch(`${API_BASE_URL}/api/cv/upload`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-    },
     body: formData,
   });
 
@@ -209,10 +206,7 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Allow upload even without existing CV - we'll create one from the parsed data
-    if (!currentCV?.id) {
-      console.log('No existing CV found, will create new one from uploaded data');
-    }
+    
 
     // Enhanced file validation
     if (file.size > 10 * 1024 * 1024) {
@@ -545,3 +539,4 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
 };
 
 export default CVUploader;
+

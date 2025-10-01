@@ -120,20 +120,15 @@ const CVUploadParser: React.FC<CVUploadParserProps> = ({ onParsedData, className
       // Parsing progress simulation
       const progressPromise = simulateProgress(setParseProgress, 8000);
 
-      // Call unified server API
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      const apiUrl = `${apiBase}/api/cv/upload`;
+      // Call your API (kept generic)
+      const apiUrl = includeTranslation
+        ? `/api/cv/upload?translate_to=${targetLanguage}`
+        : '/api/cv/upload';
 
       const formData = new FormData();
-      formData.append('cv_file', file);
+      formData.append('file', file);
 
-      const response = await fetch(apiUrl, { 
-        method: 'POST', 
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: formData 
-      });
+      const response = await fetch(apiUrl, { method: 'POST', body: formData });
 
       await progressPromise;
 
@@ -440,3 +435,4 @@ const CVUploadParser: React.FC<CVUploadParserProps> = ({ onParsedData, className
 };
 
 export default CVUploadParser;
+
