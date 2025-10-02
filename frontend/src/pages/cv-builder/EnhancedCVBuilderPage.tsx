@@ -34,6 +34,8 @@ import {
   Shield
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { CVProvider, useCV } from '@/context/CVContext';
+import CVBuilderWizard from '@/components/cv-builder/CVBuilderWizard';
 
 interface CVData {
   personalInfo?: {
@@ -68,8 +70,9 @@ interface CVData {
   };
 }
 
-const EnhancedCVBuilderPage: React.FC = () => {
+const CVBuilderContent: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { createCV, updateCV, currentCV } = useCV();
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>(i18n.language as 'en' | 'ar');
   const [activeStep, setActiveStep] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -112,6 +115,52 @@ const EnhancedCVBuilderPage: React.FC = () => {
     }
   }, []);
 
+  const autoFillCVForm = async (analysisData: CVData) => {
+    try {
+      // Create a new CV if none exists
+      if (!currentCV) {
+        await createCV('modern-template', 'en');
+      }
+
+      // Transform Gemini analysis to CV context format
+      const cvUpdates = {
+        personalInfo: {
+          firstName: analysisData.personalInfo?.name?.split(' ')[0] || '',
+          lastName: analysisData.personalInfo?.name?.split(' ').slice(1).join(' ') || '',
+          email: analysisData.personalInfo?.email || '',
+          phone: analysisData.personalInfo?.phone || '',
+          city: analysisData.personalInfo?.location?.split(',')[0] || '',
+          country: analysisData.personalInfo?.location?.includes('UAE') ? 'UAE' : '',
+          nationality: analysisData.personalInfo?.nationality || 'UAE'
+        },
+        professionalSummary: analysisData.professional_summary || '',
+        skills: [
+          ...(analysisData.skills?.technical?.map((skill, index) => ({
+            id: `tech-${index}`,
+            name: skill,
+            level: 'Advanced',
+            category: 'Technical'
+          })) || []),
+          ...(analysisData.skills?.soft?.map((skill, index) => ({
+            id: `soft-${index}`,
+            name: skill,
+            level: 'Advanced', 
+            category: 'Soft'
+          })) || [])
+        ]
+      };
+
+      // Update the CV with extracted data
+      if (currentCV?.id) {
+        await updateCV(currentCV.id, cvUpdates);
+        console.log('✅ CV form auto-filled with extracted data');
+      }
+
+    } catch (error) {
+      console.error('Auto-fill error:', error);
+    }
+  };
+
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     setUploadProgress(0);
@@ -147,7 +196,12 @@ const EnhancedCVBuilderPage: React.FC = () => {
       }
 
       const result = await response.json();
-      setCvData(result.data.analysis);
+      const analysisData = result.data.analysis;
+      setCvData(analysisData);
+      
+      // Auto-fill CV builder form with extracted data
+      await autoFillCVForm(analysisData);
+      
       setActiveStep(1); // Move to template selection
 
     } catch (error) {
@@ -203,8 +257,51 @@ const EnhancedCVBuilderPage: React.FC = () => {
       {/* Main Content */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Upload Area */}
-          <div className="space-y-8">
+          
+          {/* Step 1: CV Builder Form with Auto-filled Data */}
+          {activeStep === 1 && cvData && (
+            <div className="space-y-8">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                  {currentLanguage === 'en' ? 'CV Builder - Auto-filled' : 'منشئ السيرة الذاتية - مملوء تلقائياً'}
+                </h2>
+                <p className="text-xl text-gray-600">
+                  {currentLanguage === 'en' 
+                    ? 'Your CV data has been automatically extracted and filled. Review and customize as needed.'
+                    : 'تم استخراج بيانات سيرتك الذاتية وملؤها تلقائياً. راجع وخصص حسب الحاجة.'
+                  }
+                </p>
+              </div>
+
+              {/* CV Builder Wizard with Auto-filled Data */}
+              <div className="bg-white rounded-xl shadow-lg border p-8">
+                <CVBuilderWizard />
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setActiveStep(0)}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  {currentLanguage === 'en' ? 'Back to Upload' : 'العودة للرفع'}
+                </button>
+                <button
+                  onClick={() => setActiveStep(2)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+                >
+                  {currentLanguage === 'en' ? 'Preview & Export' : 'معاينة وتصدير'}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 0: Upload (default) */}
+          {activeStep === 0 && (
+            <div className="space-y-8">
+              {/* Upload Area */}
             <div
               className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
                 isDragOver
@@ -440,15 +537,30 @@ const EnhancedCVBuilderPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Next Step Button */}
-                <div className="text-center mt-8">
-                  <button
-                    onClick={() => setActiveStep(1)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center mx-auto"
-                  >
-                    {currentLanguage === 'en' ? 'Choose Template' : 'اختر القالب'}
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </button>
+                {/* Action Buttons */}
+                <div className="text-center mt-8 space-y-4">
+                  <div className="flex justify-center space-x-4">
+                    <button
+                      onClick={() => setActiveStep(1)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center"
+                    >
+                      {currentLanguage === 'en' ? 'Build CV with This Data' : 'أنشئ السيرة الذاتية بهذه البيانات'}
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </button>
+                    <button
+                      onClick={() => window.open('/cv-builder-wizard', '_blank')}
+                      className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center"
+                    >
+                      {currentLanguage === 'en' ? 'Open CV Builder' : 'افتح منشئ السيرة الذاتية'}
+                      <Edit3 className="w-5 h-5 ml-2" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {currentLanguage === 'en' 
+                      ? 'Your data has been extracted and is ready to auto-fill the CV builder form'
+                      : 'تم استخراج بياناتك وهي جاهزة لملء نموذج منشئ السيرة الذاتية تلقائياً'
+                    }
+                  </p>
                 </div>
               </div>
             )}
@@ -540,6 +652,15 @@ const EnhancedCVBuilderPage: React.FC = () => {
         </div>
       </section>
     </div>
+  );
+};
+
+// Wrapper component with CVProvider
+const EnhancedCVBuilderPage: React.FC = () => {
+  return (
+    <CVProvider>
+      <CVBuilderContent />
+    </CVProvider>
   );
 };
 
