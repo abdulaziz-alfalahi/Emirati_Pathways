@@ -26,6 +26,7 @@ import google.generativeai as genai
 import PyPDF2
 from docx import Document
 import io
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -264,13 +265,28 @@ def ensure_fallback_schools_exist():
 def extract_text_from_pdf(file_stream):
     """Extract text from PDF file"""
     try:
+        # Reset stream position
+        file_stream.seek(0)
         pdf_reader = PyPDF2.PdfReader(file_stream)
+        
+        if len(pdf_reader.pages) == 0:
+            logger.error("PDF has no pages")
+            return ""
+        
         text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
-        return text.strip()
+        for i, page in enumerate(pdf_reader.pages):
+            page_text = page.extract_text()
+            text += page_text + "\n"
+            logger.debug(f"Page {i+1}: extracted {len(page_text)} characters")
+        
+        extracted_text = text.strip()
+        logger.info(f"PDF extraction complete: {len(extracted_text)} total characters from {len(pdf_reader.pages)} pages")
+        return extracted_text
+        
     except Exception as e:
         logger.error(f"Error extracting PDF text: {e}")
+        import traceback
+        logger.error(f"PDF extraction traceback: {traceback.format_exc()}")
         return ""
 
 def extract_text_from_docx(file_stream):
@@ -653,7 +669,12 @@ def upload_cv():
                 'message': f'File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB.'
             }), 400
         
-        # Save file
+        # Extract text from file BEFORE saving (to avoid file pointer issues)
+        logger.info(f"File details: name={file.filename}, type={file.content_type}, size={file.content_length}")
+        cv_text = extract_text_from_file(file)
+        logger.info(f"Extracted {len(cv_text)} characters from CV")
+        
+        # Save file after text extraction
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_filename = f"{user_id}_{timestamp}_{filename}"
@@ -661,10 +682,6 @@ def upload_cv():
         
         file.save(str(file_path))
         logger.info(f"File saved: {file_path}")
-        
-        # Extract text from the uploaded file
-        cv_text = extract_text_from_file(file)
-        logger.info(f"Extracted {len(cv_text)} characters from CV")
         
         # Debug: log first 200 characters if extraction worked
         if cv_text:
