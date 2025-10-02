@@ -503,6 +503,17 @@ const AutoFillCVBuilder: React.FC = () => {
         <p className="text-xl text-gray-600">
           Review and customize the auto-filled information from your CV
         </p>
+        <div className="mt-4">
+          <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+            📄 Selected Template: {selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          </span>
+          <button
+            onClick={() => setCurrentStep('template')}
+            className="ml-4 text-blue-600 hover:text-blue-800 text-sm underline"
+          >
+            Change Template
+          </button>
+        </div>
       </div>
 
       {/* Personal Information Form */}
@@ -838,109 +849,20 @@ const AutoFillCVBuilder: React.FC = () => {
     <div className="space-y-8">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          CV Preview
+          CV Preview - {selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Template
         </h2>
         <p className="text-xl text-gray-600">
-          Preview your professional CV before downloading
+          Preview your professional CV with the selected template styling
         </p>
       </div>
 
-      {/* CV Preview */}
-      <div className="bg-white rounded-xl shadow-lg border p-8 max-w-4xl mx-auto">
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="text-center border-b pb-6">
-            <h1 className="text-3xl font-bold text-gray-900">
-              {formData.personalInfo.firstName} {formData.personalInfo.lastName}
-            </h1>
-            <div className="flex justify-center space-x-4 mt-2 text-gray-600">
-              <span className="flex items-center">
-                <Mail className="w-4 h-4 mr-1" />
-                {formData.personalInfo.email}
-              </span>
-              <span className="flex items-center">
-                <Phone className="w-4 h-4 mr-1" />
-                {formData.personalInfo.phone}
-              </span>
-              <span className="flex items-center">
-                <MapPin className="w-4 h-4 mr-1" />
-                {formData.personalInfo.location}
-              </span>
-            </div>
-          </div>
-
-          {/* Professional Summary */}
-          {formData.professionalSummary && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Professional Summary</h2>
-              <p className="text-gray-700">{formData.professionalSummary}</p>
-            </div>
-          )}
-
-          {/* Skills */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">Skills</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-medium text-gray-800 mb-2">Technical Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {formData.technicalSkills.map((skill, index) => (
-                    <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800 mb-2">Soft Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {formData.softSkills.map((skill, index) => (
-                    <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Work Experience */}
-          {formData.experience.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Work Experience</h2>
-              <div className="space-y-4">
-                {formData.experience.map((exp, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-4">
-                    <h3 className="font-semibold text-gray-900">{exp.jobTitle}</h3>
-                    <p className="text-gray-700 font-medium">{exp.company}</p>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {exp.startDate} - {exp.endDate} • {exp.location}
-                    </p>
-                    <p className="text-gray-700 text-sm">{exp.responsibilities}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Education */}
-          {formData.education.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-3">Education</h2>
-              <div className="space-y-4">
-                {formData.education.map((edu, index) => (
-                  <div key={index} className="border-l-4 border-green-500 pl-4">
-                    <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
-                    <p className="text-gray-700 font-medium">{edu.institution}</p>
-                    <p className="text-sm text-gray-600">
-                      {edu.field} • Graduated: {edu.graduationYear}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Full-size CV Preview with Selected Template */}
+      <div className="max-w-4xl mx-auto">
+        <TemplatePreview 
+          templateId={selectedTemplate} 
+          cvData={formData}
+          className="transform scale-100 w-full"
+        />
       </div>
 
       {/* Action Buttons */}
