@@ -222,14 +222,19 @@ const AutoFillCVBuilder: React.FC = () => {
       }
 
       const result = await response.json();
+      console.log('📥 Received CV analysis result:', result);
+      
       const analysisData = result.data.analysis;
+      console.log('📊 Analysis data to auto-fill:', analysisData);
+      
       setCvData(analysisData);
       
       // Auto-fill the form with extracted data
-      autoFillForm(analysisData);
-      
-      // Move to form step
-      setCurrentStep('form');
+      setTimeout(() => {
+        autoFillForm(analysisData);
+        // Move to form step after auto-fill
+        setCurrentStep('form');
+      }, 500); // Small delay to ensure state updates
 
     } catch (error) {
       console.error('CV upload error:', error);
@@ -382,6 +387,10 @@ const AutoFillCVBuilder: React.FC = () => {
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <User className="w-5 h-5 mr-2 text-blue-600" />
           Personal Information
+          {/* Debug info */}
+          <span className="ml-4 text-sm text-gray-500">
+            (Auto-filled: {formData.personalInfo.firstName ? 'Yes' : 'No'})
+          </span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
