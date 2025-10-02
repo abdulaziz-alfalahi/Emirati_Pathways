@@ -501,6 +501,8 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
         
         # Get template-specific styles
         template_config = get_template_styles(template_style)
+        logger.info(f"🎨 Generating PDF with template: {template_style}")
+        logger.info(f"🎨 Template config: {template_config}")
         styles = getSampleStyleSheet()
         
         # Custom styles based on template
@@ -510,7 +512,8 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
             fontSize=template_config['font_size_title'],
             spaceAfter=12,
             alignment=TA_CENTER,
-            textColor=colors.HexColor(template_config['primary_color'])
+            textColor=colors.HexColor(template_config['primary_color']),
+            fontName='Helvetica-Bold'
         )
         
         heading_style = ParagraphStyle(
@@ -519,7 +522,17 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
             fontSize=template_config['font_size_heading'],
             spaceAfter=6,
             spaceBefore=12,
-            textColor=colors.HexColor(template_config['secondary_color'])
+            textColor=colors.HexColor(template_config['secondary_color']),
+            fontName='Helvetica-Bold'
+        )
+        
+        # Add accent style for highlights
+        accent_style = ParagraphStyle(
+            'AccentStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(template_config['accent_color']),
+            fontName='Helvetica-Bold'
         )
         
         body_style = ParagraphStyle(
@@ -538,7 +551,7 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
         name = f"{personal_info.get('firstName', '')} {personal_info.get('lastName', '')}"
         content.append(Paragraph(name, title_style))
         
-        # Contact information
+        # Contact information with template-specific styling
         contact_info = []
         if personal_info.get('email'):
             contact_info.append(f"📧 {personal_info['email']}")
@@ -548,7 +561,13 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
             contact_info.append(f"📍 {personal_info['location']}")
             
         if contact_info:
-            content.append(Paragraph(" • ".join(contact_info), body_style))
+            contact_style = ParagraphStyle(
+                'ContactStyle',
+                parent=body_style,
+                alignment=TA_CENTER,
+                textColor=colors.HexColor(template_config['secondary_color'])
+            )
+            content.append(Paragraph(" • ".join(contact_info), contact_style))
         
         content.append(Spacer(1, 12))
         
@@ -572,17 +591,34 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
             content.append(Paragraph(skills_text, body_style))
             content.append(Spacer(1, 12))
         
-        # Work Experience
+        # Work Experience with template-specific styling
         if cv_data.get('experience'):
             content.append(Paragraph("WORK EXPERIENCE", heading_style))
             for exp in cv_data['experience']:
-                # Job title and company
-                job_header = f"<b>{exp.get('jobTitle', '')}</b> at {exp.get('company', '')}"
-                content.append(Paragraph(job_header, body_style))
+                # Job title and company with accent color
+                job_title_style = ParagraphStyle(
+                    'JobTitleStyle',
+                    parent=body_style,
+                    fontSize=12,
+                    textColor=colors.HexColor(template_config['primary_color']),
+                    fontName='Helvetica-Bold'
+                )
+                job_header = f"<b>{exp.get('jobTitle', '')}</b>"
+                content.append(Paragraph(job_header, job_title_style))
                 
-                # Dates and location
+                # Company with secondary color
+                company_style = ParagraphStyle(
+                    'CompanyStyle',
+                    parent=body_style,
+                    fontSize=11,
+                    textColor=colors.HexColor(template_config['secondary_color']),
+                    fontName='Helvetica-Bold'
+                )
+                content.append(Paragraph(exp.get('company', ''), company_style))
+                
+                # Dates and location with accent color
                 date_location = f"{exp.get('startDate', '')} - {exp.get('endDate', '')} • {exp.get('location', '')}"
-                content.append(Paragraph(date_location, body_style))
+                content.append(Paragraph(date_location, accent_style))
                 
                 # Responsibilities
                 if exp.get('responsibilities'):
@@ -590,17 +626,33 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
                 
                 content.append(Spacer(1, 8))
         
-        # Education
+        # Education with template-specific styling
         if cv_data.get('education'):
             content.append(Paragraph("EDUCATION", heading_style))
             for edu in cv_data['education']:
-                # Degree and institution
-                edu_header = f"<b>{edu.get('degree', '')}</b> - {edu.get('institution', '')}"
-                content.append(Paragraph(edu_header, body_style))
+                # Degree with primary color
+                degree_style = ParagraphStyle(
+                    'DegreeStyle',
+                    parent=body_style,
+                    fontSize=12,
+                    textColor=colors.HexColor(template_config['primary_color']),
+                    fontName='Helvetica-Bold'
+                )
+                content.append(Paragraph(f"<b>{edu.get('degree', '')}</b>", degree_style))
                 
-                # Field and year
+                # Institution with secondary color
+                institution_style = ParagraphStyle(
+                    'InstitutionStyle',
+                    parent=body_style,
+                    fontSize=11,
+                    textColor=colors.HexColor(template_config['secondary_color']),
+                    fontName='Helvetica-Bold'
+                )
+                content.append(Paragraph(edu.get('institution', ''), institution_style))
+                
+                # Field and year with accent color
                 field_year = f"{edu.get('field', '')} • Graduated: {edu.get('graduationYear', '')}"
-                content.append(Paragraph(field_year, body_style))
+                content.append(Paragraph(field_year, accent_style))
                 content.append(Spacer(1, 8))
         
         # Build PDF
