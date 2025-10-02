@@ -148,11 +148,13 @@ const AutoFillCVBuilder: React.FC = () => {
   }, []);
 
   const autoFillForm = (analysisData: CVData) => {
+    console.log('🔄 Auto-filling form with analysis data:', analysisData);
+    
     const nameParts = analysisData.personalInfo?.name?.split(' ') || ['', ''];
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    setFormData({
+    const newFormData = {
       personalInfo: {
         firstName,
         lastName,
@@ -178,8 +180,10 @@ const AutoFillCVBuilder: React.FC = () => {
         graduationYear: edu.graduation_year || '',
         field: edu.field || ''
       })) || []
-    });
+    };
 
+    console.log('📝 Setting form data:', newFormData);
+    setFormData(newFormData);
     console.log('✅ Form auto-filled with extracted CV data');
   };
 
