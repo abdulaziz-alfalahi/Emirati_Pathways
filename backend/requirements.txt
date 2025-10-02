@@ -39,6 +39,8 @@ PyPDF2==3.0.1
 python-docx==1.1.0
 openpyxl==3.1.2
 Pillow==10.2.0
+reportlab==4.0.9
+weasyprint==61.2
 
 # Security
 cryptography==42.0.4

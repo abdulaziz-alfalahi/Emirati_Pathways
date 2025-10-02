@@ -27,6 +27,13 @@ import PyPDF2
 from docx import Document
 import io
 import traceback
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from flask import send_file
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -436,6 +443,138 @@ Return only the JSON object, no additional text.
         logger.error(f"Gemini CV parsing error: {e}")
         return None
 
+# =====================================================
+# PDF GENERATION UTILITIES
+# =====================================================
+
+def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
+    """Generate PDF from CV data using ReportLab"""
+    try:
+        # Create PDF file path
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        pdf_filename = f"cv_{timestamp}.pdf"
+        pdf_path = UPLOAD_FOLDER / pdf_filename
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, 
+                               rightMargin=72, leftMargin=72, 
+                               topMargin=72, bottomMargin=18)
+        
+        # Get styles
+        styles = getSampleStyleSheet()
+        
+        # Custom styles for UAE CV
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=12,
+            alignment=TA_CENTER,
+            textColor=colors.HexColor('#1e40af')  # Blue color
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            spaceAfter=6,
+            spaceBefore=12,
+            textColor=colors.HexColor('#374151')  # Gray color
+        )
+        
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=6,
+            alignment=TA_LEFT
+        )
+        
+        # Build PDF content
+        content = []
+        
+        # Header - Personal Information
+        personal_info = cv_data.get('personalInfo', {})
+        name = f"{personal_info.get('firstName', '')} {personal_info.get('lastName', '')}"
+        content.append(Paragraph(name, title_style))
+        
+        # Contact information
+        contact_info = []
+        if personal_info.get('email'):
+            contact_info.append(f"📧 {personal_info['email']}")
+        if personal_info.get('phone'):
+            contact_info.append(f"📱 {personal_info['phone']}")
+        if personal_info.get('location'):
+            contact_info.append(f"📍 {personal_info['location']}")
+            
+        if contact_info:
+            content.append(Paragraph(" • ".join(contact_info), body_style))
+        
+        content.append(Spacer(1, 12))
+        
+        # Professional Summary
+        if cv_data.get('professionalSummary'):
+            content.append(Paragraph("PROFESSIONAL SUMMARY", heading_style))
+            content.append(Paragraph(cv_data['professionalSummary'], body_style))
+            content.append(Spacer(1, 12))
+        
+        # Technical Skills
+        if cv_data.get('technicalSkills'):
+            content.append(Paragraph("TECHNICAL SKILLS", heading_style))
+            skills_text = " • ".join(cv_data['technicalSkills'])
+            content.append(Paragraph(skills_text, body_style))
+            content.append(Spacer(1, 12))
+        
+        # Soft Skills
+        if cv_data.get('softSkills'):
+            content.append(Paragraph("SOFT SKILLS", heading_style))
+            skills_text = " • ".join(cv_data['softSkills'])
+            content.append(Paragraph(skills_text, body_style))
+            content.append(Spacer(1, 12))
+        
+        # Work Experience
+        if cv_data.get('experience'):
+            content.append(Paragraph("WORK EXPERIENCE", heading_style))
+            for exp in cv_data['experience']:
+                # Job title and company
+                job_header = f"<b>{exp.get('jobTitle', '')}</b> at {exp.get('company', '')}"
+                content.append(Paragraph(job_header, body_style))
+                
+                # Dates and location
+                date_location = f"{exp.get('startDate', '')} - {exp.get('endDate', '')} • {exp.get('location', '')}"
+                content.append(Paragraph(date_location, body_style))
+                
+                # Responsibilities
+                if exp.get('responsibilities'):
+                    content.append(Paragraph(exp['responsibilities'], body_style))
+                
+                content.append(Spacer(1, 8))
+        
+        # Education
+        if cv_data.get('education'):
+            content.append(Paragraph("EDUCATION", heading_style))
+            for edu in cv_data['education']:
+                # Degree and institution
+                edu_header = f"<b>{edu.get('degree', '')}</b> - {edu.get('institution', '')}"
+                content.append(Paragraph(edu_header, body_style))
+                
+                # Field and year
+                field_year = f"{edu.get('field', '')} • Graduated: {edu.get('graduationYear', '')}"
+                content.append(Paragraph(field_year, body_style))
+                content.append(Spacer(1, 8))
+        
+        # Build PDF
+        doc.build(content)
+        
+        logger.info(f"✅ PDF generated successfully: {pdf_path}")
+        return pdf_filename
+        
+    except Exception as e:
+        logger.error(f"PDF generation error: {e}")
+        import traceback
+        logger.error(f"PDF generation traceback: {traceback.format_exc()}")
+        return None
+
 # Initialize default providers
 def initialize_default_providers():
     """Initialize default provider configurations."""
@@ -815,6 +954,83 @@ def list_cvs():
             'success': False,
             'message': 'Failed to retrieve CVs'
         }), 500
+
+@app.route('/api/cv/export', methods=['POST'])
+def export_cv():
+    """Export CV as PDF"""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No CV data provided'
+            }), 400
+        
+        cv_data = data.get('cvData')
+        template_style = data.get('template', 'professional')
+        
+        if not cv_data:
+            return jsonify({
+                'success': False,
+                'message': 'CV data is required'
+            }), 400
+        
+        # Generate PDF
+        pdf_filename = generate_cv_pdf(cv_data, template_style)
+        
+        if not pdf_filename:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to generate PDF'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'message': 'CV exported successfully',
+            'data': {
+                'filename': pdf_filename,
+                'download_url': f'/api/cv/download/{pdf_filename}',
+                'generated_at': datetime.now().isoformat()
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"CV export error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Export failed due to system error'
+        }), 500
+
+@app.route('/api/cv/download/<filename>', methods=['GET'])
+def download_cv(filename: str):
+    """Download generated CV PDF"""
+    try:
+        # Security: validate filename
+        if not filename.endswith('.pdf') or '..' in filename:
+            return jsonify({'error': 'Invalid filename'}), 400
+        
+        file_path = UPLOAD_FOLDER / filename
+        
+        if not file_path.exists():
+            return jsonify({'error': 'File not found'}), 404
+        
+        return send_file(
+            str(file_path),
+            as_attachment=True,
+            download_name=f"CV_{filename}",
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        logger.error(f"CV download error: {str(e)}")
+        return jsonify({'error': 'Download failed'}), 500
 
 # =====================================================
 # SCHOOL PROGRAMS ROUTES

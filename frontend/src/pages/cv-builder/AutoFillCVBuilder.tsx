@@ -113,6 +113,7 @@ const AutoFillCVBuilder: React.FC = () => {
     education: []
   });
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLanguageToggle = () => {
@@ -185,6 +186,46 @@ const AutoFillCVBuilder: React.FC = () => {
     console.log('📝 Setting form data:', newFormData);
     setFormData(newFormData);
     console.log('✅ Form auto-filled with extracted CV data');
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'}/api/cv/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({
+          cvData: formData,
+          template: 'professional'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data.download_url) {
+        // Download the PDF
+        const downloadUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'}${result.data.download_url}`;
+        window.open(downloadUrl, '_blank');
+        
+        console.log('✅ CV exported and downloaded successfully');
+      } else {
+        throw new Error(result.message || 'Export failed');
+      }
+
+    } catch (error) {
+      console.error('CV export error:', error);
+      alert('Failed to export CV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -902,10 +943,21 @@ const AutoFillCVBuilder: React.FC = () => {
           Edit CV
         </button>
         <button
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+          onClick={handleExportPDF}
+          disabled={isExporting}
+          className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
         >
-          <Save className="w-4 h-4 mr-2" />
-          Download PDF
+          {isExporting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Generating PDF...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Download PDF
+            </>
+          )}
         </button>
       </div>
     </div>
