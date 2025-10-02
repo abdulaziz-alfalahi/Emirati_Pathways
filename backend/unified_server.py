@@ -272,7 +272,7 @@ def ensure_fallback_schools_exist():
 # =====================================================
 
 def extract_text_from_pdf(file_stream):
-    """Extract text from PDF file"""
+    """Extract text from PDF file with improved encoding handling"""
     try:
         # Reset stream position
         file_stream.seek(0)
@@ -284,9 +284,20 @@ def extract_text_from_pdf(file_stream):
         
         text = ""
         for i, page in enumerate(pdf_reader.pages):
-            page_text = page.extract_text()
-            text += page_text + "\n"
-            logger.debug(f"Page {i+1}: extracted {len(page_text)} characters")
+            try:
+                # Try different extraction methods for better encoding
+                page_text = page.extract_text()
+                
+                # Clean up common encoding issues
+                if page_text:
+                    # Fix common encoding problems
+                    page_text = fix_encoding_issues(page_text)
+                    text += page_text + "\n"
+                    logger.debug(f"Page {i+1}: extracted {len(page_text)} characters")
+                
+            except Exception as page_error:
+                logger.warning(f"Error extracting page {i+1}: {page_error}")
+                continue
         
         extracted_text = text.strip()
         logger.info(f"PDF extraction complete: {len(extracted_text)} total characters from {len(pdf_reader.pages)} pages")
@@ -297,6 +308,49 @@ def extract_text_from_pdf(file_stream):
         import traceback
         logger.error(f"PDF extraction traceback: {traceback.format_exc()}")
         return ""
+
+def fix_encoding_issues(text):
+    """Fix common PDF encoding issues and strange characters"""
+    if not text:
+        return text
+    
+    # Common encoding fixes
+    encoding_fixes = {
+        # Fix common PDF encoding issues
+        'Ø=Üç': '',  # Remove these strange character sequences
+        'Ø=Üñ': '',
+        'Ø=ÜÍ': '',
+        'Ø=Ü': '',
+        'Üç': '',
+        'Üñ': '',
+        'ÜÍ': '',
+        # Fix bullet points and symbols
+        '•': '•',
+        '–': '-',
+        '—': '-',
+        # Fix quotes
+        '"': '"',
+        '"': '"',
+        ''': "'",
+        ''': "'",
+        # Fix common Arabic/English mixed encoding issues
+        'Ø': '',
+        'Ü': '',
+        'ç': '',
+        'ñ': '',
+        'Í': '',
+    }
+    
+    # Apply fixes
+    for old_char, new_char in encoding_fixes.items():
+        text = text.replace(old_char, new_char)
+    
+    # Clean up multiple spaces and newlines
+    import re
+    text = re.sub(r'\s+', ' ', text)  # Replace multiple whitespace with single space
+    text = re.sub(r'\n\s*\n', '\n', text)  # Remove empty lines
+    
+    return text.strip()
 
 def extract_text_from_docx(file_stream):
     """Extract text from DOCX file"""
