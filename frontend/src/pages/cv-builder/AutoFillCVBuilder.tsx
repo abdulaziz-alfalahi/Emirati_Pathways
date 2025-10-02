@@ -853,6 +853,43 @@ const AutoFillCVBuilder: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Work Experience */}
+          {formData.experience.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">Work Experience</h2>
+              <div className="space-y-4">
+                {formData.experience.map((exp, index) => (
+                  <div key={index} className="border-l-4 border-blue-500 pl-4">
+                    <h3 className="font-semibold text-gray-900">{exp.jobTitle}</h3>
+                    <p className="text-gray-700 font-medium">{exp.company}</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {exp.startDate} - {exp.endDate} • {exp.location}
+                    </p>
+                    <p className="text-gray-700 text-sm">{exp.responsibilities}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Education */}
+          {formData.education.length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-3">Education</h2>
+              <div className="space-y-4">
+                {formData.education.map((edu, index) => (
+                  <div key={index} className="border-l-4 border-green-500 pl-4">
+                    <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
+                    <p className="text-gray-700 font-medium">{edu.institution}</p>
+                    <p className="text-sm text-gray-600">
+                      {edu.field} • Graduated: {edu.graduationYear}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
