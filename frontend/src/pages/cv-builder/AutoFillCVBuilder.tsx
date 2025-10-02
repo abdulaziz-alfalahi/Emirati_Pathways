@@ -196,51 +196,140 @@ const AutoFillCVBuilder: React.FC = () => {
     setIsExporting(true);
     
     try {
-      // Create a temporary div with the CV content
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.width = '210mm'; // A4 width
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.style.padding = '20px';
-      
-      // Generate template-specific HTML
-      const html = generatePrintableHTML(formData, selectedTemplate);
-      tempDiv.innerHTML = html;
-      
-      document.body.appendChild(tempDiv);
-      
-      // Wait for content to render
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Convert to canvas
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      // Remove temporary div
-      document.body.removeChild(tempDiv);
-      
-      // Create PDF
+      // Create PDF using jsPDF with text-based approach for better multi-page support
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
       
-      // Add image to PDF
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+      let yPosition = margin;
+      
+      // Get template colors
+      const templateColors = getTemplateColors(selectedTemplate);
+      
+      // Helper function to add text with automatic page breaks
+      const addText = (text: string, fontSize: number, style: 'normal' | 'bold' = 'normal', color: string = '#000000') => {
+        pdf.setFontSize(fontSize);
+        pdf.setFont('helvetica', style);
+        pdf.setTextColor(color);
+        
+        // Split text into lines that fit the page width
+        const lines = pdf.splitTextToSize(text, contentWidth);
+        
+        for (const line of lines) {
+          // Check if we need a new page
+          if (yPosition > pageHeight - margin - 10) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          
+          pdf.text(line, margin, yPosition);
+          yPosition += fontSize * 0.4; // Line height
+        }
+        
+        yPosition += 5; // Extra spacing after text block
+      };
+      
+      // Helper function to add section header
+      const addSectionHeader = (title: string) => {
+        yPosition += 10; // Extra space before section
+        pdf.setDrawColor(templateColors.primary);
+        pdf.setLineWidth(1);
+        pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 8;
+        
+        addText(title, 16, 'bold', templateColors.primary);
+        yPosition += 5;
+      };
+      
+      // Header - Name
+      const name = `${formData.personalInfo.firstName} ${formData.personalInfo.lastName}`;
+      addText(name, 24, 'bold', templateColors.primary);
+      yPosition += 5;
+      
+      // Contact Information
+      const contactInfo = [
+        formData.personalInfo.email && `📧 ${formData.personalInfo.email}`,
+        formData.personalInfo.phone && `📱 ${formData.personalInfo.phone}`,
+        formData.personalInfo.location && `📍 ${formData.personalInfo.location}`
+      ].filter(Boolean).join(' • ');
+      
+      if (contactInfo) {
+        addText(contactInfo, 12, 'normal', templateColors.secondary);
+      }
+      
+      // Professional Summary
+      if (formData.professionalSummary) {
+        addSectionHeader('PROFESSIONAL SUMMARY');
+        addText(formData.professionalSummary, 11);
+      }
+      
+      // Technical Skills
+      if (formData.technicalSkills.length > 0) {
+        addSectionHeader('TECHNICAL SKILLS');
+        const skillsText = formData.technicalSkills.join(' • ');
+        addText(skillsText, 11);
+      }
+      
+      // Soft Skills
+      if (formData.softSkills.length > 0) {
+        addSectionHeader('SOFT SKILLS');
+        const skillsText = formData.softSkills.join(' • ');
+        addText(skillsText, 11);
+      }
+      
+      // Work Experience
+      if (formData.experience.length > 0) {
+        addSectionHeader('WORK EXPERIENCE');
+        
+        formData.experience.forEach((exp, index) => {
+          // Job title
+          addText(exp.jobTitle, 14, 'bold', templateColors.primary);
+          
+          // Company
+          addText(exp.company, 12, 'bold', templateColors.secondary);
+          
+          // Date and location
+          const dateLocation = `${exp.startDate} - ${exp.endDate} • ${exp.location}`;
+          addText(dateLocation, 10, 'normal', templateColors.accent);
+          
+          // Responsibilities
+          if (exp.responsibilities) {
+            addText(exp.responsibilities, 10);
+          }
+          
+          yPosition += 8; // Extra space between positions
+        });
+      }
+      
+      // Education
+      if (formData.education.length > 0) {
+        addSectionHeader('EDUCATION');
+        
+        formData.education.forEach((edu, index) => {
+          // Degree
+          addText(edu.degree, 12, 'bold', templateColors.primary);
+          
+          // Institution
+          addText(edu.institution, 11, 'bold', templateColors.secondary);
+          
+          // Field and year
+          const fieldYear = `${edu.field} • Graduated: ${edu.graduationYear}`;
+          addText(fieldYear, 10, 'normal', templateColors.accent);
+          
+          yPosition += 5; // Space between education entries
+        });
+      }
       
       // Generate filename
-      const name = `${formData.personalInfo.firstName}_${formData.personalInfo.lastName}`;
       const templateName = selectedTemplate.replace('-', '_');
-      const filename = `CV_${name}_${templateName}.pdf`;
+      const filename = `CV_${formData.personalInfo.firstName}_${formData.personalInfo.lastName}_${templateName}.pdf`;
       
       // Download PDF
       pdf.save(filename);
       
-      console.log(`✅ CV PDF downloaded: ${filename}`);
+      console.log(`✅ Multi-page CV PDF downloaded: ${filename}`);
 
     } catch (error) {
       console.error('CV export error:', error);
@@ -248,6 +337,28 @@ const AutoFillCVBuilder: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const getTemplateColors = (template: string) => {
+    const colors = {
+      'government-executive': {
+        primary: '#1e40af',    // Blue
+        secondary: '#374151',  // Gray
+        accent: '#059669'      // Green
+      },
+      'tech-innovator': {
+        primary: '#7c3aed',    // Purple
+        secondary: '#0891b2',  // Cyan
+        accent: '#6b7280'      // Gray
+      },
+      'business-leader': {
+        primary: '#059669',    // Green
+        secondary: '#dc2626',  // Red
+        accent: '#6b7280'      // Gray
+      }
+    };
+    
+    return colors[template as keyof typeof colors] || colors['government-executive'];
   };
 
   const generatePrintableHTML = (cvData: any, template: string) => {
