@@ -21,7 +21,8 @@ import {
   User,
   Briefcase,
   GraduationCap,
-  Award
+  Award,
+  Target
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import TemplatePreview from '@/components/cv-templates/TemplatePreview';
