@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { cvStorageService, type SavedCV, type CVData as StorageCVData } from '@/services/cvStorageService';
 import { 
   FileText, 
   Upload, 
@@ -22,7 +23,8 @@ import {
   Briefcase,
   GraduationCap,
   Award,
-  Target
+  Target,
+  X
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import TemplatePreview from '@/components/cv-templates/TemplatePreview';
@@ -122,6 +124,15 @@ const AutoFillCVBuilder: React.FC = () => {
   const [cvScore, setCvScore] = useState<number>(0);
   const [atsScore, setAtsScore] = useState<number>(0);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  
+  // CV Storage states
+  const [savedCVs, setSavedCVs] = useState<SavedCV[]>([]);
+  const [currentCVId, setCurrentCVId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [cvTitle, setCvTitle] = useState('My CV');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLanguageToggle = () => {
@@ -280,6 +291,138 @@ const AutoFillCVBuilder: React.FC = () => {
     setSuggestions(newSuggestions);
     
     console.log(`📊 CV Score: ${newCvScore}%, ATS Score: ${newAtsScore}%`);
+  };
+
+  // CV Storage Functions
+  const loadSavedCVs = async () => {
+    setIsLoading(true);
+    try {
+      const result = await cvStorageService.listCVs();
+      if (result.success && result.data) {
+        setSavedCVs(result.data);
+      } else {
+        console.error('Failed to load CVs:', result.message);
+      }
+    } catch (error) {
+      console.error('Error loading CVs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveCV = async () => {
+    if (!cvTitle.trim()) {
+      alert('Please enter a title for your CV');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const saveData = {
+        cvData: formData,
+        title: cvTitle,
+        templateId: selectedTemplate,
+        cvScore,
+        atsScore
+      };
+
+      let result;
+      if (currentCVId) {
+        // Update existing CV
+        result = await cvStorageService.updateCV(currentCVId, {
+          ...saveData,
+          changeSummary: 'CV updated from builder'
+        });
+      } else {
+        // Save new CV
+        result = await cvStorageService.saveCV(saveData);
+        if (result.success && result.cv_id) {
+          setCurrentCVId(result.cv_id);
+        }
+      }
+
+      if (result.success) {
+        alert(result.message);
+        setShowSaveDialog(false);
+        loadSavedCVs(); // Refresh the list
+      } else {
+        alert(`Failed to save CV: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Save CV error:', error);
+      alert('Failed to save CV due to system error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoadCV = async (cvId: string) => {
+    setIsLoading(true);
+    try {
+      const result = await cvStorageService.getCV(cvId);
+      if (result.success && result.data) {
+        const cvData = result.data;
+        
+        // Map database format to form format
+        const loadedFormData = {
+          personalInfo: {
+            firstName: cvData.personal_info?.firstName || '',
+            lastName: cvData.personal_info?.lastName || '',
+            email: cvData.personal_info?.email || '',
+            phone: cvData.personal_info?.phone || '',
+            location: cvData.personal_info?.location || '',
+            nationality: cvData.personal_info?.nationality || 'UAE'
+          },
+          professionalSummary: cvData.professional_summary || '',
+          technicalSkills: cvData.technical_skills || [],
+          softSkills: cvData.soft_skills || [],
+          experience: cvData.work_experience || [],
+          education: cvData.education || []
+        };
+
+        setFormData(loadedFormData);
+        setSelectedTemplate(cvData.template_name || 'professional');
+        setCvTitle(cvData.title);
+        setCurrentCVId(cvId);
+        setCvScore(cvData.cv_score || 0);
+        setAtsScore(cvData.ats_score || 0);
+        
+        // Move to form step
+        setCurrentStep('form');
+        setShowLoadDialog(false);
+        
+        console.log('✅ CV loaded successfully');
+      } else {
+        alert(`Failed to load CV: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Load CV error:', error);
+      alert('Failed to load CV due to system error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCV = async (cvId: string) => {
+    if (!confirm('Are you sure you want to delete this CV? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const result = await cvStorageService.deleteCV(cvId);
+      if (result.success) {
+        alert(result.message);
+        loadSavedCVs(); // Refresh the list
+        if (currentCVId === cvId) {
+          setCurrentCVId(null);
+        }
+      } else {
+        alert(`Failed to delete CV: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Delete CV error:', error);
+      alert('Failed to delete CV due to system error');
+    }
   };
 
   const autoFillForm = (analysisData: CVData) => {
@@ -1565,6 +1708,37 @@ const AutoFillCVBuilder: React.FC = () => {
               <span className="font-medium">Preview & Export</span>
             </div>
           </div>
+          
+          {/* Save/Load Controls */}
+          <div className="flex justify-center space-x-4 mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                loadSavedCVs();
+                setShowLoadDialog(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Load CV
+            </button>
+            
+            <button
+              onClick={() => setShowSaveDialog(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={currentStep === 'upload' || isSaving}
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {currentCVId ? 'Update CV' : 'Save CV'}
+            </button>
+            
+            {currentCVId && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                Editing: {cvTitle}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -1577,6 +1751,128 @@ const AutoFillCVBuilder: React.FC = () => {
           {currentStep === 'preview' && renderPreviewStep()}
         </div>
       </section>
+
+      {/* Save CV Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">
+              {currentCVId ? 'Update CV' : 'Save CV'}
+            </h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                CV Title
+              </label>
+              <input
+                type="text"
+                value={cvTitle}
+                onChange={(e) => setCvTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter CV title..."
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCV}
+                disabled={isSaving || !cvTitle.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    {currentCVId ? 'Update' : 'Save'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load CV Dialog */}
+      {showLoadDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Load Saved CV</h3>
+              <button
+                onClick={() => setShowLoadDialog(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <span className="ml-2 text-gray-600">Loading CVs...</span>
+              </div>
+            ) : savedCVs.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No saved CVs found</p>
+                <p className="text-sm text-gray-500 mt-2">Create and save your first CV to see it here</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {savedCVs.map((cv) => (
+                  <div
+                    key={cv.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{cv.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{cv.full_name}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                          <span>Template: {cv.template_name}</span>
+                          <span>Score: {cv.cv_score}%</span>
+                          <span>Updated: {new Date(cv.updated_at).toLocaleDateString()}</span>
+                          <span className={`px-2 py-1 rounded-full ${
+                            cv.status === 'published' ? 'bg-green-100 text-green-800' : 
+                            cv.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {cv.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleLoadCV(cv.id)}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          disabled={isLoading}
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCV(cv.id)}
+                          className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

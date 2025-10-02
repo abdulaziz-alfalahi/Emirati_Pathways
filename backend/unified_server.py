@@ -1182,6 +1182,343 @@ def download_cv(filename: str):
         return jsonify({'error': 'Download failed'}), 500
 
 # =====================================================
+# CV STORAGE AND MANAGEMENT ROUTES
+# =====================================================
+
+@app.route('/api/cv/save', methods=['POST'])
+def save_cv():
+    """Save CV to database"""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No CV data provided'
+            }), 400
+        
+        cv_data = data.get('cvData')
+        title = data.get('title', 'My CV')
+        template_id = data.get('templateId', 'government-executive')
+        
+        if not cv_data:
+            return jsonify({
+                'success': False,
+                'message': 'CV data is required'
+            }), 400
+        
+        # Insert CV into database
+        insert_query = """
+            INSERT INTO user_cvs (
+                user_id, title, template_id, personal_info, professional_summary,
+                technical_skills, soft_skills, work_experience, education,
+                cv_score, ats_score, last_analyzed_at, status
+            ) VALUES (
+                %s, %s, (SELECT id FROM cv_templates WHERE name = %s LIMIT 1),
+                %s::jsonb, %s, %s, %s, %s::jsonb, %s::jsonb,
+                %s, %s, CURRENT_TIMESTAMP, 'draft'
+            ) RETURNING id, created_at
+        """
+        
+        params = (
+            user_id,
+            title,
+            template_id,
+            json.dumps(cv_data.get('personalInfo', {})),
+            cv_data.get('professionalSummary', ''),
+            cv_data.get('technicalSkills', []),
+            cv_data.get('softSkills', []),
+            json.dumps(cv_data.get('experience', [])),
+            json.dumps(cv_data.get('education', [])),
+            data.get('cvScore', 0),
+            data.get('atsScore', 0)
+        )
+        
+        result = execute_query(insert_query, params, fetch_one=True)
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to save CV'
+            }), 500
+        
+        cv_id = result['id']
+        
+        # Create initial analytics record
+        analytics_query = """
+            INSERT INTO cv_analytics (cv_id) VALUES (%s)
+        """
+        execute_query(analytics_query, (cv_id,))
+        
+        logger.info(f"✅ CV saved successfully: {cv_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'CV saved successfully',
+            'data': {
+                'cv_id': str(cv_id),
+                'created_at': result['created_at'].isoformat()
+            }
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"CV save error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to save CV due to system error'
+        }), 500
+
+@app.route('/api/cv/list', methods=['GET'])
+def list_user_cvs():
+    """List user's saved CVs"""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        
+        query = """
+            SELECT 
+                cv.id,
+                cv.title,
+                cv.status,
+                cv.cv_score,
+                cv.ats_score,
+                cv.created_at,
+                cv.updated_at,
+                cv.last_accessed_at,
+                t.display_name as template_name,
+                t.category as template_category,
+                (cv.personal_info->>'firstName') || ' ' || (cv.personal_info->>'lastName') as full_name
+            FROM user_cvs cv
+            LEFT JOIN cv_templates t ON cv.template_id = t.id
+            WHERE cv.user_id = %s
+            ORDER BY cv.updated_at DESC
+        """
+        
+        cvs = execute_query(query, (user_id,))
+        
+        if cvs is None:
+            return jsonify({
+                'success': False,
+                'message': 'Database error'
+            }), 500
+        
+        # Convert to JSON-serializable format
+        result = []
+        for cv in cvs:
+            cv_dict = dict(cv)
+            # Convert dates to ISO format
+            for date_field in ['created_at', 'updated_at', 'last_accessed_at']:
+                if cv_dict.get(date_field):
+                    if isinstance(cv_dict[date_field], datetime):
+                        cv_dict[date_field] = cv_dict[date_field].isoformat()
+            result.append(cv_dict)
+        
+        return jsonify({
+            'success': True,
+            'data': result
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"List CVs error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to retrieve CVs'
+        }), 500
+
+@app.route('/api/cv/<cv_id>', methods=['GET'])
+def get_cv(cv_id: str):
+    """Get specific CV by ID"""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        
+        query = """
+            SELECT 
+                cv.*,
+                t.name as template_name,
+                t.display_name as template_display_name,
+                t.template_data
+            FROM user_cvs cv
+            LEFT JOIN cv_templates t ON cv.template_id = t.id
+            WHERE cv.id = %s AND cv.user_id = %s
+        """
+        
+        cv = execute_query(query, (cv_id, user_id), fetch_one=True)
+        
+        if not cv:
+            return jsonify({
+                'success': False,
+                'message': 'CV not found'
+            }), 404
+        
+        # Update last accessed time
+        update_query = "UPDATE user_cvs SET last_accessed_at = CURRENT_TIMESTAMP WHERE id = %s"
+        execute_query(update_query, (cv_id,))
+        
+        # Convert to JSON-serializable format
+        cv_dict = dict(cv)
+        for date_field in ['created_at', 'updated_at', 'last_accessed_at', 'last_analyzed_at']:
+            if cv_dict.get(date_field):
+                if isinstance(cv_dict[date_field], datetime):
+                    cv_dict[date_field] = cv_dict[date_field].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': cv_dict
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get CV error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to retrieve CV'
+        }), 500
+
+@app.route('/api/cv/<cv_id>', methods=['PUT'])
+def update_cv(cv_id: str):
+    """Update existing CV"""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No update data provided'
+            }), 400
+        
+        cv_data = data.get('cvData')
+        if not cv_data:
+            return jsonify({
+                'success': False,
+                'message': 'CV data is required'
+            }), 400
+        
+        # Create version history entry first
+        version_query = """
+            INSERT INTO cv_versions (cv_id, version_number, cv_data, change_summary, created_by)
+            SELECT %s, COALESCE(MAX(version_number), 0) + 1, 
+                   row_to_json(cv.*), %s, %s
+            FROM user_cvs cv
+            LEFT JOIN cv_versions v ON cv.id = v.cv_id
+            WHERE cv.id = %s AND cv.user_id = %s
+            GROUP BY cv.id
+        """
+        execute_query(version_query, (cv_id, data.get('changeSummary', 'CV updated'), user_id, cv_id, user_id))
+        
+        # Update CV
+        update_query = """
+            UPDATE user_cvs SET
+                title = COALESCE(%s, title),
+                personal_info = COALESCE(%s::jsonb, personal_info),
+                professional_summary = COALESCE(%s, professional_summary),
+                technical_skills = COALESCE(%s, technical_skills),
+                soft_skills = COALESCE(%s, soft_skills),
+                work_experience = COALESCE(%s::jsonb, work_experience),
+                education = COALESCE(%s::jsonb, education),
+                cv_score = COALESCE(%s, cv_score),
+                ats_score = COALESCE(%s, ats_score),
+                last_analyzed_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s AND user_id = %s
+            RETURNING id, updated_at
+        """
+        
+        params = (
+            data.get('title'),
+            json.dumps(cv_data.get('personalInfo')) if cv_data.get('personalInfo') else None,
+            cv_data.get('professionalSummary'),
+            cv_data.get('technicalSkills'),
+            cv_data.get('softSkills'),
+            json.dumps(cv_data.get('experience')) if cv_data.get('experience') else None,
+            json.dumps(cv_data.get('education')) if cv_data.get('education') else None,
+            data.get('cvScore'),
+            data.get('atsScore'),
+            cv_id,
+            user_id
+        )
+        
+        result = execute_query(update_query, params, fetch_one=True)
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'message': 'CV not found or update failed'
+            }), 404
+        
+        logger.info(f"✅ CV updated successfully: {cv_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'CV updated successfully',
+            'data': {
+                'cv_id': str(result['id']),
+                'updated_at': result['updated_at'].isoformat()
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"CV update error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update CV due to system error'
+        }), 500
+
+@app.route('/api/cv/<cv_id>', methods=['DELETE'])
+def delete_cv(cv_id: str):
+    """Delete CV"""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        
+        # Delete CV (cascade will handle versions, analytics, shares)
+        delete_query = "DELETE FROM user_cvs WHERE id = %s AND user_id = %s RETURNING id"
+        result = execute_query(delete_query, (cv_id, user_id), fetch_one=True)
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'message': 'CV not found'
+            }), 404
+        
+        logger.info(f"✅ CV deleted successfully: {cv_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'CV deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"CV delete error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to delete CV due to system error'
+        }), 500
+
+# =====================================================
 # SCHOOL PROGRAMS ROUTES
 # =====================================================
 
