@@ -24,7 +24,7 @@ import {
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 
 interface CVData {
-  personalInfo?: {
+  personal_info?: {
     name?: string;
     email?: string;
     phone?: string;
@@ -150,7 +150,7 @@ const AutoFillCVBuilder: React.FC = () => {
   const autoFillForm = (analysisData: CVData) => {
     console.log('🔄 Auto-filling form with analysis data:', analysisData);
     
-    const nameParts = analysisData.personalInfo?.name?.split(' ') || ['', ''];
+    const nameParts = analysisData.personal_info?.name?.split(' ') || ['', ''];
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
@@ -158,10 +158,10 @@ const AutoFillCVBuilder: React.FC = () => {
       personalInfo: {
         firstName,
         lastName,
-        email: analysisData.personalInfo?.email || '',
-        phone: analysisData.personalInfo?.phone || '',
-        location: analysisData.personalInfo?.location || '',
-        nationality: analysisData.personalInfo?.nationality || 'UAE'
+        email: analysisData.personal_info?.email || '',
+        phone: analysisData.personal_info?.phone || '',
+        location: analysisData.personal_info?.location || '',
+        nationality: analysisData.personal_info?.nationality || 'UAE'
       },
       professionalSummary: analysisData.professional_summary || '',
       technicalSkills: analysisData.skills?.technical || [],
