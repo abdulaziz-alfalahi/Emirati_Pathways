@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { 
   FileText, 
   Upload, 
@@ -194,29 +196,55 @@ const AutoFillCVBuilder: React.FC = () => {
     setIsExporting(true);
     
     try {
-      // Create a new window with the CV in printable format
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        throw new Error('Popup blocked. Please allow popups and try again.');
-      }
-
+      // Create a temporary div with the CV content
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.width = '210mm'; // A4 width
+      tempDiv.style.backgroundColor = 'white';
+      tempDiv.style.padding = '20px';
+      
       // Generate template-specific HTML
       const html = generatePrintableHTML(formData, selectedTemplate);
+      tempDiv.innerHTML = html;
       
-      printWindow.document.write(html);
-      printWindow.document.close();
+      document.body.appendChild(tempDiv);
       
-      // Wait for content to load, then trigger print dialog
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 1000);
+      // Wait for content to render
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('✅ CV opened for printing/PDF export');
+      // Convert to canvas
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      // Remove temporary div
+      document.body.removeChild(tempDiv);
+      
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add image to PDF
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Generate filename
+      const name = `${formData.personalInfo.firstName}_${formData.personalInfo.lastName}`;
+      const templateName = selectedTemplate.replace('-', '_');
+      const filename = `CV_${name}_${templateName}.pdf`;
+      
+      // Download PDF
+      pdf.save(filename);
+      
+      console.log(`✅ CV PDF downloaded: ${filename}`);
 
     } catch (error) {
       console.error('CV export error:', error);
-      alert('Failed to open CV for printing. Please try again.');
+      alert('Failed to generate PDF. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -1130,7 +1158,7 @@ const AutoFillCVBuilder: React.FC = () => {
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              Download PDF
+              Download PDF File
             </>
           )}
         </button>
