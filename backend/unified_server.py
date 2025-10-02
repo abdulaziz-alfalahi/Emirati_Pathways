@@ -1213,6 +1213,13 @@ def save_cv():
                 'message': 'CV data is required'
             }), 400
         
+        # Convert mock user_id to UUID for development
+        if user_id == 'mock_user_candidate':
+            # Use a fixed UUID for mock user
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+        
         # Insert CV into database
         insert_query = """
             INSERT INTO user_cvs (
@@ -1220,14 +1227,14 @@ def save_cv():
                 technical_skills, soft_skills, work_experience, education,
                 cv_score, ats_score, last_analyzed_at, status
             ) VALUES (
-                %s, %s, (SELECT id FROM cv_templates WHERE name = %s LIMIT 1),
+                %s::uuid, %s, (SELECT id FROM cv_templates WHERE name = %s LIMIT 1),
                 %s::jsonb, %s, %s, %s, %s::jsonb, %s::jsonb,
                 %s, %s, CURRENT_TIMESTAMP, 'draft'
             ) RETURNING id, created_at
         """
         
         params = (
-            user_id,
+            user_uuid,
             title,
             template_id,
             json.dumps(cv_data.get('personalInfo', {})),
@@ -1285,6 +1292,12 @@ def list_user_cvs():
         else:
             user_id = get_jwt_identity() if auth_header else 'anonymous_user'
         
+        # Convert mock user_id to UUID for development
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+        
         query = """
             SELECT 
                 cv.id,
@@ -1300,11 +1313,11 @@ def list_user_cvs():
                 (cv.personal_info->>'firstName') || ' ' || (cv.personal_info->>'lastName') as full_name
             FROM user_cvs cv
             LEFT JOIN cv_templates t ON cv.template_id = t.id
-            WHERE cv.user_id = %s
+            WHERE cv.user_id = %s::uuid
             ORDER BY cv.updated_at DESC
         """
         
-        cvs = execute_query(query, (user_id,))
+        cvs = execute_query(query, (user_uuid,))
         
         if cvs is None:
             return jsonify({
@@ -1346,6 +1359,12 @@ def get_cv(cv_id: str):
         else:
             user_id = get_jwt_identity() if auth_header else 'anonymous_user'
         
+        # Convert mock user_id to UUID for development
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+        
         query = """
             SELECT 
                 cv.*,
@@ -1354,10 +1373,10 @@ def get_cv(cv_id: str):
                 t.template_data
             FROM user_cvs cv
             LEFT JOIN cv_templates t ON cv.template_id = t.id
-            WHERE cv.id = %s AND cv.user_id = %s
+            WHERE cv.id = %s::uuid AND cv.user_id = %s::uuid
         """
         
-        cv = execute_query(query, (cv_id, user_id), fetch_one=True)
+        cv = execute_query(query, (cv_id, user_uuid), fetch_one=True)
         
         if not cv:
             return jsonify({
@@ -1399,6 +1418,12 @@ def update_cv(cv_id: str):
         else:
             user_id = get_jwt_identity() if auth_header else 'anonymous_user'
         
+        # Convert mock user_id to UUID for development
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+        
         data = request.get_json()
         if not data:
             return jsonify({
@@ -1416,14 +1441,14 @@ def update_cv(cv_id: str):
         # Create version history entry first
         version_query = """
             INSERT INTO cv_versions (cv_id, version_number, cv_data, change_summary, created_by)
-            SELECT %s, COALESCE(MAX(version_number), 0) + 1, 
-                   row_to_json(cv.*), %s, %s
+            SELECT %s::uuid, COALESCE(MAX(version_number), 0) + 1, 
+                   row_to_json(cv.*), %s, %s::uuid
             FROM user_cvs cv
             LEFT JOIN cv_versions v ON cv.id = v.cv_id
-            WHERE cv.id = %s AND cv.user_id = %s
+            WHERE cv.id = %s::uuid AND cv.user_id = %s::uuid
             GROUP BY cv.id
         """
-        execute_query(version_query, (cv_id, data.get('changeSummary', 'CV updated'), user_id, cv_id, user_id))
+        execute_query(version_query, (cv_id, data.get('changeSummary', 'CV updated'), user_uuid, cv_id, user_uuid))
         
         # Update CV
         update_query = """
@@ -1439,7 +1464,7 @@ def update_cv(cv_id: str):
                 ats_score = COALESCE(%s, ats_score),
                 last_analyzed_at = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s AND user_id = %s
+            WHERE id = %s::uuid AND user_id = %s::uuid
             RETURNING id, updated_at
         """
         
@@ -1454,7 +1479,7 @@ def update_cv(cv_id: str):
             data.get('cvScore'),
             data.get('atsScore'),
             cv_id,
-            user_id
+            user_uuid
         )
         
         result = execute_query(update_query, params, fetch_one=True)
@@ -1494,9 +1519,15 @@ def delete_cv(cv_id: str):
         else:
             user_id = get_jwt_identity() if auth_header else 'anonymous_user'
         
+        # Convert mock user_id to UUID for development
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+        
         # Delete CV (cascade will handle versions, analytics, shares)
-        delete_query = "DELETE FROM user_cvs WHERE id = %s AND user_id = %s RETURNING id"
-        result = execute_query(delete_query, (cv_id, user_id), fetch_one=True)
+        delete_query = "DELETE FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid RETURNING id"
+        result = execute_query(delete_query, (cv_id, user_uuid), fetch_one=True)
         
         if not result:
             return jsonify({
