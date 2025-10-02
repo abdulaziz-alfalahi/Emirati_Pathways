@@ -118,6 +118,9 @@ const AutoFillCVBuilder: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('professional');
+  const [cvScore, setCvScore] = useState<number>(0);
+  const [atsScore, setAtsScore] = useState<number>(0);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLanguageToggle = () => {
@@ -151,6 +154,132 @@ const AutoFillCVBuilder: React.FC = () => {
       handleFileUpload(files[0]);
     }
   }, []);
+
+  const calculateCVScore = (cvData: CVFormData): number => {
+    let score = 0;
+    const maxScore = 100;
+    
+    // Personal Information (20 points)
+    const personalInfo = cvData.personalInfo;
+    if (personalInfo.firstName && personalInfo.lastName) score += 5;
+    if (personalInfo.email && personalInfo.email.includes('@')) score += 5;
+    if (personalInfo.phone) score += 5;
+    if (personalInfo.location) score += 5;
+    
+    // Professional Summary (20 points)
+    if (cvData.professionalSummary) {
+      if (cvData.professionalSummary.length > 50) score += 10;
+      if (cvData.professionalSummary.length > 150) score += 10;
+    }
+    
+    // Skills (20 points)
+    if (cvData.technicalSkills.length >= 3) score += 10;
+    if (cvData.technicalSkills.length >= 6) score += 5;
+    if (cvData.softSkills.length >= 3) score += 5;
+    
+    // Experience (25 points)
+    if (cvData.experience.length >= 1) score += 10;
+    if (cvData.experience.length >= 3) score += 10;
+    if (cvData.experience.some(exp => exp.responsibilities && exp.responsibilities.length > 50)) score += 5;
+    
+    // Education (15 points)
+    if (cvData.education.length >= 1) score += 10;
+    if (cvData.education.some(edu => edu.field)) score += 5;
+    
+    return Math.min(score, maxScore);
+  };
+
+  const calculateATSScore = (cvData: CVFormData): number => {
+    let score = 0;
+    
+    // UAE Keywords
+    const uaeKeywords = [
+      'UAE', 'Dubai', 'Abu Dhabi', 'Emirates', 'Arabic', 'Emirati', 'GCC',
+      'D33', 'Talent33', 'Vision 2071', 'Digital Transformation', 'Innovation',
+      'Leadership', 'Strategy', 'Management', 'Government', 'Private Sector'
+    ];
+    
+    // Check for UAE keywords in summary and experience
+    const allText = [
+      cvData.professionalSummary,
+      ...cvData.experience.map(exp => `${exp.jobTitle} ${exp.company} ${exp.responsibilities}`),
+      ...cvData.technicalSkills,
+      ...cvData.softSkills
+    ].join(' ').toLowerCase();
+    
+    const foundKeywords = uaeKeywords.filter(keyword => 
+      allText.includes(keyword.toLowerCase())
+    );
+    
+    // Score based on keyword presence (40 points max)
+    score += Math.min(foundKeywords.length * 3, 40);
+    
+    // Technical skills relevance (30 points)
+    const techKeywords = ['digital', 'technology', 'data', 'analytics', 'ai', 'cloud', 'mobile', 'web'];
+    const techMatches = cvData.technicalSkills.filter(skill => 
+      techKeywords.some(keyword => skill.toLowerCase().includes(keyword))
+    );
+    score += Math.min(techMatches.length * 5, 30);
+    
+    // Experience quality (30 points)
+    const hasQuantifiableResults = cvData.experience.some(exp => 
+      exp.responsibilities && /\d+/.test(exp.responsibilities) // Contains numbers
+    );
+    if (hasQuantifiableResults) score += 15;
+    
+    const hasLeadershipTerms = allText.includes('led') || allText.includes('managed') || allText.includes('directed');
+    if (hasLeadershipTerms) score += 15;
+    
+    return Math.min(score, 100);
+  };
+
+  const generateSuggestions = (cvData: CVFormData, cvScore: number, atsScore: number): string[] => {
+    const suggestions: string[] = [];
+    
+    // CV Completeness suggestions
+    if (cvScore < 80) {
+      if (!cvData.professionalSummary || cvData.professionalSummary.length < 150) {
+        suggestions.push('Expand your professional summary to 150+ words highlighting your UAE experience');
+      }
+      if (cvData.technicalSkills.length < 6) {
+        suggestions.push('Add more technical skills relevant to UAE job market (AI, Digital Transformation, Data Analytics)');
+      }
+      if (cvData.experience.length < 3) {
+        suggestions.push('Include more work experience entries to demonstrate career progression');
+      }
+    }
+    
+    // ATS Optimization suggestions
+    if (atsScore < 70) {
+      suggestions.push('Include more UAE-specific keywords: D33, Talent33, Digital Transformation, Innovation');
+      suggestions.push('Add quantifiable achievements with numbers (budget managed, team size, % improvements)');
+      suggestions.push('Highlight Arabic language proficiency and cultural understanding');
+      suggestions.push('Emphasize government sector experience or private sector leadership roles');
+    }
+    
+    // UAE Market specific suggestions
+    const allText = [cvData.professionalSummary, ...cvData.experience.map(exp => exp.responsibilities)].join(' ').toLowerCase();
+    if (!allText.includes('arabic')) {
+      suggestions.push('Mention Arabic language skills to align with UAE National requirements');
+    }
+    if (!allText.includes('emirati')) {
+      suggestions.push('Highlight experience working with Emirati teams or on Emiratization initiatives');
+    }
+    
+    return suggestions.slice(0, 5); // Limit to top 5 suggestions
+  };
+
+  const updateScores = (cvData: CVFormData) => {
+    const newCvScore = calculateCVScore(cvData);
+    const newAtsScore = calculateATSScore(cvData);
+    const newSuggestions = generateSuggestions(cvData, newCvScore, newAtsScore);
+    
+    setCvScore(newCvScore);
+    setAtsScore(newAtsScore);
+    setSuggestions(newSuggestions);
+    
+    console.log(`📊 CV Score: ${newCvScore}%, ATS Score: ${newAtsScore}%`);
+  };
 
   const autoFillForm = (analysisData: CVData) => {
     console.log('🔄 Auto-filling form with analysis data:', analysisData);
@@ -189,6 +318,12 @@ const AutoFillCVBuilder: React.FC = () => {
 
     console.log('📝 Setting form data:', newFormData);
     setFormData(newFormData);
+    
+    // Calculate scores after auto-fill
+    setTimeout(() => {
+      updateScores(newFormData);
+    }, 100);
+    
     console.log('✅ Form auto-filled with extracted CV data');
   };
 
@@ -663,38 +798,49 @@ const AutoFillCVBuilder: React.FC = () => {
   };
 
   const handleInputChange = (field: string, value: string, section?: string) => {
+    let newFormData;
+    
     if (section) {
-      setFormData(prev => ({
-        ...prev,
+      newFormData = {
+        ...formData,
         [section]: {
-          ...prev[section as keyof CVFormData],
+          ...formData[section as keyof CVFormData],
           [field]: value
         }
-      }));
+      };
     } else {
-      setFormData(prev => ({
-        ...prev,
+      newFormData = {
+        ...formData,
         [field]: value
-      }));
+      };
     }
+    
+    setFormData(newFormData);
+    
+    // Update scores in real-time
+    setTimeout(() => updateScores(newFormData), 100);
   };
 
   const addSkill = (type: 'technical' | 'soft', skill: string) => {
     if (!skill.trim()) return;
     
     const skillField = type === 'technical' ? 'technicalSkills' : 'softSkills';
-    setFormData(prev => ({
-      ...prev,
-      [skillField]: [...prev[skillField], skill.trim()]
-    }));
+    const newFormData = {
+      ...formData,
+      [skillField]: [...formData[skillField], skill.trim()]
+    };
+    setFormData(newFormData);
+    updateScores(newFormData);
   };
 
   const removeSkill = (type: 'technical' | 'soft', index: number) => {
     const skillField = type === 'technical' ? 'technicalSkills' : 'softSkills';
-    setFormData(prev => ({
-      ...prev,
-      [skillField]: prev[skillField].filter((_, i) => i !== index)
-    }));
+    const newFormData = {
+      ...formData,
+      [skillField]: formData[skillField].filter((_, i) => i !== index)
+    };
+    setFormData(newFormData);
+    updateScores(newFormData);
   };
 
   const renderUploadStep = () => (
@@ -890,6 +1036,65 @@ const AutoFillCVBuilder: React.FC = () => {
             Change Template
           </button>
         </div>
+      </div>
+
+      {/* CV Scoring Widget */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl shadow-lg border p-6 mb-8">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+          CV Performance Analysis
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* CV Completeness Score */}
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">CV Completeness</span>
+              <span className={`text-lg font-bold ${cvScore >= 80 ? 'text-green-600' : cvScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {cvScore}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${cvScore >= 80 ? 'bg-green-500' : cvScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                style={{ width: `${cvScore}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* ATS Optimization Score */}
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">ATS Optimization</span>
+              <span className={`text-lg font-bold ${atsScore >= 80 ? 'text-green-600' : atsScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {atsScore}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${atsScore >= 80 ? 'bg-green-500' : atsScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                style={{ width: `${atsScore}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Improvement Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="mt-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <Target className="w-4 h-4 mr-2 text-purple-600" />
+              Improvement Suggestions
+            </h4>
+            <div className="space-y-2">
+              {suggestions.map((suggestion, index) => (
+                <div key={index} className="flex items-start bg-white rounded-lg p-3">
+                  <CheckCircle className="w-4 h-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-gray-700">{suggestion}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Personal Information Form */}
