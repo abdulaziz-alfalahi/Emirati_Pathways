@@ -93,7 +93,7 @@ interface CVFormData {
 const AutoFillCVBuilder: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>(i18n.language as 'en' | 'ar');
-  const [currentStep, setCurrentStep] = useState<'upload' | 'form' | 'preview'>('upload');
+  const [currentStep, setCurrentStep] = useState<'upload' | 'template' | 'form' | 'preview'>('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [cvData, setCvData] = useState<CVData | null>(null);
@@ -232,8 +232,8 @@ const AutoFillCVBuilder: React.FC = () => {
       // Auto-fill the form with extracted data
       setTimeout(() => {
         autoFillForm(analysisData);
-        // Move to form step after auto-fill
-        setCurrentStep('form');
+        // Move to template selection step after auto-fill
+        setCurrentStep('template');
       }, 500); // Small delay to ensure state updates
 
     } catch (error) {
@@ -371,6 +371,79 @@ const AutoFillCVBuilder: React.FC = () => {
     </div>
   );
 
+  const renderTemplateStep = () => (
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          Choose Your Template
+        </h2>
+        <p className="text-xl text-gray-600">
+          Select a D33/Talent33 aligned template for your CV
+        </p>
+      </div>
+
+      {/* Template Options */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[
+          {
+            id: 'government-executive',
+            name: 'Government Executive',
+            description: 'Perfect for UAE government positions and leadership roles',
+            color: 'bg-blue-600',
+            features: ['D33 Aligned', 'Leadership Focus', 'Government Style']
+          },
+          {
+            id: 'tech-innovator', 
+            name: 'Tech Innovator',
+            description: 'Designed for technology professionals in UAE digital transformation',
+            color: 'bg-purple-600',
+            features: ['Talent33 Focus', 'Innovation Highlight', 'Tech Skills Matrix']
+          },
+          {
+            id: 'business-leader',
+            name: 'Business Leader', 
+            description: 'For business professionals and entrepreneurs in UAE market',
+            color: 'bg-green-600',
+            features: ['Executive Style', 'Results Driven', 'UAE Market Focus']
+          }
+        ].map((template) => (
+          <div key={template.id} className="bg-white rounded-xl shadow-lg border hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <FileText className="w-16 h-16 text-gray-400" />
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{template.name}</h3>
+              <p className="text-gray-600 mb-4">{template.description}</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {template.features.map((feature, index) => (
+                  <span key={index} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                    {feature}
+                  </span>
+                ))}
+              </div>
+              <button 
+                onClick={() => setCurrentStep('form')}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+              >
+                Select Template
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => setCurrentStep('upload')}
+          className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+        >
+          Back to Upload
+        </button>
+      </div>
+    </div>
+  );
+
   const renderFormStep = () => (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -466,6 +539,9 @@ const AutoFillCVBuilder: React.FC = () => {
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <Zap className="w-5 h-5 mr-2 text-purple-600" />
           Skills
+          <span className="ml-4 text-sm text-gray-500">
+            (Technical: {formData.technicalSkills.length}, Soft: {formData.softSkills.length})
+          </span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Technical Skills */}
@@ -531,6 +607,161 @@ const AutoFillCVBuilder: React.FC = () => {
               }}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Experience */}
+      <div className="bg-white rounded-xl shadow-lg border p-8">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <Briefcase className="w-5 h-5 mr-2 text-green-600" />
+          Work Experience
+          <span className="ml-4 text-sm text-gray-500">
+            ({formData.experience.length} positions)
+          </span>
+        </h3>
+        <div className="space-y-6">
+          {formData.experience.map((exp, index) => (
+            <div key={index} className="border border-gray-200 rounded-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
+                  <input
+                    type="text"
+                    value={exp.jobTitle}
+                    onChange={(e) => {
+                      const newExperience = [...formData.experience];
+                      newExperience[index].jobTitle = e.target.value;
+                      setFormData(prev => ({ ...prev, experience: newExperience }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                  <input
+                    type="text"
+                    value={exp.company}
+                    onChange={(e) => {
+                      const newExperience = [...formData.experience];
+                      newExperience[index].company = e.target.value;
+                      setFormData(prev => ({ ...prev, experience: newExperience }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                  <input
+                    type="text"
+                    value={exp.startDate}
+                    onChange={(e) => {
+                      const newExperience = [...formData.experience];
+                      newExperience[index].startDate = e.target.value;
+                      setFormData(prev => ({ ...prev, experience: newExperience }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                  <input
+                    type="text"
+                    value={exp.endDate}
+                    onChange={(e) => {
+                      const newExperience = [...formData.experience];
+                      newExperience[index].endDate = e.target.value;
+                      setFormData(prev => ({ ...prev, experience: newExperience }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Key Responsibilities</label>
+                <textarea
+                  value={exp.responsibilities}
+                  onChange={(e) => {
+                    const newExperience = [...formData.experience];
+                    newExperience[index].responsibilities = e.target.value;
+                    setFormData(prev => ({ ...prev, experience: newExperience }));
+                  }}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Education */}
+      <div className="bg-white rounded-xl shadow-lg border p-8">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <GraduationCap className="w-5 h-5 mr-2 text-purple-600" />
+          Education
+          <span className="ml-4 text-sm text-gray-500">
+            ({formData.education.length} degrees)
+          </span>
+        </h3>
+        <div className="space-y-6">
+          {formData.education.map((edu, index) => (
+            <div key={index} className="border border-gray-200 rounded-lg p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Degree</label>
+                  <input
+                    type="text"
+                    value={edu.degree}
+                    onChange={(e) => {
+                      const newEducation = [...formData.education];
+                      newEducation[index].degree = e.target.value;
+                      setFormData(prev => ({ ...prev, education: newEducation }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Institution</label>
+                  <input
+                    type="text"
+                    value={edu.institution}
+                    onChange={(e) => {
+                      const newEducation = [...formData.education];
+                      newEducation[index].institution = e.target.value;
+                      setFormData(prev => ({ ...prev, education: newEducation }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Field of Study</label>
+                  <input
+                    type="text"
+                    value={edu.field}
+                    onChange={(e) => {
+                      const newEducation = [...formData.education];
+                      newEducation[index].field = e.target.value;
+                      setFormData(prev => ({ ...prev, education: newEducation }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
+                  <input
+                    type="text"
+                    value={edu.graduationYear}
+                    onChange={(e) => {
+                      const newEducation = [...formData.education];
+                      newEducation[index].graduationYear = e.target.value;
+                      setFormData(prev => ({ ...prev, education: newEducation }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -683,19 +914,33 @@ const AutoFillCVBuilder: React.FC = () => {
       {/* Progress Indicator */}
       <section className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center space-x-8">
-            <div className={`flex items-center space-x-3 ${currentStep === 'upload' ? 'text-blue-600' : currentStep !== 'upload' ? 'text-green-600' : 'text-gray-400'}`}>
+          <div className="flex items-center justify-between">
+            {/* Step 1: Upload */}
+            <div className={`flex items-center space-x-3 ${currentStep === 'upload' ? 'text-blue-600' : 'text-green-600'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'upload' ? 'bg-blue-600 text-white' : 
-                currentStep !== 'upload' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                currentStep === 'upload' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
               }`}>
-                {currentStep !== 'upload' ? <CheckCircle className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+                {currentStep === 'upload' ? <Upload className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
               </div>
               <span className="font-medium">Upload & Analyze</span>
             </div>
             
-            <div className={`w-16 h-px ${currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 h-px mx-4 ${currentStep !== 'upload' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
             
+            {/* Step 2: Template */}
+            <div className={`flex items-center space-x-3 ${currentStep === 'template' ? 'text-blue-600' : currentStep === 'form' || currentStep === 'preview' ? 'text-green-600' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                currentStep === 'template' ? 'bg-blue-600 text-white' : 
+                currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
+              }`}>
+                {currentStep === 'form' || currentStep === 'preview' ? <CheckCircle className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              </div>
+              <span className="font-medium">Choose Template</span>
+            </div>
+            
+            <div className={`flex-1 h-px mx-4 ${currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+            
+            {/* Step 3: Form */}
             <div className={`flex items-center space-x-3 ${currentStep === 'form' ? 'text-blue-600' : currentStep === 'preview' ? 'text-green-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 currentStep === 'form' ? 'bg-blue-600 text-white' : 
@@ -706,8 +951,9 @@ const AutoFillCVBuilder: React.FC = () => {
               <span className="font-medium">Build & Customize</span>
             </div>
             
-            <div className={`w-16 h-px ${currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 h-px mx-4 ${currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
             
+            {/* Step 4: Preview */}
             <div className={`flex items-center space-x-3 ${currentStep === 'preview' ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 currentStep === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-200'
@@ -724,6 +970,7 @@ const AutoFillCVBuilder: React.FC = () => {
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {currentStep === 'upload' && renderUploadStep()}
+          {currentStep === 'template' && renderTemplateStep()}
           {currentStep === 'form' && renderFormStep()}
           {currentStep === 'preview' && renderPreviewStep()}
         </div>
