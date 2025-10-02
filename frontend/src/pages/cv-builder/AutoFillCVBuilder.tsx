@@ -384,10 +384,10 @@ const AutoFillCVBuilder: React.FC = () => {
       
       // Contact Information
       const contactInfo = [
-        formData.personalInfo.email && `📧 ${formData.personalInfo.email}`,
-        formData.personalInfo.phone && `📱 ${formData.personalInfo.phone}`,
-        formData.personalInfo.location && `📍 ${formData.personalInfo.location}`
-      ].filter(Boolean).join(' • ');
+        formData.personalInfo.email && `Email: ${formData.personalInfo.email}`,
+        formData.personalInfo.phone && `Phone: ${formData.personalInfo.phone}`,
+        formData.personalInfo.location && `Location: ${formData.personalInfo.location}`
+      ].filter(Boolean).join(' | ');
       
       if (contactInfo) {
         addText(contactInfo, 11, 'normal', templateColors.secondary, 1); // Smaller font, minimal spacing
@@ -493,10 +493,10 @@ const AutoFillCVBuilder: React.FC = () => {
   const generatePrintableHTML = (cvData: any, template: string) => {
     const name = `${cvData.personalInfo.firstName} ${cvData.personalInfo.lastName}`;
     const contact = [
-      cvData.personalInfo.email && `📧 ${cvData.personalInfo.email}`,
-      cvData.personalInfo.phone && `📱 ${cvData.personalInfo.phone}`,
-      cvData.personalInfo.location && `📍 ${cvData.personalInfo.location}`
-    ].filter(Boolean).join(' • ');
+      cvData.personalInfo.email && `Email: ${cvData.personalInfo.email}`,
+      cvData.personalInfo.phone && `Phone: ${cvData.personalInfo.phone}`,
+      cvData.personalInfo.location && `Location: ${cvData.personalInfo.location}`
+    ].filter(Boolean).join(' | ');
 
     if (template === 'government-executive') {
       return `
