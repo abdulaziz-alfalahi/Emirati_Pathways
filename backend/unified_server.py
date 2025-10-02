@@ -34,6 +34,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from flask import send_file
+import weasyprint
+from jinja2 import Template
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1074,8 +1076,9 @@ def export_cv():
                 'message': 'CV data is required'
             }), 400
         
-        # Generate PDF
-        pdf_filename = generate_cv_pdf(cv_data, template_style)
+        # Import and use the new HTML-based PDF generator
+        from cv_pdf_generator import generate_cv_pdf_html
+        pdf_filename = generate_cv_pdf_html(cv_data, template_style)
         
         if not pdf_filename:
             return jsonify({
