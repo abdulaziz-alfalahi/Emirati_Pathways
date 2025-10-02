@@ -447,6 +447,45 @@ Return only the JSON object, no additional text.
 # PDF GENERATION UTILITIES
 # =====================================================
 
+def get_template_styles(template_style: str):
+    """Get template-specific styles and colors"""
+    templates = {
+        'government-executive': {
+            'primary_color': '#1e40af',  # Blue
+            'secondary_color': '#374151',  # Gray
+            'accent_color': '#059669',  # Green
+            'font_size_title': 26,
+            'font_size_heading': 18,
+            'layout': 'traditional'
+        },
+        'tech-innovator': {
+            'primary_color': '#7c3aed',  # Purple
+            'secondary_color': '#1f2937',  # Dark gray
+            'accent_color': '#0891b2',  # Cyan
+            'font_size_title': 24,
+            'font_size_heading': 16,
+            'layout': 'modern'
+        },
+        'business-leader': {
+            'primary_color': '#059669',  # Green
+            'secondary_color': '#374151',  # Gray
+            'accent_color': '#dc2626',  # Red
+            'font_size_title': 25,
+            'font_size_heading': 17,
+            'layout': 'executive'
+        },
+        'professional': {
+            'primary_color': '#1e40af',  # Blue
+            'secondary_color': '#374151',  # Gray
+            'accent_color': '#059669',  # Green
+            'font_size_title': 24,
+            'font_size_heading': 16,
+            'layout': 'standard'
+        }
+    }
+    
+    return templates.get(template_style, templates['professional'])
+
 def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
     """Generate PDF from CV data using ReportLab"""
     try:
@@ -460,26 +499,27 @@ def generate_cv_pdf(cv_data: dict, template_style: str = 'professional') -> str:
                                rightMargin=72, leftMargin=72, 
                                topMargin=72, bottomMargin=18)
         
-        # Get styles
+        # Get template-specific styles
+        template_config = get_template_styles(template_style)
         styles = getSampleStyleSheet()
         
-        # Custom styles for UAE CV
+        # Custom styles based on template
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=24,
+            fontSize=template_config['font_size_title'],
             spaceAfter=12,
             alignment=TA_CENTER,
-            textColor=colors.HexColor('#1e40af')  # Blue color
+            textColor=colors.HexColor(template_config['primary_color'])
         )
         
         heading_style = ParagraphStyle(
             'CustomHeading',
             parent=styles['Heading2'],
-            fontSize=16,
+            fontSize=template_config['font_size_heading'],
             spaceAfter=6,
             spaceBefore=12,
-            textColor=colors.HexColor('#374151')  # Gray color
+            textColor=colors.HexColor(template_config['secondary_color'])
         )
         
         body_style = ParagraphStyle(

@@ -22,6 +22,7 @@ import {
   Award
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import TemplatePreview from '@/components/cv-templates/TemplatePreview';
 
 interface CVData {
   personal_info?: {
@@ -114,6 +115,7 @@ const AutoFillCVBuilder: React.FC = () => {
   });
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('professional');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLanguageToggle = () => {
@@ -200,7 +202,7 @@ const AutoFillCVBuilder: React.FC = () => {
         },
         body: JSON.stringify({
           cvData: formData,
-          template: 'professional'
+          template: selectedTemplate
         })
       });
 
@@ -448,9 +450,13 @@ const AutoFillCVBuilder: React.FC = () => {
             features: ['Executive Style', 'Results Driven', 'UAE Market Focus']
           }
         ].map((template) => (
-          <div key={template.id} className="bg-white rounded-xl shadow-lg border hover:shadow-xl transition-all duration-300 overflow-hidden">
-            <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-              <FileText className="w-16 h-16 text-gray-400" />
+          <div key={template.id} className={`rounded-xl shadow-lg border hover:shadow-xl transition-all duration-300 overflow-hidden ${selectedTemplate === template.id ? 'ring-4 ring-blue-500' : ''}`}>
+            <div className="h-64 overflow-hidden">
+              <TemplatePreview 
+                templateId={template.id} 
+                cvData={formData}
+                className="w-full h-full"
+              />
             </div>
             <div className="p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">{template.name}</h3>
@@ -463,7 +469,10 @@ const AutoFillCVBuilder: React.FC = () => {
                 ))}
               </div>
               <button 
-                onClick={() => setCurrentStep('form')}
+                onClick={() => {
+                  setSelectedTemplate(template.id);
+                  setCurrentStep('form');
+                }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
               >
                 Select Template
