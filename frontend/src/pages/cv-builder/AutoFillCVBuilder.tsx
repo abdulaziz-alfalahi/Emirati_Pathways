@@ -209,7 +209,7 @@ const AutoFillCVBuilder: React.FC = () => {
       const templateColors = getTemplateColors(selectedTemplate);
       
       // Helper function to add text with automatic page breaks
-      const addText = (text: string, fontSize: number, style: 'normal' | 'bold' = 'normal', color: string = '#000000') => {
+      const addText = (text: string, fontSize: number, style: 'normal' | 'bold' = 'normal', color: string = '#000000', extraSpacing: number = 2) => {
         pdf.setFontSize(fontSize);
         pdf.setFont('helvetica', style);
         pdf.setTextColor(color);
@@ -219,34 +219,32 @@ const AutoFillCVBuilder: React.FC = () => {
         
         for (const line of lines) {
           // Check if we need a new page
-          if (yPosition > pageHeight - margin - 10) {
+          if (yPosition > pageHeight - margin - 15) {
             pdf.addPage();
             yPosition = margin;
           }
           
           pdf.text(line, margin, yPosition);
-          yPosition += fontSize * 0.4; // Line height
+          yPosition += fontSize * 0.35; // Tighter line height
         }
         
-        yPosition += 5; // Extra spacing after text block
+        yPosition += extraSpacing; // Configurable spacing after text block
       };
       
       // Helper function to add section header
       const addSectionHeader = (title: string) => {
-        yPosition += 10; // Extra space before section
+        yPosition += 6; // Reduced space before section
         pdf.setDrawColor(templateColors.primary);
-        pdf.setLineWidth(1);
+        pdf.setLineWidth(0.5);
         pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 8;
-        
-        addText(title, 16, 'bold', templateColors.primary);
         yPosition += 5;
+        
+        addText(title, 14, 'bold', templateColors.primary, 3); // Smaller font, less spacing
       };
       
       // Header - Name
       const name = `${formData.personalInfo.firstName} ${formData.personalInfo.lastName}`;
-      addText(name, 24, 'bold', templateColors.primary);
-      yPosition += 5;
+      addText(name, 22, 'bold', templateColors.primary, 3); // Smaller title, less spacing
       
       // Contact Information
       const contactInfo = [
@@ -256,27 +254,27 @@ const AutoFillCVBuilder: React.FC = () => {
       ].filter(Boolean).join(' • ');
       
       if (contactInfo) {
-        addText(contactInfo, 12, 'normal', templateColors.secondary);
+        addText(contactInfo, 11, 'normal', templateColors.secondary, 1); // Smaller font, minimal spacing
       }
       
       // Professional Summary
       if (formData.professionalSummary) {
         addSectionHeader('PROFESSIONAL SUMMARY');
-        addText(formData.professionalSummary, 11);
+        addText(formData.professionalSummary, 10, 'normal', '#000000', 1); // Smaller font, minimal spacing
       }
       
       // Technical Skills
       if (formData.technicalSkills.length > 0) {
         addSectionHeader('TECHNICAL SKILLS');
         const skillsText = formData.technicalSkills.join(' • ');
-        addText(skillsText, 11);
+        addText(skillsText, 10, 'normal', '#000000', 1);
       }
       
       // Soft Skills
       if (formData.softSkills.length > 0) {
         addSectionHeader('SOFT SKILLS');
         const skillsText = formData.softSkills.join(' • ');
-        addText(skillsText, 11);
+        addText(skillsText, 10, 'normal', '#000000', 1);
       }
       
       // Work Experience
@@ -285,21 +283,18 @@ const AutoFillCVBuilder: React.FC = () => {
         
         formData.experience.forEach((exp, index) => {
           // Job title
-          addText(exp.jobTitle, 14, 'bold', templateColors.primary);
+          addText(exp.jobTitle, 12, 'bold', templateColors.primary, 1);
           
-          // Company
-          addText(exp.company, 12, 'bold', templateColors.secondary);
+          // Company and date/location on same line to save space
+          const companyDate = `${exp.company} | ${exp.startDate} - ${exp.endDate} • ${exp.location}`;
+          addText(companyDate, 10, 'normal', templateColors.secondary, 1);
           
-          // Date and location
-          const dateLocation = `${exp.startDate} - ${exp.endDate} • ${exp.location}`;
-          addText(dateLocation, 10, 'normal', templateColors.accent);
-          
-          // Responsibilities
+          // Responsibilities - more compact
           if (exp.responsibilities) {
-            addText(exp.responsibilities, 10);
+            addText(exp.responsibilities, 9, 'normal', '#000000', 1); // Smaller font
           }
           
-          yPosition += 8; // Extra space between positions
+          yPosition += 3; // Minimal space between positions
         });
       }
       
@@ -308,17 +303,15 @@ const AutoFillCVBuilder: React.FC = () => {
         addSectionHeader('EDUCATION');
         
         formData.education.forEach((edu, index) => {
-          // Degree
-          addText(edu.degree, 12, 'bold', templateColors.primary);
+          // Degree and institution on same line
+          const degreeInstitution = `${edu.degree} - ${edu.institution}`;
+          addText(degreeInstitution, 11, 'bold', templateColors.primary, 1);
           
-          // Institution
-          addText(edu.institution, 11, 'bold', templateColors.secondary);
+          // Field and year - more compact
+          const fieldYear = `${edu.field} • ${edu.graduationYear}`;
+          addText(fieldYear, 9, 'normal', templateColors.accent, 1);
           
-          // Field and year
-          const fieldYear = `${edu.field} • Graduated: ${edu.graduationYear}`;
-          addText(fieldYear, 10, 'normal', templateColors.accent);
-          
-          yPosition += 5; // Space between education entries
+          yPosition += 2; // Minimal space between education entries
         });
       }
       
