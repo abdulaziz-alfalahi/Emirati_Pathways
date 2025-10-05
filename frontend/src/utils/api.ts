@@ -70,6 +70,10 @@ export const cvBuilderApi = {
   getTemplates: () =>
     wrap<TemplateMeta[]>(restClient.get('/api/cv/templates')),
 
+  // Fetch server-rendered preview for a specific template
+  getTemplatePreview: (id: string) =>
+    wrap(restClient.get(`/api/cv/templates/${id}/preview`)),
+
   export: (payload: { id: string; format: 'pdf' | 'docx' | 'json' }) =>
     wrap<{ url: string }>(
       restClient.post(`/api/cv/${payload.id}/export`, { format: payload.format })

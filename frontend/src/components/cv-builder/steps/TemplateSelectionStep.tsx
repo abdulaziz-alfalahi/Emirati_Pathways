@@ -7,6 +7,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cvBuilderApi } from '@/utils/api';
 import {
   Briefcase,
   GraduationCap,
@@ -65,6 +68,8 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>(data.template || '');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -138,6 +143,25 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
       alert('Failed to create CV. Please try again.');
     }
   };
+
+  // Load server-rendered preview when dialog opens
+  useEffect(() => {
+    const fetchPreview = async () => {
+      if (!previewTemplate) return;
+      setIsPreviewLoading(true);
+      setPreviewHtml('');
+      try {
+        const res = await cvBuilderApi.getTemplatePreview(previewTemplate);
+        const html = (res?.data?.preview_html ?? res?.data?.preview) as string | undefined;
+        setPreviewHtml(html || '<div class="p-4 text-sm text-gray-600">No preview available.</div>');
+      } catch (e) {
+        setPreviewHtml('<div class="p-4 text-sm text-red-600">Failed to load preview.</div>');
+      } finally {
+        setIsPreviewLoading(false);
+      }
+    };
+    fetchPreview();
+  }, [previewTemplate]);
 
   const getTemplateIcon = (category: string) => {
     switch (category) {
@@ -343,6 +367,25 @@ export const TemplateSelectionStep: React.FC<TemplateSelectionStepProps> = ({
           );
         })}
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewTemplate} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Template Preview</DialogTitle>
+          </DialogHeader>
+          <div className="border rounded overflow-hidden">
+            {isPreviewLoading ? (
+              <div className="p-6 text-sm text-gray-600">Loading preview…</div>
+            ) : (
+              <ScrollArea className="h-[70vh]">
+                {/* eslint-disable-next-line react/no-danger */}
+                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              </ScrollArea>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* No templates message */}
       {filteredTemplates.length === 0 && (
