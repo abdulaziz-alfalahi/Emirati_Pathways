@@ -152,12 +152,20 @@ const AutoFillCVBuilder: React.FC = () => {
       const token = localStorage.getItem('access_token') || 'mock_token_1';
       let parsedOk = false;
       try {
-        const res = await fetch(`${API_BASE_URL}/api/cv/upload`, {
+        let res = await fetch(`${API_BASE_URL}/api/cv/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: form
         });
         setUploadProgress(60);
+        if (!res.ok) {
+          // Fallback to legacy endpoint used on prior branch
+          res = await fetch(`${API_BASE_URL}/api/candidate/cv/upload`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: form
+          });
+        }
         if (res.ok) {
           const json = await res.json();
           const mapped = mapParsedToForm(json);
