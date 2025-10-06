@@ -31,6 +31,7 @@ const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
 // Resume Builder
 const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
+const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
 
 // Home Page (not lazy loaded for faster initial access)
 import BilingualHomePage from '@/pages/BilingualHomePage';
@@ -188,7 +189,7 @@ const AppContent: React.FC = () => {
                   path="/cv-builder" 
                   element={
                     <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                      <CVBuilderPage />
+                      <AutoFillCVBuilder />
                     </ProtectedRoute>
                   } 
                 />
