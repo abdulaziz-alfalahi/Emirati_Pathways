@@ -55,10 +55,10 @@ type SavedCV = {
 };
 
 const TEMPLATES = [
-  { id: 'professional', name: 'Professional' },
-  { id: 'modern', name: 'Modern' },
-  { id: 'creative', name: 'Creative' },
-  { id: 'executive', name: 'Executive' }
+  { id: 'uae_government_d33', name: 'Government (D33-aligned)' },
+  { id: 'corporate_d33_sectors', name: 'Corporate (D33 sectors)' },
+  { id: 'education_e33', name: 'Education (E33 strategy)' },
+  { id: 'talent_2033', name: 'Talent 2033 (future skills)' }
 ];
 
 const STORAGE_KEY = 'autoFillCVs';
@@ -96,30 +96,98 @@ const AutoFillCVBuilder: React.FC = () => {
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Upload handlers (client-side only demo)
+  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:5003';
+
+  const mapParsedToForm = (parsed: any): CVFormData => {
+    const p = parsed?.data || parsed || {};
+    const pi = p.personal_info || {};
+    const exp = Array.isArray(p.experience) ? p.experience : [];
+    const edu = Array.isArray(p.education) ? p.education : [];
+    const skills = Array.isArray(p.skills) ? p.skills : [];
+    const tech: string[] = [];
+    const soft: string[] = [];
+    for (const s of skills) {
+      if (!s) continue;
+      const name = typeof s === 'string' ? s : s.name || s.skill || '';
+      if (!name) continue;
+      if (/leadership|communication|team|management|collaborat|problem/i.test(name)) soft.push(name);
+      else tech.push(name);
+    }
+    return {
+      personalInfo: {
+        firstName: (pi.full_name?.split(' ')[0] || p.first_name || '') as string,
+        lastName: (pi.full_name?.split(' ').slice(1).join(' ') || p.last_name || '') as string,
+        email: pi.email || p.email || '',
+        phone: pi.phone || p.phone || '',
+        location: [pi.city, pi.emirate].filter(Boolean).join(', '),
+        nationality: pi.nationality || 'UAE'
+      },
+      professionalSummary: p.professional_summary || p.summary || '',
+      technicalSkills: tech.slice(0, 12),
+      softSkills: soft.slice(0, 12),
+      experience: exp.map((e: any) => ({
+        jobTitle: e.job_title || e.title || '',
+        company: e.company || '',
+        location: e.location || [e.city, e.emirate].filter(Boolean).join(', '),
+        startDate: e.start_date || '',
+        endDate: e.end_date || '',
+        responsibilities: Array.isArray(e.description) ? e.description.join('\n') : (e.description || '')
+      })),
+      education: edu.map((e: any) => ({
+        degree: e.degree || '',
+        institution: e.institution || '',
+        graduationYear: e.graduation_year || e.year || '',
+        field: e.field || e.field_of_study || ''
+      }))
+    };
+  };
+
   const handleFileUpload = useCallback(async (file: File) => {
     setIsUploading(true);
     setUploadProgress(10);
     try {
-      // Demo: just simulate parsing delay
-      await new Promise((r) => setTimeout(r, 600));
-      setUploadProgress(60);
-      // Minimal fake parse: pre-fill name from filename
-      const base = file.name.replace(/\.[^.]+$/, '').split(/[-_ ]/);
-      setFormData((prev) => ({
-        ...prev,
-        personalInfo: {
-          ...prev.personalInfo,
-          firstName: prev.personalInfo.firstName || base[0] || '',
-          lastName: prev.personalInfo.lastName || base[1] || ''
-        },
-        professionalSummary: prev.professionalSummary || 'Experienced professional in the UAE market.'
-      }));
+      // First, try backend parsing if available
+      const form = new FormData();
+      form.append('cv_file', file);
+      const token = localStorage.getItem('access_token') || 'mock_token_1';
+      let parsedOk = false;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/cv/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: form
+        });
+        setUploadProgress(60);
+        if (res.ok) {
+          const json = await res.json();
+          const mapped = mapParsedToForm(json);
+          setFormData(mapped);
+          parsedOk = true;
+        }
+      } catch (e) {
+        // ignore, fallback below
+      }
+
+      if (!parsedOk) {
+        // Fallback: quick client-side prefill from filename
+        const base = file.name.replace(/\.[^.]+$/, '').split(/[-_ ]/);
+        setFormData((prev) => ({
+          ...prev,
+          personalInfo: {
+            ...prev.personalInfo,
+            firstName: prev.personalInfo.firstName || (base[0] || ''),
+            lastName: prev.personalInfo.lastName || (base.slice(1).join(' ') || '')
+          },
+          professionalSummary: prev.professionalSummary || 'Experienced professional in the UAE market.'
+        }));
+      }
+
       setUploadProgress(100);
       setStep('template');
     } finally {
       setTimeout(() => setIsUploading(false), 300);
     }
-  }, []);
+  }, [API_BASE_URL]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -209,7 +277,11 @@ const AutoFillCVBuilder: React.FC = () => {
           Upload your CV for quick auto-fill, or continue without uploading
         </p>
       </div>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+      <div
+        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
+        onDragOver={(e) => { e.preventDefault(); }}
+        onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFileUpload(f); }}
+      >
         <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <p className="text-lg font-medium text-gray-900 mb-2">Drag and drop your CV here</p>
         <p className="text-gray-500 mb-4">or</p>
@@ -218,6 +290,11 @@ const AutoFillCVBuilder: React.FC = () => {
           {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
           {isUploading ? 'Uploading...' : 'Choose File'}
         </label>
+        <div className="mt-3">
+          <button type="button" onClick={() => document.getElementById('cv-upload')?.click()} className="px-4 py-2 border rounded">
+            Browse file
+          </button>
+        </div>
         {isUploading && (
           <div className="mt-4">
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -350,9 +427,7 @@ const AutoFillCVBuilder: React.FC = () => {
             <button onClick={() => { loadSavedCVs(); setShowLoadDialog(true); }} className="px-3 py-2 border rounded flex items-center gap-2" disabled={isLoading}>
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Load CV
             </button>
-            <button onClick={() => setShowSaveDialog(true)} className="px-3 py-2 border rounded flex items-center gap-2" disabled={isSaving}>
-              <Save className="w-4 h-4" /> {currentCVId ? 'Update CV' : 'Save CV'}
-            </button>
+            {/* Removed duplicate top Save button per feedback */}
           </div>
         </div>
 
