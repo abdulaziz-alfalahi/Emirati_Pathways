@@ -165,6 +165,14 @@ try:
 except ImportError as e:
     logger.error(f"❌ Failed to import analytics routes: {e}")
 
+# Import and register enhanced CV routes (upload/parse with Gemini)
+try:
+    from routes.enhanced_cv_routes import enhanced_cv_bp
+    app.register_blueprint(enhanced_cv_bp)
+    logger.info("✅ Enhanced CV routes registered successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import enhanced CV routes: {e}")
+
 # Import and register mentor routes
 try:
     from mentor_routes import mentor_bp
