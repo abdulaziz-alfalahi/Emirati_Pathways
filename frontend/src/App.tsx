@@ -188,7 +188,7 @@ const AppContent: React.FC = () => {
                   path="/cv-builder" 
                   element={
                     <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                      <ResumeBuilderPage />
+                      <CVBuilderPage />
                     </ProtectedRoute>
                   } 
                 />
