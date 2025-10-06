@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { Languages } from "lucide-react";
-import { useLanguage } from "@/context/LanguageContext";
+import { useLanguage } from "@/context/EnhancedLanguageContext";
 import { useTranslation } from 'react-i18next';
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export function LanguageToggle() {
   const handleLanguageChange = async (newLanguage: 'en' | 'ar') => {
     console.log('Language toggle clicked:', newLanguage);
     
-    await setLanguage(newLanguage);
+    setLanguage(newLanguage);
     
     // Force component re-render by waiting a bit
     setTimeout(() => {

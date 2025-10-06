@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModernCareerPageLayout } from '@/components/career/ModernCareerPageLayout';
 import { Compass, Target, TrendingUp, Users, Briefcase, Award, Network, BarChart3, CheckCircle, Star, ArrowRight } from 'lucide-react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 const ModernCareerPlanningHubPage: React.FC = () => {
   const { t } = useTranslation();

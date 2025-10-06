@@ -1,7 +1,7 @@
 // src/pages/CVBuilderPage.tsx
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { CareerPageLayout } from '@/components/career/CareerPageLayout';
 import {
   FileText,

@@ -1,6 +1,6 @@
 
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 export const useLifelongEngagementTranslation = (namespace?: string) => {
   const namespaces = namespace ? [namespace, 'common'] : ['lifelong-engagement', 'common'];

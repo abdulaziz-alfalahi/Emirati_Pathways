@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe, Phone, Mail } from 'lucide-react';
 import { navigationGroups } from '@/components/navigation/navigationConfig';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { useTranslation } from 'react-i18next';
 
 interface EnhancedHybridGovernmentNavProps {

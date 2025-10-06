@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Star, Users, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import EnhancedHybridGovernmentNav from '@/components/layout/EnhancedHybridGovernmentNav';
 
 interface Stat {

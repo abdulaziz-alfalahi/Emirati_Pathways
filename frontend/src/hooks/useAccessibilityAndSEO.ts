@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 interface SEOData {
   title: string;

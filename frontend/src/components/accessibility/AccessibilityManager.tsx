@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 interface AccessibilityManagerProps {
   children: React.ReactNode;

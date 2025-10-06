@@ -16,7 +16,7 @@ import {
   Play
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import EnhancedHybridGovernmentNav from '@/components/layout/EnhancedHybridGovernmentNav';
 
 const EnhancedHomePage: React.FC = () => {
