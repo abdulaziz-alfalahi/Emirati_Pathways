@@ -50,10 +50,14 @@ def get_user_id_from_token():
         return 'user_123'
     return None
 
-@enhanced_cv_bp.route('/upload', methods=['POST'])
+@enhanced_cv_bp.route('/upload', methods=['POST', 'OPTIONS'])
 def upload_cv():
     """Upload and parse CV file"""
     try:
+        # Handle CORS preflight
+        if request.method == 'OPTIONS':
+            return ('', 204)
+
         # Check authentication
         user_id = get_user_id_from_token()
         if not user_id:
@@ -169,10 +173,14 @@ def upload_cv():
             'message': f'Upload failed: {str(e)}'
         }), 500
 
-@enhanced_cv_bp.route('/parse-text', methods=['POST'])
+@enhanced_cv_bp.route('/parse-text', methods=['POST', 'OPTIONS'])
 def parse_cv_text():
     """Parse CV from text input"""
     try:
+        # Handle CORS preflight
+        if request.method == 'OPTIONS':
+            return ('', 204)
+
         # Check authentication
         user_id = get_user_id_from_token()
         if not user_id:
