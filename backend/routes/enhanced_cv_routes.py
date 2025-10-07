@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 import uuid
 
 # Import our CV processing modules
-from ..cv_parser import cv_parser
+from ..cv_parser import CVParser
 from ..cv_storage_manager import cv_storage_manager
 from ..cv_job_matching_integration import cv_job_matching_integration
 
@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 
 # Create blueprint
 enhanced_cv_bp = Blueprint('enhanced_cv', __name__, url_prefix='/api/cv')
+
+# Initialize CV parser instance (lazily handle failures)
+try:
+    cv_parser = CVParser()
+    logger.info("✅ CVParser initialized for enhanced_cv_routes")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize CVParser: {e}")
+    cv_parser = None
 
 # Configuration
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'txt'}
@@ -77,89 +85,82 @@ def upload_cv():
                 'message': f'File type not allowed. Supported: {", ".join(ALLOWED_EXTENSIONS)}'
             }), 400
         
-        # Check file size
-        file.seek(0, os.SEEK_END)
-        file_size = file.tell()
-        file.seek(0)
+        # Check file size (without consuming stream for parser)
+        try:
+            file.stream.seek(0, os.SEEK_END)
+            file_size = file.stream.tell()
+            file.stream.seek(0)
+        except Exception:
+            file_size = None
         
-        if file_size > MAX_FILE_SIZE:
+        if file_size and file_size > MAX_FILE_SIZE:
             return jsonify({
                 'success': False,
                 'message': f'File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB'
             }), 400
-        
-        # Generate unique filename
+        if cv_parser is None:
+            return jsonify({
+                'success': False,
+                'message': 'CV parser not available'
+            }), 503
+
+        # Parse CV using the parser (works with FileStorage directly)
+        logger.info(f"Parsing CV: {file.filename}")
+        parse_result = cv_parser.parse_cv_file(file, user_id=user_id)
+
+        if not parse_result.get('success'):
+            return jsonify({
+                'success': False,
+                'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
+            }), 400
+
+        # Add file metadata for storage layer
         filename = secure_filename(file.filename)
-        unique_filename = f"{uuid.uuid4()}_{filename}"
-        
-        # Save file temporarily
-        upload_folder = '/tmp/cv_uploads'
-        os.makedirs(upload_folder, exist_ok=True)
-        file_path = os.path.join(upload_folder, unique_filename)
-        file.save(file_path)
-        
-        try:
-            # Parse CV
-            logger.info(f"Parsing CV: {filename}")
-            parse_result = cv_parser.parse_cv(file_path)
-            
-            if not parse_result.get('success'):
-                return jsonify({
-                    'success': False,
-                    'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
-                }), 400
-            
-            # Add file metadata
-            parse_result['file_info'] = {
-                'original_filename': filename,
-                'file_size': file_size,
-                'file_type': filename.rsplit('.', 1)[1].lower(),
-                'mime_type': file.content_type,
-                'upload_timestamp': datetime.utcnow().isoformat()
-            }
-            
-            # Store CV data
-            storage_result = cv_storage_manager.store_cv(parse_result, user_id)
-            
-            if not storage_result.get('success'):
-                return jsonify({
-                    'success': False,
-                    'message': f'CV storage failed: {storage_result.get("message", "Unknown error")}'
-                }), 500
-            
-            # Process for job matching
-            matching_result = cv_job_matching_integration.process_cv_for_job_matching(parse_result, user_id)
-            
-            # Find initial job matches
-            job_matches = {}
-            if matching_result.get('success'):
-                job_matches = cv_job_matching_integration.find_job_matches(
-                    matching_result['matching_criteria'], 
-                    limit=10
-                )
-            
-            # Complete user profile
-            profile_result = cv_job_matching_integration.complete_profile_from_cv(parse_result)
-            
-            # Prepare response
-            response_data = {
-                'success': True,
-                'message': 'CV uploaded and processed successfully',
-                'cv_id': storage_result.get('cv_id'),
-                'data': parse_result.get('data', {}),
-                'analysis': parse_result.get('analysis', {}),
-                'file_info': parse_result['file_info'],
-                'job_matches': job_matches.get('matches', [])[:5],  # Top 5 matches
-                'profile_completion': profile_result.get('completion_percentage', 0),
-                'processing_time': parse_result.get('processing_time', 0)
-            }
-            
-            return jsonify(response_data), 200
-            
-        finally:
-            # Clean up temporary file
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        parse_result['file_info'] = {
+            'original_filename': filename,
+            'file_size': file_size,
+            'file_type': filename.rsplit('.', 1)[1].lower(),
+            'mime_type': file.content_type,
+            'upload_timestamp': datetime.utcnow().isoformat()
+        }
+
+        # Store CV data
+        storage_result = cv_storage_manager.store_cv(parse_result, user_id)
+
+        if not storage_result.get('success'):
+            return jsonify({
+                'success': False,
+                'message': f'CV storage failed: {storage_result.get("message", "Unknown error")}'
+            }), 500
+
+        # Process for job matching
+        matching_result = cv_job_matching_integration.process_cv_for_job_matching(parse_result, user_id)
+
+        # Find initial job matches
+        job_matches = {}
+        if matching_result.get('success'):
+            job_matches = cv_job_matching_integration.find_job_matches(
+                matching_result['matching_criteria'],
+                limit=10
+            )
+
+        # Complete user profile
+        profile_result = cv_job_matching_integration.complete_profile_from_cv(parse_result)
+
+        # Prepare response
+        response_data = {
+            'success': True,
+            'message': 'CV uploaded and processed successfully',
+            'cv_id': storage_result.get('cv_id'),
+            'data': parse_result.get('data', {}),
+            'analysis': parse_result.get('analysis', {}),
+            'file_info': parse_result['file_info'],
+            'job_matches': job_matches.get('matches', [])[:5],  # Top 5 matches
+            'profile_completion': profile_result.get('completion_percentage', 0),
+            'processing_time': parse_result.get('metadata', {}).get('processing_time')
+        }
+
+        return jsonify(response_data), 200
     
     except Exception as e:
         logger.error(f"CV upload error: {str(e)}")
@@ -205,7 +206,12 @@ def parse_cv_text():
         
         # Parse CV text
         logger.info("Parsing CV from text input")
-        parse_result = cv_parser.parse_cv_text(cv_text)
+        if cv_parser is None:
+            return jsonify({
+                'success': False,
+                'message': 'CV parser not available'
+            }), 503
+        parse_result = cv_parser.parse_cv_text(cv_text, user_id=user_id)
         
         if not parse_result.get('success'):
             return jsonify({
@@ -480,7 +486,7 @@ def health_check():
     try:
         # Test basic functionality
         test_result = {
-            'cv_parser': hasattr(cv_parser, 'parse_cv'),
+            'cv_parser': hasattr(cv_parser, 'parse_cv_file'),
             'storage_manager': hasattr(cv_storage_manager, 'store_cv'),
             'job_matching': hasattr(cv_job_matching_integration, 'process_cv_for_job_matching'),
             'timestamp': datetime.utcnow().isoformat()
