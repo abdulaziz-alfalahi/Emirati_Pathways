@@ -351,6 +351,39 @@ def ensure_cv_tables_exist():
         logger.error(f"Error ensuring CV tables: {e}")
 
 # =====================================================
+# VACANCY TABLE INITIALIZATION
+# =====================================================
+
+def ensure_vacancy_tables_exist():
+    """Create recruiter vacancies table for matching."""
+    try:
+        execute_query(
+            """
+            CREATE TABLE IF NOT EXISTS recruiter_vacancies (
+                id UUID PRIMARY KEY,
+                title TEXT NOT NULL,
+                employer TEXT,
+                location TEXT,
+                description TEXT,
+                requirements JSONB,
+                tags JSONB,
+                posted_by UUID,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            fetch_all=False
+        )
+        execute_query(
+            """
+            CREATE INDEX IF NOT EXISTS idx_vacancies_created ON recruiter_vacancies (created_at DESC);
+            """,
+            fetch_all=False
+        )
+        logger.info("✅ Vacancy tables ensured")
+    except Exception as e:
+        logger.error(f"Error ensuring vacancy tables: {e}")
+
+# =====================================================
 # CV PARSING UTILITIES
 # =====================================================
 
@@ -581,6 +614,66 @@ Return only the JSON object, no additional text.
     except Exception as e:
         logger.error(f"Gemini CV parsing error: {e}")
         return None
+
+# =====================================================
+# MATCHING UTILITIES
+# =====================================================
+
+def _tokenize(text: str) -> set:
+    try:
+        import re
+        words = re.findall(r"[A-Za-z0-9_\-\+]+", (text or '').lower())
+        return set(words)
+    except Exception:
+        return set()
+
+def _collect_cv_keywords(cv_row: dict) -> dict:
+    personal_info = cv_row.get('personal_info') or {}
+    prof = cv_row.get('professional_summary') or ''
+    tech = cv_row.get('technical_skills') or []
+    soft = cv_row.get('soft_skills') or []
+    experience = cv_row.get('work_experience') or []
+    edu = cv_row.get('education') or []
+
+    skill_words = set([s.lower() for s in tech + soft if isinstance(s, str)])
+    summary_words = _tokenize(prof)
+    exp_words = set()
+    for e in experience:
+        exp_words |= _tokenize((e.get('responsibilities') or '') + ' ' + (e.get('jobTitle') or e.get('job_title') or ''))
+    edu_words = set()
+    for e in edu:
+        edu_words |= _tokenize((e.get('degree') or '') + ' ' + (e.get('field') or e.get('field_of_study') or ''))
+
+    return {
+        'skills': skill_words,
+        'text': summary_words | exp_words | edu_words,
+        'location': (personal_info.get('location') or '').lower()
+    }
+
+def _vacancy_keywords(v: dict) -> dict:
+    desc = (v.get('description') or '')
+    title = (v.get('title') or '')
+    tags = v.get('tags') or []
+    req = v.get('requirements') or []
+    return {
+        'text': _tokenize(desc + ' ' + title) | set([t.lower() for t in tags if isinstance(t, str)]),
+        'skills': set([r.lower() for r in req if isinstance(r, str)]),
+        'location': (v.get('location') or '').lower()
+    }
+
+def _compute_match_score(cvk: dict, vk: dict) -> int:
+    # Simple heuristic: skills 50, text 40, location 10
+    skill_overlap = len(cvk['skills'] & vk['skills'])
+    skill_total = max(1, len(vk['skills']))
+    skill_score = 50 * (skill_overlap / skill_total)
+
+    text_overlap = len(cvk['text'] & vk['text'])
+    text_total = max(1, len(vk['text']))
+    text_score = 40 * (text_overlap / text_total)
+
+    loc_score = 10 if (cvk['location'] and cvk['location'] in vk['location']) else 0
+
+    return int(round(min(100, skill_score + text_score + loc_score)))
 
 # =====================================================
 # PDF GENERATION UTILITIES
@@ -1381,6 +1474,70 @@ def save_cv():
             'success': False,
             'message': 'Failed to save CV due to system error'
         }), 500
+
+@app.route('/api/recruiter/vacancies', methods=['GET'])
+def list_vacancies():
+    """List recruiter-uploaded vacancies (basic fields)."""
+    try:
+        rows = execute_query("SELECT id, title, employer, location, description, requirements, tags, created_at FROM recruiter_vacancies ORDER BY created_at DESC")
+        result = []
+        for r in rows or []:
+            d = dict(r)
+            # ensure json serializable
+            if isinstance(d.get('created_at'), datetime):
+                d['created_at'] = d['created_at'].isoformat()
+            result.append(d)
+        return jsonify({'success': True, 'data': result}), 200
+    except Exception as e:
+        logger.error(f"List vacancies error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to list vacancies'}), 500
+
+@app.route('/api/matching/cv/<cv_id>/top-vacancies', methods=['GET'])
+def match_cv_top_vacancies(cv_id: str):
+    """Return top-N matching vacancies for a specific CV."""
+    try:
+        limit = int(request.args.get('limit', 10))
+        cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
+        if not cv:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+        cvk = _collect_cv_keywords(dict(cv))
+        vacancies = execute_query("SELECT * FROM recruiter_vacancies ORDER BY created_at DESC") or []
+
+        scored = []
+        for v in vacancies:
+            vd = dict(v)
+            vk = _vacancy_keywords(vd)
+            score = _compute_match_score(cvk, vk)
+            vd['match_score'] = score
+            vd['snippet'] = (vd.get('description') or '')[:200]
+            scored.append(vd)
+
+        scored.sort(key=lambda x: x['match_score'], reverse=True)
+        return jsonify({'success': True, 'matches': scored[:limit]}), 200
+    except Exception as e:
+        logger.error(f"Match CV error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Matching failed'}), 500
+
+@app.route('/api/matching/visible/top-vacancies', methods=['GET'])
+def match_visible_cv_top_vacancies():
+    """Return top-N matches for the user's visible CV."""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+
+        user_uuid = '550e8400-e29b-41d4-a716-446655440000' if user_id == 'mock_user_candidate' else user_id
+        cv = execute_query("SELECT * FROM user_cvs WHERE user_id = %s::uuid AND is_visible = TRUE LIMIT 1", (user_uuid,), fetch_one=True)
+        if not cv:
+            return jsonify({'success': False, 'message': 'No visible CV set'}), 404
+        return match_cv_top_vacancies(cv['id'])
+    except Exception as e:
+        logger.error(f"Match visible CV error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Matching failed'}), 500
 
 @app.route('/api/cv/list', methods=['GET'])
 def list_user_cvs():
