@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -134,6 +134,34 @@ const AutoFillCVBuilder: React.FC = () => {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [cvTitle, setCvTitle] = useState('My CV');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Autosave state/refs
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const lastSavedHashRef = useRef<string>('');
+  const autosaveTimerRef = useRef<number | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  const retryCountRef = useRef<number>(0);
+  const skipAutosaveRef = useRef<boolean>(false);
+
+  const buildSavePayload = () => ({
+    cvData: formData,
+    title: cvTitle,
+    templateId: selectedTemplate,
+    cvScore,
+    atsScore
+  });
+
+  const computePayloadHash = () => JSON.stringify(buildSavePayload());
+
+  const isFormMeaningful = () => {
+    const pi = formData.personalInfo;
+    if ((pi.firstName && pi.firstName.trim()) || (pi.lastName && pi.lastName.trim())) return true;
+    if (formData.professionalSummary && formData.professionalSummary.trim().length > 0) return true;
+    if (formData.technicalSkills.length > 0 || formData.softSkills.length > 0) return true;
+    if (formData.experience.length > 0 || formData.education.length > 0) return true;
+    return false;
+  };
 
   const handleLanguageToggle = () => {
     const newLang = currentLanguage === 'en' ? 'ar' : 'en';
@@ -345,6 +373,9 @@ const AutoFillCVBuilder: React.FC = () => {
         alert(result.message);
         setShowSaveDialog(false);
         loadSavedCVs(); // Refresh the list
+        lastSavedHashRef.current = computePayloadHash();
+        setLastSavedAt(new Date().toISOString());
+        setAutosaveStatus('saved');
       } else {
         alert(`Failed to save CV: ${result.message}`);
       }
@@ -357,6 +388,7 @@ const AutoFillCVBuilder: React.FC = () => {
   };
 
   const handleLoadCV = async (cvId: string) => {
+    skipAutosaveRef.current = true;
     setIsLoading(true);
     try {
       const result = await cvStorageService.getCV(cvId);
@@ -390,6 +422,12 @@ const AutoFillCVBuilder: React.FC = () => {
         // Move to form step
         setCurrentStep('form');
         setShowLoadDialog(false);
+        setTimeout(() => {
+          lastSavedHashRef.current = computePayloadHash();
+          setLastSavedAt(new Date().toISOString());
+          setAutosaveStatus('saved');
+          skipAutosaveRef.current = false;
+        }, 0);
         
         console.log('✅ CV loaded successfully');
       } else {
@@ -426,6 +464,7 @@ const AutoFillCVBuilder: React.FC = () => {
   };
 
   const autoFillForm = (analysisData: CVData) => {
+    skipAutosaveRef.current = true;
     console.log('🔄 Auto-filling form with analysis data:', analysisData);
     
     const nameParts = analysisData.personal_info?.name?.split(' ') || ['', ''];
@@ -466,6 +505,7 @@ const AutoFillCVBuilder: React.FC = () => {
     // Calculate scores after auto-fill
     setTimeout(() => {
       updateScores(newFormData);
+      skipAutosaveRef.current = false;
     }, 100);
     
     console.log('✅ Form auto-filled with extracted CV data');
@@ -610,6 +650,75 @@ const AutoFillCVBuilder: React.FC = () => {
       setIsExporting(false);
     }
   };
+
+  // Restore last edited CV on mount
+  useEffect(() => {
+    const lastId = localStorage.getItem('lastCvId');
+    if (lastId) {
+      handleLoadCV(lastId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced autosave effect
+  useEffect(() => {
+    if (skipAutosaveRef.current) return;
+    if (!isFormMeaningful()) return;
+
+    const currentHash = computePayloadHash();
+    if (currentHash === lastSavedHashRef.current) return;
+
+    if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = window.setTimeout(async () => {
+      setAutosaveStatus('saving');
+      try {
+        const payload = buildSavePayload();
+        if (currentCVId) {
+          const res = await cvStorageService.updateCV(currentCVId, { ...payload, changeSummary: 'Autosave' });
+          if (!res.success) throw new Error(res.message);
+        } else {
+          const res = await cvStorageService.saveCV(payload);
+          if (!res.success || !res.cv_id) throw new Error(res.message || 'Autosave failed');
+          setCurrentCVId(res.cv_id);
+          localStorage.setItem('lastCvId', res.cv_id);
+        }
+        lastSavedHashRef.current = currentHash;
+        setLastSavedAt(new Date().toISOString());
+        setAutosaveStatus('saved');
+        retryCountRef.current = 0;
+      } catch (e) {
+        console.error('Autosave error:', e);
+        setAutosaveStatus('error');
+        if (retryCountRef.current < 3) {
+          retryCountRef.current += 1;
+          if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = window.setTimeout(() => {
+            lastSavedHashRef.current = '';
+            setAutosaveStatus('idle');
+          }, 5000);
+        }
+      }
+    }, 2000);
+
+    return () => {
+      if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, selectedTemplate, cvTitle, cvScore, atsScore, currentCVId]);
+
+  // Warn on unload if there are unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const currentHash = computePayloadHash();
+      if (currentHash !== lastSavedHashRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, selectedTemplate, cvTitle, cvScore, atsScore]);
 
   const getTemplateColors = (template: string) => {
     const colors = {
