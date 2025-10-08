@@ -22,6 +22,7 @@ import hashlib
 import secrets
 from functools import wraps
 from typing import Dict, List, Optional, Any
+import uuid as uuidlib
 import google.generativeai as genai
 import PyPDF2
 from docx import Document
@@ -266,6 +267,88 @@ def ensure_fallback_schools_exist():
                 
     except Exception as e:
         logger.error(f"Error ensuring fallback schools: {e}")
+
+# =====================================================
+# CV TABLE INITIALIZATION
+# =====================================================
+
+def ensure_cv_tables_exist():
+    """Create required tables/indexes for CV persistence if they don't exist"""
+    try:
+        # user_cvs table
+        execute_query(
+            """
+            CREATE TABLE IF NOT EXISTS user_cvs (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL,
+                title TEXT NOT NULL,
+                template_name TEXT,
+                personal_info JSONB,
+                professional_summary TEXT,
+                technical_skills JSONB,
+                soft_skills JSONB,
+                work_experience JSONB,
+                education JSONB,
+                cv_score INTEGER DEFAULT 0,
+                ats_score INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'draft',
+                is_visible BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                last_accessed_at TIMESTAMPTZ
+            )
+            """,
+            fetch_all=False
+        )
+
+        # cv_versions table
+        execute_query(
+            """
+            CREATE TABLE IF NOT EXISTS cv_versions (
+                id UUID PRIMARY KEY,
+                cv_id UUID REFERENCES user_cvs(id) ON DELETE CASCADE,
+                version_number INTEGER,
+                cv_data JSONB,
+                change_summary TEXT,
+                created_by UUID,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            fetch_all=False
+        )
+
+        # cv_analytics table
+        execute_query(
+            """
+            CREATE TABLE IF NOT EXISTS cv_analytics (
+                analytics_id UUID PRIMARY KEY,
+                cv_id UUID REFERENCES user_cvs(id) ON DELETE CASCADE,
+                user_id UUID,
+                event_type TEXT,
+                event_data JSONB,
+                timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            fetch_all=False
+        )
+
+        # indexes
+        execute_query(
+            """
+            CREATE INDEX IF NOT EXISTS idx_user_cvs_user_id ON user_cvs (user_id);
+            """,
+            fetch_all=False
+        )
+        # unique visible per user (partial index)
+        execute_query(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_user_visible_cv_unique ON user_cvs (user_id) WHERE is_visible = TRUE;
+            """,
+            fetch_all=False
+        )
+        logger.info("✅ CV tables ensured")
+    except Exception as e:
+        logger.error(f"Error ensuring CV tables: {e}")
 
 # =====================================================
 # CV PARSING UTILITIES
@@ -1210,7 +1293,7 @@ def save_cv():
         
         cv_data = data.get('cvData')
         title = data.get('title', 'My CV')
-        template_id = data.get('templateId', 'government-executive')
+        template_name = data.get('templateId', 'government-executive')
         
         if not cv_data:
             return jsonify({
@@ -1220,38 +1303,48 @@ def save_cv():
         
         # Convert mock user_id to UUID for development
         if user_id == 'mock_user_candidate':
-            # Use a fixed UUID for mock user
             user_uuid = '550e8400-e29b-41d4-a716-446655440000'
         else:
             user_uuid = user_id
-        
+
+        # Enforce limit: max 3 active CVs (non-archived)
+        count_query = "SELECT COUNT(*) as cnt FROM user_cvs WHERE user_id = %s::uuid AND COALESCE(status,'draft') <> 'archived'"
+        count_row = execute_query(count_query, (user_uuid,), fetch_one=True)
+        if count_row and int(count_row.get('cnt', 0)) >= 3:
+            return jsonify({
+                'success': False,
+                'message': 'You have reached the maximum of 3 saved CVs. Please delete or archive one before creating another.'
+            }), 400
+
         # Insert CV into database
+        cv_id = str(uuidlib.uuid4())
         insert_query = """
             INSERT INTO user_cvs (
-                user_id, title, template_id, personal_info, professional_summary,
+                id, user_id, title, template_name, personal_info, professional_summary,
                 technical_skills, soft_skills, work_experience, education,
-                cv_score, ats_score, last_analyzed_at, status
+                cv_score, ats_score, status
             ) VALUES (
-                %s::uuid, %s, (SELECT id FROM cv_templates WHERE name = %s LIMIT 1),
-                %s::jsonb, %s, %s, %s, %s::jsonb, %s::jsonb,
-                %s, %s, CURRENT_TIMESTAMP, 'draft'
+                %s::uuid, %s::uuid, %s, %s,
+                %s::jsonb, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb,
+                %s, %s, 'draft'
             ) RETURNING id, created_at
         """
-        
+
         params = (
+            cv_id,
             user_uuid,
             title,
-            template_id,
+            template_name,
             json.dumps(cv_data.get('personalInfo', {})),
             cv_data.get('professionalSummary', ''),
-            cv_data.get('technicalSkills', []),
-            cv_data.get('softSkills', []),
+            json.dumps(cv_data.get('technicalSkills', [])),
+            json.dumps(cv_data.get('softSkills', [])),
             json.dumps(cv_data.get('experience', [])),
             json.dumps(cv_data.get('education', [])),
             data.get('cvScore', 0),
             data.get('atsScore', 0)
         )
-        
+
         result = execute_query(insert_query, params, fetch_one=True)
         
         if not result:
@@ -1264,9 +1357,12 @@ def save_cv():
         
         # Create initial analytics record
         analytics_query = """
-            INSERT INTO cv_analytics (cv_id) VALUES (%s)
+            INSERT INTO cv_analytics (analytics_id, cv_id, user_id, event_type, event_data)
+            VALUES (%s::uuid, %s::uuid, %s::uuid, %s, %s::jsonb)
         """
-        execute_query(analytics_query, (cv_id,))
+        execute_query(analytics_query, (
+            str(uuidlib.uuid4()), cv_id, user_uuid, 'cv_stored', json.dumps({'cv_score': data.get('cvScore', 0)})
+        ))
         
         logger.info(f"✅ CV saved successfully: {cv_id}")
         
@@ -1274,8 +1370,8 @@ def save_cv():
             'success': True,
             'message': 'CV saved successfully',
             'data': {
-                'cv_id': str(cv_id),
-                'created_at': result['created_at'].isoformat()
+                'cv_id': str(result['id']),
+                'created_at': result['created_at'].isoformat() if isinstance(result['created_at'], datetime) else str(result['created_at'])
             }
         }), 201
         
@@ -1305,23 +1401,22 @@ def list_user_cvs():
         
         query = """
             SELECT 
-                cv.id,
-                cv.title,
-                cv.status,
-                cv.cv_score,
-                cv.ats_score,
-                cv.created_at,
-                cv.updated_at,
-                cv.last_accessed_at,
-                t.display_name as template_name,
-                t.category as template_category,
-                (cv.personal_info->>'firstName') || ' ' || (cv.personal_info->>'lastName') as full_name
-            FROM user_cvs cv
-            LEFT JOIN cv_templates t ON cv.template_id = t.id
-            WHERE cv.user_id = %s::uuid
-            ORDER BY cv.updated_at DESC
+                id,
+                title,
+                status,
+                cv_score,
+                ats_score,
+                created_at,
+                updated_at,
+                last_accessed_at,
+                template_name,
+                (personal_info->>'firstName') || ' ' || (personal_info->>'lastName') as full_name,
+                is_visible
+            FROM user_cvs
+            WHERE user_id = %s::uuid
+            ORDER BY updated_at DESC NULLS LAST, created_at DESC
         """
-        
+
         cvs = execute_query(query, (user_uuid,))
         
         if cvs is None:
@@ -1371,16 +1466,9 @@ def get_cv(cv_id: str):
             user_uuid = user_id
         
         query = """
-            SELECT 
-                cv.*,
-                t.name as template_name,
-                t.display_name as template_display_name,
-                t.template_data
-            FROM user_cvs cv
-            LEFT JOIN cv_templates t ON cv.template_id = t.id
-            WHERE cv.id = %s::uuid AND cv.user_id = %s::uuid
+            SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid
         """
-        
+
         cv = execute_query(query, (cv_id, user_uuid), fetch_one=True)
         
         if not cv:
@@ -1390,7 +1478,7 @@ def get_cv(cv_id: str):
             }), 404
         
         # Update last accessed time
-        update_query = "UPDATE user_cvs SET last_accessed_at = CURRENT_TIMESTAMP WHERE id = %s"
+        update_query = "UPDATE user_cvs SET last_accessed_at = CURRENT_TIMESTAMP WHERE id = %s::uuid"
         execute_query(update_query, (cv_id,))
         
         # Convert to JSON-serializable format
@@ -1445,40 +1533,42 @@ def update_cv(cv_id: str):
         
         # Create version history entry first
         version_query = """
-            INSERT INTO cv_versions (cv_id, version_number, cv_data, change_summary, created_by)
-            SELECT %s::uuid, COALESCE(MAX(version_number), 0) + 1, 
-                   row_to_json(cv.*), %s, %s::uuid
-            FROM user_cvs cv
-            LEFT JOIN cv_versions v ON cv.id = v.cv_id
-            WHERE cv.id = %s::uuid AND cv.user_id = %s::uuid
-            GROUP BY cv.id
+            INSERT INTO cv_versions (id, cv_id, version_number, cv_data, change_summary, created_by)
+            SELECT %s::uuid, %s::uuid, COALESCE(MAX(version_number), 0) + 1, 
+                   %s::jsonb, %s, %s::uuid
+            FROM cv_versions
+            WHERE cv_id = %s::uuid
+            GROUP BY cv_id
         """
-        execute_query(version_query, (cv_id, data.get('changeSummary', 'CV updated'), user_uuid, cv_id, user_uuid))
+        execute_query(version_query, (
+            str(uuidlib.uuid4()), cv_id, json.dumps(cv_data), data.get('changeSummary', 'CV updated'), user_uuid, cv_id
+        ))
         
         # Update CV
         update_query = """
             UPDATE user_cvs SET
                 title = COALESCE(%s, title),
+                template_name = COALESCE(%s, template_name),
                 personal_info = COALESCE(%s::jsonb, personal_info),
                 professional_summary = COALESCE(%s, professional_summary),
-                technical_skills = COALESCE(%s, technical_skills),
-                soft_skills = COALESCE(%s, soft_skills),
+                technical_skills = COALESCE(%s::jsonb, technical_skills),
+                soft_skills = COALESCE(%s::jsonb, soft_skills),
                 work_experience = COALESCE(%s::jsonb, work_experience),
                 education = COALESCE(%s::jsonb, education),
                 cv_score = COALESCE(%s, cv_score),
                 ats_score = COALESCE(%s, ats_score),
-                last_analyzed_at = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = %s::uuid AND user_id = %s::uuid
             RETURNING id, updated_at
         """
-        
+
         params = (
             data.get('title'),
+            data.get('templateId'),
             json.dumps(cv_data.get('personalInfo')) if cv_data.get('personalInfo') else None,
             cv_data.get('professionalSummary'),
-            cv_data.get('technicalSkills'),
-            cv_data.get('softSkills'),
+            json.dumps(cv_data.get('technicalSkills')) if cv_data.get('technicalSkills') else None,
+            json.dumps(cv_data.get('softSkills')) if cv_data.get('softSkills') else None,
             json.dumps(cv_data.get('experience')) if cv_data.get('experience') else None,
             json.dumps(cv_data.get('education')) if cv_data.get('education') else None,
             data.get('cvScore'),
@@ -1531,7 +1621,8 @@ def delete_cv(cv_id: str):
             user_uuid = user_id
         
         # Delete CV (cascade will handle versions, analytics, shares)
-        delete_query = "DELETE FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid RETURNING id"
+        # Soft delete by setting status to archived
+        delete_query = "UPDATE user_cvs SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid AND user_id = %s::uuid RETURNING id"
         result = execute_query(delete_query, (cv_id, user_uuid), fetch_one=True)
         
         if not result:
@@ -1546,6 +1637,43 @@ def delete_cv(cv_id: str):
             'success': True,
             'message': 'CV deleted successfully'
         }), 200
+# =====================================================
+# VISIBILITY ROUTE
+# =====================================================
+
+@app.route('/api/cv/<cv_id>/visible', methods=['PUT'])
+def set_cv_visible(cv_id: str):
+    """Set a CV as visible (and unset others for the same user)."""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+
+        # Unset other visible CVs
+        execute_query("UPDATE user_cvs SET is_visible = FALSE WHERE user_id = %s::uuid AND is_visible = TRUE", (user_uuid,), fetch_all=False)
+
+        # Set this CV visible
+        result = execute_query(
+            "UPDATE user_cvs SET is_visible = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid AND user_id = %s::uuid RETURNING id",
+            (cv_id, user_uuid), fetch_one=True
+        )
+
+        if not result:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+        return jsonify({'success': True, 'message': 'CV set as visible'}), 200
+
+    except Exception as e:
+        logger.error(f"Set visible error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to update visibility'}), 500
         
     except Exception as e:
         logger.error(f"CV delete error: {str(e)}")
@@ -1870,15 +1998,20 @@ def missing_token_callback(error):
 def initialize_unified_server():
     """Initialize all components of the unified server"""
     logger.info("🔧 Initializing unified server components...")
-    
+
     # Initialize admin providers
     initialize_default_providers()
     logger.info("✅ Admin providers initialized")
-    
-    # Ensure database tables exist
-    ensure_fallback_schools_exist()
-    logger.info("✅ Database fallback data ensured")
-    
+
+    # Ensure database tables exist within app context
+    try:
+        with app.app_context():
+            ensure_cv_tables_exist()
+            ensure_fallback_schools_exist()
+            logger.info("✅ Database fallback data ensured")
+    except Exception as e:
+        logger.error(f"Initialization DB ensure error: {e}")
+
     logger.info("🚀 Unified server initialization complete")
 
 if __name__ == '__main__':
