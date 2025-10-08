@@ -1061,6 +1061,13 @@ const AutoFillCVBuilder: React.FC = () => {
 
       setCvData(analysisData);
 
+      // Treat uploaded CV as a new draft (do not overwrite an existing one)
+      setCurrentCVId(null);
+      localStorage.removeItem('lastCvId');
+      lastSavedHashRef.current = '';
+      setAutosaveStatus('idle');
+      setLastSavedAt(null);
+
       // Auto-fill the form with extracted data
       setTimeout(() => {
         autoFillForm(analysisData);
