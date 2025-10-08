@@ -379,6 +379,113 @@ def ensure_vacancy_tables_exist():
             """,
             fetch_all=False
         )
+        # Seed mock vacancies if table is empty
+        count = execute_query("SELECT COUNT(*) AS cnt FROM recruiter_vacancies", fetch_one=True)
+        if not count or int(count.get('cnt', 0)) == 0:
+            import random
+            samples = [
+                {
+                    'title': 'Software Engineer',
+                    'employer': 'Emirates Tech',
+                    'location': 'Dubai, UAE',
+                    'description': 'Build and maintain web applications in React and Node.js.',
+                    'requirements': ['react', 'node', 'typescript', 'api'],
+                    'tags': ['tech', 'web']
+                },
+                {
+                    'title': 'Data Analyst',
+                    'employer': 'Dubai Analytics Lab',
+                    'location': 'Dubai, UAE',
+                    'description': 'Analyze datasets and build BI dashboards.',
+                    'requirements': ['sql', 'python', 'excel'],
+                    'tags': ['analytics']
+                },
+                {
+                    'title': 'IT Security Specialist',
+                    'employer': 'Zayed University',
+                    'location': 'Abu Dhabi, UAE',
+                    'description': 'Implement security policies and monitor incidents.',
+                    'requirements': ['security', 'siem', 'network'],
+                    'tags': ['security']
+                },
+                {
+                    'title': 'Project Manager',
+                    'employer': 'ADNOC',
+                    'location': 'Abu Dhabi, UAE',
+                    'description': 'Lead cross-functional projects and deliver on time.',
+                    'requirements': ['project management', 'communications'],
+                    'tags': ['management']
+                },
+                {
+                    'title': 'Mobile App Developer',
+                    'employer': 'Careem',
+                    'location': 'Dubai, UAE',
+                    'description': 'Develop and maintain mobile applications.',
+                    'requirements': ['flutter', 'kotlin', 'swift'],
+                    'tags': ['mobile']
+                },
+                {
+                    'title': 'Cloud Engineer',
+                    'employer': 'Etisalat',
+                    'location': 'Abu Dhabi, UAE',
+                    'description': 'Manage cloud infrastructure and CI/CD.',
+                    'requirements': ['aws', 'docker', 'kubernetes'],
+                    'tags': ['cloud']
+                },
+                {
+                    'title': 'Business Analyst',
+                    'employer': 'Dubai Tourism',
+                    'location': 'Dubai, UAE',
+                    'description': 'Gather requirements and document business processes.',
+                    'requirements': ['requirements', 'process mapping'],
+                    'tags': ['business']
+                },
+                {
+                    'title': 'AI Researcher',
+                    'employer': 'Mohammed bin Zayed University of AI',
+                    'location': 'Abu Dhabi, UAE',
+                    'description': 'Research AI models and publish results.',
+                    'requirements': ['python', 'ml', 'deep learning'],
+                    'tags': ['ai']
+                },
+                {
+                    'title': 'Frontend Developer',
+                    'employer': 'Noon',
+                    'location': 'Dubai, UAE',
+                    'description': 'Build responsive UIs in React/Vue.',
+                    'requirements': ['react', 'html', 'css'],
+                    'tags': ['frontend']
+                },
+                {
+                    'title': 'Backend Developer',
+                    'employer': 'Talabat',
+                    'location': 'Dubai, UAE',
+                    'description': 'Design REST APIs and microservices.',
+                    'requirements': ['node', 'java', 'rest'],
+                    'tags': ['backend']
+                }
+            ]
+            # generate 20 by repeating with slight variations
+            to_insert = []
+            for i in range(20):
+                base = samples[i % len(samples)].copy()
+                base['title'] = f"{base['title']} ({i+1})"
+                base['id'] = str(uuidlib.uuid4())
+                to_insert.append(base)
+            for v in to_insert:
+                execute_query(
+                    """
+                    INSERT INTO recruiter_vacancies (id, title, employer, location, description, requirements, tags)
+                    VALUES (%s::uuid, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                    """,
+                    (
+                        v['id'], v['title'], v.get('employer'), v.get('location'), v.get('description'),
+                        json.dumps(v.get('requirements', [])), json.dumps(v.get('tags', []))
+                    ),
+                    fetch_all=False
+                )
+            logger.info("✅ Seeded 20 mock vacancies")
+
         logger.info("✅ Vacancy tables ensured")
     except Exception as e:
         logger.error(f"Error ensuring vacancy tables: {e}")
@@ -2220,6 +2327,7 @@ def initialize_unified_server():
     try:
         with app.app_context():
             ensure_cv_tables_exist()
+            ensure_vacancy_tables_exist()
             ensure_fallback_schools_exist()
             logger.info("✅ Database fallback data ensured")
     except Exception as e:
