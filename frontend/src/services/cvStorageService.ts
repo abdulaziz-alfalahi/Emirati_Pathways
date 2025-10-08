@@ -69,6 +69,31 @@ class CVStorageService {
   }
 
   /**
+   * Set a CV as visible to recruiters (unsets others automatically)
+   */
+  async setVisible(cvId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/visible`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders()
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to set CV visible');
+      }
+
+      return { success: true, message: result.message || 'CV set as visible' };
+    } catch (error) {
+      console.error('Set visible error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to set CV visible'
+      };
+    }
+  }
+
+  /**
    * Save a new CV to the database
    */
   async saveCV(data: SaveCVRequest): Promise<{ success: boolean; cv_id?: string; message: string }> {

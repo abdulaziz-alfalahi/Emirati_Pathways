@@ -1862,6 +1862,9 @@ const AutoFillCVBuilder: React.FC = () => {
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{cv.title}</h4>
                         <p className="text-sm text-gray-600 mt-1">{cv.full_name}</p>
+                        {cv as any && (cv as any).is_visible ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded mt-2">Visible</span>
+                        ) : null}
                         <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                           <span>Template: {cv.template_name}</span>
                           <span>Score: {cv.cv_score}%</span>
@@ -1882,6 +1885,22 @@ const AutoFillCVBuilder: React.FC = () => {
                           disabled={isLoading}
                         >
                           Load
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const res = await cvStorageService.setVisible(cv.id);
+                            if (!res.success) {
+                              alert(res.message);
+                              return;
+                            }
+                            // Refresh list to reflect visibility
+                            await loadSavedCVs();
+                          }}
+                          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                          disabled={isLoading || (cv as any && (cv as any).is_visible)}
+                          title={(cv as any && (cv as any).is_visible) ? 'Already visible' : 'Make visible to recruiters'}
+                        >
+                          {(cv as any && (cv as any).is_visible) ? 'Visible' : 'Make Visible'}
                         </button>
                         <button
                           onClick={() => handleDeleteCV(cv.id)}
