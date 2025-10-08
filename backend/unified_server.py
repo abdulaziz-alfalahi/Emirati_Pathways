@@ -910,10 +910,15 @@ def get_profile():
 # CV UPLOAD ROUTES
 # =====================================================
 
-@app.route('/api/cv/upload', methods=['POST'])
+@app.route('/api/cv/upload', methods=['POST', 'OPTIONS'])
+@app.route('/api/candidate/cv/upload', methods=['POST', 'OPTIONS'])
 def upload_cv():
     """Upload and process CV file"""
     try:
+        # CORS preflight support
+        if request.method == 'OPTIONS':
+            return ('', 204)
+
         # For development: accept mock tokens or use fallback user_id
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
