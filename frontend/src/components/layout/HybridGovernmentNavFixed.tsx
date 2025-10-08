@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe } from 'lucide-react';
 import { navigationGroups } from '@/components/navigation/navigationConfig';
 import UserMenu from '@/components/layout/UserMenu';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface HybridGovernmentNavProps {
   showAuthButtons?: boolean;
@@ -25,6 +26,57 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   
   // Get authentication state
   const { user, isAuthenticated } = useAuth();
+  const { t } = useTranslation();
+
+  const groupKeyMap = useMemo(() => ({
+    education: {
+      name: 'nav_education_pathway',
+      desc: 'nav_education_pathway_desc'
+    },
+    career: {
+      name: 'nav_career_entry',
+      desc: 'nav_career_entry_desc'
+    },
+    professional: {
+      name: 'nav_professional_growth',
+      desc: 'nav_professional_growth_desc'
+    },
+    lifelong: {
+      name: 'nav_lifelong_engagement',
+      desc: 'nav_lifelong_engagement_desc'
+    }
+  }), []);
+
+  const itemKeyByHref: Record<string, { name: string; desc: string }> = {
+    '/school-programs': { name: 'nav_item_school_programs', desc: 'nav_item_school_programs_desc' },
+    '/summer-camps': { name: 'nav_item_summer_camps', desc: 'nav_item_summer_camps_desc' },
+    '/scholarships': { name: 'nav_item_scholarships', desc: 'nav_item_scholarships_desc' },
+    '/university-programs': { name: 'nav_item_university_programs', desc: 'nav_item_university_programs_desc' },
+    '/graduate-programs': { name: 'nav_item_graduate_programs', desc: 'nav_item_graduate_programs_desc' },
+    '/lms': { name: 'nav_item_learning_management_system', desc: 'nav_item_learning_management_system_desc' },
+    '/industry-exploration': { name: 'nav_item_industry_exploration', desc: 'nav_item_industry_exploration_desc' },
+    '/career-planning-hub': { name: 'nav_item_career_planning_hub', desc: 'nav_item_career_planning_hub_desc' },
+    '/financial-planning': { name: 'nav_item_financial_planning', desc: 'nav_item_financial_planning_desc' },
+    '/cv-builder': { name: 'nav_item_cv_builder', desc: 'nav_item_cv_builder_desc' },
+    '/portfolio': { name: 'nav_item_portfolio', desc: 'nav_item_portfolio_desc' },
+    '/interview-preparation': { name: 'nav_item_interview_preparation', desc: 'nav_item_interview_preparation_desc' },
+    '/internships': { name: 'nav_item_internships', desc: 'nav_item_internships_desc' },
+    '/job-matching': { name: 'nav_item_job_matching', desc: 'nav_item_job_matching_desc' },
+    '/career-advisory': { name: 'nav_item_career_advisory', desc: 'nav_item_career_advisory_desc' },
+    '/assessments': { name: 'assessments', desc: 'assessments_desc' },
+    '/analytics': { name: 'nav_item_analytics', desc: 'nav_item_analytics_desc' },
+    '/digital-skills-development': { name: 'nav_item_digital_skills', desc: 'nav_item_digital_skills_desc' },
+    '/training': { name: 'nav_item_training', desc: 'nav_item_training_desc' },
+    '/professional-certifications': { name: 'nav_item_professional_certifications', desc: 'nav_item_professional_certifications_desc' },
+    '/blockchain-credentials': { name: 'nav_item_blockchain_credentials', desc: 'nav_item_blockchain_credentials_desc' },
+    '/mentorship': { name: 'nav_item_mentorship', desc: 'nav_item_mentorship_desc' },
+    '/communities': { name: 'nav_item_communities', desc: 'nav_item_communities_desc' },
+    '/youth-development': { name: 'nav_item_youth_development', desc: 'nav_item_youth_development_desc' },
+    '/national-service': { name: 'nav_item_national_service', desc: 'nav_item_national_service_desc' },
+    '/thought-leadership': { name: 'nav_item_thought_leadership', desc: 'nav_item_thought_leadership_desc' },
+    '/share-success-stories': { name: 'nav_item_success_stories', desc: 'nav_item_success_stories_desc' },
+    '/retiree': { name: 'nav_item_retiree_services', desc: 'nav_item_retiree_services_desc' }
+  };
 
   return (
     <>
@@ -49,8 +101,8 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold text-slate-900">Emirati Journey Platform</h1>
-                  <p className="text-sm text-slate-600">UAE Nationals Career Development</p>
+                  <h1 className="text-xl font-bold text-slate-900">{t('platform_title', 'Emirati Journey Platform')}</h1>
+                  <p className="text-sm text-slate-600">{t('platform_subtitle', 'UAE Nationals Career Development')}</p>
                 </Link>
               </div>
             </div>
@@ -92,7 +144,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       </span>
                     </div>
                   )}
-                  <span className="hidden sm:block text-sm text-slate-700">UAE National</span>
+                  <span className="hidden sm:block text-sm text-slate-700">{t('uae_national', 'UAE National')}</span>
                   <UserMenu />
                 </div>
               ) : showAuthButtons ? (
@@ -101,13 +153,13 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     to="/auth" 
                     className="hidden sm:block text-slate-600 hover:text-slate-900 font-medium transition-colors"
                   >
-                    Sign In
+                    {t('sign_in', 'Sign In')}
                   </Link>
                   <Link 
                     to="/auth" 
                     className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
                   >
-                    Get Started
+                    {t('get_started', 'Get Started')}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </>
@@ -129,7 +181,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 onMouseLeave={() => setActiveDropdown(null)}
               >
                 <button className="flex items-center space-x-1 px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium">
-                  <span>{group.name}</span>
+                  <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
                 
@@ -137,8 +189,8 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   <div className="absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50">
                     <div className="p-4">
                       <div className="mb-3">
-                        <h3 className="font-semibold text-slate-900 text-lg">{group.name}</h3>
-                        <p className="text-sm text-slate-600">{group.description}</p>
+                        <h3 className="font-semibold text-slate-900 text-lg">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
+                        <p className="text-sm text-slate-600">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
                         {group.items.map((item) => (
@@ -150,10 +202,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                             <item.icon className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-medium text-slate-900 group-hover:text-teal-600">
-                                {item.name}
+                                {t(itemKeyByHref[item.href]?.name || '', item.name)}
                               </div>
                               <div className="text-sm text-slate-600 line-clamp-2">
-                                {item.description}
+                                {t(itemKeyByHref[item.href]?.desc || '', item.description)}
                               </div>
                             </div>
                           </Link>
@@ -175,7 +227,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
             <div className="space-y-4">
               {/* Mobile Language Toggle */}
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                <span className="text-sm font-medium text-slate-700">Language</span>
+                <span className="text-sm font-medium text-slate-700">{t('language', 'Language')}</span>
                 <button
                   onClick={onLanguageToggle}
                   className="flex items-center space-x-2 px-3 py-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
@@ -191,7 +243,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
                   <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
                     <span className="w-3 h-3 bg-teal-600 rounded-full mr-2"></span>
-                    {group.name}
+                    {t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}
                   </h3>
                   <div className="grid grid-cols-1 gap-2 ml-5">
                     {group.items.slice(0, 4).map((item) => (
@@ -202,7 +254,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon className="h-4 w-4" />
-                        <span className="text-sm">{item.name}</span>
+                        <span className="text-sm">{t(itemKeyByHref[item.href]?.name || '', item.name)}</span>
                       </Link>
                     ))}
                     {group.items.length > 4 && (
@@ -212,7 +264,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <ChevronRight className="h-4 w-4" />
-                        <span className="text-sm">View all {group.items.length} options</span>
+                        <span className="text-sm">{t('view_all_options', 'View all')} {group.items.length} {t('options', 'options')}</span>
                       </Link>
                     )}
                   </div>
