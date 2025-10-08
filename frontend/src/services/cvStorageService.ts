@@ -279,6 +279,26 @@ class CVStorageService {
       };
     }
   }
+
+  /**
+   * Get top vacancy matches for the visible CV
+   */
+  async getTopVacancyMatches(limit = 10): Promise<{ success: boolean; data?: any[]; message: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/matching/visible/top-vacancies?limit=${limit}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to get matches');
+      }
+      return { success: true, data: result.matches || [], message: result.message || 'OK' };
+    } catch (error) {
+      console.error('Get matches error:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to get matches' };
+    }
+  }
 }
 
 export const cvStorageService = new CVStorageService();

@@ -1740,6 +1740,20 @@ const AutoFillCVBuilder: React.FC = () => {
           Edit CV
         </button>
         <button
+          onClick={async () => {
+            const res = await cvStorageService.getTopVacancyMatches(10);
+            if (!res.success) {
+              alert(res.message);
+              return;
+            }
+            const lines = (res.data || []).map((m: any, i: number) => `${i+1}. ${m.title} (${m.employer || 'N/A'}) — ${m.match_score}%`);
+            alert(lines.length ? `Top matches:\n\n${lines.join('\n')}` : 'No matches found.');
+          }}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+        >
+          Match to Vacancies
+        </button>
+        <button
           onClick={handleExportPDF}
           disabled={isExporting}
           className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
