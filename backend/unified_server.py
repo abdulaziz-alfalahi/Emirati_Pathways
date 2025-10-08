@@ -1637,6 +1637,12 @@ def delete_cv(cv_id: str):
             'success': True,
             'message': 'CV deleted successfully'
         }), 200
+    except Exception as e:
+        logger.error(f"CV delete error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to delete CV due to system error'
+        }), 500
 # =====================================================
 # VISIBILITY ROUTE
 # =====================================================
