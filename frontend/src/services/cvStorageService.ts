@@ -215,6 +215,43 @@ class CVStorageService {
   }
 
   /**
+   * Rename a CV (title only)
+   */
+  async renameCV(cvId: string, title: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ title })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Failed to rename CV');
+      return { success: true, message: result.message || 'CV renamed successfully' };
+    } catch (error) {
+      console.error('Rename CV error:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to rename CV' };
+    }
+  }
+
+  /**
+   * Duplicate an existing CV into a new draft
+   */
+  async duplicateCV(cvId: string): Promise<{ success: boolean; cv_id?: string; message: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/duplicate`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Failed to duplicate CV');
+      return { success: true, cv_id: result.data?.cv_id, message: result.message || 'CV duplicated successfully' };
+    } catch (error) {
+      console.error('Duplicate CV error:', error);
+      return { success: false, message: error instanceof Error ? error.message : 'Failed to duplicate CV' };
+    }
+  }
+
+  /**
    * Delete a CV
    */
   async deleteCV(cvId: string): Promise<{ success: boolean; message: string }> {

@@ -2019,10 +2019,36 @@ const AutoFillCVBuilder: React.FC = () => {
                           {(cv as any && (cv as any).is_visible) ? 'Visible' : 'Make Visible'}
                         </button>
                         <button
+                          onClick={async () => {
+                            const res = await cvStorageService.duplicateCV(cv.id);
+                            if (!res.success) { alert(res.message); return; }
+                            await loadSavedCVs();
+                          }}
+                          className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700"
+                          disabled={isLoading}
+                          title="Create a copy of this CV"
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const title = window.prompt('Rename CV to:', cv.title);
+                            if (!title || !title.trim()) return;
+                            const res = await cvStorageService.renameCV(cv.id, title.trim());
+                            if (!res.success) { alert(res.message); return; }
+                            await loadSavedCVs();
+                          }}
+                          className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                          disabled={isLoading}
+                          title="Rename CV"
+                        >
+                          Rename
+                        </button>
+                        <button
                           onClick={() => handleDeleteCV(cv.id)}
                           className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                         >
-                          Delete
+                          Archive
                         </button>
                       </div>
                     </div>
