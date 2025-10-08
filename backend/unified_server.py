@@ -1524,26 +1524,22 @@ def update_cv(cv_id: str):
                 'success': False,
                 'message': 'No update data provided'
             }), 400
-        
+
         cv_data = data.get('cvData')
-        if not cv_data:
-            return jsonify({
-                'success': False,
-                'message': 'CV data is required'
-            }), 400
         
         # Create version history entry first
-        version_query = """
-            INSERT INTO cv_versions (id, cv_id, version_number, cv_data, change_summary, created_by)
-            SELECT %s::uuid, %s::uuid, COALESCE(MAX(version_number), 0) + 1, 
-                   %s::jsonb, %s, %s::uuid
-            FROM cv_versions
-            WHERE cv_id = %s::uuid
-            GROUP BY cv_id
-        """
-        execute_query(version_query, (
-            str(uuidlib.uuid4()), cv_id, json.dumps(cv_data), data.get('changeSummary', 'CV updated'), user_uuid, cv_id
-        ))
+        if cv_data is not None:
+            version_query = """
+                INSERT INTO cv_versions (id, cv_id, version_number, cv_data, change_summary, created_by)
+                SELECT %s::uuid, %s::uuid, COALESCE(MAX(version_number), 0) + 1, 
+                       %s::jsonb, %s, %s::uuid
+                FROM cv_versions
+                WHERE cv_id = %s::uuid
+                GROUP BY cv_id
+            """
+            execute_query(version_query, (
+                str(uuidlib.uuid4()), cv_id, json.dumps(cv_data), data.get('changeSummary', 'CV updated'), user_uuid, cv_id
+            ))
         
         # Update CV
         update_query = """
@@ -1566,12 +1562,12 @@ def update_cv(cv_id: str):
         params = (
             data.get('title'),
             data.get('templateId'),
-            json.dumps(cv_data.get('personalInfo')) if cv_data.get('personalInfo') else None,
-            cv_data.get('professionalSummary'),
-            json.dumps(cv_data.get('technicalSkills')) if cv_data.get('technicalSkills') else None,
-            json.dumps(cv_data.get('softSkills')) if cv_data.get('softSkills') else None,
-            json.dumps(cv_data.get('experience')) if cv_data.get('experience') else None,
-            json.dumps(cv_data.get('education')) if cv_data.get('education') else None,
+            json.dumps(cv_data.get('personalInfo')) if cv_data and cv_data.get('personalInfo') else None,
+            (cv_data.get('professionalSummary') if cv_data else None),
+            (json.dumps(cv_data.get('technicalSkills')) if cv_data and cv_data.get('technicalSkills') else None),
+            (json.dumps(cv_data.get('softSkills')) if cv_data and cv_data.get('softSkills') else None),
+            (json.dumps(cv_data.get('experience')) if cv_data and cv_data.get('experience') else None),
+            (json.dumps(cv_data.get('education')) if cv_data and cv_data.get('education') else None),
             data.get('cvScore'),
             data.get('atsScore'),
             cv_id,
@@ -1644,6 +1640,66 @@ def delete_cv(cv_id: str):
             'success': False,
             'message': 'Failed to delete CV due to system error'
         }), 500
+
+@app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
+def duplicate_cv(cv_id: str):
+    """Duplicate an existing CV into a new draft (counts towards limit)."""
+    try:
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+
+        user_uuid = '550e8400-e29b-41d4-a716-446655440000' if user_id == 'mock_user_candidate' else user_id
+
+        # Enforce limit
+        count_query = "SELECT COUNT(*) as cnt FROM user_cvs WHERE user_id = %s::uuid AND COALESCE(status,'draft') <> 'archived'"
+        count_row = execute_query(count_query, (user_uuid,), fetch_one=True)
+        if count_row and int(count_row.get('cnt', 0)) >= 3:
+            return jsonify({'success': False, 'message': 'Maximum 3 CVs allowed. Please archive one first.'}), 400
+
+        # Fetch source CV
+        src = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid", (cv_id, user_uuid), fetch_one=True)
+        if not src:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+        new_id = str(uuidlib.uuid4())
+        new_title = f"Copy of {src['title']}"
+
+        insert_query = """
+            INSERT INTO user_cvs (
+                id, user_id, title, template_name, personal_info, professional_summary,
+                technical_skills, soft_skills, work_experience, education,
+                cv_score, ats_score, status, is_visible
+            ) VALUES (
+                %s::uuid, %s::uuid, %s, %s,
+                %s::jsonb, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb,
+                %s, %s, 'draft', FALSE
+            )
+        """
+
+        execute_query(insert_query, (
+            new_id,
+            user_uuid,
+            new_title,
+            src['template_name'],
+            json.dumps(src['personal_info']) if src['personal_info'] else json.dumps({}),
+            src['professional_summary'],
+            json.dumps(src['technical_skills']) if src['technical_skills'] else json.dumps([]),
+            json.dumps(src['soft_skills']) if src['soft_skills'] else json.dumps([]),
+            json.dumps(src['work_experience']) if src['work_experience'] else json.dumps([]),
+            json.dumps(src['education']) if src['education'] else json.dumps([]),
+            src['cv_score'] or 0,
+            src['ats_score'] or 0
+        ), fetch_all=False)
+
+        return jsonify({'success': True, 'message': 'CV duplicated successfully', 'data': {'cv_id': new_id}}), 201
+
+    except Exception as e:
+        logger.error(f"CV duplicate error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to duplicate CV due to system error'}), 500
 # =====================================================
 # VISIBILITY ROUTE
 # =====================================================
