@@ -1078,9 +1078,9 @@ def upload_cv():
             'message': 'Upload failed due to system error'
         }), 500
 
-@app.route('/api/cv/list', methods=['GET'])
+@app.route('/api/cv/list-mock', methods=['GET'])
 @jwt_required()
-def list_cvs():
+def list_cvs_mock():
     """List user's uploaded CVs"""
     try:
         user_id = get_jwt_identity()
