@@ -889,10 +889,13 @@ const AutoFillCVBuilder: React.FC = () => {
     setIsUploading(true);
     setUploadProgress(0);
 
+    const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+    const LEGACY_PATH = (import.meta as any).env?.VITE_CV_UPLOAD_PATH || import.meta.env.VITE_CV_UPLOAD_PATH || '/api/candidate/cv/upload';
+
     try {
       // Simulate progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
+        setUploadProgress((prev) => {
           if (prev >= 90) {
             clearInterval(progressInterval);
             return 90;
@@ -904,29 +907,51 @@ const AutoFillCVBuilder: React.FC = () => {
       const formData = new FormData();
       formData.append('cv_file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'}/api/cv/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: formData
-      });
+      const authHeader = { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` };
+      let response: Response | undefined;
+
+      // Try modern endpoint first
+      try {
+        response = await fetch(`${API_BASE}/api/cv/upload`, {
+          method: 'POST',
+          headers: authHeader,
+          body: formData
+        });
+      } catch (e) {
+        // Swallow network/preflight errors and fall through to legacy
+        response = undefined;
+      }
+
+      // If modern failed or not OK, try legacy endpoint
+      if (!response || !response.ok) {
+        setUploadProgress((p) => (p < 60 ? 60 : p));
+        try {
+          response = await fetch(`${API_BASE}${LEGACY_PATH}`, {
+            method: 'POST',
+            headers: authHeader,
+            body: formData
+          });
+        } catch (e) {
+          response = undefined;
+        }
+      }
 
       clearInterval(progressInterval);
-      setUploadProgress(100);
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         throw new Error('Upload failed');
       }
 
+      setUploadProgress(100);
+
       const result = await response.json();
       console.log('📥 Received CV analysis result:', result);
-      
-      const analysisData = result.data.analysis;
+
+      const analysisData = result.data?.analysis ?? result.data; // tolerate both shapes
       console.log('📊 Analysis data to auto-fill:', analysisData);
-      
+
       setCvData(analysisData);
-      
+
       // Auto-fill the form with extracted data
       setTimeout(() => {
         autoFillForm(analysisData);
