@@ -1414,6 +1414,7 @@ def list_user_cvs():
                 is_visible
             FROM user_cvs
             WHERE user_id = %s::uuid
+              AND COALESCE(status, 'draft') <> 'archived'
             ORDER BY updated_at DESC NULLS LAST, created_at DESC
         """
 
