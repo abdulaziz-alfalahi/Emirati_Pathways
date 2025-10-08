@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cvStorageService, type SavedCV, type CVData as StorageCVData } from '@/services/cvStorageService';
@@ -98,6 +99,7 @@ interface CVFormData {
 
 const AutoFillCVBuilder: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { language, isRTL } = useLanguage();
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>(i18n.language as 'en' | 'ar');
   const [currentStep, setCurrentStep] = useState<'upload' | 'template' | 'form' | 'preview'>('upload');
   const [isUploading, setIsUploading] = useState(false);
@@ -1775,7 +1777,7 @@ const AutoFillCVBuilder: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'} lang={language}>
       <HybridGovernmentNavFixed 
         onLanguageToggle={handleLanguageToggle}
         currentLanguage={currentLanguage}
