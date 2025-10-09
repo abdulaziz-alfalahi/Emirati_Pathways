@@ -5,7 +5,7 @@ Consolidates all services: Auth, CV Upload, School Programs, Admin APIs
 Port: 5003 (standardized)
 """
 
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, send_file
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 import json
@@ -2373,6 +2373,7 @@ if __name__ == '__main__':
     print("  📄 CV Management:")
     print(f"    POST http://localhost:{port}/api/cv/upload")
     print(f"    GET  http://localhost:{port}/api/cv/list")
+    print(f"    GET  http://localhost:{port}/api/cv/<cv_id>/export/<format>")
     print("")
     print("  🏫 School Programs:")
     print(f"    GET  http://localhost:{port}/api/school-programs")
