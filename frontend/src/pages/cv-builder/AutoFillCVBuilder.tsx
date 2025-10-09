@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import TemplatePreview from '@/components/cv-templates/TemplatePreview';
+import EnhancedCVExportDialog from '@/components/cv-builder/EnhancedCVExportDialog';
 
 interface CVData {
   personal_info?: {
@@ -148,6 +149,7 @@ const AutoFillCVBuilder: React.FC = () => {
   };
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('professional');
   const [cvScore, setCvScore] = useState<number>(0);
   const [atsScore, setAtsScore] = useState<number>(0);
@@ -540,143 +542,7 @@ const AutoFillCVBuilder: React.FC = () => {
   };
 
   const handleExportPDF = async () => {
-    setIsExporting(true);
-    
-    try {
-      // Create PDF using jsPDF with text-based approach for better multi-page support
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      
-      let yPosition = margin;
-      
-      // Get template colors
-      const templateColors = getTemplateColors(selectedTemplate);
-      
-      // Helper function to add text with automatic page breaks
-      const addText = (text: string, fontSize: number, style: 'normal' | 'bold' = 'normal', color: string = '#000000', extraSpacing: number = 2) => {
-        pdf.setFontSize(fontSize);
-        pdf.setFont('helvetica', style);
-        pdf.setTextColor(color);
-        
-        // Split text into lines that fit the page width
-        const lines = pdf.splitTextToSize(text, contentWidth);
-        
-        for (const line of lines) {
-          // Check if we need a new page
-          if (yPosition > pageHeight - margin - 15) {
-            pdf.addPage();
-            yPosition = margin;
-          }
-          
-          pdf.text(line, margin, yPosition);
-          yPosition += fontSize * 0.35; // Tighter line height
-        }
-        
-        yPosition += extraSpacing; // Configurable spacing after text block
-      };
-      
-      // Helper function to add section header
-      const addSectionHeader = (title: string) => {
-        yPosition += 6; // Reduced space before section
-        pdf.setDrawColor(templateColors.primary);
-        pdf.setLineWidth(0.5);
-        pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 5;
-        
-        addText(title, 14, 'bold', templateColors.primary, 3); // Smaller font, less spacing
-      };
-      
-      // Header - Name
-      const name = `${formData.personalInfo.firstName} ${formData.personalInfo.lastName}`;
-      addText(name, 22, 'bold', templateColors.primary, 3); // Smaller title, less spacing
-      
-      // Contact Information
-      const contactInfo = [
-        formData.personalInfo.email && `Email: ${formData.personalInfo.email}`,
-        formData.personalInfo.phone && `Phone: ${formData.personalInfo.phone}`,
-        formData.personalInfo.location && `Location: ${formData.personalInfo.location}`
-      ].filter(Boolean).join(' | ');
-      
-      if (contactInfo) {
-        addText(contactInfo, 11, 'normal', templateColors.secondary, 1); // Smaller font, minimal spacing
-      }
-      
-      // Professional Summary
-      if (formData.professionalSummary) {
-        addSectionHeader('PROFESSIONAL SUMMARY');
-        addText(formData.professionalSummary, 10, 'normal', '#000000', 1); // Smaller font, minimal spacing
-      }
-      
-      // Technical Skills
-      if (formData.technicalSkills.length > 0) {
-        addSectionHeader('TECHNICAL SKILLS');
-        const skillsText = formData.technicalSkills.join(' • ');
-        addText(skillsText, 10, 'normal', '#000000', 1);
-      }
-      
-      // Soft Skills
-      if (formData.softSkills.length > 0) {
-        addSectionHeader('SOFT SKILLS');
-        const skillsText = formData.softSkills.join(' • ');
-        addText(skillsText, 10, 'normal', '#000000', 1);
-      }
-      
-      // Work Experience
-      if (formData.experience.length > 0) {
-        addSectionHeader('WORK EXPERIENCE');
-        
-        formData.experience.forEach((exp, index) => {
-          // Job title
-          addText(exp.jobTitle, 12, 'bold', templateColors.primary, 1);
-          
-          // Company and date/location on same line to save space
-          const companyDate = `${exp.company} | ${exp.startDate} - ${exp.endDate} • ${exp.location}`;
-          addText(companyDate, 10, 'normal', templateColors.secondary, 1);
-          
-          // Responsibilities - more compact
-          if (exp.responsibilities) {
-            addText(exp.responsibilities, 9, 'normal', '#000000', 1); // Smaller font
-          }
-          
-          yPosition += 3; // Minimal space between positions
-        });
-      }
-      
-      // Education
-      if (formData.education.length > 0) {
-        addSectionHeader('EDUCATION');
-        
-        formData.education.forEach((edu, index) => {
-          // Degree and institution on same line
-          const degreeInstitution = `${edu.degree} - ${edu.institution}`;
-          addText(degreeInstitution, 11, 'bold', templateColors.primary, 1);
-          
-          // Field and year - more compact
-          const fieldYear = `${edu.field} • ${edu.graduationYear}`;
-          addText(fieldYear, 9, 'normal', templateColors.accent, 1);
-          
-          yPosition += 2; // Minimal space between education entries
-        });
-      }
-      
-      // Generate filename
-      const templateName = selectedTemplate.replace('-', '_');
-      const filename = `CV_${formData.personalInfo.firstName}_${formData.personalInfo.lastName}_${templateName}.pdf`;
-      
-      // Download PDF
-      pdf.save(filename);
-      
-      console.log(`✅ Multi-page CV PDF downloaded: ${filename}`);
-
-    } catch (error) {
-      console.error('CV export error:', error);
-      alert('Failed to generate PDF. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
+    setShowExportDialog(true);
   };
 
   // Restore last edited CV on mount
