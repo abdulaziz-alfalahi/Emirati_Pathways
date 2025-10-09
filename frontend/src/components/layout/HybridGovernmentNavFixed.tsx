@@ -64,7 +64,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     '/internships': { name: 'nav_item_internships', desc: 'nav_item_internships_desc' },
     '/job-matching': { name: 'nav_item_job_matching', desc: 'nav_item_job_matching_desc' },
     '/career-advisory': { name: 'nav_item_career_advisory', desc: 'nav_item_career_advisory_desc' },
-    '/assessments': { name: 'assessments', desc: 'assessments_desc' },
+    '/assessments': { name: 'nav_item_assessments', desc: 'nav_item_assessments_desc' },
     '/analytics': { name: 'nav_item_analytics', desc: 'nav_item_analytics_desc' },
     '/digital-skills-development': { name: 'nav_item_digital_skills', desc: 'nav_item_digital_skills_desc' },
     '/training': { name: 'nav_item_training', desc: 'nav_item_training_desc' },
@@ -198,10 +198,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                           <Link
                             key={item.name}
                             to={item.href}
-                            className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 rounded-md hover:bg-teal-50 transition-colors group`}
+                            className={`grid grid-cols-[1.25rem_auto] gap-3 ${isRTL ? 'text-right' : 'text-left'} p-3 rounded-md hover:bg-teal-50 transition-colors group`}
                           >
-                            <item.icon className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
-                            <div className={isRTL ? 'text-right' : 'text-left'}>
+                            <item.icon className={`h-5 w-5 text-teal-600 mt-0.5 ${isRTL ? 'col-start-2 justify-self-end' : 'col-start-1'} flex-shrink-0`} />
+                            <div className={`${isRTL ? 'col-start-1' : 'col-start-2'}`}>
                               <div className="font-medium text-slate-900 group-hover:text-teal-600">
                                 {t(itemKeyByHref[item.href]?.name || '', item.name)}
                               </div>
@@ -251,11 +251,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-slate-600 hover:text-teal-600 transition-colors py-1`}
+                        className={`grid grid-cols-[1rem_auto] gap-2 items-center ${isRTL ? 'text-right' : 'text-left'} text-slate-600 hover:text-teal-600 transition-colors py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <item.icon className="h-4 w-4" />
-                        <span className="text-sm">{t(itemKeyByHref[item.href]?.name || '', item.name)}</span>
+                        <item.icon className={`h-4 w-4 ${isRTL ? 'col-start-2 justify-self-end' : 'col-start-1'}`} />
+                        <span className={`text-sm ${isRTL ? 'col-start-1' : 'col-start-2'}`}>{t(itemKeyByHref[item.href]?.name || '', item.name)}</span>
                       </Link>
                     ))}
                     {group.items.length > 4 && (
