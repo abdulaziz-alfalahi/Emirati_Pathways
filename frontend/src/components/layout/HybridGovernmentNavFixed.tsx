@@ -198,10 +198,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                           <Link
                             key={item.name}
                             to={item.href}
-                            className={`grid grid-cols-[1.25rem_auto] gap-3 ${isRTL ? 'text-right' : 'text-left'} p-3 rounded-md hover:bg-teal-50 transition-colors group`}
+                            className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-start gap-3 p-3 rounded-md hover:bg-teal-50 transition-colors group`}
                           >
-                            <item.icon className={`h-5 w-5 text-teal-600 mt-0.5 ${isRTL ? 'col-start-2 justify-self-end' : 'col-start-1'} flex-shrink-0`} />
-                            <div className={`${isRTL ? 'col-start-1' : 'col-start-2'}`}>
+                            <item.icon className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
                               <div className="font-medium text-slate-900 group-hover:text-teal-600">
                                 {t(itemKeyByHref[item.href]?.name || '', item.name)}
                               </div>
@@ -251,11 +251,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`grid grid-cols-[1rem_auto] gap-2 items-center ${isRTL ? 'text-right' : 'text-left'} text-slate-600 hover:text-teal-600 transition-colors py-1`}
+                        className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-slate-600 hover:text-teal-600 transition-colors py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <item.icon className={`h-4 w-4 ${isRTL ? 'col-start-2 justify-self-end' : 'col-start-1'}`} />
-                        <span className={`text-sm ${isRTL ? 'col-start-1' : 'col-start-2'}`}>{t(itemKeyByHref[item.href]?.name || '', item.name)}</span>
+                        <item.icon className="h-4 w-4" />
+                        <span className="text-sm">{t(itemKeyByHref[item.href]?.name || '', item.name)}</span>
                       </Link>
                     ))}
                     {group.items.length > 4 && (
