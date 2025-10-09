@@ -29,16 +29,29 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 jwt = JWTManager(app)
 
 # CORS Configuration with authentication support - FIXED FOR AUTHORIZATION HEADER
+allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
+allowed_origin_list = [o for o in (x.strip() for x in allowed_origins_env.split(',')) if o]
+
+cors_origins = [
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:3000",
+    r"https?://.*\.ngrok\.io",
+    r"https?://.*\.ngrok\.app",
+    r"https?://.*\.ngrok-free\.app",
+]
+cors_origins.extend(allowed_origin_list)
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:8080", "http://localhost:8081", "http://localhost:3000", "https://yourdomain.com"],
+        "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
         "supports_credentials": True,
         "expose_headers": ["Authorization"]
     },
     r"/health": {
-        "origins": ["http://localhost:8080", "http://localhost:8081", "http://localhost:3000"],
+        "origins": ["*"],
         "methods": ["GET", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }

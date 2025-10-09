@@ -53,10 +53,27 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
-# CORS Configuration
+# CORS Configuration (allow localhost, env-defined, and ngrok domains)
+allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
+allowed_origin_list = [o for o in (x.strip() for x in allowed_origins_env.split(',')) if o]
+
+cors_origins = [
+    # Local development
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:3000",
+    # Common dev wildcard domains (Flask-CORS supports regex strings)
+    r"https?://.*\.ngrok\.io",
+    r"https?://.*\.ngrok\.app",
+    r"https?://.*\.ngrok-free\.app",
+]
+
+# Include any user-provided origins via ALLOWED_ORIGINS
+cors_origins.extend(allowed_origin_list)
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:8080", "http://localhost:8081", "http://localhost:3000"],
+        "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
         "supports_credentials": True,
