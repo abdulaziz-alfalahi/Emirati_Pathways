@@ -27,6 +27,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   // Get authentication state
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
+  const isRTL = currentLanguage === 'ar';
 
   const groupKeyMap = useMemo(() => ({
     education: {
@@ -83,10 +84,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       {/* Main Government Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center h-20`}>
             {/* Government Logos Section */}
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-4">
+            <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
+              <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
                 <img 
                   src="/dubai-gov-logo.jpg" 
                   alt="Government of Dubai" 
@@ -108,7 +109,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
             </div>
             
             {/* Navigation Actions */}
-            <div className="flex items-center space-x-4">
+            <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
               {/* Language Toggle */}
               {onLanguageToggle && (
                 <button
@@ -172,7 +173,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       {/* Dedicated Navigation Bar */}
       <nav className="bg-teal-600 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="hidden lg:flex items-center justify-center space-x-8 h-14">
+          <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
             {navigationGroups.map((group) => (
               <div
                 key={group.id}
@@ -180,27 +181,27 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 onMouseEnter={() => setActiveDropdown(group.id)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-                <button className="flex items-center space-x-1 px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium">
+                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium`}>
                   <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
                 
                 {activeDropdown === group.id && (
-                  <div className="absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50">
+                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50`}>
                     <div className="p-4">
                       <div className="mb-3">
-                        <h3 className="font-semibold text-slate-900 text-lg">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
-                        <p className="text-sm text-slate-600">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
+                        <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
+                        <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
                         {group.items.map((item) => (
                           <Link
                             key={item.name}
                             to={item.href}
-                            className="flex items-start space-x-3 p-3 rounded-md hover:bg-teal-50 transition-colors group"
+                            className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 rounded-md hover:bg-teal-50 transition-colors group`}
                           >
                             <item.icon className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
-                            <div>
+                            <div className={isRTL ? 'text-right' : 'text-left'}>
                               <div className="font-medium text-slate-900 group-hover:text-teal-600">
                                 {t(itemKeyByHref[item.href]?.name || '', item.name)}
                               </div>
@@ -226,11 +227,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="space-y-4">
               {/* Mobile Language Toggle */}
-              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center pb-4 border-b border-slate-100`}>
                 <span className="text-sm font-medium text-slate-700">{t('language', 'Language')}</span>
                 <button
                   onClick={onLanguageToggle}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                  className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} px-3 py-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors`}
                 >
                   <Globe className="h-4 w-4" />
                   <span className="text-sm">
@@ -241,16 +242,16 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
               {navigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
-                  <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
-                    <span className="w-3 h-3 bg-teal-600 rounded-full mr-2"></span>
+                  <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
+                    <span className={`w-3 h-3 bg-teal-600 rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
                     {t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}
                   </h3>
-                  <div className="grid grid-cols-1 gap-2 ml-5">
+                  <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}> 
                     {group.items.slice(0, 4).map((item) => (
                       <Link
                         key={item.name}
                         to={item.href}
-                        className="flex items-center space-x-2 text-slate-600 hover:text-teal-600 transition-colors py-1"
+                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-slate-600 hover:text-teal-600 transition-colors py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon className="h-4 w-4" />
@@ -260,11 +261,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     {group.items.length > 4 && (
                       <Link
                         to={`/${group.id}`}
-                        className="flex items-center space-x-2 text-teal-600 font-medium py-1"
+                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-teal-600 font-medium py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <ChevronRight className="h-4 w-4" />
-                        <span className="text-sm">{t('view_all_options', 'View all')} {group.items.length} {t('options', 'options')}</span>
+                        <ChevronRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
+                        <span className="text-sm">{t('view_all_options', 'View all options')} ({group.items.length})</span>
                       </Link>
                     )}
                   </div>
