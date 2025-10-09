@@ -120,6 +120,32 @@ const AutoFillCVBuilder: React.FC = () => {
     experience: [],
     education: []
   });
+
+  // --- UAE-specific validation helpers ---
+  const formatUAEPhone = (input: string): string => {
+    const digits = input.replace(/\D+/g, '');
+    // Accept 05xxxxxxxx, 9715xxxxxxxx, +9715xxxxxxxx and format to +9715xxxxxxxx
+    if (!digits) return '';
+    if (digits.startsWith('9715') && digits.length >= 12) return `+${digits.slice(0, 12)}`; // +9715xxxxxxxx
+    if (digits.startsWith('5') && digits.length >= 9) return `+971${digits.slice(0, 9)}`;   // +9715xxxxxxxx
+    if (digits.startsWith('0') && digits.length >= 10) return `+971${digits.slice(1, 10)}`; // +9715xxxxxxxx
+    return `+${digits}`;
+  };
+
+  const isLikelyUAEPhone = (value: string): boolean => {
+    return /^\+9715\d{8}$/.test(value);
+  };
+
+  const handlePhoneBlur = () => {
+    const raw = formData.personalInfo.phone || '';
+    const formatted = formatUAEPhone(raw);
+    if (formatted !== raw) {
+      setFormData(prev => ({
+        ...prev,
+        personalInfo: { ...prev.personalInfo, phone: formatted }
+      }));
+    }
+  };
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('professional');
@@ -1431,9 +1457,15 @@ const AutoFillCVBuilder: React.FC = () => {
               type="tel"
               value={formData.personalInfo.phone}
               onChange={(e) => handleInputChange('phone', e.target.value, 'personalInfo')}
+              onBlur={handlePhoneBlur}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter your phone number"
             />
+            {formData.personalInfo.phone && !isLikelyUAEPhone(formData.personalInfo.phone) && (
+              <p className="mt-1 text-xs text-amber-600">
+                {useLanguage().t('cvBuilder.uaePhoneHint', 'Suggested format: +9715XXXXXXXX')}
+              </p>
+            )}
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">{useLanguage().t('cvBuilder.location', 'Location')}</label>
