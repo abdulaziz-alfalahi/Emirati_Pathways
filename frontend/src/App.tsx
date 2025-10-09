@@ -9,7 +9,6 @@ import './i18n/config';
 import './styles/enhanced-rtl.css';
 
 // Development components
-import PersonaSwitcher from '@/components/dev/PersonaSwitcher';
 
 // Loading component
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
@@ -369,7 +368,6 @@ function App() {
       <MockAuthProvider>
         <AuthProvider>
           <AppContent />
-          <PersonaSwitcher />
         </AuthProvider>
       </MockAuthProvider>
     </LanguageProvider>
