@@ -1,5 +1,15 @@
 {
   "cvBuilder": {
+    "heroTitle": "منشئ السيرة الذاتية بالذكاء الاصطناعي",
+    "heroSubtitle": "قم بتحميل سيرتك الذاتية، واحصل على تحليل بالذكاء الاصطناعي، وأنشئ سيرة احترافية مهيأة لسوق العمل الإماراتي",
+    "uaeFocused": "موجه لدولة الإمارات",
+    "geminiAI": "Gemini AI",
+    "autoFill": "إكمال تلقائي",
+    "stepUploadAnalyze": "تحميل وتحليل",
+    "stepChooseTemplate": "اختيار القالب",
+    "stepBuildCustomize": "البناء والتخصيص",
+    "stepPreviewExport": "المعاينة والتصدير",
+    "uploadHint": "الحد الأقصى لحجم الملف: 10 ميجابايت • مدعوم بواسطة Gemini AI",
     "uploadYourCV": "قم بتحميل سيرتك الذاتية",
     "aiPoweredAnalysis": "تحليل بالذكاء الاصطناعي مع رؤى سوق العمل في الإمارات",
     "chooseFile": "اختر ملفاً",
