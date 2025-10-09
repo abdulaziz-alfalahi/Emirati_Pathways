@@ -16,6 +16,7 @@ import {
   Play
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { useTranslation } from 'react-i18next';
 import InteractiveDashboardDemo from '@/components/demo/InteractiveDashboardDemo';
 
 // Import translations
@@ -27,16 +28,24 @@ interface Translation {
 }
 
 const BilingualHomePage: React.FC = () => {
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>('en');
-  const [translations, setTranslations] = useState<Translation>(enTranslations);
+  const { i18n } = useTranslation();
+  const initialLang = (i18n.language === 'ar' ? 'ar' : 'en') as 'en' | 'ar';
+  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>(initialLang);
+  const [translations, setTranslations] = useState<Translation>(initialLang === 'ar' ? arTranslations : enTranslations);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
 
   useEffect(() => {
-    setTranslations(currentLanguage === 'en' ? enTranslations : arTranslations);
-  }, [currentLanguage]);
+    // synchronize local translations with global i18n language
+    const lang = (i18n.language === 'ar' ? 'ar' : 'en') as 'en' | 'ar';
+    setCurrentLanguage(lang);
+    setTranslations(lang === 'ar' ? arTranslations : enTranslations);
+  }, [i18n.language]);
 
   const toggleLanguage = () => {
-    setCurrentLanguage(prev => prev === 'en' ? 'ar' : 'en');
+    const next = currentLanguage === 'en' ? 'ar' : 'en';
+    setCurrentLanguage(next);
+    setTranslations(next === 'ar' ? arTranslations : enTranslations);
+    i18n.changeLanguage(next);
   };
 
   const isRTL = currentLanguage === 'ar';
