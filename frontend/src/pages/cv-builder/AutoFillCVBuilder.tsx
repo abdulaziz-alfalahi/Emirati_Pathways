@@ -1681,6 +1681,77 @@ const AutoFillCVBuilder: React.FC = () => {
         currentLanguage={currentLanguage}
       />
 
+      <EnhancedCVExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        cvData={{
+          personal_info: {
+            name: `${formData.personalInfo.firstName} ${formData.personalInfo.lastName}`.trim(),
+            email: formData.personalInfo.email,
+            phone: formData.personalInfo.phone,
+            location: formData.personalInfo.location,
+            nationality: formData.personalInfo.nationality,
+          },
+          professional_summary: formData.professionalSummary,
+          skills: { technical: formData.technicalSkills, soft: formData.softSkills },
+          experience: formData.experience.map(e => ({
+            job_title: e.jobTitle,
+            company: e.company,
+            location: e.location,
+            start_date: e.startDate,
+            end_date: e.endDate,
+            responsibilities: e.responsibilities,
+          })),
+          education: formData.education.map(ed => ({
+            degree: ed.degree,
+            institution: ed.institution,
+            graduation_year: ed.graduationYear,
+            field: ed.field,
+          })),
+        } as any}
+        onExport={async (opts) => {
+          try {
+            setIsExporting(true);
+            const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+            if (currentCVId) {
+              const endpoint = `${base}/api/cv/${currentCVId}/export/${opts.format === 'txt' ? 'json' : opts.format}`;
+              const res = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                  Authorization: localStorage.getItem('access_token') ? `Bearer ${localStorage.getItem('access_token')}` : 'Bearer mock_token_1',
+                },
+              });
+              if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `Export failed (${res.status})`);
+              }
+              const blob = await res.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = `cv_${currentCVId}.${opts.format === 'txt' ? 'json' : opts.format}`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            } else {
+              // No CV ID yet: download JSON draft
+              const blob = new Blob([JSON.stringify(formData, null, 2)], { type: 'application/json' });
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = 'cv_draft.json';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }
+            setShowExportDialog(false);
+          } catch (e) {
+            console.error('Export error:', e);
+            alert(e instanceof Error ? e.message : 'Export failed');
+          } finally {
+            setIsExporting(false);
+          }
+        }}
+      />
+
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
