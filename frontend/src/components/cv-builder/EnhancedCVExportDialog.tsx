@@ -370,7 +370,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl">
                       <SelectItem value="pdf">PDF (Recommended for UAE market)</SelectItem>
                       <SelectItem value="docx">Word Document (Editable)</SelectItem>
                       <SelectItem value="txt">Plain Text (ATS optimized)</SelectItem>
@@ -381,7 +381,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl">
                       <SelectItem value="en">English (International business)</SelectItem>
                       <SelectItem value="ar">Arabic (UAE cultural alignment)</SelectItem>
                     </SelectContent>
@@ -400,7 +400,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl">
                       {Object.entries(templateDescriptions).map(([key, description]) => (
                         <SelectItem key={key} value={key}>
                           <div>
