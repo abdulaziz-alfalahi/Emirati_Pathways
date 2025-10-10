@@ -1921,9 +1921,34 @@ def export_cv_api(cv_id: str, fmt: str):
                 weasyprint.HTML(string=html).write_pdf(str(out_path))
                 return send_file(str(out_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
             except Exception as e:
-                logger.error(f"PDF export error: {e}")
+                logger.error(f"PDF export error (weasyprint): {e}")
                 logger.error(traceback.format_exc())
-                return jsonify({'success': False, 'message': 'PDF export failed'}), 500
+                # Fallback to a simple ReportLab PDF so export still works
+                try:
+                    pdf_path = (UPLOAD_FOLDER / 'exports' / f"cv_{cv_id}_fallback.pdf")
+                    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+                    doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+                    styles = getSampleStyleSheet()
+                    story = []
+                    story.append(Paragraph(full_name or 'Curriculum Vitae', styles['Title']))
+                    contact_info = " | ".join([p for p in [email and f"Email: {email}", phone and f"Phone: {phone}", location and f"Location: {location}"] if p])
+                    if contact_info:
+                        story.append(Paragraph(contact_info, styles['Normal']))
+                    if summary:
+                        story.append(Paragraph('Professional Summary', styles['Heading2']))
+                        story.append(Paragraph(summary, styles['Normal']))
+                    if tech_skills:
+                        story.append(Paragraph('Technical Skills', styles['Heading2']))
+                        story.append(Paragraph(", ".join(tech_skills), styles['Normal']))
+                    if soft_skills:
+                        story.append(Paragraph('Soft Skills', styles['Heading2']))
+                        story.append(Paragraph(", ".join(soft_skills), styles['Normal']))
+                    doc.build(story)
+                    return send_file(str(pdf_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
+                except Exception as e2:
+                    logger.error(f"PDF export fallback error (reportlab): {e2}")
+                    logger.error(traceback.format_exc())
+                    return jsonify({'success': False, 'message': 'PDF export failed'}), 500
 
         return jsonify({'success': False, 'message': 'Unsupported format'}), 400
     except Exception as e:
