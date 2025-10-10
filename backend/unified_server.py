@@ -1782,8 +1782,8 @@ def get_cv(cv_id: str):
             'message': 'Failed to retrieve CV'
         }), 500
 
-@app.route('/api/cv/<cv_id>/export/<fmt>', methods=['GET', 'OPTIONS'])
-def export_cv(cv_id: str, fmt: str):
+@app.route('/api/cv/<cv_id>/export/<fmt>', methods=['GET', 'OPTIONS'], endpoint='export_cv_api')
+def export_cv_api(cv_id: str, fmt: str):
     """Export a saved CV as PDF/DOCX/JSON.
     - Handles CORS preflight
     - Generates a minimal but clean RTL-friendly PDF when requested
