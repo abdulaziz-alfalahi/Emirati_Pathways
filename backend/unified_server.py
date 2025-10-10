@@ -1816,13 +1816,35 @@ def export_cv_api(cv_id: str, fmt: str):
             return jsonify({'success': False, 'message': 'CV not found'}), 404
 
         cv = dict(row)
-        personal = cv.get('personal_info') or {}
+        # Normalize JSONB/text columns that may come back as strings
+        def _as_list(val):
+            if val is None:
+                return []
+            if isinstance(val, str):
+                try:
+                    return json.loads(val)
+                except Exception:
+                    return []
+            return val
+        def _as_obj(val):
+            if val is None:
+                return {}
+            if isinstance(val, str):
+                try:
+                    return json.loads(val)
+                except Exception:
+                    return {}
+            return val
+
+        personal = _as_obj(cv.get('personal_info'))
         full_name = f"{personal.get('firstName','')} {personal.get('lastName','')}".strip()
         email = personal.get('email', '')
         phone = personal.get('phone', '')
         location = personal.get('location', '')
-        tech_skills = cv.get('technical_skills') or []
-        soft_skills = cv.get('soft_skills') or []
+        tech_skills = _as_list(cv.get('technical_skills'))
+        soft_skills = _as_list(cv.get('soft_skills'))
+        work_experience = _as_list(cv.get('work_experience'))
+        education = _as_list(cv.get('education'))
         summary = cv.get('professional_summary') or ''
 
         if fmt == 'json':
@@ -1850,13 +1872,13 @@ def export_cv_api(cv_id: str, fmt: str):
                     doc.add_heading('Soft Skills', level=1)
                     doc.add_paragraph(", ".join(soft_skills))
                 # Minimal experience/education if present
-                for exp in (cv.get('work_experience') or []):
+                for exp in work_experience:
                     doc.add_heading('Experience', level=1)
                     doc.add_paragraph(f"{exp.get('jobTitle','')} - {exp.get('company','')}")
                     doc.add_paragraph(f"{exp.get('startDate','')} - {exp.get('endDate','')} • {exp.get('location','')}")
                     if exp.get('responsibilities'):
                         doc.add_paragraph(exp['responsibilities'])
-                for edu in (cv.get('education') or []):
+                for edu in education:
                     doc.add_heading('Education', level=1)
                     doc.add_paragraph(f"{edu.get('degree','')} - {edu.get('institution','')}")
                     extra = " • ".join([p for p in [edu.get('field',''), edu.get('graduationYear','')] if p])
