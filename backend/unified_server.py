@@ -1782,6 +1782,133 @@ def get_cv(cv_id: str):
             'message': 'Failed to retrieve CV'
         }), 500
 
+@app.route('/api/cv/<cv_id>/export/<fmt>', methods=['GET', 'OPTIONS'])
+def export_cv(cv_id: str, fmt: str):
+    """Export a saved CV as PDF/DOCX/JSON.
+    - Handles CORS preflight
+    - Generates a minimal but clean RTL-friendly PDF when requested
+    """
+    try:
+        # CORS preflight
+        if request.method == 'OPTIONS':
+            return ('', 204)
+
+        # For development: accept mock tokens
+        auth_header = request.headers.get('Authorization', '')
+        if 'mock_token' in auth_header:
+            user_id = 'mock_user_candidate'
+        else:
+            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+
+        # Convert mock user_id to UUID for development
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            user_uuid = user_id
+
+        # Fetch CV row
+        row = execute_query(
+            "SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid AND COALESCE(status,'draft') <> 'archived'",
+            (cv_id, user_uuid),
+            fetch_one=True
+        )
+        if not row:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+        cv = dict(row)
+        personal = cv.get('personal_info') or {}
+        full_name = f"{personal.get('firstName','')} {personal.get('lastName','')}".strip()
+        email = personal.get('email', '')
+        phone = personal.get('phone', '')
+        location = personal.get('location', '')
+        tech_skills = cv.get('technical_skills') or []
+        soft_skills = cv.get('soft_skills') or []
+        summary = cv.get('professional_summary') or ''
+
+        if fmt == 'json':
+            return jsonify({'success': True, 'data': cv}), 200
+
+        export_dir = (UPLOAD_FOLDER / 'exports')
+        export_dir.mkdir(parents=True, exist_ok=True)
+
+        # DOCX export
+        if fmt == 'docx':
+            try:
+                docx_path = export_dir / f"cv_{cv_id}.docx"
+                doc = Document()
+                doc.add_heading(full_name or 'Curriculum Vitae', 0)
+                contact = " | ".join([p for p in [email and f"Email: {email}", phone and f"Phone: {phone}", location and f"Location: {location}"] if p])
+                if contact:
+                    doc.add_paragraph(contact)
+                if summary:
+                    doc.add_heading('Professional Summary', level=1)
+                    doc.add_paragraph(summary)
+                if tech_skills:
+                    doc.add_heading('Technical Skills', level=1)
+                    doc.add_paragraph(", ".join(tech_skills))
+                if soft_skills:
+                    doc.add_heading('Soft Skills', level=1)
+                    doc.add_paragraph(", ".join(soft_skills))
+                # Minimal experience/education if present
+                for exp in (cv.get('work_experience') or []):
+                    doc.add_heading('Experience', level=1)
+                    doc.add_paragraph(f"{exp.get('jobTitle','')} - {exp.get('company','')}")
+                    doc.add_paragraph(f"{exp.get('startDate','')} - {exp.get('endDate','')} • {exp.get('location','')}")
+                    if exp.get('responsibilities'):
+                        doc.add_paragraph(exp['responsibilities'])
+                for edu in (cv.get('education') or []):
+                    doc.add_heading('Education', level=1)
+                    doc.add_paragraph(f"{edu.get('degree','')} - {edu.get('institution','')}")
+                    extra = " • ".join([p for p in [edu.get('field',''), edu.get('graduationYear','')] if p])
+                    if extra:
+                        doc.add_paragraph(extra)
+                doc.save(str(docx_path))
+                return send_file(str(docx_path), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"cv_{cv_id}.docx")
+            except Exception as e:
+                logger.error(f"DOCX export error: {e}")
+                return jsonify({'success': False, 'message': 'DOCX export failed'}), 500
+
+        # PDF export (WeasyPrint, RTL-safe)
+        if fmt == 'pdf':
+            try:
+                html = f"""
+                <!doctype html>
+                <html lang='ar' dir='rtl'>
+                <meta charset='utf-8'/>
+                <style>
+                  @page {{ size: A4; margin: 18mm; }}
+                  body {{ font-family: 'Amiri','Noto Naskh Arabic','Arial',sans-serif; color:#0f172a; }}
+                  h1 {{ color:#0f766e; margin:0 0 8px; }}
+                  .meta {{ color:#475569; margin-bottom:14px; }}
+                  .sec {{ margin:16px 0; }}
+                  .chips {{ display:flex; flex-wrap:wrap; gap:6px; }}
+                  .chip {{ background:#ecfeff; color:#0e7490; padding:3px 10px; border-radius:12px; font-size:12px; margin:2px 0; }}
+                  .chip.soft {{ background:#f0fdf4; color:#047857; }}
+                </style>
+                <body>
+                  <h1>{full_name or 'السيرة الذاتية'}</h1>
+                  <div class='meta'>📧 {email or ''} • 📱 {phone or ''} • 📍 {location or ''}</div>
+                  {f"<div class='sec'><b>الملخص المهني</b><div>{summary}</div></div>" if summary else ''}
+                  {("<div class='sec'><b>المهارات التقنية</b><div class='chips'>" + ''.join([f"<span class='chip'>{s}</span>" for s in tech_skills]) + "</div></div>") if tech_skills else ''}
+                  {("<div class='sec'><b>المهارات السلوكية</b><div class='chips'>" + ''.join([f"<span class='chip soft'>{s}</span>" for s in soft_skills]) + "</div></div>") if soft_skills else ''}
+                </body>
+                </html>
+                """
+                out_path = (UPLOAD_FOLDER / 'exports' / f"cv_{cv_id}.pdf")
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                weasyprint.HTML(string=html).write_pdf(str(out_path))
+                return send_file(str(out_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
+            except Exception as e:
+                logger.error(f"PDF export error: {e}")
+                logger.error(traceback.format_exc())
+                return jsonify({'success': False, 'message': 'PDF export failed'}), 500
+
+        return jsonify({'success': False, 'message': 'Unsupported format'}), 400
+    except Exception as e:
+        logger.error(f"Export error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({'success': False, 'message': 'Export failed'}), 500
+
 @app.route('/api/cv/<cv_id>', methods=['PUT'])
 def update_cv(cv_id: str):
     """Update existing CV"""
