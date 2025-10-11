@@ -9,7 +9,6 @@ import './i18n/config';
 import './styles/enhanced-rtl.css';
 
 // Development components
-import PersonaSwitcher from '@/components/dev/PersonaSwitcher';
 
 // Loading component
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
@@ -31,6 +30,9 @@ const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
 // Resume Builder
 const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
+const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
+const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
+const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
 
 // Home Page (not lazy loaded for faster initial access)
 import BilingualHomePage from '@/pages/BilingualHomePage';
@@ -188,7 +190,7 @@ const AppContent: React.FC = () => {
                   path="/cv-builder" 
                   element={
                     <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                      <ResumeBuilderPage />
+                      <AutoFillCVBuilder />
                     </ProtectedRoute>
                   } 
                 />
@@ -366,7 +368,6 @@ function App() {
       <MockAuthProvider>
         <AuthProvider>
           <AppContent />
-          <PersonaSwitcher />
         </AuthProvider>
       </MockAuthProvider>
     </LanguageProvider>

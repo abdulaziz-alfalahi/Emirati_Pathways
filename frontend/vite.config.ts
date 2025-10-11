@@ -17,6 +17,9 @@ export default defineConfig({
     port: 8080,
     host: true,
     cors: true,
+    allowedHosts: [
+      '2415733d5eb0.ngrok.app'
+    ],
   },
   
   // Build configuration

@@ -111,7 +111,7 @@ const ResumeBuilderPage: React.FC = () => {
       const formData = new FormData();
       formData.append('cv_file', file);
       
-      const response = await fetch('http://localhost:5003/api/candidate/cv/upload', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'}/api/cv/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token' )}`
@@ -521,15 +521,15 @@ const ResumeBuilderPage: React.FC = () => {
 
   return (
     <CareerPageLayout
-      title={t('title')}
-      description={t('description')}
+      title={t('title') !== 'title' ? t('title') : 'CV Builder & Resume Creator'}
+      description={t('description') !== 'description' ? t('description') : 'Create professional CVs tailored for the UAE job market with AI-powered assistance'}
       heroIcon={<FileText className="h-12 w-12" />}
-      primaryActionLabel={t('primaryAction')}
+      primaryActionLabel={t('primaryAction') !== 'primaryAction' ? t('primaryAction') : 'Start Building'}
       primaryActionIcon={<Edit className="h-4 w-4" />}
-      secondaryActionLabel={t('secondaryAction')}
+      secondaryActionLabel={t('secondaryAction') !== 'secondaryAction' ? t('secondaryAction') : 'Upload CV'}
       stats={stats}
-      quote={t('quote')}
-      attribution={t('attribution')}
+      quote={t('quote') !== 'quote' ? t('quote') : 'Build your career with confidence'}
+      attribution={t('attribution') !== 'attribution' ? t('attribution') : 'UAE Career Development'}
       quoteIcon={<FileText className="h-8 w-8" />}
       tabs={tabs}
       defaultTab="builder"

@@ -122,8 +122,8 @@ const CVUploadParser: React.FC<CVUploadParserProps> = ({ onParsedData, className
 
       // Call your API (kept generic)
       const apiUrl = includeTranslation
-        ? `/api/cv/parse?translate_to=${targetLanguage}`
-        : '/api/cv/parse';
+        ? `/api/cv/upload?translate_to=${targetLanguage}`
+        : '/api/cv/upload';
 
       const formData = new FormData();
       formData.append('file', file);
@@ -435,3 +435,4 @@ const CVUploadParser: React.FC<CVUploadParserProps> = ({ onParsedData, className
 };
 
 export default CVUploadParser;
+
