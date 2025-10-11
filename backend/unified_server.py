@@ -1859,7 +1859,7 @@ def export_cv_api(cv_id: str, fmt: str):
                 docx_path = export_dir / f"cv_{cv_id}.docx"
                 doc = Document()
                 doc.add_heading(full_name or 'Curriculum Vitae', 0)
-                contact = " | ".join([p for p in [email and f"Email: {email}", phone and f"Phone: {phone}", location and f"Location: {location}"] if p])
+                contact = " | ".join([str(p) for p in [email and f"Email: {email}", phone and f"Phone: {phone}", location and f"Location: {location}"] if p])
                 if contact:
                     doc.add_paragraph(contact)
                 if summary:
@@ -1867,10 +1867,10 @@ def export_cv_api(cv_id: str, fmt: str):
                     doc.add_paragraph(summary)
                 if tech_skills:
                     doc.add_heading('Technical Skills', level=1)
-                    doc.add_paragraph(", ".join(tech_skills))
+                    doc.add_paragraph(", ".join([str(s) for s in tech_skills]))
                 if soft_skills:
                     doc.add_heading('Soft Skills', level=1)
-                    doc.add_paragraph(", ".join(soft_skills))
+                    doc.add_paragraph(", ".join([str(s) for s in soft_skills]))
                 # Minimal experience/education if present
                 for exp in work_experience:
                     doc.add_heading('Experience', level=1)
@@ -1881,11 +1881,17 @@ def export_cv_api(cv_id: str, fmt: str):
                 for edu in education:
                     doc.add_heading('Education', level=1)
                     doc.add_paragraph(f"{edu.get('degree','')} - {edu.get('institution','')}")
-                    extra = " • ".join([p for p in [edu.get('field',''), edu.get('graduationYear','')] if p])
+                    extra = " • ".join([str(p) for p in [edu.get('field',''), edu.get('graduationYear','')] if p])
                     if extra:
                         doc.add_paragraph(extra)
                 doc.save(str(docx_path))
-                return send_file(str(docx_path), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"cv_{cv_id}.docx")
+                resp = send_file(str(docx_path), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"cv_{cv_id}.docx")
+                origin = request.headers.get('Origin', '*')
+                resp.headers['Access-Control-Allow-Origin'] = origin
+                resp.headers['Vary'] = 'Origin'
+                resp.headers['Access-Control-Expose-Headers'] = 'Authorization'
+                resp.headers['Access-Control-Allow-Credentials'] = 'true'
+                return resp
             except Exception as e:
                 logger.error(f"DOCX export error: {e}")
                 return jsonify({'success': False, 'message': 'DOCX export failed'}), 500
@@ -1893,6 +1899,10 @@ def export_cv_api(cv_id: str, fmt: str):
         # PDF export (WeasyPrint, RTL-safe)
         if fmt == 'pdf':
             try:
+                # On Windows, fontconfig often fails; skip WeasyPrint and go straight to fallback
+                if os.name == 'nt':
+                    raise RuntimeError('Skip WeasyPrint on Windows; using ReportLab fallback')
+
                 html = f"""
                 <!doctype html>
                 <html lang='ar' dir='rtl'>
@@ -1919,7 +1929,13 @@ def export_cv_api(cv_id: str, fmt: str):
                 out_path = (UPLOAD_FOLDER / 'exports' / f"cv_{cv_id}.pdf")
                 out_path.parent.mkdir(parents=True, exist_ok=True)
                 weasyprint.HTML(string=html).write_pdf(str(out_path))
-                return send_file(str(out_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
+                resp = send_file(str(out_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
+                origin = request.headers.get('Origin', '*')
+                resp.headers['Access-Control-Allow-Origin'] = origin
+                resp.headers['Vary'] = 'Origin'
+                resp.headers['Access-Control-Expose-Headers'] = 'Authorization'
+                resp.headers['Access-Control-Allow-Credentials'] = 'true'
+                return resp
             except Exception as e:
                 logger.error(f"PDF export error (weasyprint): {e}")
                 logger.error(traceback.format_exc())
@@ -1944,7 +1960,13 @@ def export_cv_api(cv_id: str, fmt: str):
                         story.append(Paragraph('Soft Skills', styles['Heading2']))
                         story.append(Paragraph(", ".join(soft_skills), styles['Normal']))
                     doc.build(story)
-                    return send_file(str(pdf_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
+                    resp = send_file(str(pdf_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
+                    origin = request.headers.get('Origin', '*')
+                    resp.headers['Access-Control-Allow-Origin'] = origin
+                    resp.headers['Vary'] = 'Origin'
+                    resp.headers['Access-Control-Expose-Headers'] = 'Authorization'
+                    resp.headers['Access-Control-Allow-Credentials'] = 'true'
+                    return resp
                 except Exception as e2:
                     logger.error(f"PDF export fallback error (reportlab): {e2}")
                     logger.error(traceback.format_exc())
