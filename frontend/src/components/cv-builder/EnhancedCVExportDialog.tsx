@@ -50,7 +50,15 @@ interface EnhancedCVExportDialogProps {
   onClose: () => void;
   cvData: CVData;
   cvScore?: CVScore;
-  onExport: (options: ExportOptions) => Promise<void>;
+  onExport: (
+    options: ExportOptions,
+    extra?: {
+      coverLetter?: string;
+      interviewTips?: string[];
+      strategicPlan?: string;
+      scoreAnalysis?: CVScore | null;
+    }
+  ) => Promise<void>;
 }
 
 export const EnhancedCVExportDialog: React.FC<EnhancedCVExportDialogProps> = ({
@@ -308,7 +316,12 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await onExport(exportOptions);
+      await onExport(exportOptions, {
+        coverLetter: exportOptions.includeCoverLetter ? aiContent?.coverLetter : undefined,
+        interviewTips: exportOptions.includeInterviewTips ? aiContent?.interviewTips : undefined,
+        strategicPlan: exportOptions.includeStrategicPlan ? aiContent?.strategicPlan : undefined,
+        scoreAnalysis: exportOptions.includeScoreAnalysis ? (cvScore || null) : null,
+      });
     } catch (error) {
       console.error('Export error:', error);
     } finally {
@@ -346,7 +359,7 @@ Format as a JSON array of strings with specific, actionable strategic advice.`;
             Strategic CV Export with AI Enhancements
           </DialogTitle>
           <DialogDescription>
-            Export your CV with AI-powered strategic recommendations aligned with D33 and Talent33, D33, E33, Talent 2033 & Dubai South 2033
+            Export your CV with AI-powered strategic recommendations aligned with D33, Talent33, E33, Talent 2033, and Dubai South 2033
           </DialogDescription>
         </DialogHeader>
 

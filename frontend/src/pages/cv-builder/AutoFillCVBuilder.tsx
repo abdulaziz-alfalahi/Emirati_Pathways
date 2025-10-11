@@ -1709,7 +1709,7 @@ const AutoFillCVBuilder: React.FC = () => {
             field: ed.field,
           })),
         } as any}
-        onExport={async (opts) => {
+        onExport={async (opts, extra) => {
           try {
             setIsExporting(true);
             const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
@@ -1725,13 +1725,28 @@ const AutoFillCVBuilder: React.FC = () => {
                 const text = await res.text();
                 throw new Error(text || `Export failed (${res.status})`);
               }
-              const blob = await res.blob();
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
-              a.download = `cv_${currentCVId}.${opts.format === 'txt' ? 'json' : opts.format}`;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
+              const files: Array<{ blob: Blob; name: string }> = [];
+              // Main file
+              const mainBlob = await res.blob();
+              files.push({ blob: mainBlob, name: `cv_${currentCVId}.${opts.format === 'txt' ? 'json' : opts.format}` });
+              // Client-side extras as .txt alongside the main CV
+              if (extra?.coverLetter) {
+                files.push({ blob: new Blob([extra.coverLetter], { type: 'text/plain' }), name: `cover_letter_${currentCVId}.txt` });
+              }
+              if (extra?.interviewTips?.length) {
+                files.push({ blob: new Blob([extra.interviewTips.join('\n')], { type: 'text/plain' }), name: `interview_tips_${currentCVId}.txt` });
+              }
+              if (extra?.strategicPlan) {
+                files.push({ blob: new Blob([extra.strategicPlan], { type: 'text/plain' }), name: `strategic_plan_${currentCVId}.txt` });
+              }
+              for (const f of files) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(f.blob);
+                a.download = f.name;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+              }
             } else {
               // No CV ID yet: download JSON draft
               const blob = new Blob([JSON.stringify(formData, null, 2)], { type: 'application/json' });
