@@ -21,5 +21,5 @@ USER appuser
 
 EXPOSE 5003
 
-# Run the fixed app entrypoint directly on port 5003
-CMD ["python", "app_fixed_v2.py"]
+# Default entrypoint runs recruiter services app
+CMD ["python", "recruiter_server.py"]

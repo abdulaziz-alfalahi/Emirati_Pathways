@@ -4,7 +4,7 @@ Emirati Journey Platform - Job Posting Functionality with UAE Compliance
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import logging
@@ -186,6 +186,9 @@ def get_job_postings():
     """Get job postings for the HR user's company"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
         status = request.args.get('status', 'all')
@@ -299,6 +302,9 @@ def create_job_posting():
     """Create a new job posting"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
         # Validate required fields
@@ -542,6 +548,9 @@ def update_job_posting(job_id):
     """Update a job posting"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
         conn = get_db_connection()
@@ -663,6 +672,9 @@ def publish_job_posting(job_id):
     """Publish a job posting"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -748,6 +760,9 @@ def check_compliance(job_id):
     """Run UAE compliance check on a job posting"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -803,6 +818,9 @@ def get_job_templates():
     """Get job templates for the company"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

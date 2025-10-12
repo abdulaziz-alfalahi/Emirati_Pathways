@@ -4,7 +4,7 @@ Emirati Journey Platform - Advanced Candidate Search and Filtering System
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import logging
@@ -386,6 +386,9 @@ def search_candidates():
     """Advanced candidate search with multiple filters"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Verify HR access
         conn = get_db_connection()
@@ -502,6 +505,9 @@ def get_candidate_details(candidate_id):
     """Get detailed candidate profile"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -642,6 +648,9 @@ def match_candidates_to_job(job_id):
     """Find candidates that match a specific job posting"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -775,6 +784,9 @@ def get_filter_options():
     """Get available filter options for candidate search"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

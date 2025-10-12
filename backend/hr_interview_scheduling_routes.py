@@ -4,7 +4,7 @@ Emirati Journey Platform - Interview Scheduling System with Calendar Integration
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import logging
@@ -221,6 +221,9 @@ def get_interviews():
     """Get interviews for the HR user"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
         status = request.args.get('status', 'all')
@@ -344,6 +347,9 @@ def schedule_interview():
     """Schedule a new interview"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
         # Validate required fields
@@ -508,6 +514,9 @@ def get_interview_details(interview_id):
     """Get detailed interview information"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -618,6 +627,9 @@ def reschedule_interview(interview_id):
     """Reschedule an existing interview"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
         if not data.get('new_scheduled_date'):
@@ -729,6 +741,9 @@ def cancel_interview(interview_id):
     """Cancel an interview"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
         conn = get_db_connection()
@@ -811,6 +826,9 @@ def get_interviewer_availability(interviewer_id):
     """Get available time slots for an interviewer"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
         start_date_str = request.args.get('start_date', datetime.now().strftime('%Y-%m-%d'))
@@ -888,6 +906,9 @@ def submit_interview_feedback(interview_id):
     """Submit feedback for an interview"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
         conn = get_db_connection()
@@ -983,6 +1004,9 @@ def get_interview_calendar():
     """Get interview calendar view"""
     try:
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
         start_date = request.args.get('start_date', datetime.now().strftime('%Y-%m-%d'))
