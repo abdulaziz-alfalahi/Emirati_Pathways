@@ -44,7 +44,8 @@ const useNavItems = () => {
     { name: 'Credentials', href: '/credentials', icon: Award },
     { name: 'Blockchain Credentials', href: '/blockchain-credentials', icon: Shield },
     { name: 'Share Success Stories', href: '/share-success-stories', icon: Award },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 }
+    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Recruiter Jobs', href: '/recruiter/jobs', icon: Briefcase }
   ];
 
   const authenticatedNavItems = useMemo(() => {
