@@ -13,6 +13,8 @@ import uuid
 import os
 import json
 import re
+from pathlib import Path
+from werkzeug.utils import secure_filename
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +34,17 @@ DB_CONFIG = {
 def get_db_connection():
     """Get database connection"""
     return psycopg2.connect(**DB_CONFIG)
+
+# Local storage for job documents (can be swapped for S3 later)
+JOB_DOCS_DIR = Path(os.getenv('JOB_DOCS_DIR', Path(__file__).resolve().parent / 'uploads' / 'job_docs'))
+JOB_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_DOC_EXTENSIONS = {'.pdf', '.doc', '.docx', '.txt', '.rtf', '.xlsx', '.xls', '.ppt', '.pptx'}
+
+
+def _allowed_document(filename: str) -> bool:
+    suffix = Path(filename).suffix.lower()
+    return suffix in ALLOWED_DOC_EXTENSIONS
 
 class UAEComplianceChecker:
     """UAE Labor Law and Emiratization Compliance Checker"""
@@ -163,6 +176,323 @@ class UAEComplianceChecker:
         })
         
         return recommendations
+
+
+@hr_job_posting_bp.route('/batch', methods=['POST'])
+@jwt_required()
+def create_job_postings_batch():
+    """Create multiple job postings in a single request.
+    Expects JSON body: { jobs: [ {title, description, ...}, ... ] }
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        body = request.get_json() or {}
+        jobs = body.get('jobs') or []
+
+        if not isinstance(jobs, list) or not jobs:
+            return jsonify({'success': False, 'message': 'jobs array is required'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        created_jobs = []
+
+        try:
+            # Resolve company for HR
+            cursor.execute("""
+                SELECT company_id FROM hr_profiles WHERE user_id = %s
+            """, (current_user_id,))
+            hr_profile = cursor.fetchone()
+            if not hr_profile or not hr_profile['company_id']:
+                return jsonify({'success': False, 'message': 'No company associated with your profile'}), 400
+            company_id = hr_profile['company_id']
+
+            for item in jobs:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get('title')
+                description = item.get('description')
+                if not title or not description:
+                    # Skip invalid entries instead of failing whole batch
+                    continue
+
+                job_id = str(uuid.uuid4())
+
+                # Dates
+                application_deadline = None
+                expires_at = None
+                if item.get('application_deadline'):
+                    try:
+                        application_deadline = datetime.strptime(item['application_deadline'], '%Y-%m-%d').date()
+                    except ValueError:
+                        application_deadline = None
+                if item.get('expires_at'):
+                    try:
+                        expires_at = datetime.strptime(item['expires_at'], '%Y-%m-%d').date()
+                    except ValueError:
+                        expires_at = None
+
+                compliance_result = UAEComplianceChecker.check_job_posting_compliance(item)
+
+                cursor.execute(
+                    """
+                    INSERT INTO job_postings (
+                        id, company_id, created_by, title, description, requirements,
+                        responsibilities, benefits, salary_range_min, salary_range_max,
+                        currency, location, remote_work_allowed, employment_type,
+                        experience_level, status, priority_level, application_deadline,
+                        expires_at, uae_compliance_checked, emiratization_target,
+                        visa_sponsorship_available, tags, seo_keywords
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    ) RETURNING *
+                    """,
+                    (
+                        job_id,
+                        company_id,
+                        current_user_id,
+                        title,
+                        description,
+                        json.dumps(item.get('requirements', {})),
+                        json.dumps(item.get('responsibilities', [])),
+                        json.dumps(item.get('benefits', [])),
+                        item.get('salary_range_min'),
+                        item.get('salary_range_max'),
+                        item.get('currency', 'AED'),
+                        item.get('location'),
+                        item.get('remote_work_allowed', False),
+                        item.get('employment_type', 'full-time'),
+                        item.get('experience_level', 'mid'),
+                        item.get('status', 'draft'),
+                        item.get('priority_level', 'normal'),
+                        application_deadline,
+                        expires_at,
+                        compliance_result['is_compliant'],
+                        item.get('emiratization_target', 0),
+                        item.get('visa_sponsorship_available', False),
+                        json.dumps(item.get('tags', [])),
+                        json.dumps(item.get('seo_keywords', [])),
+                    ),
+                )
+                created = dict(cursor.fetchone())
+
+                # Optional detailed requirements/benefits
+                if item.get('detailed_requirements'):
+                    for req in item['detailed_requirements']:
+                        cursor.execute(
+                            """
+                            INSERT INTO job_requirements (
+                                job_posting_id, requirement_type, requirement_name,
+                                requirement_level, proficiency_level, years_required,
+                                description, weight
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (
+                                job_id,
+                                req.get('type'),
+                                req.get('name'),
+                                req.get('level', 'required'),
+                                req.get('proficiency'),
+                                req.get('years_required'),
+                                req.get('description'),
+                                req.get('weight', 1.0),
+                            ),
+                        )
+
+                if item.get('detailed_benefits'):
+                    for benefit in item['detailed_benefits']:
+                        cursor.execute(
+                            """
+                            INSERT INTO job_benefits (
+                                job_posting_id, benefit_category, benefit_name,
+                                benefit_description, benefit_value, is_highlighted
+                            ) VALUES (%s, %s, %s, %s, %s, %s)
+                            """,
+                            (
+                                job_id,
+                                benefit.get('category'),
+                                benefit.get('name'),
+                                benefit.get('description'),
+                                benefit.get('value'),
+                                benefit.get('is_highlighted', False),
+                            ),
+                        )
+
+                created_jobs.append(created)
+
+            conn.commit()
+
+            # Normalize JSONB in response
+            normalized = []
+            for job in created_jobs:
+                jd = dict(job)
+                for fld in ['requirements', 'responsibilities', 'benefits', 'tags', 'seo_keywords']:
+                    if jd.get(fld) and isinstance(jd[fld], str):
+                        try:
+                            jd[fld] = json.loads(jd[fld])
+                        except Exception:
+                            pass
+                normalized.append(jd)
+
+            return jsonify({'success': True, 'message': 'Batch jobs created', 'data': {'job_postings': normalized, 'count': len(normalized)}}), 201
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        logger.error(f"Error creating batch job postings: {e}")
+        return jsonify({'success': False, 'message': 'Failed to create batch job postings'}), 500
+
+
+@hr_job_posting_bp.route('/<job_id>/documents', methods=['POST'])
+@jwt_required()
+def upload_job_documents(job_id: str):
+    """Upload one or more documents for a job posting (multipart/form-data).
+    Form fields: files[] or file, optional description per file (description)
+    """
+    try:
+        current_user_id = get_jwt_identity()
+
+        # Validate ownership
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT jp.id
+                FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id = %s AND hp.user_id = %s
+                """,
+                (job_id, current_user_id),
+            )
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+
+            files = []
+            if 'files' in request.files:
+                files = request.files.getlist('files')
+            elif 'file' in request.files:
+                files = [request.files['file']]
+
+            if not files:
+                return jsonify({'success': False, 'message': 'No files provided'}), 400
+
+            saved = []
+            for f in files:
+                if not f.filename:
+                    continue
+                if not _allowed_document(f.filename):
+                    continue
+                safe_name = secure_filename(f.filename)
+                # Ensure per-job directory
+                dest_dir = JOB_DOCS_DIR / job_id
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                dest_path = dest_dir / safe_name
+                f.save(str(dest_path))
+
+                file_size = dest_path.stat().st_size if dest_path.exists() else None
+                cursor.execute(
+                    """
+                    INSERT INTO job_documents (
+                        job_posting_id, uploaded_by, file_name, content_type, file_size, storage_path, description
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING *
+                    """,
+                    (
+                        job_id,
+                        current_user_id,
+                        safe_name,
+                        f.mimetype,
+                        file_size,
+                        str(dest_path),
+                        request.form.get('description'),
+                    ),
+                )
+                saved.append(dict(cursor.fetchone()))
+
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Documents uploaded', 'data': saved}), 201
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error uploading job documents: {e}")
+        return jsonify({'success': False, 'message': 'Failed to upload documents'}), 500
+
+
+@hr_job_posting_bp.route('/<job_id>/documents', methods=['GET'])
+@jwt_required()
+def list_job_documents(job_id: str):
+    """List documents attached to a job posting."""
+    try:
+        current_user_id = get_jwt_identity()
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT jd.*
+                FROM job_documents jd
+                INNER JOIN job_postings jp ON jd.job_posting_id = jp.id
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jd.job_posting_id = %s AND hp.user_id = %s
+                ORDER BY jd.created_at DESC
+                """,
+                (job_id, current_user_id),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+            return jsonify({'success': True, 'data': rows})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error listing job documents: {e}")
+        return jsonify({'success': False, 'message': 'Failed to list documents'}), 500
+
+
+@hr_job_posting_bp.route('/documents/<doc_id>', methods=['DELETE'])
+@jwt_required()
+def delete_job_document(doc_id: str):
+    """Delete a job document (and remove file from storage)."""
+    try:
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT jd.*, jp.company_id
+                FROM job_documents jd
+                INNER JOIN job_postings jp ON jd.job_posting_id = jp.id
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jd.id = %s AND hp.user_id = %s
+                """,
+                (doc_id, current_user_id),
+            )
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'success': False, 'message': 'Document not found or access denied'}), 404
+
+            # Remove file from disk if exists
+            storage_path = row.get('storage_path') if isinstance(row, dict) else row['storage_path']
+            try:
+                if storage_path and Path(storage_path).exists():
+                    Path(storage_path).unlink()
+            except Exception:
+                # Ignore file deletion errors; continue to delete DB record
+                pass
+
+            cursor.execute("DELETE FROM job_documents WHERE id = %s", (doc_id,))
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Document deleted'})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error deleting job document: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete document'}), 500
 
 @hr_job_posting_bp.route('/health', methods=['GET'])
 def health_check():
