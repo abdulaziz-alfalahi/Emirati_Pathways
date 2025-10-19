@@ -13,6 +13,7 @@ import uuid
 import os
 import json
 import re
+from werkzeug.utils import secure_filename
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -164,6 +165,18 @@ class UAEComplianceChecker:
         
         return recommendations
 
+def _get_company_id_for_user(cursor, user_id: str):
+    cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (user_id,))
+    row = cursor.fetchone()
+    return row['company_id'] if row and row.get('company_id') else None
+
+def _uploads_dir() -> str:
+    base_dir = os.getenv('JOB_DOCS_UPLOAD_DIR')
+    if not base_dir:
+        base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'job_documents')
+    os.makedirs(base_dir, exist_ok=True)
+    return base_dir
+
 @hr_job_posting_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for job posting functionality"""
@@ -295,6 +308,95 @@ def get_job_postings():
             'success': False,
             'message': 'Failed to retrieve job postings'
         }), 500
+
+@hr_job_posting_bp.route('/batch', methods=['POST'])
+@jwt_required()
+def create_job_postings_batch():
+    """Create a batch of job postings in one request"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+        data = request.get_json() or {}
+        jobs = data.get('jobs', [])
+        if not isinstance(jobs, list) or not jobs:
+            return jsonify({'success': False, 'message': 'jobs array is required'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        created = []
+        try:
+            company_id = _get_company_id_for_user(cursor, current_user_id)
+            if not company_id:
+                return jsonify({'success': False, 'message': 'No company associated with your profile'}), 400
+
+            for job in jobs:
+                if not job.get('title') or not job.get('description'):
+                    return jsonify({'success': False, 'message': 'Each job requires title and description'}), 400
+
+                compliance_result = UAEComplianceChecker.check_job_posting_compliance(job)
+                job_id = str(uuid.uuid4())
+
+                application_deadline = None
+                expires_at = None
+                if job.get('application_deadline'):
+                    try:
+                        application_deadline = datetime.strptime(job['application_deadline'], '%Y-%m-%d').date()
+                    except ValueError:
+                        return jsonify({'success': False, 'message': 'Invalid application_deadline format. Use YYYY-MM-DD'}), 400
+                if job.get('expires_at'):
+                    try:
+                        expires_at = datetime.strptime(job['expires_at'], '%Y-%m-%d').date()
+                    except ValueError:
+                        return jsonify({'success': False, 'message': 'Invalid expires_at format. Use YYYY-MM-DD'}), 400
+
+                cursor.execute(
+                    """
+                    INSERT INTO job_postings (
+                        id, company_id, created_by, title, description, requirements,
+                        responsibilities, benefits, salary_range_min, salary_range_max,
+                        currency, location, remote_work_allowed, employment_type,
+                        experience_level, status, priority_level, application_deadline,
+                        expires_at, uae_compliance_checked, emiratization_target,
+                        visa_sponsorship_available, tags, seo_keywords
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    ) RETURNING *
+                    """,
+                    (
+                        job_id, company_id, current_user_id, job['title'], job['description'],
+                        json.dumps(job.get('requirements', {})),
+                        json.dumps(job.get('responsibilities', [])),
+                        json.dumps(job.get('benefits', [])),
+                        job.get('salary_range_min'),
+                        job.get('salary_range_max'),
+                        job.get('currency', 'AED'),
+                        job.get('location'),
+                        job.get('remote_work_allowed', False),
+                        job.get('employment_type', 'full-time'),
+                        job.get('experience_level', 'mid'),
+                        job.get('status', 'draft'),
+                        job.get('priority_level', 'normal'),
+                        application_deadline,
+                        expires_at,
+                        compliance_result['is_compliant'],
+                        job.get('emiratization_target', 0),
+                        job.get('visa_sponsorship_available', False),
+                        json.dumps(job.get('tags', [])),
+                        json.dumps(job.get('seo_keywords', []))
+                    )
+                )
+                created.append(dict(cursor.fetchone()))
+
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Batch created successfully', 'data': created}), 201
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error creating job postings batch: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to create batch'}), 500
 
 @hr_job_posting_bp.route('/', methods=['POST'])
 @jwt_required()
@@ -463,6 +565,143 @@ def create_job_posting():
             'success': False,
             'message': 'Failed to create job posting'
         }), 500
+
+@hr_job_posting_bp.route('/<job_id>/documents', methods=['POST'])
+@jwt_required()
+def upload_job_document(job_id):
+    """Upload a required document for a job posting"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file part'}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No selected file'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Verify ownership
+            cursor.execute(
+                """
+                SELECT jp.id
+                FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id = %s AND hp.user_id = %s
+                """,
+                (job_id, current_user_id),
+            )
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+
+            uploads_dir = _uploads_dir()
+            filename = secure_filename(file.filename)
+            stored_name = f"{uuid.uuid4().hex}_{filename}"
+            storage_path = os.path.join(uploads_dir, stored_name)
+            file.save(storage_path)
+
+            cursor.execute(
+                """
+                INSERT INTO job_documents (
+                    job_posting_id, uploaded_by, document_type, original_filename,
+                    stored_filename, content_type, size_bytes, storage_path
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    job_id,
+                    current_user_id,
+                    request.form.get('document_type'),
+                    filename,
+                    stored_name,
+                    file.mimetype,
+                    request.content_length or 0,
+                    storage_path,
+                ),
+            )
+            doc = dict(cursor.fetchone())
+            conn.commit()
+            # Do not expose full storage path
+            doc['storage_path'] = None
+            return jsonify({'success': True, 'data': doc}), 201
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error uploading job document: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to upload document'}), 500
+
+@hr_job_posting_bp.route('/<job_id>/documents', methods=['GET'])
+@jwt_required()
+def list_job_documents(job_id):
+    """List uploaded documents for a job posting"""
+    try:
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT jd.id, jd.document_type, jd.original_filename, jd.content_type, jd.size_bytes, jd.created_at
+                FROM job_documents jd
+                INNER JOIN job_postings jp ON jd.job_posting_id = jp.id
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jd.job_posting_id = %s AND hp.user_id = %s
+                ORDER BY jd.created_at DESC
+                """,
+                (job_id, current_user_id),
+            )
+            docs = [dict(r) for r in cursor.fetchall()]
+            return jsonify({'success': True, 'data': docs})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error listing job documents: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to list documents'}), 500
+
+@hr_job_posting_bp.route('/<job_id>/documents/<doc_id>', methods=['DELETE'])
+@jwt_required()
+def delete_job_document(job_id, doc_id):
+    """Delete an uploaded document (removes DB record and file)"""
+    try:
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT jd.*
+                FROM job_documents jd
+                INNER JOIN job_postings jp ON jd.job_posting_id = jp.id
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jd.id = %s AND jd.job_posting_id = %s AND hp.user_id = %s
+                """,
+                (doc_id, job_id, current_user_id),
+            )
+            doc = cursor.fetchone()
+            if not doc:
+                return jsonify({'success': False, 'message': 'Document not found or access denied'}), 404
+            # Delete DB record first
+            cursor.execute("DELETE FROM job_documents WHERE id = %s", (doc_id,))
+            conn.commit()
+            # Attempt to remove file
+            try:
+                if doc.get('storage_path') and os.path.exists(doc['storage_path']):
+                    os.remove(doc['storage_path'])
+            except Exception:
+                pass
+            return jsonify({'success': True, 'message': 'Document deleted'})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error deleting job document: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to delete document'}), 500
 
 @hr_job_posting_bp.route('/<job_id>', methods=['GET'])
 @jwt_required()
@@ -753,6 +992,92 @@ def publish_job_posting(job_id):
             'success': False,
             'message': 'Failed to publish job posting'
         }), 500
+
+@hr_job_posting_bp.route('/<job_id>/publish-and-match', methods=['POST'])
+@jwt_required()
+def publish_and_match(job_id):
+    """Publish a job and return initial top-10 matching candidates"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Verify ownership and get job details
+            cursor.execute("""
+                SELECT jp.* FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id = %s AND hp.user_id = %s
+            """, (job_id, current_user_id))
+            job = cursor.fetchone()
+            if not job:
+                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+
+            # Publish if needed
+            if job['status'] != 'published':
+                expires_at = job['expires_at'] or (datetime.now().date() + timedelta(days=30))
+                cursor.execute("""
+                    UPDATE job_postings 
+                    SET status = 'published', published_at = CURRENT_TIMESTAMP, expires_at = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s RETURNING *
+                """, (expires_at, job_id))
+                job = cursor.fetchone()
+                conn.commit()
+
+            # Build requirements for matching
+            requirements = {}
+            if job.get('requirements'):
+                try:
+                    requirements = json.loads(job['requirements']) if isinstance(job['requirements'], str) else job['requirements']
+                except (json.JSONDecodeError, TypeError):
+                    requirements = {}
+            job_requirements = {
+                'min_experience': (requirements or {}).get('min_experience', 0),
+                'education_level': (requirements or {}).get('education_level', ''),
+                'skills': (requirements or {}).get('skills', []),
+                'location': job.get('location', ''),
+                'salary_max': job.get('salary_range_max', 0)
+            }
+
+            # Fetch active candidates
+            cursor.execute("""
+                SELECT 
+                    u.id, u.first_name, u.last_name, u.email, u.emirate, u.education_level,
+                    u.experience_years, u.preferred_salary_min, u.preferred_salary_max,
+                    u.preferred_location, u.is_uae_national, u.skills, u.last_login
+                FROM users u
+                WHERE u.role = 'candidate' AND u.is_active = true
+                LIMIT 500
+            """)
+            candidates = [dict(r) for r in cursor.fetchall()]
+
+            from hr_candidate_search_routes import CandidateSearchEngine
+            matched = []
+            for c in candidates:
+                # Parse skills from Postgres array text if needed
+                if c.get('skills') and isinstance(c['skills'], str):
+                    skills_str = c['skills'].strip('{}')
+                    c['skills'] = [s.strip('"') for s in skills_str.split(',') if s.strip()]
+                # Calculate match score using existing engine
+                score = CandidateSearchEngine.calculate_match_score(c, job_requirements)
+                matched.append({
+                    'candidate_id': c['id'],
+                    'first_name': c.get('first_name'),
+                    'last_name': c.get('last_name'),
+                    'match_score': score
+                })
+            # Sort and take top 10
+            matched.sort(key=lambda m: m['match_score']['match_percentage'], reverse=True)
+            top10 = matched[:10]
+
+            return jsonify({'success': True, 'data': {'job_posting': {'id': job['id'], 'title': job['title']}, 'top_matches': top10}})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error publish-and-match: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to publish and match'}), 500
 
 @hr_job_posting_bp.route('/<job_id>/compliance-check', methods=['POST'])
 @jwt_required()
