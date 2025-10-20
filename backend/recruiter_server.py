@@ -95,6 +95,16 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering HR job posting routes: {e}")
 
+    # Recruiter/HR: offers management + public accept/decline
+    try:
+        from hr_offer_routes import hr_offer_bp, public_offer_bp
+
+        app.register_blueprint(hr_offer_bp)
+        app.register_blueprint(public_offer_bp)
+        logger.info("Registered: HR offer routes and public offer routes")
+    except Exception as e:
+        logger.error(f"Failed registering HR offer routes: {e}")
+
     # Recruiter/HR: candidate search & matching-by-job
     try:
         from hr_candidate_search_routes import hr_candidate_search_bp
