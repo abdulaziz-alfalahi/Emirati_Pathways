@@ -1079,6 +1079,159 @@ def publish_and_match(job_id):
         logger.error(f"Error publish-and-match: {str(e)}")
         return jsonify({'success': False, 'message': 'Failed to publish and match'}), 500
 
+@hr_job_posting_bp.route('/<job_id>/shortlist', methods=['GET'])
+@jwt_required()
+def get_job_shortlist(job_id):
+    """Retrieve shortlisted candidates for a job posting"""
+    try:
+        current_user_id = get_jwt_identity()
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Verify HR ownership of the job
+            cursor.execute(
+                """
+                SELECT 1
+                FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id = %s AND hp.user_id = %s
+                """,
+                (job_id, current_user_id),
+            )
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+
+            # Fetch shortlist with basic candidate info
+            cursor.execute(
+                """
+                SELECT 
+                    js.candidate_id,
+                    js.notes,
+                    js.created_at,
+                    u.first_name,
+                    u.last_name,
+                    u.emirate,
+                    u.education_level,
+                    u.experience_years,
+                    u.skills
+                FROM job_shortlists js
+                LEFT JOIN users u ON u.id = js.candidate_id
+                WHERE js.job_posting_id = %s
+                ORDER BY js.created_at DESC
+                """,
+                (job_id,),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+
+            # Normalize skills array text -> list
+            for r in rows:
+                if r.get('skills') and isinstance(r['skills'], str):
+                    skills_str = r['skills'].strip('{}')
+                    r['skills'] = [s.strip('"') for s in skills_str.split(',') if s.strip()]
+
+            return jsonify({'success': True, 'data': rows})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error getting shortlist: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to get shortlist'}), 500
+
+@hr_job_posting_bp.route('/<job_id>/shortlist', methods=['POST'])
+@jwt_required()
+def add_to_shortlist(job_id):
+    """Add a candidate to the shortlist for a job posting"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+
+        payload = request.get_json() or {}
+        candidate_id = payload.get('candidate_id')
+        notes = payload.get('notes')
+        if not candidate_id:
+            return jsonify({'success': False, 'message': 'candidate_id is required'}), 400
+
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Verify HR ownership of the job
+            cursor.execute(
+                """
+                SELECT 1
+                FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id = %s AND hp.user_id = %s
+                """,
+                (job_id, current_user_id),
+            )
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+
+            # Ensure candidate exists and is a candidate
+            cursor.execute("SELECT 1 FROM users WHERE id = %s AND COALESCE(role,'candidate') = 'candidate'", (candidate_id,))
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+
+            # Upsert into shortlist (update notes if already present)
+            cursor.execute(
+                """
+                INSERT INTO job_shortlists (job_posting_id, candidate_id, added_by, notes)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (job_posting_id, candidate_id)
+                DO UPDATE SET notes = EXCLUDED.notes
+                RETURNING job_posting_id, candidate_id, added_by, notes, created_at
+                """,
+                (job_id, candidate_id, current_user_id, notes),
+            )
+            row = dict(cursor.fetchone())
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Candidate shortlisted', 'data': row}), 201
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error adding to shortlist: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to add to shortlist'}), 500
+
+@hr_job_posting_bp.route('/<job_id>/shortlist/<int:candidate_id>', methods=['DELETE'])
+@jwt_required()
+def remove_from_shortlist(job_id, candidate_id):
+    """Remove a candidate from the shortlist for a job posting"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Verify HR ownership
+            cursor.execute(
+                """
+                SELECT 1
+                FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id = %s AND hp.user_id = %s
+                """,
+                (job_id, current_user_id),
+            )
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+
+            cursor.execute(
+                "DELETE FROM job_shortlists WHERE job_posting_id = %s AND candidate_id = %s",
+                (job_id, candidate_id),
+            )
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'message': 'Candidate not in shortlist'}), 404
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Candidate removed from shortlist'})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error removing from shortlist: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to remove from shortlist'}), 500
+
 @hr_job_posting_bp.route('/<job_id>/compliance-check', methods=['POST'])
 @jwt_required()
 def check_compliance(job_id):
