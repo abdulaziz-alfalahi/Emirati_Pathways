@@ -122,6 +122,16 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering communication routes: {e}")
 
+    # Offers (HR + public accept/decline)
+    try:
+        from hr_offer_routes import hr_offer_bp, public_offer_bp
+
+        app.register_blueprint(hr_offer_bp)
+        app.register_blueprint(public_offer_bp)
+        logger.info("Registered: offer routes")
+    except Exception as e:
+        logger.error(f"Failed registering offer routes: {e}")
+
     # Video interviewing
     try:
         from video_interview_routes import video_interview_bp
