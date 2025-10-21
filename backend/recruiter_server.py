@@ -105,6 +105,25 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering HR offer routes: {e}")
 
+    # Recruiter/HR: approval workflow
+    try:
+        from hr_approval_routes import hr_approval_bp
+
+        app.register_blueprint(hr_approval_bp)
+        logger.info("Registered: HR approval routes")
+    except Exception as e:
+        logger.error(f"Failed registering approval routes: {e}")
+
+    # Recruiter/HR: external distribution + external callbacks
+    try:
+        from hr_external_distribution_routes import hr_distribution_bp, external_distribution_bp
+
+        app.register_blueprint(hr_distribution_bp)
+        app.register_blueprint(external_distribution_bp)
+        logger.info("Registered: HR external distribution routes and external callbacks")
+    except Exception as e:
+        logger.error(f"Failed registering external distribution routes: {e}")
+
     # Recruiter/HR: candidate search & matching-by-job
     try:
         from hr_candidate_search_routes import hr_candidate_search_bp
