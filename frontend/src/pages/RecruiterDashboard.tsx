@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,11 +25,14 @@ import {
   MessageSquare,
   Download,
   Upload,
+  FileText,
   BarChart3,
   Phone,
   Mail,
   MapPin,
   Star,
+  CheckSquare,
+  Share2,
 
   Settings,
   Bell,
@@ -208,6 +212,25 @@ const RecruiterDashboard: React.FC = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export Reports
               </Button>
+              {/* New: direct links to recruiter services */}
+              <Link to="/recruiter/offers">
+                <Button variant="outline" className="font-dubai-medium">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Manage Offers
+                </Button>
+              </Link>
+              <Link to="/recruiter/approvals">
+                <Button variant="outline" className="font-dubai-medium">
+                  <CheckSquare className="h-4 w-4 mr-2" />
+                  Approvals
+                </Button>
+              </Link>
+              <Link to="/recruiter/distribution">
+                <Button variant="outline" className="font-dubai-medium">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Job Distribution
+                </Button>
+              </Link>
             </div>
           </div>
 
