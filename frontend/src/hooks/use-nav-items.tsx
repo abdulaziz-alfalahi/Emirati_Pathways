@@ -46,6 +46,7 @@ const useNavItems = () => {
     { name: 'Share Success Stories', href: '/share-success-stories', icon: Award },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Recruiter Jobs', href: '/recruiter/jobs', icon: Briefcase },
+    { name: 'Recruiter Candidates', href: '/recruiter/candidates', icon: Users },
     { name: 'Recruiter Offers', href: '/recruiter/offers', icon: Briefcase },
     { name: 'Recruiter Approvals', href: '/recruiter/approvals', icon: CheckSquare },
     { name: 'Recruiter Distribution', href: '/recruiter/distribution', icon: Users }

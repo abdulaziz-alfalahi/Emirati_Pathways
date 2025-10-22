@@ -27,6 +27,7 @@ const MentorDashboard = lazy(() => import('@/pages/MentorDashboard'));
 const RecruiterDashboard = lazy(() => import('@/pages/RecruiterDashboard'));
 const RecruiterJobs = lazy(() => import('@/pages/recruiter/Jobs'));
 const RecruiterCandidates = lazy(() => import('@/pages/recruiter/Candidates'));
+const RecruiterCandidates = lazy(() => import('@/pages/recruiter/Candidates'));
 const RecruiterOffers = lazy(() => import('@/pages/recruiter/Offers'));
 const RecruiterApprovals = lazy(() => import('@/pages/recruiter/Approvals'));
 const RecruiterDistribution = lazy(() => import('@/pages/recruiter/Distribution'));
@@ -132,6 +133,14 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <RecruiterJobs />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recruiter/candidates" 
+                  element={
+                    <ProtectedRoute>
+                      <RecruiterCandidates />
                     </ProtectedRoute>
                   } 
                 />
