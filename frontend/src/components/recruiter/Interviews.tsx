@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Calendar, Check, Clock, Link as LinkIcon, Plus, ThumbsDown, ThumbsUp, User, Video } from 'lucide-react';
+import { Calendar, Check, Clock, Download, Mail, Plus, ThumbsDown, ThumbsUp, Video } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -101,6 +101,59 @@ const Interviews = () => {
         description: 'The video conference link is not available.',
         variant: 'destructive'
       });
+    }
+  };
+
+  // Helpers to call backend with JWT from localStorage
+  const getAuthHeaders = (): HeadersInit => {
+    const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const resolveInterviewId = (interview: Interview): string | null => {
+    // Use existing id; if it looks like a placeholder (short), prompt for a backend interview UUID
+    if (interview.id && interview.id.length > 20 && interview.id.includes('-')) return interview.id;
+    const entered = window.prompt('Enter backend Interview ID (UUID) to proceed with ICS/invites:', interview.id || '');
+    return entered || null;
+  };
+
+  const downloadICS = async (interview: Interview) => {
+    const id = resolveInterviewId(interview);
+    if (!id) return;
+    try {
+      const res = await fetch(`http://localhost:5003/api/hr/interviews/${id}/ics`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const text = await res.text();
+      const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `interview_${id}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'ICS downloaded', description: `Saved interview_${id}.ics` });
+    } catch (e: any) {
+      toast({ title: 'Failed to download ICS', description: e?.message || 'Error', variant: 'destructive' });
+    }
+  };
+
+  const sendInvites = async (interview: Interview) => {
+    const id = resolveInterviewId(interview);
+    if (!id) return;
+    try {
+      const res = await fetch(`http://localhost:5003/api/hr/interviews/${id}/send-invites`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast({ title: 'Invites queued', description: 'Calendar invites have been queued for delivery.' });
+    } catch (e: any) {
+      toast({ title: 'Failed to send invites', description: e?.message || 'Error', variant: 'destructive' });
     }
   };
 
@@ -311,8 +364,11 @@ const Interviews = () => {
                           <Button size="sm" variant="outline" onClick={() => handleJoinInterview(interview)}>
                             <Video className="h-4 w-4 mr-1" /> Join Interview
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <LinkIcon className="h-4 w-4 mr-1" /> Copy Link
+                          <Button size="sm" variant="outline" onClick={() => downloadICS(interview)}>
+                            <Download className="h-4 w-4 mr-1" /> Download ICS
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => sendInvites(interview)}>
+                            <Mail className="h-4 w-4 mr-1" /> Send Invites
                           </Button>
                         </div>
                       </div>
