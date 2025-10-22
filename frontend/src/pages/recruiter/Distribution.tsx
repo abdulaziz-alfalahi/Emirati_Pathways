@@ -38,6 +38,18 @@ export default function DistributionPage() {
     }
   };
 
+  const refresh = async () => {
+    setError(null);
+    try {
+      const res = await fetch(api(`/api/hr/distribution/jobs/${jobId}`), { headers: authHeaders as any });
+      if (!res.ok) throw new Error(await res.text());
+      const json = await res.json();
+      setQueued(json?.data || []);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to refresh');
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-semibold">External Distribution</h1>
@@ -45,6 +57,7 @@ export default function DistributionPage() {
         <input className="border px-2 py-1 rounded w-96" value={jobId} onChange={(e) => setJobId(e.target.value)} placeholder="Job ID" />
         <input className="border px-2 py-1 rounded w-64" value={targets} onChange={(e) => setTargets(e.target.value)} placeholder="Targets (comma separated)" />
         <button className="px-3 py-1 bg-ehrdc-teal text-white rounded" onClick={queue} disabled={!jobId}>Queue</button>
+        <button className="px-3 py-1 bg-gray-100 rounded" onClick={refresh} disabled={!jobId}>Refresh</button>
       </div>
       {error && <div className="text-red-600">{error}</div>}
       <ul className="list-disc pl-6">

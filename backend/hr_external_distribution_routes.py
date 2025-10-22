@@ -79,6 +79,48 @@ def distribute_job(job_id):
         return jsonify({"success": False, "message": "Failed to queue distribution"}), 500
 
 
+@hr_distribution_bp.route("/jobs/<job_id>", methods=["GET"])
+@jwt_required()
+def list_job_distribution(job_id):
+    """List external distribution records for a job (status per target)."""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
+            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Verify job ownership
+            cursor.execute(
+                """
+                SELECT 1 FROM job_postings jp
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE jp.id=%s AND hp.user_id=%s
+                """,
+                (job_id, current_user_id),
+            )
+            if not cursor.fetchone():
+                return jsonify({"success": False, "message": "Job posting not found or access denied"}), 404
+
+            cursor.execute(
+                """
+                SELECT *
+                FROM external_job_distribution
+                WHERE job_posting_id=%s
+                ORDER BY created_at DESC
+                """,
+                (job_id,),
+            )
+            rows = [dict(r) for r in cursor.fetchall()]
+            return jsonify({"success": True, "data": rows})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error listing distribution: {str(e)}")
+        return jsonify({"success": False, "message": "Failed to list distribution"}), 500
+
+
 @external_distribution_bp.route("/callbacks/<target>/<job_id>", methods=["POST"])
 def distribution_callback(target, job_id):
     """Stub endpoint external boards can call to update status for a job."""
