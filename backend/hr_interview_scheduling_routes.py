@@ -3,7 +3,7 @@ HR/Recruiter Interview Scheduling Routes
 Emirati Journey Platform - Interview Scheduling System with Calendar Integration
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
@@ -196,6 +196,61 @@ class InterviewScheduler:
         except Exception as e:
             logger.error(f"Failed to send interview notification: {str(e)}")
             return False
+
+    @staticmethod
+    def _format_dt_utc(dt: datetime) -> str:
+        """Format datetime to ICS UTC (YYYYMMDDTHHMMSSZ)."""
+        if dt.tzinfo is None:
+            # Treat naive as UTC
+            return dt.strftime('%Y%m%dT%H%M%SZ')
+        return dt.astimezone(tz=None).strftime('%Y%m%dT%H%M%SZ')
+
+    @staticmethod
+    def build_ics_event(interview: dict) -> str:
+        """Build ICS content for an interview."""
+        start: datetime = interview['scheduled_date']
+        end = start + timedelta(minutes=interview.get('duration_minutes', 60) or 60)
+        uid = f"{interview['id']}@emirati-journey"
+        dtstamp = InterviewScheduler._format_dt_utc(datetime.utcnow())
+        dtstart = InterviewScheduler._format_dt_utc(start)
+        dtend = InterviewScheduler._format_dt_utc(end)
+        title = interview.get('job_title') or 'Interview'
+        candidate_name = interview.get('candidate_name') or 'Candidate'
+        interviewer_name = interview.get('interviewer_name') or 'Interviewer'
+        location = ''
+        details = interview.get('interview_details')
+        if details:
+            try:
+                if isinstance(details, str):
+                    details = json.loads(details)
+            except Exception:
+                details = {}
+        if isinstance(details, dict):
+            location = details.get('location') or ''
+        candidate_email = interview.get('candidate_email') or ''
+        interviewer_email = interview.get('interviewer_email') or ''
+        lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Emirati Journey//Recruiter//EN',
+            'METHOD:REQUEST',
+            'BEGIN:VEVENT',
+            f'UID:{uid}',
+            f'DTSTAMP:{dtstamp}',
+            f'DTSTART:{dtstart}',
+            f'DTEND:{dtend}',
+            f'SUMMARY:Interview: {candidate_name} - {title}',
+            f'DESCRIPTION:Interview for {title} with {candidate_name} and {interviewer_name}',
+            f'LOCATION:{location}',
+        ]
+        if interviewer_email:
+            lines.append(f'ORGANIZER:mailto:{interviewer_email}')
+        if candidate_email:
+            lines.append(f'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:{candidate_email}')
+        if interviewer_email:
+            lines.append(f'ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED:mailto:{interviewer_email}')
+        lines += ['END:VEVENT', 'END:VCALENDAR']
+        return '\r\n'.join(lines) + '\r\n'
 
 @hr_interview_bp.route('/health', methods=['GET'])
 def health_check():
@@ -1077,3 +1132,164 @@ def get_interview_calendar():
             'success': False,
             'message': 'Failed to retrieve interview calendar'
         }), 500
+
+@hr_interview_bp.route('/<interview_id>/ics', methods=['GET'])
+@jwt_required()
+def download_interview_ics(interview_id):
+    """Generate and return an ICS invite for the interview."""
+    try:
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT 
+                    i.*, jp.title as job_title,
+                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
+                    u_candidate.email as candidate_email,
+                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name,
+                    u_interviewer.email as interviewer_email
+                FROM interviews i
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
+                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
+                LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
+                WHERE i.id = %s AND hp.user_id = %s
+                """,
+                (interview_id, current_user_id),
+            )
+            interview = cursor.fetchone()
+            if not interview:
+                return jsonify({'success': False, 'message': 'Interview not found or access denied'}), 404
+            ics = InterviewScheduler.build_ics_event(dict(interview))
+            filename = f"interview_{interview_id}.ics"
+            return Response(ics, mimetype='text/calendar', headers={'Content-Disposition': f'attachment; filename="{filename}"'})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error generating ICS: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to generate ICS'}), 500
+
+@hr_interview_bp.route('/<interview_id>/send-invites', methods=['POST'])
+@jwt_required()
+def send_interview_invites(interview_id):
+    """Log calendar invites to candidate and interviewer; return ICS content."""
+    try:
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute(
+                """
+                SELECT 
+                    i.*, jp.title as job_title,
+                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
+                    u_candidate.email as candidate_email,
+                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name,
+                    u_interviewer.email as interviewer_email
+                FROM interviews i
+                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
+                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                LEFT JOIN users u_candidate ON i.candidate_id = u_candidate.id
+                LEFT JOIN users u_interviewer ON i.interviewer_id = u_interviewer.id
+                WHERE i.id = %s AND hp.user_id = %s
+                """,
+                (interview_id, current_user_id),
+            )
+            interview = cursor.fetchone()
+            if not interview:
+                return jsonify({'success': False, 'message': 'Interview not found or access denied'}), 404
+            ics = InterviewScheduler.build_ics_event(dict(interview))
+            # Log notifications (simulate sending invites)
+            for recipient_type, recipient_id in (
+                ('candidate', interview['candidate_id']),
+                ('interviewer', interview['interviewer_id']),
+            ):
+                cursor.execute(
+                    """
+                    INSERT INTO interview_notifications (
+                        interview_id, notification_type, recipient_type, recipient_id,
+                        message_content, delivery_status, created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        interview_id,
+                        'calendar_invite',
+                        recipient_type,
+                        recipient_id,
+                        json.dumps({'ics_length': len(ics)}),
+                        'pending',
+                        datetime.now(),
+                    ),
+                )
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Invites queued', 'data': {'ics': ics}})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error sending invites: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to send invites'}), 500
+
+@hr_interview_bp.route('/reminders/run', methods=['POST'])
+@jwt_required()
+def run_interview_reminders():
+    """Create reminder notifications for upcoming interviews within window_hours (default 24)."""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+        body = request.get_json() or {}
+        window_hours = int(body.get('window_hours', 24))
+        now = datetime.utcnow()
+        window_end = now + timedelta(hours=window_hours)
+        created = 0
+        conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Find upcoming interviews for recruiter's company
+            cursor.execute(
+                """
+                SELECT i.*, jp.company_id
+                FROM interviews i
+                INNER JOIN job_postings jp ON i.job_posting_id = jp.id
+                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                WHERE hp.user_id = %s
+                  AND i.status IN ('scheduled','rescheduled')
+                  AND i.scheduled_date BETWEEN %s AND %s
+                """,
+                (current_user_id, now, window_end),
+            )
+            interviews = cursor.fetchall()
+            for iv in interviews:
+                for recipient_type, recipient_id in (('candidate', iv['candidate_id']), ('interviewer', iv['interviewer_id'])):
+                    # Avoid duplicate reminder within this window
+                    cursor.execute(
+                        """
+                        SELECT 1 FROM interview_notifications
+                        WHERE interview_id=%s AND notification_type='reminder' AND recipient_type=%s AND recipient_id=%s
+                          AND created_at >= %s
+                        """,
+                        (iv['id'], recipient_type, recipient_id, now - timedelta(hours=1)),
+                    )
+                    if cursor.fetchone():
+                        continue
+                    cursor.execute(
+                        """
+                        INSERT INTO interview_notifications (
+                            interview_id, notification_type, recipient_type, recipient_id,
+                            message_content, delivery_status, created_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            iv['id'], 'reminder', recipient_type, recipient_id,
+                            json.dumps({'scheduled_date': iv['scheduled_date'].isoformat()}),
+                            'pending', datetime.now(),
+                        ),
+                    )
+                    created += 1
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Reminders queued', 'data': {'created': created}})
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error running reminders: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to run reminders'}), 500
