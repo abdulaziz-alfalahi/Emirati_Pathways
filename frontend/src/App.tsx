@@ -34,6 +34,7 @@ const NewJobWizard = lazy(() => import('@/pages/recruiter/NewJobWizard'));
 const JobDetailsPage = lazy(() => import('@/pages/recruiter/JobDetails'));
 const InterviewSchedulerPage = lazy(() => import('@/pages/recruiter/InterviewScheduler'));
 const JDTemplatesPage = lazy(() => import('@/pages/recruiter/JDTemplates'));
+const BatchUploadPage = lazy(() => import('@/pages/recruiter/BatchUpload'));
 const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
@@ -168,6 +169,14 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <JDTemplatesPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recruiter/jobs/batch-upload" 
+                  element={
+                    <ProtectedRoute>
+                      <BatchUploadPage />
                     </ProtectedRoute>
                   } 
                 />

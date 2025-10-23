@@ -41,6 +41,8 @@ export default function NewJobWizard() {
   const [currency, setCurrency] = useState('AED');
 
   const [docs, setDocs] = useState<FileList | null>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   // Auth header
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
@@ -72,6 +74,19 @@ export default function NewJobWizard() {
       } catch {}
     }
   }, []);
+
+  // Load templates once
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(API('/api/hr/jobs/templates'), { headers: H as any });
+        if (r.ok) {
+          const j = await r.json();
+          setTemplates(j?.data?.templates || []);
+        }
+      } catch {}
+    })();
+  }, [H]);
 
   // Persist to localStorage
   useEffect(() => {
@@ -114,6 +129,37 @@ export default function NewJobWizard() {
     status: 'draft',
     priority_level: priority,
   });
+
+  const applyTemplate = () => {
+    const tpl = templates.find(t => t.id === selectedTemplateId);
+    if (!tpl) return;
+    try {
+      // Requirements may be JSON object or string key:value lines
+      const req = tpl.requirements_template;
+      if (req) {
+        if (typeof req === 'string') {
+          // naive parse: key: value per line
+          const obj: any = {};
+          req.split(/\n|,/).forEach((line: string) => {
+            const [k, ...rest] = line.split(':');
+            if (k && rest.length) obj[k.trim()] = rest.join(':').trim();
+          });
+          setSkills(String(obj.skills || ''));
+          if (obj.min_experience) setMinExperience(Number(obj.min_experience));
+          if (obj.education_level) setEducationLevel(String(obj.education_level));
+        } else if (typeof req === 'object') {
+          if (Array.isArray(req.skills)) setSkills(req.skills.join(', '));
+          if (req.min_experience != null) setMinExperience(Number(req.min_experience));
+          if (req.education_level) setEducationLevel(String(req.education_level));
+        }
+      }
+      if (Array.isArray(tpl.responsibilities_template)) setResponsibilities(tpl.responsibilities_template.join(', '));
+      if (Array.isArray(tpl.benefits_template)) setBenefits(tpl.benefits_template.join(', '));
+      toast({ title: 'Template applied', description: tpl.title });
+    } catch (e: any) {
+      toast({ title: 'Failed to apply template', description: e?.message || 'Error', variant: 'destructive' });
+    }
+  };
 
   const validateBasics = () => {
     if (!title?.trim()) {
@@ -226,6 +272,17 @@ export default function NewJobWizard() {
           <CardDescription>Step {step} of {maxStep}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Templates quick apply */}
+          <div className="flex items-center gap-2 mb-4">
+            <Label>Load Template</Label>
+            <select className="p-2 border rounded" value={selectedTemplateId} onChange={e => setSelectedTemplateId(e.target.value)}>
+              <option value="">Select a template</option>
+              {templates.map(t => (
+                <option key={t.id} value={t.id}>{t.title}</option>
+              ))}
+            </select>
+            <Button variant="outline" onClick={applyTemplate} disabled={!selectedTemplateId}>Apply</Button>
+          </div>
           {/* Step navigation */}
           <div className="flex items-center gap-2 mb-4">
             {Array.from({ length: maxStep }).map((_, i) => (
