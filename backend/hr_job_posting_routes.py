@@ -1353,3 +1353,66 @@ def get_job_templates():
             'success': False,
             'message': 'Failed to retrieve job templates'
         }), 500
+
+@hr_job_posting_bp.route('/templates', methods=['POST'])
+@jwt_required()
+def create_job_template():
+    """Create a job template from provided fields"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+
+        data = request.get_json() or {}
+        title = (data.get('title') or '').strip()
+        requirements_template = data.get('requirements_template') or {}
+        responsibilities_template = data.get('responsibilities_template') or []
+        benefits_template = data.get('benefits_template') or []
+        is_public = bool(data.get('is_public', False))
+
+        if not title:
+            return jsonify({'success': False, 'message': 'title is required'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Determine company id
+            cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+            row = cursor.fetchone()
+            if not row or not row.get('company_id'):
+                return jsonify({'success': False, 'message': 'No company associated with your profile'}), 400
+            company_id = row['company_id']
+
+            # Insert template
+            template_id = str(uuid.uuid4())
+            cursor.execute(
+                """
+                INSERT INTO job_templates (
+                    id, company_id, created_by, title,
+                    requirements_template, responsibilities_template, benefits_template,
+                    is_public, created_at
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
+                RETURNING *
+                """,
+                (
+                    template_id, company_id, current_user_id, title,
+                    json.dumps(requirements_template), json.dumps(responsibilities_template), json.dumps(benefits_template),
+                    is_public,
+                ),
+            )
+            tpl = dict(cursor.fetchone())
+            conn.commit()
+            # Parse JSON fields for response
+            for f in ('requirements_template', 'responsibilities_template', 'benefits_template'):
+                if tpl.get(f) and isinstance(tpl[f], str):
+                    try:
+                        tpl[f] = json.loads(tpl[f])
+                    except Exception:
+                        pass
+            return jsonify({'success': True, 'message': 'Template created', 'data': tpl}), 201
+        finally:
+            cursor.close(); conn.close()
+    except Exception as e:
+        logger.error(f"Error creating job template: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to create job template'}), 500
