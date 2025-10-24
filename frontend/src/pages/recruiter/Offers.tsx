@@ -12,6 +12,11 @@ export default function OffersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [sortBy, setSortBy] = useState<'created' | 'job' | 'candidate' | 'status'>('created');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
@@ -19,10 +24,11 @@ export default function OffersPage() {
   const loadOffers = async () => {
     try {
       setLoading(true);
-      const res = await fetch(api('/api/hr/offers/?limit=20'), { headers: authHeaders as any });
+      const res = await fetch(api(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}`), { headers: authHeaders as any });
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
       setOffers(json?.data?.offers || []);
+      setTotal(json?.data?.total_count || 0);
     } catch (e: any) {
       setError(e?.message || 'Failed to load offers');
     } finally {
@@ -87,6 +93,39 @@ export default function OffersPage() {
     return <Badge variant="outline" className={map[status] || 'bg-slate-100 text-slate-800 border-slate-200'}>{status}</Badge>;
   };
 
+  const sortedOffers = [...offers].sort((a, b) => {
+    const dir = sortOrder === 'asc' ? 1 : -1;
+    if (sortBy === 'created') {
+      const da = new Date(a.created_at || 0).getTime();
+      const db = new Date(b.created_at || 0).getTime();
+      return (da - db) * dir;
+    }
+    if (sortBy === 'job') {
+      return String(a.job_title || '').localeCompare(String(b.job_title || '')) * dir;
+    }
+    if (sortBy === 'candidate') {
+      const na = `${a.candidate_first_name || ''} ${a.candidate_last_name || ''}`;
+      const nb = `${b.candidate_first_name || ''} ${b.candidate_last_name || ''}`;
+      return na.localeCompare(nb) * dir;
+    }
+    if (sortBy === 'status') {
+      return String(a.status || '').localeCompare(String(b.status || '')) * dir;
+    }
+    return 0;
+  });
+
+  const SortHeader: React.FC<{ label: string; field: 'created'|'job'|'candidate'|'status' }>=({label, field}) => (
+    <th className="p-3 sticky top-0 bg-white z-10">
+      <button className="w-full text-left flex items-center gap-1" onClick={() => {
+        if (sortBy === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        else { setSortBy(field); setSortOrder('desc'); }
+      }}>
+        <span>{label}</span>
+        <span className="text-xs text-slate-500">{sortBy === field ? (sortOrder === 'asc' ? '▲' : '▼') : ''}</span>
+      </button>
+    </th>
+  );
+
   return (
     <div className="p-6">
       <Card className="shadow-sm">
@@ -102,9 +141,10 @@ export default function OffersPage() {
         <thead>
           <tr className="text-left border-b">
             <th className="p-3 sticky top-0 bg-white z-10">ID</th>
-            <th className="p-3 sticky top-0 bg-white z-10">Job</th>
-            <th className="p-3 sticky top-0 bg-white z-10">Candidate</th>
-            <th className="p-3 sticky top-0 bg-white z-10">Status</th>
+            <SortHeader label="Job" field="job" />
+            <SortHeader label="Candidate" field="candidate" />
+            <SortHeader label="Status" field="status" />
+            <SortHeader label="Created" field="created" />
             <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
           </tr>
         </thead>
@@ -112,12 +152,13 @@ export default function OffersPage() {
           {offers.length === 0 && (
             <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No offers yet</td></tr>
           )}
-          {offers.map((o) => (
+          {sortedOffers.map((o) => (
             <tr key={o.id} className="border-b hover:bg-slate-50">
               <td className="p-3 text-xs">{o.id}</td>
               <td className="p-3">{o.job_title}</td>
               <td className="p-3">{o.candidate_first_name} {o.candidate_last_name}</td>
               <td className="p-3">{statusBadge(o.status)}</td>
+              <td className="p-3">{o.created_at || '-'}</td>
               <td className="p-3 space-x-2 whitespace-nowrap">
                 <Button size="sm" variant="outline" onClick={async() => {
                   const res = await fetch(api(`/api/hr/offers/${o.id}`), { headers: authHeaders as any });
@@ -141,6 +182,22 @@ export default function OffersPage() {
           ))}
         </tbody>
       </table>
+      </div>
+
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-2 text-sm">
+          <span>Rows:</span>
+          <select className="p-1 border rounded" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); loadOffers(); }}>
+            <option>10</option>
+            <option>20</option>
+            <option>50</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => { if (page > 1) { setPage(page - 1); loadOffers(); } }} disabled={page === 1}>Prev</Button>
+          <div className="text-sm">Page {page} / {Math.max(1, Math.ceil(total / pageSize))}</div>
+          <Button variant="outline" onClick={() => { if (page * pageSize < total) { setPage(page + 1); loadOffers(); } }} disabled={page * pageSize >= total}>Next</Button>
+        </div>
       </div>
       </CardContent>
       </Card>

@@ -11,6 +11,9 @@ export default function ApprovalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [sortBy, setSortBy] = useState<'created'|'status'|'resource'>('created');
+  const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('desc');
   const { toast } = useToast();
 
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
@@ -27,6 +30,7 @@ export default function ApprovalsPage() {
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
       setItems(json?.data?.requests || []);
+      setTotal(json?.data?.total_count || 0);
     } catch (e: any) {
       setError(e?.message || 'Failed to load approvals');
     } finally {
@@ -59,9 +63,22 @@ export default function ApprovalsPage() {
         <thead>
           <tr className="text-left border-b">
             <th className="p-3 sticky top-0 bg-white z-10">ID</th>
-            <th className="p-3 sticky top-0 bg-white z-10">Resource</th>
+            <th className="p-3 sticky top-0 bg-white z-10">
+              <button className="w-full text-left" onClick={() => { if (sortBy==='resource') setSortOrder(sortOrder==='asc'?'desc':'asc'); else { setSortBy('resource'); setSortOrder('desc'); } }}>
+                Resource {sortBy==='resource' ? (sortOrder==='asc'?'▲':'▼') : ''}
+              </button>
+            </th>
             <th className="p-3 sticky top-0 bg-white z-10">Approver</th>
-            <th className="p-3 sticky top-0 bg-white z-10">Status</th>
+            <th className="p-3 sticky top-0 bg-white z-10">
+              <button className="w-full text-left" onClick={() => { if (sortBy==='status') setSortOrder(sortOrder==='asc'?'desc':'asc'); else { setSortBy('status'); setSortOrder('desc'); } }}>
+                Status {sortBy==='status' ? (sortOrder==='asc'?'▲':'▼') : ''}
+              </button>
+            </th>
+            <th className="p-3 sticky top-0 bg-white z-10">
+              <button className="w-full text-left" onClick={() => { if (sortBy==='created') setSortOrder(sortOrder==='asc'?'desc':'asc'); else { setSortBy('created'); setSortOrder('desc'); } }}>
+                Created {sortBy==='created' ? (sortOrder==='asc'?'▲':'▼') : ''}
+              </button>
+            </th>
             <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
           </tr>
         </thead>
@@ -71,13 +88,20 @@ export default function ApprovalsPage() {
               <td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No approval requests</td>
             </tr>
           )}
-          {items.map((r) => (
+          {[...items].sort((a,b)=>{
+            const dir = sortOrder==='asc'?1:-1;
+            if (sortBy==='status') return String(a.status||'').localeCompare(String(b.status||''))*dir;
+            if (sortBy==='resource') return String(a.resource_type||'').localeCompare(String(b.resource_type||''))*dir;
+            if (sortBy==='created') return String(a.created_at||'').localeCompare(String(b.created_at||''))*dir;
+            return 0;
+          }).map((r) => (
             <tr key={r.id} className="border-b">
               <td className="p-3 text-xs">{r.id}</td>
               <td className="p-3">{r.resource_type}</td>
               <td className="p-3">{r.approver_id}</td>
               <td className="p-3">{r.status === 'approved' ? <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">approved</Badge> : r.status === 'rejected' ? <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">rejected</Badge> : <Badge variant="outline">pending</Badge>}</td>
-              <td className="p-3 space-x-2">
+              <td className="p-3">{r.created_at || '-'}</td>
+              <td className="p-3 space-x-2 whitespace-nowrap">
                 {r.status === 'pending' && (
                   <>
                     <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => act(r.id, 'approve')}>Approve</Button>
@@ -89,6 +113,21 @@ export default function ApprovalsPage() {
           ))}
         </tbody>
       </table>
+      </div>
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-2 text-sm">
+          <span>Rows:</span>
+          <select className="p-1 border rounded" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); load(); }}>
+            <option>10</option>
+            <option>20</option>
+            <option>50</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => { if (page > 1) { setPage(page - 1); load(); } }} disabled={page === 1}>Prev</Button>
+          <div className="text-sm">Page {page}</div>
+          <Button variant="outline" onClick={() => { if (items.length === pageSize) { setPage(page + 1); load(); } }} disabled={items.length < pageSize}>Next</Button>
+        </div>
       </div>
     </div>
   );
