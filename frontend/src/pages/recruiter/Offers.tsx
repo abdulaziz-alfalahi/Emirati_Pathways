@@ -101,14 +101,17 @@ export default function OffersPage() {
       <table className="min-w-full bg-white">
         <thead>
           <tr className="text-left border-b">
-            <th className="p-3">ID</th>
-            <th className="p-3">Job</th>
-            <th className="p-3">Candidate</th>
-            <th className="p-3">Status</th>
-            <th className="p-3">Actions</th>
+            <th className="p-3 sticky top-0 bg-white z-10">ID</th>
+            <th className="p-3 sticky top-0 bg-white z-10">Job</th>
+            <th className="p-3 sticky top-0 bg-white z-10">Candidate</th>
+            <th className="p-3 sticky top-0 bg-white z-10">Status</th>
+            <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
           </tr>
         </thead>
         <tbody>
+          {offers.length === 0 && (
+            <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No offers yet</td></tr>
+          )}
           {offers.map((o) => (
             <tr key={o.id} className="border-b hover:bg-slate-50">
               <td className="p-3 text-xs">{o.id}</td>

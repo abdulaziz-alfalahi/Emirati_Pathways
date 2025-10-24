@@ -174,18 +174,21 @@ export default function JobDetailsPage() {
                   <Input type="file" multiple onChange={e => setFileList(e.target.files)} />
                   <Button onClick={uploadDocuments} disabled={!jobId}><Upload className="h-4 w-4 mr-1" /> Upload</Button>
                 </div>
-                <div className="overflow-x-auto rounded border">
+                <div className="overflow-x-auto rounded border max-h-[420px]">
                   <table className="min-w-full bg-white">
                     <thead>
                       <tr className="text-left border-b">
-                        <th className="p-3">Filename</th>
-                        <th className="p-3">Type</th>
-                        <th className="p-3">Size</th>
-                        <th className="p-3">Uploaded</th>
-                        <th className="p-3">Actions</th>
+                        <th className="p-3 sticky top-0 bg-white z-10">Filename</th>
+                        <th className="p-3 sticky top-0 bg-white z-10">Type</th>
+                        <th className="p-3 sticky top-0 bg-white z-10">Size</th>
+                        <th className="p-3 sticky top-0 bg-white z-10">Uploaded</th>
+                        <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
+                      {docs.length === 0 && (
+                        <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No documents uploaded</td></tr>
+                      )}
                       {docs.map((d) => (
                         <tr key={d.id} className="border-b hover:bg-slate-50">
                           <td className="p-3">{d.original_filename}</td>
@@ -206,18 +209,21 @@ export default function JobDetailsPage() {
             </TabsContent>
 
             <TabsContent value="shortlist">
-              <div className="overflow-x-auto rounded border">
+              <div className="overflow-x-auto rounded border max-h-[420px]">
                 <table className="min-w-full bg-white">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="p-3">Candidate</th>
-                      <th className="p-3">Education</th>
-                      <th className="p-3">Experience</th>
-                      <th className="p-3">Notes</th>
-                      <th className="p-3">Actions</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Candidate</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Education</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Experience</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Notes</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {shortlist.length === 0 && (
+                      <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No shortlisted candidates</td></tr>
+                    )}
                     {shortlist.map((s) => (
                       <tr key={s.candidate_id} className="border-b hover:bg-slate-50">
                         <td className="p-3">{s.first_name || ''} {s.last_name || ''} (#{s.candidate_id})</td>
@@ -241,17 +247,20 @@ export default function JobDetailsPage() {
               <div className="flex items-center gap-2 mb-4">
                 <Button onClick={publishAndMatch} disabled={!jobId}><Users className="h-4 w-4 mr-1" /> Publish & Match</Button>
               </div>
-              <div className="overflow-x-auto rounded border">
+              <div className="overflow-x-auto rounded border max-h-[420px]">
                 <table className="min-w-full bg-white">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="p-3">Candidate</th>
-                      <th className="p-3">Match %</th>
-                      <th className="p-3">Level</th>
-                      <th className="p-3">Actions</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Candidate</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Match %</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Level</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {matches.length === 0 && (
+                      <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={4}>No matches yet</td></tr>
+                    )}
                     {matches.map((m) => (
                       <tr key={m.candidate_id} className="border-b hover:bg-slate-50">
                         <td className="p-3">{m.first_name || ''} {m.last_name || ''} (#{m.candidate_id})</td>
