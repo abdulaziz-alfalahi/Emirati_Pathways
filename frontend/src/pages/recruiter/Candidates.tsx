@@ -24,6 +24,8 @@ export default function RecruiterCandidatesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [mPage, setMPage] = useState(1);
   const [mPageSize, setMPageSize] = useState(10);
+  const [mSortBy, setMSortBy] = useState<'percentage' | 'name'>('percentage');
+  const [mSortOrder, setMSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
@@ -84,6 +86,27 @@ export default function RecruiterCandidatesPage() {
       toast({ title: 'Failed to shortlist', description: e?.message || 'Error', variant: 'destructive' });
     }
   };
+
+  const SortHeader: React.FC<{ label: string; field: string }> = ({ label, field }) => (
+    <th className="p-3 sticky top-0 bg-white z-10">
+      <button
+        className="text-left w-full flex items-center gap-1"
+        onClick={() => {
+          if (sortBy === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+          } else {
+            setSortBy(field);
+            setSortOrder('desc');
+          }
+          setPage(1);
+          runSearch();
+        }}
+      >
+        <span>{label}</span>
+        <span className="text-xs text-slate-500">{sortBy === field ? (sortOrder === 'asc' ? '▲' : '▼') : ''}</span>
+      </button>
+    </th>
+  );
 
   return (
     <div className="p-6">
@@ -151,16 +174,21 @@ export default function RecruiterCandidatesPage() {
                 <table className="min-w-full bg-white">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="p-3">ID</th>
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Emirate</th>
-                      <th className="p-3">Education</th>
-                      <th className="p-3">Experience</th>
-                      <th className="p-3">Skills</th>
-                      <th className="p-3">Actions</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">ID</th>
+                      <SortHeader label="Name" field="name" />
+                      <th className="p-3 sticky top-0 bg-white z-10">Emirate</th>
+                      <SortHeader label="Education" field="education_level" />
+                      <SortHeader label="Experience" field="experience" />
+                      <th className="p-3 sticky top-0 bg-white z-10">Skills</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {results.length === 0 && (
+                      <tr>
+                        <td className="p-4 text-center text-sm text-slate-500" colSpan={7}>No candidates found</td>
+                      </tr>
+                    )}
                     {results.map((c) => (
                       <tr key={c.id} className="border-b hover:bg-slate-50">
                         <td className="p-3 text-xs">{c.id}</td>
@@ -216,15 +244,37 @@ export default function RecruiterCandidatesPage() {
                 <table className="min-w-full bg-white">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="p-3">Candidate ID</th>
-                      <th className="p-3">Name</th>
-                      <th className="p-3">Match %</th>
-                      <th className="p-3">Level</th>
-                      <th className="p-3">Actions</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Candidate ID</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Name</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">
+                        <button
+                          className="text-left w-full flex items-center gap-1"
+                          onClick={() => {
+                            if (mSortBy === 'percentage') setMSortOrder(mSortOrder === 'asc' ? 'desc' : 'asc');
+                            else { setMSortBy('percentage'); setMSortOrder('desc'); }
+                          }}
+                        >
+                          <span>Match %</span>
+                          <span className="text-xs text-slate-500">{mSortBy === 'percentage' ? (mSortOrder === 'asc' ? '▲' : '▼') : ''}</span>
+                        </button>
+                      </th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Level</th>
+                      <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {matches.map((m) => (
+                    {(() => {
+                      const sorted = [...matches].sort((a, b) => {
+                        const pa = a.match_score?.match_percentage ?? 0;
+                        const pb = b.match_score?.match_percentage ?? 0;
+                        return mSortOrder === 'asc' ? pa - pb : pb - pa;
+                      });
+                      const start = (mPage - 1) * mPageSize;
+                      const rows = sorted.slice(start, start + mPageSize);
+                      if (rows.length === 0) return (
+                        <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No matches yet</td></tr>
+                      );
+                      return rows.map((m) => (
                       <tr key={m.candidate_id} className="border-b hover:bg-slate-50">
                         <td className="p-3 text-xs">{m.candidate_id}</td>
                         <td className="p-3">{m.first_name || ''} {m.last_name || ''}</td>
@@ -234,7 +284,8 @@ export default function RecruiterCandidatesPage() {
                           <Button size="sm" onClick={() => shortlist(m.candidate_id)} disabled={!jobId}>Shortlist</Button>
                         </td>
                       </tr>
-                    ))}
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
