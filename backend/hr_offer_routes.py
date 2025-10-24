@@ -60,6 +60,17 @@ def list_offers():
         status = request.args.get("status")
         limit = min(int(request.args.get("limit", 20)), 100)
         offset = int(request.args.get("offset", 0))
+        sort_by = (request.args.get("sort_by") or "created_at").lower()
+        sort_order = (request.args.get("sort_order") or "desc").upper()
+        if sort_order not in ("ASC", "DESC"):
+            sort_order = "DESC"
+        sort_map = {
+            "created_at": "o.created_at",
+            "status": "o.status",
+            "job_title": "jp.title",
+            "candidate_name": "u.last_name",
+        }
+        order_clause = sort_map.get(sort_by, "o.created_at")
 
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -84,6 +95,11 @@ def list_offers():
                 params.append(status)
 
             where_clause = " AND ".join(where)
+            # Build order by (candidate_name orders by last_name then first_name)
+            if order_clause == "u.last_name":
+                order_sql = f"u.last_name {sort_order}, u.first_name {sort_order}"
+            else:
+                order_sql = f"{order_clause} {sort_order}"
             cursor.execute(
                 f"""
                 SELECT o.*, u.first_name AS candidate_first_name, u.last_name AS candidate_last_name,
@@ -92,7 +108,7 @@ def list_offers():
                 INNER JOIN job_postings jp ON o.job_posting_id = jp.id
                 LEFT JOIN users u ON o.candidate_id = u.id
                 WHERE {where_clause}
-                ORDER BY o.created_at DESC
+                ORDER BY {order_sql}
                 LIMIT %s OFFSET %s
                 """,
                 params + [limit, offset],

@@ -122,6 +122,16 @@ def list_approval_requests():
         requested_by = request.args.get("requested_by", type=int)
         limit = min(int(request.args.get("limit", 20)), 100)
         offset = int(request.args.get("offset", 0))
+        sort_by = (request.args.get("sort_by") or "created_at").lower()
+        sort_order = (request.args.get("sort_order") or "desc").upper()
+        if sort_order not in ("ASC", "DESC"):
+            sort_order = "DESC"
+        sort_map = {
+            "created_at": "ar.created_at",
+            "status": "ar.status",
+            "resource_type": "ar.resource_type",
+        }
+        order_clause = sort_map.get(sort_by, "ar.created_at")
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
@@ -152,7 +162,7 @@ def list_approval_requests():
                 SELECT ar.*
                 FROM approval_requests ar
                 WHERE {where_clause}
-                ORDER BY ar.created_at DESC
+                ORDER BY {order_clause} {sort_order}
                 LIMIT %s OFFSET %s
                 """,
                 params + [limit, offset],
