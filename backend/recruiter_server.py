@@ -124,6 +124,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering external distribution routes: {e}")
 
+    # Recruiter/HR: analytics
+    try:
+        from hr_analytics_routes import hr_analytics_bp
+
+        app.register_blueprint(hr_analytics_bp)
+        logger.info("Registered: HR analytics routes")
+    except Exception as e:
+        logger.error(f"Failed registering HR analytics routes: {e}")
+
     # Recruiter/HR: candidate search & matching-by-job
     try:
         from hr_candidate_search_routes import hr_candidate_search_bp

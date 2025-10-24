@@ -35,6 +35,7 @@ const JobDetailsPage = lazy(() => import('@/pages/recruiter/JobDetails'));
 const InterviewSchedulerPage = lazy(() => import('@/pages/recruiter/InterviewScheduler'));
 const JDTemplatesPage = lazy(() => import('@/pages/recruiter/JDTemplates'));
 const BatchUploadPage = lazy(() => import('@/pages/recruiter/BatchUpload'));
+const RecruiterAnalyticsPage = lazy(() => import('@/pages/recruiter/Analytics'));
 const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
@@ -177,6 +178,14 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <BatchUploadPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recruiter/analytics" 
+                  element={
+                    <ProtectedRoute>
+                      <RecruiterAnalyticsPage />
                     </ProtectedRoute>
                   } 
                 />
