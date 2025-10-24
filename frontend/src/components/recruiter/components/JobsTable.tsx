@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface JobsTableProps {
   jobs: any[];
@@ -49,16 +50,13 @@ const JobsTable = ({ jobs, onFindMatches }: JobsTableProps) => {
                 <TableCell>{job.company || 'N/A'}</TableCell>
                 <TableCell>{job.location || 'N/A'}</TableCell>
                 <TableCell>{formatDate(job.created_at)}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onFindMatches(job.id)}
-                    className="gap-1"
-                  >
-                    <Users className="h-4 w-4" />
-                    Match to Candidates
+                <TableCell className="text-right space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => onFindMatches(job.id)} className="gap-1">
+                    <Users className="h-4 w-4" /> Match
                   </Button>
+                  <Link to={`/recruiter/jobs/${job.id}`}>
+                    <Button variant="outline" size="sm">Details</Button>
+                  </Link>
                 </TableCell>
               </TableRow>
             ))
