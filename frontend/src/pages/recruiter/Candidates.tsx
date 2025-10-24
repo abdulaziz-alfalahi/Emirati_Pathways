@@ -18,6 +18,12 @@ export default function RecruiterCandidatesPage() {
   const [jobId, setJobId] = useState('');
   const [jobs, setJobs] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState('registered_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [mPage, setMPage] = useState(1);
+  const [mPageSize, setMPageSize] = useState(10);
 
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
@@ -45,6 +51,10 @@ export default function RecruiterCandidatesPage() {
       Object.entries(filters).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== '') params.append(k, String(v));
       });
+      params.set('limit', String(pageSize));
+      params.set('offset', String((page - 1) * pageSize));
+      params.set('sort_by', sortBy);
+      params.set('sort_order', sortOrder);
       const r = await fetch(API(`/api/hr/candidates/search?${params.toString()}`), { headers: H as any });
       if (!r.ok) throw new Error(await r.text());
       const j = await r.json();
@@ -120,8 +130,21 @@ export default function RecruiterCandidatesPage() {
             </TabsList>
 
             <TabsContent value="search">
-              <div className="flex items-center gap-2 mb-4">
-                <Button onClick={runSearch} disabled={loading}>{loading ? 'Searching…' : 'Search'}</Button>
+              <div className="flex items-center gap-2 mb-3">
+                <Label>Sort by</Label>
+                <select className="p-2 border rounded" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <option value="registered_at">Registration Date</option>
+                  <option value="last_login">Last Login</option>
+                  <option value="experience">Experience</option>
+                  <option value="applications">Applications</option>
+                  <option value="name">Name</option>
+                </select>
+                <select className="p-2 border rounded" value={sortOrder} onChange={e => setSortOrder(e.target.value as any)}>
+                  <option value="desc">Desc</option>
+                  <option value="asc">Asc</option>
+                </select>
+                <Button onClick={() => { setPage(1); runSearch(); }} disabled={loading}>{loading ? 'Searching…' : 'Search'}</Button>
+                <div className="ml-auto text-sm text-slate-500">Total: {total}</div>
               </div>
               <div className="text-sm text-slate-500 mb-2">Total: {total}</div>
               <div className="overflow-x-auto rounded border">
@@ -157,6 +180,21 @@ export default function RecruiterCandidatesPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span>Rows:</span>
+                  <select className="p-1 border rounded" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}>
+                    <option>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={() => { if (page > 1) { setPage(page - 1); runSearch(); } }} disabled={page === 1}>Prev</Button>
+                  <div className="text-sm">Page {page} / {Math.max(1, Math.ceil(total / pageSize))}</div>
+                  <Button variant="outline" onClick={() => { if (page * pageSize < total) { setPage(page + 1); runSearch(); } }} disabled={page * pageSize >= total}>Next</Button>
+                </div>
               </div>
             </TabsContent>
 
@@ -199,6 +237,21 @@ export default function RecruiterCandidatesPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span>Rows:</span>
+                  <select className="p-1 border rounded" value={mPageSize} onChange={e => { setMPageSize(Number(e.target.value)); setMPage(1); }}>
+                    <option>10</option>
+                    <option>20</option>
+                    <option>50</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={() => setMPage(p => Math.max(1, p - 1))} disabled={mPage === 1}>Prev</Button>
+                  <div className="text-sm">Page {mPage} / {Math.max(1, Math.ceil((matches?.length || 0) / mPageSize))}</div>
+                  <Button variant="outline" onClick={() => setMPage(p => (p * mPageSize < (matches?.length || 0) ? p + 1 : p))} disabled={mPage * mPageSize >= (matches?.length || 0)}>Next</Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
