@@ -49,7 +49,10 @@ const useNavItems = () => {
     { name: 'Recruiter Candidates', href: '/recruiter/candidates', icon: Users },
     { name: 'Recruiter Offers', href: '/recruiter/offers', icon: Briefcase },
     { name: 'Recruiter Approvals', href: '/recruiter/approvals', icon: CheckSquare },
-    { name: 'Recruiter Distribution', href: '/recruiter/distribution', icon: Users }
+    { name: 'Recruiter Distribution', href: '/recruiter/distribution', icon: Users },
+    { name: 'Recruiter Interviews', href: '/recruiter/interviews/schedule', icon: Calendar },
+    { name: 'Interview Details', href: '/recruiter/interviews/details', icon: Calendar },
+    { name: 'Recruiter Analytics', href: '/recruiter/analytics', icon: BarChart3 }
   ];
 
   const authenticatedNavItems = useMemo(() => {
