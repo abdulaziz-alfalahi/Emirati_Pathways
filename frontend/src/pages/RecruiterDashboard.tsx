@@ -196,10 +196,12 @@ const RecruiterDashboard: React.FC = () => {
           {/* Quick Actions */}
           <div className="mb-8">
             <div className="flex flex-wrap gap-4">
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                <Plus className="h-4 w-4 mr-2" />
-                New Search Assignment
-              </Button>
+              <Link to="/recruiter/jd-builder">
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Search Assignment
+                </Button>
+              </Link>
               <Button variant="outline" className="font-dubai-medium">
                 <Users className="h-4 w-4 mr-2" />
                 Source Candidates

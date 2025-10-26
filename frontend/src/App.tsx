@@ -31,6 +31,7 @@ const RecruiterOffers = lazy(() => import('@/pages/recruiter/Offers'));
 const RecruiterApprovals = lazy(() => import('@/pages/recruiter/Approvals'));
 const RecruiterDistribution = lazy(() => import('@/pages/recruiter/Distribution'));
 const NewJobWizard = lazy(() => import('@/pages/recruiter/NewJobWizard'));
+const JobDescriptionWizardPage = lazy(() => import('@/pages/recruiter/JobDescriptionWizardPage'));
 const JobDetailsPage = lazy(() => import('@/pages/recruiter/JobDetails'));
 const InterviewSchedulerPage = lazy(() => import('@/pages/recruiter/InterviewScheduler'));
 const JDTemplatesPage = lazy(() => import('@/pages/recruiter/JDTemplates'));
@@ -147,6 +148,14 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <NewJobWizard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/recruiter/jd-builder" 
+                  element={
+                    <ProtectedRoute>
+                      <JobDescriptionWizardPage />
                     </ProtectedRoute>
                   } 
                 />
