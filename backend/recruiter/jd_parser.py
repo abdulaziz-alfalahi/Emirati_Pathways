@@ -154,7 +154,11 @@ class JDParser:
                 return None
             
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            # Try gemini-1.5-flash first (latest), fallback to gemini-pro
+            try:
+                model = genai.GenerativeModel('gemini-1.5-flash')
+            except:
+                model = genai.GenerativeModel('gemini-pro')
             
             prompt = f"""
 Extract structured information from this job description and return it as JSON.
