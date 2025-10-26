@@ -111,6 +111,9 @@ def upload_and_parse():
             
             if parsed_data.get('responsibilities'):
                 for resp in parsed_data['responsibilities']:
+                    # Convert string to dict if needed
+                    if isinstance(resp, str):
+                        resp = {'description': resp, 'category': 'general'}
                     jd_data = engine.add_responsibility(jd_data, resp)
             
             if parsed_data.get('benefits'):
@@ -333,6 +336,9 @@ def parse_text():
             
             if parsed_data.get('responsibilities'):
                 for resp in parsed_data['responsibilities']:
+                    # Convert string to dict if needed
+                    if isinstance(resp, str):
+                        resp = {'description': resp, 'category': 'general'}
                     jd_data = engine.add_responsibility(jd_data, resp)
             
             if parsed_data.get('benefits'):
