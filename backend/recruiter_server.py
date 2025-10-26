@@ -206,6 +206,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering JD Builder routes: {e}")
 
+    # Register JD Upload routes
+    try:
+        from recruiter.jd_upload_routes import jd_upload_routes
+
+        app.register_blueprint(jd_upload_routes)
+        logger.info("Registered: JD Upload routes with AI parsing")
+    except Exception as e:
+        logger.error(f"Failed registering JD Upload routes: {e}")
+
     # Common error handlers
     @app.errorhandler(404)
     def not_found(_):

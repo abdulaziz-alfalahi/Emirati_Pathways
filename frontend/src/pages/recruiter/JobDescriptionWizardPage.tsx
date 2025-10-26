@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import JobDescriptionWizard from '@/components/recruiter/job-descriptions/JobDescriptionWizard';
+import JDWizardWithUpload from '@/components/recruiter/job-descriptions/JDWizardWithUpload';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 
 const JobDescriptionWizardPage: React.FC = () => {
@@ -43,7 +43,7 @@ const JobDescriptionWizardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <HybridGovernmentNavFixed />
       <div className="container mx-auto py-8 px-4">
-        <JobDescriptionWizard
+        <JDWizardWithUpload
           recruiterId={recruiterId}
           companyId={companyId}
           onComplete={handleComplete}

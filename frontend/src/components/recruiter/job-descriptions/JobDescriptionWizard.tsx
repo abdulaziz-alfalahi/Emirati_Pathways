@@ -95,6 +95,8 @@ const BENEFIT_CATEGORIES = [
 interface JDWizardProps {
   recruiterId: string;
   companyId: string;
+  initialData?: any;
+  initialJdId?: string;
   onComplete?: (jdId: string) => void;
   onCancel?: () => void;
 }
@@ -146,13 +148,34 @@ interface MatchedCandidate {
 const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   recruiterId,
   companyId,
+  initialData,
+  initialJdId,
   onComplete,
   onCancel
 }) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
-  const [jdData, setJDData] = useState<JDData>({
+  const [jdData, setJDData] = useState<JDData>(initialData ? {
+    jd_id: initialJdId,
+    basic_info: initialData.basic_info || {
+      title: '',
+      department: '',
+      job_type: 'full_time',
+      job_level: 'mid',
+      emirate: '',
+      city: '',
+      remote_option: false
+    },
+    description: initialData.description || '',
+    description_arabic: initialData.description_arabic || '',
+    requirements: initialData.requirements || [],
+    responsibilities: initialData.responsibilities || [],
+    benefits: initialData.benefits || [],
+    compensation: initialData.compensation || {
+      salary_currency: 'AED'
+    }
+  } : {
     basic_info: {
       title: '',
       department: '',
