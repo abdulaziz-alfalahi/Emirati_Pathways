@@ -197,6 +197,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering optimized matching routes: {e}")
 
+    # NEW: Job Description Builder with AI Candidate Matching
+    try:
+        from recruiter.jd_routes import jd_routes
+
+        app.register_blueprint(jd_routes)
+        logger.info("Registered: JD Builder routes with AI candidate matching")
+    except Exception as e:
+        logger.error(f"Failed registering JD Builder routes: {e}")
+
     # Common error handlers
     @app.errorhandler(404)
     def not_found(_):
