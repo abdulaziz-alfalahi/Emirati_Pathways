@@ -156,7 +156,12 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
-  const [jdData, setJDData] = useState<JDData>(initialData ? {
+  const [jdData, setJDData] = useState<JDData>(() => {
+    if (initialData) {
+      console.log('Loading initial data:', initialData);
+      console.log('Requirements from initial data:', initialData.requirements);
+    }
+    return initialData ? {
     jd_id: initialJdId,
     basic_info: initialData.basic_info || {
       title: '',
