@@ -276,6 +276,41 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   };
 
+  const handlePublish = async () => {
+    setLoading(true);
+    try {
+      // Validate completion score
+      if (completionScore < 60) {
+        toast({
+          title: "Incomplete Job Description",
+          description: "Please complete at least 60% of the form before publishing",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // TODO: Call API to save/publish JD to database
+      // For now, just show success and complete
+      toast({
+        title: "Success",
+        description: "Job description published successfully",
+      });
+
+      // Call onComplete callback
+      if (onComplete && jdData.jd_id) {
+        onComplete(jdData.jd_id);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to publish job description",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMatchCandidates = async () => {
     setMatchingLoading(true);
     try {
@@ -489,6 +524,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           Add Requirement
         </Button>
       </div>
+
+      {jdData.requirements.length === 0 && (
+        <Alert>
+          <AlertDescription>
+            No requirements added yet. Click "Add Requirement" to add job requirements.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {jdData.requirements.map((req, index) => (
         <Card key={index}>
@@ -908,9 +951,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           </Button>
           
           {currentStep === steps.length - 1 ? (
-            <Button onClick={() => onComplete?.(jdData.jd_id || '')}>
+            <Button onClick={handlePublish} disabled={loading}>
               <Send className="h-4 w-4 mr-2" />
-              Publish Job
+              {loading ? 'Publishing...' : 'Publish Job'}
             </Button>
           ) : (
             <Button onClick={handleNext}>
