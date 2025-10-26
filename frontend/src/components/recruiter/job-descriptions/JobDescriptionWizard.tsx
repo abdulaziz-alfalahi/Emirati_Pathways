@@ -160,43 +160,45 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     if (initialData) {
       console.log('Loading initial data:', initialData);
       console.log('Requirements from initial data:', initialData.requirements);
+      return {
+        jd_id: initialJdId,
+        basic_info: initialData.basic_info || {
+          title: '',
+          department: '',
+          job_type: 'full_time',
+          job_level: 'mid',
+          emirate: '',
+          city: '',
+          remote_option: false
+        },
+        description: initialData.description || '',
+        description_arabic: initialData.description_arabic || '',
+        requirements: initialData.requirements || [],
+        responsibilities: initialData.responsibilities || [],
+        benefits: initialData.benefits || [],
+        compensation: initialData.compensation || {
+          salary_currency: 'AED'
+        }
+      };
     }
-    return initialData ? {
-    jd_id: initialJdId,
-    basic_info: initialData.basic_info || {
-      title: '',
-      department: '',
-      job_type: 'full_time',
-      job_level: 'mid',
-      emirate: '',
-      city: '',
-      remote_option: false
-    },
-    description: initialData.description || '',
-    description_arabic: initialData.description_arabic || '',
-    requirements: initialData.requirements || [],
-    responsibilities: initialData.responsibilities || [],
-    benefits: initialData.benefits || [],
-    compensation: initialData.compensation || {
-      salary_currency: 'AED'
-    }
-  } : {
-    basic_info: {
-      title: '',
-      department: '',
-      job_type: 'full_time',
-      job_level: 'mid',
-      emirate: '',
-      city: '',
-      remote_option: false
-    },
-    description: '',
-    requirements: [],
-    responsibilities: [],
-    benefits: [],
-    compensation: {
-      salary_currency: 'AED'
-    }
+    return {
+      basic_info: {
+        title: '',
+        department: '',
+        job_type: 'full_time',
+        job_level: 'mid',
+        emirate: '',
+        city: '',
+        remote_option: false
+      },
+      description: '',
+      requirements: [],
+      responsibilities: [],
+      benefits: [],
+      compensation: {
+        salary_currency: 'AED'
+      }
+    };
   });
   
   const [loading, setLoading] = useState(false);
