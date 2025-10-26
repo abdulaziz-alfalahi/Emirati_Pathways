@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
-jd_upload_routes = Blueprint('jd_upload', __name__, url_prefix='/api/recruiter/jd')
+jd_upload_routes = Blueprint('jd_upload', __name__)
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx', 'doc', 'csv', 'xlsx'}
@@ -32,7 +32,7 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@jd_upload_routes.route('/upload/parse', methods=['POST'])
+@jd_upload_routes.route('/api/recruiter/jd/upload/parse', methods=['POST'])
 def upload_and_parse():
     """
     Upload a job description file and parse it
@@ -132,7 +132,7 @@ def upload_and_parse():
         return jsonify({'error': str(e)}), 500
 
 
-@jd_upload_routes.route('/upload/batch', methods=['POST'])
+@jd_upload_routes.route('/api/recruiter/jd/upload/batch', methods=['POST'])
 def upload_batch():
     """
     Upload multiple job description files for batch processing
@@ -263,7 +263,7 @@ def upload_batch():
         return jsonify({'error': str(e)}), 500
 
 
-@jd_upload_routes.route('/parse/text', methods=['POST'])
+@jd_upload_routes.route('/api/recruiter/jd/parse/text', methods=['POST'])
 def parse_text():
     """
     Parse job description from raw text
@@ -354,7 +354,7 @@ def parse_text():
         return jsonify({'error': str(e)}), 500
 
 
-@jd_upload_routes.route('/health', methods=['GET'])
+@jd_upload_routes.route('/api/recruiter/jd/upload/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({
