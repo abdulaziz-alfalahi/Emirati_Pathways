@@ -525,6 +525,7 @@ def save_jd(jd_id):
                 closed_at TIMESTAMP
             )
         """)
+        conn.commit()  # Commit table creation before using it
         
         # Extract data for database columns
         basic_info = jd_data.get('basic_info', {})
