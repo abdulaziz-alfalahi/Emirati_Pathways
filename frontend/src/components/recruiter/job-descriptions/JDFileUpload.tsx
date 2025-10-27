@@ -139,7 +139,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         // Return first successful result
         const firstSuccess = data.results.find((r: any) => r.success);
         if (firstSuccess) {
-          onParsed(firstSuccess.parsed_data, firstSuccess.jd_id);
+          onParsed(firstSuccess.jd_data, firstSuccess.jd_id);
         }
       } else {
         // Single file upload
@@ -161,8 +161,8 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         setUploadProgress(100);
         setSuccess(`Successfully parsed ${selectedFiles[0].name}`);
         
-        // Call callback with parsed data
-        onParsed(data.parsed_data, data.jd_id);
+        // Call callback with complete JD data (not just parsed_data)
+        onParsed(data.jd_data, data.jd_id);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to upload and parse file');
