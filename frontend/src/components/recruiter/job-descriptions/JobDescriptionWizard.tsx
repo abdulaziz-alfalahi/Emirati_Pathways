@@ -304,7 +304,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         },
         body: JSON.stringify({
           jd_data: jdData,
-          status: 'published'
+          status: 'published',
+          recruiter_id: recruiterId,
+          company_id: companyId
         })
       });
 

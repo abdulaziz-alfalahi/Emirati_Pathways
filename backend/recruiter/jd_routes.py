@@ -530,6 +530,10 @@ def save_jd(jd_id):
         basic_info = jd_data.get('basic_info', {})
         metadata = jd_data.get('metadata', {})
         
+        # Get recruiter_id and company_id from metadata or request data
+        recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id') or 'unknown'
+        company_id = metadata.get('company_id') or data.get('company_id') or 'unknown'
+        
         # Check if JD already exists
         cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
         existing = cur.fetchone()
@@ -599,8 +603,8 @@ def save_jd(jd_id):
                 )
             """, (
                 jd_id,
-                metadata.get('recruiter_id'),
-                metadata.get('company_id'),
+                recruiter_id,
+                company_id,
                 basic_info.get('title'),
                 basic_info.get('title_arabic'),
                 basic_info.get('department'),
