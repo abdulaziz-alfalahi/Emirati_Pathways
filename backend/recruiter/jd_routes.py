@@ -468,3 +468,292 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
+
+
+
+@jd_routes.route('/<jd_id>/save', methods=['POST'])
+def save_jd(jd_id):
+    """
+    Save job description (as draft or published)
+    
+    Request body:
+    {
+        "jd_data": {...},  # Complete JD data structure
+        "status": "draft" | "published"
+    }
+    """
+    try:
+        data = request.get_json()
+        jd_data = data.get('jd_data')
+        status = data.get('status', 'draft')
+        
+        if not jd_data:
+            return jsonify({'error': 'jd_data is required'}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Check if job_postings table exists, create if not
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS job_postings (
+                id SERIAL PRIMARY KEY,
+                jd_id VARCHAR(100) UNIQUE NOT NULL,
+                recruiter_id VARCHAR(100) NOT NULL,
+                company_id VARCHAR(100) NOT NULL,
+                title VARCHAR(500) NOT NULL,
+                title_arabic VARCHAR(500),
+                department VARCHAR(200),
+                job_type VARCHAR(50),
+                job_level VARCHAR(50),
+                emirate VARCHAR(100),
+                city VARCHAR(100),
+                remote_option BOOLEAN DEFAULT FALSE,
+                description TEXT,
+                description_arabic TEXT,
+                requirements JSONB,
+                responsibilities JSONB,
+                benefits JSONB,
+                compensation JSONB,
+                application_process JSONB,
+                metadata JSONB,
+                status VARCHAR(50) DEFAULT 'draft',
+                views_count INTEGER DEFAULT 0,
+                applications_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                published_at TIMESTAMP,
+                closed_at TIMESTAMP
+            )
+        """)
+        
+        # Extract data for database columns
+        basic_info = jd_data.get('basic_info', {})
+        metadata = jd_data.get('metadata', {})
+        
+        # Check if JD already exists
+        cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        existing = cur.fetchone()
+        
+        if existing:
+            # Update existing JD
+            cur.execute("""
+                UPDATE job_postings SET
+                    title = %s,
+                    title_arabic = %s,
+                    department = %s,
+                    job_type = %s,
+                    job_level = %s,
+                    emirate = %s,
+                    city = %s,
+                    remote_option = %s,
+                    description = %s,
+                    description_arabic = %s,
+                    requirements = %s,
+                    responsibilities = %s,
+                    benefits = %s,
+                    compensation = %s,
+                    application_process = %s,
+                    metadata = %s,
+                    status = %s,
+                    updated_at = CURRENT_TIMESTAMP,
+                    published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
+                                       THEN CURRENT_TIMESTAMP 
+                                       ELSE published_at END
+                WHERE jd_id = %s
+            """, (
+                basic_info.get('title'),
+                basic_info.get('title_arabic'),
+                basic_info.get('department'),
+                basic_info.get('job_type'),
+                basic_info.get('job_level'),
+                basic_info.get('emirate'),
+                basic_info.get('city'),
+                basic_info.get('remote_option', False),
+                jd_data.get('description'),
+                jd_data.get('description_arabic'),
+                json.dumps(jd_data.get('requirements', [])),
+                json.dumps(jd_data.get('responsibilities', [])),
+                json.dumps(jd_data.get('benefits', [])),
+                json.dumps(jd_data.get('compensation', {})),
+                json.dumps(jd_data.get('application_process', {})),
+                json.dumps(metadata),
+                status,
+                status,
+                jd_id
+            ))
+            logger.info(f"Updated JD {jd_id} with status: {status}")
+        else:
+            # Insert new JD
+            cur.execute("""
+                INSERT INTO job_postings (
+                    jd_id, recruiter_id, company_id,
+                    title, title_arabic, department, job_type, job_level,
+                    emirate, city, remote_option,
+                    description, description_arabic,
+                    requirements, responsibilities, benefits,
+                    compensation, application_process, metadata,
+                    status, published_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
+                )
+            """, (
+                jd_id,
+                metadata.get('recruiter_id'),
+                metadata.get('company_id'),
+                basic_info.get('title'),
+                basic_info.get('title_arabic'),
+                basic_info.get('department'),
+                basic_info.get('job_type'),
+                basic_info.get('job_level'),
+                basic_info.get('emirate'),
+                basic_info.get('city'),
+                basic_info.get('remote_option', False),
+                jd_data.get('description'),
+                jd_data.get('description_arabic'),
+                json.dumps(jd_data.get('requirements', [])),
+                json.dumps(jd_data.get('responsibilities', [])),
+                json.dumps(jd_data.get('benefits', [])),
+                json.dumps(jd_data.get('compensation', {})),
+                json.dumps(jd_data.get('application_process', {})),
+                json.dumps(metadata),
+                status,
+                status
+            ))
+            logger.info(f"Inserted new JD {jd_id} with status: {status}")
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'jd_id': jd_id,
+            'status': status,
+            'message': f'Job description {"published" if status == "published" else "saved as draft"} successfully'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error saving JD: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@jd_routes.route('/<jd_id>/publish', methods=['POST'])
+def publish_jd(jd_id):
+    """
+    Publish a job description (change status from draft to published)
+    """
+    try:
+        data = request.get_json()
+        jd_data = data.get('jd_data')
+        
+        if not jd_data:
+            return jsonify({'error': 'jd_data is required'}), 400
+        
+        # Save with published status
+        return save_jd(jd_id)
+        
+    except Exception as e:
+        logger.error(f"Error publishing JD: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@jd_routes.route('/<jd_id>', methods=['GET'])
+def get_jd(jd_id):
+    """
+    Retrieve a job description by ID
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        cur.execute("""
+            SELECT * FROM job_postings WHERE jd_id = %s
+        """, (jd_id,))
+        
+        jd = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not jd:
+            return jsonify({'error': 'Job description not found'}), 404
+        
+        # Convert to dict and parse JSON fields
+        jd_dict = dict(jd)
+        jd_dict['requirements'] = json.loads(jd_dict['requirements']) if jd_dict.get('requirements') else []
+        jd_dict['responsibilities'] = json.loads(jd_dict['responsibilities']) if jd_dict.get('responsibilities') else []
+        jd_dict['benefits'] = json.loads(jd_dict['benefits']) if jd_dict.get('benefits') else []
+        jd_dict['compensation'] = json.loads(jd_dict['compensation']) if jd_dict.get('compensation') else {}
+        jd_dict['application_process'] = json.loads(jd_dict['application_process']) if jd_dict.get('application_process') else {}
+        jd_dict['metadata'] = json.loads(jd_dict['metadata']) if jd_dict.get('metadata') else {}
+        
+        return jsonify(jd_dict), 200
+        
+    except Exception as e:
+        logger.error(f"Error retrieving JD: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@jd_routes.route('/list', methods=['GET'])
+def list_jds():
+    """
+    List all job descriptions with optional filters
+    
+    Query parameters:
+    - recruiter_id: Filter by recruiter
+    - company_id: Filter by company
+    - status: Filter by status (draft, published, closed)
+    - limit: Number of results (default 50)
+    - offset: Pagination offset (default 0)
+    """
+    try:
+        recruiter_id = request.args.get('recruiter_id')
+        company_id = request.args.get('company_id')
+        status = request.args.get('status')
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+        
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Build query with filters
+        query = "SELECT * FROM job_postings WHERE 1=1"
+        params = []
+        
+        if recruiter_id:
+            query += " AND recruiter_id = %s"
+            params.append(recruiter_id)
+        
+        if company_id:
+            query += " AND company_id = %s"
+            params.append(company_id)
+        
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+        
+        query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cur.execute(query, params)
+        jds = cur.fetchall()
+        
+        # Convert to list of dicts
+        jd_list = [dict(jd) for jd in jds]
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'job_descriptions': jd_list,
+            'count': len(jd_list),
+            'limit': limit,
+            'offset': offset
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error listing JDs: {e}")
+        return jsonify({'error': str(e)}), 500
+

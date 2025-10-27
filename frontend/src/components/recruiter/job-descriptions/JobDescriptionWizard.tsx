@@ -296,8 +296,24 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         return;
       }
 
-      // TODO: Call API to save/publish JD to database
-      // For now, just show success and complete
+      // Save JD to database with published status
+      const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          jd_data: jdData,
+          status: 'published'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to publish job description');
+      }
+
+      const result = await response.json();
+      
       toast({
         title: "Success",
         description: "Job description published successfully",
