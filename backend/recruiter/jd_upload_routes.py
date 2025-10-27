@@ -100,10 +100,11 @@ def upload_and_parse():
                 jd_data = engine.update_basic_info(jd_data, parsed_data['basic_info'])
             
             if parsed_data.get('description'):
-                jd_data = engine.update_description(jd_data, {
-                    'description': parsed_data['description'],
-                    'description_arabic': parsed_data.get('description_arabic', '')
-                })
+                jd_data = engine.update_description(
+                    jd_data,
+                    parsed_data['description'],
+                    parsed_data.get('description_arabic', '')
+                )
             
             if parsed_data.get('requirements'):
                 for req in parsed_data['requirements']:
@@ -325,10 +326,11 @@ def parse_text():
                 jd_data = engine.update_basic_info(jd_data, parsed_data['basic_info'])
             
             if parsed_data.get('description'):
-                jd_data = engine.update_description(jd_data, {
-                    'description': parsed_data['description'],
-                    'description_arabic': parsed_data.get('description_arabic', '')
-                })
+                jd_data = engine.update_description(
+                    jd_data,
+                    parsed_data['description'],
+                    parsed_data.get('description_arabic', '')
+                )
             
             if parsed_data.get('requirements'):
                 for req in parsed_data['requirements']:
