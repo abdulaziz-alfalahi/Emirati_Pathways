@@ -101,17 +101,7 @@ def create_jd():
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>', methods=['GET'])
-def get_jd(jd_id):
-    """Get JD data"""
-    try:
-        # TODO: Implement database retrieval
-        # For now, return error
-        return jsonify({'error': 'JD retrieval not yet implemented'}), 501
-        
-    except Exception as e:
-        logger.error(f"Error retrieving JD {jd_id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+# Removed old placeholder get_jd - see line 669 for actual implementation
 
 
 @jd_routes.route('/<jd_id>/basic-info', methods=['PUT'])
