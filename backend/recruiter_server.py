@@ -215,6 +215,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering JD Upload routes: {e}")
 
+    # Register Shortlist routes
+    try:
+        from recruiter.shortlist_routes import shortlist_routes
+
+        app.register_blueprint(shortlist_routes)
+        logger.info("Registered: Shortlist routes for candidate management")
+    except Exception as e:
+        logger.error(f"Failed registering Shortlist routes: {e}")
+
     # Common error handlers
     @app.errorhandler(404)
     def not_found(_):

@@ -336,6 +336,45 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   };
 
+  const handleShortlistCandidate = async (candidateId: string, matchScore: number, matchDetails: any) => {
+    try {
+      const response = await fetch(`http://localhost:5003/api/recruiter/shortlist/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jd_id: jdData.jd_id,
+          candidate_id: candidateId,
+          recruiter_id: recruiterId,
+          match_score: matchScore,
+          match_details: matchDetails,
+          notes: `Auto-shortlisted from AI matching (${matchScore.toFixed(1)}% match)`
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Candidate added to shortlist",
+        });
+      } else {
+        toast({
+          title: "Info",
+          description: result.message || "Candidate already shortlisted",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add candidate to shortlist",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleMatchCandidates = async () => {
     setMatchingLoading(true);
     try {
@@ -1048,7 +1087,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                     <Button size="sm" variant="outline">
                       View Profile
                     </Button>
-                    <Button size="sm">
+                    <Button 
+                      size="sm"
+                      onClick={() => handleShortlistCandidate(
+                        match.candidate.candidate_id,
+                        match.match_score,
+                        match.score_breakdown
+                      )}
+                    >
                       Shortlist
                     </Button>
                   </div>
