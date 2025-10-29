@@ -161,7 +161,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       console.log('Loading initial data:', initialData);
       console.log('Requirements from initial data:', initialData.requirements);
       return {
-        jd_id: initialJdId,
+        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
         basic_info: initialData.basic_info || {
           title: '',
           department: '',
