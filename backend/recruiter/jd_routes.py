@@ -483,9 +483,9 @@ def save_jd(jd_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Check if job_postings table exists, create if not
+        # Check if recruiter_job_descriptions table exists, create if not
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS job_postings (
+            CREATE TABLE IF NOT EXISTS recruiter_job_descriptions (
                 id SERIAL PRIMARY KEY,
                 jd_id VARCHAR(100) UNIQUE NOT NULL,
                 recruiter_id VARCHAR(100) NOT NULL,
@@ -526,13 +526,13 @@ def save_jd(jd_id):
         company_id = metadata.get('company_id') or data.get('company_id') or 'unknown'
         
         # Check if JD already exists
-        cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        cur.execute("SELECT id FROM recruiter_job_descriptions WHERE jd_id = %s", (jd_id,))
         existing = cur.fetchone()
         
         if existing:
             # Update existing JD
             cur.execute("""
-                UPDATE job_postings SET
+                UPDATE recruiter_job_descriptions SET
                     title = %s,
                     title_arabic = %s,
                     department = %s,
@@ -580,7 +580,7 @@ def save_jd(jd_id):
         else:
             # Insert new JD
             cur.execute("""
-                INSERT INTO job_postings (
+                INSERT INTO recruiter_job_descriptions (
                     jd_id, recruiter_id, company_id,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, remote_option,
@@ -665,7 +665,7 @@ def get_jd(jd_id):
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         cur.execute("""
-            SELECT * FROM job_postings WHERE jd_id = %s
+            SELECT * FROM recruiter_job_descriptions WHERE jd_id = %s
         """, (jd_id,))
         
         jd = cur.fetchone()
@@ -714,7 +714,7 @@ def list_jds():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Build query with filters
-        query = "SELECT * FROM job_postings WHERE 1=1"
+        query = "SELECT * FROM recruiter_job_descriptions WHERE 1=1"
         params = []
         
         if recruiter_id:
