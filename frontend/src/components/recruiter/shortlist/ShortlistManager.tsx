@@ -37,6 +37,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Info as InfoIcon,
+  Send as SendIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -114,6 +115,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [newNote, setNewNote] = useState('');
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statusNotes, setStatusNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -220,9 +223,19 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Shortlisted Candidates
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4">
+          Shortlisted Candidates
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<SendIcon />}
+          onClick={() => setMessageDialogOpen(true)}
+          disabled={selectedCandidates.length === 0}
+        >
+          Message Selected ({selectedCandidates.length})
+        </Button>
+      </Box>
 
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>

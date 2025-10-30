@@ -224,6 +224,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering Shortlist routes: {e}")
 
+    # Register Communication routes
+    try:
+        from recruiter.communication_routes import communication_routes
+
+        app.register_blueprint(communication_routes)
+        logger.info("Registered: Communication routes for messaging candidates")
+    except Exception as e:
+        logger.error(f"Failed registering Communication routes: {e}")
+
     # Common error handlers
     @app.errorhandler(404)
     def not_found(_):
