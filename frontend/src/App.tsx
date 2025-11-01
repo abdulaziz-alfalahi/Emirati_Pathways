@@ -38,6 +38,7 @@ const JDTemplatesPage = lazy(() => import('@/pages/recruiter/JDTemplates'));
 const BatchUploadPage = lazy(() => import('@/pages/recruiter/BatchUpload'));
 const RecruiterAnalyticsPage = lazy(() => import('@/pages/recruiter/Analytics'));
 const InterviewDetailsPage = lazy(() => import('@/pages/recruiter/InterviewDetails'));
+const ShortlistPage = lazy(() => import('@/pages/recruiter/ShortlistPage'));
 const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
@@ -212,6 +213,15 @@ const AppContent: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <RecruiterCandidates />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/recruiter/shortlist/:jdId" 
+                  element={
+                    <ProtectedRoute>
+                      <ShortlistPage />
                     </ProtectedRoute>
                   } 
                 />
