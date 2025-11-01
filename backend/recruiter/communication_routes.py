@@ -206,8 +206,8 @@ def send_message():
                 'candidate_name': f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
                 'success': send_result['success'],
                 'log_id': log_id,
-                'email_sent': send_result.get('email_result', {}).get('success', False),
-                'sms_sent': send_result.get('sms_result', {}).get('success', False),
+                'email_sent': (send_result.get('email_result') or {}).get('success', False),
+                'sms_sent': (send_result.get('sms_result') or {}).get('success', False),
                 'errors': send_result.get('errors', [])
             })
         
