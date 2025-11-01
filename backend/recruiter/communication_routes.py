@@ -226,7 +226,9 @@ def send_message():
         }), 200
         
     except Exception as e:
+        import traceback
         logger.error(f"Error sending messages: {e}")
+        logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 
