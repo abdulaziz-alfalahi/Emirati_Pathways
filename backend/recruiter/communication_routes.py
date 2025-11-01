@@ -157,20 +157,27 @@ def send_message():
                 })
             
             # Send message
-            send_result = comm_engine.send_message(
-                candidate=dict(candidate),
-                message_type=message_type,
-                subject=subject,
-                body=body,
-                recruiter_id=recruiter_id,
-                shortlist_id=shortlist_id
-            )
+            try:
+                send_result = comm_engine.send_message(
+                    candidate=dict(candidate),
+                    message_type=message_type,
+                    subject=subject,
+                    body=body,
+                    recruiter_id=recruiter_id,
+                    shortlist_id=shortlist_id
+                )
+            except Exception as e:
+                logger.error(f"Error in send_message: {e}")
+                send_result = {
+                    'success': False,
+                    'errors': [str(e)]
+                }
             
             # Log communication
             log_id = f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
             
-            status = 'sent' if send_result['success'] else 'failed'
-            error_msg = ', '.join(send_result.get('errors', [])) if not send_result['success'] else None
+            status = 'sent' if send_result and send_result.get('success') else 'failed'
+            error_msg = ', '.join(send_result.get('errors', [])) if send_result and not send_result.get('success') else None
             
             cur.execute("""
                 INSERT INTO communication_logs (
