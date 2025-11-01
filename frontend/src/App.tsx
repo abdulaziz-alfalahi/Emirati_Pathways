@@ -43,7 +43,7 @@ const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
 // Resume Builder
 const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
-const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
+// const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
 const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
 const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
 
