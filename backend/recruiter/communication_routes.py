@@ -22,7 +22,7 @@ from .communication_engine import (
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-communication_routes = Blueprint('communication', __name__)
+communication_routes = Blueprint('recruiter_communication', __name__)
 
 # Database configuration
 DB_CONFIG = {
