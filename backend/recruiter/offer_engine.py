@@ -238,6 +238,8 @@ def get_offer_details(offer_id):
 def update_offer(offer_id, updates):
     """Update offer details"""
     try:
+        logger.info(f"update_offer called for {offer_id} with updates: {updates}")
+        
         conn = get_db_connection()
         cur = conn.cursor()
         
@@ -246,10 +248,14 @@ def update_offer(offer_id, updates):
         result = cur.fetchone()
         
         if not result:
+            logger.error(f"Offer {offer_id} not found")
             return {'success': False, 'error': 'Offer not found'}
         
         status = result[0]
+        logger.info(f"Current offer status: {status}")
+        
         if status not in ['draft', 'negotiating']:
+            logger.error(f"Cannot edit offer in status: {status}")
             return {'success': False, 'error': 'Cannot edit offer in current status'}
         
         # Build update query dynamically
@@ -274,17 +280,25 @@ def update_offer(offer_id, updates):
                 update_values.append(value)
         
         if not update_fields:
+            logger.warning("No valid fields to update")
             return {'success': False, 'error': 'No valid fields to update'}
         
         update_fields.append("updated_at = CURRENT_TIMESTAMP")
         update_values.append(offer_id)
         
         query = f"UPDATE job_offers SET {', '.join(update_fields)} WHERE offer_id = %s"
+        logger.info(f"Executing SQL: {query}")
+        logger.info(f"With values: {update_values}")
+        
         cur.execute(query, update_values)
+        rows_affected = cur.rowcount
+        logger.info(f"Rows affected: {rows_affected}")
         
         conn.commit()
         cur.close()
         conn.close()
+        
+        logger.info(f"Offer {offer_id} updated successfully")
         
         logger.info(f"Offer updated: {offer_id}")
         return {'success': True, 'message': 'Offer updated successfully'}
