@@ -9,13 +9,21 @@ from datetime import datetime, timedelta
 import secrets
 import json
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
+# Database configuration
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', '127.0.0.1'),
+    'database': os.getenv('DB_NAME', 'emirati_journey'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', 'Passw0rd')
+}
+
 def get_db_connection():
     """Get database connection"""
-    from .db_utils import get_db_connection as get_conn
-    return get_conn()
+    return psycopg2.connect(**DB_CONFIG)
 
 def generate_offer_id():
     """Generate unique offer ID"""
