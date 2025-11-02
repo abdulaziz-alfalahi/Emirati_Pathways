@@ -1,0 +1,700 @@
+import React, { useState } from 'react';
+import NegotiationDialog from './NegotiationDialog';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Grid,
+  Typography,
+  Box,
+  Chip,
+  Divider,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  IconButton,
+  Tooltip,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
+import {
+  Close as CloseIcon,
+  Send as SendIcon,
+  Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Handshake as HandshakeIcon,
+  AttachMoney as AttachMoneyIcon,
+  CalendarToday as CalendarIcon,
+  Work as WorkIcon,
+  CardGiftcard as CardGiftcardIcon,
+} from '@mui/icons-material';
+import axios from 'axios';
+
+interface JobOffer {
+  offer_id: string;
+  jd_id: string;
+  candidate_id: string;
+  recruiter_id: string;
+  position_title: string;
+  salary_amount: number;
+  salary_currency: string;
+  salary_period: string;
+  benefits: any;
+  start_date: string;
+  contract_type: string;
+  probation_period_months: number;
+  work_location?: string;
+  work_schedule?: string;
+  status: string;
+  sent_at: string | null;
+  response_deadline: string | null;
+  candidate_response: string | null;
+  candidate_response_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  negotiation_history?: any[];
+  // Candidate details
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+interface OfferDetailsDialogProps {
+  open: boolean;
+  onClose: () => void;
+  offer: JobOffer;
+  onOfferUpdated: () => void;
+}
+
+const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'> = {
+  draft: 'default',
+  pending_approval: 'warning',
+  approved: 'info',
+  sent: 'primary',
+  accepted: 'success',
+  rejected: 'error',
+  negotiating: 'secondary',
+  withdrawn: 'default',
+  expired: 'error',
+};
+
+const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
+  open,
+  onClose,
+  offer,
+  onOfferUpdated,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [negotiationDialogOpen, setNegotiationDialogOpen] = useState(false);
+  
+  // Editable fields
+  const [salaryAmount, setSalaryAmount] = useState(offer.salary_amount.toString());
+  const [startDate, setStartDate] = useState(offer.start_date);
+  const [responseDeadline, setResponseDeadline] = useState(offer.response_deadline || '');
+
+  const handleSendOffer = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/send`);
+      setSuccess('Offer sent successfully to candidate');
+      setTimeout(() => {
+        onOfferUpdated();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error sending offer:', err);
+      setError(err.response?.data?.error || 'Failed to send offer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveOffer = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/approve`, {
+        approved_by: 'manager_001', // TODO: Get from auth context
+      });
+      setSuccess('Offer approved successfully');
+      setTimeout(() => {
+        onOfferUpdated();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error approving offer:', err);
+      setError(err.response?.data?.error || 'Failed to approve offer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectOffer = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/reject`, {
+        rejected_by: 'manager_001', // TODO: Get from auth context
+        rejection_reason: 'Budget constraints',
+      });
+      setSuccess('Offer rejected');
+      setTimeout(() => {
+        onOfferUpdated();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error rejecting offer:', err);
+      setError(err.response?.data?.error || 'Failed to reject offer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWithdrawOffer = async () => {
+    if (!window.confirm('Are you sure you want to withdraw this offer?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/withdraw`, {
+        reason: 'Position filled by another candidate',
+      });
+      setSuccess('Offer withdrawn successfully');
+      setTimeout(() => {
+        onOfferUpdated();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error withdrawing offer:', err);
+      setError(err.response?.data?.error || 'Failed to withdraw offer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateOffer = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      const updates: any = {
+        salary_amount: parseFloat(salaryAmount),
+        start_date: startDate,
+      };
+
+      if (responseDeadline) {
+        updates.response_deadline = responseDeadline;
+      }
+
+      await axios.put(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}`, updates);
+      setSuccess('Offer updated successfully');
+      setEditMode(false);
+      setTimeout(() => {
+        onOfferUpdated();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error updating offer:', err);
+      setError(err.response?.data?.error || 'Failed to update offer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecordResponse = async (response: 'accepted' | 'rejected' | 'negotiating') => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/response`, {
+        response: response,
+      });
+      setSuccess(`Candidate response recorded: ${response}`);
+      setTimeout(() => {
+        onOfferUpdated();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error recording response:', err);
+      setError(err.response?.data?.error || 'Failed to record response');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return `${amount.toLocaleString()} ${currency}`;
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
+  };
+
+  const canSend = offer.status === 'approved';
+  const canApprove = offer.status === 'draft' || offer.status === 'pending_approval';
+  const canEdit = offer.status === 'draft' || offer.status === 'pending_approval';
+  const canWithdraw = offer.status === 'sent' || offer.status === 'negotiating';
+  const canRecordResponse = offer.status === 'sent';
+  const canNegotiate = offer.status === 'negotiating';
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box display="flex" alignItems="center">
+              <WorkIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Offer Details</Typography>
+            </Box>
+            <IconButton onClick={onClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {success}
+            </Alert>
+          )}
+
+          <Grid container spacing={3}>
+            {/* Candidate Information */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+                <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  CANDIDATE INFORMATION
+                </Typography>
+                <Typography variant="h6">
+                  {offer.first_name && offer.last_name
+                    ? `${offer.first_name} ${offer.last_name}`
+                    : offer.candidate_id}
+                </Typography>
+                {offer.email && (
+                  <Typography variant="body2" color="textSecondary">
+                    {offer.email}
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+
+            {/* Status */}
+            <Grid item xs={12}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Status:
+                </Typography>
+                <Chip
+                  label={offer.status.replace('_', ' ').toUpperCase()}
+                  color={statusColors[offer.status] || 'default'}
+                />
+              </Box>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider />
+            </Grid>
+
+            {/* Position & Compensation */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                <AttachMoneyIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                Position & Compensation
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="textSecondary">
+                Position Title
+              </Typography>
+              <Typography variant="body1">{offer.position_title}</Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              {editMode ? (
+                <TextField
+                  fullWidth
+                  label="Salary Amount"
+                  type="number"
+                  value={salaryAmount}
+                  onChange={(e) => setSalaryAmount(e.target.value)}
+                  size="small"
+                />
+              ) : (
+                <>
+                  <Typography variant="body2" color="textSecondary">
+                    Salary
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatCurrency(offer.salary_amount, offer.salary_currency)}
+                    <Typography component="span" variant="caption" color="textSecondary" sx={{ ml: 1 }}>
+                      ({offer.salary_period})
+                    </Typography>
+                  </Typography>
+                </>
+              )}
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider />
+            </Grid>
+
+            {/* Contract Details */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                <CalendarIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                Contract Details
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="textSecondary">
+                Contract Type
+              </Typography>
+              <Typography variant="body1">{offer.contract_type}</Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              {editMode ? (
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                />
+              ) : (
+                <>
+                  <Typography variant="body2" color="textSecondary">
+                    Start Date
+                  </Typography>
+                  <Typography variant="body1">{formatDate(offer.start_date)}</Typography>
+                </>
+              )}
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="textSecondary">
+                Probation Period
+              </Typography>
+              <Typography variant="body1">{offer.probation_period_months} months</Typography>
+            </Grid>
+
+            {offer.work_location && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Work Location
+                </Typography>
+                <Typography variant="body1">{offer.work_location}</Typography>
+              </Grid>
+            )}
+
+            {offer.work_schedule && (
+              <Grid item xs={12}>
+                <Typography variant="body2" color="textSecondary">
+                  Work Schedule
+                </Typography>
+                <Typography variant="body1">{offer.work_schedule}</Typography>
+              </Grid>
+            )}
+
+            <Grid item xs={12}>
+              <Divider />
+            </Grid>
+
+            {/* Benefits */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                <CardGiftcardIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                Benefits & Perks
+              </Typography>
+            </Grid>
+
+            {offer.benefits && (
+              <Grid item xs={12}>
+                <List dense>
+                  {offer.benefits.annual_leave_days && (
+                    <ListItem>
+                      <ListItemText
+                        primary={`${offer.benefits.annual_leave_days} days annual leave`}
+                      />
+                    </ListItem>
+                  )}
+                  {offer.benefits.health_insurance && (
+                    <ListItem>
+                      <ListItemText primary="Health insurance included" />
+                    </ListItem>
+                  )}
+                  {offer.benefits.housing_allowance > 0 && (
+                    <ListItem>
+                      <ListItemText
+                        primary={`Housing allowance: ${formatCurrency(
+                          offer.benefits.housing_allowance,
+                          offer.salary_currency
+                        )}`}
+                      />
+                    </ListItem>
+                  )}
+                  {offer.benefits.transportation_allowance > 0 && (
+                    <ListItem>
+                      <ListItemText
+                        primary={`Transportation allowance: ${formatCurrency(
+                          offer.benefits.transportation_allowance,
+                          offer.salary_currency
+                        )}`}
+                      />
+                    </ListItem>
+                  )}
+                  {offer.benefits.flight_tickets && (
+                    <ListItem>
+                      <ListItemText
+                        primary={`${offer.benefits.flight_tickets} flight tickets per year`}
+                      />
+                    </ListItem>
+                  )}
+                  {offer.benefits.additional_benefits &&
+                    offer.benefits.additional_benefits.length > 0 && (
+                      <ListItem>
+                        <ListItemText
+                          primary="Additional Benefits:"
+                          secondary={offer.benefits.additional_benefits.join(', ')}
+                        />
+                      </ListItem>
+                    )}
+                </List>
+              </Grid>
+            )}
+
+            {/* Timeline */}
+            {(offer.sent_at || offer.approved_at || offer.candidate_response_at) && (
+              <>
+                <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" gutterBottom fontWeight="bold">
+                    Timeline
+                  </Typography>
+                </Grid>
+                {offer.approved_at && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="textSecondary">
+                      Approved At
+                    </Typography>
+                    <Typography variant="body1">{formatDateTime(offer.approved_at)}</Typography>
+                  </Grid>
+                )}
+                {offer.sent_at && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="textSecondary">
+                      Sent At
+                    </Typography>
+                    <Typography variant="body1">{formatDateTime(offer.sent_at)}</Typography>
+                  </Grid>
+                )}
+                {offer.response_deadline && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="textSecondary">
+                      Response Deadline
+                    </Typography>
+                    <Typography variant="body1">{formatDate(offer.response_deadline)}</Typography>
+                  </Grid>
+                )}
+                {offer.candidate_response && (
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="body2" color="textSecondary">
+                      Candidate Response
+                    </Typography>
+                    <Chip
+                      label={offer.candidate_response.toUpperCase()}
+                      color={
+                        offer.candidate_response === 'accepted'
+                          ? 'success'
+                          : offer.candidate_response === 'rejected'
+                          ? 'error'
+                          : 'secondary'
+                      }
+                      size="small"
+                    />
+                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                      {formatDateTime(offer.candidate_response_at)}
+                    </Typography>
+                  </Grid>
+                )}
+              </>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', width: '100%', p: 1 }}>
+            {editMode ? (
+              <>
+                <Button onClick={() => setEditMode(false)} disabled={loading}>
+                  Cancel Edit
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleUpdateOffer}
+                  disabled={loading}
+                  startIcon={<CheckCircleIcon />}
+                >
+                  Save Changes
+                </Button>
+              </>
+            ) : (
+              <>
+                {canEdit && (
+                  <Tooltip title="Edit offer details">
+                    <Button
+                      startIcon={<EditIcon />}
+                      onClick={() => setEditMode(true)}
+                      disabled={loading}
+                    >
+                      Edit
+                    </Button>
+                  </Tooltip>
+                )}
+                {canApprove && (
+                  <Tooltip title="Approve this offer for sending">
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<CheckCircleIcon />}
+                      onClick={handleApproveOffer}
+                      disabled={loading}
+                    >
+                      Approve
+                    </Button>
+                  </Tooltip>
+                )}
+                {canApprove && (
+                  <Tooltip title="Reject this offer">
+                    <Button
+                      color="error"
+                      startIcon={<CancelIcon />}
+                      onClick={handleRejectOffer}
+                      disabled={loading}
+                    >
+                      Reject
+                    </Button>
+                  </Tooltip>
+                )}
+                {canSend && (
+                  <Tooltip title="Send offer to candidate">
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<SendIcon />}
+                      onClick={handleSendOffer}
+                      disabled={loading}
+                    >
+                      Send Offer
+                    </Button>
+                  </Tooltip>
+                )}
+                {canRecordResponse && (
+                  <>
+                    <Button
+                      color="success"
+                      onClick={() => handleRecordResponse('accepted')}
+                      disabled={loading}
+                    >
+                      Mark Accepted
+                    </Button>
+                    <Button
+                      color="error"
+                      onClick={() => handleRecordResponse('rejected')}
+                      disabled={loading}
+                    >
+                      Mark Rejected
+                    </Button>
+                    <Button
+                      color="secondary"
+                      onClick={() => handleRecordResponse('negotiating')}
+                      disabled={loading}
+                    >
+                      Start Negotiation
+                    </Button>
+                  </>
+                )}
+                {canNegotiate && (
+                  <Tooltip title="Manage negotiation">
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<HandshakeIcon />}
+                      onClick={() => setNegotiationDialogOpen(true)}
+                      disabled={loading}
+                    >
+                      Negotiate
+                    </Button>
+                  </Tooltip>
+                )}
+                {canWithdraw && (
+                  <Tooltip title="Withdraw this offer">
+                    <Button
+                      color="error"
+                      startIcon={<CancelIcon />}
+                      onClick={handleWithdrawOffer}
+                      disabled={loading}
+                    >
+                      Withdraw
+                    </Button>
+                  </Tooltip>
+                )}
+              </>
+            )}
+            <Box sx={{ flex: '1 1 auto' }} />
+            <Button onClick={onClose} disabled={loading}>
+              Close
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Negotiation Dialog */}
+      <NegotiationDialog
+        open={negotiationDialogOpen}
+        onClose={() => setNegotiationDialogOpen(false)}
+        offer={offer}
+        onNegotiationUpdated={onOfferUpdated}
+      />
+    </>
+  );
+};
+
+export default OfferDetailsDialog;
+

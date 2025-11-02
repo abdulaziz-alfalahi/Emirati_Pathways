@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageComposer } from '../communication/MessageComposer';
 import CreateInterviewDialog from '../interviews/CreateInterviewDialog';
+import OfferManager from '../offers/OfferManager';
 import {
   Box,
   Paper,
@@ -43,6 +44,7 @@ import {
   Info as InfoIcon,
   Send as SendIcon,
   Close as CloseIcon,
+  CardGiftcard as CardGiftcardIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -127,6 +129,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [statusNotes, setStatusNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showOfferManager, setShowOfferManager] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
 
@@ -257,6 +260,14 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             disabled={selectedCandidates.length === 0}
           >
             Message Selected ({selectedCandidates.length})
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<CardGiftcardIcon />}
+            onClick={() => setShowOfferManager(true)}
+          >
+            Manage Offers
           </Button>
         </Box>
       </Box>
@@ -590,6 +601,19 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           fetchShortlist();
         }}
       />
+
+      {/* Offer Management Dialog */}
+      <Dialog
+        open={showOfferManager}
+        onClose={() => setShowOfferManager(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <OfferManager
+          jdId={jdId}
+          onClose={() => setShowOfferManager(false)}
+        />
+      </Dialog>
     </Box>
   );
 };
