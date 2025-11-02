@@ -361,7 +361,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                 <TableCell align="center">
                   <Chip
                     label={`${parseFloat(candidate.match_score).toFixed(1)}%`}
-                    color={candidate.match_score >= 80 ? 'success' : candidate.match_score >= 60 ? 'warning' : 'default'}
+                    color={parseFloat(candidate.match_score) >= 80 ? 'success' : parseFloat(candidate.match_score) >= 60 ? 'warning' : 'default'}
                     size="small"
                   />
                 </TableCell>
