@@ -36,6 +36,7 @@ import {
   Phone as PhoneIcon,
   Event as EventIcon,
   CalendarToday as CalendarIcon,
+  CalendarMonth as CalendarMonthIcon,
   Notes as NotesIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -241,14 +242,23 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         <Typography variant="h4">
           Shortlisted Candidates
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<SendIcon />}
-          onClick={() => setMessageDialogOpen(true)}
-          disabled={selectedCandidates.length === 0}
-        >
-          Message Selected ({selectedCandidates.length})
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<CalendarMonthIcon />}
+            onClick={() => window.location.href = `/recruiter/interviews/schedule?jdId=${jdId}`}
+          >
+            View Interviews
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SendIcon />}
+            onClick={() => setMessageDialogOpen(true)}
+            disabled={selectedCandidates.length === 0}
+          >
+            Message Selected ({selectedCandidates.length})
+          </Button>
+        </Box>
       </Box>
 
       {error && (
