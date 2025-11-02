@@ -17,8 +17,8 @@ def get_db_connection():
         host=os.getenv('DB_HOST', '127.0.0.1'),
         port=os.getenv('DB_PORT', '5432'),
         database=os.getenv('DB_NAME', 'emirati_journey'),
-        user=os.getenv('DB_USER', 'postgres'),
-        password=os.getenv('DB_PASSWORD', 'Passw0rd')
+        user=os.getenv('DB_USER', 'emirati_user'),
+        password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
     )
 
 def check_offers():
