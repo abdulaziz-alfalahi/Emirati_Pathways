@@ -99,11 +99,38 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [negotiationDialogOpen, setNegotiationDialogOpen] = useState(false);
+  const [currentOffer, setCurrentOffer] = useState<JobOffer>(offer);
   
   // Editable fields
-  const [salaryAmount, setSalaryAmount] = useState(offer.salary_amount.toString());
-  const [startDate, setStartDate] = useState(offer.start_date);
-  const [responseDeadline, setResponseDeadline] = useState(offer.response_deadline || '');
+  const [salaryAmount, setSalaryAmount] = useState(currentOffer.salary_amount.toString());
+  const [startDate, setStartDate] = useState(currentOffer.start_date);
+  const [responseDeadline, setResponseDeadline] = useState(currentOffer.response_deadline || '');
+
+  // Reload offer details when offer prop changes
+  React.useEffect(() => {
+    setCurrentOffer(offer);
+    setSalaryAmount(currentOffer.salary_amount.toString());
+    setStartDate(currentOffer.start_date);
+    setResponseDeadline(currentOffer.response_deadline || '');
+  }, [offer]);
+
+  const reloadOfferDetails = async () => {
+    try {
+      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`);
+      if (response.data.offer) {
+        setCurrentOffer(response.data.offer);
+      }
+    } catch (err) {
+      console.error('Error reloading offer details:', err);
+    }
+  };
+
+  const handleNegotiationUpdated = async () => {
+    // Reload the current offer to get updated negotiation history
+    await reloadOfferDetails();
+    // Also notify parent to refresh the list
+    onOfferUpdated();
+  };
 
   const handleSendOffer = async () => {
     try {
@@ -111,7 +138,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/send`);
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/send`);
       setSuccess('Offer sent successfully to candidate');
       setTimeout(() => {
         onOfferUpdated();
@@ -130,7 +157,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/approve`, {
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
         approved_by: 'manager_001', // TODO: Get from auth context
       });
       setSuccess('Offer approved successfully');
@@ -151,7 +178,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/reject`, {
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
         rejected_by: 'manager_001', // TODO: Get from auth context
         rejection_reason: 'Budget constraints',
       });
@@ -177,7 +204,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/withdraw`, {
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
         reason: 'Position filled by another candidate',
       });
       setSuccess('Offer withdrawn successfully');
@@ -207,7 +234,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         updates.response_deadline = responseDeadline;
       }
 
-      await axios.put(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}`, updates);
+      await axios.put(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`, updates);
       setSuccess('Offer updated successfully');
       setEditMode(false);
       setTimeout(() => {
@@ -227,7 +254,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}/response`, {
+      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/response`, {
         response: response,
       });
       setSuccess(`Candidate response recorded: ${response}`);
@@ -256,12 +283,12 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
     return new Date(dateString).toLocaleString();
   };
 
-  const canSend = offer.status === 'approved';
-  const canApprove = offer.status === 'draft' || offer.status === 'pending_approval';
-  const canEdit = offer.status === 'draft' || offer.status === 'pending_approval';
-  const canWithdraw = offer.status === 'sent' || offer.status === 'negotiating';
-  const canRecordResponse = offer.status === 'sent';
-  const canNegotiate = offer.status === 'negotiating';
+  const canSend = currentOffer.status === 'approved';
+  const canApprove = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval';
+  const canEdit = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval';
+  const canWithdraw = currentOffer.status === 'sent' || currentOffer.status === 'negotiating';
+  const canRecordResponse = currentOffer.status === 'sent';
+  const canNegotiate = currentOffer.status === 'negotiating';
 
   return (
     <>
@@ -297,13 +324,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   CANDIDATE INFORMATION
                 </Typography>
                 <Typography variant="h6">
-                  {offer.first_name && offer.last_name
-                    ? `${offer.first_name} ${offer.last_name}`
-                    : offer.candidate_id}
+                  {currentOffer.first_name && currentOffer.last_name
+                    ? `${currentOffer.first_name} ${currentOffer.last_name}`
+                    : currentOffer.candidate_id}
                 </Typography>
-                {offer.email && (
+                {currentOffer.email && (
                   <Typography variant="body2" color="textSecondary">
-                    {offer.email}
+                    {currentOffer.email}
                   </Typography>
                 )}
               </Paper>
@@ -316,7 +343,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   Status:
                 </Typography>
                 <Chip
-                  label={offer.status.replace('_', ' ').toUpperCase()}
+                  label={currentOffer.status.replace('_', ' ').toUpperCase()}
                   color={statusColors[offer.status] || 'default'}
                 />
               </Box>
@@ -338,7 +365,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               <Typography variant="body2" color="textSecondary">
                 Position Title
               </Typography>
-              <Typography variant="body1">{offer.position_title}</Typography>
+              <Typography variant="body1">{currentOffer.position_title}</Typography>
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -357,9 +384,9 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                     Salary
                   </Typography>
                   <Typography variant="body1">
-                    {formatCurrency(offer.salary_amount, offer.salary_currency)}
+                    {formatCurrency(currentOffer.salary_amount, currentOffer.salary_currency)}
                     <Typography component="span" variant="caption" color="textSecondary" sx={{ ml: 1 }}>
-                      ({offer.salary_period})
+                      ({currentOffer.salary_period})
                     </Typography>
                   </Typography>
                 </>
@@ -382,7 +409,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               <Typography variant="body2" color="textSecondary">
                 Contract Type
               </Typography>
-              <Typography variant="body1">{offer.contract_type}</Typography>
+              <Typography variant="body1">{currentOffer.contract_type}</Typography>
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -401,7 +428,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   <Typography variant="body2" color="textSecondary">
                     Start Date
                   </Typography>
-                  <Typography variant="body1">{formatDate(offer.start_date)}</Typography>
+                  <Typography variant="body1">{formatDate(currentOffer.start_date)}</Typography>
                 </>
               )}
             </Grid>
@@ -410,24 +437,24 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               <Typography variant="body2" color="textSecondary">
                 Probation Period
               </Typography>
-              <Typography variant="body1">{offer.probation_period_months} months</Typography>
+              <Typography variant="body1">{currentOffer.probation_period_months} months</Typography>
             </Grid>
 
-            {offer.work_location && (
+            {currentOffer.work_location && (
               <Grid item xs={12} md={6}>
                 <Typography variant="body2" color="textSecondary">
                   Work Location
                 </Typography>
-                <Typography variant="body1">{offer.work_location}</Typography>
+                <Typography variant="body1">{currentOffer.work_location}</Typography>
               </Grid>
             )}
 
-            {offer.work_schedule && (
+            {currentOffer.work_schedule && (
               <Grid item xs={12}>
                 <Typography variant="body2" color="textSecondary">
                   Work Schedule
                 </Typography>
-                <Typography variant="body1">{offer.work_schedule}</Typography>
+                <Typography variant="body1">{currentOffer.work_schedule}</Typography>
               </Grid>
             )}
 
@@ -443,54 +470,54 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
               </Typography>
             </Grid>
 
-            {offer.benefits && (
+            {currentOffer.benefits && (
               <Grid item xs={12}>
                 <List dense>
-                  {offer.benefits.annual_leave_days && (
+                  {currentOffer.benefits.annual_leave_days && (
                     <ListItem>
                       <ListItemText
-                        primary={`${offer.benefits.annual_leave_days} days annual leave`}
+                        primary={`${currentOffer.benefits.annual_leave_days} days annual leave`}
                       />
                     </ListItem>
                   )}
-                  {offer.benefits.health_insurance && (
+                  {currentOffer.benefits.health_insurance && (
                     <ListItem>
                       <ListItemText primary="Health insurance included" />
                     </ListItem>
                   )}
-                  {offer.benefits.housing_allowance > 0 && (
+                  {currentOffer.benefits.housing_allowance > 0 && (
                     <ListItem>
                       <ListItemText
                         primary={`Housing allowance: ${formatCurrency(
-                          offer.benefits.housing_allowance,
-                          offer.salary_currency
+                          currentOffer.benefits.housing_allowance,
+                          currentOffer.salary_currency
                         )}`}
                       />
                     </ListItem>
                   )}
-                  {offer.benefits.transportation_allowance > 0 && (
+                  {currentOffer.benefits.transportation_allowance > 0 && (
                     <ListItem>
                       <ListItemText
                         primary={`Transportation allowance: ${formatCurrency(
-                          offer.benefits.transportation_allowance,
-                          offer.salary_currency
+                          currentOffer.benefits.transportation_allowance,
+                          currentOffer.salary_currency
                         )}`}
                       />
                     </ListItem>
                   )}
-                  {offer.benefits.flight_tickets && (
+                  {currentOffer.benefits.flight_tickets && (
                     <ListItem>
                       <ListItemText
-                        primary={`${offer.benefits.flight_tickets} flight tickets per year`}
+                        primary={`${currentOffer.benefits.flight_tickets} flight tickets per year`}
                       />
                     </ListItem>
                   )}
-                  {offer.benefits.additional_benefits &&
-                    offer.benefits.additional_benefits.length > 0 && (
+                  {currentOffer.benefits.additional_benefits &&
+                    currentOffer.benefits.additional_benefits.length > 0 && (
                       <ListItem>
                         <ListItemText
                           primary="Additional Benefits:"
-                          secondary={offer.benefits.additional_benefits.join(', ')}
+                          secondary={currentOffer.benefits.additional_benefits.join(', ')}
                         />
                       </ListItem>
                     )}
@@ -499,7 +526,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
             )}
 
             {/* Timeline */}
-            {(offer.sent_at || offer.approved_at || offer.candidate_response_at) && (
+            {(currentOffer.sent_at || currentOffer.approved_at || currentOffer.candidate_response_at) && (
               <>
                 <Grid item xs={12}>
                   <Divider />
@@ -509,48 +536,48 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                     Timeline
                   </Typography>
                 </Grid>
-                {offer.approved_at && (
+                {currentOffer.approved_at && (
                   <Grid item xs={12} md={6}>
                     <Typography variant="body2" color="textSecondary">
                       Approved At
                     </Typography>
-                    <Typography variant="body1">{formatDateTime(offer.approved_at)}</Typography>
+                    <Typography variant="body1">{formatDateTime(currentOffer.approved_at)}</Typography>
                   </Grid>
                 )}
-                {offer.sent_at && (
+                {currentOffer.sent_at && (
                   <Grid item xs={12} md={6}>
                     <Typography variant="body2" color="textSecondary">
                       Sent At
                     </Typography>
-                    <Typography variant="body1">{formatDateTime(offer.sent_at)}</Typography>
+                    <Typography variant="body1">{formatDateTime(currentOffer.sent_at)}</Typography>
                   </Grid>
                 )}
-                {offer.response_deadline && (
+                {currentOffer.response_deadline && (
                   <Grid item xs={12} md={6}>
                     <Typography variant="body2" color="textSecondary">
                       Response Deadline
                     </Typography>
-                    <Typography variant="body1">{formatDate(offer.response_deadline)}</Typography>
+                    <Typography variant="body1">{formatDate(currentOffer.response_deadline)}</Typography>
                   </Grid>
                 )}
-                {offer.candidate_response && (
+                {currentOffer.candidate_response && (
                   <Grid item xs={12} md={6}>
                     <Typography variant="body2" color="textSecondary">
                       Candidate Response
                     </Typography>
                     <Chip
-                      label={offer.candidate_response.toUpperCase()}
+                      label={currentOffer.candidate_response.toUpperCase()}
                       color={
-                        offer.candidate_response === 'accepted'
+                        currentOffer.candidate_response === 'accepted'
                           ? 'success'
-                          : offer.candidate_response === 'rejected'
+                          : currentOffer.candidate_response === 'rejected'
                           ? 'error'
                           : 'secondary'
                       }
                       size="small"
                     />
                     <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                      {formatDateTime(offer.candidate_response_at)}
+                      {formatDateTime(currentOffer.candidate_response_at)}
                     </Typography>
                   </Grid>
                 )}
@@ -689,8 +716,8 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       <NegotiationDialog
         open={negotiationDialogOpen}
         onClose={() => setNegotiationDialogOpen(false)}
-        offer={offer}
-        onNegotiationUpdated={onOfferUpdated}
+        offer={currentOffer}
+        onNegotiationUpdated={handleNegotiationUpdated}
       />
     </>
   );
