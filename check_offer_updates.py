@@ -14,11 +14,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 def get_db_connection():
     """Get database connection"""
     return psycopg2.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
+        host=os.getenv('DB_HOST', '127.0.0.1'),
         port=os.getenv('DB_PORT', '5432'),
-        database=os.getenv('DB_NAME', 'emirati_pathways'),
+        database=os.getenv('DB_NAME', 'emirati_journey'),
         user=os.getenv('DB_USER', 'postgres'),
-        password=os.getenv('DB_PASSWORD', 'postgres')
+        password=os.getenv('DB_PASSWORD', 'Passw0rd')
     )
 
 def check_offers():
