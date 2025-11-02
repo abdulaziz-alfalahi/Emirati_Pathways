@@ -108,6 +108,14 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
       setError('Please provide interview title');
       return;
     }
+    if (formData.interview_type === 'video' && !formData.meeting_link) {
+      setError('Meeting link is required for video interviews');
+      return;
+    }
+    if (formData.interview_type === 'in_person' && !formData.location) {
+      setError('Location is required for in-person interviews');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -293,10 +301,12 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Meeting Link"
+                  required
+                  label="Meeting Link *"
                   value={formData.meeting_link}
                   onChange={(e) => handleChange('meeting_link', e.target.value)}
                   placeholder="https://zoom.us/j/123456789"
+                  helperText="Required for video interviews"
                 />
               </Grid>
             </>
@@ -307,10 +317,12 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Location"
+                required
+                label="Location *"
                 value={formData.location}
                 onChange={(e) => handleChange('location', e.target.value)}
                 placeholder="Office address or meeting room"
+                helperText="Required for in-person interviews"
               />
             </Grid>
           )}
