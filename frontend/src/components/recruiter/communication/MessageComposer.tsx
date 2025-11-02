@@ -98,6 +98,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const handleTemplateSelect = (template: MessageTemplate) => {
     setSubject(template.subject);
     setBody(template.body);
+    setMessageType(template.message_type as 'email' | 'sms' | 'both');
     setSelectedTemplate(template.name);
     setShowTemplates(false);
   };
@@ -109,44 +110,40 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     }
 
     if (messageType === 'email' && !subject.trim()) {
-      setError('Subject is required for emails');
+      setError('Email subject is required');
+      return;
+    }
+
+    if (candidates.length === 0) {
+      setError('No candidates selected');
       return;
     }
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/recruiter/communication/send`, {
-        shortlist_ids: candidates.map(c => c.shortlist_id),
+        candidate_ids: candidates.map(c => c.candidate_id),
         message_type: messageType,
-        subject: subject,
+        subject: messageType === 'email' || messageType === 'both' ? subject : undefined,
         body: body,
         recruiter_id: recruiterId,
+        jd_id: jdId,
       });
 
       if (response.data.success) {
-        setSuccess(`Messages sent to ${response.data.successful}/${response.data.total} candidates`);
-        
-        // Reset form
-        setSubject('');
-        setBody('');
-        setSelectedTemplate('');
-        
-        // Call callback
-        if (onSent) {
-          onSent();
-        }
-        
-        // Close after 2 seconds
+        setSuccess(`Message sent successfully to ${candidates.length} candidate(s)`);
         setTimeout(() => {
-          if (onClose) {
-            onClose();
-          }
+          if (onSent) onSent();
+          if (onClose) onClose();
         }, 2000);
+      } else {
+        setError(response.data.error || 'Failed to send message');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to send messages');
+      setError(err.response?.data?.error || 'Failed to send message');
     } finally {
       setLoading(false);
     }
@@ -199,143 +196,134 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           </Card>
         </Grid>
 
-        {/* Message Composer */}
+        {/* Message Form */}
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            {/* Message Type */}
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Message Type</InputLabel>
-              <Select
-                value={messageType}
-                onChange={(e) => setMessageType(e.target.value as any)}
-                label="Message Type"
-              >
-                <MenuItem value="email">
-                  <EmailIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Email Only
-                </MenuItem>
-                <MenuItem value="sms">
-                  <SmsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  SMS Only
-                </MenuItem>
-                <MenuItem value="both">
-                  <EmailIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                  <SmsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Email & SMS
-                </MenuItem>
-              </Select>
-            </FormControl>
+          <Card>
+            <CardContent>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Compose Message
+                </Typography>
+                <Button
+                  startIcon={<TemplateIcon />}
+                  onClick={() => setShowTemplates(!showTemplates)}
+                  variant="outlined"
+                  size="small"
+                  sx={{ mb: 2 }}
+                >
+                  {showTemplates ? 'Hide Templates' : 'Use Template'}
+                </Button>
 
-            {/* Template Selector */}
-            <Box sx={{ mb: 2 }}>
-              <Button
-                startIcon={<TemplateIcon />}
-                onClick={() => setShowTemplates(true)}
-                variant="outlined"
-                fullWidth
-              >
-                {selectedTemplate || 'Use Template'}
-              </Button>
-            </Box>
+                {showTemplates && (
+                  <Box sx={{ mb: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Available Templates
+                    </Typography>
+                    <Grid container spacing={1}>
+                      {templates.map((template) => (
+                        <Grid item xs={12} sm={6} key={template.name}>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleTemplateSelect(template)}
+                            sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
+                          >
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">
+                                {template.name}
+                              </Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                {template.category}
+                              </Typography>
+                            </Box>
+                          </Button>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Box>
+                )}
+              </Box>
 
-            {/* Subject (for email) */}
-            {(messageType === 'email' || messageType === 'both') && (
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Message Type</InputLabel>
+                <Select
+                  value={messageType}
+                  onChange={(e) => setMessageType(e.target.value as 'email' | 'sms' | 'both')}
+                  label="Message Type"
+                >
+                  <MenuItem value="email">
+                    <EmailIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Email Only
+                  </MenuItem>
+                  <MenuItem value="sms">
+                    <SmsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    SMS Only
+                  </MenuItem>
+                  <MenuItem value="both">
+                    <EmailIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                    <SmsIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Both Email & SMS
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              {(messageType === 'email' || messageType === 'both') && (
+                <TextField
+                  fullWidth
+                  label="Subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  sx={{ mb: 2 }}
+                  required
+                />
+              )}
+
               <TextField
                 fullWidth
-                label="Subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                sx={{ mb: 2 }}
+                multiline
+                rows={8}
+                label="Message Body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Enter your message here..."
                 required
+                sx={{ mb: 2 }}
               />
-            )}
 
-            {/* Message Body */}
-            <TextField
-              fullWidth
-              multiline
-              rows={12}
-              label="Message"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Enter your message here..."
-              required
-              sx={{ mb: 2 }}
-            />
-
-            {/* Variable Hints */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" color="textSecondary">
-                Available variables: {{'{{'}}candidate_name{{'}}'}}, {{'{{'}}company_name{{'}}'}}, {{'{{'}}job_title{{'}}'}}, 
-                {{'{{'}}recruiter_name{{'}}'}}, {{'{{'}}interview_date{{'}}'}}, {{'{{'}}interview_time{{'}}'}}
-              </Typography>
-            </Box>
-
-            {/* Actions */}
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              {onClose && (
-                <Button onClick={onClose} disabled={loading}>
-                  Cancel
-                </Button>
+              {selectedTemplate && (
+                <Chip
+                  label={`Template: ${selectedTemplate}`}
+                  onDelete={() => {
+                    setSelectedTemplate('');
+                    setSubject('');
+                    setBody('');
+                  }}
+                  color="primary"
+                  variant="outlined"
+                  sx={{ mb: 2 }}
+                />
               )}
-              <Button
-                variant="contained"
-                startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
-                onClick={handleSendMessage}
-                disabled={loading || !body.trim()}
-              >
-                {loading ? 'Sending...' : `Send to ${candidates.length} Candidate${candidates.length > 1 ? 's' : ''}`}
-              </Button>
-            </Box>
-          </Paper>
+
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                {onClose && (
+                  <Button onClick={onClose} disabled={loading}>
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  onClick={handleSendMessage}
+                  disabled={loading || !body.trim()}
+                  startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
+                >
+                  {loading ? 'Sending...' : `Send to ${candidates.length} Candidate(s)`}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
-
-      {/* Templates Dialog */}
-      <Dialog open={showTemplates} onClose={() => setShowTemplates(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Message Templates
-          <IconButton
-            onClick={() => setShowTemplates(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2}>
-            {templates.map((template) => (
-              <Grid item xs={12} key={template.name}>
-                <Card
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                    border: selectedTemplate === template.name ? 2 : 0,
-                    borderColor: 'primary.main',
-                  }}
-                  onClick={() => handleTemplateSelect(template)}
-                >
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {template.name}
-                    </Typography>
-                    <Chip label={template.category} size="small" sx={{ mb: 1 }} />
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      <strong>Subject:</strong> {template.subject}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                      {template.body.substring(0, 150)}...
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowTemplates(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
