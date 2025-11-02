@@ -261,6 +261,24 @@ class InterviewSchedulingEngine:
         candidate_id = shortlist_entry[0]
         jd_id = data.get('jd_id') or shortlist_entry[1]
         
+        # Prepare JSONB fields
+        import json as json_module
+        interviewers = data.get('interviewers', [])
+        if isinstance(interviewers, list):
+            interviewers = json_module.dumps(interviewers)
+        elif isinstance(interviewers, str):
+            pass  # Already a string
+        else:
+            interviewers = '[]'
+        
+        metadata = data.get('metadata', {})
+        if isinstance(metadata, dict):
+            metadata = json_module.dumps(metadata)
+        elif isinstance(metadata, str):
+            pass  # Already a string
+        else:
+            metadata = '{}'
+        
         # Insert interview
         cur.execute("""
             INSERT INTO interview_schedules (
@@ -288,10 +306,10 @@ class InterviewSchedulingEngine:
             data.get('location', ''),
             data.get('meeting_link', ''),
             data.get('meeting_platform', ''),
-            data.get('interviewers', '[]'),
+            interviewers,
             data.get('notes', ''),
             data.get('internal_notes', ''),
-            data.get('metadata', '{}')
+            metadata
         ))
         
         # Update candidate status in shortlist
