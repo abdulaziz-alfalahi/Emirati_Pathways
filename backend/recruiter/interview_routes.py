@@ -45,12 +45,19 @@ def serialize_interview(interview: dict) -> dict:
     """Serialize interview data for JSON response"""
     serialized = {}
     for key, value in interview.items():
-        if isinstance(value, (datetime,)):
+        if value is None:
+            serialized[key] = None
+        elif isinstance(value, (datetime,)):
             serialized[key] = value.isoformat()
         elif hasattr(value, 'isoformat'):  # date, time objects
             serialized[key] = value.isoformat()
-        else:
+        elif isinstance(value, (bytes, memoryview)):
+            # Skip binary data
+            serialized[key] = None
+        elif isinstance(value, (list, dict)):
             serialized[key] = value
+        else:
+            serialized[key] = str(value) if value is not None else None
     return serialized
 
 
