@@ -132,8 +132,10 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
   };
 
   const handleViewDetails = (offer: JobOffer) => {
+    console.log('handleViewDetails called with offer:', offer);
     setSelectedOffer(offer);
     setDetailsDialogOpen(true);
+    console.log('Details dialog should now be open');
   };
 
   const handleOfferCreated = () => {
@@ -408,13 +410,19 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
       />
 
       {/* Offer Details Dialog */}
-      {selectedOffer && (
+      {selectedOffer ? (
         <OfferDetailsDialog
           open={detailsDialogOpen}
-          onClose={() => setDetailsDialogOpen(false)}
+          onClose={() => {
+            console.log('Closing details dialog');
+            setDetailsDialogOpen(false);
+          }}
           offer={selectedOffer}
           onOfferUpdated={handleOfferUpdated}
         />
+      ) : (
+        console.log('selectedOffer is null, dialog not rendered'),
+        null
       )}
     </Box>
   );
