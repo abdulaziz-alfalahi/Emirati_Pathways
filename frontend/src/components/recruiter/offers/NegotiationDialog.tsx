@@ -78,12 +78,23 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
     }
   }, [open, offer.offer_id]);
 
-  const loadNegotiationHistory = () => {
-    // Load from offer object
-    if (offer.negotiation_history && offer.negotiation_history.length > 0) {
-      setNegotiationHistory(offer.negotiation_history);
-    } else {
-      setNegotiationHistory([]);
+  const loadNegotiationHistory = async () => {
+    try {
+      // Fetch fresh offer details to get latest negotiation history
+      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}`);
+      if (response.data.offer && response.data.offer.negotiation_history) {
+        setNegotiationHistory(response.data.offer.negotiation_history);
+      } else {
+        setNegotiationHistory([]);
+      }
+    } catch (err) {
+      console.error('Error loading negotiation history:', err);
+      // Fallback to offer prop if API fails
+      if (offer.negotiation_history && offer.negotiation_history.length > 0) {
+        setNegotiationHistory(offer.negotiation_history);
+      } else {
+        setNegotiationHistory([]);
+      }
     }
   };
 
@@ -136,10 +147,13 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
       setSuccess('Negotiation entry added successfully');
       resetForm();
       
-      // Reload negotiation history
+      // Reload negotiation history immediately to show the new entry
+      await loadNegotiationHistory();
+      
+      // Notify parent to refresh offer list
       setTimeout(() => {
         onNegotiationUpdated();
-      }, 1000);
+      }, 500);
     } catch (err: any) {
       console.error('Error adding negotiation entry:', err);
       setError(err.response?.data?.error || 'Failed to add negotiation entry');
