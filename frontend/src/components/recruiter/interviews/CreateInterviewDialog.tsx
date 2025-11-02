@@ -124,10 +124,16 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
       setLoading(true);
       setError(null);
 
+      // Format time to include seconds (HH:MM:SS)
+      const formattedTime = formData.scheduled_time.length === 5 
+        ? `${formData.scheduled_time}:00` 
+        : formData.scheduled_time;
+
       const response = await axios.post(
         `${API_BASE_URL}/api/recruiter/interviews/create`,
         {
           ...formData,
+          scheduled_time: formattedTime,
           recruiter_id: recruiterId,
           jd_id: jdId,
         }
