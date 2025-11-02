@@ -310,6 +310,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell padding="checkbox"></TableCell>
               <TableCell>Candidate</TableCell>
               <TableCell>Contact</TableCell>
               <TableCell>Current Role</TableCell>
@@ -322,6 +323,19 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           <TableBody>
             {shortlist && shortlist.length > 0 ? shortlist.map((candidate) => (
               <TableRow key={candidate.shortlist_id}>
+                <TableCell padding="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedCandidates.includes(candidate.shortlist_id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCandidates([...selectedCandidates, candidate.shortlist_id]);
+                      } else {
+                        setSelectedCandidates(selectedCandidates.filter(id => id !== candidate.shortlist_id));
+                      }
+                    }}
+                  />
+                </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Avatar>
@@ -421,7 +435,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   <Typography color="textSecondary">No candidates in shortlist</Typography>
                 </TableCell>
               </TableRow>
