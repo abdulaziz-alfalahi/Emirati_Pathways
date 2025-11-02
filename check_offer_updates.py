@@ -27,15 +27,35 @@ def check_offers():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Get all offers
+        # First check what columns exist
         cur.execute('''
-            SELECT offer_id, position_title, salary_amount, salary_currency, 
-                   status, created_at, updated_at, negotiation_history
-            FROM job_offers 
-            ORDER BY updated_at DESC
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'job_offers'
+            ORDER BY ordinal_position
         ''')
+        columns = [row[0] for row in cur.fetchall()]
+        print(f"Available columns: {', '.join(columns)}")
+        print()
+        
+        # Get all offers (with or without negotiation_history)
+        if 'negotiation_history' in columns:
+            cur.execute('''
+                SELECT offer_id, position_title, salary_amount, salary_currency, 
+                       status, created_at, updated_at, negotiation_history
+                FROM job_offers 
+                ORDER BY updated_at DESC
+            ''')
+        else:
+            cur.execute('''
+                SELECT offer_id, position_title, salary_amount, salary_currency, 
+                       status, created_at, updated_at
+                FROM job_offers 
+                ORDER BY updated_at DESC
+            ''')
         
         offers = cur.fetchall()
+        has_neg_history = 'negotiation_history' in columns
         
         if not offers:
             print("❌ No offers found in database")
@@ -47,7 +67,11 @@ def check_offers():
         print()
         
         for idx, row in enumerate(offers, 1):
-            offer_id, position, salary, currency, status, created_at, updated_at, neg_history = row
+            if has_neg_history:
+                offer_id, position, salary, currency, status, created_at, updated_at, neg_history = row
+            else:
+                offer_id, position, salary, currency, status, created_at, updated_at = row
+                neg_history = None
             
             print(f"OFFER #{idx}")
             print("-" * 100)
@@ -67,11 +91,13 @@ def check_offers():
                     print(f"  ⏰ Last update: {int(time_diff.total_seconds() / 60)} minutes ago")
             
             # Show negotiation history if exists
-            if neg_history:
+            if has_neg_history and neg_history:
                 print(f"  📝 Negotiation History: {len(neg_history)} entries")
                 for i, entry in enumerate(neg_history, 1):
                     if 'proposed_salary' in entry:
                         print(f"     Entry {i}: {entry['party']} proposed {entry['proposed_salary']} {currency}")
+            elif not has_neg_history:
+                print(f"  ⚠️  Negotiation history column not in database (older schema)")
             
             print()
         
