@@ -139,7 +139,10 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
         }
       );
 
+      console.log('Interview creation response:', response.data);
+
       if (response.data.success) {
+        console.log('Interview created successfully!');
         onSuccess();
         onClose();
         // Reset form
