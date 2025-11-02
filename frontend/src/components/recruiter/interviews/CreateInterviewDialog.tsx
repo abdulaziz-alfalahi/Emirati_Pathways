@@ -159,11 +159,13 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
           notes: '',
         });
         
-        // Call callbacks after a short delay to avoid state update conflicts
+        // Close dialog immediately
+        onClose();
+        
+        // Call success callback after dialog closes to avoid state conflicts
         setTimeout(() => {
           onSuccess();
-          onClose();
-        }, 100);
+        }, 150);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create interview');

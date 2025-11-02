@@ -369,6 +369,21 @@ def get_shortlist_stats(jd_id):
         
         stats = cur.fetchone()
         
+        # Get actual interview count from interview_schedules table
+        try:
+            cur.execute("""
+                SELECT COUNT(*) as interview_count
+                FROM interview_schedules
+                WHERE jd_id = %s
+            """, (jd_id,))
+            interview_result = cur.fetchone()
+            if interview_result and stats:
+                stats['interview_count'] = interview_result['interview_count']
+        except Exception:
+            # Table might not exist yet
+            if stats:
+                stats['interview_count'] = 0
+        
         cur.close()
         conn.close()
         

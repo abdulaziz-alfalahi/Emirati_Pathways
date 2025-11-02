@@ -292,7 +292,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                 <Typography color="textSecondary" gutterBottom>
                   Interviews
                 </Typography>
-                <Typography variant="h4">{stats.interview_scheduled}</Typography>
+                <Typography variant="h4">{stats.interview_count || 0}</Typography>
               </CardContent>
             </Card>
           </Grid>
