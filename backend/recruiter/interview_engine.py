@@ -197,17 +197,6 @@ class InterviewSchedulingEngine:
         if not is_valid:
             return False, error_msg, None
         
-        # Check for conflicts
-        has_conflict, conflict_msg = self.check_scheduling_conflicts(
-            conn,
-            data['recruiter_id'],
-            data['scheduled_date'],
-            data['scheduled_time'],
-            data.get('duration_minutes', 60)
-        )
-        if has_conflict:
-            return False, conflict_msg, None
-        
         interview_id = self.generate_interview_id()
         cur = conn.cursor()
         
@@ -247,6 +236,17 @@ class InterviewSchedulingEngine:
                 cancellation_reason TEXT
             )
         """)
+        
+        # Check for conflicts (now that table exists)
+        has_conflict, conflict_msg = self.check_scheduling_conflicts(
+            conn,
+            data['recruiter_id'],
+            data['scheduled_date'],
+            data['scheduled_time'],
+            data.get('duration_minutes', 60)
+        )
+        if has_conflict:
+            return False, conflict_msg, None
         
         # Get candidate_id from shortlist
         cur.execute("""
