@@ -160,22 +160,15 @@ def get_shortlist(jd_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # Build query
+        # Build query (without user_profiles table)
         query = """
             SELECT 
                 cs.*,
                 u.first_name,
                 u.last_name,
-                u.email,
-                up.phone_number,
-                up.current_job_title,
-                up.current_company,
-                up.years_of_experience,
-                up.emirates_id,
-                up.is_uae_national
+                u.email
             FROM candidate_shortlist cs
             LEFT JOIN users u ON cs.candidate_id = u.id::text
-            LEFT JOIN user_profiles up ON cs.candidate_id = up.user_id::text
             WHERE cs.jd_id = %s
         """
         
