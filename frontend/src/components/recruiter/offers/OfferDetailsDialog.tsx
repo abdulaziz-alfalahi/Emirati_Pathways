@@ -315,7 +315,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
   const canSend = currentOffer.status === 'approved';
   const canApprove = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval';
-  const canEdit = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval';
+  const canEdit = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval' || currentOffer.status === 'negotiating';
   const canWithdraw = currentOffer.status === 'sent' || currentOffer.status === 'negotiating';
   const canRecordResponse = currentOffer.status === 'sent';
   const canNegotiate = currentOffer.status === 'negotiating';
