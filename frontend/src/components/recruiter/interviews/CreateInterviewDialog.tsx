@@ -143,9 +143,8 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
 
       if (response.data.success) {
         console.log('Interview created successfully!');
-        onSuccess();
-        onClose();
-        // Reset form
+        
+        // Reset form first
         setFormData({
           shortlist_id: '',
           interview_type: 'video',
@@ -159,6 +158,12 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
           location: '',
           notes: '',
         });
+        
+        // Call callbacks after a short delay to avoid state update conflicts
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 100);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create interview');
