@@ -4,7 +4,7 @@ from datetime import datetime
 # Database connection
 conn = psycopg2.connect(
     host="localhost",
-    database="emirati_pathways",
+    database="emirati_journey",
     user="postgres",
     password="POSZamoon@2345"
 )
