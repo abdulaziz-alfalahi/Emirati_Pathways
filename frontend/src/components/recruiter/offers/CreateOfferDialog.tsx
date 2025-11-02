@@ -87,8 +87,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
   const loadCandidates = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/shortlist/list/${jdId}`);
-      setCandidates(response.data.candidates || []);
+      const response = await axios.get(`http://localhost:5003/api/recruiter/shortlist/${jdId}`);
+      // The response structure is {success: true, shortlist: [...]}
+      setCandidates(response.data.shortlist || []);
     } catch (err: any) {
       console.error('Error loading candidates:', err);
       setError('Failed to load candidates');
