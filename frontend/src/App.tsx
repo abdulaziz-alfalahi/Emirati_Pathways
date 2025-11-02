@@ -33,7 +33,7 @@ const RecruiterDistribution = lazy(() => import('@/pages/recruiter/Distribution'
 const NewJobWizard = lazy(() => import('@/pages/recruiter/NewJobWizard'));
 const JobDescriptionWizardPage = lazy(() => import('@/pages/recruiter/JobDescriptionWizardPage'));
 const JobDetailsPage = lazy(() => import('@/pages/recruiter/JobDetails'));
-const InterviewSchedulerPage = lazy(() => import('@/pages/recruiter/InterviewScheduler'));
+const InterviewSchedulerPage = lazy(() => import('@/pages/recruiter/InterviewSchedulerPage'));
 const JDTemplatesPage = lazy(() => import('@/pages/recruiter/JDTemplates'));
 const BatchUploadPage = lazy(() => import('@/pages/recruiter/BatchUpload'));
 const RecruiterAnalyticsPage = lazy(() => import('@/pages/recruiter/Analytics'));
