@@ -221,6 +221,14 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Typography>Loading shortlist...</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -312,7 +320,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             </TableRow>
           </TableHead>
           <TableBody>
-            {shortlist.map((candidate) => (
+            {shortlist && shortlist.length > 0 ? shortlist.map((candidate) => (
               <TableRow key={candidate.shortlist_id}>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -411,7 +419,13 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   </Tooltip>
                 </TableCell>
               </TableRow>
-            ))}
+            )) : (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <Typography color="textSecondary">No candidates in shortlist</Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
