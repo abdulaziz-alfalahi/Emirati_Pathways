@@ -65,10 +65,13 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
 
   useEffect(() => {
-    if (open && !shortlistId) {
-      fetchShortlistCandidates();
+    if (open) {
+      setError(null); // Clear any previous errors
+      if (!shortlistId) {
+        fetchShortlistCandidates();
+      }
     }
-  }, [open, jdId]);
+  }, [open, jdId, shortlistId]);
 
   useEffect(() => {
     if (shortlistId) {
