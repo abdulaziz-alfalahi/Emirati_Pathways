@@ -242,6 +242,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering Interview Scheduling routes: {e}")
 
+    # Register Offer Management routes
+    try:
+        from recruiter.offer_routes import offer_bp
+
+        app.register_blueprint(offer_bp, url_prefix='/api/recruiter/offers')
+        logger.info("Registered: Offer Management routes for managing job offers")
+    except Exception as e:
+        logger.error(f"Failed registering Offer Management routes: {e}")
+
     # Common error handlers
     @app.errorhandler(404)
     def not_found(_):
