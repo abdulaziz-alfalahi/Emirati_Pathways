@@ -10,16 +10,14 @@ import {
   Typography,
   Box,
   Alert,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
   Paper,
   Chip,
   IconButton,
+  List,
+  ListItem,
+  Divider,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -214,7 +212,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
             <Typography variant="subtitle1" gutterBottom fontWeight="bold">
               Negotiation History
             </Typography>
-            <Timeline position="right">
+            <List sx={{ width: '100%' }}>
               {negotiationHistory.map((entry, index) => {
                 const isRecruiter = entry.party === 'recruiter';
                 const salaryChange = entry.proposed_salary
@@ -222,79 +220,75 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
                   : null;
 
                 return (
-                  <TimelineItem key={index}>
-                    <TimelineOppositeContent color="textSecondary" sx={{ flex: 0.3 }}>
-                      <Typography variant="caption">
-                        {formatDateTime(entry.timestamp)}
-                      </Typography>
-                    </TimelineOppositeContent>
-                    <TimelineSeparator>
-                      <TimelineDot color={isRecruiter ? 'primary' : 'secondary'}>
-                        {isRecruiter ? <HandshakeIcon /> : <MessageIcon />}
-                      </TimelineDot>
-                      {index < negotiationHistory.length - 1 && <TimelineConnector />}
-                    </TimelineSeparator>
-                    <TimelineContent>
-                      <Paper elevation={3} sx={{ p: 2 }}>
-                        <Box display="flex" alignItems="center" gap={1} mb={1}>
-                          <Chip
-                            label={isRecruiter ? 'Recruiter' : 'Candidate'}
-                            color={isRecruiter ? 'primary' : 'secondary'}
-                            size="small"
-                          />
-                        </Box>
-                        {entry.proposed_salary && (
-                          <Box mb={1}>
-                            <Typography variant="body2" fontWeight="bold">
-                              Proposed Salary:
-                            </Typography>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Typography variant="h6">
-                                {formatCurrency(entry.proposed_salary, offer.salary_currency)}
+                  <React.Fragment key={index}>
+                    <ListItem alignItems="flex-start" sx={{ flexDirection: 'column', gap: 1 }}>
+                      <Box display="flex" justifyContent="space-between" width="100%" mb={1}>
+                        <Chip
+                          label={isRecruiter ? 'Recruiter' : 'Candidate'}
+                          color={isRecruiter ? 'primary' : 'secondary'}
+                          size="small"
+                          icon={isRecruiter ? <HandshakeIcon /> : <MessageIcon />}
+                        />
+                        <Typography variant="caption" color="textSecondary">
+                          {formatDateTime(entry.timestamp)}
+                        </Typography>
+                      </Box>
+                      <Card sx={{ width: '100%' }} elevation={2}>
+                        <CardContent>
+                          {entry.proposed_salary && (
+                            <Box mb={2}>
+                              <Typography variant="body2" fontWeight="bold" gutterBottom>
+                                Proposed Salary:
                               </Typography>
-                              {salaryChange && (
-                                <Chip
-                                  icon={
-                                    salaryChange.change > 0 ? (
-                                      <TrendingUpIcon />
-                                    ) : (
-                                      <TrendingDownIcon />
-                                    )
-                                  }
-                                  label={`${salaryChange.change > 0 ? '+' : ''}${
-                                    salaryChange.percentage
-                                  }%`}
-                                  color={salaryChange.change > 0 ? 'success' : 'error'}
-                                  size="small"
-                                />
-                              )}
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="h6">
+                                  {formatCurrency(entry.proposed_salary, offer.salary_currency)}
+                                </Typography>
+                                {salaryChange && (
+                                  <Chip
+                                    icon={
+                                      salaryChange.change > 0 ? (
+                                        <TrendingUpIcon />
+                                      ) : (
+                                        <TrendingDownIcon />
+                                      )
+                                    }
+                                    label={`${salaryChange.change > 0 ? '+' : ''}${
+                                      salaryChange.percentage
+                                    }%`}
+                                    color={salaryChange.change > 0 ? 'success' : 'error'}
+                                    size="small"
+                                  />
+                                )}
+                              </Box>
                             </Box>
-                          </Box>
-                        )}
-                        {entry.proposed_benefits && (
-                          <Box mb={1}>
-                            <Typography variant="body2" fontWeight="bold">
-                              Proposed Benefits:
-                            </Typography>
-                            <Typography variant="body2">
-                              {JSON.stringify(entry.proposed_benefits, null, 2)}
-                            </Typography>
-                          </Box>
-                        )}
-                        {entry.notes && (
-                          <Box>
-                            <Typography variant="body2" fontWeight="bold">
-                              Notes:
-                            </Typography>
-                            <Typography variant="body2">{entry.notes}</Typography>
-                          </Box>
-                        )}
-                      </Paper>
-                    </TimelineContent>
-                  </TimelineItem>
+                          )}
+                          {entry.proposed_benefits && (
+                            <Box mb={2}>
+                              <Typography variant="body2" fontWeight="bold" gutterBottom>
+                                Proposed Benefits:
+                              </Typography>
+                              <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
+                                {JSON.stringify(entry.proposed_benefits, null, 2)}
+                              </Typography>
+                            </Box>
+                          )}
+                          {entry.notes && (
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold" gutterBottom>
+                                Notes:
+                              </Typography>
+                              <Typography variant="body2">{entry.notes}</Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </ListItem>
+                    {index < negotiationHistory.length - 1 && <Divider component="li" />}
+                  </React.Fragment>
                 );
               })}
-            </Timeline>
+            </List>
           </Box>
         )}
 
