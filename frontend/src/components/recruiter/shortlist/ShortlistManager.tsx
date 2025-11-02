@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageComposer } from '../communication/MessageComposer';
+import CreateInterviewDialog from '../interviews/CreateInterviewDialog';
 import {
   Box,
   Paper,
@@ -34,6 +35,7 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Event as EventIcon,
+  CalendarToday as CalendarIcon,
   Notes as NotesIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
@@ -119,6 +121,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [newNote, setNewNote] = useState('');
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [selectedShortlistId, setSelectedShortlistId] = useState<string | null>(null);
   const [statusNotes, setStatusNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -396,6 +400,18 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   )}
                 </TableCell>
                 <TableCell align="right">
+                  <Tooltip title="Schedule Interview">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => {
+                        setSelectedShortlistId(candidate.shortlist_id);
+                        setInterviewDialogOpen(true);
+                      }}
+                    >
+                      <CalendarIcon />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Update Status">
                     <IconButton
                       size="small"
@@ -548,6 +564,22 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           />
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Interview Dialog */}
+      <CreateInterviewDialog
+        open={interviewDialogOpen}
+        onClose={() => {
+          setInterviewDialogOpen(false);
+          setSelectedShortlistId(null);
+        }}
+        jdId={jdId}
+        shortlistId={selectedShortlistId || undefined}
+        recruiterId="recruiter_001"
+        onSuccess={() => {
+          setSuccess('Interview scheduled successfully');
+          fetchShortlist();
+        }}
+      />
     </Box>
   );
 };
