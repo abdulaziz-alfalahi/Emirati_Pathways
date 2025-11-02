@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MessageComposer } from '../communication/MessageComposer';
 import {
   Box,
   Paper,
@@ -38,6 +39,7 @@ import {
   Cancel as CancelIcon,
   Info as InfoIcon,
   Send as SendIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -500,6 +502,51 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             Add Note
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Message Composer Dialog */}
+      <Dialog 
+        open={messageDialogOpen} 
+        onClose={() => setMessageDialogOpen(false)} 
+        maxWidth="lg" 
+        fullWidth
+      >
+        <DialogTitle>
+          Send Message to Selected Candidates
+          <IconButton
+            aria-label="close"
+            onClick={() => setMessageDialogOpen(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <MessageComposer
+            candidates={shortlist
+              .filter(c => selectedCandidates.includes(c.shortlist_id))
+              .map(c => ({
+                shortlist_id: c.shortlist_id,
+                candidate_id: c.candidate_id,
+                first_name: c.first_name || 'Test',
+                last_name: c.last_name || 'Candidate',
+                email: c.email || '',
+                phone_number: c.phone_number,
+              }))}
+            jdId={jdId}
+            recruiterId="recruiter_001"
+            onClose={() => setMessageDialogOpen(false)}
+            onSent={() => {
+              setMessageDialogOpen(false);
+              setSelectedCandidates([]);
+              fetchShortlist();
+            }}
+          />
+        </DialogContent>
       </Dialog>
     </Box>
   );
