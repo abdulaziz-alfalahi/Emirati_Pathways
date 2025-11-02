@@ -125,7 +125,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/recruiter/communication/send`, {
-        candidate_ids: candidates.map(c => c.candidate_id),
+        shortlist_ids: candidates.map(c => c.shortlist_id),
         message_type: messageType,
         subject: messageType === 'email' || messageType === 'both' ? subject : undefined,
         body: body,
