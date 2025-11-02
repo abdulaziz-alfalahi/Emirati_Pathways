@@ -322,10 +322,10 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                     </Avatar>
                     <Box>
                       <Typography variant="body1">
-                        {candidate.first_name} {candidate.last_name}
+                        {candidate.first_name || 'Test'} {candidate.last_name || 'Candidate'}
                       </Typography>
                       <Typography variant="caption" color="textSecondary">
-                        {candidate.years_of_experience} years exp.
+                        {candidate.years_of_experience || 0} years exp.
                       </Typography>
                     </Box>
                   </Box>
@@ -334,7 +334,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <EmailIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{candidate.email}</Typography>
+                      <Typography variant="body2">{candidate.email || 'No email'}</Typography>
                     </Box>
                     {candidate.phone_number && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -345,14 +345,14 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">{candidate.current_job_title}</Typography>
+                  <Typography variant="body2">{candidate.current_job_title || 'N/A'}</Typography>
                   <Typography variant="caption" color="textSecondary">
-                    {candidate.current_company}
+                    {candidate.current_company || 'N/A'}
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
                   <Chip
-                    label={`${candidate.match_score.toFixed(1)}%`}
+                    label={`${parseFloat(candidate.match_score).toFixed(1)}%`}
                     color={candidate.match_score >= 80 ? 'success' : candidate.match_score >= 60 ? 'warning' : 'default'}
                     size="small"
                   />
