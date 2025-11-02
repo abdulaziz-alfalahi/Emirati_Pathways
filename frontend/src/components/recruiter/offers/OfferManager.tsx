@@ -112,7 +112,7 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/list/${jdId}`);
+      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/jd/${jdId}`);
       setOffers(response.data.offers || []);
     } catch (err: any) {
       console.error('Error loading offers:', err);
