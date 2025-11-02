@@ -118,7 +118,12 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
     try {
       const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`);
       if (response.data.offer) {
-        setCurrentOffer(response.data.offer);
+        const updatedOffer = response.data.offer;
+        setCurrentOffer(updatedOffer);
+        // Also update the form field states
+        setSalaryAmount(updatedOffer.salary_amount.toString());
+        setStartDate(updatedOffer.start_date);
+        setResponseDeadline(updatedOffer.response_deadline || '');
       }
     } catch (err) {
       console.error('Error reloading offer details:', err);
