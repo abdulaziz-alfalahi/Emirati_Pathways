@@ -233,6 +233,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering Communication routes: {e}")
 
+    # Register Interview Scheduling routes
+    try:
+        from recruiter.interview_routes import interview_routes
+
+        app.register_blueprint(interview_routes)
+        logger.info("Registered: Interview Scheduling routes for managing interviews")
+    except Exception as e:
+        logger.error(f"Failed registering Interview Scheduling routes: {e}")
+
     # Common error handlers
     @app.errorhandler(404)
     def not_found(_):
