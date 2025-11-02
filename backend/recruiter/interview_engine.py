@@ -339,14 +339,8 @@ class InterviewSchedulingEngine:
         cur = conn.cursor()
         
         query = """
-            SELECT 
-                i.*,
-                cs.first_name,
-                cs.last_name,
-                cs.email,
-                cs.phone_number
+            SELECT i.*
             FROM interview_schedules i
-            LEFT JOIN candidate_shortlist cs ON i.shortlist_id = cs.shortlist_id
             WHERE 1=1
         """
         params = []
