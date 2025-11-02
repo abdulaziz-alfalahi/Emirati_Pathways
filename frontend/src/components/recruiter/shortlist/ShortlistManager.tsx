@@ -297,7 +297,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   Avg Match Score
                 </Typography>
                 <Typography variant="h4">
-                  {stats.avg_match_score ? stats.avg_match_score.toFixed(1) : '0'}%
+                  {stats.avg_match_score ? parseFloat(stats.avg_match_score).toFixed(1) : '0'}%
                 </Typography>
               </CardContent>
             </Card>
