@@ -175,13 +175,7 @@ def get_interview_details(interview_id):
         cur.execute("""
             SELECT 
                 i.*,
-                cs.first_name,
-                cs.last_name,
-                cs.email,
-                cs.phone_number,
-                cs.current_role,
-                cs.current_company,
-                cs.match_score
+                cs.match_score as shortlist_match_score
             FROM interview_schedules i
             LEFT JOIN candidate_shortlist cs ON i.shortlist_id = cs.shortlist_id
             WHERE i.interview_id = %s
@@ -464,14 +458,8 @@ def send_interview_reminder(interview_id):
         
         # Get interview details
         cur.execute("""
-            SELECT 
-                i.*,
-                cs.first_name,
-                cs.last_name,
-                cs.email,
-                cs.phone_number
+            SELECT i.*
             FROM interview_schedules i
-            LEFT JOIN candidate_shortlist cs ON i.shortlist_id = cs.shortlist_id
             WHERE i.interview_id = %s
         """, (interview_id,))
         
