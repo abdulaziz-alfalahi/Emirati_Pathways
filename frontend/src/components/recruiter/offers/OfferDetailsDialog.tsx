@@ -140,9 +140,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
       await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/send`);
       setSuccess('Offer sent successfully to candidate');
+      
+      // Reload offer details to show updated status and timestamps
+      await reloadOfferDetails();
+      
       setTimeout(() => {
         onOfferUpdated();
-      }, 1500);
+      }, 500);
     } catch (err: any) {
       console.error('Error sending offer:', err);
       setError(err.response?.data?.error || 'Failed to send offer');
@@ -161,9 +165,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         approved_by: 'manager_001', // TODO: Get from auth context
       });
       setSuccess('Offer approved successfully');
+      
+      // Reload offer details to show updated status
+      await reloadOfferDetails();
+      
       setTimeout(() => {
         onOfferUpdated();
-      }, 1500);
+      }, 500);
     } catch (err: any) {
       console.error('Error approving offer:', err);
       setError(err.response?.data?.error || 'Failed to approve offer');
@@ -183,9 +191,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         rejection_reason: 'Budget constraints',
       });
       setSuccess('Offer rejected');
+      
+      // Reload offer details to show updated status
+      await reloadOfferDetails();
+      
       setTimeout(() => {
         onOfferUpdated();
-      }, 1500);
+      }, 500);
     } catch (err: any) {
       console.error('Error rejecting offer:', err);
       setError(err.response?.data?.error || 'Failed to reject offer');
@@ -208,9 +220,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         reason: 'Position filled by another candidate',
       });
       setSuccess('Offer withdrawn successfully');
+      
+      // Reload offer details to show updated status
+      await reloadOfferDetails();
+      
       setTimeout(() => {
         onOfferUpdated();
-      }, 1500);
+      }, 500);
     } catch (err: any) {
       console.error('Error withdrawing offer:', err);
       setError(err.response?.data?.error || 'Failed to withdraw offer');
@@ -237,9 +253,14 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       await axios.put(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`, updates);
       setSuccess('Offer updated successfully');
       setEditMode(false);
+      
+      // Reload offer details to show updated values
+      await reloadOfferDetails();
+      
+      // Notify parent to refresh list
       setTimeout(() => {
         onOfferUpdated();
-      }, 1500);
+      }, 500);
     } catch (err: any) {
       console.error('Error updating offer:', err);
       setError(err.response?.data?.error || 'Failed to update offer');
@@ -258,9 +279,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         response: response,
       });
       setSuccess(`Candidate response recorded: ${response}`);
+      
+      // Reload offer details to show updated response
+      await reloadOfferDetails();
+      
       setTimeout(() => {
         onOfferUpdated();
-      }, 1500);
+      }, 500);
     } catch (err: any) {
       console.error('Error recording response:', err);
       setError(err.response?.data?.error || 'Failed to record response');
