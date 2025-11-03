@@ -5,10 +5,10 @@ Handles business logic for job offer creation, tracking, and management
 
 import psycopg2
 import psycopg2.extras
-from datetime import datetime, timedelta
-import secrets
 import json
+from datetime import datetime, timedelta
 import logging
+import requests
 import os
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,42 @@ DB_CONFIG = {
 def get_db_connection():
     """Get database connection"""
     return psycopg2.connect(**DB_CONFIG)
+
+def update_shortlist_status_from_offer(shortlist_id, status, notes=''):
+    """
+    Update shortlist status when offer status changes
+    Helper function to maintain status synchronization
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Update status
+        update_fields = ["status = %s", "updated_at = CURRENT_TIMESTAMP"]
+        params = [status]
+        
+        if notes:
+            update_fields.append("notes = COALESCE(notes, '') || %s")
+            params.append(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M')}: {notes}")
+        
+        params.append(shortlist_id)
+        
+        cur.execute(f"""
+            UPDATE candidate_shortlist 
+            SET {', '.join(update_fields)}
+            WHERE shortlist_id = %s
+        """, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        logger.info(f"Updated shortlist {shortlist_id} to status: {status}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error updating shortlist status: {e}")
+        return False
 
 def generate_offer_id():
     """Generate unique offer ID"""
@@ -328,8 +364,8 @@ def send_offer(offer_id, send_method='email', message=''):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Check if offer exists and is in draft status
-        cur.execute("SELECT status FROM job_offers WHERE offer_id = %s", (offer_id,))
+        # Check if offer exists and get shortlist_id
+        cur.execute("SELECT status, shortlist_id FROM job_offers WHERE offer_id = %s", (offer_id,))
         result = cur.fetchone()
         
         if not result:
@@ -337,6 +373,8 @@ def send_offer(offer_id, send_method='email', message=''):
         
         if result[0] != 'draft':
             return {'success': False, 'error': 'Offer has already been sent'}
+        
+        shortlist_id = result[1]
         
         # Calculate expiry date (7 days from now if not set)
         expiry_date = datetime.now() + timedelta(days=7)
@@ -354,6 +392,14 @@ def send_offer(offer_id, send_method='email', message=''):
         conn.commit()
         cur.close()
         conn.close()
+        
+        # Update shortlist status to 'offer_sent'
+        if shortlist_id:
+            update_shortlist_status_from_offer(
+                shortlist_id, 
+                'offer_sent', 
+                f'Offer {offer_id} sent to candidate'
+            )
         
         logger.info(f"Offer sent: {offer_id}")
         return {'success': True, 'message': 'Offer sent successfully'}
@@ -400,6 +446,11 @@ def record_candidate_response(offer_id, response, notes=''):
         if response not in valid_responses:
             return {'success': False, 'error': f'Invalid response. Must be one of: {valid_responses}'}
         
+        # Get shortlist_id before updating
+        cur.execute("SELECT shortlist_id FROM job_offers WHERE offer_id = %s", (offer_id,))
+        result = cur.fetchone()
+        shortlist_id = result[0] if result else None
+        
         # Determine new status based on response
         new_status = response
         negotiation_status = 'in_progress' if response == 'negotiating' else 'none'
@@ -421,6 +472,21 @@ def record_candidate_response(offer_id, response, notes=''):
         conn.commit()
         cur.close()
         conn.close()
+        
+        # Update shortlist status based on response
+        if shortlist_id:
+            if response == 'accepted':
+                update_shortlist_status_from_offer(
+                    shortlist_id, 
+                    'hired', 
+                    f'Candidate accepted offer {offer_id}'
+                )
+            elif response == 'rejected':
+                update_shortlist_status_from_offer(
+                    shortlist_id, 
+                    'rejected', 
+                    f'Candidate rejected offer {offer_id}'
+                )
         
         logger.info(f"Candidate response recorded for offer: {offer_id} - {response}")
         return {'success': True, 'message': 'Response recorded successfully'}
