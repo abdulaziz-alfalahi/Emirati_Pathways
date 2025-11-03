@@ -160,15 +160,28 @@ def get_shortlist(jd_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # Build query (without user_profiles table)
+        # Build query with interview feedback
         query = """
             SELECT 
                 cs.*,
                 u.first_name,
                 u.last_name,
-                u.email
+                u.email,
+                i.interview_id,
+                i.feedback as interview_feedback,
+                i.rating as interview_rating,
+                i.recommendation as interview_recommendation,
+                i.scheduled_date as interview_date,
+                i.status as interview_status
             FROM candidate_shortlist cs
             LEFT JOIN users u ON cs.candidate_id = u.id::text
+            LEFT JOIN LATERAL (
+                SELECT interview_id, feedback, rating, recommendation, scheduled_date, status
+                FROM interview_schedules
+                WHERE shortlist_id = cs.shortlist_id
+                ORDER BY scheduled_date DESC, created_at DESC
+                LIMIT 1
+            ) i ON true
             WHERE cs.jd_id = %s
         """
         
