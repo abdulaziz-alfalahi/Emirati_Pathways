@@ -448,14 +448,14 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   size="small"
                 />
               </TableCell>
-                <TableCell>
-                  {candidate.is_uae_national ? (
-                    <CheckCircleIcon color="success" />
-                  ) : (
-                    <CancelIcon color="disabled" />
-                  )}
-                </TableCell>
-                <TableCell align="right">
+              <TableCell>
+                {candidate.is_uae_national ? (
+                  <CheckCircleIcon color="success" />
+                ) : (
+                  <CancelIcon color="disabled" />
+                )}
+              </TableCell>
+              <TableCell align="right">
                   <Tooltip title="Schedule Interview">
                     <IconButton
                       size="small"
