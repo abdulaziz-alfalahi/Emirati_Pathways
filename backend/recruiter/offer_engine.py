@@ -5,10 +5,10 @@ Handles business logic for job offer creation, tracking, and management
 
 import psycopg2
 import psycopg2.extras
-from datetime import datetime, timedelta
-import secrets
 import json
+from datetime import datetime, timedelta
 import logging
+import requests
 import os
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,42 @@ DB_CONFIG = {
 def get_db_connection():
     """Get database connection"""
     return psycopg2.connect(**DB_CONFIG)
+
+def update_shortlist_status_from_offer(shortlist_id, status, notes=''):
+    """
+    Update shortlist status when offer status changes
+    Helper function to maintain status synchronization
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Update status
+        update_fields = ["status = %s", "updated_at = CURRENT_TIMESTAMP"]
+        params = [status]
+        
+        if notes:
+            update_fields.append("notes = COALESCE(notes, '') || %s")
+            params.append(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M')}: {notes}")
+        
+        params.append(shortlist_id)
+        
+        cur.execute(f"""
+            UPDATE candidate_shortlist 
+            SET {', '.join(update_fields)}
+            WHERE shortlist_id = %s
+        """, params)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        logger.info(f"Updated shortlist {shortlist_id} to status: {status}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error updating shortlist status: {e}")
+        return False
 
 def generate_offer_id():
     """Generate unique offer ID"""
@@ -328,8 +364,8 @@ def send_offer(offer_id, send_method='email', message=''):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Check if offer exists and is in draft status
-        cur.execute("SELECT status FROM job_offers WHERE offer_id = %s", (offer_id,))
+        # Check if offer exists and get shortlist_id
+        cur.execute("SELECT status, shortlist_id FROM job_offers WHERE offer_id = %s", (offer_id,))
         result = cur.fetchone()
         
         if not result:
@@ -337,6 +373,8 @@ def send_offer(offer_id, send_method='email', message=''):
         
         if result[0] != 'draft':
             return {'success': False, 'error': 'Offer has already been sent'}
+        
+        shortlist_id = result[1]
         
         # Calculate expiry date (7 days from now if not set)
         expiry_date = datetime.now() + timedelta(days=7)
@@ -354,6 +392,14 @@ def send_offer(offer_id, send_method='email', message=''):
         conn.commit()
         cur.close()
         conn.close()
+        
+        # Update shortlist status to 'offer_sent'
+        if shortlist_id:
+            update_shortlist_status_from_offer(
+                shortlist_id, 
+                'offer_sent', 
+                f'Offer {offer_id} sent to candidate'
+            )
         
         logger.info(f"Offer sent: {offer_id}")
         return {'success': True, 'message': 'Offer sent successfully'}
@@ -400,6 +446,11 @@ def record_candidate_response(offer_id, response, notes=''):
         if response not in valid_responses:
             return {'success': False, 'error': f'Invalid response. Must be one of: {valid_responses}'}
         
+        # Get shortlist_id before updating
+        cur.execute("SELECT shortlist_id FROM job_offers WHERE offer_id = %s", (offer_id,))
+        result = cur.fetchone()
+        shortlist_id = result[0] if result else None
+        
         # Determine new status based on response
         new_status = response
         negotiation_status = 'in_progress' if response == 'negotiating' else 'none'
@@ -422,11 +473,151 @@ def record_candidate_response(offer_id, response, notes=''):
         cur.close()
         conn.close()
         
+        # Update shortlist status based on response
+        if shortlist_id:
+            if response == 'accepted':
+                update_shortlist_status_from_offer(
+                    shortlist_id, 
+                    'hired', 
+                    f'Candidate accepted offer {offer_id}'
+                )
+            elif response == 'rejected':
+                update_shortlist_status_from_offer(
+                    shortlist_id, 
+                    'rejected', 
+                    f'Candidate rejected offer {offer_id}'
+                )
+        
         logger.info(f"Candidate response recorded for offer: {offer_id} - {response}")
         return {'success': True, 'message': 'Response recorded successfully'}
         
     except Exception as e:
         logger.error(f"Error recording response: {e}")
+        return {'success': False, 'error': str(e)}
+
+def get_offer_statistics(jd_id):
+    """
+    Get offer statistics for a job description
+    
+    Returns:
+        - Total offers by status
+        - Acceptance rate
+        - Average salary
+        - Time-to-accept metrics
+        - Negotiation statistics
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Get offer counts by status
+        cur.execute("""
+            SELECT 
+                COUNT(*) as total_offers,
+                COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft,
+                COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent,
+                COUNT(CASE WHEN status = 'viewed' THEN 1 END) as viewed,
+                COUNT(CASE WHEN status = 'accepted' THEN 1 END) as accepted,
+                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected,
+                COUNT(CASE WHEN status = 'negotiating' THEN 1 END) as negotiating,
+                COUNT(CASE WHEN status = 'withdrawn' THEN 1 END) as withdrawn,
+                COUNT(CASE WHEN status IN ('sent', 'viewed', 'negotiating') THEN 1 END) as pending,
+                AVG(CASE WHEN salary_amount IS NOT NULL THEN salary_amount END) as avg_salary,
+                MIN(salary_amount) as min_salary,
+                MAX(salary_amount) as max_salary
+            FROM job_offers
+            WHERE jd_id = %s
+        """, (jd_id,))
+        
+        stats = cur.fetchone()
+        
+        # Calculate acceptance rate
+        total_sent = stats['sent'] + stats['viewed'] + stats['accepted'] + stats['rejected'] + stats['negotiating']
+        acceptance_rate = (stats['accepted'] / total_sent * 100) if total_sent > 0 else 0
+        
+        # Get time-to-accept metrics
+        cur.execute("""
+            SELECT 
+                AVG(EXTRACT(EPOCH FROM (response_date - offer_date)) / 86400) as avg_days_to_respond,
+                MIN(EXTRACT(EPOCH FROM (response_date - offer_date)) / 86400) as min_days_to_respond,
+                MAX(EXTRACT(EPOCH FROM (response_date - offer_date)) / 86400) as max_days_to_respond
+            FROM job_offers
+            WHERE jd_id = %s 
+                AND offer_date IS NOT NULL 
+                AND response_date IS NOT NULL
+                AND status = 'accepted'
+        """, (jd_id,))
+        
+        time_metrics = cur.fetchone()
+        
+        # Get negotiation statistics
+        cur.execute("""
+            SELECT 
+                COUNT(*) as total_negotiations,
+                AVG(negotiation_rounds) as avg_negotiation_rounds
+            FROM job_offers
+            WHERE jd_id = %s 
+                AND negotiation_status = 'in_progress'
+        """, (jd_id,))
+        
+        negotiation_stats = cur.fetchone()
+        
+        # Get expiring offers (within 3 days)
+        cur.execute("""
+            SELECT COUNT(*) as expiring_soon
+            FROM job_offers
+            WHERE jd_id = %s 
+                AND status IN ('sent', 'viewed', 'negotiating')
+                AND expiry_date IS NOT NULL
+                AND expiry_date <= CURRENT_TIMESTAMP + INTERVAL '3 days'
+                AND expiry_date > CURRENT_TIMESTAMP
+        """, (jd_id,))
+        
+        expiring = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        # Build response
+        result = {
+            'success': True,
+            'statistics': {
+                'total_offers': stats['total_offers'] or 0,
+                'by_status': {
+                    'draft': stats['draft'] or 0,
+                    'sent': stats['sent'] or 0,
+                    'viewed': stats['viewed'] or 0,
+                    'accepted': stats['accepted'] or 0,
+                    'rejected': stats['rejected'] or 0,
+                    'negotiating': stats['negotiating'] or 0,
+                    'withdrawn': stats['withdrawn'] or 0,
+                    'pending': stats['pending'] or 0
+                },
+                'acceptance_rate': round(acceptance_rate, 1),
+                'salary': {
+                    'average': float(stats['avg_salary']) if stats['avg_salary'] else 0,
+                    'min': float(stats['min_salary']) if stats['min_salary'] else 0,
+                    'max': float(stats['max_salary']) if stats['max_salary'] else 0,
+                    'currency': 'AED'
+                },
+                'time_metrics': {
+                    'avg_days_to_respond': round(float(time_metrics['avg_days_to_respond']), 1) if time_metrics['avg_days_to_respond'] else 0,
+                    'min_days_to_respond': round(float(time_metrics['min_days_to_respond']), 1) if time_metrics['min_days_to_respond'] else 0,
+                    'max_days_to_respond': round(float(time_metrics['max_days_to_respond']), 1) if time_metrics['max_days_to_respond'] else 0
+                },
+                'negotiations': {
+                    'total': negotiation_stats['total_negotiations'] or 0,
+                    'avg_rounds': round(float(negotiation_stats['avg_negotiation_rounds']), 1) if negotiation_stats['avg_negotiation_rounds'] else 0
+                },
+                'expiring_soon': expiring['expiring_soon'] or 0
+            }
+        }
+        
+        logger.info(f"Retrieved offer statistics for JD: {jd_id}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error getting offer statistics: {e}")
         return {'success': False, 'error': str(e)}
 
 def start_negotiation(offer_id, negotiation_data):

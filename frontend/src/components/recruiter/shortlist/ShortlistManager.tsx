@@ -30,6 +30,7 @@ import {
   Avatar,
   Tooltip,
   Alert,
+  Box,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -342,6 +343,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
               <TableCell>Contact</TableCell>
               <TableCell>Current Role</TableCell>
               <TableCell align="center">Match Score</TableCell>
+              <TableCell>Interview Feedback</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>UAE National</TableCell>
               <TableCell align="right">Actions</TableCell>
@@ -403,16 +405,49 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   <Chip
                     label={`${parseFloat(candidate.match_score).toFixed(1)}%`}
                     color={parseFloat(candidate.match_score) >= 80 ? 'success' : parseFloat(candidate.match_score) >= 60 ? 'warning' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={statusLabels[candidate.status] || candidate.status}
-                    color={statusColors[candidate.status] || 'default'}
-                    size="small"
-                  />
-                </TableCell>
+                  size="small"
+                />
+              </TableCell>
+              <TableCell>
+                {candidate.interview_feedback ? (
+                  <Box>
+                    <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
+                      {candidate.interview_rating && (
+                        <Chip 
+                          label={`${candidate.interview_rating}/5`} 
+                          size="small" 
+                          color={candidate.interview_rating >= 4 ? 'success' : candidate.interview_rating >= 3 ? 'warning' : 'error'}
+                        />
+                      )}
+                      {candidate.interview_recommendation && (
+                        <Chip 
+                          label={candidate.interview_recommendation.replace('_', ' ')} 
+                          size="small"
+                          color={
+                            candidate.interview_recommendation === 'hire' ? 'success' :
+                            candidate.interview_recommendation === 'reject' ? 'error' :
+                            candidate.interview_recommendation === 'next_round' ? 'info' : 'default'
+                          }
+                        />
+                      )}
+                    </Box>
+                    <Typography variant="caption" color="textSecondary" display="block">
+                      {candidate.interview_feedback.length > 50 
+                        ? candidate.interview_feedback.substring(0, 50) + '...' 
+                        : candidate.interview_feedback}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Typography variant="caption" color="textSecondary">No feedback</Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <Chip
+                  label={statusLabels[candidate.status] || candidate.status}
+                  color={statusColors[candidate.status] || 'default'}
+                  size="small"
+                />
+              </TableCell>
                 <TableCell>
                   {candidate.is_uae_national ? (
                     <CheckCircleIcon color="success" />
