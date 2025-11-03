@@ -46,6 +46,13 @@ def check_offers():
                 FROM job_offers 
                 ORDER BY updated_at DESC
             ''')
+        elif 'negotiation_notes' in columns:
+            cur.execute('''
+                SELECT offer_id, position_title, salary_amount, salary_currency, 
+                       status, created_at, updated_at, negotiation_notes
+                FROM job_offers 
+                ORDER BY updated_at DESC
+            ''')
         else:
             cur.execute('''
                 SELECT offer_id, position_title, salary_amount, salary_currency, 
@@ -66,9 +73,14 @@ def check_offers():
         print("=" * 100)
         print()
         
+        has_neg_notes = 'negotiation_notes' in columns
+        
         for idx, row in enumerate(offers, 1):
             if has_neg_history:
                 offer_id, position, salary, currency, status, created_at, updated_at, neg_history = row
+            elif has_neg_notes:
+                offer_id, position, salary, currency, status, created_at, updated_at, neg_notes = row
+                neg_history = neg_notes
             else:
                 offer_id, position, salary, currency, status, created_at, updated_at = row
                 neg_history = None
@@ -91,13 +103,29 @@ def check_offers():
                     print(f"  ⏰ Last update: {int(time_diff.total_seconds() / 60)} minutes ago")
             
             # Show negotiation history if exists
-            if has_neg_history and neg_history:
-                print(f"  📝 Negotiation History: {len(neg_history)} entries")
-                for i, entry in enumerate(neg_history, 1):
-                    if 'proposed_salary' in entry:
-                        print(f"     Entry {i}: {entry['party']} proposed {entry['proposed_salary']} {currency}")
-            elif not has_neg_history:
-                print(f"  ⚠️  Negotiation history column not in database (older schema)")
+            if neg_history:
+                # Try to parse as JSON
+                try:
+                    if isinstance(neg_history, str):
+                        import json
+                        history_data = json.loads(neg_history)
+                    else:
+                        history_data = neg_history
+                    
+                    if isinstance(history_data, list):
+                        print(f"  📝 Negotiation History: {len(history_data)} entries")
+                        for i, entry in enumerate(history_data, 1):
+                            party = entry.get('party', 'unknown')
+                            if 'proposed_salary' in entry:
+                                print(f"     Entry {i}: {party} proposed {entry['proposed_salary']} {currency}")
+                            if 'notes' in entry:
+                                print(f"              Notes: {entry['notes']}")
+                    else:
+                        print(f"  📝 Negotiation Notes (text): {neg_history[:100]}...")
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"  📝 Negotiation Notes (raw text): {neg_history[:200] if neg_history else 'None'}")
+            elif not has_neg_history and not has_neg_notes:
+                print(f"  ⚠️  No negotiation history column in database")
             
             print()
         
