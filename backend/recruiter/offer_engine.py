@@ -226,10 +226,25 @@ def get_offer_details(offer_id):
         if not offer:
             return {'success': False, 'error': 'Offer not found'}
         
+        # Convert negotiation_notes (text) to negotiation_history (array) for frontend compatibility
+        offer_dict = dict(offer)
+        if 'negotiation_notes' in offer_dict and offer_dict['negotiation_notes']:
+            # Parse negotiation_notes text into structured array
+            try:
+                # Try to parse as JSON first (in case it's already JSON)
+                negotiation_history = json.loads(offer_dict['negotiation_notes'])
+            except (json.JSONDecodeError, TypeError):
+                # If not JSON, create empty array (old text format)
+                negotiation_history = []
+            
+            offer_dict['negotiation_history'] = negotiation_history
+        else:
+            offer_dict['negotiation_history'] = []
+        
         cur.close()
         conn.close()
         
-        return {'success': True, 'offer': dict(offer)}
+        return {'success': True, 'offer': offer_dict}
         
     except Exception as e:
         logger.error(f"Error getting offer details: {e}")
@@ -414,28 +429,67 @@ def record_candidate_response(offer_id, response, notes=''):
         logger.error(f"Error recording response: {e}")
         return {'success': False, 'error': str(e)}
 
-def start_negotiation(offer_id, notes=''):
-    """Start negotiation process"""
+def start_negotiation(offer_id, negotiation_data):
+    """Start negotiation process and add negotiation entry"""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        
+        # Get current negotiation_notes
+        cur.execute("SELECT negotiation_notes FROM job_offers WHERE offer_id = %s", (offer_id,))
+        result = cur.fetchone()
+        
+        if not result:
+            return {'success': False, 'error': 'Offer not found'}
+        
+        current_notes = result[0]
+        
+        # Parse existing negotiation history or create new array
+        try:
+            if current_notes:
+                negotiation_history = json.loads(current_notes)
+            else:
+                negotiation_history = []
+        except (json.JSONDecodeError, TypeError):
+            # Old text format, start fresh with array
+            negotiation_history = []
+        
+        # Add new negotiation entry
+        new_entry = {
+            'party': negotiation_data.get('party', 'recruiter'),
+            'timestamp': datetime.now().isoformat(),
+        }
+        
+        if 'proposed_salary' in negotiation_data:
+            new_entry['proposed_salary'] = negotiation_data['proposed_salary']
+        
+        if 'proposed_benefits' in negotiation_data:
+            new_entry['proposed_benefits'] = negotiation_data['proposed_benefits']
+        
+        if 'notes' in negotiation_data:
+            new_entry['notes'] = negotiation_data['notes']
+        
+        negotiation_history.append(new_entry)
+        
+        # Save as JSON string
+        negotiation_json = json.dumps(negotiation_history)
         
         cur.execute("""
             UPDATE job_offers
             SET negotiation_status = 'in_progress',
                 negotiation_rounds = negotiation_rounds + 1,
-                negotiation_notes = COALESCE(negotiation_notes, '') || %s,
+                negotiation_notes = %s,
                 status = 'negotiating',
                 updated_at = CURRENT_TIMESTAMP
             WHERE offer_id = %s
-        """, (f"\n\nRound {datetime.now()}: {notes}", offer_id))
+        """, (negotiation_json, offer_id))
         
         conn.commit()
         cur.close()
         conn.close()
         
-        logger.info(f"Negotiation started for offer: {offer_id}")
-        return {'success': True, 'message': 'Negotiation started'}
+        logger.info(f"Negotiation entry added for offer: {offer_id}")
+        return {'success': True, 'message': 'Negotiation entry added successfully'}
         
     except Exception as e:
         logger.error(f"Error starting negotiation: {e}")
