@@ -82,9 +82,14 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
     try {
       // Fetch fresh offer details to get latest negotiation history
       const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}`);
+      console.log('Loaded offer details:', response.data.offer);
+      console.log('Negotiation history from API:', response.data.offer?.negotiation_history);
+      
       if (response.data.offer && response.data.offer.negotiation_history) {
+        console.log('Setting negotiation history:', response.data.offer.negotiation_history);
         setNegotiationHistory(response.data.offer.negotiation_history);
       } else {
+        console.log('No negotiation history in response, setting empty array');
         setNegotiationHistory([]);
       }
     } catch (err) {
