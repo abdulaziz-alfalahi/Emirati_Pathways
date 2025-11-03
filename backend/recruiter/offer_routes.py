@@ -165,12 +165,13 @@ def record_candidate_response(offer_id):
 
 @offer_bp.route('/<offer_id>/negotiate', methods=['POST'])
 def start_negotiation(offer_id):
-    """Start negotiation process"""
+    """Start negotiation process and add negotiation entry"""
     try:
         data = request.json or {}
-        notes = data.get('notes', '')
+        logger.info(f"Negotiate endpoint called for {offer_id} with data: {data}")
         
-        result = offer_engine.start_negotiation(offer_id, notes)
+        # Pass the full negotiation data to the engine
+        result = offer_engine.start_negotiation(offer_id, data)
         
         if result['success']:
             return jsonify(result), 200
