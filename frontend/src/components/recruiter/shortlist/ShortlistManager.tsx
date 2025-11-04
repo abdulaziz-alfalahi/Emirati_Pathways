@@ -30,7 +30,6 @@ import {
   Avatar,
   Tooltip,
   Alert,
-  Box,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -343,7 +342,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
               <TableCell>Contact</TableCell>
               <TableCell>Current Role</TableCell>
               <TableCell align="center">Match Score</TableCell>
-              <TableCell>Interview Feedback</TableCell>
+              <TableCell>Interview</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>UAE National</TableCell>
               <TableCell align="right">Actions</TableCell>
@@ -405,107 +404,88 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   <Chip
                     label={`${parseFloat(candidate.match_score).toFixed(1)}%`}
                     color={parseFloat(candidate.match_score) >= 80 ? 'success' : parseFloat(candidate.match_score) >= 60 ? 'warning' : 'default'}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                {candidate.interview_feedback ? (
-                  <Box>
-                    <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
-                      {candidate.interview_rating && (
-                        <Chip 
-                          label={`${candidate.interview_rating}/5`} 
-                          size="small" 
-                          color={candidate.interview_rating >= 4 ? 'success' : candidate.interview_rating >= 3 ? 'warning' : 'error'}
-                        />
-                      )}
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  {candidate.interview_rating ? (
+                    <Typography variant="body2">
+                      ⭐ {candidate.interview_rating}/5
                       {candidate.interview_recommendation && (
-                        <Chip 
-                          label={candidate.interview_recommendation.replace('_', ' ')} 
-                          size="small"
-                          color={
-                            candidate.interview_recommendation === 'hire' ? 'success' :
-                            candidate.interview_recommendation === 'reject' ? 'error' :
-                            candidate.interview_recommendation === 'next_round' ? 'info' : 'default'
-                          }
-                        />
+                        <Typography variant="caption" display="block" color="textSecondary">
+                          {candidate.interview_recommendation}
+                        </Typography>
                       )}
-                    </Box>
-                    <Typography variant="caption" color="textSecondary" display="block">
-                      {candidate.interview_feedback.length > 50 
-                        ? candidate.interview_feedback.substring(0, 50) + '...' 
-                        : candidate.interview_feedback}
                     </Typography>
-                  </Box>
-                ) : (
-                  <Typography variant="caption" color="textSecondary">No feedback</Typography>
-                )}
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={statusLabels[candidate.status] || candidate.status}
-                  color={statusColors[candidate.status] || 'default'}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                {candidate.is_uae_national ? (
-                  <CheckCircleIcon color="success" />
-                ) : (
-                  <CancelIcon color="disabled" />
-                )}
-              </TableCell>
-              <TableCell align="right">
-                <Tooltip title="Schedule Interview">
-                  <IconButton
+                  ) : (
+                    <Typography variant="caption" color="textSecondary">-</Typography>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={statusLabels[candidate.status] || candidate.status}
+                    color={statusColors[candidate.status] || 'default'}
                     size="small"
-                    color="primary"
-                    onClick={() => {
-                      setSelectedShortlistId(candidate.shortlist_id);
-                      setInterviewDialogOpen(true);
-                    }}
-                  >
-                    <CalendarIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Update Status">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setSelectedCandidate(candidate);
-                      setNewStatus(candidate.status);
-                      setStatusDialogOpen(true);
-                    }}
-                  >
-                    <EventIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Add Note">
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setSelectedCandidate(candidate);
-                      setNoteDialogOpen(true);
-                    }}
-                  >
-                    <NotesIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="View Details">
-                  <IconButton size="small">
-                    <InfoIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Remove from Shortlist">
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleRemoveFromShortlist(candidate.shortlist_id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              </TableCell>
+                  />
+                </TableCell>
+                <TableCell>
+                  {candidate.is_uae_national ? (
+                    <CheckCircleIcon color="success" />
+                  ) : (
+                    <CancelIcon color="disabled" />
+                  )}
+                </TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Schedule Interview">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => {
+                        setSelectedShortlistId(candidate.shortlist_id);
+                        setInterviewDialogOpen(true);
+                      }}
+                    >
+                      <CalendarIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Update Status">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSelectedCandidate(candidate);
+                        setNewStatus(candidate.status);
+                        setStatusDialogOpen(true);
+                      }}
+                    >
+                      <EventIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Add Note">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSelectedCandidate(candidate);
+                        setNoteDialogOpen(true);
+                      }}
+                    >
+                      <NotesIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="View Details">
+                    <IconButton size="small">
+                      <InfoIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Remove from Shortlist">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleRemoveFromShortlist(candidate.shortlist_id)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             )) : (
               <TableRow>
