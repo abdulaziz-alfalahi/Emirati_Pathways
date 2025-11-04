@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageComposer } from '../communication/MessageComposer';
 import CreateInterviewDialog from '../interviews/CreateInterviewDialog';
 import OfferManager from '../offers/OfferManager';
+import CreateOfferDialog from '../offers/CreateOfferDialog';
 import {
   Box,
   Paper,
@@ -130,6 +131,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showOfferManager, setShowOfferManager] = useState(false);
+  const [createOfferDialogOpen, setCreateOfferDialogOpen] = useState(false);
+  const [selectedCandidateForOffer, setSelectedCandidateForOffer] = useState<ShortlistedCandidate | null>(null);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
 
@@ -211,6 +214,17 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
   };
 
+  const handleCreateOfferForSelected = () => {
+    if (selectedCandidates.length === 0) return;
+    
+    // Get the first selected candidate
+    const candidate = shortlist.find(c => c.shortlist_id === selectedCandidates[0]);
+    if (candidate) {
+      setSelectedCandidateForOffer(candidate);
+      setCreateOfferDialogOpen(true);
+    }
+  };
+
   const handleRemoveFromShortlist = async (shortlistId: string) => {
     if (!window.confirm('Are you sure you want to remove this candidate from the shortlist?')) {
       return;
@@ -260,6 +274,15 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             disabled={selectedCandidates.length === 0}
           >
             Message Selected ({selectedCandidates.length})
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<CardGiftcardIcon />}
+            onClick={handleCreateOfferForSelected}
+            disabled={selectedCandidates.length === 0}
+          >
+            Create Offer{selectedCandidates.length > 1 ? 's' : ''} ({selectedCandidates.length})
           </Button>
           <Button
             variant="contained"
@@ -629,6 +652,29 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           onClose={() => setShowOfferManager(false)}
         />
       </Dialog>
+
+      {/* Create Offer Dialog */}
+      {selectedCandidateForOffer && (
+        <CreateOfferDialog
+          open={createOfferDialogOpen}
+          onClose={() => {
+            setCreateOfferDialogOpen(false);
+            setSelectedCandidateForOffer(null);
+            setSelectedCandidates([]);
+          }}
+          jdId={jdId}
+          preselectedCandidate={{
+            shortlist_id: selectedCandidateForOffer.shortlist_id,
+            candidate_id: selectedCandidateForOffer.candidate_id,
+            name: `${selectedCandidateForOffer.first_name} ${selectedCandidateForOffer.last_name}`,
+            email: selectedCandidateForOffer.email
+          }}
+          onOfferCreated={() => {
+            setSuccess('Offer created successfully!');
+            loadShortlist();
+          }}
+        />
+      )}
     </Box>
   );
 };
