@@ -456,56 +456,56 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                 )}
               </TableCell>
               <TableCell align="right">
-                  <Tooltip title="Schedule Interview">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => {
-                        setSelectedShortlistId(candidate.shortlist_id);
-                        setInterviewDialogOpen(true);
-                      }}
-                    >
-                      <CalendarIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Update Status">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSelectedCandidate(candidate);
-                        setNewStatus(candidate.status);
-                        setStatusDialogOpen(true);
-                      }}
-                    >
-                      <EventIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Add Note">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSelectedCandidate(candidate);
-                        setNoteDialogOpen(true);
-                      }}
-                    >
-                      <NotesIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="View Details">
-                    <IconButton size="small">
-                      <InfoIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Remove from Shortlist">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleRemoveFromShortlist(candidate.shortlist_id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
+                <Tooltip title="Schedule Interview">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => {
+                      setSelectedShortlistId(candidate.shortlist_id);
+                      setInterviewDialogOpen(true);
+                    }}
+                  >
+                    <CalendarIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Update Status">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSelectedCandidate(candidate);
+                      setNewStatus(candidate.status);
+                      setStatusDialogOpen(true);
+                    }}
+                  >
+                    <EventIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Add Note">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSelectedCandidate(candidate);
+                      setNoteDialogOpen(true);
+                    }}
+                  >
+                    <NotesIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="View Details">
+                  <IconButton size="small">
+                    <InfoIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Remove from Shortlist">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleRemoveFromShortlist(candidate.shortlist_id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              </TableCell>
               </TableRow>
             )) : (
               <TableRow>
