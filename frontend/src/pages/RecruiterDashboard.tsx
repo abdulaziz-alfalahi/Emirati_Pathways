@@ -206,6 +206,12 @@ const RecruiterDashboard: React.FC = () => {
                 <Users className="h-4 w-4 mr-2" />
                 Source Candidates
               </Button>
+              <Link to="/recruiter/shortlist/jd_001">
+                <Button variant="outline" className="font-dubai-medium">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Manage Shortlist
+                </Button>
+              </Link>
               <Button variant="outline" className="font-dubai-medium">
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interviews
