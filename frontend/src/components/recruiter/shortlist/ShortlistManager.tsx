@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageComposer } from '../communication/MessageComposer';
 import CreateInterviewDialog from '../interviews/CreateInterviewDialog';
 import OfferManager from '../offers/OfferManager';
+import CreateOfferDialog from '../offers/CreateOfferDialog';
 import {
   Box,
   Paper,
@@ -45,6 +46,7 @@ import {
   Send as SendIcon,
   Close as CloseIcon,
   CardGiftcard as CardGiftcardIcon,
+  RateReview as RateReviewIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -130,6 +132,12 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showOfferManager, setShowOfferManager] = useState(false);
+  const [createOfferDialogOpen, setCreateOfferDialogOpen] = useState(false);
+  const [selectedCandidateForOffer, setSelectedCandidateForOffer] = useState<ShortlistedCandidate | null>(null);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState<number>(3);
+  const [feedbackRecommendation, setFeedbackRecommendation] = useState<string>('next_round');
+  const [feedbackNotes, setFeedbackNotes] = useState<string>('');
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
 
@@ -211,6 +219,65 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
   };
 
+  const handleCreateOfferForSelected = () => {
+    if (selectedCandidates.length === 0) return;
+    
+    // Get the first selected candidate
+    const candidate = shortlist.find(c => c.shortlist_id === selectedCandidates[0]);
+    if (candidate) {
+      setSelectedCandidateForOffer(candidate);
+      setCreateOfferDialogOpen(true);
+    }
+  };
+
+  const handleOpenFeedbackDialog = (candidate: ShortlistedCandidate) => {
+    setSelectedCandidate(candidate);
+    // Pre-fill with existing feedback if available
+    setFeedbackRating(candidate.interview_rating || 3);
+    setFeedbackRecommendation(candidate.interview_recommendation || 'next_round');
+    setFeedbackNotes(candidate.interview_feedback || '');
+    setFeedbackDialogOpen(true);
+  };
+
+  const handleAddFeedback = async () => {
+    if (!selectedCandidate) return;
+
+    try {
+      // Find the interview for this candidate
+      const interviewResponse = await axios.get(
+        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}`
+      );
+      
+      const interview = interviewResponse.data.interviews?.find(
+        (i: any) => i.shortlist_id === selectedCandidate.shortlist_id
+      );
+
+      if (!interview) {
+        setError('No interview found for this candidate. Please schedule an interview first.');
+        return;
+      }
+
+      // Update the interview with feedback
+      await axios.put(
+        `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}/feedback`,
+        {
+          rating: feedbackRating,
+          recommendation: feedbackRecommendation,
+          feedback: feedbackNotes
+        }
+      );
+
+      setSuccess('Interview feedback added successfully!');
+      setFeedbackDialogOpen(false);
+      setFeedbackRating(3);
+      setFeedbackRecommendation('next_round');
+      setFeedbackNotes('');
+      loadShortlist(); // Reload to show updated feedback
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to add interview feedback');
+    }
+  };
+
   const handleRemoveFromShortlist = async (shortlistId: string) => {
     if (!window.confirm('Are you sure you want to remove this candidate from the shortlist?')) {
       return;
@@ -260,6 +327,15 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             disabled={selectedCandidates.length === 0}
           >
             Message Selected ({selectedCandidates.length})
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<CardGiftcardIcon />}
+            onClick={handleCreateOfferForSelected}
+            disabled={selectedCandidates.length === 0}
+          >
+            Create Offer{selectedCandidates.length > 1 ? 's' : ''} ({selectedCandidates.length})
           </Button>
           <Button
             variant="contained"
@@ -448,6 +524,15 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                       <CalendarIcon />
                     </IconButton>
                   </Tooltip>
+                  <Tooltip title="Add Interview Feedback">
+                    <IconButton
+                      size="small"
+                      color="secondary"
+                      onClick={() => handleOpenFeedbackDialog(candidate)}
+                    >
+                      <RateReviewIcon />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="Update Status">
                     <IconButton
                       size="small"
@@ -629,6 +714,91 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           onClose={() => setShowOfferManager(false)}
         />
       </Dialog>
+
+      {/* Interview Feedback Dialog */}
+      <Dialog
+        open={feedbackDialogOpen}
+        onClose={() => setFeedbackDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add Interview Feedback</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Rating (1-5)</InputLabel>
+              <Select
+                value={feedbackRating}
+                onChange={(e) => setFeedbackRating(Number(e.target.value))}
+                label="Rating (1-5)"
+              >
+                <MenuItem value={1}>1 - Poor</MenuItem>
+                <MenuItem value={2}>2 - Below Average</MenuItem>
+                <MenuItem value={3}>3 - Average</MenuItem>
+                <MenuItem value={4}>4 - Good</MenuItem>
+                <MenuItem value={5}>5 - Excellent</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Recommendation</InputLabel>
+              <Select
+                value={feedbackRecommendation}
+                onChange={(e) => setFeedbackRecommendation(e.target.value)}
+                label="Recommendation"
+              >
+                <MenuItem value="hire">Hire</MenuItem>
+                <MenuItem value="reject">Reject</MenuItem>
+                <MenuItem value="next_round">Next Round</MenuItem>
+                <MenuItem value="hold">Hold</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label="Feedback Notes"
+              value={feedbackNotes}
+              onChange={(e) => setFeedbackNotes(e.target.value)}
+              placeholder="Enter detailed feedback about the interview..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFeedbackDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleAddFeedback}
+            disabled={!feedbackNotes.trim()}
+          >
+            Save Feedback
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Offer Dialog */}
+      {selectedCandidateForOffer && (
+        <CreateOfferDialog
+          open={createOfferDialogOpen}
+          onClose={() => {
+            setCreateOfferDialogOpen(false);
+            setSelectedCandidateForOffer(null);
+            setSelectedCandidates([]);
+          }}
+          jdId={jdId}
+          preselectedCandidate={{
+            shortlist_id: selectedCandidateForOffer.shortlist_id,
+            candidate_id: selectedCandidateForOffer.candidate_id,
+            name: `${selectedCandidateForOffer.first_name} ${selectedCandidateForOffer.last_name}`,
+            email: selectedCandidateForOffer.email
+          }}
+          onOfferCreated={() => {
+            setSuccess('Offer created successfully!');
+            loadShortlist();
+          }}
+        />
+      )}
     </Box>
   );
 };
