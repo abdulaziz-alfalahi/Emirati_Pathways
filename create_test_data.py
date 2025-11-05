@@ -21,8 +21,8 @@ DB_CONFIG = {
     'host': 'localhost',
     'port': 5432,
     'database': 'emirati_journey',
-    'user': 'postgres',
-    'password': 'postgres'
+    'user': 'emirati_user',
+    'password': 'emirati_secure_password'
 }
 
 def get_connection():
