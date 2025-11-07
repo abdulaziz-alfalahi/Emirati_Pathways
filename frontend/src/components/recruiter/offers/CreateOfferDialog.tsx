@@ -102,9 +102,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           match_score: 0
         };
         setSelectedCandidate(candidate);
-        // Auto-fill position title with a default value
-        setPositionTitle('Software Engineer'); // TODO: Get from job description
-        setActiveStep(1); // Skip to compensation details step
+        // Keep on Step 1 so user can see and edit position title
+        // Position title will need to be filled manually
       }
     }
   }, [open, jdId, preselectedCandidate]);
@@ -173,7 +172,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         shortlist_id: selectedCandidate.shortlist_id,
         candidate_id: selectedCandidate.candidate_id,
         recruiter_id: 'recruiter_001', // TODO: Get from auth context
-        position_title: positionTitle || 'Software Engineer', // Default if empty
+        position_title: positionTitle,
         salary_amount: parseFloat(salaryAmount),
         salary_currency: salaryCurrency,
         salary_period: salaryPeriod,
