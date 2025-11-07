@@ -102,6 +102,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           match_score: 0
         };
         setSelectedCandidate(candidate);
+        // Auto-fill position title with a default value
+        setPositionTitle('Software Engineer'); // TODO: Get from job description
         setActiveStep(1); // Skip to compensation details step
       }
     }
@@ -171,16 +173,15 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         shortlist_id: selectedCandidate.shortlist_id,
         candidate_id: selectedCandidate.candidate_id,
         recruiter_id: 'recruiter_001', // TODO: Get from auth context
-        position_title: positionTitle,
+        position_title: positionTitle || 'Software Engineer', // Default if empty
         salary_amount: parseFloat(salaryAmount),
         salary_currency: salaryCurrency,
         salary_period: salaryPeriod,
         benefits: benefits,
         start_date: startDate,
-        contract_type: contractType,
+        employment_type: contractType, // Backend expects employment_type
         probation_period_months: parseInt(probationPeriod),
         work_location: workLocation,
-        work_schedule: workSchedule,
       };
 
       await axios.post('http://localhost:5003/api/recruiter/offers/create', offerData);
