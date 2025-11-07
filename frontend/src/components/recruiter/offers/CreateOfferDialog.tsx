@@ -33,6 +33,12 @@ interface CreateOfferDialogProps {
   onClose: () => void;
   jdId: string;
   onOfferCreated: () => void;
+  preselectedCandidate?: {
+    shortlist_id: string;
+    candidate_id: string;
+    name: string;
+    email: string;
+  };
 }
 
 interface ShortlistedCandidate {
@@ -52,6 +58,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   onClose,
   jdId,
   onOfferCreated,
+  preselectedCandidate,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -82,8 +89,23 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
     if (open) {
       loadCandidates();
       resetForm();
+      
+      // If preselectedCandidate is provided, set it as selected
+      if (preselectedCandidate) {
+        const candidate: ShortlistedCandidate = {
+          shortlist_id: preselectedCandidate.shortlist_id,
+          candidate_id: preselectedCandidate.candidate_id,
+          first_name: preselectedCandidate.name.split(' ')[0] || '',
+          last_name: preselectedCandidate.name.split(' ').slice(1).join(' ') || '',
+          email: preselectedCandidate.email,
+          current_job_title: '',
+          match_score: 0
+        };
+        setSelectedCandidate(candidate);
+        setActiveStep(1); // Skip to compensation details step
+      }
     }
-  }, [open, jdId]);
+  }, [open, jdId, preselectedCandidate]);
 
   const loadCandidates = async () => {
     try {
