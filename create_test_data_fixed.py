@@ -14,6 +14,8 @@ Run this script to populate the database with sample data for testing Option C f
 """
 
 import psycopg2
+import psycopg2.extras
+import json
 from datetime import datetime, timedelta, date, time
 import random
 
@@ -147,8 +149,8 @@ def create_job_descriptions(conn, recruiter_id):
                 job['company'],
                 job['location'],
                 job['emirate'],
-                psycopg2.extras.Json(jd_data),
-                psycopg2.extras.Json(job['required_skills']),
+                json.dumps(jd_data),
+                json.dumps(job['required_skills']),
                 job['experience_level'],
                 job['employment_type'],
                 job['salary_range'],
@@ -369,7 +371,7 @@ def create_shortlist_entries(conn, job_ids, candidate_ids, recruiter_id):
                 entry['candidate_id'],
                 str(recruiter_id),
                 entry['match_score'],
-                psycopg2.extras.Json(match_details),
+                json.dumps(match_details),
                 entry['status']
             ))
             
