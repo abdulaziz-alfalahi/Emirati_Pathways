@@ -6,6 +6,7 @@ Handles business logic for job offer creation, tracking, and management
 import psycopg2
 import psycopg2.extras
 import json
+import secrets
 from datetime import datetime, timedelta
 import logging
 import requests
