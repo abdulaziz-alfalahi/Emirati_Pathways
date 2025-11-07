@@ -259,7 +259,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
       // Update the interview with feedback
       await axios.put(
-        `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}/feedback`,
+        `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}`,
         {
           rating: feedbackRating,
           recommendation: feedbackRecommendation,
