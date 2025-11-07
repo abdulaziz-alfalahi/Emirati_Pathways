@@ -168,6 +168,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
       const offerData = {
         jd_id: jdId,
+        shortlist_id: selectedCandidate.shortlist_id,
         candidate_id: selectedCandidate.candidate_id,
         recruiter_id: 'recruiter_001', // TODO: Get from auth context
         position_title: positionTitle,
