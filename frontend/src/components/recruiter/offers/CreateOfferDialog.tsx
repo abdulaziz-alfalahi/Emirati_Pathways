@@ -463,6 +463,14 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                     maxHeight: '250px',
                   }
                 }}
+                componentsProps={{
+                  popper: {
+                    style: {
+                      width: 'fit-content',
+                      minWidth: '300px'
+                    }
+                  }
+                }}
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip label={option} {...getTagProps({ index })} size="small" />
