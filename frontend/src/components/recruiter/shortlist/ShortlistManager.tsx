@@ -138,6 +138,10 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [feedbackRating, setFeedbackRating] = useState<number>(3);
   const [feedbackRecommendation, setFeedbackRecommendation] = useState<string>('next_round');
   const [feedbackNotes, setFeedbackNotes] = useState<string>('');
+  const [viewInterviewsDialogOpen, setViewInterviewsDialogOpen] = useState(false);
+  const [interviews, setInterviews] = useState<any[]>([]);
+  const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
+  const [selectedCandidateDetails, setSelectedCandidateDetails] = useState<ShortlistedCandidate | null>(null);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
 
@@ -278,6 +282,26 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
   };
 
+  const handleViewInterviews = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}`
+      );
+      
+      if (response.data.success) {
+        setInterviews(response.data.interviews || []);
+        setViewInterviewsDialogOpen(true);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to load interviews');
+    }
+  };
+
+  const handleViewDetails = (candidate: ShortlistedCandidate) => {
+    setSelectedCandidateDetails(candidate);
+    setViewDetailsDialogOpen(true);
+  };
+
   const handleRemoveFromShortlist = async (shortlistId: string) => {
     if (!window.confirm('Are you sure you want to remove this candidate from the shortlist?')) {
       return;
@@ -316,7 +340,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           <Button
             variant="outlined"
             startIcon={<CalendarMonthIcon />}
-            onClick={() => window.location.href = `/recruiter/interviews/schedule?jdId=${jdId}`}
+            onClick={handleViewInterviews}
           >
             View Interviews
           </Button>
@@ -557,7 +581,10 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="View Details">
-                    <IconButton size="small">
+                    <IconButton 
+                      size="small"
+                      onClick={() => handleViewDetails(candidate)}
+                    >
                       <InfoIcon />
                     </IconButton>
                   </Tooltip>
@@ -799,6 +826,306 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           }}
         />
       )}
+
+      {/* View Interviews Dialog */}
+      <Dialog
+        open={viewInterviewsDialogOpen}
+        onClose={() => setViewInterviewsDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Scheduled Interviews</DialogTitle>
+        <DialogContent>
+          {interviews.length > 0 ? (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Candidate</TableCell>
+                    <TableCell>Interview Type</TableCell>
+                    <TableCell>Date & Time</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Rating</TableCell>
+                    <TableCell>Recommendation</TableCell>
+                    <TableCell>Feedback</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {interviews.map((interview: any) => (
+                    <TableRow key={interview.interview_id}>
+                      <TableCell>
+                        {interview.candidate_first_name} {interview.candidate_last_name}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={interview.interview_type} 
+                          size="small" 
+                          color="primary"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {interview.scheduled_date && (
+                          <Box>
+                            <Typography variant="body2">
+                              {new Date(interview.scheduled_date).toLocaleDateString()}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {interview.scheduled_time}
+                            </Typography>
+                          </Box>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={interview.status} 
+                          size="small"
+                          color={interview.status === 'completed' ? 'success' : 'default'}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {interview.rating ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography>⭐</Typography>
+                            <Typography>{interview.rating}/5</Typography>
+                          </Box>
+                        ) : (
+                          <Typography color="textSecondary">-</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {interview.recommendation ? (
+                          <Chip 
+                            label={interview.recommendation} 
+                            size="small"
+                            color={interview.recommendation === 'hire' ? 'success' : 'default'}
+                          />
+                        ) : (
+                          <Typography color="textSecondary">-</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {interview.feedback ? (
+                          <Tooltip title={interview.feedback}>
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                maxWidth: 200, 
+                                overflow: 'hidden', 
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {interview.feedback}
+                            </Typography>
+                          </Tooltip>
+                        ) : (
+                          <Typography color="textSecondary">-</Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Typography color="textSecondary">
+                No interviews scheduled for this job description yet.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewInterviewsDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog
+        open={viewDetailsDialogOpen}
+        onClose={() => setViewDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Candidate Details
+        </DialogTitle>
+        <DialogContent>
+          {selectedCandidateDetails && (
+            <Box sx={{ pt: 2 }}>
+              <Grid container spacing={3}>
+                {/* Basic Information */}
+                <Grid item xs={12}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Basic Information
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Name
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.first_name} {selectedCandidateDetails.last_name}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Email
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.email}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Phone
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.phone_number || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            UAE National
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.is_uae_national ? 'Yes' : 'No'}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Professional Information */}
+                <Grid item xs={12}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Professional Information
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Current Job Title
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.current_job_title || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Current Company
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.current_company || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Years of Experience
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.years_of_experience || 0} years
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Emirates ID
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.emirates_id || 'N/A'}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Shortlist Information */}
+                <Grid item xs={12}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        Shortlist Information
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Match Score
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.match_score}%
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="textSecondary">
+                            Status
+                          </Typography>
+                          <Chip 
+                            label={selectedCandidateDetails.status} 
+                            size="small"
+                            color={statusColors[selectedCandidateDetails.status] || 'default'}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Typography variant="body2" color="textSecondary">
+                            Notes
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedCandidateDetails.notes || 'No notes available'}
+                          </Typography>
+                        </Grid>
+                        {selectedCandidateDetails.tags && selectedCandidateDetails.tags.length > 0 && (
+                          <Grid item xs={12}>
+                            <Typography variant="body2" color="textSecondary" gutterBottom>
+                              Tags
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                              {selectedCandidateDetails.tags.map((tag: string, index: number) => (
+                                <Chip key={index} label={tag} size="small" />
+                              ))}
+                            </Box>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Match Details */}
+                {selectedCandidateDetails.match_details && (
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          Match Details
+                        </Typography>
+                        <Box sx={{ 
+                          backgroundColor: '#f5f5f5', 
+                          p: 2, 
+                          borderRadius: 1,
+                          maxHeight: 200,
+                          overflow: 'auto'
+                        }}>
+                          <pre style={{ margin: 0, fontSize: '0.875rem' }}>
+                            {JSON.stringify(selectedCandidateDetails.match_details, null, 2)}
+                          </pre>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setViewDetailsDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
