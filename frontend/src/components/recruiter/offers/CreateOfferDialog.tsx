@@ -480,7 +480,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center">
           <DescriptionIcon sx={{ mr: 1 }} />
