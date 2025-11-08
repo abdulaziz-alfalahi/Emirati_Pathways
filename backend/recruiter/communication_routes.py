@@ -22,7 +22,7 @@ from .communication_engine import (
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-communication_routes = Blueprint('recruiter_communication', __name__)
+communication_bp = Blueprint('recruiter_communication', __name__)
 
 # Database configuration
 DB_CONFIG = {
@@ -41,7 +41,7 @@ def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
 
-@communication_routes.route('/health', methods=['GET'])
+@communication_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check for communication routes"""
     return jsonify({
@@ -50,7 +50,7 @@ def health_check():
     }), 200
 
 
-@communication_routes.route('/api/recruiter/communication/send', methods=['POST'])
+@communication_bp.route('/api/recruiter/communication/send', methods=['POST'])
 def send_message():
     """
     Send message to candidate(s)
@@ -232,7 +232,7 @@ def send_message():
         return jsonify({'error': str(e)}), 500
 
 
-@communication_routes.route('/api/recruiter/communication/history/<candidate_id>', methods=['GET'])
+@communication_bp.route('/api/recruiter/communication/history/<candidate_id>', methods=['GET'])
 def get_communication_history(candidate_id):
     """
     Get communication history for a candidate
@@ -271,7 +271,7 @@ def get_communication_history(candidate_id):
         return jsonify({'error': str(e)}), 500
 
 
-@communication_routes.route('/api/recruiter/communication/templates', methods=['GET'])
+@communication_bp.route('/api/recruiter/communication/templates', methods=['GET'])
 def get_templates():
     """Get message templates"""
     try:
@@ -288,7 +288,7 @@ def get_templates():
         return jsonify({'error': str(e)}), 500
 
 
-@communication_routes.route('/api/recruiter/communication/templates/render', methods=['POST'])
+@communication_bp.route('/api/recruiter/communication/templates/render', methods=['POST'])
 def render_template():
     """
     Render a template with variables
@@ -339,7 +339,7 @@ def render_template():
         return jsonify({'error': str(e)}), 500
 
 
-@communication_routes.route('/api/recruiter/communication/stats/<jd_id>', methods=['GET'])
+@communication_bp.route('/api/recruiter/communication/stats/<jd_id>', methods=['GET'])
 def get_communication_stats(jd_id):
     """Get communication statistics for a job description"""
     try:
