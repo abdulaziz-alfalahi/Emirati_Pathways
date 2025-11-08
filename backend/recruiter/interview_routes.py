@@ -70,7 +70,7 @@ def health_check():
     }), 200
 
 
-@interview_bp.route('/api/recruiter/interviews/create', methods=['POST'])
+@interview_bp.route('/create', methods=['POST'])
 def create_interview():
     """
     Create a new interview
@@ -120,7 +120,7 @@ def create_interview():
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/jd/<jd_id>', methods=['GET'])
+@interview_bp.route('/jd/<jd_id>', methods=['GET'])
 def get_interviews_by_jd(jd_id):
     """
     Get all interviews for a job description
@@ -165,7 +165,7 @@ def get_interviews_by_jd(jd_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>', methods=['GET'])
+@interview_bp.route('/<interview_id>', methods=['GET'])
 def get_interview_details(interview_id):
     """Get detailed information about a specific interview"""
     try:
@@ -203,7 +203,7 @@ def get_interview_details(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>', methods=['PUT'])
+@interview_bp.route('/<interview_id>', methods=['PUT'])
 def update_interview(interview_id):
     """
     Update interview details
@@ -236,7 +236,7 @@ def update_interview(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>/cancel', methods=['POST'])
+@interview_bp.route('/<interview_id>/cancel', methods=['POST'])
 def cancel_interview(interview_id):
     """
     Cancel an interview
@@ -273,7 +273,7 @@ def cancel_interview(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>/reschedule', methods=['POST'])
+@interview_bp.route('/<interview_id>/reschedule', methods=['POST'])
 def reschedule_interview(interview_id):
     """
     Reschedule an interview
@@ -354,7 +354,7 @@ def reschedule_interview(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>/complete', methods=['POST'])
+@interview_bp.route('/<interview_id>/complete', methods=['POST'])
 def complete_interview(interview_id):
     """
     Mark interview as completed and add feedback
@@ -393,7 +393,7 @@ def complete_interview(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>/confirm', methods=['POST'])
+@interview_bp.route('/<interview_id>/confirm', methods=['POST'])
 def confirm_interview(interview_id):
     """
     Update interview confirmation status
@@ -445,7 +445,7 @@ def confirm_interview(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/<interview_id>/remind', methods=['POST'])
+@interview_bp.route('/<interview_id>/remind', methods=['POST'])
 def send_interview_reminder(interview_id):
     """
     Send interview reminder to candidate
@@ -497,7 +497,7 @@ def send_interview_reminder(interview_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/stats/<jd_id>', methods=['GET'])
+@interview_bp.route('/stats/<jd_id>', methods=['GET'])
 def get_interview_statistics(jd_id):
     """Get interview statistics for a job description"""
     try:
@@ -518,7 +518,7 @@ def get_interview_statistics(jd_id):
         }), 500
 
 
-@interview_bp.route('/api/recruiter/interviews/shortlist/<shortlist_id>', methods=['GET'])
+@interview_bp.route('/shortlist/<shortlist_id>', methods=['GET'])
 def get_interviews_by_shortlist(shortlist_id):
     """Get all interviews for a specific shortlisted candidate"""
     try:
