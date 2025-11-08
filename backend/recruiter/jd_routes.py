@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
-jd_routes = Blueprint('jd_routes', __name__, url_prefix='/api/recruiter/jd')
+jd_bp = Blueprint('jd_routes', __name__, url_prefix='/api/recruiter/jd')
 
 # Initialize components
 jd_engine = get_jd_builder_engine()
@@ -42,7 +42,7 @@ def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
 
-@jd_routes.route('/health', methods=['GET'])
+@jd_bp.route('/health', methods=['GET'])
 def jd_health():
     """JD Builder health check"""
     try:
@@ -65,7 +65,7 @@ def jd_health():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-@jd_routes.route('/create', methods=['POST'])
+@jd_bp.route('/create', methods=['POST'])
 def create_jd():
     """Create a new job description"""
     try:
@@ -104,7 +104,7 @@ def create_jd():
 # Removed old placeholder get_jd - see line 669 for actual implementation
 
 
-@jd_routes.route('/<jd_id>/basic-info', methods=['PUT'])
+@jd_bp.route('/<jd_id>/basic-info', methods=['PUT'])
 def update_basic_info(jd_id):
     """Update basic information (Step 1 of wizard)"""
     try:
@@ -135,7 +135,7 @@ def update_basic_info(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/description', methods=['PUT'])
+@jd_bp.route('/<jd_id>/description', methods=['PUT'])
 def update_description(jd_id):
     """Update job description (Step 2 of wizard)"""
     try:
@@ -166,7 +166,7 @@ def update_description(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/requirements', methods=['POST'])
+@jd_bp.route('/<jd_id>/requirements', methods=['POST'])
 def add_requirement(jd_id):
     """Add job requirement (Step 3 of wizard)"""
     try:
@@ -195,7 +195,7 @@ def add_requirement(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/responsibilities', methods=['POST'])
+@jd_bp.route('/<jd_id>/responsibilities', methods=['POST'])
 def add_responsibility(jd_id):
     """Add job responsibility (Step 4 of wizard)"""
     try:
@@ -224,7 +224,7 @@ def add_responsibility(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/benefits', methods=['POST'])
+@jd_bp.route('/<jd_id>/benefits', methods=['POST'])
 def add_benefit(jd_id):
     """Add job benefit (Step 5 of wizard)"""
     try:
@@ -253,7 +253,7 @@ def add_benefit(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/compensation', methods=['PUT'])
+@jd_bp.route('/<jd_id>/compensation', methods=['PUT'])
 def update_compensation(jd_id):
     """Update compensation information (Step 6 of wizard)"""
     try:
@@ -282,7 +282,7 @@ def update_compensation(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/generate-description', methods=['POST'])
+@jd_bp.route('/<jd_id>/generate-description', methods=['POST'])
 def generate_description(jd_id):
     """Generate AI-powered job description"""
     try:
@@ -308,7 +308,7 @@ def generate_description(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/completion-score', methods=['GET'])
+@jd_bp.route('/<jd_id>/completion-score', methods=['GET'])
 def get_completion_score(jd_id):
     """Get JD completion score and recommendations"""
     try:
@@ -330,7 +330,7 @@ def get_completion_score(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/match-candidates', methods=['POST'])
+@jd_bp.route('/<jd_id>/match-candidates', methods=['POST'])
 def match_candidates(jd_id):
     """
     Match top 10 candidates to job description with employment status filtering.
@@ -427,7 +427,7 @@ def match_candidates(jd_id):
         }), 500
 
 
-@jd_routes.route('/<jd_id>/validate', methods=['POST'])
+@jd_bp.route('/<jd_id>/validate', methods=['POST'])
 def validate_jd(jd_id):
     """Validate JD before publishing"""
     try:
@@ -449,19 +449,19 @@ def validate_jd(jd_id):
 
 
 # Error handlers
-@jd_routes.errorhandler(404)
+@jd_bp.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Endpoint not found'}), 404
 
 
-@jd_routes.errorhandler(500)
+@jd_bp.errorhandler(500)
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
 
 
 
-@jd_routes.route('/<jd_id>/save', methods=['POST'])
+@jd_bp.route('/<jd_id>/save', methods=['POST'])
 def save_jd(jd_id):
     """
     Save job description (as draft or published)
@@ -639,7 +639,7 @@ def save_jd(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>/publish', methods=['POST'])
+@jd_bp.route('/<jd_id>/publish', methods=['POST'])
 def publish_jd(jd_id):
     """
     Publish a job description (change status from draft to published)
@@ -659,7 +659,7 @@ def publish_jd(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/<jd_id>', methods=['GET'])
+@jd_bp.route('/<jd_id>', methods=['GET'])
 def get_jd(jd_id):
     """
     Retrieve a job description by ID
@@ -695,7 +695,7 @@ def get_jd(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_routes.route('/list', methods=['GET'])
+@jd_bp.route('/list', methods=['GET'])
 def list_jds():
     """
     List all job descriptions with optional filters
