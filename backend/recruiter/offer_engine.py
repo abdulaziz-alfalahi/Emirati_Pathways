@@ -714,6 +714,34 @@ def approve_offer(offer_id, approved_by, notes=''):
         logger.error(f"Error approving offer: {e}")
         return {'success': False, 'error': str(e)}
 
+def reject_offer(offer_id, rejected_by, rejection_reason=''):
+    """Reject an offer"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE job_offers
+            SET approval_status = 'rejected',
+                status = 'rejected',
+                rejected_by = %s,
+                rejection_date = CURRENT_TIMESTAMP,
+                rejection_reason = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE offer_id = %s
+        """, (rejected_by, rejection_reason, offer_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        logger.info(f"Offer rejected: {offer_id} by {rejected_by}")
+        return {'success': True, 'message': 'Offer rejected successfully'}
+        
+    except Exception as e:
+        logger.error(f"Error rejecting offer: {e}")
+        return {'success': False, 'error': str(e)}
+
 def get_offer_statistics(jd_id):
     """Get statistics for offers"""
     try:

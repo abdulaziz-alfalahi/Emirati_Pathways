@@ -219,6 +219,28 @@ def approve_offer(offer_id):
         logger.error(f"Error in approve_offer route: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@offer_bp.route('/<offer_id>/reject', methods=['POST'])
+def reject_offer(offer_id):
+    """Reject an offer"""
+    try:
+        data = request.json
+        rejected_by = data.get('rejected_by')
+        rejection_reason = data.get('rejection_reason', '')
+        
+        if not rejected_by:
+            return jsonify({'success': False, 'error': 'rejected_by is required'}), 400
+        
+        result = offer_engine.reject_offer(offer_id, rejected_by, rejection_reason)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"Error in reject_offer route: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @offer_bp.route('/stats/<jd_id>', methods=['GET'])
 def get_offer_statistics(jd_id):
     """Get statistics for offers"""
