@@ -447,6 +447,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               <Autocomplete
                 multiple
                 freeSolo
+                fullWidth
                 options={[
                   'Performance Bonus',
                   'Education Allowance',
@@ -457,9 +458,14 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 ]}
                 value={additionalBenefits}
                 onChange={(_, newValue) => setAdditionalBenefits(newValue)}
+                ListboxProps={{
+                  style: {
+                    maxHeight: '250px',
+                  }
+                }}
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
-                    <Chip label={option} {...getTagProps({ index })} />
+                    <Chip label={option} {...getTagProps({ index })} size="small" />
                   ))
                 }
                 renderInput={(params) => (
@@ -467,6 +473,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                     {...params}
                     label="Additional Benefits"
                     placeholder="Add benefit and press Enter"
+                    fullWidth
                   />
                 )}
               />
