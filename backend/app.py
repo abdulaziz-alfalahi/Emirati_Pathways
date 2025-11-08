@@ -445,6 +445,46 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ HR Interview Scheduling Blueprint not available: {e}")
 
+# Register Recruiter Shortlist Blueprint
+try:
+    from recruiter.shortlist_routes import shortlist_bp
+    app.register_blueprint(shortlist_bp, url_prefix='/api/recruiter/shortlist')
+    logger.info("✅ Recruiter Shortlist Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Shortlist Blueprint not available: {e}")
+
+# Register Recruiter Offer Blueprint
+try:
+    from recruiter.offer_routes import offer_bp
+    app.register_blueprint(offer_bp, url_prefix='/api/recruiter/offers')
+    logger.info("✅ Recruiter Offer Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Offer Blueprint not available: {e}")
+
+# Register Recruiter Interview Blueprint
+try:
+    from recruiter.interview_routes import interview_bp
+    app.register_blueprint(interview_bp, url_prefix='/api/recruiter/interviews')
+    logger.info("✅ Recruiter Interview Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Interview Blueprint not available: {e}")
+
+# Register Recruiter JD Blueprint
+try:
+    from recruiter.jd_routes import jd_bp
+    app.register_blueprint(jd_bp, url_prefix='/api/recruiter/jd')
+    logger.info("✅ Recruiter JD Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter JD Blueprint not available: {e}")
+
+# Register Recruiter Communication Blueprint
+try:
+    from recruiter.communication_routes import communication_bp
+    app.register_blueprint(communication_bp, url_prefix='/api/recruiter/communication')
+    logger.info("✅ Recruiter Communication Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Communication Blueprint not available: {e}")
+
 # Register Candidate Profile Management Blueprint
 try:
     from candidate_profile_routes import candidate_profile_bp
