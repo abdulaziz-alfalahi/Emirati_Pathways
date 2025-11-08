@@ -430,7 +430,8 @@ class InterviewSchedulingEngine:
             'scheduled_date', 'scheduled_time', 'duration_minutes',
             'location', 'meeting_link', 'meeting_platform',
             'status', 'confirmation_status', 'interviewers',
-            'notes', 'internal_notes', 'metadata'
+            'notes', 'internal_notes', 'metadata',
+            'feedback', 'rating', 'recommendation'  # Added for interview feedback
         ]
         
         for field in allowed_fields:
