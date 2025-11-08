@@ -119,6 +119,9 @@ def create_offer_table():
             approved_by VARCHAR(50),
             approval_date TIMESTAMP,
             approval_notes TEXT,
+            rejected_by VARCHAR(50),
+            rejection_date TIMESTAMP,
+            rejection_reason TEXT,
             
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
