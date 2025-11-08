@@ -700,7 +700,7 @@ def approve_offer(offer_id, approved_by, notes=''):
             UPDATE job_offers
             SET status = 'approved',
                 approved_by = %s,
-                approved_at = CURRENT_TIMESTAMP,
+                approval_date = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
             WHERE offer_id = %s
         """, (approved_by, offer_id))
