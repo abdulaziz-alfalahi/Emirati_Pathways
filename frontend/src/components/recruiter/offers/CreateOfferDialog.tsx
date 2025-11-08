@@ -494,7 +494,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           Create New Job Offer
         </Box>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent dividers sx={{ minHeight: '500px', maxHeight: '70vh' }}>
         <Box sx={{ mt: 2 }}>
           <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
             {steps.map((label) => (
@@ -510,7 +510,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
             </Alert>
           )}
 
-          {renderStepContent(activeStep)}
+          <Box sx={{ minHeight: '350px', pb: 2 }}>
+            {renderStepContent(activeStep)}
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions>
