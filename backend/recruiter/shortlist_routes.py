@@ -16,7 +16,7 @@ from .shortlist_engine import ShortlistEngine, ShortlistStatus
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-shortlist_routes = Blueprint('shortlist', __name__)
+shortlist_bp = Blueprint('shortlist', __name__)
 
 # Database configuration
 DB_CONFIG = {
@@ -31,7 +31,7 @@ def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
 
-@shortlist_routes.route('/health', methods=['GET'])
+@shortlist_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check for shortlist routes"""
     return jsonify({
@@ -40,7 +40,7 @@ def health_check():
     }), 200
 
 
-@shortlist_routes.route('/api/recruiter/shortlist/add', methods=['POST'])
+@shortlist_bp.route('/api/recruiter/shortlist/add', methods=['POST'])
 def add_to_shortlist():
     """
     Add a candidate to shortlist
@@ -142,7 +142,7 @@ def add_to_shortlist():
         return jsonify({'error': str(e)}), 500
 
 
-@shortlist_routes.route('/api/recruiter/shortlist/<jd_id>', methods=['GET'])
+@shortlist_bp.route('/api/recruiter/shortlist/<jd_id>', methods=['GET'])
 def get_shortlist(jd_id):
     """
     Get shortlisted candidates for a job description
@@ -222,7 +222,7 @@ def get_shortlist(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@shortlist_routes.route('/api/recruiter/shortlist/<shortlist_id>/status', methods=['PUT'])
+@shortlist_bp.route('/api/recruiter/shortlist/<shortlist_id>/status', methods=['PUT'])
 def update_shortlist_status(shortlist_id):
     """
     Update shortlist candidate status
@@ -284,7 +284,7 @@ def update_shortlist_status(shortlist_id):
         return jsonify({'error': str(e)}), 500
 
 
-@shortlist_routes.route('/api/recruiter/shortlist/<shortlist_id>', methods=['DELETE'])
+@shortlist_bp.route('/api/recruiter/shortlist/<shortlist_id>', methods=['DELETE'])
 def remove_from_shortlist(shortlist_id):
     """Remove a candidate from shortlist"""
     try:
@@ -311,7 +311,7 @@ def remove_from_shortlist(shortlist_id):
         return jsonify({'error': str(e)}), 500
 
 
-@shortlist_routes.route('/api/recruiter/shortlist/<shortlist_id>/notes', methods=['POST'])
+@shortlist_bp.route('/api/recruiter/shortlist/<shortlist_id>/notes', methods=['POST'])
 def add_note(shortlist_id):
     """
     Add a note to shortlist entry
@@ -357,7 +357,7 @@ def add_note(shortlist_id):
         return jsonify({'error': str(e)}), 500
 
 
-@shortlist_routes.route('/api/recruiter/shortlist/<jd_id>/stats', methods=['GET'])
+@shortlist_bp.route('/api/recruiter/shortlist/<jd_id>/stats', methods=['GET'])
 def get_shortlist_stats(jd_id):
     """Get statistics for a job description's shortlist"""
     try:
