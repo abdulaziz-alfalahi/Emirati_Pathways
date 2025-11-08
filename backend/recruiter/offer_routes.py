@@ -241,18 +241,4 @@ def reject_offer(offer_id):
         logger.error(f"Error in reject_offer route: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@offer_bp.route('/stats/<jd_id>', methods=['GET'])
-def get_offer_statistics(jd_id):
-    """Get statistics for offers"""
-    try:
-        result = offer_engine.get_offer_statistics(jd_id)
-        
-        if result['success']:
-            return jsonify(result), 200
-        else:
-            return jsonify(result), 400
-            
-    except Exception as e:
-        logger.error(f"Error in get_offer_statistics route: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
 
