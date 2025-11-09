@@ -485,6 +485,22 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ Recruiter Communication Blueprint not available: {e}")
 
+# Register Recruiter Statistics Blueprint
+try:
+    from recruiter.statistics_routes import statistics_bp
+    app.register_blueprint(statistics_bp, url_prefix='/api/recruiter/statistics')
+    logger.info("✅ Recruiter Statistics Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Statistics Blueprint not available: {e}")
+
+# Register Recruiter Reports Blueprint
+try:
+    from recruiter.reports_routes import reports_bp
+    app.register_blueprint(reports_bp, url_prefix='/api/recruiter/reports')
+    logger.info("✅ Recruiter Reports Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Reports Blueprint not available: {e}")
+
 # Register Candidate Profile Management Blueprint
 try:
     from candidate_profile_routes import candidate_profile_bp
