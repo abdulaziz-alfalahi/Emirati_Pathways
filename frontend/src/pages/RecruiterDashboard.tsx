@@ -120,9 +120,9 @@ const RecruiterDashboard: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.data && result.data.length > 0) {
+        if (result.job_descriptions && result.job_descriptions.length > 0) {
           // Navigate to the first JD's shortlist
-          const firstJD = result.data[0];
+          const firstJD = result.job_descriptions[0];
           navigate(`/recruiter/shortlist/${firstJD.id}`);
         } else {
           alert('No job descriptions found. Please create a job description first.');
