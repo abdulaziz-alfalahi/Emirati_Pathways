@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,7 @@ interface RecruiterData {
 
 const RecruiterDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
     placements: {
       thisMonth: 0,
@@ -246,7 +248,7 @@ const RecruiterDashboard: React.FC = () => {
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interviews
               </Button>
-              <Button variant="outline" className="font-dubai-medium">
+              <Button variant="outline" className="font-dubai-medium" onClick={() => setExportDialogOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Reports
               </Button>
@@ -579,6 +581,12 @@ const RecruiterDashboard: React.FC = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Export Reports Dialog */}
+      <ExportReportsDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+      />
     </div>
   );
 };
