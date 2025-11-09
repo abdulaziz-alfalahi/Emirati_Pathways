@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
 import ScheduleInterviewDialog from '@/components/recruiter/ScheduleInterviewDialog';
 import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
+import ManageShortlistDialog from '@/components/recruiter/ManageShortlistDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +80,7 @@ const RecruiterDashboard: React.FC = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [scheduleInterviewDialogOpen, setScheduleInterviewDialogOpen] = useState(false);
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
+  const [manageShortlistDialogOpen, setManageShortlistDialogOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
     placements: {
       thisMonth: 0,
@@ -242,12 +244,10 @@ const RecruiterDashboard: React.FC = () => {
                 <Users className="h-4 w-4 mr-2" />
                 Source Candidates
               </Button>
-              <Link to="/recruiter/shortlist/jd_001">
-                <Button variant="outline" className="font-dubai-medium">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Manage Shortlist
-                </Button>
-              </Link>
+              <Button variant="outline" className="font-dubai-medium" onClick={() => setManageShortlistDialogOpen(true)}>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Manage Shortlist
+              </Button>
               <Button variant="outline" className="font-dubai-medium" onClick={() => setScheduleInterviewDialogOpen(true)}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interviews
@@ -602,6 +602,12 @@ const RecruiterDashboard: React.FC = () => {
       <SourceCandidatesDialog
         open={sourceCandidatesDialogOpen}
         onClose={() => setSourceCandidatesDialogOpen(false)}
+      />
+
+      {/* Manage Shortlist Dialog */}
+      <ManageShortlistDialog
+        open={manageShortlistDialogOpen}
+        onClose={() => setManageShortlistDialogOpen(false)}
       />
     </div>
   );
