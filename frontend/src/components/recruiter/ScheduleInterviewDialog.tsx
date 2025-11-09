@@ -75,9 +75,9 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.data) {
+        if (result.job_descriptions) {
           // Filter only active JDs
-          const activeJDs = result.data.filter((jd: any) => jd.status === 'active');
+          const activeJDs = result.job_descriptions.filter((jd: any) => jd.status === 'active' || jd.status === 'published');
           setJobDescriptions(activeJDs);
         }
       }

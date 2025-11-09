@@ -51,10 +51,10 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.data) {
-          // Show all JDs (active and paused)
-          const relevantJDs = result.data.filter(
-            (jd: any) => jd.status === 'active' || jd.status === 'paused'
+        if (result.job_descriptions) {
+          // Show all JDs (active, published, and paused)
+          const relevantJDs = result.job_descriptions.filter(
+            (jd: any) => jd.status === 'active' || jd.status === 'published' || jd.status === 'paused'
           );
           setJobDescriptions(relevantJDs);
         }
