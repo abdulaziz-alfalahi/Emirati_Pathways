@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
 import ScheduleInterviewDialog from '@/components/recruiter/ScheduleInterviewDialog';
 import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
-import ManageShortlistDialog from '@/components/recruiter/ManageShortlistDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,11 +75,11 @@ interface RecruiterData {
 
 
 const RecruiterDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [scheduleInterviewDialogOpen, setScheduleInterviewDialogOpen] = useState(false);
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
-  const [manageShortlistDialogOpen, setManageShortlistDialogOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
     placements: {
       thisMonth: 0,
@@ -107,6 +106,35 @@ const RecruiterDashboard: React.FC = () => {
   React.useEffect(() => {
     loadDashboardData();
   }, []);
+
+  const handleManageShortlist = async () => {
+    try {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      
+      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+          // Navigate to the first JD's shortlist
+          const firstJD = result.data[0];
+          navigate(`/recruiter/shortlist/${firstJD.id}`);
+        } else {
+          alert('No job descriptions found. Please create a job description first.');
+        }
+      } else {
+        alert('Failed to load job descriptions.');
+      }
+    } catch (error) {
+      console.error('Error loading job descriptions:', error);
+      alert('Failed to load job descriptions.');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -244,7 +272,7 @@ const RecruiterDashboard: React.FC = () => {
                 <Users className="h-4 w-4 mr-2" />
                 Source Candidates
               </Button>
-              <Button variant="outline" className="font-dubai-medium" onClick={() => setManageShortlistDialogOpen(true)}>
+              <Button variant="outline" className="font-dubai-medium" onClick={handleManageShortlist}>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Manage Shortlist
               </Button>
@@ -602,12 +630,6 @@ const RecruiterDashboard: React.FC = () => {
       <SourceCandidatesDialog
         open={sourceCandidatesDialogOpen}
         onClose={() => setSourceCandidatesDialogOpen(false)}
-      />
-
-      {/* Manage Shortlist Dialog */}
-      <ManageShortlistDialog
-        open={manageShortlistDialogOpen}
-        onClose={() => setManageShortlistDialogOpen(false)}
       />
     </div>
   );
