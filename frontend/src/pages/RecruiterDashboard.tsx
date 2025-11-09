@@ -95,10 +95,40 @@ const RecruiterDashboard: React.FC = () => {
     activity: []
   });
 
-  // Initialize with mock data
+  // Load real dashboard data from backend
   React.useEffect(() => {
-    setMockData();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      
+      const response = await fetch('http://localhost:5003/api/recruiter/statistics/dashboard', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setDashboardData(result.data);
+          console.log('✅ Dashboard data loaded from backend');
+        } else {
+          console.log('⚠️ API returned no data, using mock data');
+          setMockData();
+        }
+      } else {
+        console.log('⚠️ API call failed, using mock data');
+        setMockData();
+      }
+    } catch (error) {
+      console.error('❌ Error loading dashboard data:', error);
+      setMockData();
+    }
+  };
 
   const setMockData = () => {
     setDashboardData({
