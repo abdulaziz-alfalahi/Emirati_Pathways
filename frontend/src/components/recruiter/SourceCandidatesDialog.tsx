@@ -48,13 +48,13 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       
       // Build query parameters
       const params = new URLSearchParams();
-      if (searchQuery) params.append('query', searchQuery);
-      if (location) params.append('location', location);
+      if (searchQuery) params.append('search', searchQuery);
+      if (location) params.append('preferred_location', location);
       if (minExperience) params.append('min_experience', minExperience);
       if (skills) params.append('skills', skills);
 
       const response = await fetch(
-        `http://localhost:5003/api/candidates/search?${params.toString()}`,
+        `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
         {
           headers: {
             'Authorization': token ? `Bearer ${token}` : '',
@@ -65,8 +65,8 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.data) {
-          setCandidates(result.data);
+        if (result.success && result.data && result.data.candidates) {
+          setCandidates(result.data.candidates);
         } else {
           setCandidates([]);
         }
@@ -232,29 +232,24 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                           {candidate.first_name} {candidate.last_name}
                         </h4>
                         
-                        {candidate.current_position && (
+                        {candidate.experience_years !== undefined && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                             <Briefcase className="h-4 w-4" />
-                            {candidate.current_position}
-                            {candidate.experience_years && (
-                              <span className="text-gray-400">
-                                • {candidate.experience_years} years exp.
-                              </span>
-                            )}
+                            {candidate.experience_years} years experience
                           </div>
                         )}
 
-                        {candidate.education && (
+                        {candidate.education_level && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                             <GraduationCap className="h-4 w-4" />
-                            {candidate.education}
+                            {candidate.education_level}
                           </div>
                         )}
 
-                        {candidate.location && (
+                        {candidate.preferred_location && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                             <MapPin className="h-4 w-4" />
-                            {candidate.location}
+                            {candidate.preferred_location}
                           </div>
                         )}
 
