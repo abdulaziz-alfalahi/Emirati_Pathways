@@ -698,13 +698,12 @@ def approve_offer(offer_id, approved_by, notes=''):
         
         cur.execute("""
             UPDATE job_offers
-            SET approval_status = 'approved',
+            SET status = 'approved',
                 approved_by = %s,
                 approval_date = CURRENT_TIMESTAMP,
-                approval_notes = %s,
                 updated_at = CURRENT_TIMESTAMP
             WHERE offer_id = %s
-        """, (approved_by, notes, offer_id))
+        """, (approved_by, offer_id))
         
         conn.commit()
         cur.close()
