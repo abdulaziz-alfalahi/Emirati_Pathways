@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
+import ScheduleInterviewDialog from '@/components/recruiter/ScheduleInterviewDialog';
+import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -75,6 +77,8 @@ interface RecruiterData {
 const RecruiterDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [scheduleInterviewDialogOpen, setScheduleInterviewDialogOpen] = useState(false);
+  const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
     placements: {
       thisMonth: 0,
@@ -234,7 +238,7 @@ const RecruiterDashboard: React.FC = () => {
                   New Search Assignment
                 </Button>
               </Link>
-              <Button variant="outline" className="font-dubai-medium">
+              <Button variant="outline" className="font-dubai-medium" onClick={() => setSourceCandidatesDialogOpen(true)}>
                 <Users className="h-4 w-4 mr-2" />
                 Source Candidates
               </Button>
@@ -244,7 +248,7 @@ const RecruiterDashboard: React.FC = () => {
                   Manage Shortlist
                 </Button>
               </Link>
-              <Button variant="outline" className="font-dubai-medium">
+              <Button variant="outline" className="font-dubai-medium" onClick={() => setScheduleInterviewDialogOpen(true)}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Schedule Interviews
               </Button>
@@ -586,6 +590,18 @@ const RecruiterDashboard: React.FC = () => {
       <ExportReportsDialog
         open={exportDialogOpen}
         onClose={() => setExportDialogOpen(false)}
+      />
+
+      {/* Schedule Interview Dialog */}
+      <ScheduleInterviewDialog
+        open={scheduleInterviewDialogOpen}
+        onClose={() => setScheduleInterviewDialogOpen(false)}
+      />
+
+      {/* Source Candidates Dialog */}
+      <SourceCandidatesDialog
+        open={sourceCandidatesDialogOpen}
+        onClose={() => setSourceCandidatesDialogOpen(false)}
       />
     </div>
   );
