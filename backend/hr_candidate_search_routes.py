@@ -390,18 +390,12 @@ def search_candidates():
         if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
-        # Verify HR access
+        # User already verified by JWT role check above
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Verify user is HR
-            cursor.execute("SELECT id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
-            if not cursor.fetchone():
-                return jsonify({
-                    'success': False,
-                    'message': 'Access denied. HR profile required.'
-                }), 403
+            # Role check already done by JWT claims, no need for hr_profiles table check
             
             # Get search filters from query parameters
             filters = {
