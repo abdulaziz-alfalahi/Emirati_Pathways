@@ -106,7 +106,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-width-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] lg:max-w-[1000px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -224,47 +224,51 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                 {candidates.map((candidate) => (
                   <div
                     key={candidate.id}
-                    className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                    className="p-5 border rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-lg">
                           {candidate.first_name} {candidate.last_name}
                         </h4>
                         
-                        {candidate.experience_years !== undefined && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                            <Briefcase className="h-4 w-4" />
-                            {candidate.experience_years} years experience
-                          </div>
-                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                          {candidate.experience_years !== undefined && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Briefcase className="h-4 w-4 flex-shrink-0" />
+                              <span>{candidate.experience_years} years experience</span>
+                            </div>
+                          )}
 
-                        {candidate.education_level && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                            <GraduationCap className="h-4 w-4" />
-                            {candidate.education_level}
-                          </div>
-                        )}
+                          {candidate.education_level && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <GraduationCap className="h-4 w-4 flex-shrink-0" />
+                              <span>{candidate.education_level}</span>
+                            </div>
+                          )}
 
-                        {candidate.preferred_location && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                            <MapPin className="h-4 w-4" />
-                            {candidate.preferred_location}
-                          </div>
-                        )}
+                          {candidate.preferred_location && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <MapPin className="h-4 w-4 flex-shrink-0" />
+                              <span>{candidate.preferred_location}</span>
+                            </div>
+                          )}
+                        </div>
 
                         {candidate.skills && candidate.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {candidate.skills.slice(0, 5).map((skill, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {skill}
-                              </Badge>
-                            ))}
-                            {candidate.skills.length > 5 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{candidate.skills.length - 5} more
-                              </Badge>
-                            )}
+                          <div className="mt-3">
+                            <div className="flex flex-wrap gap-2">
+                              {candidate.skills.slice(0, 8).map((skill, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {candidate.skills.length > 8 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{candidate.skills.length - 8} more
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         )}
 
@@ -287,11 +291,12 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="flex flex-col gap-2 flex-shrink-0">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleViewProfile(candidate.id)}
+                          className="whitespace-nowrap"
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
                           View Profile
@@ -299,6 +304,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                         <Button
                           size="sm"
                           onClick={() => handleContactCandidate(candidate)}
+                          className="whitespace-nowrap"
                         >
                           <Mail className="h-4 w-4 mr-1" />
                           Contact
