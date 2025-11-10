@@ -435,13 +435,20 @@ def search_candidates():
             # Build and execute search query
             search_query, count_query, count_params, search_params = CandidateSearchEngine.build_search_query(filters)
             
+            # DEBUG: Log the query and parameters
+            logger.info(f"DEBUG Search filters: {filters}")
+            logger.info(f"DEBUG Search query: {search_query}")
+            logger.info(f"DEBUG Search params: {search_params}")
+            
             # Get total count
             cursor.execute(count_query, count_params)
             total_count = cursor.fetchone()['count']
+            logger.info(f"DEBUG Total count: {total_count}")
             
             # Get candidates
             cursor.execute(search_query, search_params)
             candidates = cursor.fetchall()
+            logger.info(f"DEBUG Candidates found: {len(candidates)}")
             
             # Convert to list of dicts
             candidates_data = []
