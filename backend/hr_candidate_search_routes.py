@@ -94,8 +94,12 @@ class CandidateSearchEngine:
                 params.append(filters['emirate'])
         
         if filters.get('preferred_location'):
-            where_conditions.append("u.preferred_location ILIKE %s")
-            params.append(f"%{filters['preferred_location']}%")
+            # Search in both preferred_location and emirate, or allow null (candidate open to any location)
+            where_conditions.append(
+                "(u.preferred_location ILIKE %s OR u.emirate ILIKE %s OR u.preferred_location IS NULL)"
+            )
+            location_param = f"%{filters['preferred_location']}%"
+            params.extend([location_param, location_param])
         
         # Nationality filters
         if filters.get('nationality'):
