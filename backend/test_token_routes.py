@@ -67,6 +67,54 @@ def generate_recruiter_token():
         }), 500
 
 
+@test_token_bp.route('/check-candidates', methods=['GET'])
+def check_candidates():
+    """Check how many candidates exist in database"""
+    import psycopg2
+    import psycopg2.extras
+    import os
+    
+    try:
+        DB_CONFIG = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'database': os.getenv('DB_NAME', 'emirati_journey'),
+            'user': os.getenv('DB_USER', 'emirati_user'),
+            'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
+        }
+        
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Count total candidates
+        cur.execute("SELECT COUNT(*) as count FROM users WHERE role = 'candidate'")
+        total_count = cur.fetchone()['count']
+        
+        # Get sample candidates
+        cur.execute("""
+            SELECT id, first_name, last_name, email, emirate, 
+                   experience_years, education_level, skills, preferred_location
+            FROM users 
+            WHERE role = 'candidate'
+            LIMIT 5
+        """)
+        samples = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'total_candidates': total_count,
+            'sample_candidates': [dict(s) for s in samples]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @test_token_bp.route('/health', methods=['GET'])
 def health():
     """Health check"""
