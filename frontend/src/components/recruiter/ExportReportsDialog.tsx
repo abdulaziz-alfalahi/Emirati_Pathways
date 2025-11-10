@@ -39,7 +39,7 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
     try {
       setLoading(true);
 
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       // Build query parameters
       const params = new URLSearchParams();
