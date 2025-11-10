@@ -44,7 +44,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       setLoading(true);
       setSearched(true);
 
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       // Build query parameters
       const params = new URLSearchParams();

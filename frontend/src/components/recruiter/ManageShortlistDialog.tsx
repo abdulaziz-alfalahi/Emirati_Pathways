@@ -40,7 +40,7 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
   const loadJobDescriptions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
         headers: {

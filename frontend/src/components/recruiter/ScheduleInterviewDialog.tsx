@@ -64,7 +64,7 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
 
   const loadJobDescriptions = async () => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
         headers: {
@@ -89,7 +89,7 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
   const loadCandidates = async (jdId: string) => {
     try {
       setLoadingCandidates(true);
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       const response = await fetch(`http://localhost:5003/api/recruiter/shortlist/${jdId}`, {
         headers: {
@@ -124,7 +124,7 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
     try {
       setLoading(true);
 
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       // Combine date and time
       const scheduledDateTime = `${scheduledDate}T${scheduledTime}:00`;

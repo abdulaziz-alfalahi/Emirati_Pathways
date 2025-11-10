@@ -109,7 +109,7 @@ const RecruiterDashboard: React.FC = () => {
 
   const handleManageShortlist = async () => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
         headers: {
@@ -138,7 +138,7 @@ const RecruiterDashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       const response = await fetch('http://localhost:5003/api/recruiter/statistics/dashboard', {
         headers: {
