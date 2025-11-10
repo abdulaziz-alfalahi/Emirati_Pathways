@@ -138,6 +138,14 @@ try:
 except ImportError as e:
     logger.error(f"❌ Failed to import enhanced authentication routes: {e}")
 
+# Import and register test token routes (for debugging)
+try:
+    from test_token_routes import test_token_bp
+    app.register_blueprint(test_token_bp)
+    logger.info("✅ Test Token routes registered successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import test token routes: {e}")
+
 # Import and register profile management routes
 try:
     from profile_management_routes import profile_bp
