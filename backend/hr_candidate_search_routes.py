@@ -74,14 +74,14 @@ class CandidateSearchEngine:
         params = []
         joins = []
         
-        # Text search in name, email, or skills
+        # Text search in skills only (more relevant for candidate search)
+        # Searching in names/emails is too restrictive and returns no results
         if filters.get('search'):
             search_term = f"%{filters['search']}%"
-            where_conditions.append("""
-                (u.first_name ILIKE %s OR u.last_name ILIKE %s OR u.email ILIKE %s 
-                 OR array_to_string(u.skills, ' ') ILIKE %s)
-            """)
-            params.extend([search_term, search_term, search_term, search_term])
+            where_conditions.append(
+                "array_to_string(u.skills, ' ') ILIKE %s"
+            )
+            params.append(search_term)
         
         # Location filters
         if filters.get('emirate'):
