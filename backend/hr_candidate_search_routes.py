@@ -511,21 +511,20 @@ def get_candidate_details(candidate_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
-            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+        user_role = claims.get('role', '') if claims else ''
+        
+        # Accept multiple role names for HR/Recruiter access
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({
+                'success': False, 
+                'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'
+            }), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Verify HR access
-            cursor.execute("SELECT id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
-            if not cursor.fetchone():
-                return jsonify({
-                    'success': False,
-                    'message': 'Access denied. HR profile required.'
-                }), 403
-            
             # Get candidate details
             cursor.execute("""
                 SELECT 
@@ -790,21 +789,20 @@ def get_filter_options():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
-            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+        user_role = claims.get('role', '') if claims else ''
+        
+        # Accept multiple role names for HR/Recruiter access
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({
+                'success': False, 
+                'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'
+            }), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Verify HR access
-            cursor.execute("SELECT id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
-            if not cursor.fetchone():
-                return jsonify({
-                    'success': False,
-                    'message': 'Access denied. HR profile required.'
-                }), 403
-            
             # Get unique values for filter options
             filter_options = {}
             
