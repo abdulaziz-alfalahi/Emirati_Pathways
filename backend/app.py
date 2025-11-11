@@ -457,6 +457,23 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ HR Interview Scheduling Blueprint not available: {e}")
 
+# Register HR Offer Management Blueprint
+try:
+    from hr_offer_routes import hr_offer_bp, public_offer_bp
+    app.register_blueprint(hr_offer_bp)
+    app.register_blueprint(public_offer_bp)
+    logger.info("✅ HR Offer Management Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Offer Management Blueprint not available: {e}")
+
+# Register HR Approval Workflow Blueprint
+try:
+    from hr_approval_routes import hr_approval_bp
+    app.register_blueprint(hr_approval_bp)
+    logger.info("✅ HR Approval Workflow Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Approval Workflow Blueprint not available: {e}")
+
 # Register Recruiter Shortlist Blueprint
 try:
     from recruiter.shortlist_routes import shortlist_bp
