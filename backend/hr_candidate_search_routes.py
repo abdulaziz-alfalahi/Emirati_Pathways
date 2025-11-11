@@ -563,7 +563,7 @@ def get_candidate_details(candidate_id):
                     c.name as company_name
                 FROM job_applications ja
                 LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
-                LEFT JOIN companies c ON jp.company_id = c.id
+                LEFT JOIN companies c ON jp.company_id::uuid = c.id
                 WHERE ja.user_id = %s
                 ORDER BY ja.submitted_at DESC
                 LIMIT 5
