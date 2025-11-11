@@ -57,8 +57,10 @@ def create_approval_request():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         data = request.get_json() or {}
         resource_type = (data.get("resource_type") or "").strip()
@@ -113,8 +115,10 @@ def list_approval_requests():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         status = request.args.get("status")
         resource_type = request.args.get("resource_type")
@@ -188,8 +192,10 @@ def get_approval_request(req_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
@@ -215,8 +221,10 @@ def approve_request(req_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
         data = request.get_json() or {}
         comment = data.get("comment")
 
@@ -255,8 +263,10 @@ def reject_request(req_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
         data = request.get_json() or {}
         comment = data.get("comment")
 

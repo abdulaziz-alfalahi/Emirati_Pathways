@@ -52,8 +52,10 @@ def list_offers():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         job_id = request.args.get("job_id")
         candidate_id = request.args.get("candidate_id", type=int)
@@ -153,8 +155,10 @@ def create_offer():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         data = request.get_json() or {}
         job_posting_id = data.get("job_posting_id")
@@ -234,8 +238,10 @@ def get_offer(offer_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
@@ -279,8 +285,10 @@ def send_offer(offer_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
-            return jsonify({"success": False, "message": "Insufficient permissions"}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
         data = request.get_json() or {}
         expires_in_days = int(data.get("expires_in_days", 7))
