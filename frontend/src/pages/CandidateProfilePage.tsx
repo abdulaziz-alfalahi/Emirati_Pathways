@@ -79,8 +79,8 @@ const CandidateProfilePage: React.FC = () => {
       const data = await response.json();
       
       if (data.success) {
-        setCandidate(data.candidate);
-        setApplications(data.recent_applications || []);
+        setCandidate(data.data.candidate);
+        setApplications(data.data.recent_applications || []);
       } else {
         setError(data.message || 'Failed to load candidate profile');
       }
