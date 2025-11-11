@@ -531,12 +531,10 @@ def get_candidate_details(candidate_id):
                     u.*,
                     COUNT(DISTINCT ja.id) as total_applications,
                     COUNT(DISTINCT CASE WHEN ja.application_status = 'submitted' THEN ja.id END) as pending_applications,
-                    COUNT(DISTINCT i.id) as total_interviews,
                     MAX(ja.submitted_at) as last_application_date,
                     MAX(u.last_login) as last_activity
                 FROM users u
                 LEFT JOIN job_applications ja ON u.id = ja.user_id
-                LEFT JOIN interviews i ON ja.id = i.application_id
                 WHERE u.id = %s AND u.role = 'candidate'
                 GROUP BY u.id
             """, (candidate_id,))
@@ -578,31 +576,8 @@ def get_candidate_details(candidate_id):
                 if app.get('submitted_at'):
                     app['submitted_at'] = app['submitted_at'].isoformat()
             
-            # Get interview history
-            cursor.execute("""
-                SELECT 
-                    i.*,
-                    jp.title as job_title,
-                    c.name as company_name,
-                    u.first_name || ' ' || u.last_name as interviewer_name
-                FROM interviews i
-                LEFT JOIN job_applications ja ON i.application_id = ja.id
-                LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
-                LEFT JOIN companies c ON jp.company_id = c.id
-                LEFT JOIN users u ON i.interviewer_id = u.id
-                WHERE i.candidate_id = %s
-                ORDER BY i.scheduled_date DESC
-                LIMIT 5
-            """, (candidate_id,))
-            
-            interview_history = [dict(interview) for interview in cursor.fetchall()]
-            
-            # Format interview dates
-            for interview in interview_history:
-                if interview.get('scheduled_date'):
-                    interview['scheduled_date'] = interview['scheduled_date'].isoformat()
-                if interview.get('created_at'):
-                    interview['created_at'] = interview['created_at'].isoformat()
+            # Interview history not available (interviews table doesn't exist yet)
+            interview_history = []
             
             # Format main candidate dates
             if candidate_data.get('created_at'):
@@ -626,8 +601,8 @@ def get_candidate_details(candidate_id):
                     'profile_summary': {
                         'total_applications': candidate_data['total_applications'],
                         'pending_applications': candidate_data['pending_applications'],
-                        'total_interviews': candidate_data['total_interviews'],
-                        'response_rate': round((candidate_data['total_interviews'] / max(candidate_data['total_applications'], 1)) * 100, 1),
+                        'total_interviews': 0,
+                        'response_rate': 0,
                         'activity_level': 'active' if candidate_data.get('last_login') and 
                                         datetime.fromisoformat(candidate_data['last_login'].replace('Z', '+00:00')) > datetime.now().replace(tzinfo=None) - timedelta(days=7) 
                                         else 'inactive'
