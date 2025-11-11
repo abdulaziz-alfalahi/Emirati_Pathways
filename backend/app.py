@@ -114,8 +114,12 @@ except ImportError as e:
 
 # Import CV Builder routes (optional)
 try:
-    from cv_builder_routes import cv_builder_bp
-    app.register_blueprint(cv_builder_bp)
+    from cv_builder.cv_routes import cv_routes
+    from cv_builder.cv_management_routes import cv_management_routes
+    from cv_builder.cv_analytics_routes import cv_analytics_routes
+    app.register_blueprint(cv_routes)
+    app.register_blueprint(cv_management_routes)
+    app.register_blueprint(cv_analytics_routes)
     logger.info("✅ CV Builder routes registered successfully")
     cv_builder_available = True
 except ImportError as e:
