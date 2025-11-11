@@ -39,6 +39,7 @@ const BatchUploadPage = lazy(() => import('@/pages/recruiter/BatchUpload'));
 const RecruiterAnalyticsPage = lazy(() => import('@/pages/recruiter/Analytics'));
 const InterviewDetailsPage = lazy(() => import('@/pages/recruiter/InterviewDetails'));
 const ShortlistPage = lazy(() => import('@/pages/recruiter/ShortlistPage'));
+const CandidateProfilePage = lazy(() => import('@/pages/CandidateProfilePage'));
 const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 
@@ -220,8 +221,17 @@ const AppContent: React.FC = () => {
                 <Route 
                   path="/recruiter/shortlist/:jdId" 
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
                       <ShortlistPage />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/candidate-profile/:candidateId" 
+                  element={
+                    <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                      <CandidateProfilePage />
                     </ProtectedRoute>
                   } 
                 />
