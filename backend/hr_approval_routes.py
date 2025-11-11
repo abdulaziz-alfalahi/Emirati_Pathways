@@ -142,7 +142,8 @@ def list_approval_requests():
             cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id=%s", (current_user_id,))
             row = cursor.fetchone()
             if not row or not row.get("company_id"):
-                return jsonify({"success": False, "message": "No company associated with your profile"}), 400
+                # No HR profile yet - return empty list
+                return jsonify({"success": True, "data": {"requests": [], "total_count": 0}}), 200
             company_id = row["company_id"]
 
             where = ["ar.company_id = %s"]
