@@ -53,7 +53,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 COUNT(*) FILTER (WHERE created_at >= %(start_of_month)s) as this_month,
                 COUNT(*) FILTER (WHERE created_at >= %(start_of_quarter)s) as this_quarter,
                 COUNT(*) FILTER (WHERE created_at >= %(start_of_year)s) as this_year
-            FROM job_offers
+            FROM offers
             WHERE {recruiter_filter} status = 'accepted'
         """, {**params, 
               'start_of_month': start_of_month,
@@ -65,10 +65,10 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
         # 2. Pipeline Statistics  
         cursor.execute(f"""
             SELECT 
-                (SELECT COUNT(*) FROM job_descriptions WHERE {recruiter_filter.replace('recruiter_id', 'created_by')} status = 'active') as active_searches,
-                (SELECT COUNT(*) FROM shortlist WHERE {recruiter_filter} status NOT IN ('rejected', 'hired')) as candidates_in_process,
-                (SELECT COUNT(*) FROM interviews WHERE {recruiter_filter} status = 'scheduled') as interviews_scheduled,
-                (SELECT COUNT(*) FROM job_offers WHERE {recruiter_filter} status = 'pending') as offers_extended
+                (SELECT COUNT(*) FROM job_postings WHERE {recruiter_filter.replace('recruiter_id', 'created_by')} status = 'active') as active_searches,
+                (SELECT COUNT(*) FROM job_shortlists WHERE {recruiter_filter} status NOT IN ('rejected', 'hired')) as candidates_in_process,
+                0 as interviews_scheduled,
+                (SELECT COUNT(*) FROM offers WHERE {recruiter_filter} status = 'pending') as offers_extended
         """, params)
         
         pipeline = cursor.fetchone()
@@ -79,7 +79,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
             SELECT 
                 COUNT(*) FILTER (WHERE status = 'hired') as hired,
                 COUNT(*) as total
-            FROM shortlist
+            FROM job_shortlists
             {('WHERE ' + recruiter_filter.replace(' AND', '')) if recruiter_filter else ''}
         """, params)
         
@@ -90,8 +90,8 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
         cursor.execute(f"""
             SELECT 
                 AVG(EXTRACT(DAY FROM (o.created_at - s.created_at))) as avg_days
-            FROM job_offers o
-            JOIN shortlist s ON o.candidate_id = s.candidate_id AND o.jd_id = s.jd_id
+            FROM offers o
+            JOIN job_shortlists s ON o.candidate_id = s.candidate_id AND o.job_posting_id = s.job_posting_id
             WHERE {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')} o.status = 'accepted'
         """, params)
         
@@ -112,22 +112,10 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 CONCAT(c.first_name, ' ', c.last_name, ' placed as ', jd.title) as description,
                 o.created_at as timestamp,
                 'high' as priority
-            FROM job_offers o
-            JOIN candidates c ON o.candidate_id = c.id
-            JOIN job_descriptions jd ON o.jd_id = jd.id
+            FROM offers o
+            JOIN users c ON o.candidate_id = c.id
+            JOIN job_postings jd ON o.job_posting_id = jd.id
             WHERE {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')} o.status = 'accepted'
-            
-            UNION ALL
-            
-            SELECT 
-                'interview_scheduled' as type,
-                'Interview Scheduled' as title,
-                CONCAT(i.interview_type, ' interview for ', jd.title) as description,
-                i.scheduled_time as timestamp,
-                'medium' as priority
-            FROM interviews i
-            JOIN job_descriptions jd ON i.jd_id = jd.id
-            WHERE {recruiter_filter.replace('recruiter_id', 'i.recruiter_id')} i.status = 'scheduled'
             
             UNION ALL
             
@@ -137,7 +125,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 CONCAT(jd.title, ' position for ', jd.company_name) as description,
                 jd.created_at as timestamp,
                 'high' as priority
-            FROM job_descriptions jd
+            FROM job_postings jd
             {('WHERE ' + recruiter_filter.replace('recruiter_id', 'jd.created_by').replace(' AND', '')) if recruiter_filter else ''}
             
             ORDER BY timestamp DESC
@@ -213,7 +201,7 @@ def get_placement_statistics(recruiter_id: Optional[str] = None) -> Dict[str, in
                 COUNT(*) FILTER (WHERE created_at >= %s) as this_month,
                 COUNT(*) FILTER (WHERE created_at >= %s) as this_quarter,
                 COUNT(*) FILTER (WHERE created_at >= %s) as this_year
-            FROM job_offers
+            FROM offers
             {recruiter_filter}
             {'AND' if recruiter_filter else 'WHERE'} status = 'accepted'
         """, params + (start_of_month, start_of_quarter, start_of_year))
@@ -241,10 +229,10 @@ def get_pipeline_statistics(recruiter_id: Optional[str] = None) -> Dict[str, int
         
         cursor.execute(f"""
             SELECT 
-                (SELECT COUNT(*) FROM job_descriptions {recruiter_filter.replace('recruiter_id', 'created_by')} {'AND' if recruiter_filter else 'WHERE'} status = 'active') as active_searches,
-                (SELECT COUNT(*) FROM shortlist {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status NOT IN ('rejected', 'hired')) as candidates_in_process,
-                (SELECT COUNT(*) FROM interviews {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status = 'scheduled') as interviews_scheduled,
-                (SELECT COUNT(*) FROM job_offers {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status = 'pending') as offers_extended
+                (SELECT COUNT(*) FROM job_postings {recruiter_filter.replace('recruiter_id', 'created_by')} {'AND' if recruiter_filter else 'WHERE'} status = 'active') as active_searches,
+                (SELECT COUNT(*) FROM job_shortlists {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status NOT IN ('rejected', 'hired')) as candidates_in_process,
+                (SELECT COUNT(*) FROM interviews_placeholder {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status = 'scheduled') as interviews_scheduled,
+                (SELECT COUNT(*) FROM offers {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status = 'pending') as offers_extended
         """, params)
         
         result = cursor.fetchone()
@@ -273,7 +261,7 @@ def get_performance_metrics(recruiter_id: Optional[str] = None) -> Dict[str, flo
             SELECT 
                 COUNT(*) FILTER (WHERE status = 'hired') as hired,
                 COUNT(*) as total
-            FROM shortlist
+            FROM job_shortlists
             {recruiter_filter}
         """, params)
         
@@ -284,8 +272,8 @@ def get_performance_metrics(recruiter_id: Optional[str] = None) -> Dict[str, flo
         cursor.execute(f"""
             SELECT 
                 AVG(EXTRACT(DAY FROM (o.created_at - s.created_at))) as avg_days
-            FROM job_offers o
-            JOIN shortlist s ON o.candidate_id = s.candidate_id AND o.jd_id = s.jd_id
+            FROM offers o
+            JOIN job_shortlists s ON o.candidate_id = s.candidate_id AND o.job_posting_id = s.job_posting_id
             {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')}
             {'AND' if recruiter_filter else 'WHERE'} o.status = 'accepted'
         """, params)
