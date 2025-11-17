@@ -53,6 +53,15 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
         return;
       }
       
+      // Validate JWT token format (should have 3 parts separated by dots)
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        alert('Your session token is invalid. Please log out and log back in.');
+        console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length);
+        setLoading(false);
+        return;
+      }
+      
       // Build query parameters
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
