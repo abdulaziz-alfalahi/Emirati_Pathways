@@ -506,6 +506,14 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ Recruiter JD Blueprint not available: {e}")
 
+# Register Recruiter JD Upload Blueprint
+try:
+    from recruiter.jd_upload_routes import jd_upload_routes
+    app.register_blueprint(jd_upload_routes)
+    logger.info("✅ Recruiter JD Upload Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter JD Upload Blueprint not available: {e}")
+
 # Register Recruiter Communication Blueprint
 try:
     from recruiter.communication_routes import communication_bp
