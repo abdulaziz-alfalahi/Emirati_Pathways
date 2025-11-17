@@ -96,8 +96,50 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       );
 
       if (response.status === 401) {
+        // Try to refresh the token before giving up
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (refreshToken) {
+          try {
+            const refreshResponse = await fetch('http://localhost:5003/api/auth/refresh', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${refreshToken}`,
+              },
+            });
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              if (refreshData.success && refreshData.data?.access_token) {
+                // Save new token
+                localStorage.setItem('access_token', refreshData.data.access_token);
+                // Retry the search with new token
+                const retryResponse = await fetch(
+                  `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${refreshData.data.access_token}`,
+                      'Content-Type': 'application/json',
+                    },
+                  }
+                );
+                
+                if (retryResponse.ok) {
+                  const result = await retryResponse.json();
+                  if (result.success && result.data && result.data.candidates) {
+                    setCandidates(result.data.candidates);
+                    return;
+                  }
+                }
+              }
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+          }
+        }
+        
+        // If refresh failed or no refresh token, redirect to login
         alert('Your session has expired. Please log in again.');
-        // Optionally redirect to login
         window.location.href = '/login';
         return;
       }
