@@ -41,9 +41,10 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
         
         # Build WHERE clause for recruiter filter
         recruiter_filter = ""
+        recruiter_and = "WHERE"
         params = {}
         if recruiter_id:
-            recruiter_filter = "WHERE recruiter_id = %(recruiter_id)s"
+            recruiter_filter = "recruiter_id = %(recruiter_id)s AND"
             params['recruiter_id'] = recruiter_id
         
         # 1. Placements Statistics
@@ -53,8 +54,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 COUNT(*) FILTER (WHERE created_at >= %(start_of_quarter)s) as this_quarter,
                 COUNT(*) FILTER (WHERE created_at >= %(start_of_year)s) as this_year
             FROM job_offers
-            {recruiter_filter}
-            AND status = 'accepted'
+            WHERE {recruiter_filter} status = 'accepted'
         """, {**params, 
               'start_of_month': start_of_month,
               'start_of_quarter': start_of_quarter,
@@ -62,13 +62,13 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
         
         placements = cursor.fetchone()
         
-        # 2. Pipeline Statistics
+        # 2. Pipeline Statistics  
         cursor.execute(f"""
             SELECT 
-                (SELECT COUNT(*) FROM job_descriptions {recruiter_filter.replace('recruiter_id', 'created_by')} {'AND' if recruiter_filter else 'WHERE'} status = 'active') as active_searches,
-                (SELECT COUNT(*) FROM shortlist {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status NOT IN ('rejected', 'hired')) as candidates_in_process,
-                (SELECT COUNT(*) FROM interviews {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status = 'scheduled') as interviews_scheduled,
-                (SELECT COUNT(*) FROM job_offers {recruiter_filter} {'AND' if recruiter_filter else 'WHERE'} status = 'pending') as offers_extended
+                (SELECT COUNT(*) FROM job_descriptions WHERE {recruiter_filter.replace('recruiter_id', 'created_by')} status = 'active') as active_searches,
+                (SELECT COUNT(*) FROM shortlist WHERE {recruiter_filter} status NOT IN ('rejected', 'hired')) as candidates_in_process,
+                (SELECT COUNT(*) FROM interviews WHERE {recruiter_filter} status = 'scheduled') as interviews_scheduled,
+                (SELECT COUNT(*) FROM job_offers WHERE {recruiter_filter} status = 'pending') as offers_extended
         """, params)
         
         pipeline = cursor.fetchone()
@@ -80,7 +80,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 COUNT(*) FILTER (WHERE status = 'hired') as hired,
                 COUNT(*) as total
             FROM shortlist
-            {recruiter_filter}
+            {('WHERE ' + recruiter_filter.replace(' AND', '')) if recruiter_filter else ''}
         """, params)
         
         placement_data = cursor.fetchone()
@@ -92,8 +92,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 AVG(EXTRACT(DAY FROM (o.created_at - s.created_at))) as avg_days
             FROM job_offers o
             JOIN shortlist s ON o.candidate_id = s.candidate_id AND o.jd_id = s.jd_id
-            {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')}
-            {'AND' if recruiter_filter else 'WHERE'} o.status = 'accepted'
+            WHERE {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')} o.status = 'accepted'
         """, params)
         
         time_to_fill_data = cursor.fetchone()
@@ -116,8 +115,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
             FROM job_offers o
             JOIN candidates c ON o.candidate_id = c.id
             JOIN job_descriptions jd ON o.jd_id = jd.id
-            {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')}
-            {'AND' if recruiter_filter else 'WHERE'} o.status = 'accepted'
+            WHERE {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')} o.status = 'accepted'
             
             UNION ALL
             
@@ -129,8 +127,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 'medium' as priority
             FROM interviews i
             JOIN job_descriptions jd ON i.jd_id = jd.id
-            {recruiter_filter.replace('recruiter_id', 'i.recruiter_id')}
-            {'AND' if recruiter_filter else 'WHERE'} i.status = 'scheduled'
+            WHERE {recruiter_filter.replace('recruiter_id', 'i.recruiter_id')} i.status = 'scheduled'
             
             UNION ALL
             
@@ -141,7 +138,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 jd.created_at as timestamp,
                 'high' as priority
             FROM job_descriptions jd
-            {recruiter_filter.replace('recruiter_id', 'jd.created_by')}
+            {('WHERE ' + recruiter_filter.replace('recruiter_id', 'jd.created_by').replace(' AND', '')) if recruiter_filter else ''}
             
             ORDER BY timestamp DESC
             LIMIT 10
