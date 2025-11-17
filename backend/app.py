@@ -38,9 +38,11 @@ def expired_token_callback(jwt_header, jwt_payload):
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
+    logger.error(f"JWT Invalid Token Error: {str(error)}")
+    logger.error(f"JWT Invalid Token Error type: {type(error)}")
     return jsonify({
         'success': False,
-        'message': f'Invalid token: {str(error)}'
+        'message': f'Invalid token. Please log in again. Error: {str(error)}'
     }), 422
 
 @jwt.unauthorized_loader
