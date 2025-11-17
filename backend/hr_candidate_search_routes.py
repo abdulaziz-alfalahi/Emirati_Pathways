@@ -389,9 +389,16 @@ def health_check():
 def search_candidates():
     """Advanced candidate search with multiple filters"""
     try:
-        current_user_id = get_jwt_identity()
-        claims = get_jwt()
-        user_role = claims.get('role', '') if claims else ''
+        # Log JWT information for debugging
+        try:
+            current_user_id = get_jwt_identity()
+            claims = get_jwt()
+            user_role = claims.get('role', '') if claims else ''
+            logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, Claims: {claims}")
+        except Exception as jwt_error:
+            logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
+            logger.error(f"JWT Error type: {type(jwt_error)}")
+            raise
         allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
         if user_role not in allowed_roles:
             return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
