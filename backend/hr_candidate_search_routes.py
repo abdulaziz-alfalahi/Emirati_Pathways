@@ -391,8 +391,10 @@ def search_candidates():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
-            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
         
         # User already verified by JWT role check above
         conn = get_db_connection()
@@ -628,8 +630,10 @@ def match_candidates_to_job(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
-            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+        user_role = claims.get('role', '') if claims else ''
+        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        if user_role not in allowed_roles:
+            return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
