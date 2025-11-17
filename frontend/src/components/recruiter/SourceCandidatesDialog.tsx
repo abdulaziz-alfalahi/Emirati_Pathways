@@ -44,7 +44,14 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       setLoading(true);
       setSearched(true);
 
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      // Get token - authService stores it as 'access_token'
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        alert('You must be logged in to search candidates. Please log in and try again.');
+        setLoading(false);
+        return;
+      }
       
       // Build query parameters
       const params = new URLSearchParams();
@@ -57,11 +64,18 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
         `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
         {
           headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
       );
+
+      if (response.status === 401) {
+        alert('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        window.location.href = '/login';
+        return;
+      }
 
       if (response.ok) {
         const result = await response.json();
@@ -71,13 +85,14 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
           setCandidates([]);
         }
       } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         setCandidates([]);
-        alert('Failed to search candidates. Please try again.');
+        alert(`Failed to search candidates: ${errorData.message || 'Please try again.'}`);
       }
     } catch (error) {
       console.error('Error searching candidates:', error);
       setCandidates([]);
-      alert('Failed to search candidates. Please try again.');
+      alert('Failed to search candidates. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
