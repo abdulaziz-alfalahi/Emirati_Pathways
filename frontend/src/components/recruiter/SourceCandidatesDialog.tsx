@@ -44,8 +44,9 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       setLoading(true);
       setSearched(true);
 
-      // Get token - authService stores it as 'access_token'
-      const token = localStorage.getItem('access_token');
+      // Get token - check both possible storage keys
+      // authService stores it as 'access_token', but some code might use 'accessToken'
+      let token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
       
       if (!token) {
         alert('You must be logged in to search candidates. Please log in and try again.');
@@ -56,10 +57,25 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       // Validate JWT token format (should have 3 parts separated by dots)
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
-        alert('Your session token is invalid. Please log out and log back in.');
-        console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length);
-        setLoading(false);
-        return;
+        // Try the other key if current token is invalid
+        const otherToken = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
+        if (otherToken && otherToken !== token) {
+          const otherParts = otherToken.split('.');
+          if (otherParts.length === 3) {
+            token = otherToken;
+            console.log('Using alternate token key');
+          } else {
+            alert('Your session token is invalid. Please log out and log back in.');
+            console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length);
+            setLoading(false);
+            return;
+          }
+        } else {
+          alert('Your session token is invalid. Please log out and log back in.');
+          console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length);
+          setLoading(false);
+          return;
+        }
       }
       
       // Build query parameters
