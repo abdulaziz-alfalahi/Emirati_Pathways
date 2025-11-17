@@ -108,8 +108,20 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
 
       console.log('Search response status:', response.status);
       
-      if (response.status === 401) {
-        console.log('Got 401, attempting token refresh...');
+      // Log response body for debugging
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('Error JSON:', errorJson);
+        } catch (e) {
+          console.error('Error is not JSON:', errorText);
+        }
+      }
+      
+      if (response.status === 401 || response.status === 422) {
+        console.log(`Got ${response.status}, attempting token refresh...`);
         // Try to refresh the token before giving up
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
