@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 import psycopg2
 import psycopg2.extras
 import logging
+import traceback
 from datetime import datetime, timedelta
 import uuid
 import os
@@ -384,6 +385,31 @@ def health_check():
         ]
     })
 
+@hr_candidate_search_bp.route('/debug/token', methods=['GET'])
+@jwt_required()
+def debug_token():
+    """Debug endpoint to check JWT token information"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        return jsonify({
+            'success': True,
+            'data': {
+                'user_id': current_user_id,
+                'claims': claims,
+                'role': claims.get('role', ''),
+                'user_type': claims.get('user_type', ''),
+                'all_claims': dict(claims) if claims else {}
+            }
+        })
+    except Exception as e:
+        logger.error(f"Debug token error: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @hr_candidate_search_bp.route('/search', methods=['GET'])
 @jwt_required()
 def search_candidates():
@@ -394,10 +420,12 @@ def search_candidates():
             current_user_id = get_jwt_identity()
             claims = get_jwt()
             user_role = claims.get('role', '') if claims else ''
-            logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, Claims: {claims}")
+            user_type = claims.get('user_type', '') if claims else ''
+            logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, User Type: {user_type}, Claims: {claims}")
         except Exception as jwt_error:
             logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
             logger.error(f"JWT Error type: {type(jwt_error)}")
+            logger.error(f"JWT Error traceback: {traceback.format_exc()}")
             raise
         allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
         if user_role not in allowed_roles:
