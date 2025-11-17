@@ -28,6 +28,28 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
+# JWT Error Handlers
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return jsonify({
+        'success': False,
+        'message': 'Token has expired. Please log in again.'
+    }), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({
+        'success': False,
+        'message': f'Invalid token: {str(error)}'
+    }), 422
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return jsonify({
+        'success': False,
+        'message': 'Authorization header is missing or invalid'
+    }), 401
+
 # CORS Configuration with authentication support - FIXED FOR AUTHORIZATION HEADER
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
 allowed_origin_list = [o for o in (x.strip() for x in allowed_origins_env.split(',')) if o]
@@ -1133,6 +1155,20 @@ def forbidden(error):
         'success': False,
         'message': 'Access forbidden'
     }), 403
+
+@app.errorhandler(422)
+def unprocessable_entity(error):
+    """Handle 422 Unprocessable Entity errors (often from JWT validation)"""
+    error_message = 'Request could not be processed'
+    if hasattr(error, 'description'):
+        error_message = error.description
+    elif isinstance(error, str):
+        error_message = error
+    
+    return jsonify({
+        'success': False,
+        'message': error_message
+    }), 422
 
 if __name__ == '__main__':
     # Print startup information
