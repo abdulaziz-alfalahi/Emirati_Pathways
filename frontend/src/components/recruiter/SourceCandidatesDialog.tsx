@@ -48,6 +48,14 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       // authService stores it as 'access_token', but some code might use 'accessToken'
       let token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
       
+      // Debug: Log token info
+      console.log('Token check:', {
+        hasAccessToken: !!localStorage.getItem('accessToken'),
+        hasAccess_token: !!localStorage.getItem('access_token'),
+        tokenLength: token?.length,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null'
+      });
+      
       if (!token) {
         alert('You must be logged in to search candidates. Please log in and try again.');
         setLoading(false);
@@ -66,17 +74,19 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
             console.log('Using alternate token key');
           } else {
             alert('Your session token is invalid. Please log out and log back in.');
-            console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length);
+            console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
             setLoading(false);
             return;
           }
         } else {
           alert('Your session token is invalid. Please log out and log back in.');
-          console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length);
+          console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
           setLoading(false);
           return;
         }
       }
+      
+      console.log('Using token with', tokenParts.length, 'parts');
       
       // Build query parameters
       const params = new URLSearchParams();
@@ -85,6 +95,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       if (minExperience) params.append('min_experience', minExperience);
       if (skills) params.append('skills', skills);
 
+      console.log('Making search request with token...');
       const response = await fetch(
         `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
         {
@@ -95,7 +106,10 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
         }
       );
 
+      console.log('Search response status:', response.status);
+      
       if (response.status === 401) {
+        console.log('Got 401, attempting token refresh...');
         // Try to refresh the token before giving up
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
