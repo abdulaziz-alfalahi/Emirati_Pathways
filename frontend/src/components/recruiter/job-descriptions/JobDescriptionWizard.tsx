@@ -156,6 +156,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
+  
   const [jdData, setJDData] = useState<JDData>(() => {
     if (initialData) {
       console.log('Loading initial data:', initialData);
@@ -206,6 +207,60 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const [employmentStatusFilter, setEmploymentStatusFilter] = useState<string>('all');
   const [matchedCandidates, setMatchedCandidates] = useState<MatchedCandidate[]>([]);
   const [matchingLoading, setMatchingLoading] = useState(false);
+
+  // Initialize JD ID on mount if not provided
+  useEffect(() => {
+    const initializeJD = async () => {
+      // If we already have a JD ID, don't create a new one
+      if (jdData.jd_id) {
+        return;
+      }
+      
+      // If we have initial data with JD ID, use it
+      if (initialJdId || initialData?.metadata?.jd_id || initialData?.jd_id) {
+        setJDData(prev => ({
+          ...prev,
+          jd_id: initialJdId || initialData?.metadata?.jd_id || initialData?.jd_id
+        }));
+        return;
+      }
+      
+      // Create a new JD in the database
+      try {
+        const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
+        const isMockToken = token?.startsWith('mock_token_');
+        
+        const response = await fetch('http://localhost:5003/api/recruiter/jd/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            recruiter_id: recruiterId,
+            company_id: companyId,
+            template: 'standard'
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.jd_id) {
+            setJDData(prev => ({
+              ...prev,
+              jd_id: result.jd_id
+            }));
+            console.log('Created new JD with ID:', result.jd_id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to create JD:', error);
+        // Continue anyway - JD ID will be created on first save
+      }
+    };
+    
+    initializeJD();
+  }, [recruiterId, companyId, initialJdId, initialData]); // Run when these change
 
   const steps = [
     { id: 'basic', title: 'Basic Information', icon: Briefcase },
@@ -283,6 +338,52 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   };
 
+  const handleSaveDraft = async () => {
+    setLoading(true);
+    try {
+      // Get token for authentication
+      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
+      const isMockToken = token?.startsWith('mock_token_');
+      
+      // Save JD to database with draft status
+      const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          jd_data: jdData,
+          status: 'draft',
+          recruiter_id: recruiterId,
+          company_id: companyId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to save draft' }));
+        throw new Error(errorData.message || 'Failed to save draft');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Success",
+        description: "Job description saved as draft",
+      });
+
+      // Don't navigate away - allow user to continue editing
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save draft",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePublish = async () => {
     setLoading(true);
     try {
@@ -296,11 +397,16 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         return;
       }
 
+      // Get token for authentication
+      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
+      const isMockToken = token?.startsWith('mock_token_');
+
       // Save JD to database with published status
       const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           jd_data: jdData,
@@ -311,7 +417,8 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to publish job description');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to publish' }));
+        throw new Error(errorData.message || 'Failed to publish job description');
       }
 
       const result = await response.json();
@@ -325,10 +432,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       if (onComplete && jdData.jd_id) {
         onComplete(jdData.jd_id);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to publish job description",
+        description: error.message || "Failed to publish job description",
         variant: "destructive"
       });
     } finally {
@@ -1015,10 +1122,16 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           </Button>
           
           {currentStep === steps.length - 1 ? (
-            <Button onClick={handlePublish} disabled={loading}>
-              <Send className="h-4 w-4 mr-2" />
-              {loading ? 'Publishing...' : 'Publish Job'}
-            </Button>
+            <>
+              <Button variant="outline" onClick={handleSaveDraft} disabled={loading}>
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? 'Saving...' : 'Save as Draft'}
+              </Button>
+              <Button onClick={handlePublish} disabled={loading || completionScore < 60}>
+                <Send className="h-4 w-4 mr-2" />
+                {loading ? 'Publishing...' : 'Publish Job'}
+              </Button>
+            </>
           ) : (
             <Button onClick={handleNext}>
               Next

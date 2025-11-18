@@ -10,6 +10,8 @@ import JobDescriptionWizard from './JobDescriptionWizard';
 interface JDWizardWithUploadProps {
   recruiterId: string;
   companyId: string;
+  initialJdId?: string;
+  initialData?: any;
   onComplete?: (jdId: string) => void;
   onCancel?: () => void;
 }
@@ -17,6 +19,8 @@ interface JDWizardWithUploadProps {
 const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
   recruiterId,
   companyId,
+  initialJdId,
+  initialData,
   onComplete,
   onCancel
 }) => {
@@ -152,8 +156,8 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
       <JobDescriptionWizard
         recruiterId={recruiterId}
         companyId={companyId}
-        initialData={parsedData}
-        initialJdId={jdId}
+        initialData={parsedData || initialData}
+        initialJdId={jdId || initialJdId}
         onComplete={onComplete}
         onCancel={onCancel}
       />
