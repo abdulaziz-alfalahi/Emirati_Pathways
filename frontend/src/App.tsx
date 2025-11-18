@@ -5,7 +5,6 @@ import { AuthProvider } from '@/context/AuthContext';
 import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
 import { Toaster as HotToaster } from 'react-hot-toast';
-import { Toaster } from '@/components/ui/toaster';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
 
@@ -498,7 +497,6 @@ const AppContent: React.FC = () => {
                 },
               }}
             />
-            <Toaster />
           </div>
         </Router>
   );

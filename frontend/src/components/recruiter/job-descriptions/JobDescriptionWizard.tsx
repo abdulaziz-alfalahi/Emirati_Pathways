@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
+import toast from 'react-hot-toast';
 import { 
   Select,
   SelectContent,
@@ -154,7 +154,6 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   onComplete,
   onCancel
 }) => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
@@ -325,16 +324,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     setLoading(true);
     try {
       // TODO: Call AI description generation API
-      toast({
-        title: "AI Generation",
-        description: "AI description generation will be available soon",
-      });
+      toast("AI description generation will be available soon");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate description",
-        variant: "destructive"
-      });
+      toast.error("Failed to generate description");
     } finally {
       setLoading(false);
     }
@@ -342,11 +334,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   const handleSaveDraft = async () => {
     if (!jdData.jd_id) {
-      toast({
-        title: "Error",
-        description: "JD ID is missing. Please refresh the page and try again.",
-        variant: "destructive"
-      });
+      toast.error("JD ID is missing. Please refresh the page and try again.");
       return;
     }
 
@@ -406,21 +394,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       console.log('Save draft result:', result);
       
       // Show success toast
-      toast({
-        title: "✅ Success",
-        description: result.message || result.success ? "Job description saved as draft successfully" : "Saved",
-      });
+      toast.success(result.message || (result.success ? "Job description saved as draft successfully" : "Saved"));
       
       console.log('Toast should be displayed');
 
       // Don't navigate away - allow user to continue editing
     } catch (error: any) {
       console.error('Save draft error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save draft. Please try again.",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to save draft. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -431,11 +412,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     try {
       // Validate completion score
       if (completionScore < 60) {
-        toast({
-          title: "Incomplete Job Description",
-          description: "Please complete at least 60% of the form before publishing",
-          variant: "destructive"
-        });
+        toast.error("Please complete at least 60% of the form before publishing");
         return;
       }
 
@@ -465,21 +442,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
       const result = await response.json();
       
-      toast({
-        title: "Success",
-        description: "Job description published successfully",
-      });
+      toast.success("Job description published successfully");
 
       // Call onComplete callback
       if (onComplete && jdData.jd_id) {
         onComplete(jdData.jd_id);
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to publish job description",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to publish job description");
     } finally {
       setLoading(false);
     }
@@ -505,22 +475,12 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       const result = await response.json();
       
       if (result.success) {
-        toast({
-          title: "Success",
-          description: "Candidate added to shortlist",
-        });
+        toast.success("Candidate added to shortlist");
       } else {
-        toast({
-          title: "Info",
-          description: result.message || "Candidate already shortlisted",
-        });
+        toast(result.message || "Candidate already shortlisted");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add candidate to shortlist",
-        variant: "destructive"
-      });
+      toast.error("Failed to add candidate to shortlist");
     }
   };
 
@@ -546,16 +506,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       const result = await response.json();
       setMatchedCandidates(result.top_matches || []);
       
-      toast({
-        title: "Matching Complete",
-        description: `Found ${result.match_count} matching candidates`,
-      });
+      toast.success(`Found ${result.match_count} matching candidates`);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to match candidates",
-        variant: "destructive"
-      });
+      toast.error("Failed to match candidates");
     } finally {
       setMatchingLoading(false);
     }
