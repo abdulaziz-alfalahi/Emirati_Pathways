@@ -403,10 +403,13 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       const result = await response.json();
       console.log('Save draft result:', result);
       
+      // Show success toast
       toast({
-        title: "Success",
-        description: result.message || "Job description saved as draft successfully",
+        title: "✅ Success",
+        description: result.message || result.success ? "Job description saved as draft successfully" : "Saved",
       });
+      
+      console.log('Toast should be displayed');
 
       // Don't navigate away - allow user to continue editing
     } catch (error: any) {
