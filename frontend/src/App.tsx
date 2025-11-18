@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
 import { Toaster as HotToaster } from 'react-hot-toast';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
 
@@ -502,16 +503,28 @@ const AppContent: React.FC = () => {
   );
 };
 
+// Create a QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 // Main App Component with Enhanced Language Provider and Mock Auth
 function App() {
   return (
-    <LanguageProvider>
-      <MockAuthProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </MockAuthProvider>
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <MockAuthProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </MockAuthProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
 
