@@ -781,11 +781,7 @@ def save_jd(jd_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Check if job_postings table exists, create if not
-        # Drop old table first if it exists with different schema
-        cur.execute("DROP TABLE IF EXISTS job_postings CASCADE")
-        conn.commit()
-        
+        # Check if job_postings table exists, create if not (don't drop existing table!)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS job_postings (
                 id SERIAL PRIMARY KEY,
