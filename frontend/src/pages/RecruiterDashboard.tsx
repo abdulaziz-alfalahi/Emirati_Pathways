@@ -262,8 +262,8 @@ const RecruiterDashboard: React.FC = () => {
           {/* Quick Actions */}
           <div className="mb-8">
             <div className="flex flex-wrap gap-4">
-              <Link to="/recruiter/jd-builder">
-                <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
+              <Link to="/recruiter/jd-builder" className="inline-block">
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium" aria-label="Create new vacancy">
                   <Plus className="h-4 w-4 mr-2" />
                   New Vacancy
                 </Button>
@@ -285,19 +285,19 @@ const RecruiterDashboard: React.FC = () => {
                 Export Reports
               </Button>
               {/* New: direct links to recruiter services */}
-              <Link to="/recruiter/offers">
+              <Link to="/recruiter/offers" className="inline-block" aria-label="Manage job offers">
                 <Button variant="outline" className="font-dubai-medium">
                   <FileText className="h-4 w-4 mr-2" />
                   Manage Offers
                 </Button>
               </Link>
-              <Link to="/recruiter/approvals">
+              <Link to="/recruiter/approvals" className="inline-block" aria-label="View approvals">
                 <Button variant="outline" className="font-dubai-medium">
                   <CheckSquare className="h-4 w-4 mr-2" />
                   Approvals
                 </Button>
               </Link>
-              <Link to="/recruiter/distribution">
+              <Link to="/recruiter/distribution" className="inline-block" aria-label="Manage job distribution">
                 <Button variant="outline" className="font-dubai-medium">
                   <Share2 className="h-4 w-4 mr-2" />
                   Job Distribution

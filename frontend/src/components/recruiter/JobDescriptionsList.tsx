@@ -437,8 +437,9 @@ const JobDescriptionsList = () => {
                             onClick={() => {
                               // Navigate to JD wizard to edit
                               const jdId = job.jd_id || job.id;
-                              window.location.href = `/recruiter/jd-builder?jd_id=${jdId}`;
+                              navigate(`/recruiter/jd-builder?jd_id=${jdId}`, { replace: false });
                             }}
+                            aria-label={`Edit job description ${job.title || job.jd_id}`}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             Edit
