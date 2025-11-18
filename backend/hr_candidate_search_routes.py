@@ -414,7 +414,7 @@ def debug_token():
 def search_candidates():
     """Advanced candidate search with multiple filters"""
     try:
-        # Check for mock token (development mode)
+        # Check for mock token (development mode) - check before JWT validation
         auth_header = request.headers.get('Authorization', '')
         is_mock_token = auth_header and 'mock_token' in auth_header
         
@@ -428,9 +428,12 @@ def search_candidates():
             logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
             user_role = 'recruiter'  # Default to recruiter for mock users
             user_type = 'recruiter'
+            current_user_id = user_id
         else:
-            # Normal JWT authentication
+            # Normal JWT authentication - try to get JWT claims
             try:
+                from flask_jwt_extended import verify_jwt_in_request
+                verify_jwt_in_request()
                 current_user_id = get_jwt_identity()
                 claims = get_jwt()
                 user_role = claims.get('role', '') if claims else ''
@@ -440,6 +443,7 @@ def search_candidates():
                 logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
                 logger.error(f"JWT Error type: {type(jwt_error)}")
                 logger.error(f"JWT Error traceback: {traceback.format_exc()}")
+                # Re-raise to let Flask-JWT-Extended handle the error response
                 raise
         allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
         if user_role not in allowed_roles:
