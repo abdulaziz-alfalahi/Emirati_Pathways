@@ -48,12 +48,18 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       // authService stores it as 'access_token', but some code might use 'accessToken'
       let token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
       
+      // Check if using mock authentication
+      const isMockToken = token?.startsWith('mock_token_');
+      const mockUser = localStorage.getItem('mock_current_user');
+      
       // Debug: Log token info
       console.log('Token check:', {
         hasAccessToken: !!localStorage.getItem('accessToken'),
         hasAccess_token: !!localStorage.getItem('access_token'),
         tokenLength: token?.length,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null'
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null',
+        isMockToken: isMockToken,
+        hasMockUser: !!mockUser
       });
       
       if (!token) {
@@ -62,31 +68,35 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
         return;
       }
       
-      // Validate JWT token format (should have 3 parts separated by dots)
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        // Try the other key if current token is invalid
-        const otherToken = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
-        if (otherToken && otherToken !== token) {
-          const otherParts = otherToken.split('.');
-          if (otherParts.length === 3) {
-            token = otherToken;
-            console.log('Using alternate token key');
+      // For mock tokens, skip JWT validation (they're not real JWTs)
+      if (!isMockToken) {
+        // Validate JWT token format (should have 3 parts separated by dots)
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          // Try the other key if current token is invalid
+          const otherToken = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
+          if (otherToken && otherToken !== token) {
+            const otherParts = otherToken.split('.');
+            if (otherParts.length === 3) {
+              token = otherToken;
+              console.log('Using alternate token key');
+            } else {
+              alert('Your session token is invalid. Please log out and log back in.');
+              console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
+              setLoading(false);
+              return;
+            }
           } else {
             alert('Your session token is invalid. Please log out and log back in.');
             console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
             setLoading(false);
             return;
           }
-        } else {
-          alert('Your session token is invalid. Please log out and log back in.');
-          console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
-          setLoading(false);
-          return;
         }
+        console.log('Using JWT token with', tokenParts.length, 'parts');
+      } else {
+        console.log('Using mock token (bypassing JWT validation)');
       }
-      
-      console.log('Using token with', tokenParts.length, 'parts');
       
       // Build query parameters
       const params = new URLSearchParams();
