@@ -17,8 +17,7 @@ const RecruiterJobs: React.FC = () => {
   }
   
   // Check if the user has the recruiter role
-  const isRecruiter = roles.includes('private_sector_recruiter') || 
-                      roles.includes('recruiter') ||
+  const isRecruiter = (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
                       (user?.email && user.email.includes('recruit'));
                       
   // Redirect to dashboard if not a recruiter
