@@ -339,11 +339,37 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handleSaveDraft = async () => {
+    if (!jdData.jd_id) {
+      toast({
+        title: "Error",
+        description: "JD ID is missing. Please refresh the page and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Get token for authentication
       const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
       const isMockToken = token?.startsWith('mock_token_');
+      
+      // Prepare JD data with metadata
+      const jdDataToSave = {
+        ...jdData,
+        metadata: {
+          ...jdData.metadata,
+          jd_id: jdData.jd_id,
+          recruiter_id: recruiterId,
+          company_id: companyId,
+          status: 'draft',
+          completion_score: completionScore,
+          current_step: steps[currentStep].id,
+          last_modified: new Date().toISOString()
+        }
+      };
+      
+      console.log('Saving draft with JD ID:', jdData.jd_id);
       
       // Save JD to database with draft status
       const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
@@ -353,30 +379,41 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          jd_data: jdData,
+          jd_data: jdDataToSave,
           status: 'draft',
           recruiter_id: recruiterId,
           company_id: companyId
         })
       });
 
+      console.log('Save draft response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to save draft' }));
-        throw new Error(errorData.message || 'Failed to save draft');
+        const errorText = await response.text();
+        console.error('Save draft error response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Failed to save draft' };
+        }
+        throw new Error(errorData.message || errorData.error || 'Failed to save draft');
       }
 
       const result = await response.json();
+      console.log('Save draft result:', result);
       
       toast({
         title: "Success",
-        description: "Job description saved as draft",
+        description: result.message || "Job description saved as draft successfully",
       });
 
       // Don't navigate away - allow user to continue editing
     } catch (error: any) {
+      console.error('Save draft error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save draft",
+        description: error.message || "Failed to save draft. Please try again.",
         variant: "destructive"
       });
     } finally {
