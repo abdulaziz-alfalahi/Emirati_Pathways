@@ -781,11 +781,7 @@ def save_jd(jd_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Check if job_postings table exists, create if not
-        # Drop old table first if it exists with different schema
-        cur.execute("DROP TABLE IF EXISTS job_postings CASCADE")
-        conn.commit()
-        
+        # Check if job_postings table exists, create if not (don't drop existing table!)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS job_postings (
                 id SERIAL PRIMARY KEY,
@@ -828,10 +824,12 @@ def save_jd(jd_id):
         company_id = metadata.get('company_id') or data.get('company_id') or 'unknown'
         
         # Check if JD already exists
-        cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        cur.execute("SELECT id, jd_id FROM job_postings WHERE jd_id = %s", (jd_id,))
         existing = cur.fetchone()
         
+        logger.info(f"Checking for existing JD with jd_id: {jd_id}")
         if existing:
+            logger.info(f"Found existing JD: id={existing.get('id')}, jd_id={existing.get('jd_id')}")
             # Update existing JD
             cur.execute("""
                 UPDATE job_postings SET
@@ -880,6 +878,7 @@ def save_jd(jd_id):
             ))
             logger.info(f"Updated JD {jd_id} with status: {status}")
         else:
+            logger.info(f"No existing JD found with jd_id: {jd_id}, inserting new record")
             # Insert new JD
             cur.execute("""
                 INSERT INTO job_postings (

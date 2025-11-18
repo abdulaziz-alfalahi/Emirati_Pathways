@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
 import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
-import { Toaster } from 'react-hot-toast';
+import { Toaster as HotToaster } from 'react-hot-toast';
+import { Toaster } from '@/components/ui/toaster';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
 
@@ -487,7 +488,7 @@ const AppContent: React.FC = () => {
             </Suspense>
             
             {/* Toast Notifications */}
-            <Toaster 
+            <HotToaster 
               position="top-right"
               toastOptions={{
                 duration: 4000,
@@ -497,6 +498,7 @@ const AppContent: React.FC = () => {
                 },
               }}
             />
+            <Toaster />
           </div>
         </Router>
   );
