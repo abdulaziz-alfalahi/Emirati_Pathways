@@ -56,11 +56,25 @@ const JobDescriptionsList = () => {
   const { data: jobDescriptions, isLoading, refetch } = useQuery({
     queryKey: ['jobDescriptions'],
     queryFn: async () => {
-      const response = await jobApi.list();
-      if (response.success) {
-        return response.data || [];
+      // Get token for authentication
+      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
+      const isMockToken = token?.startsWith('mock_token_');
+      
+      // Use the correct recruiter JD list endpoint
+      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch job descriptions');
       }
-      throw new Error(response.error || 'Failed to fetch job descriptions');
+      
+      const data = await response.json();
+      // The API returns { job_descriptions: [...], count: ... }
+      return data.job_descriptions || [];
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -365,14 +379,14 @@ const JobDescriptionsList = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Job Details</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Requirements</TableHead>
-                    <TableHead>Parsing Quality</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {jobDescriptions.map((job) => (
-                    <TableRow key={job.id}>
+                  {jobDescriptions.map((job: any) => (
+                    <TableRow key={job.jd_id || job.id}>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="font-medium">{job.title || 'Untitled Job'}</div>
@@ -393,25 +407,25 @@ const JobDescriptionsList = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <div className="text-sm">
-                            <span className="font-medium">Skills:</span> {job.requirements?.skills?.length || 0}
+                        <Badge variant={job.status === 'published' ? 'default' : job.status === 'draft' ? 'secondary' : 'outline'}>
+                          {job.status || 'draft'}
+                        </Badge>
+                        {job.created_at && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {new Date(job.created_at).toLocaleDateString()}
                           </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Experience:</span> {job.requirements?.experience?.length || 0}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Education:</span> {job.requirements?.education?.length || 0}
-                          </div>
-                        </div>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-2">
-                          <Badge variant={getConfidenceBadge(job.parsing_metadata?.confidence_score || 0)}>
-                            {job.parsing_metadata?.confidence_score || 0}% confidence
-                          </Badge>
-                          <div className="text-xs text-muted-foreground">
-                            {job.parsing_metadata?.successful_sections || 0}/{job.parsing_metadata?.total_sections || 0} sections
+                        <div className="space-y-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Requirements:</span> {Array.isArray(job.requirements) ? job.requirements.length : 0}
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium">Responsibilities:</span> {Array.isArray(job.responsibilities) ? job.responsibilities.length : 0}
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium">Benefits:</span> {Array.isArray(job.benefits) ? job.benefits.length : 0}
                           </div>
                         </div>
                       </TableCell>
@@ -420,18 +434,24 @@ const JobDescriptionsList = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleViewJob(job)}
+                            onClick={() => {
+                              // Navigate to JD wizard to edit
+                              const jdId = job.jd_id || job.id;
+                              window.location.href = `/recruiter/jd-builder?jd_id=${jdId}`;
+                            }}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            View
+                            Edit
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleFindMatches(job)}
-                          >
-                            <Users className="h-4 w-4 mr-1" />
-                            Find Candidates
-                          </Button>
+                          {job.status === 'published' && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleFindMatches(job)}
+                            >
+                              <Users className="h-4 w-4 mr-1" />
+                              Find Candidates
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
