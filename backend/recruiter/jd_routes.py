@@ -42,6 +42,245 @@ def get_db_connection():
     return psycopg2.connect(**DB_CONFIG)
 
 
+def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Retrieve JD from database and convert to JD engine format
+    
+    Returns:
+        JD data in engine format, or None if not found
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        cur.execute("""
+            SELECT * FROM job_postings WHERE jd_id = %s
+        """, (jd_id,))
+        
+        jd = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not jd:
+            return None
+        
+        # Convert database record to JD engine format
+        jd_dict = dict(jd)
+        
+        # Parse JSON fields
+        requirements = json.loads(jd_dict['requirements']) if jd_dict.get('requirements') else []
+        responsibilities = json.loads(jd_dict['responsibilities']) if jd_dict.get('responsibilities') else []
+        benefits = json.loads(jd_dict['benefits']) if jd_dict.get('benefits') else []
+        compensation = json.loads(jd_dict['compensation']) if jd_dict.get('compensation') else {}
+        application_process = json.loads(jd_dict['application_process']) if jd_dict.get('application_process') else {}
+        metadata = json.loads(jd_dict['metadata']) if jd_dict.get('metadata') else {}
+        
+        # Build basic_info from database columns
+        basic_info = {
+            'title': jd_dict.get('title', ''),
+            'title_arabic': jd_dict.get('title_arabic'),
+            'department': jd_dict.get('department', ''),
+            'job_type': jd_dict.get('job_type', 'full_time'),
+            'job_level': jd_dict.get('job_level', 'mid'),
+            'emirate': jd_dict.get('emirate', ''),
+            'city': jd_dict.get('city', ''),
+            'remote_option': jd_dict.get('remote_option', False)
+        }
+        
+        # Build JD data structure expected by engine
+        jd_data = {
+            'metadata': {
+                'jd_id': jd_id,
+                'recruiter_id': jd_dict.get('recruiter_id', ''),
+                'company_id': jd_dict.get('company_id', ''),
+                'status': jd_dict.get('status', 'draft'),
+                'completion_score': metadata.get('completion_score', 0),
+                'created_at': jd_dict.get('created_at').isoformat() if jd_dict.get('created_at') else datetime.now().isoformat(),
+                'last_modified': jd_dict.get('updated_at').isoformat() if jd_dict.get('updated_at') else datetime.now().isoformat(),
+                'current_step': metadata.get('current_step', 'basic_info'),
+                **metadata  # Include any other metadata fields
+            },
+            'basic_info': basic_info,
+            'description': jd_dict.get('description', ''),
+            'description_arabic': jd_dict.get('description_arabic', ''),
+            'requirements': requirements,
+            'responsibilities': responsibilities,
+            'benefits': benefits,
+            'compensation': compensation,
+            'application_process': application_process
+        }
+        
+        return jd_data
+        
+    except Exception as e:
+        logger.error(f"Error retrieving JD {jd_id} from database: {str(e)}")
+        return None
+
+
+def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -> bool:
+    """
+    Save JD data to database
+    
+    Args:
+        jd_id: Job description ID
+        jd_data: JD data in engine format
+        status: Status (draft, published, etc.)
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Ensure table exists (only create if it doesn't exist, don't drop)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS job_postings (
+                id SERIAL PRIMARY KEY,
+                jd_id VARCHAR(100) UNIQUE NOT NULL,
+                recruiter_id VARCHAR(100) NOT NULL,
+                company_id VARCHAR(100) NOT NULL,
+                title VARCHAR(500) NOT NULL,
+                title_arabic VARCHAR(500),
+                department VARCHAR(200),
+                job_type VARCHAR(50),
+                job_level VARCHAR(50),
+                emirate VARCHAR(100),
+                city VARCHAR(100),
+                remote_option BOOLEAN DEFAULT FALSE,
+                description TEXT,
+                description_arabic TEXT,
+                requirements JSONB,
+                responsibilities JSONB,
+                benefits JSONB,
+                compensation JSONB,
+                application_process JSONB,
+                metadata JSONB,
+                status VARCHAR(50) DEFAULT 'draft',
+                views_count INTEGER DEFAULT 0,
+                applications_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                published_at TIMESTAMP,
+                closed_at TIMESTAMP
+            )
+        """)
+        conn.commit()  # Commit table creation before using it
+        
+        # Extract data for database columns
+        basic_info = jd_data.get('basic_info', {})
+        metadata = jd_data.get('metadata', {})
+        
+        # Get recruiter_id and company_id from metadata
+        recruiter_id = metadata.get('recruiter_id', 'unknown')
+        company_id = metadata.get('company_id', 'unknown')
+        
+        # Check if JD already exists
+        cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        existing = cur.fetchone()
+        
+        if existing:
+            # Update existing JD
+            cur.execute("""
+                UPDATE job_postings SET
+                    title = %s,
+                    title_arabic = %s,
+                    department = %s,
+                    job_type = %s,
+                    job_level = %s,
+                    emirate = %s,
+                    city = %s,
+                    remote_option = %s,
+                    description = %s,
+                    description_arabic = %s,
+                    requirements = %s,
+                    responsibilities = %s,
+                    benefits = %s,
+                    compensation = %s,
+                    application_process = %s,
+                    metadata = %s,
+                    status = %s,
+                    updated_at = CURRENT_TIMESTAMP,
+                    published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
+                                       THEN CURRENT_TIMESTAMP 
+                                       ELSE published_at END
+                WHERE jd_id = %s
+            """, (
+                basic_info.get('title', ''),
+                basic_info.get('title_arabic'),
+                basic_info.get('department', ''),
+                basic_info.get('job_type', 'full_time'),
+                basic_info.get('job_level', 'mid'),
+                basic_info.get('emirate', ''),
+                basic_info.get('city', ''),
+                basic_info.get('remote_option', False),
+                jd_data.get('description', ''),
+                jd_data.get('description_arabic', ''),
+                json.dumps(jd_data.get('requirements', [])),
+                json.dumps(jd_data.get('responsibilities', [])),
+                json.dumps(jd_data.get('benefits', [])),
+                json.dumps(jd_data.get('compensation', {})),
+                json.dumps(jd_data.get('application_process', {})),
+                json.dumps(metadata),
+                status,
+                status,
+                jd_id
+            ))
+            logger.info(f"Updated JD {jd_id} in database with status: {status}")
+        else:
+            # Insert new JD
+            cur.execute("""
+                INSERT INTO job_postings (
+                    jd_id, recruiter_id, company_id,
+                    title, title_arabic, department, job_type, job_level,
+                    emirate, city, remote_option,
+                    description, description_arabic,
+                    requirements, responsibilities, benefits,
+                    compensation, application_process, metadata,
+                    status, published_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
+                )
+            """, (
+                jd_id,
+                recruiter_id,
+                company_id,
+                basic_info.get('title', ''),
+                basic_info.get('title_arabic'),
+                basic_info.get('department', ''),
+                basic_info.get('job_type', 'full_time'),
+                basic_info.get('job_level', 'mid'),
+                basic_info.get('emirate', ''),
+                basic_info.get('city', ''),
+                basic_info.get('remote_option', False),
+                jd_data.get('description', ''),
+                jd_data.get('description_arabic', ''),
+                json.dumps(jd_data.get('requirements', [])),
+                json.dumps(jd_data.get('responsibilities', [])),
+                json.dumps(jd_data.get('benefits', [])),
+                json.dumps(jd_data.get('compensation', {})),
+                json.dumps(jd_data.get('application_process', {})),
+                json.dumps(metadata),
+                status,
+                status
+            ))
+            logger.info(f"Inserted new JD {jd_id} into database with status: {status}")
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error saving JD {jd_id} to database: {str(e)}")
+        if conn:
+            conn.rollback()
+        return False
+
+
 @jd_bp.route('/health', methods=['GET'])
 def jd_health():
     """JD Builder health check"""
@@ -111,14 +350,38 @@ def update_basic_info(jd_id):
         data = request.get_json()
         basic_info = data.get('basic_info', {})
         
-        # TODO: Retrieve JD from database
-        # For now, create temporary JD data
-        jd_data = {'metadata': {'jd_id': jd_id}, 'basic_info': {}}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            # If JD doesn't exist, create a new one with basic structure
+            jd_data = {
+                'metadata': {
+                    'jd_id': jd_id,
+                    'recruiter_id': data.get('recruiter_id', 'unknown'),
+                    'company_id': data.get('company_id', 'unknown'),
+                    'status': 'draft',
+                    'completion_score': 0,
+                    'created_at': datetime.now().isoformat(),
+                    'last_modified': datetime.now().isoformat(),
+                    'current_step': 'basic_info'
+                },
+                'basic_info': {},
+                'description': '',
+                'description_arabic': '',
+                'requirements': [],
+                'responsibilities': [],
+                'benefits': [],
+                'compensation': {},
+                'application_process': {}
+            }
         
         # Update JD
         updated_jd = jd_engine.update_basic_info(jd_data, basic_info)
         
-        # TODO: Save to database
+        # Save to database
+        status = updated_jd['metadata'].get('status', 'draft')
+        if not _save_jd_to_db(jd_id, updated_jd, status):
+            return jsonify({'error': 'Failed to save JD to database'}), 500
         
         logger.info(f"Updated basic info for JD {jd_id}")
         
@@ -143,13 +406,18 @@ def update_description(jd_id):
         description = data.get('description', '')
         description_arabic = data.get('description_arabic')
         
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}, 'description': ''}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         # Update JD
         updated_jd = jd_engine.update_description(jd_data, description, description_arabic)
         
-        # TODO: Save to database
+        # Save to database
+        status = updated_jd['metadata'].get('status', 'draft')
+        if not _save_jd_to_db(jd_id, updated_jd, status):
+            return jsonify({'error': 'Failed to save JD to database'}), 500
         
         logger.info(f"Updated description for JD {jd_id}")
         
@@ -173,13 +441,18 @@ def add_requirement(jd_id):
         data = request.get_json()
         requirement = data.get('requirement', {})
         
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}, 'requirements': []}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         # Add requirement
         updated_jd = jd_engine.add_requirement(jd_data, requirement)
         
-        # TODO: Save to database
+        # Save to database
+        status = updated_jd['metadata'].get('status', 'draft')
+        if not _save_jd_to_db(jd_id, updated_jd, status):
+            return jsonify({'error': 'Failed to save JD to database'}), 500
         
         logger.info(f"Added requirement to JD {jd_id}")
         
@@ -202,13 +475,18 @@ def add_responsibility(jd_id):
         data = request.get_json()
         responsibility = data.get('responsibility', {})
         
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}, 'responsibilities': []}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         # Add responsibility
         updated_jd = jd_engine.add_responsibility(jd_data, responsibility)
         
-        # TODO: Save to database
+        # Save to database
+        status = updated_jd['metadata'].get('status', 'draft')
+        if not _save_jd_to_db(jd_id, updated_jd, status):
+            return jsonify({'error': 'Failed to save JD to database'}), 500
         
         logger.info(f"Added responsibility to JD {jd_id}")
         
@@ -231,13 +509,18 @@ def add_benefit(jd_id):
         data = request.get_json()
         benefit = data.get('benefit', {})
         
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}, 'benefits': []}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         # Add benefit
         updated_jd = jd_engine.add_benefit(jd_data, benefit)
         
-        # TODO: Save to database
+        # Save to database
+        status = updated_jd['metadata'].get('status', 'draft')
+        if not _save_jd_to_db(jd_id, updated_jd, status):
+            return jsonify({'error': 'Failed to save JD to database'}), 500
         
         logger.info(f"Added benefit to JD {jd_id}")
         
@@ -260,13 +543,18 @@ def update_compensation(jd_id):
         data = request.get_json()
         compensation = data.get('compensation', {})
         
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}, 'compensation': {}}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         # Update compensation
         updated_jd = jd_engine.update_compensation(jd_data, compensation)
         
-        # TODO: Save to database
+        # Save to database
+        status = updated_jd['metadata'].get('status', 'draft')
+        if not _save_jd_to_db(jd_id, updated_jd, status):
+            return jsonify({'error': 'Failed to save JD to database'}), 500
         
         logger.info(f"Updated compensation for JD {jd_id}")
         
@@ -289,8 +577,10 @@ def generate_description(jd_id):
         data = request.get_json()
         industry = data.get('industry')
         
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}, 'basic_info': {}}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         # Generate description
         generated_description = jd_engine.generate_description_ai(jd_data, industry)
@@ -312,8 +602,10 @@ def generate_description(jd_id):
 def get_completion_score(jd_id):
     """Get JD completion score and recommendations"""
     try:
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
         
         score = jd_engine._calculate_completion_score(jd_data)
         recommendations = jd_engine.get_completion_recommendations(jd_data)
@@ -343,15 +635,14 @@ def match_candidates(jd_id):
         employment_status_filter = data.get('employment_status_filter')  # 'employed', 'job_seeker', 'open_to_opportunities', or None
         top_n = data.get('top_n', 10)
         
-        # TODO: Retrieve JD from database
-        # For now, use placeholder
-        jd_data = {
-            'metadata': {'jd_id': jd_id},
-            'basic_info': {'title': 'Software Engineer'},
-            'description': '',
-            'requirements': [],
-            'responsibilities': []
-        }
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({
+                'success': False,
+                'error': 'Job description not found',
+                'top_matches': []
+            }), 404
         
         # Get candidates from database
         conn = get_db_connection()
@@ -431,8 +722,15 @@ def match_candidates(jd_id):
 def validate_jd(jd_id):
     """Validate JD before publishing"""
     try:
-        # TODO: Retrieve JD from database
-        jd_data = {'metadata': {'jd_id': jd_id}}
+        # Retrieve JD from database
+        jd_data = _get_jd_from_db(jd_id)
+        if not jd_data:
+            return jsonify({
+                'success': False,
+                'jd_id': jd_id,
+                'is_valid': False,
+                'errors': ['Job description not found']
+            }), 404
         
         is_valid, errors = jd_engine.validate_jd(jd_data)
         
