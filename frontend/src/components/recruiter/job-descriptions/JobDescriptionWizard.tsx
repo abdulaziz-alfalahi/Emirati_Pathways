@@ -157,6 +157,57 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
   
+  const [jdData, setJDData] = useState<JDData>(() => {
+    if (initialData) {
+      console.log('Loading initial data:', initialData);
+      console.log('Requirements from initial data:', initialData.requirements);
+      return {
+        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
+        basic_info: initialData.basic_info || {
+          title: '',
+          department: '',
+          job_type: 'full_time',
+          job_level: 'mid',
+          emirate: '',
+          city: '',
+          remote_option: false
+        },
+        description: initialData.description || '',
+        description_arabic: initialData.description_arabic || '',
+        requirements: initialData.requirements || [],
+        responsibilities: initialData.responsibilities || [],
+        benefits: initialData.benefits || [],
+        compensation: initialData.compensation || {
+          salary_currency: 'AED'
+        }
+      };
+    }
+    return {
+      basic_info: {
+        title: '',
+        department: '',
+        job_type: 'full_time',
+        job_level: 'mid',
+        emirate: '',
+        city: '',
+        remote_option: false
+      },
+      description: '',
+      requirements: [],
+      responsibilities: [],
+      benefits: [],
+      compensation: {
+        salary_currency: 'AED'
+      }
+    };
+  });
+  
+  const [loading, setLoading] = useState(false);
+  const [showMatchingDialog, setShowMatchingDialog] = useState(false);
+  const [employmentStatusFilter, setEmploymentStatusFilter] = useState<string>('all');
+  const [matchedCandidates, setMatchedCandidates] = useState<MatchedCandidate[]>([]);
+  const [matchingLoading, setMatchingLoading] = useState(false);
+
   // Initialize JD ID on mount if not provided
   useEffect(() => {
     const initializeJD = async () => {
@@ -209,58 +260,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     };
     
     initializeJD();
-  }, []); // Only run once on mount
-  
-  const [jdData, setJDData] = useState<JDData>(() => {
-    if (initialData) {
-      console.log('Loading initial data:', initialData);
-      console.log('Requirements from initial data:', initialData.requirements);
-      return {
-        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
-        basic_info: initialData.basic_info || {
-          title: '',
-          department: '',
-          job_type: 'full_time',
-          job_level: 'mid',
-          emirate: '',
-          city: '',
-          remote_option: false
-        },
-        description: initialData.description || '',
-        description_arabic: initialData.description_arabic || '',
-        requirements: initialData.requirements || [],
-        responsibilities: initialData.responsibilities || [],
-        benefits: initialData.benefits || [],
-        compensation: initialData.compensation || {
-          salary_currency: 'AED'
-        }
-      };
-    }
-    return {
-      basic_info: {
-        title: '',
-        department: '',
-        job_type: 'full_time',
-        job_level: 'mid',
-        emirate: '',
-        city: '',
-        remote_option: false
-      },
-      description: '',
-      requirements: [],
-      responsibilities: [],
-      benefits: [],
-      compensation: {
-        salary_currency: 'AED'
-      }
-    };
-  });
-  
-  const [loading, setLoading] = useState(false);
-  const [showMatchingDialog, setShowMatchingDialog] = useState(false);
-  const [employmentStatusFilter, setEmploymentStatusFilter] = useState<string>('all');
-  const [matchedCandidates, setMatchedCandidates] = useState<MatchedCandidate[]>([]);
-  const [matchingLoading, setMatchingLoading] = useState(false);
+  }, [recruiterId, companyId, initialJdId, initialData]); // Run when these change
 
   const steps = [
     { id: 'basic', title: 'Basic Information', icon: Briefcase },
