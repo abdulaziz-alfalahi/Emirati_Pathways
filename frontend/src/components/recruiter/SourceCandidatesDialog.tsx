@@ -121,11 +121,29 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       }
       
       if (response.status === 401 || response.status === 422) {
-        console.log(`Got ${response.status}, attempting token refresh...`);
-        // Try to refresh the token before giving up
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.log(`Got ${response.status}, error:`, errorData);
+        
+        // If token expired, try to refresh
+        if (errorData.message?.includes('expired') || errorData.message?.includes('Token has expired') || response.status === 401) {
+          console.log('Token expired or 401, attempting token refresh...');
+          const refreshToken = localStorage.getItem('refresh_token') || localStorage.getItem('refreshToken');
+          
+          console.log('Refresh token check:', {
+            hasRefresh_token: !!localStorage.getItem('refresh_token'),
+            hasRefreshToken: !!localStorage.getItem('refreshToken'),
+            refreshTokenLength: refreshToken?.length
+          });
+          
+          if (!refreshToken) {
+            console.error('No refresh token available');
+            alert('Your session has expired. Please log in again.');
+            window.location.href = '/login';
+            return;
+          }
+          
           try {
+            console.log('Calling refresh endpoint...');
             const refreshResponse = await fetch('http://localhost:5003/api/auth/refresh', {
               method: 'POST',
               headers: {
@@ -134,11 +152,20 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
               },
             });
             
+            console.log('Refresh response status:', refreshResponse.status);
+            
             if (refreshResponse.ok) {
               const refreshData = await refreshResponse.json();
+              console.log('Refresh data:', refreshData);
+              
               if (refreshData.success && refreshData.data?.access_token) {
                 // Save new token
                 localStorage.setItem('access_token', refreshData.data.access_token);
+                if (refreshData.data.refresh_token) {
+                  localStorage.setItem('refresh_token', refreshData.data.refresh_token);
+                }
+                console.log('Token refreshed successfully, retrying search...');
+                
                 // Retry the search with new token
                 const retryResponse = await fetch(
                   `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
@@ -150,24 +177,46 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                   }
                 );
                 
+                console.log('Retry response status:', retryResponse.status);
+                
                 if (retryResponse.ok) {
                   const result = await retryResponse.json();
                   if (result.success && result.data && result.data.candidates) {
                     setCandidates(result.data.candidates);
                     return;
+                  } else {
+                    setCandidates([]);
                   }
+                } else {
+                  const retryError = await retryResponse.json().catch(() => ({ message: 'Unknown error' }));
+                  console.error('Retry failed:', retryError);
+                  alert(`Search failed after token refresh: ${retryError.message || 'Please try again.'}`);
                 }
+              } else {
+                console.error('Refresh response missing access_token:', refreshData);
+                alert('Token refresh failed. Please log in again.');
+                window.location.href = '/login';
+                return;
               }
+            } else {
+              const refreshError = await refreshResponse.json().catch(() => ({ message: 'Refresh failed' }));
+              console.error('Refresh failed:', refreshError);
+              alert('Your session has expired. Please log in again.');
+              window.location.href = '/login';
+              return;
             }
           } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
+            console.error('Token refresh exception:', refreshError);
+            alert('Token refresh failed. Please log in again.');
+            window.location.href = '/login';
+            return;
           }
+        } else {
+          // Other authentication errors
+          alert(`Authentication failed: ${errorData.message || 'Please log in again.'}`);
+          window.location.href = '/login';
+          return;
         }
-        
-        // If refresh failed or no refresh token, redirect to login
-        alert('Your session has expired. Please log in again.');
-        window.location.href = '/login';
-        return;
       }
 
       if (response.ok) {
