@@ -266,7 +266,7 @@ const RecruiterDashboard: React.FC = () => {
                   New Vacancy
                 </Button>
               </Link>
-              <Link to="/recruiter/jobs" className="inline-block" aria-label="View active vacancies">
+              <Link to="/recruiter/vacancies" className="inline-block" aria-label="View active vacancies">
                 <Button variant="outline" className="font-dubai-medium">
                   <Briefcase className="h-4 w-4 mr-2" />
                   Active Vacancies
