@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
-import ScheduleInterviewDialog from '@/components/recruiter/ScheduleInterviewDialog';
 import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -78,7 +77,6 @@ const RecruiterDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [scheduleInterviewDialogOpen, setScheduleInterviewDialogOpen] = useState(false);
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
     placements: {
@@ -281,10 +279,6 @@ const RecruiterDashboard: React.FC = () => {
               <Button variant="outline" className="font-dubai-medium" onClick={handleManageShortlist}>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Manage Shortlist
-              </Button>
-              <Button variant="outline" className="font-dubai-medium" onClick={() => setScheduleInterviewDialogOpen(true)}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule Interviews
               </Button>
               <Button variant="outline" className="font-dubai-medium" onClick={() => setExportDialogOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
@@ -626,11 +620,6 @@ const RecruiterDashboard: React.FC = () => {
         onClose={() => setExportDialogOpen(false)}
       />
 
-      {/* Schedule Interview Dialog */}
-      <ScheduleInterviewDialog
-        open={scheduleInterviewDialogOpen}
-        onClose={() => setScheduleInterviewDialogOpen(false)}
-      />
 
       {/* Source Candidates Dialog */}
       <SourceCandidatesDialog
