@@ -122,7 +122,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
             
             SELECT 
                 'new_requirement' as type,
-                'New Search Assignment' as title,
+                'New Vacancy' as title,
                 CONCAT(jd.title, ' position for ', jd.company_name) as description,
                 jd.created_at as timestamp,
                 'high' as priority
