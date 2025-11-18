@@ -1112,14 +1112,6 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Button>
 
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/recruiter/jobs')}
-            title="View all saved job descriptions"
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View Saved JDs
-          </Button>
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
