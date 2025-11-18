@@ -268,6 +268,12 @@ const RecruiterDashboard: React.FC = () => {
                   New Vacancy
                 </Button>
               </Link>
+              <Link to="/recruiter/jobs" className="inline-block" aria-label="View active vacancies">
+                <Button variant="outline" className="font-dubai-medium">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Active Vacancies
+                </Button>
+              </Link>
               <Button variant="outline" className="font-dubai-medium" onClick={() => setSourceCandidatesDialogOpen(true)}>
                 <Users className="h-4 w-4 mr-2" />
                 Source Candidates
