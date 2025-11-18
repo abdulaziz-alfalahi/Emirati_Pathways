@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -154,6 +155,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   onCancel
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
   
@@ -1157,6 +1159,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Button>
 
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/recruiter/jobs')}
+            title="View all saved job descriptions"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            View Saved JDs
+          </Button>
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
