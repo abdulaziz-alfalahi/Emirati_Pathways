@@ -206,7 +206,7 @@ const RecruiterDashboard: React.FC = () => {
         {
           id: 3,
           type: 'new_requirement',
-          title: 'New Search Assignment',
+          title: 'New Vacancy',
           description: 'AI Engineer position for Dubai Future Foundation',
           timestamp: new Date(Date.now() - 172800000).toISOString(),
           priority: 'high'
@@ -265,7 +265,7 @@ const RecruiterDashboard: React.FC = () => {
               <Link to="/recruiter/jd-builder">
                 <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
                   <Plus className="h-4 w-4 mr-2" />
-                  New Search Assignment
+                  New Vacancy
                 </Button>
               </Link>
               <Button variant="outline" className="font-dubai-medium" onClick={() => setSourceCandidatesDialogOpen(true)}>
