@@ -125,9 +125,15 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
         console.log(`Got ${response.status}, error:`, errorData);
         
         // If token expired, try to refresh
-        if (errorData.message?.includes('expired') || errorData.message?.includes('Token has expired')) {
-          console.log('Token expired, attempting token refresh...');
-          const refreshToken = localStorage.getItem('refresh_token');
+        if (errorData.message?.includes('expired') || errorData.message?.includes('Token has expired') || response.status === 401) {
+          console.log('Token expired or 401, attempting token refresh...');
+          const refreshToken = localStorage.getItem('refresh_token') || localStorage.getItem('refreshToken');
+          
+          console.log('Refresh token check:', {
+            hasRefresh_token: !!localStorage.getItem('refresh_token'),
+            hasRefreshToken: !!localStorage.getItem('refreshToken'),
+            refreshTokenLength: refreshToken?.length
+          });
           
           if (!refreshToken) {
             console.error('No refresh token available');
