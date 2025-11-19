@@ -370,7 +370,7 @@ const JobDescriptionsList = () => {
           <CardHeader>
             <CardTitle>Saved Job Descriptions</CardTitle>
             <CardDescription>
-              {jobDescriptions?.length || 0} job descriptions parsed and ready for matching
+              {jobDescriptions?.length || 0} saved job description{jobDescriptions?.length !== 1 ? 's' : ''} available to use as templates
             </CardDescription>
           </CardHeader>
           <CardContent>
