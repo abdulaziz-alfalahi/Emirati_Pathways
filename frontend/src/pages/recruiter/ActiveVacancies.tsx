@@ -13,17 +13,34 @@ const ActiveVacancies: React.FC = () => {
   const { user, roles, isLoading } = useAuth();
   const navigate = useNavigate();
   
-  // Check if the user is authenticated
-  if (!isLoading && !user) {
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Check if the user is authenticated (allow mock tokens)
+  const hasToken = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
+  const isMockToken = hasToken?.startsWith('mock_token_');
+  
+  if (!user && !isMockToken) {
     return <Navigate to="/auth" replace />;
   }
   
-  // Check if the user has the recruiter role
-  const isRecruiter = (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
+  // Check if the user has the recruiter role (or is using mock auth)
+  const isRecruiter = isMockToken || 
+                      (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
                       (user?.email && user.email.includes('recruit'));
                       
   // Redirect to dashboard if not a recruiter
-  if (!isLoading && !isRecruiter) {
+  if (!isRecruiter) {
     return <Navigate to="/dashboard" replace />;
   }
 
