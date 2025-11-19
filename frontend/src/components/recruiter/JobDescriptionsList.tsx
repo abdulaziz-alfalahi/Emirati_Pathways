@@ -234,9 +234,9 @@ const JobDescriptionsList = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Job Descriptions</h2>
+          <h2 className="text-2xl font-bold">Your Saved Job Descriptions</h2>
           <p className="text-muted-foreground">
-            Upload and manage job descriptions with AI-powered parsing
+            Select a saved job description to use as a template for a new vacancy
           </p>
         </div>
         
@@ -368,7 +368,7 @@ const JobDescriptionsList = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Active Job Listings</CardTitle>
+            <CardTitle>Saved Job Descriptions</CardTitle>
             <CardDescription>
               {jobDescriptions?.length || 0} job descriptions parsed and ready for matching
             </CardDescription>
@@ -433,16 +433,16 @@ const JobDescriptionsList = () => {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="default"
                             onClick={() => {
-                              // Navigate to JD wizard to edit
+                              // Navigate to JD wizard to use as template or edit
                               const jdId = job.jd_id || job.id;
                               navigate(`/recruiter/jd-builder?jd_id=${jdId}`, { replace: false });
                             }}
-                            aria-label={`Edit job description ${job.title || job.jd_id}`}
+                            aria-label={`Use job description ${job.title || job.jd_id} as template`}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Edit
+                            Use as Template
                           </Button>
                           {job.status === 'published' && (
                             <Button

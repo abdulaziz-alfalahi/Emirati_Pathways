@@ -30,12 +30,14 @@ const RecruiterJobs: React.FC = () => {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Job Descriptions</h1>
-            <p className="text-muted-foreground">Manage your job postings and descriptions</p>
+            <h1 className="text-3xl font-bold mb-2">Saved Job Descriptions</h1>
+            <p className="text-muted-foreground">
+              Select a saved job description to use as a template or edit for a new vacancy
+            </p>
           </div>
           <Button onClick={() => navigate('/recruiter/jd-builder')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create New JD
+            Create New Vacancy
           </Button>
         </div>
         
