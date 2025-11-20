@@ -36,7 +36,7 @@ import {
   Work as WorkIcon,
   CardGiftcard as CardGiftcardIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface JobOffer {
   offer_id: string;
@@ -116,9 +116,9 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
   const reloadOfferDetails = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`);
-      if (response.data.offer) {
-        const updatedOffer = response.data.offer;
+      const response = await apiClient.get<{ offer?: any }>(`/api/recruiter/offers/${currentOffer.offer_id}`);
+      if (response.offer) {
+        const updatedOffer = response.offer;
         setCurrentOffer(updatedOffer);
         // Also update the form field states
         setSalaryAmount(updatedOffer.salary_amount.toString());
@@ -143,7 +143,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/send`);
+      await apiClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/send`, {});
       setSuccess('Offer sent successfully to candidate');
       
       // Reload offer details to show updated status and timestamps
@@ -154,7 +154,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       }, 500);
     } catch (err: any) {
       console.error('Error sending offer:', err);
-      setError(err.response?.data?.error || 'Failed to send offer');
+      setError(err.message || 'Failed to send offer');
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
+      await apiClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
         approved_by: 'manager_001', // TODO: Get from auth context
       });
       setSuccess('Offer approved successfully');
@@ -191,7 +191,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
+      await apiClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
         rejected_by: 'manager_001', // TODO: Get from auth context
         rejection_reason: 'Budget constraints',
       });
@@ -221,7 +221,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
+      await apiClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
         reason: 'Position filled by another candidate',
       });
       setSuccess('Offer withdrawn successfully');
@@ -255,7 +255,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         updates.response_deadline = responseDeadline;
       }
 
-      await axios.put(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`, updates);
+      await apiClient.put(`/api/recruiter/offers/${currentOffer.offer_id}`, updates);
       setSuccess('Offer updated successfully');
       setEditMode(false);
       
@@ -280,7 +280,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/response`, {
+      await apiClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/response`, {
         response: response,
       });
       setSuccess(`Candidate response recorded: ${response}`);

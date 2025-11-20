@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function JDTemplatesPage() {
   const { toast } = useToast();
@@ -15,14 +14,11 @@ export default function JDTemplatesPage() {
   const [requirements, setRequirements] = useState('skills: python, qa');
   const [responsibilities, setResponsibilities] = useState('Test, Automate');
   const [benefits, setBenefits] = useState('Health insurance, Bonus');
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   const load = async () => {
     try {
-      const r = await fetch(API('/api/hr/jobs/templates'), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ data: { templates?: any[] } }>('/api/hr/jobs/templates');
       setList(j?.data?.templates || []);
     } catch (e: any) {
       toast({ title: 'Failed to load', description: e?.message || 'Error', variant: 'destructive' });
@@ -40,8 +36,7 @@ export default function JDTemplatesPage() {
         benefits_template: benefits.split(',').map(s => s.trim()).filter(Boolean),
         is_public: false,
       };
-      const r = await fetch(API('/api/hr/jobs/templates'), { method: 'POST', headers: { ...(H as any), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post('/api/hr/jobs/templates', payload);
       toast({ title: 'Template created' });
       await load();
     } catch (e: any) {

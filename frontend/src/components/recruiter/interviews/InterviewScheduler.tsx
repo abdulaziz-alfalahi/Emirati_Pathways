@@ -43,7 +43,7 @@ import {
   Delete as DeleteIcon,
   Feedback as FeedbackIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface Interview {
   interview_id: string;
@@ -100,7 +100,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  // Note: Using apiClient instead of hardcoded URL
 
   useEffect(() => {
     fetchInterviews();
@@ -113,15 +113,15 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
       const params = new URLSearchParams();
       if (status) params.append('status', status);
       
-      const response = await axios.get(
-        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}?${params.toString()}`
+      const response = await apiClient.get<{ success?: boolean; interviews?: Interview[] }>(
+        `/api/recruiter/interviews/jd/${jdId}?${params.toString()}`
       );
       
-      if (response.data.success) {
-        setInterviews(response.data.interviews);
+      if (response.success) {
+        setInterviews(response.interviews || []);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to fetch interviews');
+      setError(err.message || 'Failed to fetch interviews');
     } finally {
       setLoading(false);
     }
@@ -129,12 +129,12 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/recruiter/interviews/stats/${jdId}`
+      const response = await apiClient.get<{ success?: boolean; stats?: any }>(
+        `/api/recruiter/interviews/stats/${jdId}`
       );
       
-      if (response.data.success) {
-        setStats(response.data.stats);
+      if (response.success) {
+        setStats(response.stats);
       }
     } catch (err: any) {
       console.error('Failed to fetch stats:', err);
@@ -149,18 +149,16 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
 
   const handleConfirmInterview = async (interviewId: string) => {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/interviews/${interviewId}/confirm`,
+      await apiClient.post(
+        `/api/recruiter/interviews/${interviewId}/confirm`,
         { confirmation_status: 'confirmed' }
       );
       
-      if (response.data.success) {
-        setSuccess('Interview confirmed successfully');
-        fetchInterviews();
-        fetchStats();
-      }
+      setSuccess('Interview confirmed successfully');
+      fetchInterviews();
+      fetchStats();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to confirm interview');
+      setError(err.message || 'Failed to confirm interview');
     }
   };
 
@@ -169,18 +167,16 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
     if (!reason) return;
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/interviews/${interviewId}/cancel`,
+      await apiClient.post(
+        `/api/recruiter/interviews/${interviewId}/cancel`,
         { cancellation_reason: reason }
       );
       
-      if (response.data.success) {
-        setSuccess('Interview cancelled successfully');
-        fetchInterviews();
-        fetchStats();
-      }
+      setSuccess('Interview cancelled successfully');
+      fetchInterviews();
+      fetchStats();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to cancel interview');
+      setError(err.message || 'Failed to cancel interview');
     }
   };
 

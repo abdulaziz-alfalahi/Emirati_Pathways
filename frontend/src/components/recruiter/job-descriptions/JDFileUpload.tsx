@@ -14,6 +14,7 @@ import {
   FileUp,
   FilePlus
 } from 'lucide-react';
+import { apiClient } from '@/utils/apiClient';
 
 interface JDFileUploadProps {
   recruiterId: string;
@@ -123,8 +124,14 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_drafts', 'true');
 
-        const response = await fetch('http://localhost:5003/api/recruiter/jd/upload/batch', {
+        // FormData uploads need special handling
+        const baseUrl = apiClient.getBaseURL();
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${baseUrl}/api/recruiter/jd/upload/batch`, {
           method: 'POST',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: formData
         });
 
@@ -148,8 +155,14 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_draft', 'true');
 
-        const response = await fetch('http://localhost:5003/api/recruiter/jd/upload/parse', {
+        // FormData uploads need special handling
+        const baseUrl = apiClient.getBaseURL();
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${baseUrl}/api/recruiter/jd/upload/parse`, {
           method: 'POST',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: formData
         });
 

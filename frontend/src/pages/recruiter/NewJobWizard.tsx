@@ -7,8 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function NewJobWizard() {
   const { toast } = useToast();
@@ -45,8 +44,7 @@ export default function NewJobWizard() {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   // Auth header
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   // Load from localStorage (autosave)
   useEffect(() => {
@@ -79,14 +77,11 @@ export default function NewJobWizard() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(API('/api/hr/jobs/templates'), { headers: H as any });
-        if (r.ok) {
-          const j = await r.json();
-          setTemplates(j?.data?.templates || []);
-        }
+        const j = await apiClient.get<{ data: { templates?: any[] } }>('/api/hr/jobs/templates');
+        setTemplates(j?.data?.templates || []);
       } catch {}
     })();
-  }, [H]);
+  }, []);
 
   // Persist to localStorage
   useEffect(() => {
@@ -183,24 +178,13 @@ export default function NewJobWizard() {
       if (!jobId) {
         // require title+description
         if (!validateBasics() || !validateJD()) return;
-        const r = await fetch(API('/api/hr/jobs/'), {
-          method: 'POST',
-          headers: { ...(H as any), 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!r.ok) throw new Error(await r.text());
-        const j = await r.json();
+        const j = await apiClient.post<{ data: { job_posting?: { id: string } } }>('/api/hr/jobs/', payload);
         const id = j?.data?.job_posting?.id;
         if (!id) throw new Error('Missing job id');
         setJobId(id);
         toast({ title: 'Draft saved', description: `Job created (${id.slice(0, 8)}...)` });
       } else {
-        const r = await fetch(API(`/api/hr/jobs/${jobId}`), {
-          method: 'PUT',
-          headers: { ...(H as any), 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!r.ok) throw new Error(await r.text());
+        await apiClient.put(`/api/hr/jobs/${jobId}`, payload);
         toast({ title: 'Draft updated' });
       }
     } catch (e: any) {
@@ -221,9 +205,13 @@ export default function NewJobWizard() {
       for (let i = 0; i < docs.length; i++) {
         const fd = new FormData();
         fd.append('file', docs[i]);
-        const r = await fetch(API(`/api/hr/jobs/${jobId}/documents`), {
+        // Note: FormData uploads need special handling - using fetch directly for now
+        const baseUrl = apiClient.getBaseURL();
+        const r = await fetch(`${baseUrl}/api/hr/jobs/${jobId}/documents`, {
           method: 'POST',
-          headers: { ...(H as any) },
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+          },
           body: fd,
         });
         if (!r.ok) throw new Error(await r.text());
@@ -237,12 +225,7 @@ export default function NewJobWizard() {
   const checkCompliance = async () => {
     if (!jobId) return;
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/compliance-check`), {
-        method: 'POST',
-        headers: { ...(H as any) },
-      });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.post<{ data: { compliance_score?: number; score?: number } }>(`/api/hr/jobs/${jobId}/compliance-check`, {});
       const score = j?.data?.compliance_score ?? j?.data?.score;
       toast({ title: 'Compliance checked', description: `Score: ${score}` });
       return j?.data;
@@ -255,9 +238,7 @@ export default function NewJobWizard() {
     if (!jobId) return;
     try {
       const url = andMatch ? `/api/hr/jobs/${jobId}/publish-and-match` : `/api/hr/jobs/${jobId}/publish`;
-      const r = await fetch(API(url), { method: 'POST', headers: { ...(H as any) } });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.post<{ data: { top_matches?: any[] } }>(url, {});
       toast({ title: andMatch ? 'Published and matched' : 'Published', description: andMatch ? `Top matches: ${(j?.data?.top_matches || []).length}` : undefined });
     } catch (e: any) {
       toast({ title: 'Publish failed', description: e?.message || 'Error', variant: 'destructive' });

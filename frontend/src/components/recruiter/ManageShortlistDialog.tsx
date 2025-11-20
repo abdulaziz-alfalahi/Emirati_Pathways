@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '@/utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -40,24 +41,13 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
   const loadJobDescriptions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.job_descriptions) {
-          // Show all JDs (active, published, and paused)
-          const relevantJDs = result.job_descriptions.filter(
-            (jd: any) => jd.status === 'active' || jd.status === 'published' || jd.status === 'paused'
-          );
-          setJobDescriptions(relevantJDs);
-        }
+      const result = await apiClient.get<{ job_descriptions?: any[] }>('/api/recruiter/jd/list');
+      if (result.job_descriptions) {
+        // Show all JDs (active, published, and paused)
+        const relevantJDs = result.job_descriptions.filter(
+          (jd: any) => jd.status === 'active' || jd.status === 'published' || jd.status === 'paused'
+        );
+        setJobDescriptions(relevantJDs);
       }
     } catch (error) {
       console.error('Error loading job descriptions:', error);

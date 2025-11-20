@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function InterviewSchedulerPage() {
   const { toast } = useToast();
@@ -18,8 +17,7 @@ export default function InterviewSchedulerPage() {
   const [duration, setDuration] = useState('60');
   const [notes, setNotes] = useState('');
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   const schedule = async () => {
     try {
@@ -31,12 +29,7 @@ export default function InterviewSchedulerPage() {
         interview_type: 'video',
         notes,
       };
-      const r = await fetch(API('/api/hr/interviews/'), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post('/api/hr/interviews/', body);
       toast({ title: 'Interview scheduled' });
     } catch (e: any) {
       toast({ title: 'Schedule failed', description: e?.message || 'Error', variant: 'destructive' });
@@ -47,12 +40,7 @@ export default function InterviewSchedulerPage() {
     const id = prompt('Interview ID to reschedule');
     if (!id) return;
     try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/reschedule`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_scheduled_date: scheduledDate, reschedule_reason: 'Updated time' }),
-      });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post(`/api/hr/interviews/${id}/reschedule`, { new_scheduled_date: scheduledDate, reschedule_reason: 'Updated time' });
       toast({ title: 'Interview rescheduled' });
     } catch (e: any) {
       toast({ title: 'Reschedule failed', description: e?.message || 'Error', variant: 'destructive' });
@@ -63,12 +51,7 @@ export default function InterviewSchedulerPage() {
     const id = prompt('Interview ID to cancel');
     if (!id) return;
     try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/cancel`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cancellation_reason: 'Cancelled by HR' }),
-      });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post(`/api/hr/interviews/${id}/cancel`, { cancellation_reason: 'Cancelled by HR' });
       toast({ title: 'Interview cancelled' });
     } catch (e: any) {
       toast({ title: 'Cancel failed', description: e?.message || 'Error', variant: 'destructive' });
@@ -79,12 +62,7 @@ export default function InterviewSchedulerPage() {
     const id = prompt('Interview ID for feedback');
     if (!id) return;
     try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/feedback`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ overall_rating: 4, technical_assessment: {}, soft_skills_assessment: {}, recommendation: 'advance', overall_notes: notes }),
-      });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post(`/api/hr/interviews/${id}/feedback`, { overall_rating: 4, technical_assessment: {}, soft_skills_assessment: {}, recommendation: 'advance', overall_notes: notes });
       toast({ title: 'Feedback submitted' });
     } catch (e: any) {
       toast({ title: 'Feedback failed', description: e?.message || 'Error', variant: 'destructive' });
@@ -95,9 +73,7 @@ export default function InterviewSchedulerPage() {
     const id = prompt('Interview ID (UUID) to download ICS');
     if (!id) return;
     try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/ics`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const text = await r.text();
+      const text = await apiClient.get<string>(`/api/hr/interviews/${id}/ics`);
       const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

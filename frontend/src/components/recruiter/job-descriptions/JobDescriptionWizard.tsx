@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import toast from 'react-hot-toast';
+import { apiClient } from '@/utils/apiClient';
 import { 
   Select,
   SelectContent,
@@ -231,28 +232,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
         const isMockToken = token?.startsWith('mock_token_');
         
-        const response = await fetch('http://localhost:5003/api/recruiter/jd/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            recruiter_id: recruiterId,
-            company_id: companyId,
-            template: 'standard'
-          })
+        const result = await apiClient.post<{ success?: boolean; jd_id?: string }>('/api/recruiter/jd/create', {
+          recruiter_id: recruiterId,
+          company_id: companyId,
+          template: 'standard'
         });
         
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.jd_id) {
-            setJDData(prev => ({
-              ...prev,
-              jd_id: result.jd_id
-            }));
-            console.log('Created new JD with ID:', result.jd_id);
-          }
+        if (result.success && result.jd_id) {
+          setJDData(prev => ({
+            ...prev,
+            jd_id: result.jd_id
+          }));
+          console.log('Created new JD with ID:', result.jd_id);
         }
       } catch (error) {
         console.error('Failed to create JD:', error);
@@ -362,35 +353,12 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       console.log('Saving draft with JD ID:', jdData.jd_id);
       
       // Save JD to database with draft status
-      const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          jd_data: jdDataToSave,
-          status: 'draft',
-          recruiter_id: recruiterId,
-          company_id: companyId
-        })
+      const result = await apiClient.post<{ success?: boolean; message?: string }>(`/api/recruiter/jd/${jdData.jd_id}/save`, {
+        jd_data: jdDataToSave,
+        status: 'draft',
+        recruiter_id: recruiterId,
+        company_id: companyId
       });
-
-      console.log('Save draft response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Save draft error response:', errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText || 'Failed to save draft' };
-        }
-        throw new Error(errorData.message || errorData.error || 'Failed to save draft');
-      }
-
-      const result = await response.json();
       console.log('Save draft result:', result);
       
       // Show success toast
@@ -416,31 +384,13 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         return;
       }
 
-      // Get token for authentication
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-
       // Save JD to database with published status
-      const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          jd_data: jdData,
-          status: 'published',
-          recruiter_id: recruiterId,
-          company_id: companyId
-        })
+      const result = await apiClient.post<{ success?: boolean; message?: string }>(`/api/recruiter/jd/${jdData.jd_id}/save`, {
+        jd_data: jdData,
+        status: 'published',
+        recruiter_id: recruiterId,
+        company_id: companyId
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to publish' }));
-        throw new Error(errorData.message || 'Failed to publish job description');
-      }
-
-      const result = await response.json();
       
       toast.success("Job description published successfully");
 
@@ -457,22 +407,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   const handleShortlistCandidate = async (candidateId: string, matchScore: number, matchDetails: any) => {
     try {
-      const response = await fetch(`http://localhost:5003/api/recruiter/shortlist/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jd_id: jdData.jd_id,
-          candidate_id: candidateId,
-          recruiter_id: recruiterId,
-          match_score: matchScore,
-          match_details: matchDetails,
-          notes: `Auto-shortlisted from AI matching (${matchScore.toFixed(1)}% match)`
-        })
+      const result = await apiClient.post<{ success?: boolean }>('/api/recruiter/shortlist/add', {
+        jd_id: jdData.jd_id,
+        candidate_id: candidateId,
+        recruiter_id: recruiterId,
+        match_score: matchScore,
+        match_details: matchDetails,
+        notes: `Auto-shortlisted from AI matching (${matchScore.toFixed(1)}% match)`
       });
-
-      const result = await response.json();
       
       if (result.success) {
         toast.success("Candidate added to shortlist");

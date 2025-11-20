@@ -48,7 +48,7 @@ import {
   CardGiftcard as CardGiftcardIcon,
   RateReview as RateReviewIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface ShortlistedCandidate {
   shortlist_id: string;
@@ -143,7 +143,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
   const [selectedCandidateDetails, setSelectedCandidateDetails] = useState<ShortlistedCandidate | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  // Note: Using apiClient instead of hardcoded URL
 
   useEffect(() => {
     loadShortlist();
@@ -153,12 +153,12 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const loadShortlist = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/recruiter/shortlist/${jdId}`);
-      if (response.data.success) {
-        setShortlist(response.data.shortlist);
+      const response = await apiClient.get<{ success?: boolean; shortlist?: ShortlistedCandidate[] }>(`/api/recruiter/shortlist/${jdId}`);
+      if (response.success) {
+        setShortlist(response.shortlist || []);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load shortlist');
+      setError(err.message || 'Failed to load shortlist');
     } finally {
       setLoading(false);
     }
@@ -166,9 +166,9 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/recruiter/shortlist/${jdId}/stats`);
-      if (response.data.success) {
-        setStats(response.data.stats);
+      const response = await apiClient.get<{ success?: boolean; stats?: any }>(`/api/recruiter/shortlist/${jdId}/stats`);
+      if (response.success) {
+        setStats(response.stats);
       }
     } catch (err: any) {
       console.error('Failed to load stats:', err);
@@ -179,24 +179,22 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     if (!selectedCandidate || !newStatus) return;
 
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/status`,
+      await apiClient.put(
+        `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/status`,
         {
           status: newStatus,
           notes: statusNotes,
         }
       );
 
-      if (response.data.success) {
-        setSuccess('Status updated successfully');
-        setStatusDialogOpen(false);
-        setNewStatus('');
-        setStatusNotes('');
-        loadShortlist();
-        loadStats();
-      }
+      setSuccess('Status updated successfully');
+      setStatusDialogOpen(false);
+      setNewStatus('');
+      setStatusNotes('');
+      loadShortlist();
+      loadStats();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update status');
+      setError(err.message || 'Failed to update status');
     }
   };
 
@@ -204,22 +202,20 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     if (!selectedCandidate || !newNote.trim()) return;
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/notes`,
+      await apiClient.post(
+        `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/notes`,
         {
           note: newNote,
           recruiter_id: 'current_recruiter', // TODO: Get from auth context
         }
       );
 
-      if (response.data.success) {
-        setSuccess('Note added successfully');
-        setNoteDialogOpen(false);
-        setNewNote('');
-        loadShortlist();
-      }
+      setSuccess('Note added successfully');
+      setNoteDialogOpen(false);
+      setNewNote('');
+      loadShortlist();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add note');
+      setError(err.message || 'Failed to add note');
     }
   };
 
@@ -248,11 +244,11 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
     try {
       // Find the interview for this candidate
-      const interviewResponse = await axios.get(
-        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}`
+      const interviewResponse = await apiClient.get<{ interviews?: any[] }>(
+        `/api/recruiter/interviews/jd/${jdId}`
       );
       
-      const interview = interviewResponse.data.interviews?.find(
+      const interview = interviewResponse.interviews?.find(
         (i: any) => i.shortlist_id === selectedCandidate.shortlist_id
       );
 
@@ -262,8 +258,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
       }
 
       // Update the interview with feedback
-      await axios.put(
-        `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}`,
+      await apiClient.put(
+        `/api/recruiter/interviews/${interview.interview_id}`,
         {
           rating: feedbackRating,
           recommendation: feedbackRecommendation,
@@ -278,22 +274,22 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
       setFeedbackNotes('');
       loadShortlist(); // Reload to show updated feedback
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add interview feedback');
+      setError(err.message || 'Failed to add interview feedback');
     }
   };
 
   const handleViewInterviews = async () => {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}`
+      const response = await apiClient.get<{ success?: boolean; interviews?: any[] }>(
+        `/api/recruiter/interviews/jd/${jdId}`
       );
       
-      if (response.data.success) {
-        setInterviews(response.data.interviews || []);
+      if (response.success) {
+        setInterviews(response.interviews || []);
         setViewInterviewsDialogOpen(true);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load interviews');
+      setError(err.message || 'Failed to load interviews');
     }
   };
 
@@ -308,17 +304,12 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
 
     try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/api/recruiter/shortlist/${shortlistId}`
-      );
-
-      if (response.data.success) {
-        setSuccess('Candidate removed from shortlist');
-        loadShortlist();
-        loadStats();
-      }
+      await apiClient.delete(`/api/recruiter/shortlist/${shortlistId}`);
+      setSuccess('Candidate removed from shortlist');
+      loadShortlist();
+      loadStats();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to remove candidate');
+      setError(err.message || 'Failed to remove candidate');
     }
   };
 

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Briefcase, GraduationCap, Users, Mail, Phone, ExternalLink } from 'lucide-react';
+import { apiClient } from '@/utils/apiClient';
 
 interface SourceCandidatesDialogProps {
   open: boolean;
@@ -106,141 +107,112 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       if (skills) params.append('skills', skills);
 
       console.log('Making search request with token...');
-      const response = await fetch(
-        `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      console.log('Search response status:', response.status);
       
-      // Log response body for debugging
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          console.error('Error JSON:', errorJson);
-        } catch (e) {
-          console.error('Error is not JSON:', errorText);
-        }
-      }
-      
-      if (response.status === 401 || response.status === 422) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.log(`Got ${response.status}, error:`, errorData);
-        
-        // If token expired, try to refresh
-        if (errorData.message?.includes('expired') || errorData.message?.includes('Token has expired') || response.status === 401) {
-          console.log('Token expired or 401, attempting token refresh...');
-          const refreshToken = localStorage.getItem('refresh_token') || localStorage.getItem('refreshToken');
-          
-          console.log('Refresh token check:', {
-            hasRefresh_token: !!localStorage.getItem('refresh_token'),
-            hasRefreshToken: !!localStorage.getItem('refreshToken'),
-            refreshTokenLength: refreshToken?.length
-          });
-          
-          if (!refreshToken) {
-            console.error('No refresh token available');
-            alert('Your session has expired. Please log in again.');
-            window.location.href = '/login';
-            return;
-          }
-          
-          try {
-            console.log('Calling refresh endpoint...');
-            const refreshResponse = await fetch('http://localhost:5003/api/auth/refresh', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${refreshToken}`,
-              },
-            });
-            
-            console.log('Refresh response status:', refreshResponse.status);
-            
-            if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              console.log('Refresh data:', refreshData);
-              
-              if (refreshData.success && refreshData.data?.access_token) {
-                // Save new token
-                localStorage.setItem('access_token', refreshData.data.access_token);
-                if (refreshData.data.refresh_token) {
-                  localStorage.setItem('refresh_token', refreshData.data.refresh_token);
-                }
-                console.log('Token refreshed successfully, retrying search...');
-                
-                // Retry the search with new token
-                const retryResponse = await fetch(
-                  `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
-                  {
-                    headers: {
-                      'Authorization': `Bearer ${refreshData.data.access_token}`,
-                      'Content-Type': 'application/json',
-                    },
-                  }
-                );
-                
-                console.log('Retry response status:', retryResponse.status);
-                
-                if (retryResponse.ok) {
-                  const result = await retryResponse.json();
-                  if (result.success && result.data && result.data.candidates) {
-                    setCandidates(result.data.candidates);
-                    return;
-                  } else {
-                    setCandidates([]);
-                  }
-                } else {
-                  const retryError = await retryResponse.json().catch(() => ({ message: 'Unknown error' }));
-                  console.error('Retry failed:', retryError);
-                  alert(`Search failed after token refresh: ${retryError.message || 'Please try again.'}`);
-                }
-              } else {
-                console.error('Refresh response missing access_token:', refreshData);
-                alert('Token refresh failed. Please log in again.');
-                window.location.href = '/login';
-                return;
-              }
-            } else {
-              const refreshError = await refreshResponse.json().catch(() => ({ message: 'Refresh failed' }));
-              console.error('Refresh failed:', refreshError);
-              alert('Your session has expired. Please log in again.');
-              window.location.href = '/login';
-              return;
-            }
-          } catch (refreshError) {
-            console.error('Token refresh exception:', refreshError);
-            alert('Token refresh failed. Please log in again.');
-            window.location.href = '/login';
-            return;
-          }
-        } else {
-          // Other authentication errors
-          alert(`Authentication failed: ${errorData.message || 'Please log in again.'}`);
-          window.location.href = '/login';
-          return;
-        }
-      }
-
-      if (response.ok) {
-        const result = await response.json();
+      try {
+        // Try the search with apiClient
+        const result = await apiClient.get<{ success?: boolean; data?: { candidates?: Candidate[] } }>(`/api/hr/candidates/search?${params.toString()}`);
         if (result.success && result.data && result.data.candidates) {
           setCandidates(result.data.candidates);
         } else {
           setCandidates([]);
         }
-      } else {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        setCandidates([]);
-        alert(`Failed to search candidates: ${errorData.message || 'Please try again.'}`);
-      }
+        setLoading(false);
+        return;
+      } catch (error: any) {
+        console.log('Search request failed:', error);
+        
+        // Check if it's an authentication error
+        if (error instanceof Error && (error.message.includes('401') || error.message.includes('422') || error.message.includes('Unauthorized'))) {
+          console.log(`Got authentication error, attempting token refresh...`);
+          
+          // If token expired, try to refresh
+          if (error.message?.includes('expired') || error.message?.includes('Token has expired') || error.message?.includes('401')) {
+            console.log('Token expired or 401, attempting token refresh...');
+            const refreshToken = localStorage.getItem('refresh_token') || localStorage.getItem('refreshToken');
+            
+            console.log('Refresh token check:', {
+              hasRefresh_token: !!localStorage.getItem('refresh_token'),
+              hasRefreshToken: !!localStorage.getItem('refreshToken'),
+              refreshTokenLength: refreshToken?.length
+            });
+            
+            if (!refreshToken) {
+              console.error('No refresh token available');
+              alert('Your session has expired. Please log in again.');
+              window.location.href = '/login';
+              setLoading(false);
+              return;
+            }
+            
+            try {
+              console.log('Calling refresh endpoint...');
+              // Use apiClient base URL for refresh endpoint
+              const baseUrl = apiClient.getBaseURL();
+              const refreshResponse = await fetch(`${baseUrl}/api/auth/refresh`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${refreshToken}`,
+                },
+              });
+              
+              console.log('Refresh response status:', refreshResponse.status);
+              
+              if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
+                console.log('Refresh data:', refreshData);
+                
+                if (refreshData.success && refreshData.data?.access_token) {
+                  // Save new token
+                  localStorage.setItem('access_token', refreshData.data.access_token);
+                  if (refreshData.data.refresh_token) {
+                    localStorage.setItem('refresh_token', refreshData.data.refresh_token);
+                  }
+                  console.log('Token refreshed successfully, retrying search...');
+                  
+                  // Retry the search with new token using apiClient
+                  try {
+                    const retryResult = await apiClient.get<{ success?: boolean; data?: { candidates?: Candidate[] } }>(`/api/hr/candidates/search?${params.toString()}`);
+                    if (retryResult.success && retryResult.data && retryResult.data.candidates) {
+                      setCandidates(retryResult.data.candidates);
+                    } else {
+                      setCandidates([]);
+                    }
+                  } catch (retryError: any) {
+                    console.error('Retry failed:', retryError);
+                    alert(`Search failed after token refresh: ${retryError.message || 'Please try again.'}`);
+                    setCandidates([]);
+                  }
+                } else {
+                  console.error('Refresh response missing access_token:', refreshData);
+                  alert('Token refresh failed. Please log in again.');
+                  window.location.href = '/login';
+                }
+              } else {
+                const refreshError = await refreshResponse.json().catch(() => ({ message: 'Refresh failed' }));
+                console.error('Refresh failed:', refreshError);
+                alert('Your session has expired. Please log in again.');
+                window.location.href = '/login';
+              }
+            } catch (refreshError) {
+              console.error('Token refresh exception:', refreshError);
+              alert('Token refresh failed. Please log in again.');
+              window.location.href = '/login';
+            }
+            setLoading(false);
+            return;
+          } else {
+            // Other authentication errors
+            alert(`Authentication failed: ${error.message || 'Please log in again.'}`);
+            window.location.href = '/login';
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Other errors
+          alert(`Search failed: ${error.message || 'Please try again.'}`);
+          setCandidates([]);
+        }
     } catch (error) {
       console.error('Error searching candidates:', error);
       setCandidates([]);

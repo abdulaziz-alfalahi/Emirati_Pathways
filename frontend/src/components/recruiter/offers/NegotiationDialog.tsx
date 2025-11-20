@@ -27,7 +27,7 @@ import {
   Message as MessageIcon,
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface JobOffer {
   offer_id: string;
@@ -81,13 +81,13 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
   const loadNegotiationHistory = async () => {
     try {
       // Fetch fresh offer details to get latest negotiation history
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}`);
-      console.log('Loaded offer details:', response.data.offer);
-      console.log('Negotiation history from API:', response.data.offer?.negotiation_history);
+      const response = await apiClient.get<{ offer?: { negotiation_history?: any[] } }>(`/api/recruiter/offers/${offer.offer_id}`);
+      console.log('Loaded offer details:', response.offer);
+      console.log('Negotiation history from API:', response.offer?.negotiation_history);
       
-      if (response.data.offer && response.data.offer.negotiation_history) {
-        console.log('Setting negotiation history:', response.data.offer.negotiation_history);
-        setNegotiationHistory(response.data.offer.negotiation_history);
+      if (response.offer && response.offer.negotiation_history) {
+        console.log('Setting negotiation history:', response.offer.negotiation_history);
+        setNegotiationHistory(response.offer.negotiation_history);
       } else {
         console.log('No negotiation history in response, setting empty array');
         setNegotiationHistory([]);
@@ -144,8 +144,8 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
         payload.proposed_benefits = proposedBenefits;
       }
 
-      await axios.post(
-        `http://localhost:5003/api/recruiter/offers/${offer.offer_id}/negotiate`,
+      await apiClient.post(
+        `/api/recruiter/offers/${offer.offer_id}/negotiate`,
         payload
       );
 

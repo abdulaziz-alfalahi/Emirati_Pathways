@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { apiClient } from '@/utils/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -173,20 +174,8 @@ const RecruiterDashboard = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5003/api/recruiter/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      } );
-
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data.data || {});
-      } else {
-        console.log('API call failed, using mock data');
-        setMockData();
-      }
+      const data = await apiClient.get<{ data?: any }>('/api/recruiter/dashboard');
+      setDashboardData(data.data || {});
     } catch (error) {
       console.error('Error loading recruiter dashboard data:', error);
       setMockData();

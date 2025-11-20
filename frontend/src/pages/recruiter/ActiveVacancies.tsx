@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
 import { Eye, Users, MapPin, Building, Calendar, Briefcase } from 'lucide-react';
+import { apiClient } from '@/utils/apiClient';
 
 const ActiveVacancies: React.FC = () => {
   const { user, roles, isLoading } = useAuth();
@@ -48,21 +49,7 @@ const ActiveVacancies: React.FC = () => {
   const { data: activeVacancies, isLoading: isLoadingVacancies } = useQuery({
     queryKey: ['activeVacancies'],
     queryFn: async () => {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch active vacancies');
-      }
-      
-      const data = await response.json();
+      const data = await apiClient.get<{ job_descriptions: any[] }>('/api/recruiter/jd/list');
       // Filter to show only published vacancies
       const allJDs = data.job_descriptions || [];
       return allJDs.filter((jd: any) => jd.status === 'published');

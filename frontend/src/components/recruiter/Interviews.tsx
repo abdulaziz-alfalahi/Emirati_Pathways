@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { apiClient } from '@/utils/apiClient';
 import {
   Dialog,
   DialogContent,
@@ -121,11 +122,7 @@ const Interviews = () => {
     const id = resolveInterviewId(interview);
     if (!id) return;
     try {
-      const res = await fetch(`http://localhost:5003/api/hr/interviews/${id}/ics`, {
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const text = await res.text();
+      const text = await apiClient.get<string>(`/api/hr/interviews/${id}/ics`);
       const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -145,12 +142,7 @@ const Interviews = () => {
     const id = resolveInterviewId(interview);
     if (!id) return;
     try {
-      const res = await fetch(`http://localhost:5003/api/hr/interviews/${id}/send-invites`, {
-        method: 'POST',
-        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      await apiClient.post(`/api/hr/interviews/${id}/send-invites`, {});
       toast({ title: 'Invites queued', description: 'Calendar invites have been queued for delivery.' });
     } catch (e: any) {
       toast({ title: 'Failed to send invites', description: e?.message || 'Error', variant: 'destructive' });

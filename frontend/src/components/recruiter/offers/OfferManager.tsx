@@ -33,7 +33,7 @@ import {
   Description as DescriptionIcon,
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface JobOffer {
   offer_id: string;
@@ -112,11 +112,11 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/jd/${jdId}`);
-      setOffers(response.data.offers || []);
+      const response = await apiClient.get<{ offers?: JobOffer[] }>(`/api/recruiter/offers/jd/${jdId}`);
+      setOffers(response.offers || []);
     } catch (err: any) {
       console.error('Error loading offers:', err);
-      setError(err.response?.data?.error || 'Failed to load offers');
+      setError(err.message || 'Failed to load offers');
     } finally {
       setLoading(false);
     }
@@ -124,8 +124,8 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/statistics/${jdId}`);
-      setStats(response.data.statistics);
+      const response = await apiClient.get<{ statistics?: any }>(`/api/recruiter/offers/statistics/${jdId}`);
+      setStats(response.statistics);
     } catch (err: any) {
       console.error('Error loading statistics:', err);
     }

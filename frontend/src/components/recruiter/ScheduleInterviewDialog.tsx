@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, MapPin, Video, Users } from 'lucide-react';
+import { apiClient } from '@/utils/apiClient';
 
 interface ScheduleInterviewDialogProps {
   open: boolean;
@@ -64,22 +65,11 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
 
   const loadJobDescriptions = async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.job_descriptions) {
-          // Filter only active JDs
-          const activeJDs = result.job_descriptions.filter((jd: any) => jd.status === 'active' || jd.status === 'published');
-          setJobDescriptions(activeJDs);
-        }
+      const result = await apiClient.get<{ job_descriptions?: any[] }>('/api/recruiter/jd/list');
+      if (result.job_descriptions) {
+        // Filter only active JDs
+        const activeJDs = result.job_descriptions.filter((jd: any) => jd.status === 'active' || jd.status === 'published');
+        setJobDescriptions(activeJDs);
       }
     } catch (error) {
       console.error('Error loading job descriptions:', error);
@@ -89,24 +79,13 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
   const loadCandidates = async (jdId: string) => {
     try {
       setLoadingCandidates(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch(`http://localhost:5003/api/recruiter/shortlist/${jdId}`, {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          // Filter only shortlisted candidates
-          const shortlistedCandidates = result.data.filter(
-            (item: any) => item.status === 'shortlisted' || item.status === 'interviewed'
-          );
-          setCandidates(shortlistedCandidates.map((item: any) => item.candidate));
-        }
+      const result = await apiClient.get<{ success?: boolean; data?: Array<{ status: string; candidate: any }> }>(`/api/recruiter/shortlist/${jdId}`);
+      if (result.success && result.data) {
+        // Filter only shortlisted candidates
+        const shortlistedCandidates = result.data.filter(
+          (item: any) => item.status === 'shortlisted' || item.status === 'interviewed'
+        );
+        setCandidates(shortlistedCandidates.map((item: any) => item.candidate));
       }
     } catch (error) {
       console.error('Error loading candidates:', error);
@@ -123,36 +102,22 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
 
     try {
       setLoading(true);
-
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       
       // Combine date and time
       const scheduledDateTime = `${scheduledDate}T${scheduledTime}:00`;
 
-      const response = await fetch('http://localhost:5003/api/recruiter/interviews/schedule', {
-        method: 'POST',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jd_id: selectedJD,
-          candidate_id: selectedCandidate,
-          interview_type: interviewType,
-          scheduled_time: scheduledDateTime,
-          location: location || null,
-          notes: notes || null,
-        }),
+      await apiClient.post('/api/recruiter/interviews/schedule', {
+        jd_id: selectedJD,
+        candidate_id: selectedCandidate,
+        interview_type: interviewType,
+        scheduled_time: scheduledDateTime,
+        location: location || null,
+        notes: notes || null,
       });
 
-      if (response.ok) {
-        alert('Interview scheduled successfully!');
-        resetForm();
-        onClose();
-      } else {
-        const error = await response.json();
-        alert(`Failed to schedule interview: ${error.error || 'Unknown error'}`);
-      }
+      alert('Interview scheduled successfully!');
+      resetForm();
+      onClose();
     } catch (error) {
       console.error('Error scheduling interview:', error);
       alert('Failed to schedule interview. Please try again.');

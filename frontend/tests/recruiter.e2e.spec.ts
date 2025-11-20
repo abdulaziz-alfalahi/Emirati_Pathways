@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const API = 'http://localhost:5003';
+const API = process.env.VITE_API_BASE_URL || process.env.API_BASE_URL || 'http://localhost:5003';
 
 test.describe('Recruiter flow', () => {
   test('jobs → publish/match → shortlist → offers', async ({ page, request }) => {

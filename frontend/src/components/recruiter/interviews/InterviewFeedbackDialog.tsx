@@ -17,7 +17,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Close as CloseIcon, Star as StarIcon } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface Interview {
   interview_id: string;
@@ -49,7 +49,7 @@ export const InterviewFeedbackDialog: React.FC<InterviewFeedbackDialogProps> = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  // Note: Using apiClient instead of hardcoded URL
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -68,24 +68,22 @@ export const InterviewFeedbackDialog: React.FC<InterviewFeedbackDialogProps> = (
       setLoading(true);
       setError(null);
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}/complete`,
+      await apiClient.post(
+        `/api/recruiter/interviews/${interview.interview_id}/complete`,
         formData
       );
 
-      if (response.data.success) {
-        onSuccess();
-        onClose();
-        // Reset form
-        setFormData({
-          feedback: '',
-          rating: 3,
-          recommendation: 'next_round',
-          internal_notes: '',
-        });
-      }
+      onSuccess();
+      onClose();
+      // Reset form
+      setFormData({
+        feedback: '',
+        rating: 3,
+        recommendation: 'next_round',
+        internal_notes: '',
+      });
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit feedback');
+      setError(err.message || 'Failed to submit feedback');
     } finally {
       setLoading(false);
     }

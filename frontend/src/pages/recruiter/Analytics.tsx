@@ -1,21 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function RecruiterAnalyticsPage() {
   const [data, setData] = useState<any>(null);
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(API('/api/hr/analytics/recruiter/summary'), { headers: H as any });
-        if (r.ok) setData(await r.json());
+        const result = await apiClient.get('/api/hr/analytics/recruiter/summary');
+        setData(result);
       } catch {}
     })();
-  }, [H]);
+  }, []);
 
   const d = data?.data || {};
   return (

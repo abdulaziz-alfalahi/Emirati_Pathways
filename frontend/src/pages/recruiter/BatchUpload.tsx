@@ -4,14 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function BatchUploadPage() {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   const parseCSV = async (text: string) => {
     const lines = text.split(/\r?\n/).filter(Boolean);
@@ -46,8 +44,7 @@ export default function BatchUploadPage() {
         experience_level: r.experience_level || 'mid',
         priority_level: r.priority || 'normal',
       }));
-      const r = await fetch(API('/api/hr/jobs/batch'), { method: 'POST', headers: { ...(H as any), 'Content-Type': 'application/json' }, body: JSON.stringify({ jobs }) });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post('/api/hr/jobs/batch', { jobs });
       toast({ title: 'Batch created', description: `${jobs.length} jobs submitted` });
     } catch (e: any) {
       toast({ title: 'Batch upload failed', description: e?.message || 'Error', variant: 'destructive' });

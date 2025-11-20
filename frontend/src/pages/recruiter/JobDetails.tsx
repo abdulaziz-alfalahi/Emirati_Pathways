@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Upload, Users, MessageSquare } from 'lucide-react';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function JobDetailsPage() {
   const { id: routeId } = useParams();
@@ -22,16 +21,13 @@ export default function JobDetailsPage() {
   const [fileList, setFileList] = useState<FileList | null>(null);
   const { toast } = useToast();
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   const loadJob = async () => {
     if (!jobId) return;
     setLoading(true);
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ data?: any }>(`/api/hr/jobs/${jobId}`);
       setJob(j?.data || null);
     } catch (e: any) {
       toast({ title: 'Failed to load job', description: e?.message || 'Error', variant: 'destructive' });
@@ -43,9 +39,7 @@ export default function JobDetailsPage() {
   const loadDocuments = async () => {
     if (!jobId) return;
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/documents`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ data?: any[] }>(`/api/hr/jobs/${jobId}/documents`);
       setDocs(j?.data || []);
     } catch (e: any) {
       toast({ title: 'Failed to load documents', description: e?.message || 'Error', variant: 'destructive' });
@@ -58,9 +52,13 @@ export default function JobDetailsPage() {
       for (let i = 0; i < fileList.length; i++) {
         const fd = new FormData();
         fd.append('file', fileList[i]);
-        const r = await fetch(API(`/api/hr/jobs/${jobId}/documents`), {
+        // Note: FormData uploads need special handling - using fetch directly for now
+        const baseUrl = apiClient.getBaseURL();
+        const r = await fetch(`${baseUrl}/api/hr/jobs/${jobId}/documents`, {
           method: 'POST',
-          headers: { ...(H as any) },
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+          },
           body: fd,
         });
         if (!r.ok) throw new Error(await r.text());
@@ -74,8 +72,7 @@ export default function JobDetailsPage() {
 
   const deleteDocument = async (docId: string) => {
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/documents/${docId}`), { method: 'DELETE', headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.delete(`/api/hr/jobs/${jobId}/documents/${docId}`);
       toast({ title: 'Document deleted' });
       await loadDocuments();
     } catch (e: any) {
@@ -86,9 +83,7 @@ export default function JobDetailsPage() {
   const loadShortlist = async () => {
     if (!jobId) return;
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/shortlist`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ data?: any[] }>(`/api/hr/jobs/${jobId}/shortlist`);
       setShortlist(j?.data || []);
     } catch (e: any) {
       toast({ title: 'Failed to load shortlist', description: e?.message || 'Error', variant: 'destructive' });
@@ -97,8 +92,7 @@ export default function JobDetailsPage() {
 
   const removeFromShortlist = async (candidateId: number) => {
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`), { method: 'DELETE', headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`);
       toast({ title: 'Removed from shortlist' });
       await loadShortlist();
     } catch (e: any) {
@@ -108,12 +102,7 @@ export default function JobDetailsPage() {
 
   const shortlistCandidate = async (candidateId: number) => {
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/shortlist`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidate_id: candidateId, notes: 'Shortlisted from matches' }),
-      });
-      if (!r.ok) throw new Error(await r.text());
+      await apiClient.post(`/api/hr/jobs/${jobId}/shortlist`, { candidate_id: candidateId, notes: 'Shortlisted from matches' });
       toast({ title: 'Shortlisted' });
       await loadShortlist();
     } catch (e: any) {
@@ -123,9 +112,7 @@ export default function JobDetailsPage() {
 
   const publishAndMatch = async () => {
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/publish-and-match`), { method: 'POST', headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.post<{ data: { top_matches?: any[] } }>(`/api/hr/jobs/${jobId}/publish-and-match`, {});
       setMatches(j?.data?.top_matches || []);
       toast({ title: 'Matched', description: `${(j?.data?.top_matches || []).length} candidates` });
     } catch (e: any) {

@@ -17,7 +17,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface CreateInterviewDialogProps {
   open: boolean;
@@ -62,7 +62,7 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  // Note: Using apiClient instead of hardcoded URL
 
   useEffect(() => {
     if (open) {
@@ -81,12 +81,12 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
 
   const fetchShortlistCandidates = async () => {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/recruiter/shortlist/${jdId}`
+      const response = await apiClient.get<{ success?: boolean; shortlist?: ShortlistCandidate[] }>(
+        `/api/recruiter/shortlist/${jdId}`
       );
       
-      if (response.data.success) {
-        setCandidates(response.data.shortlist);
+      if (response.success) {
+        setCandidates(response.shortlist || []);
       }
     } catch (err: any) {
       console.error('Failed to fetch candidates:', err);
@@ -129,8 +129,8 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
         ? `${formData.scheduled_time}:00` 
         : formData.scheduled_time;
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/interviews/create`,
+      const response = await apiClient.post<{ success?: boolean }>(
+        `/api/recruiter/interviews/create`,
         {
           ...formData,
           scheduled_time: formattedTime,
@@ -139,9 +139,9 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
         }
       );
 
-      console.log('Interview creation response:', response.data);
+      console.log('Interview creation response:', response);
 
-      if (response.data.success) {
+      if (response.success) {
         console.log('Interview created successfully!');
         
         // Reset form first

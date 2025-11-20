@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { jobApi, healthApi, type JobDescription } from '@/utils/api';
+import { apiClient } from '@/utils/apiClient';
 
 const JobDescriptionsList = () => {
   const navigate = useNavigate();
@@ -56,23 +57,8 @@ const JobDescriptionsList = () => {
   const { data: jobDescriptions, isLoading, refetch } = useQuery({
     queryKey: ['jobDescriptions'],
     queryFn: async () => {
-      // Get token for authentication
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-      
-      // Use the correct recruiter JD list endpoint
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch job descriptions');
-      }
-      
-      const data = await response.json();
+      // Use the centralized API client
+      const data = await apiClient.get<{ job_descriptions: any[]; count?: number }>('/api/recruiter/jd/list');
       // The API returns { job_descriptions: [...], count: ... }
       return data.job_descriptions || [];
     },

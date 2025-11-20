@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
 import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
+import { apiClient } from '@/utils/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -107,26 +108,13 @@ const RecruiterDashboard: React.FC = () => {
 
   const handleManageShortlist = async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.job_descriptions && result.job_descriptions.length > 0) {
-          // Navigate to the first JD's shortlist
-          const firstJD = result.job_descriptions[0];
-          navigate(`/recruiter/shortlist/${firstJD.id}`);
-        } else {
-          alert('No job descriptions found. Please create a job description first.');
-        }
+      const result = await apiClient.get<{ job_descriptions?: Array<{ id: string }> }>('/api/recruiter/jd/list');
+      if (result.job_descriptions && result.job_descriptions.length > 0) {
+        // Navigate to the first JD's shortlist
+        const firstJD = result.job_descriptions[0];
+        navigate(`/recruiter/shortlist/${firstJD.id}`);
       } else {
-        alert('Failed to load job descriptions.');
+        alert('No job descriptions found. Please create a job description first.');
       }
     } catch (error) {
       console.error('Error loading job descriptions:', error);
@@ -136,26 +124,12 @@ const RecruiterDashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/statistics/dashboard', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setDashboardData(result.data);
-          console.log('✅ Dashboard data loaded from backend');
-        } else {
-          console.log('⚠️ API returned no data, using mock data');
-          setMockData();
-        }
+      const result = await apiClient.get<{ success?: boolean; data?: RecruiterData }>('/api/recruiter/statistics/dashboard');
+      if (result.success && result.data) {
+        setDashboardData(result.data);
+        console.log('✅ Dashboard data loaded from backend');
       } else {
-        console.log('⚠️ API call failed, using mock data');
+        console.log('⚠️ API returned no data, using mock data');
         setMockData();
       }
     } catch (error) {

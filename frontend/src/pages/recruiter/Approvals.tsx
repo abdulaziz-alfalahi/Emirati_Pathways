@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-
-const api = (path: string) => `http://localhost:5003${path}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function ApprovalsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -16,8 +15,7 @@ export default function ApprovalsPage() {
   const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('desc');
   const { toast } = useToast();
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   useEffect(() => {
     (async () => { await load(); })();
@@ -26,9 +24,7 @@ export default function ApprovalsPage() {
   const load = async () => {
     try {
       setLoading(true);
-      const res = await fetch(api(`/api/hr/approvals/requests?limit=${pageSize}`), { headers: authHeaders as any });
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
+      const json = await apiClient.get<{ data: { requests: any[]; total_count: number } }>(`/api/hr/approvals/requests?limit=${pageSize}`);
       setItems(json?.data?.requests || []);
       setTotal(json?.data?.total_count || 0);
     } catch (e: any) {
@@ -40,12 +36,7 @@ export default function ApprovalsPage() {
 
   const act = async (id: string, action: 'approve' | 'reject') => {
     try {
-      const res = await fetch(api(`/api/hr/approvals/requests/${id}/${action}`), {
-        method: 'POST',
-        headers: { ...(authHeaders as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: action })
-      });
-      if (!res.ok) throw new Error(await res.text());
+      await apiClient.post(`/api/hr/approvals/requests/${id}/${action}`, { comment: action });
       await load();
       toast({ title: action === 'approve' ? 'Approved' : 'Rejected' });
     } catch (e: any) {

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Download, FileText, Users, Calendar, Award, BarChart3 } from 'lucide-react';
+import { apiClient } from '@/utils/apiClient';
 
 interface ExportReportsDialogProps {
   open: boolean;
@@ -47,8 +48,10 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
       if (endDate) params.append('end_date', endDate);
       params.append('format', exportFormat);
 
+      // For file downloads, use fetch with apiClient base URL
+      const baseUrl = apiClient.getBaseURL();
       const response = await fetch(
-        `http://localhost:5003/api/recruiter/reports/${reportType}?${params.toString()}`,
+        `${baseUrl}/api/recruiter/reports/${reportType}?${params.toString()}`,
         {
           headers: {
             'Authorization': token ? `Bearer ${token}` : '',

@@ -26,7 +26,7 @@ import {
   CalendarToday as CalendarIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { apiClient } from '@/utils/apiClient';
 
 interface CreateOfferDialogProps {
   open: boolean;
@@ -110,9 +110,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
 
   const loadCandidates = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/shortlist/${jdId}`);
+      const response = await apiClient.get<{ shortlist?: any[] }>(`/api/recruiter/shortlist/${jdId}`);
       // The response structure is {success: true, shortlist: [...]}
-      setCandidates(response.data.shortlist || []);
+      setCandidates(response.shortlist || []);
     } catch (err: any) {
       console.error('Error loading candidates:', err);
       setError('Failed to load candidates');
@@ -183,7 +183,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         work_location: workLocation,
       };
 
-      await axios.post('http://localhost:5003/api/recruiter/offers/create', offerData);
+      await apiClient.post('/api/recruiter/offers/create', offerData);
       onOfferCreated();
       onClose();
     } catch (err: any) {

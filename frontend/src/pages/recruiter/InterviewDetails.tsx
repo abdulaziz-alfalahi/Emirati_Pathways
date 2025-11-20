@@ -4,15 +4,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
-const API = (p: string) => `http://localhost:5003${p}`;
+import { apiClient } from '@/utils/apiClient';
 
 export default function InterviewDetailsPage() {
   const [sp] = useSearchParams();
   const { toast } = useToast();
   const [sessionId, setSessionId] = useState(sp.get('session') || '');
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Note: apiClient handles authentication automatically via localStorage.getItem('access_token')
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [report, setReport] = useState<any>(null);
@@ -20,9 +18,7 @@ export default function InterviewDetailsPage() {
 
   const loadSessions = async () => {
     try {
-      const r = await fetch(API('/api/video-interview/sessions'), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ sessions?: any[] }>('/api/video-interview/sessions');
       setSessions(j.sessions || []);
     } catch (e: any) {
       toast({ title: 'Failed to load sessions', description: e?.message || 'Error', variant: 'destructive' });
@@ -32,9 +28,7 @@ export default function InterviewDetailsPage() {
   const loadReport = async () => {
     if (!sessionId) return;
     try {
-      const r = await fetch(API(`/api/video-interview/sessions/${sessionId}/report`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ report?: any }>(`/api/video-interview/sessions/${sessionId}/report`);
       setReport(j.report || null);
     } catch (e: any) {
       toast({ title: 'Failed to load report', description: e?.message || 'Error', variant: 'destructive' });
@@ -44,9 +38,7 @@ export default function InterviewDetailsPage() {
   const loadRecordings = async () => {
     if (!sessionId) return;
     try {
-      const r = await fetch(API(`/api/video-interview/sessions/${sessionId}/recordings`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+      const j = await apiClient.get<{ recording_info?: any }>(`/api/video-interview/sessions/${sessionId}/recordings`);
       setRecordings(j.recording_info || null);
     } catch (e: any) {
       toast({ title: 'Failed to load recordings', description: e?.message || 'Error', variant: 'destructive' });
@@ -104,7 +96,7 @@ export default function InterviewDetailsPage() {
                   <div className="text-sm">Available: {recordings.available ? 'Yes' : 'No'}</div>
                   {recordings.stream_token && (
                     <div className="text-sm">
-                      <a className="text-ehrdc-teal underline" href={API(`/api/video-interview/stream/${sessionId}?token=${encodeURIComponent(recordings.stream_token)}`)} target="_blank">Open Recording</a>
+                      <a className="text-ehrdc-teal underline" href={`${apiClient.getBaseURL()}/api/video-interview/stream/${sessionId}?token=${encodeURIComponent(recordings.stream_token)}`} target="_blank">Open Recording</a>
                     </div>
                   )}
                 </div>
