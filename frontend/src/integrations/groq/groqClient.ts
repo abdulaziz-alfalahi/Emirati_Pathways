@@ -2,7 +2,7 @@
 export class GroqClient {
   private readonly backendBaseUrl: string;
   constructor() {
-    this.backendBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:5003';
+    this.backendBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
   }
 
   /**
@@ -73,7 +73,7 @@ All generated content must:
   }): Promise<string> {
     try {
       const strategicContext = this.getStrategicContext();
-      
+
       const systemPrompt = `${strategicContext}
 
 Your responses should be:
@@ -86,7 +86,7 @@ Your responses should be:
 
 Always provide practical next steps that consider the unique opportunities available in Dubai's transformational economy and the strategic frameworks guiding the UAE's future.`;
 
-      const userPrompt = context 
+      const userPrompt = context
         ? `Strategic Context: ${JSON.stringify(context, null, 2)}\n\nStrategic Request: ${prompt}`
         : prompt;
 
@@ -122,7 +122,7 @@ Always provide practical next steps that consider the unique opportunities avail
   }> {
     try {
       const strategicContext = this.getStrategicContext();
-      
+
       const prompt = `${strategicContext}
 
 **ENHANCED ANALYSIS TASK**: Provide comprehensive CV analysis with confidence scoring for ${targetRole || 'professional role'} in the UAE market.
@@ -221,7 +221,7 @@ ${cvContent}
   }> {
     try {
       const strategicContext = this.getStrategicContext();
-      
+
       const prompt = `${strategicContext}
 
 **TASK**: Provide strategic job matching analysis based on UAE's transformation frameworks.
@@ -299,7 +299,7 @@ Focus on:
   }> {
     try {
       const strategicContext = this.getStrategicContext();
-      
+
       const prompt = `${strategicContext}
 
 **TASK**: Prepare comprehensive strategic interview guidance for the UAE job market.
@@ -398,7 +398,7 @@ Focus on:
   }> {
     try {
       const strategicContext = this.getStrategicContext();
-      
+
       const prompt = `${strategicContext}
 
 **TASK**: Develop a comprehensive strategic skill development plan aligned with UAE's transformation frameworks.
@@ -493,12 +493,12 @@ Focus on:
   /**
    * Generate strategic content for specific frameworks
    */
-  async generateStrategicContent(contentType: 'summary' | 'achievement' | 'objective' | 'description', 
-                                currentContent: string, 
-                                context: any): Promise<string> {
+  async generateStrategicContent(contentType: 'summary' | 'achievement' | 'objective' | 'description',
+    currentContent: string,
+    context: any): Promise<string> {
     try {
       const strategicContext = this.getStrategicContext();
-      
+
       const prompt = `${strategicContext}
 
 **TASK**: Enhance this ${contentType} with strategic framework alignment for the UAE job market.

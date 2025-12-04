@@ -40,7 +40,7 @@ interface Application {
 const CandidateProfilePage: React.FC = () => {
   const { candidateId } = useParams<{ candidateId: string }>();
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<CandidateData | null>(null);
@@ -58,14 +58,14 @@ const CandidateProfilePage: React.FC = () => {
       setError(null);
 
       const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
+
       if (!token) {
         setError('Authentication required');
         setLoading(false);
         return;
       }
 
-      const response = await fetch(`http://localhost:5003/api/hr/candidates/${candidateId}`, {
+      const response = await fetch(`http://127.0.0.1:5005/api/hr/candidates/${candidateId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -77,7 +77,7 @@ const CandidateProfilePage: React.FC = () => {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         setCandidate(data.data.candidate);
         setApplications(data.data.recent_applications || []);
@@ -190,7 +190,7 @@ const CandidateProfilePage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <Button onClick={handleContact}>
               <Mail className="h-4 w-4 mr-2" />
               Contact Candidate
@@ -217,7 +217,7 @@ const CandidateProfilePage: React.FC = () => {
                   </a>
                 </div>
               </div>
-              
+
               {candidate.phone && (
                 <div className="flex items-start gap-3">
                   <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
@@ -229,7 +229,7 @@ const CandidateProfilePage: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
@@ -237,7 +237,7 @@ const CandidateProfilePage: React.FC = () => {
                   <p className="text-gray-900">{candidate.emirate || 'N/A'}, UAE</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <Activity className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
@@ -261,7 +261,7 @@ const CandidateProfilePage: React.FC = () => {
                   <p className="text-gray-900">{candidate.experience_years || 0} years</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <GraduationCap className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
@@ -269,7 +269,7 @@ const CandidateProfilePage: React.FC = () => {
                   <p className="text-gray-900">{candidate.education_level || 'Not specified'}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <DollarSign className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
@@ -281,7 +281,7 @@ const CandidateProfilePage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
@@ -357,7 +357,7 @@ const CandidateProfilePage: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Last Login</p>
                   <p className="text-gray-900 font-medium">
-                    {candidate.last_login 
+                    {candidate.last_login
                       ? new Date(candidate.last_login).toLocaleDateString()
                       : 'Never'}
                   </p>

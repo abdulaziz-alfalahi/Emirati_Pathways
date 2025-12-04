@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-const API = (p: string) => `http://localhost:5003${p}`;
+const API = (p: string) => `http://127.0.0.1:5005${p}`;
 
 export default function RecruiterCandidatesPage() {
   const { toast } = useToast();
@@ -42,7 +42,7 @@ export default function RecruiterCandidatesPage() {
           const id = list?.[0]?.id;
           if (id) setJobId(id);
         }
-      } catch {}
+      } catch { }
     })();
   }, [H]);
 
@@ -275,15 +275,15 @@ export default function RecruiterCandidatesPage() {
                         <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No matches yet</td></tr>
                       );
                       return rows.map((m) => (
-                      <tr key={m.candidate_id} className="border-b hover:bg-slate-50">
-                        <td className="p-3 text-xs">{m.candidate_id}</td>
-                        <td className="p-3">{m.first_name || ''} {m.last_name || ''}</td>
-                        <td className="p-3">{m.match_score?.match_percentage ?? '-'}</td>
-                        <td className="p-3">{m.match_score?.match_level ?? '-'}</td>
-                        <td className="p-3">
-                          <Button size="sm" onClick={() => shortlist(m.candidate_id)} disabled={!jobId}>Shortlist</Button>
-                        </td>
-                      </tr>
+                        <tr key={m.candidate_id} className="border-b hover:bg-slate-50">
+                          <td className="p-3 text-xs">{m.candidate_id}</td>
+                          <td className="p-3">{m.first_name || ''} {m.last_name || ''}</td>
+                          <td className="p-3">{m.match_score?.match_percentage ?? '-'}</td>
+                          <td className="p-3">{m.match_score?.match_level ?? '-'}</td>
+                          <td className="p-3">
+                            <Button size="sm" onClick={() => shortlist(m.candidate_id)} disabled={!jobId}>Shortlist</Button>
+                          </td>
+                        </tr>
                       ));
                     })()}
                   </tbody>

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const api = (path: string) => `http://localhost:5003${path}`;
+import { restClient } from '@/utils/api';
 
 export default function DistributionPage() {
   const [queued, setQueued] = useState<any[]>([]);
@@ -8,19 +7,14 @@ export default function DistributionPage() {
   const [targets, setTargets] = useState<string>('linkedin,indeed');
   const [error, setError] = useState<string | null>(null);
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const authHeaders = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
-
   useEffect(() => {
     // attempt to get a recent job id
     (async () => {
       try {
-        const res = await fetch(api('/api/hr/jobs/?limit=1'), { headers: authHeaders as any });
-        if (res.ok) {
-          const json = await res.json();
-          const id = json?.data?.job_postings?.[0]?.id;
-          if (id) setJobId(id);
-        }
+        const res = await restClient.get('/api/hr/jobs/?limit=1');
+        const json = res.data;
+        const id = json?.data?.job_postings?.[0]?.id;
+        if (id) setJobId(id);
       } catch {}
     })();
   }, []);
@@ -29,9 +23,8 @@ export default function DistributionPage() {
     setError(null);
     try {
       const t = targets.split(',').map((s) => s.trim()).filter(Boolean);
-      const res = await fetch(api(`/api/hr/distribution/jobs/${jobId}/distribute`), { method: 'POST', headers: authHeaders as any, body: JSON.stringify({ targets: t, payload: { note: 'from UI' } }) });
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
+      const res = await restClient.post(`/api/hr/distribution/jobs/${jobId}/distribute`, { targets: t, payload: { note: 'from UI' } });
+      const json = res.data;
       setQueued(json?.data || []);
     } catch (e: any) {
       setError(e?.message || 'Failed to queue');
@@ -41,9 +34,8 @@ export default function DistributionPage() {
   const refresh = async () => {
     setError(null);
     try {
-      const res = await fetch(api(`/api/hr/distribution/jobs/${jobId}`), { headers: authHeaders as any });
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
+      const res = await restClient.get(`/api/hr/distribution/jobs/${jobId}`);
+      const json = res.data;
       setQueued(json?.data || []);
     } catch (e: any) {
       setError(e?.message || 'Failed to refresh');

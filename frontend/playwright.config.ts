@@ -1,9 +1,10 @@
-import { defineConfig } from '@playwright/test';
+﻿import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  timeout: 60000,
-  use: {
-    baseURL: 'http://localhost:8080',
-    headless: true,
-  },
+  testDir: './tests',
+  testMatch: /.*\\.e2e\\.spec\\.ts$/,
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+  ],
+  use: { baseURL: 'http://localhost:8080', headless: true },
 });

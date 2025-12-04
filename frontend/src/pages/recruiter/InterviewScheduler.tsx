@@ -5,116 +5,74 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import VideoInterviewRoom from '@/components/recruiter/interviews/VideoInterviewRoom';
+import { restClient } from '@/utils/api';
 
-const API = (p: string) => `http://localhost:5003${p}`;
+const API = (p: string) => `http://127.0.0.1:5005${p}`;
 
 export default function InterviewSchedulerPage() {
   const { toast } = useToast();
   const [applicationId, setApplicationId] = useState('');
-  const [jobId, setJobId] = useState('');
-  const [candidateId, setCandidateId] = useState('');
   const [interviewerId, setInterviewerId] = useState('1');
   const [scheduledDate, setScheduledDate] = useState('');
   const [duration, setDuration] = useState('60');
   const [notes, setNotes] = useState('');
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [showVideoRoom, setShowVideoRoom] = useState(false);
 
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const schedule = async () => {
     try {
+      // Use the advanced video interview endpoint
       const body = {
         application_id: applicationId,
-        scheduled_date: scheduledDate,
-        interviewer_id: Number(interviewerId),
+        scheduled_time: scheduledDate, // Note: backend expects scheduled_time
         duration_minutes: Number(duration),
-        interview_type: 'video',
         notes,
       };
-      const r = await fetch(API('/api/hr/interviews/'), {
+
+      const r = await fetch(API('/api/video-interview/schedule'), {
         method: 'POST',
         headers: { ...(H as any), 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+
       if (!r.ok) throw new Error(await r.text());
-      toast({ title: 'Interview scheduled' });
+
+      const data = await r.json();
+      toast({
+        title: 'Video Interview Scheduled',
+        description: `Session ID: ${data.session_id}`
+      });
+
+      // Auto-fill session ID for immediate joining (demo convenience)
+      setActiveSessionId(data.session_id);
     } catch (e: any) {
       toast({ title: 'Schedule failed', description: e?.message || 'Error', variant: 'destructive' });
     }
   };
 
-  const reschedule = async () => {
-    const id = prompt('Interview ID to reschedule');
-    if (!id) return;
-    try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/reschedule`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_scheduled_date: scheduledDate, reschedule_reason: 'Updated time' }),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      toast({ title: 'Interview rescheduled' });
-    } catch (e: any) {
-      toast({ title: 'Reschedule failed', description: e?.message || 'Error', variant: 'destructive' });
-    }
-  };
-
-  const cancel = async () => {
-    const id = prompt('Interview ID to cancel');
-    if (!id) return;
-    try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/cancel`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cancellation_reason: 'Cancelled by HR' }),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      toast({ title: 'Interview cancelled' });
-    } catch (e: any) {
-      toast({ title: 'Cancel failed', description: e?.message || 'Error', variant: 'destructive' });
-    }
-  };
-
-  const feedback = async () => {
-    const id = prompt('Interview ID for feedback');
-    if (!id) return;
-    try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/feedback`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ overall_rating: 4, technical_assessment: {}, soft_skills_assessment: {}, recommendation: 'advance', overall_notes: notes }),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      toast({ title: 'Feedback submitted' });
-    } catch (e: any) {
-      toast({ title: 'Feedback failed', description: e?.message || 'Error', variant: 'destructive' });
-    }
-  };
-
-  const downloadICS = async () => {
-    const id = prompt('Interview ID (UUID) to download ICS');
-    if (!id) return;
-    try {
-      const r = await fetch(API(`/api/hr/interviews/${id}/ics`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const text = await r.text();
-      const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `interview_${id}.ics`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e: any) {
-      toast({ title: 'ICS download failed', description: e?.message || 'Error', variant: 'destructive' });
+  const startInterview = () => {
+    if (!activeSessionId) {
+      const id = prompt('Enter Session ID to join:');
+      if (id) {
+        setActiveSessionId(id);
+        setShowVideoRoom(true);
+      }
+    } else {
+      setShowVideoRoom(true);
     }
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>Interview Scheduling</CardTitle>
-          <CardDescription>Schedule/reschedule/cancel interviews and submit feedback</CardDescription>
+          <CardTitle>AI Video Interview Scheduler</CardTitle>
+          <CardDescription>Schedule advanced video interviews with real-time AI analysis</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -140,14 +98,26 @@ export default function InterviewSchedulerPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 mt-4">
-            <Button onClick={schedule}>Schedule</Button>
-            <Button variant="outline" onClick={reschedule}>Reschedule</Button>
-            <Button variant="outline" onClick={cancel}>Cancel</Button>
-            <Button variant="outline" onClick={feedback}>Submit Feedback</Button>
-            <Button variant="outline" onClick={downloadICS}>Download ICS</Button>
+            <Button onClick={schedule} className="bg-teal-600 hover:bg-teal-700">
+              Schedule Video Interview
+            </Button>
+            <Button variant="outline" onClick={startInterview}>
+              Join Interview Room
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showVideoRoom} onOpenChange={setShowVideoRoom}>
+        <DialogContent className="max-w-6xl h-[80vh] p-0 bg-slate-950 border-slate-800">
+          {activeSessionId && (
+            <VideoInterviewRoom
+              sessionId={activeSessionId}
+              onEnd={() => setShowVideoRoom(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

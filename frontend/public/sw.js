@@ -22,10 +22,11 @@ const CACHE_STRATEGIES = {
 
 // ✅ FIXED: Helper function with proper Response handling
 function canCache(request) {
+  if (request.url.startsWith('chrome-extension://')) return false;
   const url = new URL(request.url);
-  return request.method === 'GET' && 
-         !url.pathname.includes('/api/') &&
-         !url.pathname.includes('chrome-extension');
+  return request.method === 'GET' &&
+    !url.pathname.includes('/api/') &&
+    url.protocol !== 'chrome-extension:';
 }
 
 // ✅ FIXED: Proper Response creation and error handling
@@ -74,7 +75,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(event.request.url);
-  
+
   // Handle different types of requests
   if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico)$/)) {
     // Image cache-first strategy
@@ -93,19 +94,19 @@ async function handleImageRequest(request) {
   try {
     const cache = await caches.open(DYNAMIC_CACHE_NAME);
     const cachedResponse = await cache.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetch(request);
-    
+
     // ✅ FIXED: Validate response before caching
     if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
       const responseClone = networkResponse.clone();
       await cache.put(request, responseClone);
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.error('Service Worker: Image request failed', error);
@@ -122,26 +123,26 @@ async function handleImageRequest(request) {
 async function handleApiRequest(request) {
   try {
     const networkResponse = await fetch(request);
-    
+
     // ✅ FIXED: Validate response
     if (networkResponse && networkResponse.status === 200) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       const responseClone = networkResponse.clone();
       await cache.put(request, responseClone);
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.error('Service Worker: API request failed', error);
-    
+
     // Try to serve from cache
     const cache = await caches.open(DYNAMIC_CACHE_NAME);
     const cachedResponse = await cache.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // ✅ FIXED: Return proper Response object for errors
     return new Response(JSON.stringify({ error: 'Network unavailable' }), {
       status: 503,
@@ -156,24 +157,24 @@ async function handleStaticRequest(request) {
   try {
     const cache = await caches.open(STATIC_CACHE_NAME);
     const cachedResponse = await cache.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetch(request);
-    
+
     // ✅ FIXED: Validate response before caching
     if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
       const responseClone = networkResponse.clone();
       const dynamicCache = await caches.open(DYNAMIC_CACHE_NAME);
       await dynamicCache.put(request, responseClone);
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.error('Service Worker: Static request failed', error);
-    
+
     // ✅ FIXED: Return proper fallback Response
     return new Response('Content not available', {
       status: 404,
@@ -195,7 +196,7 @@ self.addEventListener('message', (event) => {
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
   console.log('Service Worker: Background sync triggered', event.tag);
-  
+
   if (event.tag === 'job-application-sync') {
     event.waitUntil(syncJobApplications());
   } else if (event.tag === 'notification-sync') {
@@ -208,9 +209,9 @@ self.addEventListener('sync', (event) => {
 // Push notification handling
 self.addEventListener('push', (event) => {
   console.log('Service Worker: Push notification received');
-  
+
   let notificationData = {};
-  
+
   if (event.data) {
     try {
       notificationData = event.data.json();
@@ -258,18 +259,18 @@ self.addEventListener('push', (event) => {
 // Notification click handling
 self.addEventListener('notificationclick', (event) => {
   console.log('Service Worker: Notification clicked', event);
-  
+
   event.notification.close();
-  
+
   const action = event.action;
   const data = event.notification.data;
-  
+
   if (action === 'dismiss') {
     return;
   }
-  
+
   let targetUrl = '/';
-  
+
   if (data && data.url) {
     targetUrl = data.url;
   } else if (data && data.type) {
@@ -290,7 +291,7 @@ self.addEventListener('notificationclick', (event) => {
         targetUrl = '/';
     }
   }
-  
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
@@ -300,7 +301,7 @@ self.addEventListener('notificationclick', (event) => {
             return client.focus();
           }
         }
-        
+
         // If no existing window, open a new one
         if (clients.openWindow) {
           return clients.openWindow(targetUrl);
@@ -313,10 +314,10 @@ self.addEventListener('notificationclick', (event) => {
 async function syncJobApplications() {
   try {
     console.log('Service Worker: Syncing job applications');
-    
+
     // Get pending applications from IndexedDB
     const pendingApplications = await getPendingApplications();
-    
+
     for (const application of pendingApplications) {
       try {
         const response = await fetch('/api/applications', {
@@ -327,7 +328,7 @@ async function syncJobApplications() {
           },
           body: JSON.stringify(application.data)
         });
-        
+
         if (response.ok) {
           await removePendingApplication(application.id);
           console.log('Service Worker: Application synced successfully');
@@ -344,12 +345,12 @@ async function syncJobApplications() {
 async function syncNotifications() {
   try {
     console.log('Service Worker: Syncing notifications');
-    
+
     // Fetch latest notifications
     const response = await fetch('/api/notifications/sync');
     if (response.ok) {
       const notifications = await response.json();
-      
+
       // Store notifications in cache for offline access
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put('/api/notifications/latest', new Response(JSON.stringify(notifications)));
@@ -362,10 +363,10 @@ async function syncNotifications() {
 async function syncProfileUpdates() {
   try {
     console.log('Service Worker: Syncing profile updates');
-    
+
     // Get pending profile updates from IndexedDB
     const pendingUpdates = await getPendingProfileUpdates();
-    
+
     for (const update of pendingUpdates) {
       try {
         const response = await fetch('/api/profile', {
@@ -376,7 +377,7 @@ async function syncProfileUpdates() {
           },
           body: JSON.stringify(update.data)
         });
-        
+
         if (response.ok) {
           await removePendingProfileUpdate(update.id);
           console.log('Service Worker: Profile update synced successfully');

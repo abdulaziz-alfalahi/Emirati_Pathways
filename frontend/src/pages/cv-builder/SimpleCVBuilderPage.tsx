@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  FileText, 
-  Upload, 
-  CheckCircle, 
+import {
+  FileText,
+  Upload,
+  CheckCircle,
   Loader2,
   Users,
   Zap,
@@ -103,7 +103,7 @@ const SimpleCVBuilderPage: React.FC = () => {
       const formData = new FormData();
       formData.append('cv_file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'}/api/cv/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005'}/api/cv/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
@@ -130,7 +130,7 @@ const SimpleCVBuilderPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HybridGovernmentNavFixed 
+      <HybridGovernmentNavFixed
         onLanguageToggle={handleLanguageToggle}
         currentLanguage={currentLanguage}
       />
@@ -171,11 +171,10 @@ const SimpleCVBuilderPage: React.FC = () => {
           <div className="space-y-8">
             {/* Upload Area */}
             <div
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
-                isDragOver
+              className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${isDragOver
                   ? 'border-blue-500 bg-blue-50 scale-105'
                   : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-              }`}
+                }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}

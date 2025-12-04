@@ -109,8 +109,8 @@ class InterviewSchedulingEngine:
                 return False, "Invalid time format. Use HH:MM:SS or HH:MM"
         
         # Validate meeting link for video interviews
-        if data['interview_type'] == 'video' and not data.get('meeting_link'):
-            return False, "Meeting link is required for video interviews"
+        # if data['interview_type'] == 'video' and not data.get('meeting_link'):
+        #     return False, "Meeting link is required for video interviews"
         
         # Validate location for in-person interviews
         if data['interview_type'] == 'in_person' and not data.get('location'):
@@ -238,6 +238,27 @@ class InterviewSchedulingEngine:
         """)
         
         # Check for conflicts (now that table exists)
+        # Ensure schema is up to date (add missing columns if table existed)
+        try:
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS meeting_platform VARCHAR(50)")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS meeting_link VARCHAR(500)")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS interviewers JSONB DEFAULT '[]'")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS feedback TEXT")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS rating INTEGER")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS recommendation VARCHAR(50)")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS internal_notes TEXT")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS timezone VARCHAR(50) DEFAULT 'Asia/Dubai'")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS location VARCHAR(500)")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS cancellation_reason TEXT")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP")
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            self.logger.error(f"Schema migration failed: {e}")
+
         has_conflict, conflict_msg = self.check_scheduling_conflicts(
             conn,
             data['recruiter_id'],

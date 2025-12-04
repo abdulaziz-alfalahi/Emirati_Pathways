@@ -88,30 +88,36 @@ class JDParser:
         file_ext = os.path.splitext(file_path)[1].lower()
         
         if file_ext == '.txt':
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except UnicodeDecodeError:
+                # Fallback to latin-1 if utf-8 fails
+                with open(file_path, 'r', encoding='latin-1') as f:
+                    return f.read()
         
         elif file_ext == '.pdf':
-            # Use PyPDF2 or pdfplumber
+            # Use PyMuPDF (fitz) for superior extraction
             try:
-                import PyPDF2
-                with open(file_path, 'rb') as f:
-                    reader = PyPDF2.PdfReader(f)
-                    text = ''
-                    for page in reader.pages:
-                        text += page.extract_text()
-                    return text
+                import fitz  # PyMuPDF
+                text = ""
+                with fitz.open(file_path) as doc:
+                    for page in doc:
+                        text += page.get_text()
+                return text
             except ImportError:
-                logger.warning("PyPDF2 not available, trying pdfplumber")
+                logger.warning("PyMuPDF (fitz) not available, falling back to PyPDF2")
+                # Fallback to PyPDF2
                 try:
-                    import pdfplumber
-                    with pdfplumber.open(file_path) as pdf:
+                    import PyPDF2
+                    with open(file_path, 'rb') as f:
+                        reader = PyPDF2.PdfReader(f)
                         text = ''
-                        for page in pdf.pages:
+                        for page in reader.pages:
                             text += page.extract_text()
                         return text
                 except ImportError:
-                    raise ImportError("Neither PyPDF2 nor pdfplumber is available")
+                    raise ImportError("No PDF parser available. Please install pymupdf.")
         
         elif file_ext in ['.docx', '.doc']:
             # Use python-docx

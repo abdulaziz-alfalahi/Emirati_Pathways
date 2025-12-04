@@ -1,10 +1,10 @@
 // src/components/cv-builder/CVUploader.tsx
 import React, { useState, useRef } from 'react';
 import { useCV } from '@/context/CVContext';
-import { 
+import {
   CV as CVType,
-  Experience as CVExperience, 
-  Education as CVEducation, 
+  Experience as CVExperience,
+  Education as CVEducation,
   Skill as CVSkill,
   Language as CVLanguageType,
   PersonalInfo as CVPersonalInfo
@@ -14,12 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
-import { 
-  Upload, 
-  FileUp, 
-  FileText, 
-  Check, 
-  AlertTriangle, 
+import {
+  Upload,
+  FileUp,
+  FileText,
+  Check,
+  AlertTriangle,
   Sparkles,
   Clock,
   CheckCircle,
@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 // Production Parser API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
 
 // Enhanced interfaces matching your production parser output
 interface ProductionParserContactInfo {
@@ -147,7 +147,7 @@ const mapProductionParserToCVContext = (parsedData: ProductionParserResponse): P
     name: lang,
     proficiency: 'Conversational',
   }));
-  
+
   return {
     personalInfo: personal,
     professionalSummary,
@@ -155,7 +155,7 @@ const mapProductionParserToCVContext = (parsedData: ProductionParserResponse): P
     education,
     skills,
     languages,
-    metadata: { 
+    metadata: {
       lastUpdated: new Date().toISOString(),
       parsingMethod: parsedData._extraction_method || 'production_parser',
       languageDetected: parsedData._language_detected || 'unknown',
@@ -199,14 +199,14 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
     entities?: number;
     ruleBasedName?: boolean;
   }>({});
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    
+
 
     // Enhanced file validation
     if (file.size > 10 * 1024 * 1024) {
@@ -252,7 +252,7 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
     try {
       const parsedData = await callProductionParser(file);
       clearInterval(progressInterval);
-      
+
       if (parsedData) {
         setParsingStats({
           method: parsedData._extraction_method,
@@ -263,11 +263,11 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
 
         const updates = mapProductionParserToCVContext(parsedData);
         await updateCV(currentCV.id, updates);
-        
+
         setProgress(100);
         setUploading(false);
         setUploadStatus('success');
-        
+
         toast.success('CV parsed and form filled successfully.');
       } else {
         throw new Error('No data received from parser');
@@ -276,13 +276,13 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
     } catch (error) {
       clearInterval(progressInterval);
       console.error('[CVUploader] Parsing error:', error);
-      
+
       const errorMsg = error instanceof Error ? error.message : 'Unknown parsing error';
       setErrorMessage(errorMsg);
       setUploading(false);
       setUploadStatus('error');
       setProgress(0);
-      
+
       toast.error(`Parsing failed: ${errorMsg}`);
     }
   };
@@ -349,7 +349,7 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
             className="hidden"
             disabled={uploading || loading.isLoading}
           />
-          
+
           {!uploading && !fileName && (
             <div className="flex items-center justify-center flex-col text-center p-6 border-2 border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
               <Upload className="h-12 w-12 mb-4 text-gray-400" />
@@ -357,8 +357,8 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
               <p className="text-sm text-gray-500 mb-4">
                 or click to browse files
               </p>
-              <Button 
-                onClick={handleClick} 
+              <Button
+                onClick={handleClick}
                 disabled={loading.isLoading}
                 className="gap-2"
               >
@@ -367,7 +367,7 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
               </Button>
             </div>
           )}
-          
+
           {(uploading || fileName) && (
             <div className="space-y-4">
               <Card className="bg-gray-50">
@@ -445,96 +445,101 @@ const CVUploader: React.FC<CVUploaderProps> = ({ className }) => {
                         </span>
                         <span>{Math.round(progress)}%</span>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+    </div>
+  )
+}
+                </CardContent >
+              </Card >
 
-              {uploadStatus === 'success' && Object.keys(parsingStats).length > 0 && (
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800">Parsing Statistics</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      {parsingStats.method && (
-                        <div>
-                          <span className="text-gray-600">Method:</span>
-                          <span className="ml-1 font-medium">{parsingStats.method}</span>
-                        </div>
-                      )}
-                      {parsingStats.language && (
-                        <div>
-                          <span className="text-gray-600">Language:</span>
-                          <span className="ml-1 font-medium">{parsingStats.language}</span>
-                        </div>
-                      )}
-                      {parsingStats.entities !== undefined && (
-                        <div>
-                          <span className="text-gray-600">Entities:</span>
-                          <span className="ml-1 font-medium">{parsingStats.entities}</span>
-                        </div>
-                      )}
-                      {parsingStats.ruleBasedName !== undefined && (
-                        <div>
-                          <span className="text-gray-600">Enhanced Name:</span>
-                          <span className="ml-1 font-medium">{parsingStats.ruleBasedName ? 'Yes' : 'No'}</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {uploadStatus === 'error' && errorMessage && (
-                <Card className="bg-red-50 border-red-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm font-medium text-red-800">Parsing Error</span>
-                    </div>
-                    <p className="text-xs text-red-700">{errorMessage}</p>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {!uploading && (
-                <div className="flex justify-between items-center pt-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={resetUpload}
-                    disabled={loading.isLoading}
-                    className="gap-2"
-                  >
-                    <Upload className="h-3 w-3" />
-                    Upload Another
-                  </Button>
-                  
-                  {uploadStatus === 'success' && (
-                    <Badge variant="default" className="bg-green-600 text-white">
-                      Form auto-filled successfully
-                    </Badge>
-                  )}
-                  
-                  {uploadStatus === 'error' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setUploadStatus('idle')}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                    >
-                      Fill Manually Instead
-                    </Button>
-                  )}
-                </div>
-              )}
+  { uploadStatus === 'success' && Object.keys(parsingStats).length > 0 && (
+    <Card className="bg-green-50 border-green-200">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <span className="text-sm font-medium text-green-800">Parsing Statistics</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          {parsingStats.method && (
+            <div>
+              <span className="text-gray-600">Method:</span>
+              <span className="ml-1 font-medium">{parsingStats.method}</span>
             </div>
           )}
-        </CardContent>
-      </Card>
+          {parsingStats.language && (
+            <div>
+              <span className="text-gray-600">Language:</span>
+              <span className="ml-1 font-medium">{parsingStats.language}</span>
+            </div>
+          )}
+          {parsingStats.entities !== undefined && (
+            <div>
+              <span className="text-gray-600">Entities:</span>
+              <span className="ml-1 font-medium">{parsingStats.entities}</span>
+            </div>
+          )}
+          {parsingStats.ruleBasedName !== undefined && (
+            <div>
+              <span className="text-gray-600">Enhanced Name:</span>
+              <span className="ml-1 font-medium">{parsingStats.ruleBasedName ? 'Yes' : 'No'}</span>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )}
+
+{
+  uploadStatus === 'error' && errorMessage && (
+    <Card className="bg-red-50 border-red-200">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <span className="text-sm font-medium text-red-800">Parsing Error</span>
+        </div>
+        <p className="text-xs text-red-700">{errorMessage}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+{
+  !uploading && (
+    <div className="flex justify-between items-center pt-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={resetUpload}
+        disabled={loading.isLoading}
+        className="gap-2"
+      >
+        <Upload className="h-3 w-3" />
+        Upload Another
+      </Button>
+
+      {uploadStatus === 'success' && (
+        <Badge variant="default" className="bg-green-600 text-white">
+          Form auto-filled successfully
+        </Badge>
+      )}
+
+      {uploadStatus === 'error' && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setUploadStatus('idle')}
+          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+        >
+          Fill Manually Instead
+        </Button>
+      )}
     </div>
+  )
+}
+            </div >
+          )}
+        </CardContent >
+      </Card >
+    </div >
   );
 };
 

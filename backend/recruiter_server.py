@@ -4,15 +4,24 @@ Registers recruiter-focused APIs: auth, postings, candidates, interviews,
 messaging, candidate profiles, matching, and video interview endpoints.
 """
 
+# Trigger reload - debug 5
+
 import os
 import sys
 import logging
 from datetime import datetime, timedelta
-from flask import Flask, jsonify
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
+
+load_dotenv()
+
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 
+
+print("!!! DEBUG: LOADING RECRUITER_SERVER.PY !!!")
+print(f"SYS.PATH: {sys.path}")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -20,8 +29,7 @@ logger = logging.getLogger(__name__)
 def create_app() -> Flask:
     app = Flask(__name__)
 
-    # JWT configuration
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=int(os.getenv("JWT_ACCESS_TOKEN_HOURS", "24")))
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=int(os.getenv("JWT_REFRESH_TOKEN_DAYS", "30")))
 
@@ -30,26 +38,28 @@ def create_app() -> Flask:
     # CORS configuration
     origins_env = os.getenv("CORS_ORIGINS", "").strip()
     allowed_origins = [o for o in (x.strip() for x in origins_env.split(",")) if o]
+    # Always include local development origins
+    local_origins = [
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:3000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8081",
+        "http://127.0.0.1:3000",
+    ]
+    
     if not allowed_origins:
-        allowed_origins = [
-            "http://localhost:8080",
-            "http://localhost:8081",
-            "http://localhost:3000",
-        ]
+        allowed_origins = local_origins
+    else:
+        allowed_origins.extend(local_origins)
+        
+    # Remove duplicates
+    allowed_origins = list(set(allowed_origins))
+    
+    logger.info(f"CORS Allowed Origins: {allowed_origins}")
 
-    CORS(
-        app,
-        resources={
-            r"/api/*": {
-                "origins": allowed_origins,
-                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-                "supports_credentials": True,
-                "expose_headers": ["Authorization"],
-            },
-            r"/health": {"origins": ["*"], "methods": ["GET", "OPTIONS"]},
-        },
-    )
+    # Global CORS configuration
+    CORS(app, origins=allowed_origins, supports_credentials=True)
 
     # Make local imports available
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -127,9 +137,13 @@ def create_app() -> Flask:
     # Recruiter/HR: analytics
     try:
         from hr_analytics_routes import hr_analytics_bp
-
         app.register_blueprint(hr_analytics_bp)
         logger.info("Registered: HR analytics routes")
+        
+        # New Recruiter Analytics
+        from recruiter.analytics_routes import analytics_bp
+        app.register_blueprint(analytics_bp, url_prefix='/api/recruiter')
+        logger.info("Registered: Recruiter analytics routes")
     except Exception as e:
         logger.error(f"Failed registering HR analytics routes: {e}")
 
@@ -160,15 +174,7 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering communication routes: {e}")
 
-    # Offers (HR + public accept/decline)
-    try:
-        from hr_offer_routes import hr_offer_bp, public_offer_bp
 
-        app.register_blueprint(hr_offer_bp)
-        app.register_blueprint(public_offer_bp)
-        logger.info("Registered: offer routes")
-    except Exception as e:
-        logger.error(f"Failed registering offer routes: {e}")
 
     # Video interviewing
     try:
@@ -198,31 +204,40 @@ def create_app() -> Flask:
         logger.error(f"Failed registering optimized matching routes: {e}")
 
     # NEW: Job Description Builder with AI Candidate Matching
-    try:
-        from recruiter.jd_routes import jd_routes
+    # (Removed duplicate registration)
 
-        app.register_blueprint(jd_routes)
-        logger.info("Registered: JD Builder routes with AI candidate matching")
-    except Exception as e:
-        logger.error(f"Failed registering JD Builder routes: {e}")
 
     # Register JD Upload routes
     try:
         from recruiter.jd_upload_routes import jd_upload_routes
-
         app.register_blueprint(jd_upload_routes)
         logger.info("Registered: JD Upload routes with AI parsing")
     except Exception as e:
         logger.error(f"Failed registering JD Upload routes: {e}")
 
+    # Register JD Builder v2 routes
+    try:
+        from recruiter.jd_routes_v2 import jd_bp as jd_v2_bp
+        app.register_blueprint(jd_v2_bp)
+        logger.info("Registered: JD Builder v2 routes")
+    except Exception as e:
+        logger.error(f"Failed registering JD Builder v2 routes: {e}")
+
     # Register Shortlist routes
     try:
-        from recruiter.shortlist_routes import shortlist_routes
-
-        app.register_blueprint(shortlist_routes)
+        from recruiter.shortlist_routes import shortlist_bp
+        app.register_blueprint(shortlist_bp, url_prefix='/api/recruiter/shortlist')
         logger.info("Registered: Shortlist routes for candidate management")
     except Exception as e:
         logger.error(f"Failed registering Shortlist routes: {e}")
+
+    # Register Statistics routes
+    try:
+        from recruiter.statistics_routes import statistics_bp
+        app.register_blueprint(statistics_bp, url_prefix='/api/recruiter/statistics')
+        logger.info("Registered: Statistics routes")
+    except Exception as e:
+        logger.error(f"Failed registering Statistics routes: {e}")
 
     # Register Communication routes
     try:
@@ -235,11 +250,14 @@ def create_app() -> Flask:
 
     # Register Interview Scheduling routes
     try:
-        from recruiter.interview_routes import interview_routes
-
-        app.register_blueprint(interview_routes)
+        from recruiter.interview_routes import interview_bp as interview_routes
+        
+        app.register_blueprint(interview_routes, url_prefix='/api/recruiter/interviews')
         logger.info("Registered: Interview Scheduling routes for managing interviews")
     except Exception as e:
+        import traceback
+        with open('registration_error.log', 'w') as f:
+            f.write(f"Error: {str(e)}\nTraceback:\n{traceback.format_exc()}")
         logger.error(f"Failed registering Interview Scheduling routes: {e}")
 
     # Register Offer Management routes
@@ -253,12 +271,35 @@ def create_app() -> Flask:
 
     # Common error handlers
     @app.errorhandler(404)
-    def not_found(_):
-        return jsonify({"success": False, "message": "Endpoint not found"}), 404
+    def not_found(e):
+        logger.error(f"404 ERROR: {request.url}")
+        return jsonify({"success": False, "message": "MY CUSTOM 404", "url": request.url}), 404
 
     @app.errorhandler(500)
-    def internal_error(_):
-        return jsonify({"success": False, "message": "Internal server error"}), 500
+    def internal_error(e):
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(f"500 ERROR: {e}\n{tb}")
+        
+        # Write to file
+        try:
+            log_path = os.path.join(os.getcwd(), "backend_error.log")
+            with open(log_path, "a") as f:
+                f.write(f"[{datetime.now()}] {e}\n{tb}\n\n")
+        except Exception as write_err:
+            logger.error(f"Failed to write to error log: {write_err}")
+            
+        response = jsonify({
+            "success": False, 
+            "message": "Internal server error", 
+            "error": str(e),
+            "traceback": tb
+        })
+        # Add CORS headers manually just in case
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response, 500
 
     @app.errorhandler(401)
     def unauthorized(_):
@@ -268,11 +309,25 @@ def create_app() -> Flask:
     def forbidden(_):
         return jsonify({"success": False, "message": "Access forbidden"}), 403
 
+    try:
+        from recruiter.training_routes import training_bp
+        app.register_blueprint(training_bp)
+        logger.info("Registered: Training recommendation routes")
+    except Exception as e:
+        logger.error(f"Failed registering training routes: {e}")
+
+    try:
+        from recruiter.mentorship_routes import mentorship_bp
+        app.register_blueprint(mentorship_bp)
+        logger.info("Registered: Mentorship recommendation routes")
+    except Exception as e:
+        logger.error(f"Failed registering mentorship routes: {e}")
+
     return app
 
 
 if __name__ == "__main__":
     flask_app = create_app()
-    port = int(os.getenv("PORT", "5003"))
+    port = int(os.getenv("PORT", "5005"))
     logger.info(f"Recruiter services running on http://0.0.0.0:{port}")
-    flask_app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+    flask_app.run(host="0.0.0.0", port=port, debug=True, threaded=True)

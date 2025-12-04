@@ -4,8 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, Send, Link as LinkIcon } from 'lucide-react';
-
-const api = (path: string) => `http://localhost:5003${path}`;
+import { restClient } from '@/utils/api';
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<any[]>([]);
@@ -18,15 +17,11 @@ export default function OffersPage() {
   const [sortBy, setSortBy] = useState<'created' | 'job' | 'candidate' | 'status'>('created');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-
   const loadOffers = async () => {
     try {
       setLoading(true);
-      const res = await fetch(api(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}`), { headers: authHeaders as any });
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
+      const res = await restClient.get(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}`);
+      const json = res.data;
       setOffers(json?.data?.offers || []);
       setTotal(json?.data?.total_count || 0);
     } catch (e: any) {
@@ -43,13 +38,8 @@ export default function OffersPage() {
 
   const sendOffer = async (offerId: string) => {
     try {
-      const res = await fetch(api(`/api/hr/offers/${offerId}/send`), {
-        method: 'POST',
-        headers: { ...(authHeaders as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expires_in_days: 7 })
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
+      const res = await restClient.post(`/api/hr/offers/${offerId}/send`, { expires_in_days: 7 });
+      const json = res.data;
       const signUrl = json?.data?.sign_url;
       if (signUrl && navigator.clipboard) {
         await navigator.clipboard.writeText(signUrl);
@@ -71,7 +61,8 @@ export default function OffersPage() {
         toast({ title: 'No signature token', description: 'Send the offer first.', variant: 'destructive' });
         return;
       }
-      const signUrl = `${api(`/api/offers/${o.id}/accept`)}?token=${o.signature_token}`;
+      // Note: Sign URL might need full path if not relative to app
+      const signUrl = `${window.location.origin}/api/offers/${o.id}/accept?token=${o.signature_token}`;
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(signUrl);
         toast({ title: 'Copied', description: 'Sign URL copied to clipboard.' });
@@ -161,8 +152,8 @@ export default function OffersPage() {
               <td className="p-3">{o.created_at || '-'}</td>
               <td className="p-3 space-x-2 whitespace-nowrap">
                 <Button size="sm" variant="outline" onClick={async() => {
-                  const res = await fetch(api(`/api/hr/offers/${o.id}`), { headers: authHeaders as any });
-                  const txt = await res.text();
+                  const res = await restClient.get(`/api/hr/offers/${o.id}`);
+                  const txt = JSON.stringify(res.data, null, 2);
                   toast({ title: 'Offer details', description: txt.substring(0, 200) + (txt.length>200?'...':'') });
                 }}>
                   <Eye className="h-4 w-4 mr-1" /> View

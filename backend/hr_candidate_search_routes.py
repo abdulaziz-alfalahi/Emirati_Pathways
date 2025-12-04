@@ -432,6 +432,9 @@ def search_candidates():
         else:
             # Normal JWT authentication - try to get JWT claims
             try:
+                with open("debug_search.log", "a") as f:
+                    f.write(f"DEBUG: Request Headers: {request.headers}\n")
+                logger.info(f"DEBUG: Request Headers: {request.headers}")
                 from flask_jwt_extended import verify_jwt_in_request
                 verify_jwt_in_request()
                 current_user_id = get_jwt_identity()
@@ -441,10 +444,9 @@ def search_candidates():
                 logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, User Type: {user_type}, Claims: {claims}")
             except Exception as jwt_error:
                 logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
-                logger.error(f"JWT Error type: {type(jwt_error)}")
-                logger.error(f"JWT Error traceback: {traceback.format_exc()}")
-                # Re-raise to let Flask-JWT-Extended handle the error response
-                raise
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
+        
         allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
         if user_role not in allowed_roles:
             return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403

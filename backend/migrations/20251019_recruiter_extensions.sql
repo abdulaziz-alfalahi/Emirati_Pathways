@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS job_documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_posting_id UUID NOT NULL REFERENCES job_postings(id) ON DELETE CASCADE,
-    uploaded_by UUID NOT NULL REFERENCES users(id),
+    uploaded_by INTEGER NOT NULL REFERENCES users(id),
     document_type VARCHAR(100), -- 'jd', 'role_justification', 'budget_approval', 'other'
     original_filename TEXT NOT NULL,
     stored_filename TEXT NOT NULL,
@@ -24,8 +24,8 @@ CREATE INDEX IF NOT EXISTS idx_job_documents_uploader ON job_documents(uploaded_
 CREATE TABLE IF NOT EXISTS job_shortlists (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_posting_id UUID NOT NULL REFERENCES job_postings(id) ON DELETE CASCADE,
-    candidate_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    added_by UUID NOT NULL REFERENCES users(id),
+    candidate_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    added_by INTEGER NOT NULL REFERENCES users(id),
     notes TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(job_posting_id, candidate_id)
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS offers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_posting_id UUID NOT NULL REFERENCES job_postings(id) ON DELETE CASCADE,
     application_id UUID REFERENCES job_applications(id) ON DELETE SET NULL,
-    candidate_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    recruiter_id UUID NOT NULL REFERENCES users(id),
+    candidate_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recruiter_id INTEGER NOT NULL REFERENCES users(id),
     offer_data JSONB NOT NULL, -- salary, benefits, start_date, etc.
     status VARCHAR(50) NOT NULL DEFAULT 'draft', -- 'draft','sent','signed','accepted','declined','expired'
     signature_token VARCHAR(128), -- simple token for demo e-sign flow
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS approval_requests (
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     resource_type VARCHAR(50) NOT NULL, -- 'job_posting','offer'
     resource_id UUID NOT NULL,
-    requested_by UUID NOT NULL REFERENCES users(id),
-    approver_id UUID NOT NULL REFERENCES users(id),
+    requested_by INTEGER NOT NULL REFERENCES users(id),
+    approver_id INTEGER NOT NULL REFERENCES users(id),
     status VARCHAR(50) NOT NULL DEFAULT 'pending', -- 'pending','approved','rejected'
     comment TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -93,25 +93,3 @@ CREATE INDEX IF NOT EXISTS idx_external_dist_target ON external_job_distribution
 CREATE INDEX IF NOT EXISTS idx_external_dist_status ON external_job_distribution(status);
 
 -- Trigger to maintain updated_at columns where relevant
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DO $$ BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_trigger WHERE tgname = 'update_offers_updated_at'
-    ) THEN
-        CREATE TRIGGER update_offers_updated_at BEFORE UPDATE ON offers
-        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_trigger WHERE tgname = 'update_external_job_distribution_updated_at'
-    ) THEN
-        CREATE TRIGGER update_external_job_distribution_updated_at BEFORE UPDATE ON external_job_distribution
-        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-END $$;

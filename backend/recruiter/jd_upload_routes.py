@@ -15,6 +15,11 @@ from typing import List, Dict, Any
 from .jd_parser import get_jd_parser
 from .jd_builder_engine import get_jd_builder_engine
 
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+import psycopg2
+import psycopg2.extras
+import json
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,6 +30,16 @@ jd_upload_routes = Blueprint('jd_upload', __name__)
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'docx', 'doc', 'csv', 'xlsx'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+def get_db_connection():
+    """Create database connection"""
+    return psycopg2.connect(
+        host=os.getenv('DB_HOST', 'localhost'),
+        port=os.getenv('DB_PORT', '5432'),
+        database=os.getenv('DB_NAME', 'emirati_journey'),
+        user=os.getenv('DB_USER', 'emirati_user'),
+        password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
+    )
 
 
 def allowed_file(filename: str) -> bool:
@@ -371,4 +386,6 @@ def health_check():
         'allowed_formats': list(ALLOWED_EXTENSIONS),
         'max_file_size_mb': MAX_FILE_SIZE / (1024 * 1024)
     }), 200
+
+
 

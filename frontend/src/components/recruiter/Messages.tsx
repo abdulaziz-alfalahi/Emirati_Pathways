@@ -164,10 +164,10 @@ const Messages: React.FC = () => {
   // Send new message
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;
-    
+
     const conversation = conversations.find(c => c.id === selectedConversation);
     if (!conversation) return;
-    
+
     const newMessageObj: Message = {
       id: `m${Date.now()}`,
       senderId: 'recruiter',
@@ -178,10 +178,10 @@ const Messages: React.FC = () => {
       timestamp: new Date().toISOString(),
       read: true
     };
-    
+
     setMessages([...messages, newMessageObj]);
     setNewMessage('');
-    
+
     toast({
       title: 'Message Sent',
       description: 'Your message has been sent successfully.',
@@ -194,11 +194,11 @@ const Messages: React.FC = () => {
         <h2 className="text-2xl font-bold">Messages</h2>
         <p className="text-muted-foreground">Communicate with candidates and team members</p>
       </div>
-      
+
       <Card className="flex flex-col md:flex-row">
         {/* Conversations list */}
         <div className="w-full md:w-1/3 border-r">
-          <ConversationList 
+          <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
             searchQuery={searchQuery}
@@ -206,7 +206,7 @@ const Messages: React.FC = () => {
             onSelectConversation={handleSelectConversation}
           />
         </div>
-        
+
         {/* Message thread */}
         <div className="w-full md:w-2/3 flex flex-col">
           {selectedConversation ? (
@@ -217,6 +217,14 @@ const Messages: React.FC = () => {
               handleSendMessage={handleSendMessage}
               selectedConversation={selectedConversation}
               conversations={conversations}
+              onScheduleInterview={() => {
+                toast({
+                  title: "Redirecting to Scheduler",
+                  description: "Opening interview scheduler for this candidate...",
+                });
+                // In a real app, this would navigate to the interviews tab with the candidate pre-selected
+                // navigate('/recruiter/interviews?candidateId=' + selectedConversation);
+              }}
             />
           ) : (
             <EmptyConversation />

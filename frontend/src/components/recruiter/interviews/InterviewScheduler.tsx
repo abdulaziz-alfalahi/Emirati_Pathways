@@ -94,13 +94,13 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState(0);
-  
+
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5005';
 
   useEffect(() => {
     fetchInterviews();
@@ -112,11 +112,11 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
       setLoading(true);
       const params = new URLSearchParams();
       if (status) params.append('status', status);
-      
+
       const response = await axios.get(
         `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}?${params.toString()}`
       );
-      
+
       if (response.data.success) {
         setInterviews(response.data.interviews);
       }
@@ -132,7 +132,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
       const response = await axios.get(
         `${API_BASE_URL}/api/recruiter/interviews/stats/${jdId}`
       );
-      
+
       if (response.data.success) {
         setStats(response.data.stats);
       }
@@ -153,7 +153,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
         `${API_BASE_URL}/api/recruiter/interviews/${interviewId}/confirm`,
         { confirmation_status: 'confirmed' }
       );
-      
+
       if (response.data.success) {
         setSuccess('Interview confirmed successfully');
         fetchInterviews();
@@ -173,7 +173,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
         `${API_BASE_URL}/api/recruiter/interviews/${interviewId}/cancel`,
         { cancellation_reason: reason }
       );
-      
+
       if (response.data.success) {
         setSuccess('Interview cancelled successfully');
         fetchInterviews();

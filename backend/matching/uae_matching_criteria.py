@@ -3,7 +3,7 @@ UAE-Specific Matching Criteria Module
 Comprehensive criteria for UAE job market alignment
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, Any
 from dataclasses import dataclass
 from enum import Enum
 import logging
@@ -468,6 +468,77 @@ class UAEMatchingCriteria:
             recommendations.append(f"Consider opportunities in growing sectors: {', '.join(growth_sectors)}")
         
         return recommendations
+    
+    def get_location_adjustments(self, candidate_location: str, job_location: str) -> Dict[str, Any]:
+        """Calculate location-based score adjustments"""
+        adjustments = {
+            'location_preference_score': 0,
+            'commute_factor': 0,
+            'relocation_factor': 0,
+            'details': []
+        }
+        
+        if not candidate_location or not job_location:
+            return adjustments
+            
+        # Normalize locations
+        cand_loc = candidate_location.lower()
+        job_loc = job_location.lower()
+        
+        # Direct match
+        if cand_loc == job_loc or job_loc in cand_loc or cand_loc in job_loc:
+            adjustments['location_preference_score'] = 100
+            adjustments['details'].append("Perfect location match")
+            return adjustments
+            
+        # Check if both are in UAE
+        uae_cities = [e.value.lower() for e in EmirateType]
+        cand_in_uae = any(city in cand_loc for city in uae_cities) or 'uae' in cand_loc or 'united arab emirates' in cand_loc
+        job_in_uae = any(city in job_loc for city in uae_cities) or 'uae' in job_loc or 'united arab emirates' in job_loc
+        
+        if cand_in_uae and job_in_uae:
+            # Different emirates
+            adjustments['location_preference_score'] = 80
+            adjustments['commute_factor'] = -10
+            adjustments['details'].append("Same country, different location")
+        elif not cand_in_uae and job_in_uae:
+            # International relocation
+            adjustments['location_preference_score'] = 60
+            adjustments['relocation_factor'] = -20
+            adjustments['details'].append("International relocation required")
+            
+        return adjustments
+
+    def calculate_uae_bonuses(self, cv_info: Dict, jd_info: Dict) -> Dict[str, float]:
+        """Calculate UAE-specific bonuses"""
+        bonuses = {}
+        
+        # 1. UAE National Bonus
+        if cv_info.get('nationality', '').lower() in ['uae', 'emirati', 'united arab emirates']:
+            bonuses['cultural_fit_score'] = 20
+            bonuses['overall_score'] = 15
+        
+        # 2. Arabic Language Bonus
+        languages = [l.lower() for l in cv_info.get('languages', [])]
+        if 'arabic' in languages:
+            bonuses['language_compatibility_score'] = 15
+            if 'native' in str(cv_info.get('languages')).lower():
+                bonuses['language_compatibility_score'] = 25
+        
+        # 3. UAE Experience Bonus
+        # Simple check for UAE in experience locations
+        has_uae_exp = False
+        for exp in cv_info.get('experience', []):
+            loc = exp.get('location', '').lower()
+            if 'uae' in loc or 'dubai' in loc or 'abu dhabi' in loc:
+                has_uae_exp = True
+                break
+        
+        if has_uae_exp:
+            bonuses['experience_match_score'] = 10
+            bonuses['cultural_fit_score'] = 10
+            
+        return bonuses
 
 # Global instance
 uae_criteria = UAEMatchingCriteria()

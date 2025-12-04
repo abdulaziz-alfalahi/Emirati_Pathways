@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
-const API = (p: string) => `http://localhost:5003${p}`;
+const API = (p: string) => `http://127.0.0.1:5005${p}`;
 
 export default function JDTemplatesPage() {
   const { toast } = useToast();

@@ -44,7 +44,7 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
         recruiter_and = "WHERE"
         params = {}
         if recruiter_id:
-            recruiter_filter = "recruiter_id = %(recruiter_id)s AND"
+            recruiter_filter = "recruiter_id::text = %(recruiter_id)s AND"
             params['recruiter_id'] = recruiter_id
         
         # 1. Placements Statistics
@@ -92,7 +92,8 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
             SELECT 
                 AVG(EXTRACT(DAY FROM (o.created_at - s.created_at))) as avg_days
             FROM offers o
-            JOIN job_shortlists s ON o.candidate_id = s.candidate_id AND o.job_posting_id = s.job_posting_id
+            JOIN job_shortlists s ON o.candidate_id::text = s.candidate_id::text AND o.job_posting_id::text = s.job_posting_id::text
+            JOIN job_postings jd ON o.job_posting_id::text = jd.id::text
             WHERE {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')} o.status = 'accepted'
         """, params)
         
@@ -114,8 +115,8 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
                 o.created_at as timestamp,
                 'high' as priority
             FROM offers o
-            JOIN users c ON o.candidate_id = c.id
-            JOIN job_postings jd ON o.job_posting_id = jd.id
+            JOIN users c ON o.candidate_id::text = c.id::text
+            JOIN job_postings jd ON o.job_posting_id::text = jd.id::text
             WHERE {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')} o.status = 'accepted'
             
             UNION ALL
@@ -123,10 +124,11 @@ def get_dashboard_statistics(recruiter_id: Optional[str] = None) -> Dict[str, An
             SELECT 
                 'new_requirement' as type,
                 'New Vacancy' as title,
-                CONCAT(jd.title, ' position for ', jd.company_name) as description,
+                CONCAT(jd.title, ' position for ', c.company_name) as description,
                 jd.created_at as timestamp,
                 'high' as priority
             FROM job_postings jd
+            LEFT JOIN companies c ON jd.company_id::text = c.id::text
             {('WHERE ' + recruiter_filter.replace('recruiter_id', 'jd.created_by').replace(' AND', '')) if recruiter_filter else ''}
             
             ORDER BY timestamp DESC
@@ -274,7 +276,8 @@ def get_performance_metrics(recruiter_id: Optional[str] = None) -> Dict[str, flo
             SELECT 
                 AVG(EXTRACT(DAY FROM (o.created_at - s.created_at))) as avg_days
             FROM offers o
-            JOIN job_shortlists s ON o.candidate_id = s.candidate_id AND o.job_posting_id = s.job_posting_id
+            JOIN job_shortlists s ON o.candidate_id::text = s.candidate_id::text AND o.job_posting_id::text = s.job_posting_id::text
+            JOIN job_postings jd ON o.job_posting_id::text = jd.id::text
             {recruiter_filter.replace('recruiter_id', 'o.recruiter_id')}
             {'AND' if recruiter_filter else 'WHERE'} o.status = 'accepted'
         """, params)

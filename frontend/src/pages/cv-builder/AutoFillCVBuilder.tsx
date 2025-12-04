@@ -4,10 +4,10 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cvStorageService, type SavedCV, type CVData as StorageCVData } from '@/services/cvStorageService';
-import { 
-  FileText, 
-  Upload, 
-  CheckCircle, 
+import {
+  FileText,
+  Upload,
+  CheckCircle,
   Loader2,
   Users,
   Zap,
@@ -154,7 +154,7 @@ const AutoFillCVBuilder: React.FC = () => {
   const [cvScore, setCvScore] = useState<number>(0);
   const [atsScore, setAtsScore] = useState<number>(0);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  
+
   // CV Storage states
   const [savedCVs, setSavedCVs] = useState<SavedCV[]>([]);
   const [currentCVId, setCurrentCVId] = useState<string | null>(null);
@@ -228,47 +228,47 @@ const AutoFillCVBuilder: React.FC = () => {
   const calculateCVScore = (cvData: CVFormData): number => {
     let score = 0;
     const maxScore = 100;
-    
+
     // Personal Information (20 points)
     const personalInfo = cvData.personalInfo;
     if (personalInfo.firstName && personalInfo.lastName) score += 5;
     if (personalInfo.email && personalInfo.email.includes('@')) score += 5;
     if (personalInfo.phone) score += 5;
     if (personalInfo.location) score += 5;
-    
+
     // Professional Summary (20 points)
     if (cvData.professionalSummary) {
       if (cvData.professionalSummary.length > 50) score += 10;
       if (cvData.professionalSummary.length > 150) score += 10;
     }
-    
+
     // Skills (20 points)
     if (cvData.technicalSkills.length >= 3) score += 10;
     if (cvData.technicalSkills.length >= 6) score += 5;
     if (cvData.softSkills.length >= 3) score += 5;
-    
+
     // Experience (25 points)
     if (cvData.experience.length >= 1) score += 10;
     if (cvData.experience.length >= 3) score += 10;
     if (cvData.experience.some(exp => exp.responsibilities && exp.responsibilities.length > 50)) score += 5;
-    
+
     // Education (15 points)
     if (cvData.education.length >= 1) score += 10;
     if (cvData.education.some(edu => edu.field)) score += 5;
-    
+
     return Math.min(score, maxScore);
   };
 
   const calculateATSScore = (cvData: CVFormData): number => {
     let score = 0;
-    
+
     // UAE Keywords
     const uaeKeywords = [
       'UAE', 'Dubai', 'Abu Dhabi', 'Emirates', 'Arabic', 'Emirati', 'GCC',
       'D33', 'Talent33', 'Vision 2071', 'Digital Transformation', 'Innovation',
       'Leadership', 'Strategy', 'Management', 'Government', 'Private Sector'
     ];
-    
+
     // Check for UAE keywords in summary and experience
     const allText = [
       cvData.professionalSummary,
@@ -276,36 +276,36 @@ const AutoFillCVBuilder: React.FC = () => {
       ...cvData.technicalSkills,
       ...cvData.softSkills
     ].join(' ').toLowerCase();
-    
-    const foundKeywords = uaeKeywords.filter(keyword => 
+
+    const foundKeywords = uaeKeywords.filter(keyword =>
       allText.includes(keyword.toLowerCase())
     );
-    
+
     // Score based on keyword presence (40 points max)
     score += Math.min(foundKeywords.length * 3, 40);
-    
+
     // Technical skills relevance (30 points)
     const techKeywords = ['digital', 'technology', 'data', 'analytics', 'ai', 'cloud', 'mobile', 'web'];
-    const techMatches = cvData.technicalSkills.filter(skill => 
+    const techMatches = cvData.technicalSkills.filter(skill =>
       techKeywords.some(keyword => skill.toLowerCase().includes(keyword))
     );
     score += Math.min(techMatches.length * 5, 30);
-    
+
     // Experience quality (30 points)
-    const hasQuantifiableResults = cvData.experience.some(exp => 
+    const hasQuantifiableResults = cvData.experience.some(exp =>
       exp.responsibilities && /\d+/.test(exp.responsibilities) // Contains numbers
     );
     if (hasQuantifiableResults) score += 15;
-    
+
     const hasLeadershipTerms = allText.includes('led') || allText.includes('managed') || allText.includes('directed');
     if (hasLeadershipTerms) score += 15;
-    
+
     return Math.min(score, 100);
   };
 
   const generateSuggestions = (cvData: CVFormData, cvScore: number, atsScore: number): string[] => {
     const suggestions: string[] = [];
-    
+
     // CV Completeness suggestions
     if (cvScore < 80) {
       if (!cvData.professionalSummary || cvData.professionalSummary.length < 150) {
@@ -318,7 +318,7 @@ const AutoFillCVBuilder: React.FC = () => {
         suggestions.push('Include more work experience entries to demonstrate career progression');
       }
     }
-    
+
     // ATS Optimization suggestions
     if (atsScore < 70) {
       suggestions.push('Include more UAE-specific keywords: D33, Talent33, Digital Transformation, Innovation');
@@ -326,7 +326,7 @@ const AutoFillCVBuilder: React.FC = () => {
       suggestions.push('Highlight Arabic language proficiency and cultural understanding');
       suggestions.push('Emphasize government sector experience or private sector leadership roles');
     }
-    
+
     // UAE Market specific suggestions
     const allText = [cvData.professionalSummary, ...cvData.experience.map(exp => exp.responsibilities)].join(' ').toLowerCase();
     if (!allText.includes('arabic')) {
@@ -335,7 +335,7 @@ const AutoFillCVBuilder: React.FC = () => {
     if (!allText.includes('emirati')) {
       suggestions.push('Highlight experience working with Emirati teams or on Emiratization initiatives');
     }
-    
+
     return suggestions.slice(0, 5); // Limit to top 5 suggestions
   };
 
@@ -343,11 +343,11 @@ const AutoFillCVBuilder: React.FC = () => {
     const newCvScore = calculateCVScore(cvData);
     const newAtsScore = calculateATSScore(cvData);
     const newSuggestions = generateSuggestions(cvData, newCvScore, newAtsScore);
-    
+
     setCvScore(newCvScore);
     setAtsScore(newAtsScore);
     setSuggestions(newSuggestions);
-    
+
     console.log(`📊 CV Score: ${newCvScore}%, ATS Score: ${newAtsScore}%`);
   };
 
@@ -424,7 +424,7 @@ const AutoFillCVBuilder: React.FC = () => {
       const result = await cvStorageService.getCV(cvId);
       if (result.success && result.data) {
         const cvData = result.data;
-        
+
         // Map database format to form format
         const loadedFormData = {
           personalInfo: {
@@ -448,7 +448,7 @@ const AutoFillCVBuilder: React.FC = () => {
         setCurrentCVId(cvId);
         setCvScore(cvData.cv_score || 0);
         setAtsScore(cvData.ats_score || 0);
-        
+
         // Move to form step
         setCurrentStep('form');
         setShowLoadDialog(false);
@@ -458,7 +458,7 @@ const AutoFillCVBuilder: React.FC = () => {
           setAutosaveStatus('saved');
           skipAutosaveRef.current = false;
         }, 0);
-        
+
         console.log('✅ CV loaded successfully');
       } else {
         alert(`Failed to load CV: ${result.message}`);
@@ -496,7 +496,7 @@ const AutoFillCVBuilder: React.FC = () => {
   const autoFillForm = (analysisData: CVData) => {
     skipAutosaveRef.current = true;
     console.log('🔄 Auto-filling form with analysis data:', analysisData);
-    
+
     const nameParts = analysisData.personal_info?.name?.split(' ') || ['', ''];
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
@@ -531,13 +531,13 @@ const AutoFillCVBuilder: React.FC = () => {
 
     console.log('📝 Setting form data:', newFormData);
     setFormData(newFormData);
-    
+
     // Calculate scores after auto-fill
     setTimeout(() => {
       updateScores(newFormData);
       skipAutosaveRef.current = false;
     }, 100);
-    
+
     console.log('✅ Form auto-filled with extracted CV data');
   };
 
@@ -632,7 +632,7 @@ const AutoFillCVBuilder: React.FC = () => {
         accent: '#6b7280'      // Gray
       }
     };
-    
+
     return colors[template as keyof typeof colors] || colors['government-executive'];
   };
 
@@ -718,7 +718,7 @@ const AutoFillCVBuilder: React.FC = () => {
         </html>
       `;
     }
-    
+
     if (template === 'tech-innovator') {
       return `
         <!DOCTYPE html>
@@ -788,7 +788,7 @@ const AutoFillCVBuilder: React.FC = () => {
         </html>
       `;
     }
-    
+
     if (template === 'business-leader') {
       return `
         <!DOCTYPE html>
@@ -858,7 +858,7 @@ const AutoFillCVBuilder: React.FC = () => {
         </html>
       `;
     }
-    
+
     // Default professional template
     return `
       <!DOCTYPE html>
@@ -892,7 +892,7 @@ const AutoFillCVBuilder: React.FC = () => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+    const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
     const LEGACY_PATH = (import.meta as any).env?.VITE_CV_UPLOAD_PATH || import.meta.env.VITE_CV_UPLOAD_PATH || '/api/candidate/cv/upload';
 
     try {
@@ -978,7 +978,7 @@ const AutoFillCVBuilder: React.FC = () => {
 
   const handleInputChange = (field: string, value: string, section?: string) => {
     let newFormData;
-    
+
     if (section) {
       newFormData = {
         ...formData,
@@ -993,16 +993,16 @@ const AutoFillCVBuilder: React.FC = () => {
         [field]: value
       };
     }
-    
+
     setFormData(newFormData);
-    
+
     // Update scores in real-time
     setTimeout(() => updateScores(newFormData), 100);
   };
 
   const addSkill = (type: 'technical' | 'soft', skill: string) => {
     if (!skill.trim()) return;
-    
+
     const skillField = type === 'technical' ? 'technicalSkills' : 'softSkills';
     const newFormData = {
       ...formData,
@@ -1026,11 +1026,10 @@ const AutoFillCVBuilder: React.FC = () => {
     <div className="space-y-8">
       {/* Upload Area */}
       <div
-        className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
-          isDragOver
+        className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${isDragOver
             ? 'border-blue-500 bg-blue-50 scale-105'
             : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-        }`}
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -1137,7 +1136,7 @@ const AutoFillCVBuilder: React.FC = () => {
             features: ['D33 Aligned', 'Leadership Focus', 'Government Style']
           },
           {
-            id: 'tech-innovator', 
+            id: 'tech-innovator',
             name: 'Tech Innovator',
             description: 'Designed for technology professionals in UAE digital transformation',
             color: 'bg-purple-600',
@@ -1145,7 +1144,7 @@ const AutoFillCVBuilder: React.FC = () => {
           },
           {
             id: 'business-leader',
-            name: 'Business Leader', 
+            name: 'Business Leader',
             description: 'For business professionals and entrepreneurs in UAE market',
             color: 'bg-green-600',
             features: ['Executive Style', 'Results Driven', 'UAE Market Focus']
@@ -1153,8 +1152,8 @@ const AutoFillCVBuilder: React.FC = () => {
         ].map((template) => (
           <div key={template.id} className={`rounded-xl shadow-lg border hover:shadow-xl transition-all duration-300 overflow-hidden ${selectedTemplate === template.id ? 'ring-4 ring-blue-500' : ''}`}>
             <div className="h-64 overflow-hidden">
-              <TemplatePreview 
-                templateId={template.id} 
+              <TemplatePreview
+                templateId={template.id}
                 cvData={formData}
                 className="w-full h-full"
               />
@@ -1169,7 +1168,7 @@ const AutoFillCVBuilder: React.FC = () => {
                   </span>
                 ))}
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setSelectedTemplate(template.id);
                   setCurrentStep('form');
@@ -1376,8 +1375,8 @@ const AutoFillCVBuilder: React.FC = () => {
             <h4 className="font-medium text-gray-800 mb-3">{useLanguage().t('cvBuilder.technicalSkills', 'Technical Skills')}</h4>
             <div className="flex flex-wrap gap-2 mb-4">
               {formData.technicalSkills.map((skill, index) => (
-                <span 
-                  key={index} 
+                <span
+                  key={index}
                   className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center"
                 >
                   {skill}
@@ -1408,8 +1407,8 @@ const AutoFillCVBuilder: React.FC = () => {
             <h4 className="font-medium text-gray-800 mb-3">{useLanguage().t('cvBuilder.softSkills', 'Soft Skills')}</h4>
             <div className="flex flex-wrap gap-2 mb-4">
               {formData.softSkills.map((skill, index) => (
-                <span 
-                  key={index} 
+                <span
+                  key={index}
                   className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center"
                 >
                   {skill}
@@ -1624,8 +1623,8 @@ const AutoFillCVBuilder: React.FC = () => {
 
       {/* Full-size CV Preview with Selected Template */}
       <div className="max-w-4xl mx-auto">
-        <TemplatePreview 
-          templateId={selectedTemplate} 
+        <TemplatePreview
+          templateId={selectedTemplate}
           cvData={formData}
           className="transform scale-100 w-full"
         />
@@ -1646,7 +1645,7 @@ const AutoFillCVBuilder: React.FC = () => {
               alert(res.message);
               return;
             }
-            const lines = (res.data || []).map((m: any, i: number) => `${i+1}. ${m.title} (${m.employer || 'N/A'}) — ${m.match_score}%`);
+            const lines = (res.data || []).map((m: any, i: number) => `${i + 1}. ${m.title} (${m.employer || 'N/A'}) — ${m.match_score}%`);
             alert(lines.length ? `Top matches:\n\n${lines.join('\n')}` : 'No matches found.');
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
@@ -1676,7 +1675,7 @@ const AutoFillCVBuilder: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'} lang={language}>
-      <HybridGovernmentNavFixed 
+      <HybridGovernmentNavFixed
         onLanguageToggle={handleLanguageToggle}
         currentLanguage={currentLanguage}
       />
@@ -1712,7 +1711,7 @@ const AutoFillCVBuilder: React.FC = () => {
         onExport={async (opts, extra) => {
           try {
             setIsExporting(true);
-            const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+            const base = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
             if (currentCVId) {
               const endpoint = `${base}/api/cv/${currentCVId}/export/${opts.format === 'txt' ? 'json' : opts.format}`;
               const res = await fetch(endpoint, {
@@ -1803,53 +1802,49 @@ const AutoFillCVBuilder: React.FC = () => {
           <div className="flex items-center justify-between">
             {/* Step 1: Upload */}
             <div className={`flex items-center space-x-3 ${currentStep === 'upload' ? 'text-blue-600' : 'text-green-600'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'upload' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'upload' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
+                }`}>
                 {currentStep === 'upload' ? <Upload className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
               </div>
               <span className="font-medium">{useLanguage().t('cvBuilder.stepUploadAnalyze', 'Upload & Analyze')}</span>
             </div>
-            
+
             <div className={`flex-1 h-px mx-4 ${currentStep !== 'upload' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
-            
+
             {/* Step 2: Template */}
             <div className={`flex items-center space-x-3 ${currentStep === 'template' ? 'text-blue-600' : currentStep === 'form' || currentStep === 'preview' ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'template' ? 'bg-blue-600 text-white' : 
-                currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'template' ? 'bg-blue-600 text-white' :
+                  currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                }`}>
                 {currentStep === 'form' || currentStep === 'preview' ? <CheckCircle className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
               </div>
               <span className="font-medium">{useLanguage().t('cvBuilder.stepChooseTemplate', 'Choose Template')}</span>
             </div>
-            
+
             <div className={`flex-1 h-px mx-4 ${currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
-            
+
             {/* Step 3: Form */}
             <div className={`flex items-center space-x-3 ${currentStep === 'form' ? 'text-blue-600' : currentStep === 'preview' ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'form' ? 'bg-blue-600 text-white' : 
-                currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'form' ? 'bg-blue-600 text-white' :
+                  currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                }`}>
                 {currentStep === 'preview' ? <CheckCircle className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               </div>
               <span className="font-medium">{useLanguage().t('cvBuilder.stepBuildCustomize', 'Build & Customize')}</span>
             </div>
-            
+
             <div className={`flex-1 h-px mx-4 ${currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
-            
+
             {/* Step 4: Preview */}
             <div className={`flex items-center space-x-3 ${currentStep === 'preview' ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+                }`}>
                 <Eye className="w-4 h-4" />
               </div>
               <span className="font-medium">{useLanguage().t('cvBuilder.stepPreviewExport', 'Preview & Export')}</span>
             </div>
           </div>
-          
+
           {/* Save/Load Controls */}
           <div className="flex justify-center space-x-4 mt-4 pt-4 border-t border-gray-200">
             <button
@@ -1863,7 +1858,7 @@ const AutoFillCVBuilder: React.FC = () => {
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
               {useLanguage().t('cvBuilder.loadCV', 'Load CV')}
             </button>
-            
+
             <button
               onClick={() => setShowSaveDialog(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -1872,7 +1867,7 @@ const AutoFillCVBuilder: React.FC = () => {
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {currentCVId ? useLanguage().t('cvBuilder.updateCV', 'Update CV') : useLanguage().t('cvBuilder.saveCV', 'Save CV')}
             </button>
-            
+
             {currentCVId && (
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -1955,7 +1950,7 @@ const AutoFillCVBuilder: React.FC = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -1985,11 +1980,10 @@ const AutoFillCVBuilder: React.FC = () => {
                           <span>Template: {cv.template_name}</span>
                           <span>Score: {cv.cv_score}%</span>
                           <span>Updated: {new Date(cv.updated_at).toLocaleDateString()}</span>
-                          <span className={`px-2 py-1 rounded-full ${
-                            cv.status === 'published' ? 'bg-green-100 text-green-800' : 
-                            cv.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full ${cv.status === 'published' ? 'bg-green-100 text-green-800' :
+                              cv.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                            }`}>
                             {cv.status}
                           </span>
                         </div>

@@ -100,7 +100,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
   const [editMode, setEditMode] = useState(false);
   const [negotiationDialogOpen, setNegotiationDialogOpen] = useState(false);
   const [currentOffer, setCurrentOffer] = useState<JobOffer>(offer);
-  
+
   // Editable fields
   const [salaryAmount, setSalaryAmount] = useState(currentOffer.salary_amount.toString());
   const [startDate, setStartDate] = useState(currentOffer.start_date);
@@ -116,7 +116,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
   const reloadOfferDetails = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`);
+      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}`);
       if (response.data.offer) {
         const updatedOffer = response.data.offer;
         setCurrentOffer(updatedOffer);
@@ -143,12 +143,12 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/send`);
+      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/send`);
       setSuccess('Offer sent successfully to candidate');
-      
+
       // Reload offer details to show updated status and timestamps
       await reloadOfferDetails();
-      
+
       setTimeout(() => {
         onOfferUpdated();
       }, 500);
@@ -166,14 +166,14 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
+      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
         approved_by: 'manager_001', // TODO: Get from auth context
       });
       setSuccess('Offer approved successfully');
-      
+
       // Reload offer details to show updated status
       await reloadOfferDetails();
-      
+
       setTimeout(() => {
         onOfferUpdated();
       }, 500);
@@ -191,15 +191,15 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
+      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
         rejected_by: 'manager_001', // TODO: Get from auth context
         rejection_reason: 'Budget constraints',
       });
       setSuccess('Offer rejected');
-      
+
       // Reload offer details to show updated status
       await reloadOfferDetails();
-      
+
       setTimeout(() => {
         onOfferUpdated();
       }, 500);
@@ -221,14 +221,14 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
+      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
         reason: 'Position filled by another candidate',
       });
       setSuccess('Offer withdrawn successfully');
-      
+
       // Reload offer details to show updated status
       await reloadOfferDetails();
-      
+
       setTimeout(() => {
         onOfferUpdated();
       }, 500);
@@ -255,13 +255,13 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         updates.response_deadline = responseDeadline;
       }
 
-      await axios.put(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}`, updates);
+      await axios.put(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}`, updates);
       setSuccess('Offer updated successfully');
       setEditMode(false);
-      
+
       // Reload offer details to show updated values
       await reloadOfferDetails();
-      
+
       // Notify parent to refresh list
       setTimeout(() => {
         onOfferUpdated();
@@ -280,14 +280,14 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://localhost:5003/api/recruiter/offers/${currentOffer.offer_id}/response`, {
+      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/response`, {
         response: response,
       });
       setSuccess(`Candidate response recorded: ${response}`);
-      
+
       // Reload offer details to show updated response
       await reloadOfferDetails();
-      
+
       setTimeout(() => {
         onOfferUpdated();
       }, 500);
@@ -601,8 +601,8 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                         currentOffer.candidate_response === 'accepted'
                           ? 'success'
                           : currentOffer.candidate_response === 'rejected'
-                          ? 'error'
-                          : 'secondary'
+                            ? 'error'
+                            : 'secondary'
                       }
                       size="small"
                     />

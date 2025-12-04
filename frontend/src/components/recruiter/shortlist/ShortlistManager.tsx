@@ -47,8 +47,10 @@ import {
   Close as CloseIcon,
   CardGiftcard as CardGiftcardIcon,
   RateReview as RateReviewIcon,
+  Refresh as RefreshCw,
 } from '@mui/icons-material';
-import axios from 'axios';
+// import axios from 'axios'; // Removed axios
+import { restClient } from '@/utils/api';
 
 interface ShortlistedCandidate {
   shortlist_id: string;
@@ -74,6 +76,10 @@ interface ShortlistedCandidate {
   years_of_experience: number;
   emirates_id: string;
   is_uae_national: boolean;
+  // Interview details
+  interview_rating?: number;
+  interview_recommendation?: string;
+  interview_feedback?: string;
 }
 
 interface ShortlistStats {
@@ -86,6 +92,7 @@ interface ShortlistStats {
   hired: number;
   rejected: number;
   avg_match_score: number;
+  interview_count?: number;
 }
 
 interface ShortlistManagerProps {
@@ -142,8 +149,10 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [interviews, setInterviews] = useState<any[]>([]);
   const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
   const [selectedCandidateDetails, setSelectedCandidateDetails] = useState<ShortlistedCandidate | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [candidateToDelete, setCandidateToDelete] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  // API_BASE_URL is handled by restClient
 
   useEffect(() => {
     loadShortlist();
@@ -151,14 +160,24 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   }, [jdId]);
 
   const loadShortlist = async () => {
+    console.log('ShortlistManager: Loading shortlist for JD:', jdId);
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/recruiter/shortlist/${jdId}`);
-      if (response.data.success) {
+      const response = await restClient.get(`/api/recruiter/shortlist/${jdId}`);
+      console.log('ShortlistManager: API Response:', response.data);
+
+      // restClient returns { data: ..., success: ... } structure
+      if (response.data && response.data.success) {
         setShortlist(response.data.shortlist);
+        console.log('ShortlistManager: Set shortlist state:', response.data.shortlist);
+      } else {
+        // Handle cases where success might be false in the body
+        console.warn('Shortlist load failed:', response.data);
+        setError(response.data?.message || 'Failed to load shortlist');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load shortlist');
+      console.error('Load shortlist error:', err);
+      setError(err.message || 'Failed to load shortlist');
     } finally {
       setLoading(false);
     }
@@ -166,8 +185,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/recruiter/shortlist/${jdId}/stats`);
-      if (response.data.success) {
+      const response = await restClient.get(`/api/recruiter/shortlist/${jdId}/stats`);
+      if (response.data && response.data.success) {
         setStats(response.data.stats);
       }
     } catch (err: any) {
@@ -179,15 +198,15 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     if (!selectedCandidate || !newStatus) return;
 
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/status`,
+      const response = await restClient.put(
+        `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/status`,
         {
           status: newStatus,
           notes: statusNotes,
         }
       );
 
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setSuccess('Status updated successfully');
         setStatusDialogOpen(false);
         setNewStatus('');
@@ -196,7 +215,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         loadStats();
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update status');
+      setError(err.message || 'Failed to update status');
     }
   };
 
@@ -204,28 +223,28 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     if (!selectedCandidate || !newNote.trim()) return;
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/notes`,
+      const response = await restClient.post(
+        `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/notes`,
         {
           note: newNote,
           recruiter_id: 'current_recruiter', // TODO: Get from auth context
         }
       );
 
-      if (response.data.success) {
+      if (response.data && response.data.success) {
         setSuccess('Note added successfully');
         setNoteDialogOpen(false);
         setNewNote('');
         loadShortlist();
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add note');
+      setError(err.message || 'Failed to add note');
     }
   };
 
   const handleCreateOfferForSelected = () => {
     if (selectedCandidates.length === 0) return;
-    
+
     // Get the first selected candidate
     const candidate = shortlist.find(c => c.shortlist_id === selectedCandidates[0]);
     if (candidate) {
@@ -248,10 +267,10 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
     try {
       // Find the interview for this candidate
-      const interviewResponse = await axios.get(
-        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}`
+      const interviewResponse = await restClient.get(
+        `/api/recruiter/interviews/jd/${jdId}`
       );
-      
+
       const interview = interviewResponse.data.interviews?.find(
         (i: any) => i.shortlist_id === selectedCandidate.shortlist_id
       );
@@ -262,8 +281,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
       }
 
       // Update the interview with feedback
-      await axios.put(
-        `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}`,
+      await restClient.put(
+        `/api/recruiter/interviews/${interview.interview_id}`,
         {
           rating: feedbackRating,
           recommendation: feedbackRecommendation,
@@ -278,22 +297,22 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
       setFeedbackNotes('');
       loadShortlist(); // Reload to show updated feedback
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add interview feedback');
+      setError(err.message || 'Failed to add interview feedback');
     }
   };
 
   const handleViewInterviews = async () => {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}`
+      const response = await restClient.get(
+        `/api/recruiter/interviews/jd/${jdId}`
       );
-      
-      if (response.data.success) {
+
+      if (response.data && response.data.success) {
         setInterviews(response.data.interviews || []);
         setViewInterviewsDialogOpen(true);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load interviews');
+      setError(err.message || 'Failed to load interviews');
     }
   };
 
@@ -302,23 +321,43 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     setViewDetailsDialogOpen(true);
   };
 
-  const handleRemoveFromShortlist = async (shortlistId: string) => {
-    if (!window.confirm('Are you sure you want to remove this candidate from the shortlist?')) {
+  const handleRemoveFromShortlist = (shortlistId: string) => {
+    console.log('handleRemoveFromShortlist called with ID:', shortlistId);
+    if (!shortlistId) {
+      console.error('Error: shortlistId is missing!');
+      setError('Error: Cannot delete candidate (missing ID)');
       return;
     }
+    setCandidateToDelete(shortlistId);
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!candidateToDelete) return;
+
+    console.log('User confirmed delete. Sending DELETE request...');
     try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/api/recruiter/shortlist/${shortlistId}`
+      const response = await restClient.delete(
+        `/api/recruiter/shortlist/${candidateToDelete}`
       );
 
-      if (response.data.success) {
+      console.log('DELETE response:', response);
+
+      if (response.data && response.data.success) {
+        console.log('Delete successful');
         setSuccess('Candidate removed from shortlist');
         loadShortlist();
         loadStats();
+      } else {
+        console.error('Delete failed:', response.data);
+        setError(response.data?.message || 'Failed to remove candidate');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to remove candidate');
+      console.error('Delete error:', err);
+      setError(err.message || 'Failed to remove candidate');
+    } finally {
+      setDeleteDialogOpen(false);
+      setCandidateToDelete(null);
     }
   };
 
@@ -335,8 +374,21 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">
           Shortlisted Candidates
+          <Typography variant="caption" display="block" color="textSecondary">
+            JD ID: {jdId}
+          </Typography>
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshCw />}
+            onClick={() => {
+              loadShortlist();
+              loadStats();
+            }}
+          >
+            Refresh
+          </Button>
           <Button
             variant="outlined"
             startIcon={<CalendarMonthIcon />}
@@ -449,7 +501,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             </TableRow>
           </TableHead>
           <TableBody>
-            {shortlist && shortlist.length > 0 ? shortlist.map((candidate) => (
+            {shortlist && shortlist.length > 0 && shortlist.map((candidate) => (
               <TableRow key={candidate.shortlist_id}>
                 <TableCell padding="checkbox">
                   <input
@@ -475,7 +527,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                         {candidate.first_name || 'Test'} {candidate.last_name || 'Candidate'}
                       </Typography>
                       <Typography variant="caption" color="textSecondary">
-                        {candidate.years_of_experience || 0} years exp.
+                        {candidate.years_of_experience || 0} years exp. | ID: {candidate.shortlist_id}
                       </Typography>
                     </Box>
                   </Box>
@@ -502,8 +554,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                 </TableCell>
                 <TableCell align="center">
                   <Chip
-                    label={`${parseFloat(candidate.match_score).toFixed(1)}%`}
-                    color={parseFloat(candidate.match_score) >= 80 ? 'success' : parseFloat(candidate.match_score) >= 60 ? 'warning' : 'default'}
+                    label={`${parseFloat(candidate.match_score as any).toFixed(1)}%`}
+                    color={parseFloat(candidate.match_score as any) >= 80 ? 'success' : parseFloat(candidate.match_score as any) >= 60 ? 'warning' : 'default'}
                     size="small"
                   />
                 </TableCell>
@@ -581,7 +633,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="View Details">
-                    <IconButton 
+                    <IconButton
                       size="small"
                       onClick={() => handleViewDetails(candidate)}
                     >
@@ -599,7 +651,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   </Tooltip>
                 </TableCell>
               </TableRow>
-            )) : (
+            ))}
+            {(!shortlist || shortlist.length === 0) && (
               <TableRow>
                 <TableCell colSpan={8} align="center">
                   <Typography color="textSecondary">No candidates in shortlist</Typography>
@@ -645,6 +698,22 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         </DialogActions>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove this candidate from the shortlist? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Add Note Dialog */}
       <Dialog open={noteDialogOpen} onClose={() => setNoteDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add Note</DialogTitle>
@@ -669,10 +738,10 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
       </Dialog>
 
       {/* Message Composer Dialog */}
-      <Dialog 
-        open={messageDialogOpen} 
-        onClose={() => setMessageDialogOpen(false)} 
-        maxWidth="lg" 
+      <Dialog
+        open={messageDialogOpen}
+        onClose={() => setMessageDialogOpen(false)}
+        maxWidth="lg"
         fullWidth
       >
         <DialogTitle>
@@ -707,7 +776,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             onSent={() => {
               setMessageDialogOpen(false);
               setSelectedCandidates([]);
-              fetchShortlist();
+              loadShortlist();
             }}
           />
         </DialogContent>
@@ -725,7 +794,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         recruiterId="recruiter_001"
         onSuccess={() => {
           setSuccess('Interview scheduled successfully');
-          fetchShortlist();
+          loadShortlist();
         }}
       />
 
@@ -857,9 +926,9 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                         {interview.candidate_first_name} {interview.candidate_last_name}
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={interview.interview_type} 
-                          size="small" 
+                        <Chip
+                          label={interview.interview_type}
+                          size="small"
                           color="primary"
                         />
                       </TableCell>
@@ -876,8 +945,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                         )}
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={interview.status} 
+                        <Chip
+                          label={interview.status}
                           size="small"
                           color={interview.status === 'completed' ? 'success' : 'default'}
                         />
@@ -894,8 +963,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                       </TableCell>
                       <TableCell>
                         {interview.recommendation ? (
-                          <Chip 
-                            label={interview.recommendation} 
+                          <Chip
+                            label={interview.recommendation}
                             size="small"
                             color={interview.recommendation === 'hire' ? 'success' : 'default'}
                           />
@@ -906,11 +975,11 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                       <TableCell>
                         {interview.feedback ? (
                           <Tooltip title={interview.feedback}>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                maxWidth: 200, 
-                                overflow: 'hidden', 
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                maxWidth: 200,
+                                overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
                               }}
@@ -1064,8 +1133,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                           <Typography variant="body2" color="textSecondary">
                             Status
                           </Typography>
-                          <Chip 
-                            label={selectedCandidateDetails.status} 
+                          <Chip
+                            label={selectedCandidateDetails.status}
                             size="small"
                             color={statusColors[selectedCandidateDetails.status] || 'default'}
                           />
@@ -1103,9 +1172,9 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                         <Typography variant="h6" gutterBottom>
                           Match Details
                         </Typography>
-                        <Box sx={{ 
-                          backgroundColor: '#f5f5f5', 
-                          p: 2, 
+                        <Box sx={{
+                          backgroundColor: '#f5f5f5',
+                          p: 2,
                           borderRadius: 1,
                           maxHeight: 200,
                           overflow: 'auto'

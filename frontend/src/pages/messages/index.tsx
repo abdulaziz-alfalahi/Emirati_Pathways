@@ -7,14 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { 
-  MessageSquare, 
-  Send, 
-  Search, 
-  Plus, 
-  Paperclip, 
-  Phone, 
-  Video, 
+import {
+  MessageSquare,
+  Send,
+  Search,
+  Plus,
+  Paperclip,
+  Phone,
+  Video,
   MoreVertical,
   Clock,
   Check,
@@ -196,7 +196,7 @@ const MessagesPage: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await messagingService.getConversations();
-      
+
       if (response.success) {
         setConversations(response.data || []);
       } else {
@@ -216,7 +216,7 @@ const MessagesPage: React.FC = () => {
   const loadMessages = async (conversationId: string) => {
     try {
       const response = await messagingService.getConversationMessages(conversationId);
-      
+
       if (response.success) {
         setMessages(response.data || []);
       } else {
@@ -224,7 +224,7 @@ const MessagesPage: React.FC = () => {
         setMessages(mockMessages[conversationId] || []);
         console.log('Using mock data for messages');
       }
-      
+
       // Mark conversation as read
       await messagingService.markConversationAsRead(conversationId);
     } catch (error) {
@@ -258,10 +258,10 @@ const MessagesPage: React.FC = () => {
           read_by: ['current-user'],
           is_read: true
         };
-        
+
         setMessages(prev => [...prev, tempMessage]);
         setNewMessage('');
-        
+
         toast({
           title: "Message Sent",
           description: "Your message has been sent successfully.",
@@ -294,7 +294,7 @@ const MessagesPage: React.FC = () => {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) {
       return date.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays < 7) {
@@ -328,7 +328,7 @@ const MessagesPage: React.FC = () => {
 
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.participant_names?.some(name => 
+    conv.participant_names?.some(name =>
       name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -343,7 +343,7 @@ const MessagesPage: React.FC = () => {
               <h1 className="text-3xl font-bold mb-2">💬 Messages</h1>
               <p className="text-xl opacity-90">Connect with recruiters, mentors, and career advisors</p>
             </div>
-            <Button 
+            <Button
               onClick={() => setShowNewConversation(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white"
               size="lg"
@@ -395,11 +395,10 @@ const MessagesPage: React.FC = () => {
                         <div
                           key={conversation.id}
                           onClick={() => setSelectedConversation(conversation)}
-                          className={`p-4 cursor-pointer hover:bg-gray-50 border-l-4 transition-colors ${
-                            selectedConversation?.id === conversation.id
+                          className={`p-4 cursor-pointer hover:bg-gray-50 border-l-4 transition-colors ${selectedConversation?.id === conversation.id
                               ? 'bg-blue-50 border-l-blue-500'
                               : 'border-l-transparent'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start space-x-3">
                             <Avatar className="h-10 w-10">
@@ -408,7 +407,7 @@ const MessagesPage: React.FC = () => {
                                 {getInitials(conversation.participant_names?.[1] || 'Unknown')}
                               </AvatarFallback>
                             </Avatar>
-                            
+
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
@@ -416,8 +415,8 @@ const MessagesPage: React.FC = () => {
                                     {conversation.participant_names?.[1] || 'Unknown'}
                                   </p>
                                   {conversation.participant_roles?.[1] && (
-                                    <Badge 
-                                      variant="outline" 
+                                    <Badge
+                                      variant="outline"
                                       className={`text-xs ${getRoleColor(conversation.participant_roles[1])}`}
                                     >
                                       <div className="flex items-center space-x-1">
@@ -438,11 +437,11 @@ const MessagesPage: React.FC = () => {
                                   </span>
                                 </div>
                               </div>
-                              
+
                               <p className="text-sm text-gray-600 truncate mt-1">
                                 {conversation.job_title || conversation.title}
                               </p>
-                              
+
                               {conversation.last_message && (
                                 <p className="text-xs text-gray-500 truncate mt-1">
                                   {conversation.last_message.sender_name}: {conversation.last_message.content}
@@ -488,6 +487,22 @@ const MessagesPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-teal-600 hover:bg-teal-700"
+                        onClick={() => {
+                          toast({
+                            title: "Redirecting",
+                            description: "Opening interview scheduler...",
+                          });
+                          // Navigate to the interview scheduler
+                          window.location.href = '/recruiter/interviews/schedule';
+                        }}
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Schedule Interview
+                      </Button>
                       <Button variant="outline" size="sm">
                         <Phone className="h-4 w-4" />
                       </Button>
@@ -510,18 +525,16 @@ const MessagesPage: React.FC = () => {
                       {messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${
-                            message.sender_id === 'current-user' || message.sender_name === 'You'
+                          className={`flex ${message.sender_id === 'current-user' || message.sender_name === 'You'
                               ? 'justify-end'
                               : 'justify-start'
-                          }`}
+                            }`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.sender_id === 'current-user' || message.sender_name === 'You'
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender_id === 'current-user' || message.sender_name === 'You'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-900'
-                            }`}
+                              }`}
                           >
                             <p className="text-sm">{message.content}</p>
                             <div className="flex items-center justify-between mt-1">
@@ -569,7 +582,7 @@ const MessagesPage: React.FC = () => {
                         className="resize-none"
                       />
                     </div>
-                    <Button 
+                    <Button
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || isSending}
                       className="bg-blue-600 hover:bg-blue-700"

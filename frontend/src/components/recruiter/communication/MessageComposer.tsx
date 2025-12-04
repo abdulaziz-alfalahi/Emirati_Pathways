@@ -78,7 +78,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5005';
 
   useEffect(() => {
     loadTemplates();

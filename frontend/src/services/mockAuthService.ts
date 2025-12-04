@@ -201,6 +201,8 @@ export class MockAuthService {
     if (saved) {
       try {
         this.currentUser = JSON.parse(saved);
+        // Refresh the token on load to ensure we have a valid backend token
+        // this.fetchDevToken(this.currentUser!).catch(console.warn);
       } catch (error) {
         console.warn('Failed to load saved mock user:', error);
         this.setUser('candidate'); // Default to candidate
@@ -215,14 +217,48 @@ export class MockAuthService {
     if (!user) {
       throw new Error(`Mock user type "${userType}" not found`);
     }
-    
+
     this.currentUser = user;
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
+    // Set a temporary mock token first
     localStorage.setItem('access_token', `mock_token_${user.id}`);
     localStorage.setItem('user', JSON.stringify(user));
-    
+
     console.log(`🎭 Mock Auth: Switched to ${user.full_name} (${user.user_type})`);
+
+    // Attempt to get a real token from the backend
+    // this.fetchDevToken(user).catch(err => {
+    //   console.warn('Failed to fetch real dev token, using mock token:', err);
+    // });
+
     return user;
+  }
+
+  private static async fetchDevToken(user: MockUser) {
+    try {
+      // Use fetch to avoid circular dependencies or interceptor issues
+      const response = await fetch('http://localhost:5005/api/auth/dev-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          role: user.role,
+          email: user.email
+        }),
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success && json.data.access_token) {
+          localStorage.setItem('access_token', json.data.access_token);
+          console.log('✅ Mock Auth: Obtained real backend token');
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching dev token:', e);
+    }
   }
 
   static getCurrentUser(): MockUser | null {
@@ -245,13 +281,13 @@ export class MockAuthService {
     console.log('🎭 Mock Auth: Logged out');
   }
 
-  static getAllUserTypes(): Array<{key: string, user: MockUser}> {
-    return Object.entries(MOCK_USERS).map(([key, user]) => ({key, user}));
+  static getAllUserTypes(): Array<{ key: string, user: MockUser }> {
+    return Object.entries(MOCK_USERS).map(([key, user]) => ({ key, user }));
   }
 
   static getDashboardRoute(userType?: string): string {
     const type = userType || this.currentUser?.user_type;
-    
+
     switch (type) {
       case 'candidate':
       case 'job_seeker':

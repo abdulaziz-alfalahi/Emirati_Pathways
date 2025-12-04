@@ -16,11 +16,14 @@ import psycopg2
 import psycopg2.extras
 
 from .jd_builder_engine import get_jd_builder_engine
-from .ai_candidate_matching import get_ai_matching_engine
+from .ai_candidate_matching_final import get_ai_matching_engine_final as get_ai_matching_engine
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
 
 # Create Blueprint
 jd_bp = Blueprint('jd_routes', __name__, url_prefix='/api/recruiter/jd')
@@ -67,13 +70,23 @@ def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
         # Convert database record to JD engine format
         jd_dict = dict(jd)
         
-        # Parse JSON fields
-        requirements = json.loads(jd_dict['requirements']) if jd_dict.get('requirements') else []
-        responsibilities = json.loads(jd_dict['responsibilities']) if jd_dict.get('responsibilities') else []
-        benefits = json.loads(jd_dict['benefits']) if jd_dict.get('benefits') else []
-        compensation = json.loads(jd_dict['compensation']) if jd_dict.get('compensation') else {}
-        application_process = json.loads(jd_dict['application_process']) if jd_dict.get('application_process') else {}
-        metadata = json.loads(jd_dict['metadata']) if jd_dict.get('metadata') else {}
+        # Parse JSON fields (handle both string and object formats)
+        def parse_json_field(field_value, default_value):
+            if not field_value:
+                return default_value
+            if isinstance(field_value, str):
+                try:
+                    return json.loads(field_value)
+                except json.JSONDecodeError:
+                    return default_value
+            return field_value
+
+        requirements = parse_json_field(jd_dict.get('requirements'), [])
+        responsibilities = parse_json_field(jd_dict.get('responsibilities'), [])
+        benefits = parse_json_field(jd_dict.get('benefits'), [])
+        compensation = parse_json_field(jd_dict.get('compensation'), {})
+        application_process = parse_json_field(jd_dict.get('application_process'), {})
+        metadata = parse_json_field(jd_dict.get('metadata'), {})
         
         # Build basic_info from database columns
         basic_info = {
@@ -207,8 +220,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                                        ELSE published_at END
                 WHERE jd_id = %s
             """, (
-                basic_info.get('title', ''),
-                basic_info.get('title_arabic'),
+                basic_info.get('title') or 'Untitled',
+                basic_info.get('title_arabic', ''),
                 basic_info.get('department', ''),
                 basic_info.get('job_type', 'full_time'),
                 basic_info.get('job_level', 'mid'),
@@ -247,8 +260,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 jd_id,
                 recruiter_id,
                 company_id,
-                basic_info.get('title', ''),
-                basic_info.get('title_arabic'),
+                basic_info.get('title') or 'Untitled',
+                basic_info.get('title_arabic', ''),
                 basic_info.get('department', ''),
                 basic_info.get('job_type', 'full_time'),
                 basic_info.get('job_level', 'mid'),
@@ -283,6 +296,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
 
 @jd_bp.route('/health', methods=['GET'])
 def jd_health():
+    raise Exception("!!! EXCEPTION: HEALTH CHECK HIT !!!")
     """JD Builder health check"""
     try:
         return jsonify({
@@ -340,7 +354,138 @@ def create_jd():
         return jsonify({'error': str(e)}), 500
 
 
-# Removed old placeholder get_jd - see line 669 for actual implementation
+@jd_bp.route('/list', methods=['GET'])
+def list_jds():
+    """
+    List all job descriptions with optional filters
+    
+    Query parameters:
+    - recruiter_id: Filter by recruiter
+    - company_id: Filter by company
+    - status: Filter by status (draft, published, closed)
+    - limit: Number of results (default 50)
+    - offset: Pagination offset (default 0)
+    """
+    try:
+        # Check for mock token (development mode)
+        auth_header = request.headers.get('Authorization', '')
+        is_mock_token = auth_header and 'mock_token' in auth_header
+        
+        current_user_id = None
+        if is_mock_token:
+            mock_token = auth_header.replace('Bearer ', '').strip()
+            user_id = mock_token.replace('mock_token_', '')
+            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
+            current_user_id = user_id
+        else:
+            # Fallback to real JWT if configured and valid
+            try:
+                from flask_jwt_extended import verify_jwt_in_request
+                verify_jwt_in_request()
+                current_user_id = get_jwt_identity()
+            except Exception as e:
+                logger.warning(f"JWT verification failed: {e}")
+                pass
+
+        recruiter_id = request.args.get('recruiter_id')
+        company_id = request.args.get('company_id')
+        status = request.args.get('status')
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+        
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # If authenticated but no filters provided, try to filter by current user's company
+        if current_user_id and not recruiter_id and not company_id:
+             try:
+                # Get company ID for the user
+                cur.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+                row = cur.fetchone()
+                
+                if not row or not row.get('company_id'):
+                    # Try to find company via job_postings if no profile (fallback)
+                    cur.execute("SELECT company_id FROM job_postings WHERE recruiter_id = %s LIMIT 1", (current_user_id,))
+                    row = cur.fetchone()
+                    
+                if row and row.get('company_id'):
+                     company_id = row['company_id']
+                     logger.info(f"Auto-detected company_id {company_id} for user {current_user_id}")
+                     
+                with open("debug_list_jds.log", "a") as f:
+                    f.write(f"User: {current_user_id}, Detected Company: {company_id}\n")
+             except Exception as e:
+                 logger.error(f"Error looking up company for user {current_user_id}: {e}")
+                 with open("debug_list_jds.log", "a") as f:
+                    f.write(f"Error looking up company: {e}\n")
+
+        # Build query with filters
+        query = "SELECT * FROM job_postings WHERE 1=1"
+        params = []
+        
+        if recruiter_id:
+            query += " AND recruiter_id = %s"
+            params.append(recruiter_id)
+        
+        if company_id:
+            query += " AND company_id = %s"
+            params.append(company_id)
+        
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+        
+        query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cur.execute(query, params)
+        jds = cur.fetchall()
+        
+        # Convert to list of dicts
+        jd_list = []
+        for jd in jds:
+            jd_dict = dict(jd)
+            # Ensure JSON fields are parsed
+            for field in ['requirements', 'responsibilities', 'benefits', 'compensation', 'application_process', 'metadata']:
+                 if isinstance(jd_dict.get(field), str):
+                      try:
+                          jd_dict[field] = json.loads(jd_dict[field])
+                      except:
+                          pass # Keep as string or whatever it is
+            
+            jd_list.append(jd_dict)
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'job_descriptions': jd_list,
+            'count': len(jd_list),
+            'limit': limit,
+            'offset': offset
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error listing JDs: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@jd_bp.route('/<jd_id>', methods=['GET'])
+def get_jd(jd_id):
+    """Get full job description details"""
+    try:
+        jd_data = _get_jd_from_db(jd_id)
+        
+        if not jd_data:
+            return jsonify({'error': 'Job description not found'}), 404
+            
+        return jsonify({
+            'success': True,
+            'jd': jd_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving JD {jd_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 @jd_bp.route('/<jd_id>/basic-info', methods=['PUT'])
@@ -662,14 +807,14 @@ def match_candidates(jd_id):
                 is_uae_national,
                 education_level,
                 experience_years,
-                current_position,
-                current_company,
-                employment_status,
+                job_title as current_position,
+                company as current_company,
+                'open_to_opportunities' as employment_status,
                 skills,
                 preferred_salary_min,
                 preferred_salary_max,
-                cv_url,
-                linkedin_url
+                NULL as cv_url,
+                NULL as linkedin_url
             FROM users
             WHERE role = 'candidate'
                 AND is_active = true
@@ -778,8 +923,26 @@ def save_jd(jd_id):
         if not jd_data:
             return jsonify({'error': 'jd_data is required'}), 400
         
+        # Check for mock token (development mode)
+        auth_header = request.headers.get('Authorization', '')
+        is_mock_token = auth_header and 'mock_token' in auth_header
+        
+        current_user_id = None
+        if is_mock_token:
+            mock_token = auth_header.replace('Bearer ', '').strip()
+            user_id = mock_token.replace('mock_token_', '')
+            current_user_id = user_id
+        else:
+            # Fallback to real JWT if configured and valid
+            try:
+                from flask_jwt_extended import verify_jwt_in_request
+                verify_jwt_in_request()
+                current_user_id = get_jwt_identity()
+            except Exception as e:
+                logger.warning(f"JWT verification failed: {e}")
+
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Check if job_postings table exists, create if not (don't drop existing table!)
         cur.execute("""
@@ -820,8 +983,33 @@ def save_jd(jd_id):
         metadata = jd_data.get('metadata', {})
         
         # Get recruiter_id and company_id from metadata or request data
-        recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id') or 'unknown'
-        company_id = metadata.get('company_id') or data.get('company_id') or 'unknown'
+        recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id')
+        company_id = metadata.get('company_id') or data.get('company_id')
+        
+        # If missing, try to lookup from user profile
+        if (not recruiter_id or not company_id) and current_user_id:
+             try:
+                # Get company ID for the user
+                cur.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+                row = cur.fetchone()
+                
+                if not row or not row.get('company_id'):
+                    # Try to find company via job_postings if no profile (fallback)
+                    cur.execute("SELECT company_id FROM job_postings WHERE recruiter_id = %s LIMIT 1", (current_user_id,))
+                    row = cur.fetchone()
+                    
+                if row and row.get('company_id'):
+                     if not company_id:
+                         company_id = row['company_id']
+                     if not recruiter_id:
+                         recruiter_id = current_user_id
+                     logger.info(f"Auto-detected company_id {company_id} for user {current_user_id}")
+             except Exception as e:
+                 logger.error(f"Error looking up company for user {current_user_id}: {e}")
+
+        # Fallback to unknown if still missing
+        recruiter_id = recruiter_id or 'unknown'
+        company_id = company_id or 'unknown'
         
         # Check if JD already exists
         cur.execute("SELECT id, jd_id FROM job_postings WHERE jd_id = %s", (jd_id,))
@@ -962,94 +1150,49 @@ def get_jd(jd_id):
     Retrieve a job description by ID
     """
     try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        # Use the helper function to get correctly formatted data
+        jd_data = _get_jd_from_db(jd_id)
         
-        cur.execute("""
-            SELECT * FROM job_postings WHERE jd_id = %s
-        """, (jd_id,))
-        
-        jd = cur.fetchone()
-        cur.close()
-        conn.close()
-        
-        if not jd:
+        if not jd_data:
             return jsonify({'error': 'Job description not found'}), 404
         
-        # Convert to dict and parse JSON fields
-        jd_dict = dict(jd)
-        jd_dict['requirements'] = json.loads(jd_dict['requirements']) if jd_dict.get('requirements') else []
-        jd_dict['responsibilities'] = json.loads(jd_dict['responsibilities']) if jd_dict.get('responsibilities') else []
-        jd_dict['benefits'] = json.loads(jd_dict['benefits']) if jd_dict.get('benefits') else []
-        jd_dict['compensation'] = json.loads(jd_dict['compensation']) if jd_dict.get('compensation') else {}
-        jd_dict['application_process'] = json.loads(jd_dict['application_process']) if jd_dict.get('application_process') else {}
-        jd_dict['metadata'] = json.loads(jd_dict['metadata']) if jd_dict.get('metadata') else {}
-        
-        return jsonify(jd_dict), 200
+        return jsonify(jd_data), 200
         
     except Exception as e:
         logger.error(f"Error retrieving JD: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@jd_bp.route('/list', methods=['GET'])
-def list_jds():
+
+
+@jd_bp.route('/<jd_id>', methods=['DELETE'])
+def delete_jd(jd_id):
     """
-    List all job descriptions with optional filters
-    
-    Query parameters:
-    - recruiter_id: Filter by recruiter
-    - company_id: Filter by company
-    - status: Filter by status (draft, published, closed)
-    - limit: Number of results (default 50)
-    - offset: Pagination offset (default 0)
+    Delete a job description
     """
     try:
-        recruiter_id = request.args.get('recruiter_id')
-        company_id = request.args.get('company_id')
-        status = request.args.get('status')
-        limit = int(request.args.get('limit', 50))
-        offset = int(request.args.get('offset', 0))
-        
         conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur = conn.cursor()
         
-        # Build query with filters
-        query = "SELECT * FROM job_postings WHERE 1=1"
-        params = []
-        
-        if recruiter_id:
-            query += " AND recruiter_id = %s"
-            params.append(recruiter_id)
-        
-        if company_id:
-            query += " AND company_id = %s"
-            params.append(company_id)
-        
-        if status:
-            query += " AND status = %s"
-            params.append(status)
-        
-        query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-        
-        cur.execute(query, params)
-        jds = cur.fetchall()
-        
-        # Convert to list of dicts
-        jd_list = [dict(jd) for jd in jds]
+        # Check if JD exists
+        cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Job description not found'}), 404
+            
+        # Delete JD
+        cur.execute("DELETE FROM job_postings WHERE jd_id = %s", (jd_id,))
+        conn.commit()
         
         cur.close()
         conn.close()
         
-        return jsonify({
-            'job_descriptions': jd_list,
-            'count': len(jd_list),
-            'limit': limit,
-            'offset': offset
-        }), 200
+        logger.info(f"Deleted JD: {jd_id}")
+        return jsonify({'success': True, 'message': 'Job description deleted successfully'}), 200
         
     except Exception as e:
-        logger.error(f"Error listing JDs: {e}")
+        logger.error(f"Error deleting JD {jd_id}: {e}")
+        if conn:
+            conn.rollback()
         return jsonify({'error': str(e)}), 500
-

@@ -17,7 +17,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '../../../utils/api';
 
 interface CreateInterviewDialogProps {
   open: boolean;
@@ -53,7 +53,7 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
     scheduled_time: '',
     duration_minutes: 60,
     meeting_link: '',
-    meeting_platform: 'zoom',
+    meeting_platform: 'emirati_video',
     location: '',
     notes: '',
   });
@@ -62,13 +62,22 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5003';
+
 
   useEffect(() => {
     if (open) {
       setError(null); // Clear any previous errors
       if (!shortlistId) {
         fetchShortlistCandidates();
+      }
+
+      // Auto-generate link for internal video if not set
+      if (formData.meeting_platform === 'emirati_video' && !formData.meeting_link) {
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setFormData(prev => ({
+          ...prev,
+          meeting_link: `${window.location.origin}/recruiter/video-interview/${sessionId}`
+        }));
       }
     }
   }, [open, jdId, shortlistId]);
@@ -81,10 +90,10 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
 
   const fetchShortlistCandidates = async () => {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/recruiter/shortlist/${jdId}`
+      const response = await restClient.get(
+        `/api/recruiter/shortlist/${jdId}`
       );
-      
+
       if (response.data.success) {
         setCandidates(response.data.shortlist);
       }
@@ -125,12 +134,12 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
       setError(null);
 
       // Format time to include seconds (HH:MM:SS)
-      const formattedTime = formData.scheduled_time.length === 5 
-        ? `${formData.scheduled_time}:00` 
+      const formattedTime = formData.scheduled_time.length === 5
+        ? `${formData.scheduled_time}:00`
         : formData.scheduled_time;
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/recruiter/interviews/create`,
+      const response = await restClient.post(
+        `/api/recruiter/interviews/create`,
         {
           ...formData,
           scheduled_time: formattedTime,
@@ -143,7 +152,7 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
 
       if (response.data.success) {
         console.log('Interview created successfully!');
-        
+
         // Reset form first
         setFormData({
           shortlist_id: '',
@@ -154,21 +163,36 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
           scheduled_time: '',
           duration_minutes: 60,
           meeting_link: '',
-          meeting_platform: 'zoom',
+          meeting_platform: 'emirati_video',
           location: '',
           notes: '',
         });
-        
+
         // Close dialog immediately
         onClose();
-        
+
         // Call success callback after dialog closes to avoid state conflicts
         setTimeout(() => {
           onSuccess();
         }, 150);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create interview');
+      console.error('Create interview error:', err);
+      if (err.response) {
+        console.error('Error response:', err.response.data);
+        console.error('Error status:', err.response.status);
+        setError(
+          err.response.data?.error ||
+          err.response.data?.message ||
+          `Server Error: ${err.response.status}`
+        );
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+        setError('No response from server. Please check your connection.');
+      } else {
+        console.error('Error setting up request:', err.message);
+        setError(err.message || 'Failed to create interview');
+      }
     } finally {
       setLoading(false);
     }
@@ -297,38 +321,19 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
             </FormControl>
           </Grid>
 
-          {/* Meeting Platform */}
+          {/* Meeting Platform - Hidden/Fixed */}
           {(formData.interview_type === 'video') && (
-            <>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Platform</InputLabel>
-                  <Select
-                    value={formData.meeting_platform}
-                    onChange={(e) => handleChange('meeting_platform', e.target.value)}
-                    label="Platform"
-                  >
-                    <MenuItem value="zoom">Zoom</MenuItem>
-                    <MenuItem value="teams">Microsoft Teams</MenuItem>
-                    <MenuItem value="meet">Google Meet</MenuItem>
-                    <MenuItem value="webex">Webex</MenuItem>
-                    <MenuItem value="other">Other</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  required
-                  label="Meeting Link *"
-                  value={formData.meeting_link}
-                  onChange={(e) => handleChange('meeting_link', e.target.value)}
-                  placeholder="https://zoom.us/j/123456789"
-                  helperText="Required for video interviews"
-                />
-              </Grid>
-            </>
+            <Grid item xs={12}>
+              <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1, border: '1px solid', borderColor: 'primary.200' }}>
+                <Typography variant="subtitle2" color="primary.main" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  Emirati Pathways Video (Built-in)
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  A secure interview link will be automatically generated and sent to the candidate.
+                  The session will be recorded and analyzed by AI.
+                </Typography>
+              </Box>
+            </Grid>
           )}
 
           {/* Location for in-person */}
@@ -378,4 +383,3 @@ export const CreateInterviewDialog: React.FC<CreateInterviewDialogProps> = ({
 };
 
 export default CreateInterviewDialog;
-

@@ -5,23 +5,32 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  
+
   // Define global variables for browser compatibility
   define: {
     'process.env': 'import.meta.env',
     global: 'globalThis',
   },
-  
+
   // Server configuration
   server: {
     port: 8080,
     host: true,
     cors: true,
     allowedHosts: [
-      '2415733d5eb0.ngrok.app'
+      '2415733d5eb0.ngrok.app',
+      'archdiocesan-complimentarily-marianna.ngrok-free.dev'
     ],
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:5006',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path
+      }
+    },
   },
-  
+
   // Build configuration
   build: {
     sourcemap: true,
@@ -34,10 +43,10 @@ export default defineConfig({
       },
     },
   },
-  
+
   // Environment variables configuration
   envPrefix: ['VITE_', 'REACT_APP_'],
-  
+
   test: {
     globals: true,
     environment: 'jsdom',
@@ -61,7 +70,7 @@ export default defineConfig({
       ignoreSourceErrors: true
     }
   },
-  
+
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -70,7 +79,7 @@ export default defineConfig({
       '@/utils': path.resolve(__dirname, './src/lib/utils'),
     },
   },
-  
+
   // Optimizations
   optimizeDeps: {
     include: [

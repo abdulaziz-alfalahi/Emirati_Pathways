@@ -15,6 +15,21 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 import os
 
+# Load environment variables
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logging.warning("Google Generative AI not available. Install with: pip install google-generativeai")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -70,6 +85,20 @@ class JDBuilderEngine:
         """Initialize JD Builder Engine"""
         self.logger = logging.getLogger(__name__)
         self.logger.info("JDBuilderEngine initialized")
+        
+        # Initialize Gemini
+        self.gemini_model = None
+        if GEMINI_AVAILABLE:
+            try:
+                api_key = os.getenv('GEMINI_API_KEY')
+                if api_key:
+                    genai.configure(api_key=api_key)
+                    self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                    self.logger.info("Gemini AI initialized for JD generation")
+                else:
+                    self.logger.warning("GEMINI_API_KEY not found in environment")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Gemini AI: {e}")
     
     def create_jd(
         self,
@@ -256,29 +285,70 @@ class JDBuilderEngine:
         jd_data: Dict[str, Any],
         industry: Optional[str] = None
     ) -> str:
-        """Generate AI-powered job description"""
+        """Generate AI-powered job description using Gemini"""
         try:
-            # This is a placeholder for AI generation
-            # In production, this would call an LLM API
+            import google.generativeai as genai
+            
+            api_key = os.getenv('GEMINI_API_KEY')
+            if not api_key:
+                self.logger.warning("GEMINI_API_KEY not found, using placeholder")
+                return self._generate_placeholder_description(jd_data)
+            
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-2.0-flash-exp')
             
             basic_info = jd_data.get('basic_info', {})
             title = basic_info.get('title', 'Position')
             department = basic_info.get('department', 'Department')
+            level = basic_info.get('job_level', 'mid')
+            location = f"{basic_info.get('city', '')}, {basic_info.get('emirate', 'UAE')}"
             
-            generated_description = f"""We are seeking a talented {title} to join our {department} team. 
+            prompt = f"""
+            Write a professional job description for the following position in the UAE:
+            
+            Title: {title}
+            Department: {department}
+            Level: {level}
+            Location: {location}
+            Industry: {industry or 'General'}
+            
+            Requirements provided so far:
+            {json.dumps(jd_data.get('requirements', []), indent=2)}
+            
+            Responsibilities provided so far:
+            {json.dumps(jd_data.get('responsibilities', []), indent=2)}
+            
+            Please write a compelling 3-4 paragraph introduction and role overview.
+            Focus on the opportunity, company culture (professional, innovative), and impact of the role.
+            Keep it under 400 words. Use professional business English suitable for the UAE market.
+            """
+            
+            response = model.generate_content(prompt)
+            
+            if response and response.text:
+                self.logger.info(f"Generated AI description for JD {jd_data['metadata']['jd_id']}")
+                return response.text
+            else:
+                return self._generate_placeholder_description(jd_data)
+            
+        except Exception as e:
+            self.logger.error(f"Error generating AI description: {str(e)}")
+            return self._generate_placeholder_description(jd_data)
+
+    def _generate_placeholder_description(self, jd_data: Dict[str, Any]) -> str:
+        """Fallback placeholder description"""
+        basic_info = jd_data.get('basic_info', {})
+        title = basic_info.get('title', 'Position')
+        department = basic_info.get('department', 'Department')
+        location = f"{basic_info.get('city', '')}, {basic_info.get('emirate', 'UAE')}"
+        
+        return f"""We are seeking a talented {title} to join our {department} team. 
 
 This role offers an exciting opportunity to contribute to our organization's growth and success in the UAE market. The ideal candidate will bring expertise, dedication, and a passion for excellence.
 
 Key aspects of this role include working in a dynamic environment, collaborating with talented professionals, and making a meaningful impact on our operations.
 
-This position is based in the UAE and offers competitive compensation, professional development opportunities, and a supportive work culture."""
-            
-            self.logger.info(f"Generated AI description for JD {jd_data['metadata']['jd_id']}")
-            return generated_description
-            
-        except Exception as e:
-            self.logger.error(f"Error generating AI description: {str(e)}")
-            raise
+This position is based in {location} and offers competitive compensation, professional development opportunities, and a supportive work culture."""
     
     def _calculate_completion_score(self, jd_data: Dict[str, Any]) -> int:
         """Calculate JD completion score (0-100)"""
@@ -415,4 +485,3 @@ def get_jd_builder_engine() -> JDBuilderEngine:
     if _jd_builder_engine_instance is None:
         _jd_builder_engine_instance = JDBuilderEngine()
     return _jd_builder_engine_instance
-

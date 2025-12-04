@@ -9,10 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  User, 
-  Briefcase, 
-  Users, 
+import {
+  User,
+  Briefcase,
+  Users,
   Video,
   Search,
   Filter,
@@ -41,19 +41,19 @@ import {
 const RoleSwitcherButton = () => {
   const handleRoleSwitch = () => {
     console.log('🔄 Switching to role selector from Recruiter Dashboard');
-    
+
     // Clear authentication state to allow role switching
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
     localStorage.removeItem('auth_token');
-    
+
     // Force navigation to HTML role selector
     window.location.href = '/role_selector.html';
   };
 
   return (
-    <button 
+    <button
       onClick={handleRoleSwitch}
       style={{
         position: 'fixed',
@@ -133,21 +133,21 @@ const RecruiterDashboard = () => {
   // Get user display name from various possible sources
   const getUserDisplayName = () => {
     if (!user) return 'Recruiter';
-    
+
     // Try user_metadata first (common in Supabase)
     if (user.user_metadata?.full_name) return user.user_metadata.full_name;
     if (user.user_metadata?.name) return user.user_metadata.name;
-    
+
     // Try direct properties
     if (user.full_name) return user.full_name;
     if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    
+
     // Fallback to email-based name
     if (user.email) {
       const emailName = user.email.split('@')[0];
       return emailName.charAt(0).toUpperCase() + emailName.slice(1);
     }
-    
+
     return 'Recruiter';
   };
 
@@ -173,12 +173,12 @@ const RecruiterDashboard = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5003/api/recruiter/dashboard', {
+      const response = await fetch('http://127.0.0.1:5005/api/recruiter/dashboard', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      } );
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -261,7 +261,7 @@ const RecruiterDashboard = () => {
     <Layout>
       {/* Role Switcher Button */}
       <RoleSwitcherButton />
-      
+
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="bg-card border-b">
@@ -381,13 +381,13 @@ const RecruiterDashboard = () => {
                         <span className="text-sm font-bold">{dashboardData.performance.fillRate}%</span>
                       </div>
                       <Progress value={dashboardData.performance.fillRate} className="w-full" />
-                      
+
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">Candidate Quality Score</span>
                         <span className="text-sm font-bold">{dashboardData.performance.candidateQuality}/10</span>
                       </div>
                       <Progress value={dashboardData.performance.candidateQuality * 10} className="w-full" />
-                      
+
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">Client Satisfaction</span>
                         <span className="text-sm font-bold">{dashboardData.performance.clientSatisfaction}/10</span>
@@ -532,7 +532,7 @@ const RecruiterDashboard = () => {
                         <p className="text-sm text-gray-600">Currently recruiting</p>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Filled Positions</CardTitle>
@@ -542,7 +542,7 @@ const RecruiterDashboard = () => {
                         <p className="text-sm text-gray-600">Successfully filled</p>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Pending Approval</CardTitle>
@@ -625,7 +625,7 @@ const RecruiterDashboard = () => {
                         <p className="text-sm text-gray-600">Upcoming interviews</p>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Completed</CardTitle>
@@ -635,7 +635,7 @@ const RecruiterDashboard = () => {
                         <p className="text-sm text-gray-600">This month</p>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Pending Review</CardTitle>

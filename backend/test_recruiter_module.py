@@ -18,30 +18,30 @@ def test_imports():
     
     try:
         from recruiter import recruiter_engine
-        print("✓ recruiter_engine imported successfully")
+        print("[PASS] recruiter_engine imported successfully")
     except Exception as e:
-        print(f"✗ Failed to import recruiter_engine: {e}")
+        print(f"[FAIL] Failed to import recruiter_engine: {e}")
         return False
     
     try:
         from recruiter import jd_builder_engine
-        print("✓ jd_builder_engine imported successfully")
+        print("[PASS] jd_builder_engine imported successfully")
     except Exception as e:
-        print(f"✗ Failed to import jd_builder_engine: {e}")
+        print(f"[FAIL] Failed to import jd_builder_engine: {e}")
         return False
     
     try:
         from recruiter import ai_candidate_matching
-        print("✓ ai_candidate_matching imported successfully")
+        print("[PASS] ai_candidate_matching imported successfully")
     except Exception as e:
-        print(f"✗ Failed to import ai_candidate_matching: {e}")
+        print(f"[FAIL] Failed to import ai_candidate_matching: {e}")
         return False
     
     try:
-        from recruiter import jd_routes
-        print("✓ jd_routes imported successfully")
+        from recruiter.jd_routes import jd_bp as jd_routes
+        print("[PASS] jd_routes imported successfully")
     except Exception as e:
-        print(f"⚠ jd_routes import skipped (requires psycopg2): {e}")
+        print(f"[WARN] jd_routes import skipped (requires psycopg2): {e}")
         # Don't fail the test since psycopg2 is not installed in sandbox
         pass
     
@@ -57,19 +57,19 @@ def test_engine_initialization():
     try:
         from recruiter.jd_builder_engine import get_jd_builder_engine
         engine = get_jd_builder_engine()
-        print("✓ JD Builder Engine initialized successfully")
+        print("[PASS] JD Builder Engine initialized successfully")
         print(f"  Engine type: {type(engine).__name__}")
     except Exception as e:
-        print(f"✗ Failed to initialize JD Builder Engine: {e}")
+        print(f"[FAIL] Failed to initialize JD Builder Engine: {e}")
         return False
     
     try:
         from recruiter.ai_candidate_matching import get_ai_matching_engine
         matching_engine = get_ai_matching_engine()
-        print("✓ AI Matching Engine initialized successfully")
+        print("[PASS] AI Matching Engine initialized successfully")
         print(f"  Engine type: {type(matching_engine).__name__}")
     except Exception as e:
-        print(f"✗ Failed to initialize AI Matching Engine: {e}")
+        print(f"[FAIL] Failed to initialize AI Matching Engine: {e}")
         return False
     
     return True
@@ -92,7 +92,7 @@ def test_jd_creation():
             template="standard"
         )
         
-        print("✓ JD created successfully")
+        print("[PASS] JD created successfully")
         print(f"  JD ID: {jd_data['metadata']['jd_id']}")
         print(f"  Status: {jd_data['metadata']['status']}")
         print(f"  Completion Score: {jd_data['metadata']['completion_score']}%")
@@ -107,7 +107,7 @@ def test_jd_creation():
             'city': 'Dubai'
         })
         
-        print("✓ Basic info updated successfully")
+        print("[PASS] Basic info updated successfully")
         print(f"  New Completion Score: {jd_data['metadata']['completion_score']}%")
         
         # Test adding requirements
@@ -117,16 +117,16 @@ def test_jd_creation():
             'is_required': True
         })
         
-        print("✓ Requirement added successfully")
+        print("[PASS] Requirement added successfully")
         print(f"  Total Requirements: {len(jd_data['requirements'])}")
         
         # Test completion score calculation
         score = engine._calculate_completion_score(jd_data)
-        print(f"✓ Completion score calculated: {score}%")
+        print(f"[PASS] Completion score calculated: {score}%")
         
         # Test validation
         is_valid, errors = engine.validate_jd(jd_data)
-        print(f"✓ Validation completed")
+        print(f"[PASS] Validation completed")
         print(f"  Is Valid: {is_valid}")
         if errors:
             print(f"  Errors: {errors}")
@@ -134,7 +134,7 @@ def test_jd_creation():
         return True
         
     except Exception as e:
-        print(f"✗ JD creation test failed: {e}")
+        print(f"[FAIL] JD creation test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -147,9 +147,9 @@ def test_api_routes():
     print("=" * 60)
     
     try:
-        from recruiter.jd_routes import jd_routes
+        from recruiter.jd_routes import jd_bp as jd_routes
         
-        print("✓ JD Routes blueprint imported successfully")
+        print("[PASS] JD Routes blueprint imported successfully")
         print(f"  Blueprint name: {jd_routes.name}")
         print(f"  URL prefix: {jd_routes.url_prefix}")
         
@@ -165,15 +165,15 @@ def test_api_routes():
         
     except ModuleNotFoundError as e:
         if 'psycopg2' in str(e):
-            print("⚠ API routes test skipped (requires psycopg2 - will work in production)")
+            print("[WARN] API routes test skipped (requires psycopg2 - will work in production)")
             return True  # Don't fail since it's expected in sandbox
         else:
-            print(f"✗ API routes test failed: {e}")
+            print(f"[FAIL] API routes test failed: {e}")
             import traceback
             traceback.print_exc()
             return False
     except Exception as e:
-        print(f"✗ API routes test failed: {e}")
+        print(f"[FAIL] API routes test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -191,12 +191,12 @@ def test_data_structures():
             CompanyProfile, RecruiterProfile, JobPosting, Candidate
         )
         
-        print("✓ All enums imported successfully")
+        print("[PASS] All enums imported successfully")
         print(f"  JobType values: {[t.value for t in JobType]}")
         print(f"  JobLevel values: {[l.value for l in JobLevel]}")
         print(f"  EmploymentStatus values: {[s.value for s in EmploymentStatus]}")
         
-        print("✓ All dataclasses imported successfully")
+        print("[PASS] All dataclasses imported successfully")
         
         # Test creating instances
         company = CompanyProfile(
@@ -204,12 +204,12 @@ def test_data_structures():
             company_name="Test Company",
             industry="Technology"
         )
-        print(f"✓ CompanyProfile instance created: {company.company_name}")
+        print(f"[PASS] CompanyProfile instance created: {company.company_name}")
         
         return True
         
     except Exception as e:
-        print(f"✗ Data structures test failed: {e}")
+        print(f"[FAIL] Data structures test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -239,19 +239,18 @@ def main():
     total = len(results)
     
     for test_name, result in results.items():
-        status = "✓ PASSED" if result else "✗ FAILED"
+        status = "[PASS]" if result else "[FAIL]"
         print(f"{test_name.upper()}: {status}")
     
     print(f"\nTotal: {passed}/{total} tests passed")
     
     if passed == total:
-        print("\n✓ ALL TESTS PASSED - Module is ready for use!")
+        print("\n[PASS] ALL TESTS PASSED - Module is ready for use!")
         return 0
     else:
-        print(f"\n✗ {total - passed} test(s) failed - Please review errors above")
+        print(f"\n[FAIL] {total - passed} test(s) failed - Please review errors above")
         return 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

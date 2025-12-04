@@ -529,3 +529,37 @@ def internal_error(error):
         'message': 'Internal server error'
     }), 500
 
+@auth_bp.route('/dev-login', methods=['POST'])
+def dev_login():
+    """
+    Development only: Generate a token for a mock user
+    """
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        role = data.get('role', 'candidate')
+        email = data.get('email')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': 'user_id required'}), 400
+
+        # Create access token with identity as user_id
+        # Add role to claims if needed by your JWT setup
+        additional_claims = {'role': role, 'email': email}
+        access_token = create_access_token(identity=str(user_id), additional_claims=additional_claims)
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'access_token': access_token,
+                'user': {
+                    'id': user_id,
+                    'role': role,
+                    'email': email
+                }
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Dev login error: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500

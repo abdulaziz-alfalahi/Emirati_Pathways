@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertCircle,
   Loader2,
   Sparkles,
   Brain,
@@ -50,10 +50,10 @@ interface ParsedCVData {
   certifications?: string[];
 }
 
-const CVUpload: React.FC<CVUploadProps> = ({ 
-  onUploadComplete, 
-  onParsingComplete, 
-  className = "" 
+const CVUpload: React.FC<CVUploadProps> = ({
+  onUploadComplete,
+  onParsingComplete,
+  className = ""
 }) => {
   const [activeTab, setActiveTab] = useState('text'); // Start with text tab for easier testing
   const [isUploading, setIsUploading] = useState(false);
@@ -67,12 +67,12 @@ const CVUpload: React.FC<CVUploadProps> = ({
   // Get API base URL
   const getApiUrl = () => {
     if (typeof window !== 'undefined') {
-      return import.meta.env.VITE_API_BASE_URL || 
-             import.meta.env.VITE_API_URL || 
-             import.meta.env.REACT_APP_API_URL || 
-             'http://localhost:5003';
+      return import.meta.env.VITE_API_BASE_URL ||
+        import.meta.env.VITE_API_URL ||
+        import.meta.env.REACT_APP_API_URL ||
+        'http://127.0.0.1:5005';
     }
-    return 'http://localhost:5003';
+    return 'http://127.0.0.1:5005';
   };
 
   const API_BASE_URL = getApiUrl();
@@ -109,7 +109,7 @@ const CVUpload: React.FC<CVUploadProps> = ({
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Parse failed:', errorText);
-        
+
         // Try to parse as JSON for better error message
         try {
           const errorJson = JSON.parse(errorText);
@@ -152,7 +152,7 @@ const CVUpload: React.FC<CVUploadProps> = ({
 
       setSuccess('✅ CV text parsed successfully! (Test mode - no authentication)');
       setParsedData(mockParsedData);
-      
+
       // Call callbacks
       if (onParsingComplete) {
         console.log('🔄 Calling onParsingComplete with data:', mockParsedData);
@@ -293,9 +293,9 @@ Certified Scrum Master`;
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-medium">CV Content</label>
-                  <Button 
+                  <Button
                     onClick={loadSampleCV}
-                    variant="outline" 
+                    variant="outline"
                     size="sm"
                   >
                     Load Sample CV
@@ -311,8 +311,8 @@ Certified Scrum Master`;
                   Characters: {cvText.length} | Lines: {cvText.split('\n').length}
                 </p>
               </div>
-              
-              <Button 
+
+              <Button
                 onClick={handleTextParsing}
                 disabled={isParsing || !cvText.trim()}
                 className="w-full"
@@ -459,7 +459,7 @@ Certified Scrum Master`;
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
+                    <Button
                       onClick={() => {
                         setActiveTab('text');
                         setParsedData(null);
@@ -470,7 +470,7 @@ Certified Scrum Master`;
                     >
                       Test Another CV
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => {
                         console.log('🎯 Triggering profile update with data:', parsedData);
                         if (onParsingComplete) {

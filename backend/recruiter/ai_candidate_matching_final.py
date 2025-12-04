@@ -14,6 +14,8 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 import json
 
+
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -26,11 +28,15 @@ except ImportError:
     logging.warning("Enhanced matching engine not available")
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+fh = logging.FileHandler('matching_debug.log')
+fh.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 
-class AICandidateMatchingEngine:
+class AICandidateMatchingEngineFinal:
     """
     AI-powered candidate matching engine for recruiters.
     Finds top 10 candidates for a job posting with employment status filtering.
@@ -39,6 +45,7 @@ class AICandidateMatchingEngine:
     def __init__(self):
         """Initialize AI candidate matching engine"""
         self.logger = logging.getLogger(__name__)
+        print("!!! DEBUG: AICandidateMatchingEngineFinal INITIALIZED !!!")
         
         # Initialize enhanced matching engine if available
         if MATCHING_ENGINE_AVAILABLE:
@@ -51,7 +58,7 @@ class AICandidateMatchingEngine:
         else:
             self.matching_engine = None
         
-        self.logger.info("AICandidateMatchingEngine initialized")
+        self.logger.info("AICandidateMatchingEngineFinal initialized")
     
     def match_candidates_for_job(
         self,
@@ -74,6 +81,11 @@ class AICandidateMatchingEngine:
             Dictionary with matched candidates and metadata
         """
         try:
+            with open('debug_direct.txt', 'a') as f:
+                f.write(f"Match called at {datetime.now()}\n")
+                f.write(f"Candidates count: {len(candidates)}\n")
+                f.write(f"JD Title: {jd_data.get('basic_info', {}).get('title')}\n")
+            
             start_time = datetime.now()
             
             # Filter candidates by employment status if specified
@@ -186,8 +198,10 @@ class AICandidateMatchingEngine:
         try:
             # If enhanced matching engine is available, use it
             if self.matching_engine:
+                self.logger.info(f"Scoring candidate {candidate.get('candidate_id')} with AI engine")
                 return self._score_with_ai(jd_data, candidate)
             else:
+                self.logger.info(f"Scoring candidate {candidate.get('candidate_id')} with rules")
                 return self._score_with_rules(jd_data, candidate)
                 
         except Exception as e:
@@ -235,20 +249,50 @@ class AICandidateMatchingEngine:
                 'experience_required': self._extract_experience_requirement(jd_data)
             }
             
-            # Use matching engine
-            match_result = self.matching_engine.match_cv_to_job(cv_data, jd_formatted)
+            # Perform matching
+            match_result = self.matching_engine.enhanced_single_match(cv_data, jd_formatted)
             
+            # Extract score - handle nested structure
+            extracted_score = 0.0
+            
+            if 'enhanced_scoring' in match_result:
+                enhanced = match_result['enhanced_scoring']
+                # Try to get overall compatibility score
+                if 'overall_compatibility' in enhanced:
+                    extracted_score = float(enhanced['overall_compatibility'])
+                elif 'overall_score' in enhanced:
+                    extracted_score = float(enhanced['overall_score'])
+            elif 'overall_score' in match_result:
+                extracted_score = float(match_result['overall_score'])
+            
+            # Calculate rule-based score as a baseline/fallback
+            rule_result = self._score_with_rules(jd_data, candidate)
+            rule_score = rule_result['overall_score']
+            
+            # Use the higher of the two scores
+            final_score = max(extracted_score, rule_score)
+            
+            # Merge details
+            breakdown = match_result.get('enhanced_scoring', {})
+            if rule_score > extracted_score:
+                # If rule score is higher, merge rule breakdown
+                breakdown.update(rule_result['breakdown'])
+            
+            with open('debug_direct.txt', 'a') as f:
+                f.write(f"Final Score for {candidate.get('candidate_id')}: {final_score} (AI: {extracted_score}, Rule: {rule_score})\n")
+                
             return {
-                'overall_score': match_result.get('overall_score', 0.0) * 100,  # Convert to percentage
-                'breakdown': match_result.get('breakdown', {}),
-                'matching_skills': match_result.get('matching_skills', []),
-                'missing_skills': match_result.get('missing_skills', []),
-                'strengths': match_result.get('strengths', []),
+                'overall_score': final_score,
+                'breakdown': breakdown,
+                'matching_skills': list(set(match_result.get('matching_skills', []) + rule_result.get('matching_skills', []))),
+                'missing_skills': [s for s in match_result.get('missing_skills', []) if s not in rule_result.get('matching_skills', [])],
+                'strengths': list(set(match_result.get('strengths', []) + rule_result.get('strengths', []))),
                 'concerns': match_result.get('concerns', [])
             }
-            
         except Exception as e:
             self.logger.error(f"Error in AI scoring: {e}")
+            with open('debug_direct.txt', 'a') as f:
+                f.write(f"EXCEPTION in _score_with_ai: {e}\n")
             # Fallback to rule-based scoring
             return self._score_with_rules(jd_data, candidate)
     
@@ -268,21 +312,40 @@ class AICandidateMatchingEngine:
             
             # Skills matching (40 points)
             jd_requirements = jd_data.get('requirements', [])
+            
+            with open('debug_direct.txt', 'a') as f:
+                f.write(f"JD Requirements: {json.dumps(jd_requirements)}\n")
+            
+            self.logger.info(f"JD Requirements count: {len(jd_requirements)}")
             required_skills = []
             for req in jd_requirements:
                 if req.get('category') == 'skills':
                     required_skills.append(req.get('description', '').lower())
             
+            with open('debug_direct.txt', 'a') as f:
+                f.write(f"Required Skills: {required_skills}\n")
+                f.write(f"Candidate Skills: {candidate.get('skills', [])}\n")
+
+            self.logger.info(f"Required skills: {required_skills}")
             candidate_skills = [s.lower() for s in candidate.get('skills', [])]
+            self.logger.info(f"Candidate skills: {candidate_skills}")
             
             if required_skills:
                 matched = 0
-                for skill in required_skills:
-                    if any(skill in cs for cs in candidate_skills):
+                for skill_req in required_skills:
+                    # Check if any candidate skill matches this requirement
+                    # Either exact match, or candidate skill is in requirement string, or requirement string is in candidate skill
+                    matched_this_req = False
+                    for cand_skill in candidate_skills:
+                        if cand_skill in skill_req or skill_req in cand_skill:
+                            matched_this_req = True
+                            matching_skills.append(skill_req) # Add the requirement as matched
+                            break
+                    
+                    if matched_this_req:
                         matched += 1
-                        matching_skills.append(skill)
                     else:
-                        missing_skills.append(skill)
+                        missing_skills.append(skill_req)
                 
                 skills_score = (matched / len(required_skills)) * 40
                 score += skills_score
@@ -364,6 +427,8 @@ class AICandidateMatchingEngine:
             
         except Exception as e:
             self.logger.error(f"Error in rule-based scoring: {e}")
+            with open('debug_direct.txt', 'a') as f:
+                f.write(f"EXCEPTION in _score_with_rules: {e}\n")
             return {
                 'overall_score': 0.0,
                 'breakdown': {},
@@ -407,10 +472,9 @@ class AICandidateMatchingEngine:
 _ai_matching_engine_instance = None
 
 
-def get_ai_matching_engine() -> AICandidateMatchingEngine:
-    """Get singleton instance of AICandidateMatchingEngine"""
+def get_ai_matching_engine_final() -> AICandidateMatchingEngineFinal:
+    """Get singleton instance of AICandidateMatchingEngineFinal"""
     global _ai_matching_engine_instance
     if _ai_matching_engine_instance is None:
-        _ai_matching_engine_instance = AICandidateMatchingEngine()
+        _ai_matching_engine_instance = AICandidateMatchingEngineFinal()
     return _ai_matching_engine_instance
-

@@ -6,6 +6,7 @@ Version 4.0 - Includes Gemini 2.5 PRO optimization, advanced scoring, enhanced a
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+
 import json
 import time
 import logging
@@ -553,6 +554,14 @@ try:
     logger.info("✅ Recruiter Statistics Blueprint registered successfully")
 except ImportError as e:
     logger.warning(f"⚠️ Recruiter Statistics Blueprint not available: {e}")
+
+# Register Recruiter Analytics Blueprint (New)
+try:
+    from recruiter.analytics_routes import analytics_bp
+    app.register_blueprint(analytics_bp, url_prefix='/api/recruiter')
+    logger.info("✅ Recruiter Analytics Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Analytics Blueprint not available: {e}")
 
 # Register Recruiter Reports Blueprint
 try:

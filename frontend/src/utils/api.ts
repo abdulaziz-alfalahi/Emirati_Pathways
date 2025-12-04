@@ -7,8 +7,9 @@ import type { CV } from '@/types/cv'
  *  - VITE_API_BASE_URL: your main backend (Node, Rails, etc.)
  *  - VITE_FLASK_API_URL: your Python/Flask microservice (for NLP/matching, etc.)
  */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'
-const FLASK_API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'
+// FORCE RELATIVE PATH FOR DEBUGGING
+const API_BASE_URL = 'http://127.0.0.1:5006'
+const FLASK_API_URL = '/'
 
 export interface ApiResponse<T = any> {
   success: boolean
@@ -21,7 +22,20 @@ export interface ApiResponse<T = any> {
 export const restClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-} )
+})
+
+// Add request interceptor to inject token
+restClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token') ||
+    localStorage.getItem('accessToken') ||
+    localStorage.getItem('auth_token') ||
+    localStorage.getItem('HR_TOKEN');
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const flaskClient: AxiosInstance = axios.create({
   baseURL: FLASK_API_URL,
@@ -82,27 +96,82 @@ export const cvBuilderApi = {
 // ---------- Recruiter / Jobs API ----------
 export interface JobDescription {
   id: string
+  jd_id?: string
   title: string
   description: string
+  company: string
+  location: string
+  employment_type: string
+  requirements?: any
   skills?: string[]
+  parsing_metadata?: {
+    confidence_score?: number
+    language_detected?: string
+    processing_time?: number
+    successful_sections?: number
+    total_sections?: number
+  }
+  metadata?: {
+    parsing_metadata?: {
+      confidence_score?: number
+    }
+  }
+  responsibilities?: string[]
+  benefits?: string[]
+  work_mode?: string
   createdAt?: string
   updatedAt?: string
 }
 
 export const jobApi = {
-  list: () => wrap<JobDescription[]>(restClient.get('/api/jobs')),
+  list: () => wrap<{ job_descriptions: JobDescription[] }>(restClient.get('/api/recruiter/jd/list')),
   get: (id: string) => wrap<JobDescription>(restClient.get(`/api/jobs/${id}`)),
   create: (job: Omit<JobDescription, 'id' | 'createdAt' | 'updatedAt'>) =>
     wrap<JobDescription>(restClient.post('/api/jobs', job)),
   update: (id: string, job: Partial<JobDescription>) =>
     wrap<JobDescription>(restClient.patch(`/api/jobs/${id}`, job)),
   remove: (id: string) => wrap(restClient.delete(`/api/jobs/${id}`)),
+  delete: (id: string) => wrap<{ success: boolean; message: string }>(restClient.delete(`/api/recruiter/jd/${id}`)),
+  parse: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return wrap<{
+      completeness_score: number;
+      data: JobDescription;
+    }>(restClient.post('/api/recruiter/jd/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }));
+  },
+  parseText: (text: string) => wrap<{
+    completeness_score: number;
+    data: JobDescription;
+  }>(restClient.post('/api/recruiter/jd/parse-text', { text })),
+}
+
+// ---------- Shortlist API ----------
+export const shortlistApi = {
+  add: (data: {
+    jd_id: string;
+    candidate_id: string;
+    recruiter_id: string;
+    match_score?: number;
+    match_details?: any;
+    notes?: string;
+  }) => wrap<{ success: boolean; shortlist_id: string; message: string }>(restClient.post('/api/recruiter/shortlist/add', data)),
+
+  get: (jdId: string) => wrap<Array<{
+    candidate_id: string;
+    status: string;
+    match_score: number;
+    notes?: string;
+  }>>(restClient.get(`/api/recruiter/shortlist/${jdId}`)),
 }
 
 // ---------- Health API ----------
 export const healthApi = {
   status: () => wrap<{ status: 'ok' | 'error'; message?: string }>(restClient.get('/health')),
   flask: () => wrap<{ status: 'ok' | 'error'; message?: string }>(flaskClient.get('/health')),
+  check: () => wrap<{ features: { jd_parsing: boolean } }>(restClient.get('/health')),
 }
 
 // Re-exports (handy for consumers)

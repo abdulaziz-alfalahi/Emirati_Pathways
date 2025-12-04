@@ -7,8 +7,32 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { JobPostStrengthMeter } from '@/components/recruiter/job-wizard/JobPostStrengthMeter';
+import { Sparkles, Wand2 } from 'lucide-react';
 
-const API = (p: string) => `http://localhost:5003${p}`;
+const API = (p: string) => `http://127.0.0.1:5005${p}`;
+
+// Smart Defaults Dictionary
+const SMART_DEFAULTS: Record<string, any> = {
+  'python': {
+    skills: 'Python, Django, Flask, SQL, REST APIs',
+    description: 'We are looking for an experienced Python Developer to join our backend team. You will be responsible for building scalable APIs and optimizing database queries.',
+    responsibilities: 'Design and implement RESTful APIs\nOptimize database performance\nCollaborate with frontend team',
+    benefits: 'Competitive Salary\nRemote Work Options\nHealth Insurance'
+  },
+  'manager': {
+    skills: 'Leadership, Project Management, Agile, Communication',
+    description: 'Seeking a Project Manager to lead our development teams. You will oversee project timelines, resource allocation, and stakeholder communication.',
+    responsibilities: 'Manage project lifecycles\nCoordinate cross-functional teams\nReport on project status',
+    benefits: 'Leadership Bonus\nStock Options\nProfessional Development'
+  },
+  'marketing': {
+    skills: 'SEO, Content Marketing, Google Analytics, Social Media',
+    description: 'Join our marketing team to drive brand awareness and lead generation. You will manage campaigns across multiple channels.',
+    responsibilities: 'Execute marketing campaigns\nAnalyze performance metrics\nManage social media accounts',
+    benefits: 'Performance Bonuses\nFlexible Hours\nCreative Environment'
+  }
+};
 
 export default function NewJobWizard() {
   const { toast } = useToast();
@@ -32,7 +56,7 @@ export default function NewJobWizard() {
   const [responsibilities, setResponsibilities] = useState<string>(''); // comma/newline
   const [benefits, setBenefits] = useState<string>(''); // comma/newline
 
-  const [skills, setSkills] = useState('python, qa');
+  const [skills, setSkills] = useState('');
   const [minExperience, setMinExperience] = useState<number>(0 as any);
   const [educationLevel, setEducationLevel] = useState('Bachelor');
 
@@ -71,7 +95,7 @@ export default function NewJobWizard() {
         setSalaryMin(s.salaryMin ?? 0);
         setSalaryMax(s.salaryMax ?? 0);
         setCurrency(s.currency ?? 'AED');
-      } catch {}
+      } catch { }
     }
   }, []);
 
@@ -84,7 +108,7 @@ export default function NewJobWizard() {
           const j = await r.json();
           setTemplates(j?.data?.templates || []);
         }
-      } catch {}
+      } catch { }
     })();
   }, [H]);
 
@@ -264,176 +288,265 @@ export default function NewJobWizard() {
     }
   };
 
+  // --- Smart Features ---
+
+  const handleSmartFill = () => {
+    if (!title) {
+      toast({ title: 'Enter a title first', variant: 'destructive' });
+      return;
+    }
+    const lowerTitle = title.toLowerCase();
+    let match = null;
+
+    for (const key in SMART_DEFAULTS) {
+      if (lowerTitle.includes(key)) {
+        match = SMART_DEFAULTS[key];
+        break;
+      }
+    }
+
+    if (match) {
+      setSkills(match.skills);
+      setDescription(match.description);
+      setResponsibilities(match.responsibilities);
+      setBenefits(match.benefits);
+      toast({ title: 'Smart Fill Applied', description: 'Fields populated based on job title.' });
+    } else {
+      toast({ title: 'No match found', description: 'Try "Python", "Manager", or "Marketing".' });
+    }
+  };
+
+  const handleAIGenerate = (field: 'description' | 'responsibilities' | 'benefits') => {
+    if (!title) {
+      toast({ title: 'Enter a title first', variant: 'destructive' });
+      return;
+    }
+
+    // Simulate AI generation
+    toast({ title: 'Generating content...', description: 'AI is writing for you.' });
+
+    setTimeout(() => {
+      if (field === 'description') {
+        setDescription(prev => prev + (prev ? '\n\n' : '') + `[AI Generated] We are seeking a talented ${title} to join our dynamic team. In this role, you will leverage your expertise to drive innovation and success.`);
+      } else if (field === 'responsibilities') {
+        setResponsibilities(prev => prev + (prev ? '\n' : '') + `[AI] Lead key initiatives for ${title}\n[AI] Collaborate with cross-functional teams\n[AI] Ensure high-quality deliverables`);
+      } else if (field === 'benefits') {
+        setBenefits(prev => prev + (prev ? '\n' : '') + `[AI] Competitive compensation package\n[AI] Professional growth opportunities\n[AI] Modern work environment`);
+      }
+      toast({ title: 'Content Generated', description: 'Review and edit the AI suggestions.' });
+    }, 1000);
+  };
+
   return (
-    <div className="p-6">
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>New Job Wizard</CardTitle>
-          <CardDescription>Step {step} of {maxStep}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Templates quick apply */}
-          <div className="flex items-center gap-2 mb-4">
-            <Label>Load Template</Label>
-            <select className="p-2 border rounded" value={selectedTemplateId} onChange={e => setSelectedTemplateId(e.target.value)}>
-              <option value="">Select a template</option>
-              {templates.map(t => (
-                <option key={t.id} value={t.id}>{t.title}</option>
+    <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>New Job Wizard</CardTitle>
+            <CardDescription>Step {step} of {maxStep}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Templates quick apply */}
+            <div className="flex items-center gap-2 mb-4">
+              <Label>Load Template</Label>
+              <select className="p-2 border rounded" value={selectedTemplateId} onChange={e => setSelectedTemplateId(e.target.value)}>
+                <option value="">Select a template</option>
+                {templates.map(t => (
+                  <option key={t.id} value={t.id}>{t.title}</option>
+                ))}
+              </select>
+              <Button variant="outline" onClick={applyTemplate} disabled={!selectedTemplateId}>Apply</Button>
+            </div>
+            {/* Step navigation */}
+            <div className="flex items-center gap-2 mb-4">
+              {Array.from({ length: maxStep }).map((_, i) => (
+                <Badge key={i} variant={i + 1 === step ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setStep(i + 1)}>
+                  {i + 1}
+                </Badge>
               ))}
-            </select>
-            <Button variant="outline" onClick={applyTemplate} disabled={!selectedTemplateId}>Apply</Button>
-          </div>
-          {/* Step navigation */}
-          <div className="flex items-center gap-2 mb-4">
-            {Array.from({ length: maxStep }).map((_, i) => (
-              <Badge key={i} variant={i + 1 === step ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => setStep(i + 1)}>
-                {i + 1}
-              </Badge>
-            ))}
-            <div className="ml-auto text-xs text-slate-500">{jobId ? `Draft ID: ${jobId.slice(0, 8)}...` : 'Draft not created'}</div>
-          </div>
-
-          {step === 1 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Title</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., QA Engineer" />
-              </div>
-              <div>
-                <Label>Employment Type</Label>
-                <select className="w-full p-2 border rounded" value={employmentType} onChange={e => setEmploymentType(e.target.value)}>
-                  <option value="full-time">Full-time</option>
-                  <option value="part-time">Part-time</option>
-                  <option value="contract">Contract</option>
-                  <option value="internship">Internship</option>
-                  <option value="freelance">Gig/Freelance</option>
-                </select>
-              </div>
-              <div>
-                <Label>Location</Label>
-                <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Dubai" />
-              </div>
-              <div>
-                <Label>Remote</Label>
-                <select className="w-full p-2 border rounded" value={remoteAllowed ? 'yes' : 'no'} onChange={e => setRemoteAllowed(e.target.value === 'yes')}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </div>
-              <div>
-                <Label>Experience Level</Label>
-                <select className="w-full p-2 border rounded" value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)}>
-                  <option value="junior">Junior</option>
-                  <option value="mid">Mid</option>
-                  <option value="senior">Senior</option>
-                </select>
-              </div>
-              <div>
-                <Label>Priority</Label>
-                <select className="w-full p-2 border rounded" value={priority} onChange={e => setPriority(e.target.value)}>
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
+              <div className="ml-auto text-xs text-slate-500">{jobId ? `Draft ID: ${jobId.slice(0, 8)}...` : 'Draft not created'}</div>
             </div>
-          )}
 
-          {step === 2 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Description</Label>
-                <Textarea rows={6} value={description} onChange={e => setDescription(e.target.value)} placeholder="Role overview and responsibilities..." />
+            {step === 1 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label>Title</Label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., QA Engineer" />
+                  </div>
+                  <Button variant="secondary" onClick={handleSmartFill} className="mb-0.5 bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200">
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Smart Fill
+                  </Button>
+                </div>
+                <div>
+                  <Label>Employment Type</Label>
+                  <select className="w-full p-2 border rounded" value={employmentType} onChange={e => setEmploymentType(e.target.value)}>
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                    <option value="freelance">Gig/Freelance</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Location</Label>
+                  <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Dubai" />
+                </div>
+                <div>
+                  <Label>Remote</Label>
+                  <select className="w-full p-2 border rounded" value={remoteAllowed ? 'yes' : 'no'} onChange={e => setRemoteAllowed(e.target.value === 'yes')}>
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Experience Level</Label>
+                  <select className="w-full p-2 border rounded" value={experienceLevel} onChange={e => setExperienceLevel(e.target.value)}>
+                    <option value="junior">Junior</option>
+                    <option value="mid">Mid</option>
+                    <option value="senior">Senior</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <select className="w-full p-2 border rounded" value={priority} onChange={e => setPriority(e.target.value)}>
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <Label>Responsibilities (comma or newline)</Label>
-                <Textarea rows={4} value={responsibilities} onChange={e => setResponsibilities(e.target.value)} placeholder="List responsibilities" />
-              </div>
-              <div>
-                <Label>Benefits (comma or newline)</Label>
-                <Textarea rows={4} value={benefits} onChange={e => setBenefits(e.target.value)} placeholder="List benefits" />
-              </div>
-            </div>
-          )}
+            )}
 
-          {step === 3 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Skills (comma separated)</Label>
-                <Input value={skills} onChange={e => setSkills(e.target.value)} placeholder="python, qa" />
+            {step === 2 && (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label>Description</Label>
+                    <Button variant="ghost" size="sm" onClick={() => handleAIGenerate('description')} className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Generate
+                    </Button>
+                  </div>
+                  <Textarea rows={6} value={description} onChange={e => setDescription(e.target.value)} placeholder="Role overview and responsibilities..." />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label>Responsibilities (comma or newline)</Label>
+                    <Button variant="ghost" size="sm" onClick={() => handleAIGenerate('responsibilities')} className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Generate
+                    </Button>
+                  </div>
+                  <Textarea rows={4} value={responsibilities} onChange={e => setResponsibilities(e.target.value)} placeholder="List responsibilities" />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label>Benefits (comma or newline)</Label>
+                    <Button variant="ghost" size="sm" onClick={() => handleAIGenerate('benefits')} className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI Generate
+                    </Button>
+                  </div>
+                  <Textarea rows={4} value={benefits} onChange={e => setBenefits(e.target.value)} placeholder="List benefits" />
+                </div>
               </div>
-              <div>
-                <Label>Min Experience (years)</Label>
-                <Input type="number" value={minExperience} onChange={e => setMinExperience((e.target as any).value)} />
-              </div>
-              <div>
-                <Label>Education Level</Label>
-                <Input value={educationLevel} onChange={e => setEducationLevel(e.target.value)} placeholder="Bachelor" />
-              </div>
-            </div>
-          )}
+            )}
 
-          {step === 4 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label>Salary Min</Label>
-                <Input type="number" value={salaryMin} onChange={e => setSalaryMin((e.target as any).value)} />
+            {step === 3 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Skills (comma separated)</Label>
+                  <Input value={skills} onChange={e => setSkills(e.target.value)} placeholder="python, qa" />
+                </div>
+                <div>
+                  <Label>Min Experience (years)</Label>
+                  <Input type="number" value={minExperience} onChange={e => setMinExperience((e.target as any).value)} />
+                </div>
+                <div>
+                  <Label>Education Level</Label>
+                  <Input value={educationLevel} onChange={e => setEducationLevel(e.target.value)} placeholder="Bachelor" />
+                </div>
               </div>
-              <div>
-                <Label>Salary Max</Label>
-                <Input type="number" value={salaryMax} onChange={e => setSalaryMax((e.target as any).value)} />
-              </div>
-              <div>
-                <Label>Currency</Label>
-                <Input value={currency} onChange={e => setCurrency(e.target.value)} placeholder="AED" />
-              </div>
-            </div>
-          )}
+            )}
 
-          {step === 5 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Upload JD/Attachments</Label>
-                <Input type="file" multiple onChange={e => setDocs(e.target.files)} />
-                <div className="text-xs text-slate-500 mt-1">Save draft first to enable uploads.</div>
+            {step === 4 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Salary Min</Label>
+                  <Input type="number" value={salaryMin} onChange={e => setSalaryMin((e.target as any).value)} />
+                </div>
+                <div>
+                  <Label>Salary Max</Label>
+                  <Input type="number" value={salaryMax} onChange={e => setSalaryMax((e.target as any).value)} />
+                </div>
+                <div>
+                  <Label>Currency</Label>
+                  <Input value={currency} onChange={e => setCurrency(e.target.value)} placeholder="AED" />
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Upload JD/Attachments</Label>
+                  <Input type="file" multiple onChange={e => setDocs(e.target.files)} />
+                  <div className="text-xs text-slate-500 mt-1">Save draft first to enable uploads.</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={uploadDocuments} disabled={!jobId}>Upload</Button>
+                </div>
+              </div>
+            )}
+
+            {step === 6 && (
+              <div className="space-y-4">
+                <div className="text-sm text-slate-700">
+                  <div><b>Title:</b> {title}</div>
+                  <div><b>Type:</b> {employmentType} {remoteAllowed ? '(remote allowed)' : ''}</div>
+                  <div><b>Location:</b> {location}</div>
+                  <div><b>Description:</b> {description?.slice(0, 200)}{description?.length > 200 ? '...' : ''}</div>
+                  <div><b>Skills:</b> {parseList(skills).join(', ')}</div>
+                  <div><b>Experience:</b> {minExperience} yrs | <b>Education:</b> {educationLevel}</div>
+                  <div><b>Salary:</b> {salaryMin}-{salaryMax} {currency}</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={checkCompliance} disabled={!jobId}>Check Compliance</Button>
+                  <Button onClick={() => publish(false)} disabled={!jobId}>Publish</Button>
+                  <Button onClick={() => publish(true)} disabled={!jobId}>Publish & Match</Button>
+                </div>
+              </div>
+            )}
+
+            {/* Footer actions */}
+            <div className="flex items-center justify-between mt-6">
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>Back</Button>
+                <Button variant="outline" onClick={saveDraft}>Save Draft</Button>
               </div>
               <div className="flex gap-2">
-                <Button onClick={uploadDocuments} disabled={!jobId}>Upload</Button>
+                <Button onClick={() => setStep(Math.min(maxStep, step + 1))}>{step === maxStep ? 'Finish' : 'Next'}</Button>
               </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
+      </div>
 
-          {step === 6 && (
-            <div className="space-y-4">
-              <div className="text-sm text-slate-700">
-                <div><b>Title:</b> {title}</div>
-                <div><b>Type:</b> {employmentType} {remoteAllowed ? '(remote allowed)' : ''}</div>
-                <div><b>Location:</b> {location}</div>
-                <div><b>Description:</b> {description?.slice(0, 200)}{description?.length > 200 ? '...' : ''}</div>
-                <div><b>Skills:</b> {parseList(skills).join(', ')}</div>
-                <div><b>Experience:</b> {minExperience} yrs | <b>Education:</b> {educationLevel}</div>
-                <div><b>Salary:</b> {salaryMin}-{salaryMax} {currency}</div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={checkCompliance} disabled={!jobId}>Check Compliance</Button>
-                <Button onClick={() => publish(false)} disabled={!jobId}>Publish</Button>
-                <Button onClick={() => publish(true)} disabled={!jobId}>Publish & Match</Button>
-              </div>
-            </div>
-          )}
-
-          {/* Footer actions */}
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>Back</Button>
-              <Button variant="outline" onClick={saveDraft}>Save Draft</Button>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setStep(Math.min(maxStep, step + 1))}>{step === maxStep ? 'Finish' : 'Next'}</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Sidebar for Strength Meter */}
+      <div className="lg:col-span-1">
+        <div className="sticky top-24">
+          <JobPostStrengthMeter
+            title={title}
+            description={description}
+            skills={skills}
+            salaryMin={Number(salaryMin)}
+            salaryMax={Number(salaryMax)}
+            location={location}
+          />
+        </div>
+      </div>
     </div>
   );
 }

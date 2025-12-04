@@ -58,9 +58,9 @@ def add_to_shortlist():
     try:
         data = request.get_json()
         
-        jd_id = data.get('jd_id')
-        candidate_id = data.get('candidate_id')
-        recruiter_id = data.get('recruiter_id')
+        jd_id = str(data.get('jd_id', ''))
+        candidate_id = str(data.get('candidate_id', ''))
+        recruiter_id = str(data.get('recruiter_id', ''))
         match_score = data.get('match_score', 0.0)
         match_details = data.get('match_details', {})
         notes = data.get('notes', '')

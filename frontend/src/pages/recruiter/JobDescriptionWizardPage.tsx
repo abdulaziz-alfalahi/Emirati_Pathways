@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import JDWizardWithUpload from '@/components/recruiter/job-descriptions/JDWizardWithUpload';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { restClient } from '@/utils/api';
 
 const JobDescriptionWizardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,25 +35,24 @@ const JobDescriptionWizardPage: React.FC = () => {
   // Load existing JD if jd_id is in URL
   useEffect(() => {
     const jdId = searchParams.get('jd_id');
+    console.log('Page: URL jd_id param:', jdId);
+    
     if (jdId) {
       setInitialJdId(jdId);
+      setInitialData(null); // Clear previous data to prevent stale state
       
       // Load JD data from backend
       const loadJD = async () => {
         try {
-          const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-          const isMockToken = token?.startsWith('mock_token_');
+          console.log('Page: Fetching JD data for', jdId);
+          const response = await restClient.get(`/api/recruiter/jd/${jdId}`);
+          console.log('Page: JD Fetch response:', response);
           
-          const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdId}`, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setInitialData(data);
+          if (response.data) {
+            console.log('Page: Setting initial data', response.data);
+            setInitialData(response.data);
+          } else {
+            console.warn('Page: No data in response');
           }
         } catch (error) {
           console.error('Failed to load JD:', error);
@@ -79,6 +79,7 @@ const JobDescriptionWizardPage: React.FC = () => {
       <HybridGovernmentNavFixed />
       <div className="container mx-auto py-8 px-4">
         <JDWizardWithUpload
+          key={initialJdId || 'new'} // Force re-mount when ID changes
           recruiterId={recruiterId}
           companyId={companyId}
           initialJdId={initialJdId}

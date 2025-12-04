@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-const API = (p: string) => `http://localhost:5003${p}`;
+const API = (p: string) => `http://127.0.0.1:5005${p}`;
 
 export default function BatchUploadPage() {
   const { toast } = useToast();
@@ -72,7 +72,7 @@ export default function BatchUploadPage() {
             </div>
             <div className="text-xs text-slate-500">
               Example columns: title,description,skills,min_experience,education_level,responsibilities,benefits,salary_min,salary_max,currency,location,remote,employment_type,experience_level,priority
-              <br/>Use pipe (|) to separate multi-values in a single cell (skills/responsibilities/benefits).
+              <br />Use pipe (|) to separate multi-values in a single cell (skills/responsibilities/benefits).
             </div>
           </div>
         </CardContent>

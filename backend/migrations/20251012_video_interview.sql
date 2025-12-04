@@ -7,8 +7,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS video_interview_sessions (
     id VARCHAR(64) PRIMARY KEY,
     application_id UUID NOT NULL REFERENCES job_applications(id) ON DELETE CASCADE,
-    interviewer_id UUID NOT NULL REFERENCES users(id),
-    candidate_id UUID NOT NULL REFERENCES users(id),
+    interviewer_id INTEGER NOT NULL REFERENCES users(id),
+    candidate_id INTEGER NOT NULL REFERENCES users(id),
     interview_type VARCHAR(50) NOT NULL,
     scheduled_time TIMESTAMPTZ NOT NULL,
     duration_minutes INTEGER DEFAULT 60,

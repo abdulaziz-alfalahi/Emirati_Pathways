@@ -166,7 +166,13 @@ class AdvancedScoringSystem:
         """Calculate score for a specific dimension"""
         
         dimension_config = self.base_dimensions[dimension_name]
+        
+        # Try to get score from detailed_scores first
         ai_score = ai_analysis.get('detailed_scores', {}).get(dimension_name, 0)
+        
+        # If not found, try top-level with _score suffix (common in Gemini/fallback response)
+        if ai_score == 0:
+            ai_score = ai_analysis.get(f"{dimension_name}_score", 0)
         
         # Extract evidence and reasoning from AI analysis
         evidence = self._extract_evidence(dimension_name, cv_data, jd_data, ai_analysis)
@@ -507,6 +513,42 @@ class AdvancedScoringSystem:
         
         return improvement_areas
     
+    def calculate_advanced_scores(self, cv_info: Dict, jd_info: Dict, 
+                                ai_analysis: Dict, uae_adjustments: Dict = None) -> Dict[str, Any]:
+        """
+        Calculate advanced scores (compatibility wrapper for job_matching_engine_optimized)
+        
+        Args:
+            cv_info: Extracted CV information
+            jd_info: Extracted JD information
+            ai_analysis: AI analysis results
+            uae_adjustments: Optional UAE-specific adjustments
+            
+        Returns:
+            Dictionary containing scores and breakdown
+        """
+        # Call internal method
+        result = self.calculate_advanced_score(cv_info, jd_info, ai_analysis)
+        
+        # Format result to match expectation of optimized engine
+        formatted_result = {
+            'overall_score': result.overall_score,
+            'confidence_score': result.confidence_score,
+            'confidence_level': result.confidence_level.value,
+            'weighted_score': result.weighted_score,
+            'normalized_score': result.normalized_score,
+            'reliability_index': result.reliability_index,
+            'detailed_scores': {name: dim.score for name, dim in result.dimensions.items()},
+            'recommendations': result.recommendations,
+            'improvement_areas': result.improvement_areas
+        }
+        
+        # Merge detailed dimensions
+        for name, dim in result.dimensions.items():
+            formatted_result[name] = dim.score
+            
+        return formatted_result
+
     # Helper methods
     def _calculate_total_experience(self, cv_data: Dict) -> float:
         """Calculate total years of experience"""

@@ -1,46 +1,38 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
 import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
+import CandidateMatching from '@/components/recruiter/CandidateMatching';
+import JobDescriptionsList from '@/components/recruiter/JobDescriptionsList';
+import Interviews from '@/components/recruiter/Interviews';
+import OffersPage from '@/pages/recruiter/Offers';
+import RecruiterAnalyticsPage from '@/pages/recruiter/Analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
-import { 
-  Users, 
-  Target, 
-  Briefcase, 
-  TrendingUp, 
+import { restClient } from '@/utils/api';
+import {
+  Target,
+  Briefcase,
+  TrendingUp,
   Calendar,
-  Search,
-  Filter,
-  Eye,
   CheckCircle,
   Clock,
   UserPlus,
-  Building,
-  Award,
-  MessageSquare,
-  Download,
-  Upload,
-  FileText,
-  BarChart3,
-  Phone,
-  Mail,
-  MapPin,
-  Star,
-  CheckSquare,
-  Share2,
-
   Settings,
   Bell,
   Plus,
-  Edit
+  Calculator,
+  FileText,
+  Users,
+  BarChart3,
+  CheckSquare,
+  Star
 } from 'lucide-react';
+import EmiratizationROICalculatorDialog from '@/components/recruiter/EmiratizationROICalculatorDialog';
 
 interface RecruiterData {
   placements: {
@@ -71,13 +63,19 @@ interface RecruiterData {
   }>;
 }
 
-
-
 const RecruiterDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'overview';
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
+  const [roiCalculatorOpen, setRoiCalculatorOpen] = useState(false);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    navigate(`/recruiter-dashboard?tab=${value}`, { replace: true });
+  };
+
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
     placements: {
       thisMonth: 0,
@@ -101,61 +99,19 @@ const RecruiterDashboard: React.FC = () => {
   });
 
   // Load real dashboard data from backend
-  React.useEffect(() => {
+  useEffect(() => {
     loadDashboardData();
   }, []);
 
-  const handleManageShortlist = async () => {
-    try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.job_descriptions && result.job_descriptions.length > 0) {
-          // Navigate to the first JD's shortlist
-          const firstJD = result.job_descriptions[0];
-          navigate(`/recruiter/shortlist/${firstJD.id}`);
-        } else {
-          alert('No job descriptions found. Please create a job description first.');
-        }
-      } else {
-        alert('Failed to load job descriptions.');
-      }
-    } catch (error) {
-      console.error('Error loading job descriptions:', error);
-      alert('Failed to load job descriptions.');
-    }
-  };
-
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/statistics/dashboard', {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await restClient.get('/api/recruiter/statistics/dashboard');
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          setDashboardData(result.data);
-          console.log('✅ Dashboard data loaded from backend');
-        } else {
-          console.log('⚠️ API returned no data, using mock data');
-          setMockData();
-        }
+      if (response.data && response.data.success && response.data.data) {
+        setDashboardData(response.data.data);
+        console.log('✅ Dashboard data loaded from backend');
       } else {
-        console.log('⚠️ API call failed, using mock data');
+        console.log('⚠️ API returned no data, using mock data');
         setMockData();
       }
     } catch (error) {
@@ -221,13 +177,25 @@ const RecruiterDashboard: React.FC = () => {
     });
   };
 
+  // Dynamic greeting logic
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const [notifications] = useState([
+    { id: 1, title: "New Applicant", time: "5m ago" },
+    { id: 2, title: "Interview Confirmed", time: "1h ago" },
+    { id: 3, title: "Job Approved", time: "2h ago" }
+  ]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
       {/* Navigation */}
       <HybridGovernmentNavFixed showAuthButtons={true} />
-      
 
-      
       {/* Main Content */}
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -239,10 +207,22 @@ const RecruiterDashboard: React.FC = () => {
                   Recruitment Dashboard
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  Welcome back, Omar Al Rashid - UAE National Talent Specialist
+                  {getGreeting()}, Omar Al Rashid. You have <span className="text-teal-600 font-bold">5 new matches</span> today.
                 </p>
               </div>
               <div className="flex items-center space-x-3">
+                {/* Notification Center */}
+                <div className="relative">
+                  <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-5 w-5 text-slate-600" />
+                    {notifications.length > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
+                        {notifications.length}
+                      </span>
+                    )}
+                  </Button>
+                </div>
+
                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-dubai-medium">
                   Senior Recruiter
                 </Badge>
@@ -257,63 +237,35 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions (Simplified) */}
           <div className="mb-8">
             <div className="flex flex-wrap gap-4">
               <Link to="/recruiter/jd-builder" className="inline-block">
-                <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium" aria-label="Create new vacancy">
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium shadow-sm" aria-label="Create new vacancy">
                   <Plus className="h-4 w-4 mr-2" />
-                  New Vacancy
+                  Post New Job
                 </Button>
               </Link>
-              <Link to="/recruiter/vacancies" className="inline-block" aria-label="View active vacancies">
-                <Button variant="outline" className="font-dubai-medium">
-                  <Briefcase className="h-4 w-4 mr-2" />
-                  Active Vacancies
-                </Button>
-              </Link>
-              <Button variant="outline" className="font-dubai-medium" onClick={() => setSourceCandidatesDialogOpen(true)}>
-                <Users className="h-4 w-4 mr-2" />
+              <Button variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50" onClick={() => setSourceCandidatesDialogOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
                 Source Candidates
               </Button>
-              <Button variant="outline" className="font-dubai-medium" onClick={handleManageShortlist}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Manage Shortlist
+              <Button variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50" onClick={() => setRoiCalculatorOpen(true)}>
+                <Calculator className="h-4 w-4 mr-2" />
+                ROI Calculator
               </Button>
-              <Button variant="outline" className="font-dubai-medium" onClick={() => setExportDialogOpen(true)}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Reports
-              </Button>
-              {/* New: direct links to recruiter services */}
-              <Link to="/recruiter/offers" className="inline-block" aria-label="Manage job offers">
-                <Button variant="outline" className="font-dubai-medium">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Manage Offers
-                </Button>
-              </Link>
-              <Link to="/recruiter/approvals" className="inline-block" aria-label="View approvals">
-                <Button variant="outline" className="font-dubai-medium">
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  Approvals
-                </Button>
-              </Link>
-              <Link to="/recruiter/distribution" className="inline-block" aria-label="Manage job distribution">
-                <Button variant="outline" className="font-dubai-medium">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Job Distribution
-                </Button>
-              </Link>
             </div>
           </div>
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
-              <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
-              <TabsTrigger value="searches" className="font-dubai-medium">Active Searches</TabsTrigger>
-              <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
-              <TabsTrigger value="performance" className="font-dubai-medium">Performance</TabsTrigger>
-              <TabsTrigger value="reports" className="font-dubai-medium">Reports</TabsTrigger>
+          <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
+              <TabsTrigger value="overview" className="font-dubai-medium" onClick={() => handleTabChange('overview')}>Overview</TabsTrigger>
+              <TabsTrigger value="jobs" className="font-dubai-medium" onClick={() => handleTabChange('jobs')}>My Jobs</TabsTrigger>
+              <TabsTrigger value="candidates" className="font-dubai-medium" onClick={() => handleTabChange('candidates')}>Candidates</TabsTrigger>
+              <TabsTrigger value="interviews" className="font-dubai-medium" onClick={() => handleTabChange('interviews')}>Interviews</TabsTrigger>
+              <TabsTrigger value="offers" className="font-dubai-medium" onClick={() => handleTabChange('offers')}>Offers & Approvals</TabsTrigger>
+              <TabsTrigger value="analytics" className="font-dubai-medium" onClick={() => handleTabChange('analytics')}>Analytics</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -418,9 +370,9 @@ const RecruiterDashboard: React.FC = () => {
                       <div className="text-3xl font-dubai-bold text-slate-900">{dashboardData.performance.clientSatisfaction}</div>
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star 
-                            key={star} 
-                            className={`h-5 w-5 ${star <= dashboardData.performance.clientSatisfaction ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          <Star
+                            key={star}
+                            className={`h-5 w-5 ${star <= dashboardData.performance.clientSatisfaction ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
                           />
                         ))}
                       </div>
@@ -443,9 +395,9 @@ const RecruiterDashboard: React.FC = () => {
                       <div className="text-3xl font-dubai-bold text-slate-900">{dashboardData.performance.candidateQuality}</div>
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star 
-                            key={star} 
-                            className={`h-5 w-5 ${star <= dashboardData.performance.candidateQuality ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                          <Star
+                            key={star}
+                            className={`h-5 w-5 ${star <= dashboardData.performance.candidateQuality ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
                           />
                         ))}
                       </div>
@@ -490,7 +442,7 @@ const RecruiterDashboard: React.FC = () => {
                                 {activity.title}
                               </p>
                               {activity.priority && (
-                                <Badge 
+                                <Badge
                                   variant={activity.priority === 'high' ? 'destructive' : 'secondary'}
                                   className="text-xs"
                                 >
@@ -515,100 +467,29 @@ const RecruiterDashboard: React.FC = () => {
               </Card>
             </TabsContent>
 
-            {/* Active Searches Tab */}
-            <TabsContent value="searches" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Active Search Assignments</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Manage your current recruitment searches
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Briefcase className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Search Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Advanced search assignment tracking and management</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Search
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* My Jobs Tab */}
+            <TabsContent value="jobs" className="space-y-6">
+              <JobDescriptionsList />
             </TabsContent>
 
             {/* Candidates Tab */}
             <TabsContent value="candidates" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Candidate Pipeline</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Manage candidates across all your searches
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Candidate Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Advanced candidate tracking and pipeline management</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      View All Candidates
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <CandidateMatching />
             </TabsContent>
 
-            {/* Performance Tab */}
-            <TabsContent value="performance" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Performance Analytics</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Detailed performance metrics and insights
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Performance Analytics</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive recruitment performance insights</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      View Analytics Dashboard
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Interviews Tab */}
+            <TabsContent value="interviews" className="space-y-6">
+              <Interviews />
             </TabsContent>
 
-            {/* Reports Tab */}
-            <TabsContent value="reports" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Reports & Analytics</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Generate and download recruitment reports
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Download className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Report Generation</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Generate detailed recruitment reports and analytics</p>
-                    <div className="flex justify-center space-x-4">
-                      <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                        <Download className="h-4 w-4 mr-2" />
-                        Generate Report
-                      </Button>
-                      <Button variant="outline" className="font-dubai-medium">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Templates
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Offers & Approvals Tab */}
+            <TabsContent value="offers" className="space-y-6">
+              <OffersPage />
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6">
+              <RecruiterAnalyticsPage />
             </TabsContent>
           </Tabs>
         </div>
@@ -620,11 +501,16 @@ const RecruiterDashboard: React.FC = () => {
         onClose={() => setExportDialogOpen(false)}
       />
 
-
       {/* Source Candidates Dialog */}
       <SourceCandidatesDialog
         open={sourceCandidatesDialogOpen}
         onClose={() => setSourceCandidatesDialogOpen(false)}
+      />
+
+      {/* ROI Calculator Dialog */}
+      <EmiratizationROICalculatorDialog
+        open={roiCalculatorOpen}
+        onClose={() => setRoiCalculatorOpen(false)}
       />
     </div>
   );

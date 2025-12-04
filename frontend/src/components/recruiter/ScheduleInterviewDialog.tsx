@@ -65,8 +65,8 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
   const loadJobDescriptions = async () => {
     try {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
+
+      const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/list', {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json',
@@ -90,8 +90,8 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
     try {
       setLoadingCandidates(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch(`http://localhost:5003/api/recruiter/shortlist/${jdId}`, {
+
+      const response = await fetch(`http://127.0.0.1:5005/api/recruiter/shortlist/${jdId}`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json',
@@ -125,11 +125,11 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
       setLoading(true);
 
       const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
+
       // Combine date and time
       const scheduledDateTime = `${scheduledDate}T${scheduledTime}:00`;
 
-      const response = await fetch('http://localhost:5003/api/recruiter/interviews/schedule', {
+      const response = await fetch('http://127.0.0.1:5005/api/recruiter/interviews/schedule', {
         method: 'POST',
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
@@ -216,9 +216,9 @@ const ScheduleInterviewDialog: React.FC<ScheduleInterviewDialogProps> = ({ open,
             >
               <SelectTrigger id="candidate">
                 <SelectValue placeholder={
-                  loadingCandidates ? 'Loading candidates...' : 
-                  !selectedJD ? 'Select a job description first' :
-                  'Select candidate'
+                  loadingCandidates ? 'Loading candidates...' :
+                    !selectedJD ? 'Select a job description first' :
+                      'Select candidate'
                 } />
               </SelectTrigger>
               <SelectContent>

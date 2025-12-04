@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Briefcase, GraduationCap, Users, Mail, Phone, ExternalLink } from 'lucide-react';
+import { restClient } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 interface SourceCandidatesDialogProps {
   open: boolean;
@@ -44,60 +46,6 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       setLoading(true);
       setSearched(true);
 
-      // Get token - check both possible storage keys
-      // authService stores it as 'access_token', but some code might use 'accessToken'
-      let token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      
-      // Check if using mock authentication
-      const isMockToken = token?.startsWith('mock_token_');
-      const mockUser = localStorage.getItem('mock_current_user');
-      
-      // Debug: Log token info
-      console.log('Token check:', {
-        hasAccessToken: !!localStorage.getItem('accessToken'),
-        hasAccess_token: !!localStorage.getItem('access_token'),
-        tokenLength: token?.length,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null',
-        isMockToken: isMockToken,
-        hasMockUser: !!mockUser
-      });
-      
-      if (!token) {
-        alert('You must be logged in to search candidates. Please log in and try again.');
-        setLoading(false);
-        return;
-      }
-      
-      // For mock tokens, skip JWT validation (they're not real JWTs)
-      if (!isMockToken) {
-        // Validate JWT token format (should have 3 parts separated by dots)
-        const tokenParts = token.split('.');
-        if (tokenParts.length !== 3) {
-          // Try the other key if current token is invalid
-          const otherToken = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
-          if (otherToken && otherToken !== token) {
-            const otherParts = otherToken.split('.');
-            if (otherParts.length === 3) {
-              token = otherToken;
-              console.log('Using alternate token key');
-            } else {
-              alert('Your session token is invalid. Please log out and log back in.');
-              console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
-              setLoading(false);
-              return;
-            }
-          } else {
-            alert('Your session token is invalid. Please log out and log back in.');
-            console.error('Invalid JWT token format. Expected 3 parts, got:', tokenParts.length, 'Token:', token);
-            setLoading(false);
-            return;
-          }
-        }
-        console.log('Using JWT token with', tokenParts.length, 'parts');
-      } else {
-        console.log('Using mock token (bypassing JWT validation)');
-      }
-      
       // Build query parameters
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
@@ -105,146 +53,30 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       if (minExperience) params.append('min_experience', minExperience);
       if (skills) params.append('skills', skills);
 
-      console.log('Making search request with token...');
-      const response = await fetch(
-        `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      console.log('Search response status:', response.status);
+      console.log('Making search request...');
       
-      // Log response body for debugging
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          console.error('Error JSON:', errorJson);
-        } catch (e) {
-          console.error('Error is not JSON:', errorText);
-        }
-      }
-      
-      if (response.status === 401 || response.status === 422) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        console.log(`Got ${response.status}, error:`, errorData);
-        
-        // If token expired, try to refresh
-        if (errorData.message?.includes('expired') || errorData.message?.includes('Token has expired') || response.status === 401) {
-          console.log('Token expired or 401, attempting token refresh...');
-          const refreshToken = localStorage.getItem('refresh_token') || localStorage.getItem('refreshToken');
-          
-          console.log('Refresh token check:', {
-            hasRefresh_token: !!localStorage.getItem('refresh_token'),
-            hasRefreshToken: !!localStorage.getItem('refreshToken'),
-            refreshTokenLength: refreshToken?.length
-          });
-          
-          if (!refreshToken) {
-            console.error('No refresh token available');
-            alert('Your session has expired. Please log in again.');
-            window.location.href = '/login';
-            return;
-          }
-          
-          try {
-            console.log('Calling refresh endpoint...');
-            const refreshResponse = await fetch('http://localhost:5003/api/auth/refresh', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${refreshToken}`,
-              },
-            });
-            
-            console.log('Refresh response status:', refreshResponse.status);
-            
-            if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              console.log('Refresh data:', refreshData);
-              
-              if (refreshData.success && refreshData.data?.access_token) {
-                // Save new token
-                localStorage.setItem('access_token', refreshData.data.access_token);
-                if (refreshData.data.refresh_token) {
-                  localStorage.setItem('refresh_token', refreshData.data.refresh_token);
-                }
-                console.log('Token refreshed successfully, retrying search...');
-                
-                // Retry the search with new token
-                const retryResponse = await fetch(
-                  `http://localhost:5003/api/hr/candidates/search?${params.toString()}`,
-                  {
-                    headers: {
-                      'Authorization': `Bearer ${refreshData.data.access_token}`,
-                      'Content-Type': 'application/json',
-                    },
-                  }
-                );
-                
-                console.log('Retry response status:', retryResponse.status);
-                
-                if (retryResponse.ok) {
-                  const result = await retryResponse.json();
-                  if (result.success && result.data && result.data.candidates) {
-                    setCandidates(result.data.candidates);
-                    return;
-                  } else {
-                    setCandidates([]);
-                  }
-                } else {
-                  const retryError = await retryResponse.json().catch(() => ({ message: 'Unknown error' }));
-                  console.error('Retry failed:', retryError);
-                  alert(`Search failed after token refresh: ${retryError.message || 'Please try again.'}`);
-                }
-              } else {
-                console.error('Refresh response missing access_token:', refreshData);
-                alert('Token refresh failed. Please log in again.');
-                window.location.href = '/login';
-                return;
-              }
-            } else {
-              const refreshError = await refreshResponse.json().catch(() => ({ message: 'Refresh failed' }));
-              console.error('Refresh failed:', refreshError);
-              alert('Your session has expired. Please log in again.');
-              window.location.href = '/login';
-              return;
-            }
-          } catch (refreshError) {
-            console.error('Token refresh exception:', refreshError);
-            alert('Token refresh failed. Please log in again.');
-            window.location.href = '/login';
-            return;
-          }
-        } else {
-          // Other authentication errors
-          alert(`Authentication failed: ${errorData.message || 'Please log in again.'}`);
-          window.location.href = '/login';
-          return;
-        }
-      }
+      // Use restClient instead of manual fetch
+      // Note: Endpoint might be /api/recruiter/candidates/search or /api/hr/candidates/search
+      // Based on file list, hr_candidate_search_bp is registered in recruiter_server.py
+      // Let's assume the prefix is correct from the original code (/api/hr/candidates/search)
+      // If that fails, we might need to check recruiter_server.py registration path.
+      const response = await restClient.get(`/api/hr/candidates/search?${params.toString()}`);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data && result.data.candidates) {
-          setCandidates(result.data.candidates);
-        } else {
-          setCandidates([]);
-        }
+      if (response.data && response.data.success && response.data.data && response.data.data.candidates) {
+        setCandidates(response.data.data.candidates);
+      } else if (response.data && response.data.candidates) {
+        // Handle alternative response structure
+        setCandidates(response.data.candidates);
       } else {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         setCandidates([]);
-        alert(`Failed to search candidates: ${errorData.message || 'Please try again.'}`);
+        if (!response.success) {
+           console.warn('Search returned failure:', response);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching candidates:', error);
       setCandidates([]);
-      alert('Failed to search candidates. Please check your connection and try again.');
+      toast.error(error.message || 'Failed to search candidates. Please try again.');
     } finally {
       setLoading(false);
     }

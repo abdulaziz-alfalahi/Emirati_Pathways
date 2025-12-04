@@ -3,7 +3,7 @@
  * Handles CV save/load operations with the backend database
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
 
 export interface SavedCV {
   id: string;
@@ -105,7 +105,7 @@ class CVStorageService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to save CV');
       }
@@ -135,7 +135,7 @@ class CVStorageService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to load CVs');
       }
@@ -165,7 +165,7 @@ class CVStorageService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to load CV');
       }
@@ -196,7 +196,7 @@ class CVStorageService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to update CV');
       }
@@ -262,7 +262,7 @@ class CVStorageService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to delete CV');
       }

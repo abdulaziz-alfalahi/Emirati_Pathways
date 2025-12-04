@@ -16,6 +16,7 @@ interface MessageThreadProps {
   handleSendMessage: () => void;
   selectedConversation: string;
   conversations: Conversation[];
+  onScheduleInterview: () => void;
 }
 
 const MessageThread: React.FC<MessageThreadProps> = ({
@@ -25,27 +26,33 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   handleSendMessage,
   selectedConversation,
   conversations,
+  onScheduleInterview,
 }) => {
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
   if (!selectedConversationData) return null;
 
   return (
     <>
-      <CardHeader className="px-6 pb-0">
-        <div className="flex items-center gap-2">
-          <Avatar>
-            <AvatarFallback>
-              {selectedConversationData.participantName.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <CardTitle>
-              {selectedConversationData.participantName}
-            </CardTitle>
-            <CardDescription>
-              Candidate for position
-            </CardDescription>
+      <CardHeader className="px-6 pb-0 border-b pb-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Avatar>
+              <AvatarFallback>
+                {selectedConversationData.participantName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle>
+                {selectedConversationData.participantName}
+              </CardTitle>
+              <CardDescription>
+                Candidate for position
+              </CardDescription>
+            </div>
           </div>
+          <Button variant="outline" size="sm" onClick={onScheduleInterview}>
+            Schedule Interview
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col p-0">
@@ -53,10 +60,10 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           <div className="space-y-6">
             {messages.map((message, index) => {
               const isFirstInGroup = index === 0 || messages[index - 1].senderId !== message.senderId;
-              const showTimestamp = index === 0 || 
-                new Date(message.timestamp).toDateString() !== 
+              const showTimestamp = index === 0 ||
+                new Date(message.timestamp).toDateString() !==
                 new Date(messages[index - 1].timestamp).toDateString();
-              
+
               return (
                 <div key={message.id}>
                   {showTimestamp && (
@@ -77,11 +84,10 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                         {isFirstInGroup && message.senderId !== 'recruiter' && (
                           <div className="text-sm font-medium mb-1">{message.senderName}</div>
                         )}
-                        <div className={`rounded-lg p-3 ${
-                          message.senderId === 'recruiter' 
+                        <div className={`rounded-lg p-3 ${message.senderId === 'recruiter'
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
-                        }`}>
+                          }`}>
                           {message.content}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 text-right">
@@ -97,7 +103,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         </div>
         <div className="p-4 border-t">
           <div className="flex gap-2">
-            <Input 
+            <Input
               placeholder="Type your message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
@@ -108,7 +114,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                 }
               }}
             />
-            <Button 
+            <Button
               onClick={handleSendMessage}
               disabled={!newMessage.trim()}
             >

@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import toast from 'react-hot-toast';
-import { 
+import { restClient } from '@/utils/api';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -18,8 +19,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Briefcase, 
+import {
+  Briefcase,
   MapPin,
   DollarSign,
   Award,
@@ -44,6 +45,65 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { JobPostStrengthMeter } from '@/components/recruiter/job-wizard/JobPostStrengthMeter';
+import { Wand2 } from 'lucide-react';
+
+// Smart Defaults Dictionary
+const SMART_DEFAULTS: Record<string, any> = {
+  'python': {
+    description: 'We are looking for an experienced Python Developer to join our backend team. You will be responsible for building scalable APIs and optimizing database queries.',
+    requirements: [
+      { category: 'skills', description: 'Python', is_required: true },
+      { category: 'skills', description: 'Django/Flask', is_required: true },
+      { category: 'skills', description: 'SQL', is_required: true },
+      { category: 'experience', description: '3+ years of backend development', is_required: true }
+    ],
+    responsibilities: [
+      { category: 'core', description: 'Design and implement RESTful APIs' },
+      { category: 'core', description: 'Optimize database performance' },
+      { category: 'core', description: 'Collaborate with frontend team' }
+    ],
+    benefits: [
+      { category: 'compensation', description: 'Competitive Salary' },
+      { category: 'health', description: 'Health Insurance' },
+      { category: 'time_off', description: 'Remote Work Options' }
+    ]
+  },
+  'manager': {
+    description: 'Seeking a Project Manager to lead our development teams. You will oversee project timelines, resource allocation, and stakeholder communication.',
+    requirements: [
+      { category: 'skills', description: 'Project Management', is_required: true },
+      { category: 'skills', description: 'Agile/Scrum', is_required: true },
+      { category: 'skills', description: 'Leadership', is_required: true }
+    ],
+    responsibilities: [
+      { category: 'core', description: 'Manage project lifecycles' },
+      { category: 'core', description: 'Coordinate cross-functional teams' },
+      { category: 'core', description: 'Report on project status' }
+    ],
+    benefits: [
+      { category: 'compensation', description: 'Leadership Bonus' },
+      { category: 'perks', description: 'Stock Options' }
+    ]
+  },
+  'marketing': {
+    description: 'Join our marketing team to drive brand awareness and lead generation. You will manage campaigns across multiple channels.',
+    requirements: [
+      { category: 'skills', description: 'SEO', is_required: true },
+      { category: 'skills', description: 'Content Marketing', is_required: true },
+      { category: 'skills', description: 'Google Analytics', is_required: true }
+    ],
+    responsibilities: [
+      { category: 'core', description: 'Execute marketing campaigns' },
+      { category: 'core', description: 'Analyze performance metrics' },
+      { category: 'core', description: 'Manage social media accounts' }
+    ],
+    benefits: [
+      { category: 'compensation', description: 'Performance Bonuses' },
+      { category: 'time_off', description: 'Flexible Hours' }
+    ]
+  }
+};
 
 // UAE Emirates
 const UAE_EMIRATES = [
@@ -157,7 +217,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
-  
+
   const [jdData, setJDData] = useState<JDData>(() => {
     if (initialData) {
       console.log('Loading initial data:', initialData);
@@ -202,12 +262,30 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
     };
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [showMatchingDialog, setShowMatchingDialog] = useState(false);
   const [employmentStatusFilter, setEmploymentStatusFilter] = useState<string>('all');
   const [matchedCandidates, setMatchedCandidates] = useState<MatchedCandidate[]>([]);
   const [matchingLoading, setMatchingLoading] = useState(false);
+
+  // Update state when initialData changes (e.g. after async load)
+  useEffect(() => {
+    if (initialData) {
+      console.log('Updating with loaded data:', initialData);
+      setJDData(prev => ({
+        ...prev,
+        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
+        basic_info: initialData.basic_info || prev.basic_info,
+        description: initialData.description || prev.description,
+        description_arabic: initialData.description_arabic || prev.description_arabic,
+        requirements: initialData.requirements || prev.requirements,
+        responsibilities: initialData.responsibilities || prev.responsibilities,
+        benefits: initialData.benefits || prev.benefits,
+        compensation: initialData.compensation || prev.compensation
+      }));
+    }
+  }, [initialData, initialJdId]);
 
   // Initialize JD ID on mount if not provided
   useEffect(() => {
@@ -216,7 +294,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       if (jdData.jd_id) {
         return;
       }
-      
+
       // If we have initial data with JD ID, use it
       if (initialJdId || initialData?.metadata?.jd_id || initialData?.jd_id) {
         setJDData(prev => ({
@@ -225,41 +303,29 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         }));
         return;
       }
-      
+
       // Create a new JD in the database
       try {
-        const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-        const isMockToken = token?.startsWith('mock_token_');
-        
-        const response = await fetch('http://localhost:5003/api/recruiter/jd/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            recruiter_id: recruiterId,
-            company_id: companyId,
-            template: 'standard'
-          })
+        // Use restClient which handles base URL and headers automatically
+        const response = await restClient.post('/api/recruiter/jd/create', {
+          recruiter_id: recruiterId,
+          company_id: companyId,
+          template: 'standard'
         });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.jd_id) {
-            setJDData(prev => ({
-              ...prev,
-              jd_id: result.jd_id
-            }));
-            console.log('Created new JD with ID:', result.jd_id);
-          }
+
+        if (response.data && response.data.success && response.data.jd_id) {
+          setJDData(prev => ({
+            ...prev,
+            jd_id: response.data.jd_id
+          }));
+          console.log('Created new JD with ID:', response.data.jd_id);
         }
       } catch (error) {
         console.error('Failed to create JD:', error);
         // Continue anyway - JD ID will be created on first save
       }
     };
-    
+
     initializeJD();
   }, [recruiterId, companyId, initialJdId, initialData]); // Run when these change
 
@@ -276,35 +342,35 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   // Calculate completion score
   useEffect(() => {
     let score = 0;
-    
+
     // Basic info (25 points)
     if (jdData.basic_info.title) score += 8;
     if (jdData.basic_info.department) score += 5;
     if (jdData.basic_info.emirate && jdData.basic_info.city) score += 12;
-    
+
     // Description (20 points)
     if (jdData.description.length >= 200) score += 20;
     else if (jdData.description.length >= 100) score += 10;
     else if (jdData.description) score += 5;
-    
+
     // Requirements (20 points)
     if (jdData.requirements.length >= 5) score += 20;
     else if (jdData.requirements.length >= 3) score += 15;
     else if (jdData.requirements.length >= 1) score += 10;
-    
+
     // Responsibilities (20 points)
     if (jdData.responsibilities.length >= 5) score += 20;
     else if (jdData.responsibilities.length >= 3) score += 15;
     else if (jdData.responsibilities.length >= 1) score += 10;
-    
+
     // Compensation (10 points)
     if (jdData.compensation.salary_min && jdData.compensation.salary_max) score += 10;
     else if (jdData.compensation.salary_min || jdData.compensation.salary_max) score += 5;
-    
+
     // Benefits (5 points)
     if (jdData.benefits.length >= 3) score += 5;
     else if (jdData.benefits.length >= 1) score += 3;
-    
+
     setCompletionScore(Math.min(score, 100));
   }, [jdData]);
 
@@ -321,12 +387,29 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handleGenerateDescription = async () => {
+    if (!jdData.basic_info.title) {
+      toast.error("Please enter a job title first");
+      return;
+    }
+
     setLoading(true);
     try {
-      // TODO: Call AI description generation API
-      toast("AI description generation will be available soon");
+      const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/generate-description`, {
+        industry: 'General' // Could be made dynamic
+      });
+
+      if (response.data && response.data.success && response.data.generated_description) {
+        setJDData(prev => ({
+          ...prev,
+          description: response.data.generated_description
+        }));
+        toast.success("Job description generated successfully");
+      } else {
+        throw new Error('Failed to generate description');
+      }
     } catch (error) {
-      toast.error("Failed to generate description");
+      console.error('AI generation error:', error);
+      toast.error("Failed to generate description. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -340,10 +423,6 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
     setLoading(true);
     try {
-      // Get token for authentication
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-      
       // Prepare JD data with metadata
       const jdDataToSave = {
         ...jdData,
@@ -358,50 +437,30 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           last_modified: new Date().toISOString()
         }
       };
-      
+
       console.log('Saving draft with JD ID:', jdData.jd_id);
-      
-      // Save JD to database with draft status
-      const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          jd_data: jdDataToSave,
-          status: 'draft',
-          recruiter_id: recruiterId,
-          company_id: companyId
-        })
+
+      // Save JD to database with draft status using restClient
+      const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/save`, {
+        jd_data: jdDataToSave,
+        status: 'draft',
+        recruiter_id: recruiterId,
+        company_id: companyId
       });
 
-      console.log('Save draft response status:', response.status);
+      console.log('Save draft response:', response);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Save draft error response:', errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText || 'Failed to save draft' };
-        }
-        throw new Error(errorData.message || errorData.error || 'Failed to save draft');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       console.log('Save draft result:', result);
-      
+
       // Show success toast
       toast.success(result.message || (result.success ? "Job description saved as draft successfully" : "Saved"));
-      
-      console.log('Toast should be displayed');
 
       // Don't navigate away - allow user to continue editing
     } catch (error: any) {
       console.error('Save draft error:', error);
-      toast.error(error.message || "Failed to save draft. Please try again.");
+      const message = error.response?.data?.error || error.message || "Failed to save draft. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -416,32 +475,16 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         return;
       }
 
-      // Get token for authentication
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-
-      // Save JD to database with published status
-      const response = await fetch(`http://localhost:5003/api/recruiter/jd/${jdData.jd_id}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          jd_data: jdData,
-          status: 'published',
-          recruiter_id: recruiterId,
-          company_id: companyId
-        })
+      // Save JD to database with published status using restClient
+      const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/save`, {
+        jd_data: jdData,
+        status: 'published',
+        recruiter_id: recruiterId,
+        company_id: companyId
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to publish' }));
-        throw new Error(errorData.message || 'Failed to publish job description');
-      }
+      const result = response.data;
 
-      const result = await response.json();
-      
       toast.success("Job description published successfully");
 
       // Call onComplete callback
@@ -449,7 +492,8 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         onComplete(jdData.jd_id);
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to publish job description");
+      const message = error.response?.data?.error || error.message || "Failed to publish job description";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -457,23 +501,17 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   const handleShortlistCandidate = async (candidateId: string, matchScore: number, matchDetails: any) => {
     try {
-      const response = await fetch(`http://localhost:5003/api/recruiter/shortlist/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jd_id: jdData.jd_id,
-          candidate_id: candidateId,
-          recruiter_id: recruiterId,
-          match_score: matchScore,
-          match_details: matchDetails,
-          notes: `Auto-shortlisted from AI matching (${matchScore.toFixed(1)}% match)`
-        })
+      const response = await restClient.post(`/api/recruiter/shortlist/add`, {
+        jd_id: jdData.jd_id,
+        candidate_id: candidateId,
+        recruiter_id: recruiterId,
+        match_score: matchScore,
+        match_details: matchDetails,
+        notes: `Auto-shortlisted from AI matching (${matchScore.toFixed(1)}% match)`
       });
 
-      const result = await response.json();
-      
+      const result = response.data;
+
       if (result.success) {
         toast.success("Candidate added to shortlist");
       } else {
@@ -487,25 +525,15 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const handleMatchCandidates = async () => {
     setMatchingLoading(true);
     try {
-      // TODO: Call match candidates API
-      const response = await fetch(`/api/recruiter/jd/${jdData.jd_id}/match-candidates`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          employment_status_filter: employmentStatusFilter === 'all' ? null : employmentStatusFilter,
-          top_n: 10
-        })
+      // Call match candidates API
+      const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/match-candidates`, {
+        employment_status_filter: employmentStatusFilter === 'all' ? null : employmentStatusFilter,
+        top_n: 10
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to match candidates');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       setMatchedCandidates(result.top_matches || []);
-      
+
       toast.success(`Found ${result.match_count} matching candidates`);
     } catch (error) {
       toast.error("Failed to match candidates");
@@ -514,19 +542,113 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   };
 
+  // --- Smart Features ---
+
+  const handleSmartFill = () => {
+    if (!jdData.basic_info.title) {
+      toast.error('Enter a job title first');
+      return;
+    }
+    const lowerTitle = jdData.basic_info.title.toLowerCase();
+    let match = null;
+
+    for (const key in SMART_DEFAULTS) {
+      if (lowerTitle.includes(key)) {
+        match = SMART_DEFAULTS[key];
+        break;
+      }
+    }
+
+    if (match) {
+      setJDData(prev => ({
+        ...prev,
+        description: match.description,
+        requirements: match.requirements,
+        responsibilities: match.responsibilities,
+        benefits: match.benefits
+      }));
+      toast.success('Smart Fill Applied: Fields populated based on job title.');
+    } else {
+      toast.error('No match found. Try "Python", "Manager", or "Marketing".');
+    }
+  };
+
+  const handleAIGenerate = (field: 'description' | 'responsibilities' | 'benefits' | 'requirements') => {
+    if (!jdData.basic_info.title) {
+      toast.error('Enter a job title first');
+      return;
+    }
+
+    // Simulate AI generation
+    toast.loading('AI is generating content...', { duration: 1000 });
+
+    setTimeout(() => {
+      if (field === 'description') {
+        setJDData(prev => ({
+          ...prev,
+          description: prev.description + (prev.description ? '\n\n' : '') + `[AI Generated] We are seeking a talented ${jdData.basic_info.title} to join our dynamic team. In this role, you will leverage your expertise to drive innovation and success.`
+        }));
+      } else if (field === 'responsibilities') {
+        setJDData(prev => ({
+          ...prev,
+          responsibilities: [
+            ...prev.responsibilities,
+            { category: 'core', description: `[AI] Lead key initiatives for ${jdData.basic_info.title}` },
+            { category: 'core', description: `[AI] Collaborate with cross-functional teams` },
+            { category: 'core', description: `[AI] Ensure high-quality deliverables` }
+          ]
+        }));
+      } else if (field === 'benefits') {
+        setJDData(prev => ({
+          ...prev,
+          benefits: [
+            ...prev.benefits,
+            { category: 'compensation', description: `[AI] Competitive compensation package` },
+            { category: 'development', description: `[AI] Professional growth opportunities` },
+            { category: 'perks', description: `[AI] Modern work environment` }
+          ]
+        }));
+      } else if (field === 'requirements') {
+        setJDData(prev => ({
+          ...prev,
+          requirements: [
+            ...prev.requirements,
+            { category: 'skills', description: `[AI] Relevant degree or equivalent experience`, is_required: true },
+            { category: 'skills', description: `[AI] Strong communication skills`, is_required: true }
+          ]
+        }));
+      }
+      toast.dismiss();
+      toast.success('Content Generated');
+    }, 1000);
+  };
+
   const renderBasicInfo = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="title">Job Title *</Label>
-        <Input
-          id="title"
-          value={jdData.basic_info.title}
-          onChange={(e) => setJDData({
-            ...jdData,
-            basic_info: { ...jdData.basic_info, title: e.target.value }
-          })}
-          placeholder="e.g., Senior Software Engineer"
-        />
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Label htmlFor="title">Job Title *</Label>
+            <Input
+              id="title"
+              value={jdData.basic_info.title}
+              onChange={(e) => setJDData({
+                ...jdData,
+                basic_info: { ...jdData.basic_info, title: e.target.value }
+              })}
+              placeholder="e.g., Senior Software Engineer"
+            />
+          </div>
+          <Button
+            variant="secondary"
+            onClick={handleSmartFill}
+            className="mb-0.5 bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200"
+            title="Auto-fill fields based on title"
+          >
+            <Wand2 className="h-4 w-4 mr-2" />
+            Smart Fill
+          </Button>
+        </div>
       </div>
 
       <div>
@@ -691,6 +813,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Button>
       </div>
 
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleAIGenerate('requirements')}
+          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs"
+        >
+          <Sparkles className="h-3 w-3 mr-1" />
+          AI Generate Requirements
+        </Button>
+      </div>
+
       {jdData.requirements.length === 0 && (
         <Alert>
           <AlertDescription>
@@ -762,14 +896,6 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           </CardContent>
         </Card>
       ))}
-
-      {jdData.requirements.length === 0 && (
-        <Alert>
-          <AlertDescription>
-            No requirements added yet. Click "Add Requirement" to start.
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 
@@ -791,6 +917,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           }}
         >
           Add Responsibility
+        </Button>
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleAIGenerate('responsibilities')}
+          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs"
+        >
+          <Sparkles className="h-3 w-3 mr-1" />
+          AI Generate Responsibilities
         </Button>
       </div>
 
@@ -851,6 +989,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           }}
         >
           Add Benefit
+        </Button>
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleAIGenerate('benefits')}
+          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-xs"
+        >
+          <Sparkles className="h-3 w-3 mr-1" />
+          AI Generate Benefits
         </Button>
       </div>
 
@@ -1044,95 +1194,120 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Progress Bar */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progress</span>
-              <span className="font-semibold">{completionScore}%</span>
-            </div>
-            <Progress value={completionScore} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Steps Navigation */}
-      <div className="flex justify-between items-center">
-        {steps.map((step, index) => {
-          const Icon = step.icon;
-          return (
-            <div
-              key={step.id}
-              className={`flex flex-col items-center cursor-pointer ${
-                index === currentStep ? 'text-primary' : 'text-muted-foreground'
-              }`}
-              onClick={() => setCurrentStep(index)}
-            >
-              <div className={`rounded-full p-2 ${
-                index === currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted'
-              }`}>
-                <Icon className="h-4 w-4" />
+    <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
+        {/* Progress Bar */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Progress</span>
+                <span className="font-semibold">{completionScore}%</span>
               </div>
-              <span className="text-xs mt-1 hidden md:block">{step.title}</span>
+              <Progress value={completionScore} />
             </div>
-          );
-        })}
+          </CardContent>
+        </Card>
+
+        {/* Steps Navigation */}
+        <div className="flex justify-between items-center">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={step.id}
+                className={`flex flex-col items-center cursor-pointer ${index === currentStep ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                onClick={() => setCurrentStep(index)}
+              >
+                <div className={`rounded-full p-2 ${index === currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  }`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span className="text-xs mt-1 hidden md:block">{step.title}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Step Content */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{steps[currentStep].title}</CardTitle>
+            <CardDescription>
+              Step {currentStep + 1} of {steps.length}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {currentStep === 0 && renderBasicInfo()}
+            {currentStep === 1 && renderDescription()}
+            {currentStep === 2 && renderRequirements()}
+            {currentStep === 3 && renderResponsibilities()}
+            {currentStep === 4 && renderBenefits()}
+            {currentStep === 5 && renderCompensation()}
+            {currentStep === 6 && renderReview()}
+          </CardContent>
+        </Card>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentStep === 0}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Previous
+          </Button>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+
+            {currentStep === steps.length - 1 ? (
+              <>
+                <Button variant="outline" onClick={handleSaveDraft} disabled={loading}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {loading ? 'Saving...' : 'Save as Draft'}
+                </Button>
+                <Button onClick={handlePublish} disabled={loading || completionScore < 60}>
+                  <Send className="h-4 w-4 mr-2" />
+                  {loading ? 'Publishing...' : 'Publish Job'}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={handleNext}>
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Step Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{steps[currentStep].title}</CardTitle>
-          <CardDescription>
-            Step {currentStep + 1} of {steps.length}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {currentStep === 0 && renderBasicInfo()}
-          {currentStep === 1 && renderDescription()}
-          {currentStep === 2 && renderRequirements()}
-          {currentStep === 3 && renderResponsibilities()}
-          {currentStep === 4 && renderBenefits()}
-          {currentStep === 5 && renderCompensation()}
-          {currentStep === 6 && renderReview()}
-        </CardContent>
-      </Card>
+      {/* Sidebar for Strength Meter */}
+      <div className="lg:col-span-1">
+        <div className="sticky top-24 space-y-6">
+          <JobPostStrengthMeter
+            title={jdData.basic_info.title}
+            description={jdData.description}
+            skills={jdData.requirements.filter(r => r.category === 'skills').map(r => r.description).join(', ')}
+            salaryMin={jdData.compensation.salary_min || 0}
+            salaryMax={jdData.compensation.salary_max || 0}
+            location={jdData.basic_info.city || ''}
+          />
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentStep === 0}
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          
-          {currentStep === steps.length - 1 ? (
-            <>
-              <Button variant="outline" onClick={handleSaveDraft} disabled={loading}>
-                <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Saving...' : 'Save as Draft'}
-              </Button>
-              <Button onClick={handlePublish} disabled={loading || completionScore < 60}>
-                <Send className="h-4 w-4 mr-2" />
-                {loading ? 'Publishing...' : 'Publish Job'}
-              </Button>
-            </>
-          ) : (
-            <Button onClick={handleNext}>
-              Next
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>• Use clear, standard job titles.</p>
+              <p>• Be specific about required skills.</p>
+              <p>• Include a salary range to attract more candidates.</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -1195,7 +1370,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                     <Button size="sm" variant="outline">
                       View Profile
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => handleShortlistCandidate(
                         match.candidate.candidate_id,

@@ -1,16 +1,16 @@
 // School Programs Service
 // API-connected service for real database integration with fallback to mock data
 
-import { 
-  SchoolProgram, 
-  ProgramFilters, 
-  SearchParams, 
+import {
+  SchoolProgram,
+  ProgramFilters,
+  SearchParams,
   ProgramsResponse,
   ProgramAnalytics,
-  ProgramCategory 
+  ProgramCategory
 } from '../types/schoolPrograms';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://localhost:5003/api');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://127.0.0.1:5005/api');
 
 // Mock data for Dubai school programs
 const mockPrograms: SchoolProgram[] = [
@@ -132,7 +132,7 @@ const mockPrograms: SchoolProgram[] = [
         studentName: { en: 'Sara Al Zahra', ar: 'سارة الزهراء' },
         graduationYear: 2023,
         currentPosition: { en: 'AI Developer at Emirates NBD', ar: 'مطور ذكاء اصطناعي في بنك الإمارات دبي الوطني' },
-        testimonial: { 
+        testimonial: {
           en: 'This program transformed my understanding of technology and opened doors to amazing career opportunities.',
           ar: 'هذا البرنامج غيّر فهمي للتكنولوجيا وفتح أبواب فرص مهنية مذهلة.'
         },
@@ -308,7 +308,7 @@ const mockPrograms: SchoolProgram[] = [
         studentName: { en: 'Omar Al Rashid', ar: 'عمر الراشد' },
         graduationYear: 2023,
         currentPosition: { en: 'Digital Content Creator at Dubai Culture', ar: 'منشئ محتوى رقمي في دبي للثقافة' },
-        testimonial: { 
+        testimonial: {
           en: 'The program helped me connect with my heritage while building modern creative skills.',
           ar: 'ساعدني البرنامج على التواصل مع تراثي بينما أبني مهارات إبداعية حديثة.'
         },
@@ -481,7 +481,7 @@ const mockPrograms: SchoolProgram[] = [
         studentName: { en: 'Mariam Al Zahra', ar: 'مريم الزهراء' },
         graduationYear: 2022,
         currentPosition: { en: 'National Team Athlete', ar: 'رياضية في المنتخب الوطني' },
-        testimonial: { 
+        testimonial: {
           en: 'The academy provided world-class training that helped me represent UAE in international competitions.',
           ar: 'وفرت الأكاديمية تدريباً عالمي المستوى ساعدني على تمثيل الإمارات في المنافسات الدولية.'
         },
@@ -551,13 +551,13 @@ export class SchoolProgramsService {
   }
 
   async getPrograms(params: SearchParams = {}): Promise<ProgramsResponse> {
-    const { 
-      query = '', 
-      filters = {}, 
-      sortBy = 'relevance', 
-      sortOrder = 'desc', 
-      page = 1, 
-      limit = 12 
+    const {
+      query = '',
+      filters = {},
+      sortBy = 'relevance',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 12
     } = params;
 
     let filteredPrograms = [...this.programs];
@@ -565,7 +565,7 @@ export class SchoolProgramsService {
     // Apply text search
     if (query) {
       const searchTerm = query.toLowerCase();
-      filteredPrograms = filteredPrograms.filter(program => 
+      filteredPrograms = filteredPrograms.filter(program =>
         program.title.en.toLowerCase().includes(searchTerm) ||
         program.title.ar.includes(searchTerm) ||
         program.description.en.toLowerCase().includes(searchTerm) ||
@@ -577,32 +577,32 @@ export class SchoolProgramsService {
 
     // Apply filters
     if (filters.category && filters.category.length > 0) {
-      filteredPrograms = filteredPrograms.filter(program => 
+      filteredPrograms = filteredPrograms.filter(program =>
         filters.category!.includes(program.category)
       );
     }
 
     if (filters.schoolType && filters.schoolType.length > 0) {
-      filteredPrograms = filteredPrograms.filter(program => 
+      filteredPrograms = filteredPrograms.filter(program =>
         filters.schoolType!.includes(program.school.type)
       );
     }
 
     if (filters.ageRange) {
-      filteredPrograms = filteredPrograms.filter(program => 
+      filteredPrograms = filteredPrograms.filter(program =>
         program.targetAge.min >= filters.ageRange!.min &&
         program.targetAge.max <= filters.ageRange!.max
       );
     }
 
     if (filters.availability) {
-      filteredPrograms = filteredPrograms.filter(program => 
+      filteredPrograms = filteredPrograms.filter(program =>
         program.capacity.available > 0
       );
     }
 
     if (filters.scholarshipAvailable) {
-      filteredPrograms = filteredPrograms.filter(program => 
+      filteredPrograms = filteredPrograms.filter(program =>
         program.fees.scholarshipAvailable
       );
     }
@@ -610,7 +610,7 @@ export class SchoolProgramsService {
     // Apply sorting
     filteredPrograms.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'name':
           comparison = a.title.en.localeCompare(b.title.en);
@@ -627,7 +627,7 @@ export class SchoolProgramsService {
         default: // relevance
           comparison = 0;
       }
-      
+
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 

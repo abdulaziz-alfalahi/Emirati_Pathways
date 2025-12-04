@@ -96,12 +96,12 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 class AuthService {
-  private readonly API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ? `${(import.meta as any).env.VITE_API_BASE_URL}/api` : 'http://localhost:5003/api';
+  private readonly API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ? `${(import.meta as any).env.VITE_API_BASE_URL}/api` : 'http://127.0.0.1:5005/api';
 
-  async login(credentials: LoginData ): Promise<AuthResponse> {
+  async login(credentials: LoginData): Promise<AuthResponse> {
     try {
       console.log('AuthService: Attempting login to', `${this.API_BASE_URL}/auth/login`);
-      
+
       const response = await fetch(`${this.API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -146,7 +146,7 @@ class AuthService {
         user_type: userData.user_type,
         emirate: userData.emirate
       });
-      
+
       const response = await fetch(`${this.API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
@@ -207,7 +207,7 @@ class AuthService {
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
       const token = localStorage.getItem('access_token');
-      
+
       const response = await fetch(`${this.API_BASE_URL}/auth/logout`, {
         method: 'POST',
         headers: {
@@ -240,7 +240,7 @@ class AuthService {
   async getProfile(): Promise<any> {
     try {
       const token = localStorage.getItem('access_token');
-      
+
       if (!token) {
         throw new Error('No access token found');
       }
@@ -268,7 +268,7 @@ class AuthService {
   async getUserRoles(): Promise<UserRolesResponse> {
     try {
       const token = localStorage.getItem('access_token');
-      
+
       if (!token) {
         throw new Error('No access token found');
       }
@@ -335,12 +335,12 @@ class AuthService {
       const storedUser = localStorage.getItem('user');
       if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
         const userData = JSON.parse(storedUser);
-        
+
         // Check for roles array first
         if (userData.roles && userData.roles.length > 0) {
           return userData.roles[0]; // Return primary role
         }
-        
+
         // Fallback to user_type field
         if (userData.user_type) {
           return userData.user_type;
@@ -385,17 +385,17 @@ class AuthService {
   async getDashboardRoute(): Promise<string> {
     try {
       const role = await this.getUserRole();
-      
+
       console.log('AuthService: Determining dashboard route for role:', role);
-      
+
       // Use the role mapping for consistent routing
       const dashboardRoute = ROLE_DASHBOARD_MAP[role?.toLowerCase() || ''];
-      
+
       if (dashboardRoute) {
         console.log('AuthService: Routing to:', dashboardRoute);
         return dashboardRoute;
       }
-      
+
       // Legacy fallback logic
       switch (role?.toLowerCase()) {
         case 'hr_manager':
@@ -456,7 +456,7 @@ class AuthService {
   async updateUserRoles(primaryRole: string, secondaryRoles: string[] = []): Promise<any> {
     try {
       const token = localStorage.getItem('access_token');
-      
+
       if (!token) {
         throw new Error('No access token found');
       }
@@ -479,13 +479,13 @@ class AuthService {
       }
 
       const data = await response.json();
-      
+
       // Update local storage with new user data if successful
       if (data.success && data.data?.user) {
         localStorage.setItem('user', JSON.stringify(data.data.user));
       }
 
-            if (data.success && data.data) {
+      if (data.success && data.data) {
         localStorage.setItem('access_token', data.data.access_token);
         localStorage.setItem('refresh_token', data.data.refresh_token);
         // Store the user data directly from data.data (not data.data.user)

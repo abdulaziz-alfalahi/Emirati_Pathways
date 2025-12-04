@@ -26,7 +26,7 @@ import {
   CalendarToday as CalendarIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '../../../utils/api';
 
 interface CreateOfferDialogProps {
   open: boolean;
@@ -76,7 +76,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   const [probationPeriod, setProbationPeriod] = useState('3');
   const [workLocation, setWorkLocation] = useState('');
   const [workSchedule, setWorkSchedule] = useState('');
-  
+
   // Benefits
   const [annualLeave, setAnnualLeave] = useState('30');
   const [healthInsurance, setHealthInsurance] = useState(true);
@@ -88,8 +88,9 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   useEffect(() => {
     if (open) {
       loadCandidates();
+      loadJobDescription();
       resetForm();
-      
+
       // If preselectedCandidate is provided, set it as selected
       if (preselectedCandidate) {
         const candidate: ShortlistedCandidate = {
@@ -102,15 +103,24 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
           match_score: 0
         };
         setSelectedCandidate(candidate);
-        // Keep on Step 1 so user can see and edit position title
-        // Position title will need to be filled manually
       }
     }
   }, [open, jdId, preselectedCandidate]);
 
+  const loadJobDescription = async () => {
+    try {
+      const response = await restClient.get(`/api/recruiter/jd/${jdId}`);
+      if (response.data && response.data.success && response.data.jd) {
+        setPositionTitle(response.data.jd.basic_info?.title || '');
+      }
+    } catch (err) {
+      console.error('Error loading JD details:', err);
+    }
+  };
+
   const loadCandidates = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/shortlist/${jdId}`);
+      const response = await restClient.get(`/api/recruiter/shortlist/${jdId}`);
       // The response structure is {success: true, shortlist: [...]}
       setCandidates(response.data.shortlist || []);
     } catch (err: any) {
@@ -123,7 +133,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
     setActiveStep(0);
     setError(null);
     setSelectedCandidate(null);
-    setPositionTitle('');
+    // setPositionTitle(''); // Don't reset position title as it comes from JD
     setSalaryAmount('');
     setSalaryCurrency('AED');
     setSalaryPeriod('annual');
@@ -183,7 +193,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         work_location: workLocation,
       };
 
-      await axios.post('http://localhost:5003/api/recruiter/offers/create', offerData);
+      await restClient.post('/api/recruiter/offers/create', offerData);
       onOfferCreated();
       onClose();
     } catch (err: any) {

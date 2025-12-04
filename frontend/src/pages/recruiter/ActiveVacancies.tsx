@@ -1,44 +1,44 @@
 import React from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import Layout from '@/components/layout/Layout';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Users, MapPin, Building, Calendar, Briefcase } from 'lucide-react';
+import { Eye, Users, MapPin, Building, Calendar, Briefcase, Plus, ArrowLeft } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 const ActiveVacancies: React.FC = () => {
   const { user, roles, isLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <Layout>
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 font-dubai-medium">Loading...</p>
         </div>
-      </Layout>
+      </div>
     );
   }
-  
+
   // Check if the user is authenticated (allow mock tokens)
   const hasToken = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
   const isMockToken = hasToken?.startsWith('mock_token_');
-  
+
   if (!user && !isMockToken) {
     return <Navigate to="/auth" replace />;
   }
-  
+
   // Check if the user has the recruiter role (or is using mock auth)
-  const isRecruiter = isMockToken || 
-                      (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
-                      (user?.email && user.email.includes('recruit'));
-                      
+  const isRecruiter = isMockToken ||
+    (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
+    (user?.email && user.email.includes('recruit'));
+
   // Redirect to dashboard if not a recruiter
   if (!isRecruiter) {
     return <Navigate to="/dashboard" replace />;
@@ -48,21 +48,13 @@ const ActiveVacancies: React.FC = () => {
   const { data: activeVacancies, isLoading: isLoadingVacancies } = useQuery({
     queryKey: ['activeVacancies'],
     queryFn: async () => {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      
-      if (!response.ok) {
+      const response = await restClient.get('/api/recruiter/jd/list');
+
+      if (!response.data) {
         throw new Error('Failed to fetch active vacancies');
       }
-      
-      const data = await response.json();
+
+      const data = response.data;
       // Filter to show only published vacancies
       const allJDs = data.job_descriptions || [];
       return allJDs.filter((jd: any) => jd.status === 'published');
@@ -71,131 +63,173 @@ const ActiveVacancies: React.FC = () => {
   });
 
   return (
-    <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Active Vacancies</h1>
-            <p className="text-muted-foreground">
-              Published job postings actively seeking suitable candidates
-            </p>
-          </div>
-          <Button onClick={() => navigate('/recruiter/jd-builder')}>
-            <Briefcase className="h-4 w-4 mr-2" />
-            Create New Vacancy
-          </Button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+      {/* Navigation */}
+      <HybridGovernmentNavFixed showAuthButtons={true} />
 
-        {isLoadingVacancies ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">Loading active vacancies...</p>
-            </CardContent>
-          </Card>
-        ) : !activeVacancies || activeVacancies.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Active Vacancies</h3>
-                <p className="text-muted-foreground mb-4">
-                  You don't have any published vacancies at the moment.
+      {/* Main Content */}
+      <div className="pt-24 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Link to="/recruiter-dashboard" className="text-slate-500 hover:text-teal-600 transition-colors">
+                    <ArrowLeft className="h-5 w-5" />
+                  </Link>
+                  <h1 className="text-3xl font-dubai-bold text-slate-900">
+                    Active Vacancies
+                  </h1>
+                </div>
+                <p className="text-slate-600 font-dubai-medium ml-7">
+                  Published job postings actively seeking suitable candidates
                 </p>
-                <Button onClick={() => navigate('/recruiter/jd-builder')}>
-                  Create Your First Vacancy
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Published Vacancies ({activeVacancies.length})</CardTitle>
-              <CardDescription>
-                These vacancies are live and actively seeking candidates
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job Title</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Published</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeVacancies.map((vacancy: any) => (
-                    <TableRow key={vacancy.jd_id || vacancy.id}>
-                      <TableCell className="font-medium">
-                        {vacancy.title || vacancy.basic_info?.title || 'Untitled Position'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span>
-                            {vacancy.city || vacancy.basic_info?.city || 'Not specified'}
-                            {vacancy.emirate || vacancy.basic_info?.emirate ? 
-                              `, ${vacancy.emirate || vacancy.basic_info?.emirate}` : ''}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {vacancy.department || vacancy.basic_info?.department || 'Not specified'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {vacancy.job_type || vacancy.basic_info?.job_type || 'Full-time'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {vacancy.published_at ? (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(vacancy.published_at).toLocaleDateString()}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Recently</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const jdId = vacancy.jd_id || vacancy.id;
-                              navigate(`/recruiter/shortlist/${jdId}`);
-                            }}
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium" onClick={() => navigate('/recruiter/jd-builder')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Vacancy
+              </Button>
+            </div>
+          </div>
+
+          {isLoadingVacancies ? (
+            <Card className="bg-white shadow-sm">
+              <CardContent className="pt-12 pb-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                  <p className="text-slate-500 font-dubai-medium">Loading active vacancies...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : !activeVacancies || activeVacancies.length === 0 ? (
+            <Card className="bg-white shadow-sm">
+              <CardContent className="pt-12 pb-12">
+                <div className="text-center">
+                  <Briefcase className="h-16 w-16 mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">No Active Vacancies</h3>
+                  <p className="text-slate-500 mb-6 font-dubai-medium max-w-md mx-auto">
+                    You don't have any published vacancies at the moment. Create a new vacancy to start receiving applications.
+                  </p>
+                  <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium" onClick={() => navigate('/recruiter/jd-builder')}>
+                    Create Your First Vacancy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-white shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="font-dubai-bold text-slate-900">Published Vacancies</CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-600">
+                      {activeVacancies.length} live positions
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border border-slate-200">
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead className="font-dubai-bold text-slate-700">Job Title</TableHead>
+                        <TableHead className="font-dubai-bold text-slate-700">Status</TableHead>
+                        <TableHead className="font-dubai-bold text-slate-700">Recruitment Stage</TableHead>
+                        <TableHead className="font-dubai-bold text-slate-700">Applications</TableHead>
+                        <TableHead className="font-dubai-bold text-slate-700">Type</TableHead>
+                        <TableHead className="font-dubai-bold text-slate-700 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activeVacancies.map((vacancy: any) => {
+                        // Mock data for demonstration - in real app would come from backend
+                        const stage = vacancy.stage || 'Screening';
+                        const progress = vacancy.progress || 45;
+                        const applications = vacancy.applications_count || Math.floor(Math.random() * 50) + 5;
+
+                        return (
+                          <TableRow
+                            key={vacancy.jd_id || vacancy.id}
+                            className="hover:bg-teal-50/30 transition-colors cursor-pointer group border-l-4 border-l-transparent hover:border-l-teal-500"
                           >
-                            <Users className="h-4 w-4 mr-1" />
-                            View Candidates
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const jdId = vacancy.jd_id || vacancy.id;
-                              navigate(`/recruiter/jd-builder?jd_id=${jdId}`);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Details
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
+                            <TableCell className="font-dubai-bold text-slate-900">
+                              <div>
+                                {vacancy.title || vacancy.basic_info?.title || 'Untitled Position'}
+                                <div className="flex items-center gap-1 text-xs text-slate-500 font-dubai-medium mt-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {vacancy.city || vacancy.basic_info?.city || 'Not specified'}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 font-dubai-medium">
+                                Active
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="w-48">
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-dubai-medium">
+                                  <span className="text-slate-700">{stage}</span>
+                                  <span className="text-slate-500">{progress}%</span>
+                                </div>
+                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-teal-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 font-dubai-bold text-slate-700">
+                                <Users className="h-4 w-4 text-slate-400" />
+                                {applications}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
+                                {vacancy.job_type || vacancy.basic_info?.job_type || 'Full-time'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  size="sm"
+                                  className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
+                                  onClick={() => {
+                                    const jdId = vacancy.jd_id || vacancy.id;
+                                    navigate(`/recruiter/shortlist/${jdId}`);
+                                  }}
+                                >
+                                  Candidates
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="font-dubai-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 border-slate-200"
+                                  onClick={() => {
+                                    const jdId = vacancy.jd_id || vacancy.id;
+                                    navigate(`/recruiter/jd-builder?jd_id=${jdId}`);
+                                  }}
+                                >
+                                  Details
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

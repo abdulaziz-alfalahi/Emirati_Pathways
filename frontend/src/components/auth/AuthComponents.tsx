@@ -49,7 +49,7 @@ interface RegistrationData {
 // UAE Emirates list
 const UAE_EMIRATES = [
   'Abu Dhabi',
-  'Dubai', 
+  'Dubai',
   'Sharjah',
   'Ajman',
   'Umm Al Quwain',
@@ -80,7 +80,7 @@ export const LoginForm: React.FC = () => {
   const [showMFA, setShowMFA] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const navigate = useNavigate();
 
   const validateForm = (): boolean => {
@@ -106,12 +106,12 @@ export const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -135,7 +135,7 @@ export const LoginForm: React.FC = () => {
           localStorage.setItem('access_token', result.data!.access_token);
           localStorage.setItem('refresh_token', result.data!.refresh_token);
           localStorage.setItem('user', JSON.stringify(result.data!.user));
-          
+
           toast.success('Login successful!');
           navigate('/dashboard');
         }
@@ -164,7 +164,7 @@ export const LoginForm: React.FC = () => {
             Welcome back to Emirati Journey Platform
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Email Field */}
@@ -178,9 +178,8 @@ export const LoginForm: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'
+                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -202,9 +201,8 @@ export const LoginForm: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                  className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${errors.password ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -238,9 +236,8 @@ export const LoginForm: React.FC = () => {
                   name="mfaCode"
                   type="text"
                   maxLength={6}
-                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.mfaCode ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.mfaCode ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Enter 6-digit MFA code"
                   value={formData.mfaCode}
                   onChange={(e) => setFormData({ ...formData, mfaCode: e.target.value })}
@@ -301,13 +298,13 @@ export const RegistrationForm: React.FC = () => {
     privacy_accepted: false,
     marketing_consent: false
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState(1);
-  
+
   const navigate = useNavigate();
 
   const validateStep1 = (): boolean => {
@@ -380,7 +377,7 @@ export const RegistrationForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateStep2()) return;
 
     setLoading(true);
@@ -424,19 +421,17 @@ export const RegistrationForm: React.FC = () => {
 
         {/* Progress Indicator */}
         <div className="flex items-center justify-center space-x-4">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-            step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+            }`}>
             1
           </div>
           <div className={`w-16 h-1 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-            step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+            }`}>
             2
           </div>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {step === 1 && (
             <div className="space-y-4">
@@ -451,9 +446,8 @@ export const RegistrationForm: React.FC = () => {
                     name="first_name"
                     type="text"
                     required
-                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                      errors.first_name ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.first_name ? 'border-red-300' : 'border-gray-300'
+                      } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                     value={formData.first_name}
                     onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                   />
@@ -471,9 +465,8 @@ export const RegistrationForm: React.FC = () => {
                     name="last_name"
                     type="text"
                     required
-                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                      errors.last_name ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.last_name ? 'border-red-300' : 'border-gray-300'
+                      } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                     value={formData.last_name}
                     onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                   />
@@ -494,9 +487,8 @@ export const RegistrationForm: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
-                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -517,9 +509,8 @@ export const RegistrationForm: React.FC = () => {
                   type="tel"
                   placeholder="+971 50 123 4567"
                   required
-                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                    errors.phone ? 'border-red-300' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${errors.phone ? 'border-red-300' : 'border-gray-300'
+                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
@@ -594,9 +585,8 @@ export const RegistrationForm: React.FC = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
-                      errors.password ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${errors.password ? 'border-red-300' : 'border-gray-300'
+                      } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
@@ -630,9 +620,8 @@ export const RegistrationForm: React.FC = () => {
                     name="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     required
-                    className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
-                      errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                    } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                      } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   />

@@ -26,9 +26,18 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
   onCancel
 }) => {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'select' | 'upload' | 'manual'>('select');
+  const [mode, setMode] = useState<'select' | 'upload' | 'manual'>(
+    initialJdId || initialData ? 'manual' : 'select'
+  );
   const [parsedData, setParsedData] = useState<any>(null);
   const [jdId, setJdId] = useState<string | undefined>(undefined);
+
+  // React to prop changes
+  React.useEffect(() => {
+    if (initialJdId || initialData) {
+      setMode('manual');
+    }
+  }, [initialJdId, initialData]);
 
   const handleParsed = (data: any, createdJdId?: string) => {
     setParsedData(data);
@@ -182,6 +191,7 @@ const JDWizardWithUpload: React.FC<JDWizardWithUploadProps> = ({
       )}
       
       <JobDescriptionWizard
+        key={jdId || initialJdId || 'wizard'} // Force re-mount
         recruiterId={recruiterId}
         companyId={companyId}
         initialData={parsedData || initialData}

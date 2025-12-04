@@ -64,7 +64,7 @@ export function buttonVariants(opts: {
   size?: ButtonSize;
   loading?: boolean;
   className?: string;
-}) {
+} = {}) {
   const variant = opts.variant ?? "default";
   const size = opts.size ?? "default";
   const loadingCls = opts.loading ? "cursor-not-allowed" : "";

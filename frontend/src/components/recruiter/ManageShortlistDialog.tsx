@@ -41,8 +41,8 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
+
+      const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/list', {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
               {/* Info Box */}
               <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm">
                 <p className="text-blue-700">
-                  <strong>Tip:</strong> The shortlist manager allows you to view candidates, 
+                  <strong>Tip:</strong> The shortlist manager allows you to view candidates,
                   schedule interviews, and send offers for the selected job description.
                 </p>
               </div>
@@ -154,8 +154,8 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleManageShortlist} 
+          <Button
+            onClick={handleManageShortlist}
             disabled={!selectedJD || loading}
           >
             <CheckCircle className="h-4 w-4 mr-2" />

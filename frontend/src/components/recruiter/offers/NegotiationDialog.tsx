@@ -64,7 +64,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [negotiationHistory, setNegotiationHistory] = useState<NegotiationEntry[]>([]);
-  
+
   // Form fields
   const [proposedSalary, setProposedSalary] = useState('');
   const [notes, setNotes] = useState('');
@@ -81,10 +81,10 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
   const loadNegotiationHistory = async () => {
     try {
       // Fetch fresh offer details to get latest negotiation history
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/${offer.offer_id}`);
+      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/${offer.offer_id}`);
       console.log('Loaded offer details:', response.data.offer);
       console.log('Negotiation history from API:', response.data.offer?.negotiation_history);
-      
+
       if (response.data.offer && response.data.offer.negotiation_history) {
         console.log('Setting negotiation history:', response.data.offer.negotiation_history);
         setNegotiationHistory(response.data.offer.negotiation_history);
@@ -145,16 +145,16 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
       }
 
       await axios.post(
-        `http://localhost:5003/api/recruiter/offers/${offer.offer_id}/negotiate`,
+        `http://127.0.0.1:5005/api/recruiter/offers/${offer.offer_id}/negotiate`,
         payload
       );
 
       setSuccess('Negotiation entry added successfully');
       resetForm();
-      
+
       // Reload negotiation history immediately to show the new entry
       await loadNegotiationHistory();
-      
+
       // Notify parent to refresh offer list
       setTimeout(() => {
         onNegotiationUpdated();
@@ -272,9 +272,8 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
                                         <TrendingDownIcon />
                                       )
                                     }
-                                    label={`${salaryChange.change > 0 ? '+' : ''}${
-                                      salaryChange.percentage
-                                    }%`}
+                                    label={`${salaryChange.change > 0 ? '+' : ''}${salaryChange.percentage
+                                      }%`}
                                     color={salaryChange.change > 0 ? 'success' : 'error'}
                                     size="small"
                                   />

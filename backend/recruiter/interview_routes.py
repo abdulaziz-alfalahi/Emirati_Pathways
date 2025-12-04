@@ -113,10 +113,18 @@ def create_interview():
             }), 400
             
     except Exception as e:
-        logger.error(f"Error creating interview: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Error creating interview: {str(e)}\n{error_trace}")
+        
+        # Write to file for debugging
+        with open('error_log.txt', 'w') as f:
+            f.write(error_trace)
+            
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'traceback': error_trace
         }), 500
 
 

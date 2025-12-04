@@ -1,20 +1,20 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CareerPageLayout } from '@/components/career/CareerPageLayout';
-import { 
-  FileText, 
-  Download, 
-  Edit, 
-  Users, 
-  Eye, 
-  Mail, 
-  BarChart3, 
-  Lightbulb, 
-  Monitor, 
-  Smartphone, 
-  Tablet, 
-  TrendingUp, 
-  Clock, 
+import {
+  FileText,
+  Download,
+  Edit,
+  Users,
+  Eye,
+  Mail,
+  BarChart3,
+  Lightbulb,
+  Monitor,
+  Smartphone,
+  Tablet,
+  TrendingUp,
+  Clock,
   MapPin,
   Upload,
   Brain,
@@ -36,17 +36,17 @@ import { Progress } from '@/components/ui/progress';
 const RoleSwitcherButton = () => {
   const handleRoleSwitch = () => {
     console.log('🔄 Switching to role selector from Resume Builder');
-    
+
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
     localStorage.removeItem('auth_token');
-    
+
     window.location.href = '/role_selector.html';
   };
 
   return (
-    <button 
+    <button
       onClick={handleRoleSwitch}
       style={{
         position: 'fixed',
@@ -84,7 +84,7 @@ const RoleSwitcherButton = () => {
 
 const ResumeBuilderPage: React.FC = () => {
   const { t } = useTranslation('resume-builder');
-  
+
   // CV Upload and AI states
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -106,26 +106,26 @@ const ResumeBuilderPage: React.FC = () => {
   const handleFileUpload = useCallback(async (file: File) => {
     setIsUploading(true);
     setError('');
-    
+
     try {
       const formData = new FormData();
       formData.append('cv_file', file);
-      
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003'}/api/cv/upload`, {
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005'}/api/cv/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token' )}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         body: formData
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setUploadedFile(file);
         setParsedData(result.data);
         setSuccess('CV uploaded and parsed successfully!');
-        
+
         // Auto-run AI analysis
         setTimeout(() => handleAiAnalysis(result.data), 1000);
       } else {
@@ -145,26 +145,26 @@ const ResumeBuilderPage: React.FC = () => {
       setError('Please enter CV text to parse');
       return;
     }
-    
+
     setIsParsing(true);
     setError('');
-    
+
     try {
-      const response = await fetch('http://localhost:5003/api/candidate/cv/parse-text', {
+      const response = await fetch('http://127.0.0.1:5005/api/candidate/cv/parse-text', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token' )}`
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         body: JSON.stringify({ cv_text: cvText })
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setParsedData(result.data);
         setSuccess('CV text parsed successfully!');
-        
+
         // Auto-run AI analysis
         setTimeout(() => handleAiAnalysis(result.data), 1000);
       } else {
@@ -184,7 +184,7 @@ const ResumeBuilderPage: React.FC = () => {
       setError('Please upload and parse a CV first');
       return;
     }
-    
+
     try {
       // Enhanced AI analysis with UAE-specific insights
       const mockAnalysis = {
@@ -211,7 +211,7 @@ const ResumeBuilderPage: React.FC = () => {
           'Local Market Knowledge'
         ]
       };
-      
+
       setAiAnalysis(mockAnalysis);
     } catch (err) {
       setError('Failed to analyze CV. Please try again.');
@@ -258,7 +258,7 @@ const ResumeBuilderPage: React.FC = () => {
   const BuilderTabContent = () => (
     <div className="space-y-6">
       <RoleSwitcherButton />
-      
+
       <div className="text-center">
         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
           Upload your existing CV for AI analysis or build a new one from scratch
@@ -272,7 +272,7 @@ const ResumeBuilderPage: React.FC = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {success && (
         <Alert>
           <CheckCircle className="h-4 w-4" />
@@ -329,7 +329,7 @@ const ResumeBuilderPage: React.FC = () => {
                 </Button>
               </label>
             </div>
-            
+
             {uploadedFile && (
               <div className="mt-4 p-4 bg-green-50 rounded-lg">
                 <div className="flex items-center space-x-2">
@@ -359,7 +359,7 @@ const ResumeBuilderPage: React.FC = () => {
               onChange={(e) => setCvText(e.target.value)}
               className="min-h-[200px]"
             />
-            <Button 
+            <Button
               onClick={handleTextParsing}
               className="w-full bg-primary hover:bg-primary/90"
               disabled={isParsing || !cvText.trim()}
@@ -424,7 +424,7 @@ const ResumeBuilderPage: React.FC = () => {
                   </div>
                   <Progress value={aiAnalysis.skillsMatch} />
                 </div>
-                
+
                 <div>
                   <div className="flex justify-between mb-2">
                     <span>Emiratization Score</span>
@@ -432,7 +432,7 @@ const ResumeBuilderPage: React.FC = () => {
                   </div>
                   <Progress value={aiAnalysis.emiratizationScore} />
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium mb-2">Top Job Matches:</h4>
                   <div className="space-y-2">
@@ -465,7 +465,7 @@ const ResumeBuilderPage: React.FC = () => {
         <p className="text-muted-foreground mb-6">
           {t('builder.description')}
         </p>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
           <div className="text-center">
             <div className="bg-primary/10 rounded-lg p-4 mb-2">
@@ -496,7 +496,7 @@ const ResumeBuilderPage: React.FC = () => {
         <Badge variant="secondary" className="mb-4">
           {t('builder.comingSoon')}
         </Badge>
-          
+
 
         <Button variant="outline">
           <Mail className="h-4 w-4 mr-2" />

@@ -1,0 +1,183 @@
+{
+  "id": "uae_creative",
+  "name": "uae_creative",
+  "display_name": "UAE Creative",
+  "description": "Creative template for design and media professionals",
+  "category": "creative",
+  "industry": "media",
+  "language": "english",
+  "is_premium": false,
+  "is_active": true,
+  "preview_image": "",
+  "sections": [
+    {
+      "name": "personal_info",
+      "display_name": "Personal Information",
+      "required": true,
+      "order": 1,
+      "max_items": null,
+      "fields": [
+        "full_name",
+        "email",
+        "phone",
+        "emirate",
+        "city",
+        "nationality",
+        "visa_status"
+      ]
+    },
+    {
+      "name": "professional_summary",
+      "display_name": "Professional Summary",
+      "required": true,
+      "order": 2,
+      "max_items": null,
+      "fields": []
+    },
+    {
+      "name": "experience",
+      "display_name": "Work Experience",
+      "required": true,
+      "order": 3,
+      "max_items": null,
+      "fields": [
+        "job_title",
+        "company",
+        "location",
+        "start_date",
+        "end_date",
+        "description",
+        "achievements"
+      ]
+    },
+    {
+      "name": "education",
+      "display_name": "Education",
+      "required": true,
+      "order": 4,
+      "max_items": null,
+      "fields": [
+        "degree",
+        "institution",
+        "graduation_year",
+        "gpa",
+        "honors"
+      ]
+    },
+    {
+      "name": "skills",
+      "display_name": "Skills",
+      "required": true,
+      "order": 5,
+      "max_items": null,
+      "fields": [
+        "name",
+        "category",
+        "proficiency",
+        "years_experience"
+      ]
+    },
+    {
+      "name": "languages",
+      "display_name": "Languages",
+      "required": false,
+      "order": 6,
+      "max_items": null,
+      "fields": [
+        "language",
+        "proficiency",
+        "certification"
+      ]
+    },
+    {
+      "name": "certifications",
+      "display_name": "Certifications",
+      "required": false,
+      "order": 7,
+      "max_items": null,
+      "fields": []
+    },
+    {
+      "name": "projects",
+      "display_name": "Projects",
+      "required": false,
+      "order": 8,
+      "max_items": null,
+      "fields": []
+    },
+    {
+      "name": "awards",
+      "display_name": "Awards & Achievements",
+      "required": false,
+      "order": 9,
+      "max_items": null,
+      "fields": []
+    },
+    {
+      "name": "volunteer_work",
+      "display_name": "Volunteer Work",
+      "required": false,
+      "order": 10,
+      "max_items": null,
+      "fields": []
+    },
+    {
+      "name": "portfolio",
+      "display_name": "Portfolio",
+      "required": true,
+      "order": 3.5,
+      "max_items": null,
+      "fields": [
+        "project_name",
+        "description",
+        "url",
+        "technologies",
+        "role"
+      ]
+    },
+    {
+      "name": "creative_skills",
+      "display_name": "Creative Skills",
+      "required": true,
+      "order": 5.5,
+      "max_items": null,
+      "fields": []
+    },
+    {
+      "name": "exhibitions",
+      "display_name": "Exhibitions & Shows",
+      "required": false,
+      "order": 8.5,
+      "max_items": null,
+      "fields": []
+    }
+  ],
+  "style": {
+    "font_family": "Helvetica, sans-serif",
+    "font_size": 10,
+    "line_height": 1.4,
+    "color_primary": "#8E44AD",
+    "color_secondary": "#E67E22",
+    "color_accent": "#F39C12",
+    "background_color": "#FFFFFF",
+    "header_style": "creative",
+    "layout_type": "two_column",
+    "spacing": "normal",
+    "border_style": "creative"
+  },
+  "metadata": {
+    "target_audience": "Creative professionals",
+    "best_for": [
+      "Designers",
+      "Artists",
+      "Media professionals"
+    ],
+    "features": [
+      "Portfolio showcase",
+      "Creative layout",
+      "Visual emphasis"
+    ]
+  },
+  "created_at": "2025-11-28T09:59:31.204845",
+  "updated_at": "2025-11-28T09:59:31.204845"
+}

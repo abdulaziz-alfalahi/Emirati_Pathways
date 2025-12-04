@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Download, FileText, Users, Calendar, Award, BarChart3 } from 'lucide-react';
+import { restClient } from '@/utils/api';
+import toast from 'react-hot-toast';
 
 interface ExportReportsDialogProps {
   open: boolean;
@@ -39,28 +41,22 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
     try {
       setLoading(true);
 
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      
       // Build query parameters
       const params = new URLSearchParams();
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
       params.append('format', exportFormat);
 
-      const response = await fetch(
-        `http://localhost:5003/api/recruiter/reports/${reportType}?${params.toString()}`,
-        {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'application/json',
-          },
-        }
+      // Use restClient instead of manual fetch
+      const response = await restClient.get(
+        `/api/recruiter/reports/${reportType}?${params.toString()}`,
+        { responseType: exportFormat === 'csv' ? 'blob' : 'json' }
       );
 
-      if (response.ok) {
+      if (response.data) {
         if (exportFormat === 'csv') {
           // Download CSV file
-          const blob = await response.blob();
+          const blob = new Blob([response.data], { type: 'text/csv' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -71,8 +67,8 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
           document.body.removeChild(a);
         } else {
           // Download JSON file
-          const data = await response.json();
-          const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+          const jsonData = typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2);
+          const blob = new Blob([jsonData], { type: 'application/json' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -83,15 +79,14 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
           document.body.removeChild(a);
         }
 
-        alert('Report exported successfully!');
+        toast.success('Report exported successfully!');
         onClose();
       } else {
-        const error = await response.json();
-        alert(`Failed to export report: ${error.error || 'Unknown error'}`);
+        throw new Error('Failed to generate report');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error exporting report:', error);
-      alert('Failed to export report. Please try again.');
+      toast.error(error.message || 'Failed to export report. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -99,7 +94,7 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-width-[500px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
@@ -210,4 +205,3 @@ const ExportReportsDialog: React.FC<ExportReportsDialogProps> = ({ open, onClose
 };
 
 export default ExportReportsDialog;
-

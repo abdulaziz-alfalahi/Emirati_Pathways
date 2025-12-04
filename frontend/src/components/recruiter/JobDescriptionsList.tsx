@@ -7,18 +7,19 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Upload, 
-  FileText, 
-  Plus, 
-  Eye, 
-  Users, 
-  CheckCircle, 
+import {
+  Upload,
+  FileText,
+  Plus,
+  Eye,
+  Users,
+  CheckCircle,
   AlertCircle,
   Clock,
   Building,
   MapPin,
-  Briefcase
+  Briefcase,
+  Trash2
 } from 'lucide-react';
 import {
   Dialog,
@@ -29,6 +30,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -36,13 +47,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { jobApi, healthApi, type JobDescription } from '@/utils/api';
+import { restClient, healthApi, jobApi, type JobDescription } from '@/utils/api';
 
 const JobDescriptionsList = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // State management
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isTextInputOpen, setIsTextInputOpen] = useState(false);
@@ -51,30 +62,21 @@ const JobDescriptionsList = () => {
   const [jobText, setJobText] = useState('');
   const [selectedJob, setSelectedJob] = useState<JobDescription | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<JobDescription | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Fetch job descriptions from Flask backend
   const { data: jobDescriptions, isLoading, refetch } = useQuery({
     queryKey: ['jobDescriptions'],
     queryFn: async () => {
-      // Get token for authentication
-      const token = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
-      const isMockToken = token?.startsWith('mock_token_');
-      
-      // Use the correct recruiter JD list endpoint
-      const response = await fetch('http://localhost:5003/api/recruiter/jd/list', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && !isMockToken ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      
-      if (!response.ok) {
+      const response = await restClient.get('/api/recruiter/jd/list');
+
+      if (!response.data) {
         throw new Error('Failed to fetch job descriptions');
       }
-      
-      const data = await response.json();
+
       // The API returns { job_descriptions: [...], count: ... }
-      return data.job_descriptions || [];
+      return response.data.job_descriptions || [];
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -93,13 +95,13 @@ const JobDescriptionsList = () => {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-    
+
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     try {
       const file = files[0];
-      
+
       // Validate file type
       const allowedTypes = [
         'application/pdf',
@@ -107,35 +109,35 @@ const JobDescriptionsList = () => {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'text/plain'
       ];
-      
+
       if (!allowedTypes.includes(file.type)) {
         throw new Error('Please upload a PDF, Word document, or text file');
       }
-      
+
       // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
-      
+
       // Parse the job description
       const response = await jobApi.parse(file);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
-      if (response.success) {
+
+      if (response.success && response.data) {
         toast({
           title: 'Job Description Parsed Successfully!',
-          description: `Extracted job details with ${response.completeness_score || 0}% confidence`,
+          description: `Extracted job details with ${response.data.completeness_score || 0}% confidence`,
         });
-        
+
         // Refetch the list to include the new job
         refetch();
         setIsUploadOpen(false);
-        
+
         // Show preview of parsed data
-        if (response.data) {
-          setSelectedJob(response.data);
+        if (response.data.data) {
+          setSelectedJob(response.data.data);
           setIsPreviewOpen(true);
         }
       } else {
@@ -166,26 +168,26 @@ const JobDescriptionsList = () => {
       });
       return;
     }
-    
+
     setIsUploading(true);
-    
+
     try {
       const response = await jobApi.parseText(jobText);
-      
-      if (response.success) {
+
+      if (response.success && response.data) {
         toast({
           title: 'Job Description Parsed Successfully!',
-          description: `Extracted job details with ${response.completeness_score || 0}% confidence`,
+          description: `Extracted job details with ${response.data.completeness_score || 0}% confidence`,
         });
-        
+
         // Refetch the list to include the new job
         refetch();
         setIsTextInputOpen(false);
         setJobText('');
-        
+
         // Show preview of parsed data
-        if (response.data) {
-          setSelectedJob(response.data);
+        if (response.data.data) {
+          setSelectedJob(response.data.data);
           setIsPreviewOpen(true);
         }
       } else {
@@ -206,13 +208,50 @@ const JobDescriptionsList = () => {
   const handleFindMatches = (job: JobDescription) => {
     // Store the selected job for the matching component
     localStorage.setItem('selectedJobForMatching', JSON.stringify(job));
-    navigate('/recruiter?tab=candidates');
+    // Navigate to the dashboard candidates tab
+    navigate('/recruiter-dashboard?tab=candidates');
   };
 
   // View job details
   const handleViewJob = (job: JobDescription) => {
     setSelectedJob(job);
     setIsPreviewOpen(true);
+  };
+
+  // Handle delete click
+  const handleDeleteClick = (job: JobDescription) => {
+    setJobToDelete(job);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Confirm delete
+  const confirmDeleteJob = async () => {
+    if (!jobToDelete) return;
+
+    const jdId = jobToDelete.jd_id || jobToDelete.id;
+
+    try {
+      const response = await jobApi.delete(jdId);
+
+      if (response.success) {
+        toast({
+          title: 'Job Deleted',
+          description: 'Job description has been successfully deleted.',
+        });
+        refetch();
+      } else {
+        throw new Error(response.error || 'Failed to delete job');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: error.message || 'An error occurred while deleting the job.',
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setJobToDelete(null);
+    }
   };
 
   // Get confidence color
@@ -239,109 +278,8 @@ const JobDescriptionsList = () => {
             Upload and manage job descriptions with AI-powered parsing
           </p>
         </div>
-        
-        <div className="flex gap-2">
-          <Dialog open={isTextInputOpen} onOpenChange={setIsTextInputOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <FileText className="h-4 w-4 mr-2" />
-                Add Text
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Parse Job Description from Text</DialogTitle>
-                <DialogDescription>
-                  Paste or type the job description text below
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <Textarea
-                  placeholder="Paste job description here..."
-                  value={jobText}
-                  onChange={(e) => setJobText(e.target.value)}
-                  rows={10}
-                  className="min-h-[200px]"
-                />
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsTextInputOpen(false)}
-                    disabled={isUploading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleTextParsing}
-                    disabled={isUploading || !jobText.trim()}
-                  >
-                    {isUploading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                        Parsing...
-                      </>
-                    ) : (
-                      <>Parse Job Description</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-          
-          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload File
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Upload Job Description</DialogTitle>
-                <DialogDescription>
-                  Upload a PDF, Word document, or text file containing the job description
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    PDF, DOC, DOCX, or TXT files only
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    Select File
-                  </Button>
-                </div>
-                
-                {isUploading && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Parsing job description...</span>
-                      <span>{uploadProgress}%</span>
-                    </div>
-                    <Progress value={uploadProgress} className="w-full" />
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+
+        {/* Buttons removed as per requirement - functionality moved to "Create New JD" wizard */}
       </div>
 
       {/* Health Status - FIXED: Added null safety checks */}
@@ -453,6 +391,14 @@ const JobDescriptionsList = () => {
                               Find Candidates
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteClick(job)}
+                            aria-label={`Delete job description ${job.title || job.jd_id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -485,7 +431,7 @@ const JobDescriptionsList = () => {
               Parsed job information and requirements
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedJob && (
             <div className="space-y-6">
               {/* Basic Information */}
@@ -500,7 +446,7 @@ const JobDescriptionsList = () => {
                     <div><span className="font-medium">Work Mode:</span> {selectedJob.work_mode || 'On-site'}</div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold mb-2">Parsing Metadata</h3>
                   <div className="space-y-2 text-sm">
@@ -526,7 +472,7 @@ const JobDescriptionsList = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium mb-1">Education ({selectedJob.requirements?.education?.length || 0})</h4>
                     <div className="flex flex-wrap gap-1">
@@ -538,7 +484,7 @@ const JobDescriptionsList = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
                     <h4 className="font-medium mb-1">Experience ({selectedJob.requirements?.experience?.length || 0})</h4>
@@ -548,7 +494,7 @@ const JobDescriptionsList = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium mb-1">Languages ({selectedJob.requirements?.languages?.length || 0})</h4>
                     <div className="flex flex-wrap gap-1">
@@ -603,6 +549,24 @@ const JobDescriptionsList = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the job description
+              "{jobToDelete?.title || 'Untitled Job'}" and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setJobToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteJob} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

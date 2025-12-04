@@ -112,7 +112,7 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/jd/${jdId}`);
+      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/jd/${jdId}`);
       setOffers(response.data.offers || []);
     } catch (err: any) {
       console.error('Error loading offers:', err);
@@ -124,7 +124,7 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`http://localhost:5003/api/recruiter/offers/statistics/${jdId}`);
+      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/statistics/${jdId}`);
       setStats(response.data.statistics);
     } catch (err: any) {
       console.error('Error loading statistics:', err);

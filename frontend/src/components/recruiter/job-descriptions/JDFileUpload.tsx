@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Upload, 
-  File, 
-  FileText, 
-  X, 
-  CheckCircle, 
+import {
+  Upload,
+  File,
+  FileText,
+  X,
+  CheckCircle,
   AlertTriangle,
   Loader2,
   FileUp,
@@ -44,24 +44,24 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
+
     // Validate files
     const validFiles: File[] = [];
     const errors: string[] = [];
 
     files.forEach(file => {
       const ext = file.name.split('.').pop()?.toLowerCase();
-      
+
       if (!ext || !allowedExtensions.includes(ext)) {
         errors.push(`${file.name}: Invalid file type. Allowed: ${allowedExtensions.join(', ')}`);
         return;
       }
-      
+
       if (file.size > maxFileSize) {
         errors.push(`${file.name}: File too large (max 10MB)`);
         return;
       }
-      
+
       validFiles.push(file);
     });
 
@@ -83,12 +83,12 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const files = Array.from(event.dataTransfer.files);
-    
+
     // Create a fake event to reuse validation logic
     const fakeEvent = {
       target: { files }
     } as any;
-    
+
     handleFileSelect(fakeEvent);
   };
 
@@ -113,7 +113,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
 
     try {
       const formData = new FormData();
-      
+
       if (allowBatch && selectedFiles.length > 1) {
         // Batch upload
         selectedFiles.forEach(file => {
@@ -123,7 +123,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_drafts', 'true');
 
-        const response = await fetch('http://localhost:5003/api/recruiter/jd/upload/batch', {
+        const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/upload/batch', {
           method: 'POST',
           body: formData
         });
@@ -135,7 +135,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         const data = await response.json();
         setUploadProgress(100);
         setSuccess(`Successfully processed ${data.success_count} out of ${data.total_files} files`);
-        
+
         // Return first successful result
         const firstSuccess = data.results.find((r: any) => r.success);
         if (firstSuccess) {
@@ -148,7 +148,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_draft', 'true');
 
-        const response = await fetch('http://localhost:5003/api/recruiter/jd/upload/parse', {
+        const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/upload/parse', {
           method: 'POST',
           body: formData
         });
@@ -160,7 +160,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         const data = await response.json();
         setUploadProgress(100);
         setSuccess(`Successfully parsed ${selectedFiles[0].name}`);
-        
+
         // Call callback with complete JD data (not just parsed_data)
         onParsed(data.jd_data, data.jd_id);
       }
@@ -214,14 +214,14 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
             onChange={handleFileSelect}
             className="hidden"
           />
-          
+
           <div className="flex flex-col items-center gap-4">
             {allowBatch ? (
               <FilePlus className="h-12 w-12 text-gray-400" />
             ) : (
               <Upload className="h-12 w-12 text-gray-400" />
             )}
-            
+
             <div>
               <p className="text-lg font-medium text-gray-700">
                 {allowBatch ? 'Drop files here or click to browse' : 'Drop file here or click to browse'}
@@ -254,7 +254,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
                     </p>
                   </div>
                 </div>
-                
+
                 {!uploading && (
                   <Button
                     variant="ghost"
@@ -315,7 +315,7 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
               </>
             )}
           </Button>
-          
+
           {onCancel && (
             <Button
               variant="outline"

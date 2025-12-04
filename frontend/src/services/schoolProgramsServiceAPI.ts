@@ -1,48 +1,48 @@
 // School Programs Service - API Connected
 // Real database integration with PostgreSQL backend
 
-import { 
-  SchoolProgram, 
-  ProgramFilters, 
-  SearchParams, 
+import {
+  SchoolProgram,
+  ProgramFilters,
+  SearchParams,
   ProgramsResponse,
   ProgramAnalytics,
-  ProgramCategory 
+  ProgramCategory
 } from '../types/schoolPrograms';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://localhost:5003/api');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://127.0.0.1:5005/api');
 
 class SchoolProgramsAPIService {
   // Get programs with filtering and search
   async getPrograms(params: SearchParams = {}): Promise<ProgramsResponse> {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (params.search) queryParams.append('search', params.search);
       if (params.category && params.category !== 'all') queryParams.append('category', params.category);
       if (params.status && params.status !== 'all') queryParams.append('status', params.status);
       if (params.featured !== undefined) queryParams.append('featured', params.featured.toString());
-      
+
       const url = `${API_BASE_URL}/school-programs${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const programs = await response.json();
       const transformedPrograms = programs.map(this.transformProgramData);
-      
+
       // Apply client-side filtering for features not supported by API
       let filteredPrograms = transformedPrograms;
-      
+
       if (params.ageRange) {
-        filteredPrograms = filteredPrograms.filter(program => 
-          program.targetAge.min <= params.ageRange!.max && 
+        filteredPrograms = filteredPrograms.filter(program =>
+          program.targetAge.min <= params.ageRange!.max &&
           program.targetAge.max >= params.ageRange!.min
         );
       }
-      
+
       // Apply sorting
       if (params.sortBy) {
         filteredPrograms.sort((a, b) => {
@@ -62,7 +62,7 @@ class SchoolProgramsAPIService {
           }
         });
       }
-      
+
       // Apply pagination
       const total = filteredPrograms.length;
       const page = params.page || 1;
@@ -70,7 +70,7 @@ class SchoolProgramsAPIService {
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
       const paginatedPrograms = filteredPrograms.slice(startIndex, endIndex);
-      
+
       return {
         programs: paginatedPrograms,
         total,
@@ -80,7 +80,7 @@ class SchoolProgramsAPIService {
         hasNext: endIndex < total,
         hasPrev: page > 1
       };
-      
+
     } catch (error) {
       console.error('Error fetching programs from API:', error);
       // Return empty result on API failure
@@ -100,12 +100,12 @@ class SchoolProgramsAPIService {
   async getProgramById(id: string): Promise<SchoolProgram | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/school-programs/${id}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) return null;
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       return this.transformProgramData(data);
     } catch (error) {
@@ -118,11 +118,11 @@ class SchoolProgramsAPIService {
   async getCategories(): Promise<ProgramCategory[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/school-programs/categories`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -141,13 +141,13 @@ class SchoolProgramsAPIService {
   async getAnalytics(): Promise<ProgramAnalytics> {
     try {
       const response = await fetch(`${API_BASE_URL}/admin/dashboard-stats`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const stats = await response.json();
-      
+
       // Transform API response to match ProgramAnalytics interface
       return {
         totalPrograms: stats.totalPrograms,
@@ -191,8 +191,8 @@ class SchoolProgramsAPIService {
 
   // Get featured programs
   async getFeaturedPrograms(limit: number = 6): Promise<SchoolProgram[]> {
-    const response = await this.getPrograms({ 
-      featured: true, 
+    const response = await this.getPrograms({
+      featured: true,
       status: 'published',
       limit,
       sortBy: 'popularity'
@@ -202,8 +202,8 @@ class SchoolProgramsAPIService {
 
   // Get programs by category
   async getProgramsByCategory(category: string, limit: number = 10): Promise<SchoolProgram[]> {
-    const response = await this.getPrograms({ 
-      category, 
+    const response = await this.getPrograms({
+      category,
       status: 'published',
       limit,
       sortBy: 'popularity'
@@ -227,11 +227,11 @@ class SchoolProgramsAPIService {
     const program = await this.getProgramById(programId);
     if (!program) return [];
 
-    const response = await this.getPrograms({ 
-      category: program.category, 
-      status: 'published' 
+    const response = await this.getPrograms({
+      category: program.category,
+      status: 'published'
     });
-    
+
     return response.programs
       .filter(p => p.id !== programId)
       .slice(0, limit);
