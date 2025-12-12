@@ -8,7 +8,8 @@ import type { CV } from '@/types/cv'
  *  - VITE_FLASK_API_URL: your Python/Flask microservice (for NLP/matching, etc.)
  */
 // FORCE RELATIVE PATH FOR DEBUGGING
-const API_BASE_URL = 'http://127.0.0.1:5006'
+// FORCE RELATIVE PATH FOR DEBUGGING - Ignore Env Var for now
+const API_BASE_URL = '' // import.meta.env.VITE_API_BASE_URL || ''
 const FLASK_API_URL = '/'
 
 export interface ApiResponse<T = any> {

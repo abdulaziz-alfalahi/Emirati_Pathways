@@ -25,7 +25,7 @@ try {
   console.log("App rendered successfully");
 } catch (error) {
   console.error("Failed to render app:", error);
-  
+
   // Fallback error display
   if (root) {
     root.innerHTML = `
@@ -42,3 +42,28 @@ try {
   }
 }
 
+// Force unregister legacy Service Workers to clear stale cache (fixes 404 font issues)
+// Aggressive Service Worker Cleanup for Dev Environment
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then(registration => {
+    console.log('SW: Unregistering ready worker:', registration);
+    registration.unregister();
+  }).catch(e => console.error('SW ready error:', e));
+
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      console.log('SW: Force unregistering from main.tsx:', registration);
+      registration.unregister();
+    }
+  });
+
+  // Force reload if we detect a controller that shouldn't be there
+  if (navigator.serviceWorker.controller) {
+    console.log('SW: Controller detected, reloading in 1s...');
+    setTimeout(() => {
+      // Only reload if we haven't just reloaded (prevention loop would be good but simple is better now)
+      // window.location.reload(); 
+      // Commented out reload to avoid infinite loops, but the unregister needs to happen first.
+    }, 1000);
+  }
+}

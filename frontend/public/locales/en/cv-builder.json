@@ -1,0 +1,153 @@
+{
+    "title": "Professional CV Builder",
+    "description": "Create a compelling CV tailored for the UAE job market with our comprehensive builder featuring professional templates, expert guidance, and AI-powered optimization.",
+    "quote": "A well-crafted CV is your gateway to career opportunities in the UAE's dynamic job market.",
+    "attribution": "UAE Career Development Expert",
+    "stats": {
+        "steps": "Step Wizard",
+        "templates": "Professional Templates",
+        "compliance": "UAE Compliant",
+        "powered": "AI Powered"
+    },
+    "actions": {
+        "primary": "Start Building CV",
+        "secondary": "View Templates"
+    },
+    "tabs": {
+        "builder": {
+            "label": "CV Builder",
+            "description": "Create a professional CV tailored for the UAE job market with our comprehensive 9-step wizard."
+        },
+        "templates": {
+            "label": "Templates",
+            "description": "Choose from professionally designed templates optimized for different industries and career levels."
+        },
+        "tips": {
+            "label": "UAE Tips",
+            "description": "Expert tips and best practices for creating an outstanding CV for the UAE job market."
+        },
+        "analytics": {
+            "label": "Analytics",
+            "description": "Track your CV performance and get insights to improve your job search success."
+        }
+    },
+    "templates": {
+        "government": {
+            "name": "Government",
+            "description": "Perfect for UAE government positions"
+        },
+        "corporate": {
+            "name": "Corporate",
+            "description": "Professional design for corporate roles"
+        },
+        "creative": {
+            "name": "Creative",
+            "description": "Modern layout for creative industries"
+        },
+        "technical": {
+            "name": "Technical",
+            "description": "Clean format for technical positions"
+        },
+        "academic": {
+            "name": "Academic",
+            "description": "Detailed format for academic careers"
+        },
+        "modern": {
+            "name": "Modern",
+            "description": "Contemporary design for all industries"
+        },
+        "actions": {
+            "preview": "Preview Template"
+        }
+    },
+    "tips": {
+        "personal": {
+            "title": "Personal Information",
+            "photo": "Include a professional photo (recommended in UAE)",
+            "visa": "Add your UAE visa status if applicable",
+            "nationality": "Include nationality and languages spoken",
+            "contacts": "Provide both English and Arabic contact details"
+        },
+        "experience": {
+            "title": "Work Experience",
+            "uae": "Highlight UAE work experience prominently",
+            "context": "Include company size and industry context",
+            "metrics": "Quantify achievements with specific metrics",
+            "government": "Mention any government or semi-government experience"
+        },
+        "education": {
+            "title": "Education & Qualifications",
+            "equivalency": "Include degree equivalency for international qualifications",
+            "uae": "Mention any UAE university affiliations",
+            "certifications": "Highlight relevant professional certifications",
+            "continuing": "Include continuing education and training"
+        },
+        "cultural": {
+            "title": "Cultural Considerations",
+            "arabic": "Arabic language skills are highly valued",
+            "awareness": "Cultural awareness and adaptability",
+            "business": "Understanding of UAE business practices",
+            "customs": "Respect for local customs and traditions"
+        }
+    },
+    "analytics": {
+        "comingSoon": {
+            "title": "CV Analytics Coming Soon",
+            "description": "Get detailed insights about your CV performance, download statistics, and optimization suggestions.",
+            "badge": "Feature Coming Soon"
+        },
+        "metrics": {
+            "views": "Views",
+            "downloads": "Downloads"
+        }
+    },
+    "uploadYourCV": "Upload Your CV",
+    "uploadHint": "Maximum file size: 10MB • Powered by Gemini AI",
+    "aiPoweredAnalysis": "AI-powered analysis with UAE job market insights",
+    "chooseFile": "Choose File",
+    "autoFill": "Auto-Fill with CV",
+    "startFromScratch": "Start from Scratch",
+    "confirmDelete": "Are you sure you want to delete this CV?",
+    "deleteError": "Failed to delete CV",
+    "heroTitle": "AI-Powered CV Builder",
+    "heroSubtitle": "Upload your CV, get AI analysis, and create a professional resume tailored for the UAE job market",
+    "uaeFocused": "UAE Focused",
+    "geminiAI": "Gemini AI",
+    "loadCV": "Load CV",
+    "updateCV": "Update CV",
+    "saveCV": "Save CV",
+    "save": "Save",
+    "editing": "Editing: {{title}}",
+    "reviewCustomize": "Review and Customize",
+    "chooseTemplate": "Choose Template",
+    "selectedTemplate": "Selected Template",
+    "personalInformation": "Personal Information",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "uaePhoneHint": "Suggested format: +9715XXXXXXXX",
+    "location": "Location",
+    "professionalSummary": "Professional Summary",
+    "skills": "Skills",
+    "technicalSkills": "Technical Skills",
+    "softSkills": "Soft Skills",
+    "workExperience": "Work Experience",
+    "education": "Education",
+    "previewExport": "Preview & Export",
+    "editCV": "Edit CV",
+    "matchToVacancies": "Match to Vacancies",
+    "downloadPDF": "Download PDF",
+    "shareLink": "Share Link",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "cvTitle": "CV Title",
+    "invalidFileType": "Please upload a PDF or Word document",
+    "fileTooLarge": "File size must be less than 10MB",
+    "uploadError": "Upload failed: {{message}}",
+    "skipUpload": "Back to Upload",
+    "cvAnalysis": "CV Performance Analysis",
+    "cvCompleteness": "CV Completeness",
+    "atsOptimization": "ATS Optimization",
+    "improvementSuggestions": "Improvement Suggestions"
+}

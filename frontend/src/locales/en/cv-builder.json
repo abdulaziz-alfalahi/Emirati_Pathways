@@ -5,7 +5,7 @@
   "attribution": "UAE Career Development Expert",
   "stats": {
     "steps": "Step Wizard",
-    "templates": "Professional Templates", 
+    "templates": "Professional Templates",
     "compliance": "UAE Compliant",
     "powered": "AI Powered"
   },
@@ -37,7 +37,7 @@
       "description": "Perfect for UAE government positions"
     },
     "corporate": {
-      "name": "Corporate", 
+      "name": "Corporate",
       "description": "Professional design for corporate roles"
     },
     "creative": {
@@ -98,10 +98,51 @@
     },
     "metrics": {
       "views": "Views",
-      "downloads": "Downloads",
-      "score": "Score",
-      "ranking": "Ranking"
+      "downloads": "Downloads"
     }
-  }
+  },
+  "uploadYourCV": "Upload Your CV",
+  "uploadHint": "Maximum file size: 10MB • Powered by Gemini AI",
+  "aiPoweredAnalysis": "AI-powered analysis with UAE job market insights",
+  "chooseFile": "Choose File",
+  "autoFill": "Auto-Fill with CV",
+  "startFromScratch": "Start from Scratch",
+  "confirmDelete": "Are you sure you want to delete this CV?",
+  "deleteError": "Failed to delete CV",
+  "heroTitle": "AI-Powered CV Builder",
+  "heroSubtitle": "Upload your CV, get AI analysis, and create a professional resume tailored for the UAE job market",
+  "uaeFocused": "UAE Focused",
+  "geminiAI": "Gemini AI",
+  "loadCV": "Load CV",
+  "updateCV": "Update CV",
+  "saveCV": "Save CV",
+  "save": "Save",
+  "editing": "Editing: {{title}}",
+  "reviewCustomize": "Review and Customize",
+  "chooseTemplate": "Choose Template",
+  "selectedTemplate": "Selected Template",
+  "personalInformation": "Personal Information",
+  "firstName": "First Name",
+  "lastName": "Last Name",
+  "email": "Email",
+  "phone": "Phone",
+  "uaePhoneHint": "Suggested format: +9715XXXXXXXX",
+  "location": "Location",
+  "professionalSummary": "Professional Summary",
+  "skills": "Skills",
+  "technicalSkills": "Technical Skills",
+  "softSkills": "Soft Skills",
+  "workExperience": "Work Experience",
+  "education": "Education",
+  "previewExport": "Preview & Export",
+  "editCV": "Edit CV",
+  "matchToVacancies": "Match to Vacancies",
+  "downloadPDF": "Download PDF",
+  "saving": "Saving...",
+  "cancel": "Cancel",
+  "cvTitle": "CV Title",
+  "invalidFileType": "Please upload a PDF or Word document",
+  "fileTooLarge": "File size must be less than 10MB",
+  "uploadError": "Upload failed: {{message}}",
+  "skipUpload": "Back to Upload"
 }
-

@@ -23,19 +23,31 @@ const RecruiterJobs: React.FC = () => {
     );
   }
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('RecruiterJobs: Auth State:', { user, isLoading, roles: user?.roles });
+  }, [user, isLoading]);
+
   // Check if the user is authenticated
   if (!user) {
+    console.log('RecruiterJobs: Redirecting to /auth (User is null)');
     return <Navigate to="/auth" replace />;
   }
 
   // Check if the user has the recruiter role
   const roles = user.roles || [];
+  const userType = user.user_type || user.role || '';
+
   const isRecruiter = (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
+    userType === 'recruiter' ||
+    userType === 'hr_manager' ||
+    userType === 'hr_recruiter' ||
     (user?.email && user.email.includes('recruit'));
 
   // Redirect to dashboard if not a recruiter
   if (!isRecruiter) {
-    return <Navigate to="/dashboard" replace />;
+    console.log('RecruiterJobs: Redirecting to /recruiter-dashboard (Not a Recruiter or Role Mismatch)', { roles, userType, email: user.email });
+    return <Navigate to="/recruiter-dashboard" replace />;
   }
 
   return (

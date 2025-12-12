@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -287,47 +287,78 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     }
   }, [initialData, initialJdId]);
 
-  // Initialize JD ID on mount if not provided
+
+  const [searchParams] = useSearchParams();
+  const urlJdId = searchParams.get('jd_id');
+
+  // Initialize JD ID on mount
   useEffect(() => {
     const initializeJD = async () => {
-      // If we already have a JD ID, don't create a new one
-      if (jdData.jd_id) {
-        return;
-      }
+      // Determine effective JD ID (Prop > URL > State)
+      const effectiveId = initialJdId || urlJdId || jdData.jd_id;
 
-      // If we have initial data with JD ID, use it
-      if (initialJdId || initialData?.metadata?.jd_id || initialData?.jd_id) {
-        setJDData(prev => ({
-          ...prev,
-          jd_id: initialJdId || initialData?.metadata?.jd_id || initialData?.jd_id
-        }));
-        return;
-      }
-
-      // Create a new JD in the database
-      try {
-        // Use restClient which handles base URL and headers automatically
-        const response = await restClient.post('/api/recruiter/jd/create', {
-          recruiter_id: recruiterId,
-          company_id: companyId,
-          template: 'standard'
-        });
-
-        if (response.data && response.data.success && response.data.jd_id) {
-          setJDData(prev => ({
-            ...prev,
-            jd_id: response.data.jd_id
-          }));
-          console.log('Created new JD with ID:', response.data.jd_id);
+      if (effectiveId) {
+        // If we have an ID but no data (and it's different from current), fetch it
+        if (!jdData.jd_id || jdData.jd_id !== effectiveId) {
+          setLoading(true);
+          try {
+            const response = await restClient.get(`/api/recruiter/jd/${effectiveId}`);
+            if (response.data && response.data.success && response.data.jd) {
+              const fetchedData = response.data.jd;
+              console.log('Fetched JD Data:', fetchedData);
+              setJDData({
+                jd_id: effectiveId,
+                basic_info: fetchedData.basic_info || {
+                  title: '',
+                  department: '',
+                  job_type: 'full_time',
+                  job_level: 'mid',
+                  emirate: '',
+                  city: '',
+                  remote_option: false
+                },
+                description: fetchedData.description || '',
+                description_arabic: fetchedData.description_arabic || '',
+                requirements: fetchedData.requirements || [],
+                responsibilities: fetchedData.responsibilities || [],
+                benefits: fetchedData.benefits || [],
+                compensation: fetchedData.compensation || { salary_currency: 'AED' },
+                metadata: fetchedData.metadata
+              });
+            }
+          } catch (error) {
+            console.error("Failed to load JD:", error);
+            toast.error("Failed to load job description");
+          } finally {
+            setLoading(false);
+          }
         }
-      } catch (error) {
-        console.error('Failed to create JD:', error);
-        // Continue anyway - JD ID will be created on first save
+        return;
+      }
+
+      // If no ID found anywhere, Create a new JD
+      if (!initialData && !urlJdId) {
+        try {
+          const response = await restClient.post('/api/recruiter/jd/create', {
+            recruiter_id: recruiterId,
+            company_id: companyId,
+            template: 'standard'
+          });
+
+          if (response.data && response.data.success && response.data.jd_id) {
+            setJDData(prev => ({
+              ...prev,
+              jd_id: response.data.jd_id
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to create JD:', error);
+        }
       }
     };
 
     initializeJD();
-  }, [recruiterId, companyId, initialJdId, initialData]); // Run when these change
+  }, [recruiterId, companyId, initialJdId, initialData, urlJdId]);
 
   const steps = [
     { id: 'basic', title: 'Basic Information', icon: Briefcase },

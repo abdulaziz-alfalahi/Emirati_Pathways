@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,45 +8,37 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
-import { 
-  User, 
-  Briefcase, 
-  FileText, 
-  TrendingUp, 
+import {
+  User,
+  Briefcase,
+  FileText,
+  TrendingUp,
   Upload,
   CheckCircle,
   AlertCircle,
   Target,
   Calendar,
-  Star,
-  Award,
-  MapPin,
-  Phone,
-  Mail,
   Eye,
-  Edit,
-  Download,
-  Share,
   Bell,
-  Settings
+  Settings,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 
 // Import your existing components
-import CVUpload from '@/components/candidate/CVUpload';
 import ProfileForm from '@/components/candidate/ProfileForm';
 import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
-import Layout from '@/components/layout/Layout';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 interface DashboardData {
   profile: {
     name: string;
-    email: string;
-    phone: string;
-    location: string;
+    email?: string;
+    phone?: string;
+    location?: string;
     completionPercentage: number;
     cvUploaded: boolean;
-    profilePicture?: string;
   };
   stats: {
     profileViews: number;
@@ -64,149 +57,86 @@ interface DashboardData {
 
 const CandidateDashboard: React.FC = () => {
   const { t } = useTranslation();
+  const { language, toggleLanguage } = useLanguage();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     profile: {
-      name: 'Ahmed Al Emirati',
-      email: 'ahmed.alemirati@hrdc.ae',
-      phone: '+971501234567',
-      location: 'Dubai, UAE',
-      completionPercentage: 75,
+      name: 'Candidate',
+      completionPercentage: 0,
       cvUploaded: false
     },
     stats: {
-      profileViews: 24,
-      jobMatches: 8,
-      applications: 5,
-      interviews: 2
+      profileViews: 0,
+      jobMatches: 0,
+      applications: 0,
+      interviews: 0
     },
-    recentActivity: [
-      {
-        id: '1',
-        type: 'job_match',
-        title: 'New Job Match',
-        description: 'Senior Software Engineer at Emirates Technology',
-        timestamp: '2 hours ago'
-      },
-      {
-        id: '2',
-        type: 'profile_view',
-        title: 'Profile Viewed',
-        description: 'Your profile was viewed by ADNOC Digital',
-        timestamp: '5 hours ago'
-      },
-      {
-        id: '3',
-        type: 'interview',
-        title: 'Interview Scheduled',
-        description: 'Technical interview with Careem on Sept 20',
-        timestamp: '1 day ago'
-      }
-    ]
+    recentActivity: []
   });
-
-  const [parsedCVData, setParsedCVData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [showCVSuccess, setShowCVSuccess] = useState(false);
 
-  // Handle CV upload completion
-  const handleCVUploadComplete = (cvData: any) => {
-    console.log('CV Upload completed:', cvData);
-    setDashboardData(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        cvUploaded: true,
-        completionPercentage: Math.min(prev.profile.completionPercentage + 20, 100)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/candidate/dashboard/stats', { headers });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setDashboardData(prev => ({
+              ...prev,
+              profile: { ...prev.profile, ...result.data.profile },
+              stats: { ...prev.stats, ...result.data.stats }
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats', error);
+      } finally {
+        setLoading(false);
       }
-    }));
-    setShowCVSuccess(true);
-    setTimeout(() => setShowCVSuccess(false), 5000);
-  };
+    };
 
-  // Handle CV parsing completion - this is the key integration!
-  const handleCVParsingComplete = (parsedData: any) => {
-    console.log('CV Parsing completed:', parsedData);
-    setParsedCVData(parsedData);
-    
-    // Update dashboard stats
-    setDashboardData(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        name: parsedData.name || prev.profile.name,
-        email: parsedData.email || prev.profile.email,
-        phone: parsedData.phone || prev.profile.phone,
-        location: parsedData.location || prev.profile.location,
-        completionPercentage: Math.min(prev.profile.completionPercentage + 15, 100)
-      }
-    }));
-
-    // Automatically switch to Profile tab to show the populated form
-    setActiveTab('profile');
-    setShowCVSuccess(true);
-    setTimeout(() => setShowCVSuccess(false), 5000);
-  };
-
-  // Handle profile form updates
-  const handleProfileUpdate = (profileData: any) => {
-    console.log('Profile updated:', profileData);
-    setDashboardData(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        name: profileData.name || prev.profile.name,
-        email: profileData.email || prev.profile.email,
-        phone: profileData.phone || prev.profile.phone,
-        location: profileData.location || prev.profile.location,
-        completionPercentage: calculateProfileCompletion(profileData)
-      }
-    }));
-  };
-
-  // Calculate profile completion based on filled fields
-  const calculateProfileCompletion = (profileData: any) => {
-    const fields = [
-      profileData.name,
-      profileData.email,
-      profileData.phone,
-      profileData.location,
-      profileData.summary,
-      profileData.skills?.length > 0,
-      profileData.education,
-      profileData.years_of_experience > 0
-    ];
-    const completed = fields.filter(Boolean).length;
-    return Math.round((completed / fields.length) * 100);
-  };
+    fetchStats();
+  }, []);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'application':
-        return <FileText className="h-4 w-4 text-blue-500" />;
-      case 'interview':
-        return <Calendar className="h-4 w-4 text-purple-500" />;
-      case 'profile_view':
-        return <Eye className="h-4 w-4 text-green-500" />;
-      case 'job_match':
-        return <Target className="h-4 w-4 text-orange-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
+      case 'application': return <FileText className="h-4 w-4 text-blue-500" />;
+      case 'interview': return <Calendar className="h-4 w-4 text-purple-500" />;
+      case 'profile_view': return <Eye className="h-4 w-4 text-green-500" />;
+      case 'job_match': return <Target className="h-4 w-4 text-orange-500" />;
+      default: return <Bell className="h-4 w-4 text-gray-500" />;
     }
   };
 
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading dashboard...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50">
-      <HybridGovernmentNavFixed showAuthButtons={false} currentPage="dashboard" userRole="job seeker" />
+      <HybridGovernmentNavFixed
+        showAuthButtons={false}
+        currentPage="dashboard"
+        userRole="job seeker"
+        currentLanguage={language}
+        onLanguageToggle={toggleLanguage}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center py-6">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
               <span className="text-white font-bold text-lg">
-                {dashboardData.profile.name.split(' ').map(n => n[0]).join('')}
+                {dashboardData.profile.name ? dashboardData.profile.name.charAt(0).toUpperCase() : 'C'}
               </span>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 animate-in fade-in slide-in-from-left-4 duration-500">
                 Welcome back, {dashboardData.profile.name.split(' ')[0]}!
               </h1>
               <p className="text-gray-600">Your career journey continues here</p>
@@ -215,41 +145,44 @@ const CandidateDashboard: React.FC = () => {
           <div className="flex items-center space-x-3">
             <Button variant="outline" size="sm">
               <Bell className="h-4 w-4 mr-2" />
-              Job Seeker
-            </Button>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Sign Out
+              Notifications
             </Button>
           </div>
         </div>
 
-        {showCVSuccess && (
-          <div className="pt-4">
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                🎉 CV processed successfully! Your profile has been automatically updated with the parsed information.
+        {!dashboardData.profile.cvUploaded && (
+          <div className="pt-4 mb-6">
+            <Alert className="border-teal-200 bg-teal-50 shadow-sm">
+              <Sparkles className="h-4 w-4 text-teal-600" />
+              <AlertDescription className="text-teal-800 flex justify-between items-center">
+                <span>
+                  <strong>Boost your profile!</strong> Upload your CV to get AI-powered job matches and a professional profile.
+                </span>
+                <Button size="sm" className="ml-4 bg-teal-600 hover:bg-teal-700" onClick={() => navigate('/cv-builder')}>
+                  Upload CV Now <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </AlertDescription>
             </Alert>
           </div>
         )}
 
         <div className="py-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4 bg-white/50 p-1 rounded-xl shadow-sm">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="jobs">Job Matches</TabsTrigger>
+              <TabsTrigger value="profile">Profile & CV</TabsTrigger>
+              <TabsTrigger value="jobs">Job Matches ({dashboardData.stats.jobMatches})</TabsTrigger>
               <TabsTrigger value="applications">Applications</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6 mt-6">
+            <TabsContent value="overview" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card>
+                <Card className="hover:shadow-md transition-shadow duration-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center">
-                      <Eye className="h-8 w-8 text-blue-600" />
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <Eye className="h-6 w-6 text-blue-600" />
+                      </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Profile Views</p>
                         <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.profileViews}</p>
@@ -257,10 +190,12 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="hover:shadow-md transition-shadow duration-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center">
-                      <Target className="h-8 w-8 text-green-600" />
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <Target className="h-6 w-6 text-green-600" />
+                      </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Job Matches</p>
                         <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.jobMatches}</p>
@@ -268,10 +203,12 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="hover:shadow-md transition-shadow duration-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center">
-                      <FileText className="h-8 w-8 text-purple-600" />
+                      <div className="p-3 bg-purple-100 rounded-full">
+                        <FileText className="h-6 w-6 text-purple-600" />
+                      </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Applications</p>
                         <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.applications}</p>
@@ -279,10 +216,12 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="hover:shadow-md transition-shadow duration-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center">
-                      <Calendar className="h-8 w-8 text-orange-600" />
+                      <div className="p-3 bg-orange-100 rounded-full">
+                        <Calendar className="h-6 w-6 text-orange-600" />
+                      </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Interviews</p>
                         <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.interviews}</p>
@@ -293,42 +232,45 @@ const CandidateDashboard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
+                <Card className="overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
                     <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
+                      <User className="h-5 w-5 text-teal-600" />
                       Profile Completion
                     </CardTitle>
                     <CardDescription>
                       Complete your profile to get better job matches
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="pt-6">
+                    <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Overall Progress</span>
-                        <span className="text-sm text-gray-600">{dashboardData.profile.completionPercentage}%</span>
+                        <span className="text-sm font-bold text-teal-600">{dashboardData.profile.completionPercentage}%</span>
                       </div>
-                      <Progress value={dashboardData.profile.completionPercentage} className="h-3" />
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
+                      <Progress value={dashboardData.profile.completionPercentage} className="h-3 bg-gray-100" />
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm p-3 bg-gray-50 rounded-lg">
                           <span className="flex items-center gap-2">
-                            <Upload className="h-4 w-4" />
-                            CV Upload
+                            <Upload className="h-4 w-4 text-gray-500" />
+                            CV Upload Status
                           </span>
                           {dashboardData.profile.cvUploaded ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" /> Uploaded
+                            </Badge>
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-yellow-500" />
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" /> Pending
+                            </Badge>
                           )}
                         </div>
-                        <Button 
-                          onClick={() => setActiveTab('profile')}
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
+                        <Button
+                          onClick={() => navigate('/cv-builder')}
+                          variant="default"
+                          className="w-full bg-slate-900 hover:bg-slate-800"
                         >
-                          {dashboardData.profile.cvUploaded ? 'Update Profile' : 'Upload CV & Complete Profile'}
+                          {dashboardData.profile.cvUploaded ? 'Enhance / Edit CV' : 'Upload CV to Start'}
                         </Button>
                       </div>
                     </div>
@@ -336,84 +278,89 @@ const CandidateDashboard: React.FC = () => {
                 </Card>
 
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
                     <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
+                      <TrendingUp className="h-5 w-5 text-teal-600" />
                       Quick Actions
                     </CardTitle>
                     <CardDescription>
                       Common tasks to boost your job search
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <div className="space-y-3">
-                      <Button 
+                      <Button
                         onClick={() => setActiveTab('jobs')}
-                        variant="outline" 
-                        className="w-full justify-start"
+                        variant="outline"
+                        className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
                         <Target className="h-4 w-4 mr-2" />
                         Browse Job Matches ({dashboardData.stats.jobMatches})
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => setActiveTab('applications')}
-                        variant="outline" 
-                        className="w-full justify-start"
+                        variant="outline"
+                        className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
                         <FileText className="h-4 w-4 mr-2" />
                         Track Applications ({dashboardData.stats.applications})
                       </Button>
-                      <Button 
-                        onClick={() => setActiveTab('profile')}
-                        variant="outline" 
-                        className="w-full justify-start"
+                      <Button
+                        onClick={() => navigate('/cv-builder')}
+                        variant="outline"
+                        className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
-                        <Upload className="h-4 w-4 mr-2" />
-                        {dashboardData.profile.cvUploaded ? 'Update CV' : 'Upload CV'}
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Used our AI Resume Builder?
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Recent Activity
-                  </CardTitle>
-                  <CardDescription>
-                    Your latest job search activities
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {dashboardData.recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                        {getActivityIcon(activity.type)}
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                          <p className="text-sm text-gray-600">{activity.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="profile" className="space-y-6 mt-6">
-                <CVUpload onUploadComplete={handleCVUploadComplete} onParsingComplete={handleCVParsingComplete} />
-                <ProfileForm initialData={parsedCVData} onProfileUpdate={handleProfileUpdate} />
+              {/* Integrated CV Experience */}
+              <Card className="border-teal-200 bg-gradient-to-br from-white to-teal-50/30">
+                <CardHeader>
+                  <CardTitle>Your Professional CV</CardTitle>
+                  <CardDescription>Manage your CV, update your skills, and let our AI optimize your profile.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 border rounded-xl bg-white shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="p-4 bg-teal-100 rounded-full">
+                        <FileText className="h-8 w-8 text-teal-700" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg text-gray-900">
+                          {dashboardData.profile.cvUploaded ? 'CV Available' : 'No CV Uploaded'}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {dashboardData.profile.cvUploaded
+                            ? 'Your CV is active and visible to recruiters.'
+                            : 'Upload your CV to unlock AI parsing and job matching.'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="lg" className="bg-teal-600 hover:bg-teal-700 shadow-md" onClick={() => navigate('/cv-builder')}>
+                      {dashboardData.profile.cvUploaded ? 'Edit / View CV' : 'Launch CV Builder'}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Legacy components kept for completeness if user relies on them, but logic should shift to CV Builder eventually */}
+              <ProfileForm />
             </TabsContent>
 
             <TabsContent value="jobs" className="space-y-6 mt-6">
-                <JobMatches />
+              <JobMatches />
             </TabsContent>
 
             <TabsContent value="applications" className="space-y-6 mt-6">
-                <ApplicationTracker />
+              <ApplicationTracker />
             </TabsContent>
           </Tabs>
         </div>

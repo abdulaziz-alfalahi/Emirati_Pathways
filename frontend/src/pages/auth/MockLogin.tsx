@@ -1,140 +1,226 @@
 /**
- * Mock Login Page for Development
- * Allows easy persona selection instead of traditional login
+ * Mobile OTP Login Page for Development
+ * Simulates Phone + OTP flow for Soft Launch
  */
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MockAuthService, MOCK_USERS } from '@/services/mockAuthService';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { MockAuthService, TEST_USERS } from '@/services/mockAuthService';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Briefcase, 
-  GraduationCap, 
-  UserCheck, 
-  ClipboardCheck, 
-  Settings,
-  Building,
-  ArrowRight
-} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { AlertCircle, CheckCircle, Smartphone, ArrowRight, Loader2, Copy } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const MockLogin: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedPersona, setSelectedPersona] = useState<string>('candidate');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [phoneNumber, setPhoneNumber] = useState('+971 ');
+  const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (userType: string) => {
-    const user = MockAuthService.setUser(userType);
-    const dashboardRoute = MockAuthService.getDashboardRoute(userType);
-    
-    console.log(`🎭 Mock Login: Logging in as ${user.full_name}, redirecting to ${dashboardRoute}`);
-    navigate(dashboardRoute);
-  };
+  const handleSendOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-  const getRoleIcon = (userType: string) => {
-    switch (userType) {
-      case 'candidate': return <User className="w-6 h-6" />;
-      case 'hr_manager': return <Building className="w-6 h-6" />;
-      case 'recruiter': return <Briefcase className="w-6 h-6" />;
-      case 'educator': return <GraduationCap className="w-6 h-6" />;
-      case 'mentor': return <UserCheck className="w-6 h-6" />;
-      case 'assessor': return <ClipboardCheck className="w-6 h-6" />;
-      case 'admin': return <Settings className="w-6 h-6" />;
-      default: return <User className="w-6 h-6" />;
+    if (phoneNumber.length < 8) {
+      setError('Please enter a valid mobile number');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await MockAuthService.sendOTP(phoneNumber);
+      setStep('otp');
+    } catch (err) {
+      setError('Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getRoleColor = (userType: string) => {
-    switch (userType) {
-      case 'candidate': return 'border-blue-200 hover:border-blue-400 bg-blue-50';
-      case 'hr_manager': return 'border-green-200 hover:border-green-400 bg-green-50';
-      case 'recruiter': return 'border-purple-200 hover:border-purple-400 bg-purple-50';
-      case 'educator': return 'border-orange-200 hover:border-orange-400 bg-orange-50';
-      case 'mentor': return 'border-teal-200 hover:border-teal-400 bg-teal-50';
-      case 'assessor': return 'border-pink-200 hover:border-pink-400 bg-pink-50';
-      case 'admin': return 'border-red-200 hover:border-red-400 bg-red-50';
-      default: return 'border-gray-200 hover:border-gray-400 bg-gray-50';
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await MockAuthService.verifyOTP(phoneNumber, otp);
+
+      if (result.success && result.user) {
+        const dashboardRoute = MockAuthService.getDashboardRoute(result.user.user_type);
+        navigate(dashboardRoute);
+      } else {
+        setError(result.error || 'Verification failed');
+      }
+    } catch (err) {
+      setError('An error occurred during verification');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatRoleName = (userType: string) => {
-    return userType.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-2 bg-orange-100 border border-orange-300 rounded-full px-4 py-2 mb-4">
-            <span className="text-2xl">🚧</span>
-            <span className="font-mono text-sm font-medium text-orange-800">DEVELOPMENT MODE</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Choose Your Persona</h1>
-          <p className="text-gray-600">Select a user persona to test different roles and dashboards</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 flex flex-col md:flex-row">
+
+      {/* Left Side: Login Form */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-t-4 border-t-teal-600">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mb-4">
+              <Smartphone className="w-6 h-6 text-teal-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Emirati Journey Platform</CardTitle>
+            <CardDescription>
+              {step === 'phone' ? 'Enter your mobile number to sign in or sign up' : 'Enter the verification code sent to your mobile'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {step === 'phone' ? (
+              <form onSubmit={handleSendOTP} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Mobile Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+971 50 123 4567"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="text-lg h-12"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Format: +971 50 XXX XXXX
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-lg bg-teal-600 hover:bg-teal-700"
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Get OTP Code'}
+                  {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="otp">Verification Code</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="text-lg h-12 tracking-widest text-center font-mono"
+                    maxLength={6}
+                    autoFocus
+                  />
+                  <p className="text-xs text-center text-muted-foreground">
+                    Use code <strong>123456</strong> for testing
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-lg bg-teal-600 hover:bg-teal-700"
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Login'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => { setStep('phone'); setError(''); }}
+                >
+                  Change Mobile Number
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Right Side: Dev Helper Sidebar */}
+      <div className="hidden md:flex w-80 bg-white border-l p-6 flex-col justify-center overflow-y-auto">
+        <div className="mb-6">
+          <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <span className="text-xl">🛠️</span>
+            Developer Mode
+          </h3>
+          <p className="text-sm text-gray-500">
+            Use these test accounts to verify different user roles. New numbers will create a Candidate account.
+          </p>
         </div>
 
-        {/* Persona Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {Object.entries(MOCK_USERS).map(([key, user]) => (
-            <Card 
-              key={key}
-              className={`cursor-pointer transition-all duration-200 ${getRoleColor(user.user_type)} ${
-                selectedPersona === key ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-md'
-              }`}
-              onClick={() => setSelectedPersona(key)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    {getRoleIcon(user.user_type)}
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{user.full_name}</CardTitle>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {formatRoleName(user.user_type)}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-sm mb-3">
-                  {user.profile_data.bio}
-                </CardDescription>
-                <div className="space-y-1 text-xs text-gray-600">
-                  <p><strong>Email:</strong> {user.email}</p>
-                  <p><strong>Location:</strong> {user.emirate}, UAE</p>
-                  {user.profile_data.company && (
-                    <p><strong>Company:</strong> {user.profile_data.company}</p>
-                  )}
-                  {user.profile_data.institution && (
-                    <p><strong>Institution:</strong> {user.profile_data.institution}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+        <div className="space-y-4">
+          {Object.entries(TEST_USERS).map(([phone, user]) => (
+            <div key={user.id} className="p-3 border rounded-lg bg-slate-50 hover:border-teal-300 transition-colors group relative">
+              <div className="flex justify-between items-start mb-1">
+                <span className="font-medium text-sm text-slate-800">{user.full_name}</span>
+                <span className="text-xs px-2 py-0.5 rounded bg-slate-200 text-slate-700 uppercase font-semibold">
+                  {user.role}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <code className="text-xs font-mono bg-white px-2 py-1 rounded border text-teal-700">
+                  {phone}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  onClick={() => {
+                    setPhoneNumber(phone);
+                    if (step === 'phone') {
+                      // optional: auto focus
+                    }
+                  }}
+                  title="Use this number"
+                >
+                  <Smartphone className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
           ))}
-        </div>
 
-        {/* Login Button */}
-        <div className="text-center">
-          <Button
-            onClick={() => handleLogin(selectedPersona)}
-            size="lg"
-            className="px-8 py-3 text-lg"
-          >
-            Login as {MOCK_USERS[selectedPersona]?.full_name}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-          
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-            <p className="font-medium mb-1">🎭 Development Mode Information</p>
-            <p>This is a mock authentication system for development purposes. 
-               You can switch between different user personas using the persona switcher 
-               that appears in the top-right corner of each page.</p>
+          <div className="mt-6 pt-6 border-t">
+            <h4 className="font-semibold text-sm mb-2">New User Sign Up</h4>
+            <p className="text-xs text-gray-500 mb-2">
+              Enter any unregistered number to test the sign-up flow.
+            </p>
+            <div className="p-3 border border-dashed rounded-lg bg-yellow-50 flex flex-col items-center gap-2">
+              <p className="text-xs font-mono text-yellow-800 text-center">
+                e.g. +971 50 999 9999
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs border-yellow-200 hover:bg-yellow-100 text-yellow-700"
+                onClick={() => {
+                  const randomNum = `+971 50 ${Math.floor(1000000 + Math.random() * 9000000)}`;
+                  setPhoneNumber(randomNum);
+                  if (step === 'phone') {
+                    setTimeout(() => document.getElementById('phone')?.focus(), 100);
+                  }
+                }}
+              >
+                Auto-fill New Number
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -143,3 +229,4 @@ const MockLogin: React.FC = () => {
 };
 
 export default MockLogin;
+

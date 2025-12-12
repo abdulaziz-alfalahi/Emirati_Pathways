@@ -173,7 +173,7 @@ const RecruiterDashboard = () => {
         return;
       }
 
-      const response = await fetch('http://127.0.0.1:5005/api/recruiter/dashboard', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/recruiter/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

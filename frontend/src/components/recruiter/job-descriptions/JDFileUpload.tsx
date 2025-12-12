@@ -123,7 +123,9 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_drafts', 'true');
 
-        const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/upload/batch', {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+
+        const response = await fetch(`${API_BASE}/api/recruiter/jd/upload/batch`, {
           method: 'POST',
           body: formData
         });
@@ -148,7 +150,8 @@ const JDFileUpload: React.FC<JDFileUploadProps> = ({
         formData.append('company_id', companyId);
         formData.append('create_draft', 'true');
 
-        const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/upload/parse', {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+        const response = await fetch(`${API_BASE}/api/recruiter/jd/upload/parse`, {
           method: 'POST',
           body: formData
         });

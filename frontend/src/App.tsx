@@ -54,6 +54,7 @@ const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
 // const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
 const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
 const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
+const PublicCVViewer = lazy(() => import('@/pages/cv-builder/PublicCVViewer'));
 
 // Home Page (not lazy loaded for faster initial access)
 import BilingualHomePage from '@/pages/BilingualHomePage';
@@ -123,6 +124,7 @@ const AppContent: React.FC = () => {
             {/* Public Routes */}
             <Route path="/" element={<BilingualHomePage />} />
             <Route path="/auth" element={<MockLogin />} />
+            <Route path="/cv/share/:id" element={<PublicCVViewer />} />
 
             {/* Protected Dashboard Routes */}
             <Route

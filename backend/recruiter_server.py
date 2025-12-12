@@ -4,7 +4,7 @@ Registers recruiter-focused APIs: auth, postings, candidates, interviews,
 messaging, candidate profiles, matching, and video interview endpoints.
 """
 
-# Trigger reload - debug 5
+# Trigger reload - debug 7
 
 import os
 import sys
@@ -77,6 +77,8 @@ def create_app() -> Flask:
             ),
             200,
         )
+
+
 
     # Auth
     try:
@@ -238,6 +240,14 @@ def create_app() -> Flask:
         logger.info("Registered: Statistics routes")
     except Exception as e:
         logger.error(f"Failed registering Statistics routes: {e}")
+
+    # Register CV Builder routes
+    try:
+        from recruiter.cv_routes import cv_bp
+        app.register_blueprint(cv_bp)
+        logger.info("Registered: CV Builder routes")
+    except Exception as e:
+        logger.error(f"Failed registering CV Builder routes: {e}")
 
     # Register Communication routes
     try:

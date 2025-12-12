@@ -14,7 +14,7 @@ export default defineConfig({
 
   // Server configuration
   server: {
-    port: 8080,
+    port: 8089,
     host: true,
     cors: true,
     allowedHosts: [
@@ -23,7 +23,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5006',
+        target: 'http://127.0.0.1:5003',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path

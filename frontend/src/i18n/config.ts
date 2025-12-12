@@ -11,128 +11,59 @@ import enCareerPlanningHub from '../locales/en/career-planning-hub.json';
 import arCareerPlanningHub from '../locales/ar/career-planning-hub.json';
 import enCareerAdvisory from '../locales/en/career-advisory.json';
 import arCareerAdvisory from '../locales/ar/career-advisory.json';
+import enCVBuilder from '../locales/en/cv-builder.json';
+import arCVBuilder from '../locales/ar/cv-builder.json';
+
 
 const resources = {
   en: {
     translation: enTranslations,
     'career-planning-hub': enCareerPlanningHub,
-    'career-advisory': enCareerAdvisory
+    'career-advisory': enCareerAdvisory,
+    'cv-builder': enCVBuilder
   },
   ar: {
     translation: arTranslations,
     'career-planning-hub': arCareerPlanningHub,
-    'career-advisory': arCareerAdvisory
+    'career-advisory': arCareerAdvisory,
+    'cv-builder': arCVBuilder
   }
 };
 
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
-    
-
-
     interpolation: {
-      escapeValue: false, // React already does escaping
+      escapeValue: false,
     },
-
-
-
-    // Language-specific configurations
-    lng: 'en', // default language
-    
-    // Namespace configuration
+    lng: 'en',
     defaultNS: 'translation',
-    ns: ['translation', 'career-planning-hub', 'career-advisory'],
-
-    // Key separator
-    keySeparator: '.',
-    
-    // Nesting separator
+    ns: ['translation', 'career-planning-hub', 'career-advisory', 'cv-builder'],
+    keySeparator: false,
     nsSeparator: ':',
-
-    // Pluralization
-    pluralSeparator: '_',
-    contextSeparator: '_',
-
-    // Formatting
     returnObjects: true,
     returnEmptyString: false,
     returnNull: false,
-
-    // Load path for additional namespaces
-    backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
-    },
-
-    // Language detection options
     detection: {
       order: [
         'localStorage',
         'sessionStorage',
         'navigator',
-        'htmlTag',
-        'path',
-        'subdomain'
       ],
       lookupLocalStorage: 'preferred-language',
       lookupSessionStorage: 'preferred-language',
-      lookupFromPathIndex: 0,
-      lookupFromSubdomainIndex: 0,
       caches: ['localStorage', 'sessionStorage'],
-      excludeCacheFor: ['cimode'],
-      checkWhitelist: true
     },
-
-    // Whitelist languages
     whitelist: ['en', 'ar'],
     nonExplicitWhitelist: true,
+    saveMissing: false, // Disable trying to post missing keys
 
-    // Load languages
-    preload: ['en', 'ar'],
-
-    // Clean code
-    cleanCode: true,
-    
-    // Postprocessing
-    postProcess: ['interval', 'plural'],
-
-    // Savemissing
-    saveMissing: process.env.NODE_ENV === 'development',
-    saveMissingTo: 'current',
-
-    // Update missing
-    updateMissing: process.env.NODE_ENV === 'development',
-
-    // Missing key handler
-    missingKeyHandler: (lng, ns, key, fallbackValue) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn(`Missing translation key: ${key} for language: ${lng}`);
-      }
-    },
-
-    // Parsers
-    parseMissingKeyHandler: (key) => {
-      return key;
-    },
-
-    // Append namespace to missing key
-    appendNamespaceToMissingKey: false,
-
-    // Compatibility
-    compatibilityJSON: 'v3',
-
-    // React options
     react: {
-      bindI18n: 'languageChanged',
-      bindI18nStore: '',
-      transEmptyNodeValue: '',
-      transSupportBasicHtmlNodes: true,
-      transKeepBasicHtmlNodesFor: ['br', 'strong', 'i', 'p'],
       useSuspense: false,
+      bindI18n: 'languageChanged',
     }
   });
 
@@ -141,7 +72,7 @@ i18n.on('languageChanged', (lng) => {
   // Update document direction
   document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = lng;
-  
+
   // Update body class for styling
   if (lng === 'ar') {
     document.body.classList.add('rtl');
@@ -150,7 +81,7 @@ i18n.on('languageChanged', (lng) => {
     document.body.classList.add('ltr');
     document.body.classList.remove('rtl');
   }
-  
+
   // Store preference
   localStorage.setItem('preferred-language', lng);
 });

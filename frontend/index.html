@@ -1,141 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Emirati Pathways Platform</title>
-    <meta name="description" content="Comprehensive platform for Emirati career development and opportunities" />
-    <meta name="author" content="Emirates Human Resources Development Council" />
 
-    <!-- PWA Configuration -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0EA5E9" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Emirati Pathways" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Emirati Pathways Platform</title>
+  <meta name="description" content="Comprehensive platform for Emirati career development and opportunities" />
+  <meta name="author" content="Emirates Human Resources Development Council" />
 
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <!-- PWA Configuration -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0EA5E9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Emirati Pathways" />
 
-    <!-- Favicons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="Emirati Pathways Platform" />
-    <meta property="og:description" content="Comprehensive platform for Emirati career development and opportunities" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Emirati Pathways Platform" />
-    <meta name="twitter:description" content="Comprehensive platform for Emirati career development and opportunities" />
-    <meta name="twitter:image" content="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
+  <!-- Open Graph -->
+  <meta property="og:title" content="Emirati Pathways Platform" />
+  <meta property="og:description" content="Comprehensive platform for Emirati career development and opportunities" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
 
-    <!-- Google Fonts - Inter Font Family -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Emirati Pathways Platform" />
+  <meta name="twitter:description" content="Comprehensive platform for Emirati career development and opportunities" />
+  <meta name="twitter:image" content="/lovable-uploads/e4ab7695-235d-451a-a304-556e2bb2b7e8.png" />
 
-    <!-- Security - Enhanced CSP for development with backend API access -->
-    <!-- TEMPORARILY DISABLED FOR TESTING
+  <!-- Google Fonts - Inter Font Family -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Security - Enhanced CSP for development with backend API access -->
+  <!-- TEMPORARILY DISABLED FOR TESTING
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob: http://localhost:5001 http://localhost:5002 http://localhost:5003 ws://localhost:8080 ws://localhost:8081; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; object-src 'none'; frame-src 'self' https:; media-src 'self' https: blob:; worker-src 'self' blob:;">
     -->
 
-    <!-- Font Face Declarations for Inter -->
-    <style>
-      body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-    </style>
-  </head>
+  <!-- Font Face Declarations for Inter -->
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+</head>
 
-  <body>
-    <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
+<body>
+  <div id="root"></div>
+  <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+  <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+  <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator  ) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration);
-
-              // Check for updates
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                if (newWorker) {
-                  newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                      // New content is available
-                      if (confirm('New version available! Reload to update?')) {
-                        window.location.reload();
-                      }
-                    }
-                  });
-                }
-              });
-            })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
-            });
-        });
-      }
-
-      // Install prompt
-      let deferredPrompt;
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-
-        // Show custom install button
-        const installButton = document.createElement('button');
-        installButton.textContent = 'Install App';
-        installButton.style.cssText = `
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          background: #0EA5E9;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 25px;
-          font-weight: bold;
-          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
-          cursor: pointer;
-          z-index: 1000;
-          transition: all 0.3s ease;
-        `;
-
-        installButton.addEventListener('click', async () => {
-          if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to the install prompt: ${outcome}`);
-            deferredPrompt = null;
-            installButton.remove();
-          }
-        });
-
-        document.body.appendChild(installButton);
-
-        // Auto-hide after 10 seconds
-        setTimeout(() => {
-          if (installButton.parentNode) {
-            installButton.remove();
-          }
-        }, 10000);
+  <!-- Service Worker Force Unregister (Fix for Dev Environment) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          console.log('Force unregistering SW:', registration);
+          registration.unregister();
+        }
       });
-    </script>
-  </body>
+    }
+  </script>
+
+</body>
+
 </html>
-
-

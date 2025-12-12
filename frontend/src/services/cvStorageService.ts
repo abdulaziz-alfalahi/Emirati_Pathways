@@ -3,7 +3,7 @@
  * Handles CV save/load operations with the backend database
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
+const API_BASE_URL = ''; // Forced relative path for proxy
 
 export interface SavedCV {
   id: string;
@@ -68,14 +68,15 @@ class CVStorageService {
     };
   }
 
-  /**
-   * Set a CV as visible to recruiters (unsets others automatically)
-   */
+
   async setVisible(cvId: string): Promise<{ success: boolean; message: string }> {
     try {
+      const headers = this.getAuthHeaders();
+      console.log('👀 DEBUG: Sending setVisible headers:', headers);
+
       const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/visible`, {
         method: 'PUT',
-        headers: this.getAuthHeaders()
+        headers: headers
       });
 
       const result = await response.json();
@@ -297,6 +298,20 @@ class CVStorageService {
     } catch (error) {
       console.error('Get matches error:', error);
       return { success: false, message: error instanceof Error ? error.message : 'Failed to get matches' };
+    }
+  }
+  /**
+   * Export CV to specified format
+   */
+  async exportCV(cvId: string, format: string, options?: any): Promise<Response> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/export/${format}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      return response;
+    } catch (error) {
+      throw error;
     }
   }
 }

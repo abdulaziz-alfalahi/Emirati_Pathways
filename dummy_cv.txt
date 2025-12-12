@@ -1,0 +1,15 @@
+John Doe
+Software Engineer
+Dubai, UAE
++971 50 123 4567
+email@example.com
+
+Summary
+Experienced software engineer with 5 years in Python and React.
+
+Experience
+Software Developer at Tech Co (2020-Present)
+- Built web apps.
+
+Education
+BSu in Computer Science, UAE University.

@@ -99,9 +99,9 @@ interface CVFormData {
 }
 
 const AutoFillCVBuilder: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const { language, isRTL } = useLanguage();
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'ar'>(i18n.language as 'en' | 'ar');
+  const { t, language, isRTL, toggleLanguage } = useLanguage();
+  const { i18n } = useTranslation();
+
   const [currentStep, setCurrentStep] = useState<'upload' | 'template' | 'form' | 'preview'>('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -193,11 +193,7 @@ const AutoFillCVBuilder: React.FC = () => {
     return false;
   };
 
-  const handleLanguageToggle = () => {
-    const newLang = currentLanguage === 'en' ? 'ar' : 'en';
-    setCurrentLanguage(newLang);
-    i18n.changeLanguage(newLang);
-  };
+
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -1027,8 +1023,8 @@ const AutoFillCVBuilder: React.FC = () => {
       {/* Upload Area */}
       <div
         className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${isDragOver
-            ? 'border-blue-500 bg-blue-50 scale-105'
-            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+          ? 'border-blue-500 bg-blue-50 scale-105'
+          : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
           }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -1201,17 +1197,18 @@ const AutoFillCVBuilder: React.FC = () => {
           {useLanguage().t('cvBuilder.reviewCustomize', 'CV Builder - Auto-filled with Your Data')}
         </h2>
         <p className="text-xl text-gray-600">
-          {useLanguage().t('cvBuilder.reviewCustomize', 'Review and customize the auto-filled information from your CV')}
+          // Replaced by t() via multi-replace or manual edit if too complex
+          {t('cvBuilder.reviewCustomize', 'Review and customize the auto-filled information from your CV')}
         </p>
         <div className="mt-4">
           <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
-            📄 {useLanguage().t('cvBuilder.selectedTemplate', 'Selected Template')}: {selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            📄 {t('cvBuilder.selectedTemplate', 'Selected Template')}: {selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
           </span>
           <button
             onClick={() => setCurrentStep('template')}
             className="ml-4 text-blue-600 hover:text-blue-800 text-sm underline"
           >
-            {useLanguage().t('cvBuilder.chooseTemplate', 'Change Template')}
+            {t('cvBuilder.chooseTemplate', 'Change Template')}
           </button>
         </div>
       </div>
@@ -1220,13 +1217,13 @@ const AutoFillCVBuilder: React.FC = () => {
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl shadow-lg border p-6 mb-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
           <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-          CV Performance Analysis
+          {t('cvBuilder.cvAnalysis', 'CV Performance Analysis')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* CV Completeness Score */}
           <div className="bg-white rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">CV Completeness</span>
+              <span className="text-sm font-medium text-gray-700">{t('cvBuilder.cvCompleteness', 'CV Completeness')}</span>
               <span className={`text-lg font-bold ${cvScore >= 80 ? 'text-green-600' : cvScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {cvScore}%
               </span>
@@ -1242,7 +1239,7 @@ const AutoFillCVBuilder: React.FC = () => {
           {/* ATS Optimization Score */}
           <div className="bg-white rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">ATS Optimization</span>
+              <span className="text-sm font-medium text-gray-700">{t('cvBuilder.atsOptimization', 'ATS Optimization')}</span>
               <span className={`text-lg font-bold ${atsScore >= 80 ? 'text-green-600' : atsScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
                 {atsScore}%
               </span>
@@ -1261,7 +1258,7 @@ const AutoFillCVBuilder: React.FC = () => {
           <div className="mt-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
               <Target className="w-4 h-4 mr-2 text-purple-600" />
-              Improvement Suggestions
+              {t('cvBuilder.improvementSuggestions', 'Improvement Suggestions')}
             </h4>
             <div className="space-y-2">
               {suggestions.map((suggestion, index) => (
@@ -1279,7 +1276,7 @@ const AutoFillCVBuilder: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg border p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <User className="w-5 h-5 mr-2 text-blue-600" />
-          {useLanguage().t('cvBuilder.personalInformation', 'Personal Information')}
+          {t('cvBuilder.personalInformation', 'Personal Information')}
           {/* Debug info */}
           <span className="ml-4 text-sm text-gray-500">
             (Auto-filled: {formData.personalInfo.firstName ? 'Yes' : 'No'})
@@ -1287,7 +1284,7 @@ const AutoFillCVBuilder: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{useLanguage().t('cvBuilder.firstName', 'First Name')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('cvBuilder.firstName', 'First Name')}</label>
             <input
               type="text"
               value={formData.personalInfo.firstName}
@@ -1297,7 +1294,7 @@ const AutoFillCVBuilder: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{useLanguage().t('cvBuilder.lastName', 'Last Name')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('cvBuilder.lastName', 'Last Name')}</label>
             <input
               type="text"
               value={formData.personalInfo.lastName}
@@ -1307,7 +1304,7 @@ const AutoFillCVBuilder: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{useLanguage().t('cvBuilder.email', 'Email')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('cvBuilder.email', 'Email')}</label>
             <input
               type="email"
               value={formData.personalInfo.email}
@@ -1317,7 +1314,7 @@ const AutoFillCVBuilder: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{useLanguage().t('cvBuilder.phone', 'Phone')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('cvBuilder.phone', 'Phone')}</label>
             <input
               type="tel"
               value={formData.personalInfo.phone}
@@ -1328,12 +1325,12 @@ const AutoFillCVBuilder: React.FC = () => {
             />
             {formData.personalInfo.phone && !isLikelyUAEPhone(formData.personalInfo.phone) && (
               <p className="mt-1 text-xs text-amber-600">
-                {useLanguage().t('cvBuilder.uaePhoneHint', 'Suggested format: +9715XXXXXXXX')}
+                {t('cvBuilder.uaePhoneHint', 'Suggested format: +9715XXXXXXXX')}
               </p>
             )}
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">{useLanguage().t('cvBuilder.location', 'Location')}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('cvBuilder.location', 'Location')}</label>
             <input
               type="text"
               value={formData.personalInfo.location}
@@ -1349,7 +1346,7 @@ const AutoFillCVBuilder: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg border p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <Briefcase className="w-5 h-5 mr-2 text-green-600" />
-          {useLanguage().t('cvBuilder.professionalSummary', 'Professional Summary')}
+          {t('cvBuilder.professionalSummary', 'Professional Summary')}
         </h3>
         <textarea
           value={formData.professionalSummary}
@@ -1364,7 +1361,7 @@ const AutoFillCVBuilder: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg border p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <Zap className="w-5 h-5 mr-2 text-purple-600" />
-          {useLanguage().t('cvBuilder.skills', 'Skills')}
+          {t('cvBuilder.skills', 'Skills')}
           <span className="ml-4 text-sm text-gray-500">
             (Technical: {formData.technicalSkills.length}, Soft: {formData.softSkills.length})
           </span>
@@ -1372,7 +1369,7 @@ const AutoFillCVBuilder: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Technical Skills */}
           <div>
-            <h4 className="font-medium text-gray-800 mb-3">{useLanguage().t('cvBuilder.technicalSkills', 'Technical Skills')}</h4>
+            <h4 className="font-medium text-gray-800 mb-3">{t('cvBuilder.technicalSkills', 'Technical Skills')}</h4>
             <div className="flex flex-wrap gap-2 mb-4">
               {formData.technicalSkills.map((skill, index) => (
                 <span
@@ -1404,7 +1401,7 @@ const AutoFillCVBuilder: React.FC = () => {
 
           {/* Soft Skills */}
           <div>
-            <h4 className="font-medium text-gray-800 mb-3">{useLanguage().t('cvBuilder.softSkills', 'Soft Skills')}</h4>
+            <h4 className="font-medium text-gray-800 mb-3">{t('cvBuilder.softSkills', 'Soft Skills')}</h4>
             <div className="flex flex-wrap gap-2 mb-4">
               {formData.softSkills.map((skill, index) => (
                 <span
@@ -1440,7 +1437,7 @@ const AutoFillCVBuilder: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg border p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <Briefcase className="w-5 h-5 mr-2 text-green-600" />
-          {useLanguage().t('cvBuilder.workExperience', 'Work Experience')}
+          {t('cvBuilder.workExperience', 'Work Experience')}
           <span className="ml-4 text-sm text-gray-500">
             ({formData.experience.length} positions)
           </span>
@@ -1524,7 +1521,7 @@ const AutoFillCVBuilder: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg border p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
           <GraduationCap className="w-5 h-5 mr-2 text-purple-600" />
-          {useLanguage().t('cvBuilder.education', 'Education')}
+          {t('cvBuilder.education', 'Education')}
           <span className="ml-4 text-sm text-gray-500">
             ({formData.education.length} degrees)
           </span>
@@ -1597,13 +1594,13 @@ const AutoFillCVBuilder: React.FC = () => {
           onClick={() => setCurrentStep('upload')}
           className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
-          {useLanguage().t('cvBuilder.skipUpload', 'Back to Upload')}
+          {t('cvBuilder.skipUpload', 'Back to Upload')}
         </button>
         <button
           onClick={() => setCurrentStep('preview')}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
         >
-          {useLanguage().t('cvBuilder.previewExport', 'Preview CV')}
+          {t('cvBuilder.previewExport', 'Preview CV')}
           <Eye className="w-4 h-4 ml-2" />
         </button>
       </div>
@@ -1614,10 +1611,10 @@ const AutoFillCVBuilder: React.FC = () => {
     <div className="space-y-8">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          {useLanguage().t('cvBuilder.previewExport', 'CV Preview')} - {selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          {t('cvBuilder.previewExport', 'CV Preview')} - {selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
         </h2>
         <p className="text-xl text-gray-600">
-          {useLanguage().t('cvBuilder.previewExport', 'Preview your professional CV with the selected template styling')}
+          {t('cvBuilder.previewExport', 'Preview your professional CV with the selected template styling')}
         </p>
       </div>
 
@@ -1636,7 +1633,7 @@ const AutoFillCVBuilder: React.FC = () => {
           onClick={() => setCurrentStep('form')}
           className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
-          {useLanguage().t('cvBuilder.editCV', 'Edit CV')}
+          {t('cvBuilder.editCV', 'Edit CV')}
         </button>
         <button
           onClick={async () => {
@@ -1650,7 +1647,7 @@ const AutoFillCVBuilder: React.FC = () => {
           }}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
-          {useLanguage().t('cvBuilder.matchToVacancies', 'Match to Vacancies')}
+          {t('cvBuilder.matchToVacancies', 'Match to Vacancies')}
         </button>
         <button
           onClick={handleExportPDF}
@@ -1665,7 +1662,7 @@ const AutoFillCVBuilder: React.FC = () => {
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              {useLanguage().t('cvBuilder.downloadPDF', 'Download PDF File')}
+              {t('cvBuilder.downloadPDF', 'Download PDF File')}
             </>
           )}
         </button>
@@ -1676,8 +1673,8 @@ const AutoFillCVBuilder: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'} lang={language}>
       <HybridGovernmentNavFixed
-        onLanguageToggle={handleLanguageToggle}
-        currentLanguage={currentLanguage}
+        onLanguageToggle={toggleLanguage}
+        currentLanguage={language}
       />
 
       <EnhancedCVExportDialog
@@ -1776,20 +1773,20 @@ const AutoFillCVBuilder: React.FC = () => {
               </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
-              {useLanguage().t('cvBuilder.heroTitle', 'AI-Powered CV Builder')}
+              {t('cvBuilder.heroTitle', 'AI-Powered CV Builder')}
             </h1>
             <p className="text-xl mb-8 max-w-3xl mx-auto">
-              {useLanguage().t('cvBuilder.heroSubtitle', 'Upload your CV, get AI analysis, and create a professional resume tailored for the UAE job market')}
+              {t('cvBuilder.heroSubtitle', 'Upload your CV, get AI analysis, and create a professional resume tailored for the UAE job market')}
             </p>
             <div className="flex justify-center space-x-4">
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-                <span className="font-medium">🇦🇪 {useLanguage().t('cvBuilder.uaeFocused', 'UAE Focused')}</span>
+                <span className="font-medium">🇦🇪 {t('cvBuilder.uaeFocused', 'UAE Focused')}</span>
               </div>
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-                <span className="font-medium">🤖 {useLanguage().t('cvBuilder.geminiAI', 'Gemini AI')}</span>
+                <span className="font-medium">🤖 {t('cvBuilder.geminiAI', 'Gemini AI')}</span>
               </div>
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-                <span className="font-medium">🌟 {useLanguage().t('cvBuilder.autoFill', 'Auto-fill')}</span>
+                <span className="font-medium">🌟 {t('cvBuilder.autoFill', 'Auto-fill')}</span>
               </div>
             </div>
           </div>
@@ -1806,7 +1803,7 @@ const AutoFillCVBuilder: React.FC = () => {
                 }`}>
                 {currentStep === 'upload' ? <Upload className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
               </div>
-              <span className="font-medium">{useLanguage().t('cvBuilder.stepUploadAnalyze', 'Upload & Analyze')}</span>
+              <span className="font-medium">{t('cvBuilder.stepUploadAnalyze', 'Upload & Analyze')}</span>
             </div>
 
             <div className={`flex-1 h-px mx-4 ${currentStep !== 'upload' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
@@ -1814,11 +1811,11 @@ const AutoFillCVBuilder: React.FC = () => {
             {/* Step 2: Template */}
             <div className={`flex items-center space-x-3 ${currentStep === 'template' ? 'text-blue-600' : currentStep === 'form' || currentStep === 'preview' ? 'text-green-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'template' ? 'bg-blue-600 text-white' :
-                  currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
                 }`}>
                 {currentStep === 'form' || currentStep === 'preview' ? <CheckCircle className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
               </div>
-              <span className="font-medium">{useLanguage().t('cvBuilder.stepChooseTemplate', 'Choose Template')}</span>
+              <span className="font-medium">{t('cvBuilder.stepChooseTemplate', 'Choose Template')}</span>
             </div>
 
             <div className={`flex-1 h-px mx-4 ${currentStep === 'form' || currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
@@ -1826,11 +1823,11 @@ const AutoFillCVBuilder: React.FC = () => {
             {/* Step 3: Form */}
             <div className={`flex items-center space-x-3 ${currentStep === 'form' ? 'text-blue-600' : currentStep === 'preview' ? 'text-green-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'form' ? 'bg-blue-600 text-white' :
-                  currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                currentStep === 'preview' ? 'bg-green-600 text-white' : 'bg-gray-200'
                 }`}>
                 {currentStep === 'preview' ? <CheckCircle className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               </div>
-              <span className="font-medium">{useLanguage().t('cvBuilder.stepBuildCustomize', 'Build & Customize')}</span>
+              <span className="font-medium">{t('cvBuilder.stepBuildCustomize', 'Build & Customize')}</span>
             </div>
 
             <div className={`flex-1 h-px mx-4 ${currentStep === 'preview' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
@@ -1841,7 +1838,7 @@ const AutoFillCVBuilder: React.FC = () => {
                 }`}>
                 <Eye className="w-4 h-4" />
               </div>
-              <span className="font-medium">{useLanguage().t('cvBuilder.stepPreviewExport', 'Preview & Export')}</span>
+              <span className="font-medium">{t('cvBuilder.stepPreviewExport', 'Preview & Export')}</span>
             </div>
           </div>
 
@@ -1856,7 +1853,7 @@ const AutoFillCVBuilder: React.FC = () => {
               disabled={isLoading}
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              {useLanguage().t('cvBuilder.loadCV', 'Load CV')}
+              {t('cvBuilder.loadCV', 'Load CV')}
             </button>
 
             <button
@@ -1865,13 +1862,13 @@ const AutoFillCVBuilder: React.FC = () => {
               disabled={currentStep === 'upload' || isSaving}
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {currentCVId ? useLanguage().t('cvBuilder.updateCV', 'Update CV') : useLanguage().t('cvBuilder.saveCV', 'Save CV')}
+              {currentCVId ? t('cvBuilder.updateCV', 'Update CV') : t('cvBuilder.saveCV', 'Save CV')}
             </button>
 
             {currentCVId && (
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                {useLanguage().t('cvBuilder.editing', 'Editing: {{title}}', { title: cvTitle })}
+                {t('cvBuilder.editing', 'Editing: {{title}}', { title: cvTitle })}
               </div>
             )}
           </div>
@@ -1893,11 +1890,11 @@ const AutoFillCVBuilder: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">
-              {currentCVId ? useLanguage().t('cvBuilder.updateCV', 'Update CV') : useLanguage().t('cvBuilder.saveCV', 'Save CV')}
+              {currentCVId ? t('cvBuilder.updateCV', 'Update CV') : t('cvBuilder.saveCV', 'Save CV')}
             </h3>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {useLanguage().t('cvBuilder.cvTitle', 'CV Title')}
+                {t('cvBuilder.cvTitle', 'CV Title')}
               </label>
               <input
                 type="text"
@@ -1981,8 +1978,8 @@ const AutoFillCVBuilder: React.FC = () => {
                           <span>Score: {cv.cv_score}%</span>
                           <span>Updated: {new Date(cv.updated_at).toLocaleDateString()}</span>
                           <span className={`px-2 py-1 rounded-full ${cv.status === 'published' ? 'bg-green-100 text-green-800' :
-                              cv.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
+                            cv.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
                             }`}>
                             {cv.status}
                           </span>

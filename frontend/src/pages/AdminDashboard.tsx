@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { MockAuthService } from '@/services/mockAuthService';
 import { useNavigate } from 'react-router-dom';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +26,7 @@ import {
 
 
 const AdminDashboard = () => {
-  const { user, signOut, isAuthenticated } = useAuth();
+  // Use MockAuthService directly as it's the source of truth for soft launch
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [dashboardData, setDashboardData] = useState({
@@ -53,35 +53,25 @@ const AdminDashboard = () => {
     activity: []
   });
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (Mock Check)
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!MockAuthService.isAuthenticated()) {
       navigate('/auth');
       return;
     }
     loadDashboardData();
-  }, [isAuthenticated, navigate]);
+  }, [navigate]);
 
   const getUserDisplayName = () => {
+    const user = MockAuthService.getCurrentUser();
     if (!user) return 'Administrator';
-
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
-    if (user.user_metadata?.name) return user.user_metadata.name;
-    if (user.full_name) return user.full_name;
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-
-    if (user.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-
-    return 'Administrator';
+    return user.full_name || 'Administrator';
   };
 
   const handleLogout = async () => {
     try {
       console.log('🚪 Admin logout process...');
-      await signOut();
+      MockAuthService.logout();
       console.log('✅ Admin logout completed');
       window.location.replace('/auth');
     } catch (error) {
@@ -170,17 +160,7 @@ const AdminDashboard = () => {
     });
   };
 
-  // Show loading if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">

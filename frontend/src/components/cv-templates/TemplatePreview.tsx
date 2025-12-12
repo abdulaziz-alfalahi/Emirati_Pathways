@@ -1,13 +1,15 @@
 import React from 'react';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
+import {
+  Mail,
+  Phone,
+  MapPin,
   Calendar,
   Building2,
   GraduationCap,
   Award,
-  Zap
+  Zap,
+  User,
+  Users
 } from 'lucide-react';
 
 interface TemplatePreviewProps {
@@ -28,6 +30,7 @@ interface TemplatePreviewProps {
       company?: string;
       startDate?: string;
       endDate?: string;
+      responsibilities?: string;
     }>;
     education?: Array<{
       degree?: string;
@@ -38,44 +41,25 @@ interface TemplatePreviewProps {
   className?: string;
 }
 
-const TemplatePreview: React.FC<TemplatePreviewProps> = ({ 
-  templateId, 
-  cvData, 
-  className = '' 
+const TemplatePreview: React.FC<TemplatePreviewProps> = ({
+  templateId,
+  cvData,
+  className = ''
 }) => {
-  // Sample data for preview
+  // Sample data for preview using specific fallbacks or empty strings to avoid confusion
   const sampleData = {
     personalInfo: {
-      firstName: cvData?.personalInfo?.firstName || 'Ahmed',
-      lastName: cvData?.personalInfo?.lastName || 'Al Mansouri',
-      email: cvData?.personalInfo?.email || 'ahmed.almansouri@email.com',
-      phone: cvData?.personalInfo?.phone || '+971 50 123 4567',
-      location: cvData?.personalInfo?.location || 'Dubai, UAE'
+      firstName: cvData?.personalInfo?.firstName || '',
+      lastName: cvData?.personalInfo?.lastName || '',
+      email: cvData?.personalInfo?.email || '',
+      phone: cvData?.personalInfo?.phone || '',
+      location: cvData?.personalInfo?.location || ''
     },
-    professionalSummary: cvData?.professionalSummary || 'Experienced professional with expertise in technology and leadership...',
-    technicalSkills: cvData?.technicalSkills?.slice(0, 6) || ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker'],
-    softSkills: cvData?.softSkills?.slice(0, 4) || ['Leadership', 'Communication', 'Problem Solving', 'Team Management'],
-    experience: cvData?.experience?.slice(0, 2) || [
-      {
-        jobTitle: 'Senior Software Engineer',
-        company: 'Emirates NBD',
-        startDate: '2020',
-        endDate: 'Present'
-      },
-      {
-        jobTitle: 'Software Engineer',
-        company: 'Dubai Municipality',
-        startDate: '2018',
-        endDate: '2020'
-      }
-    ],
-    education: cvData?.education?.slice(0, 1) || [
-      {
-        degree: 'Bachelor of Computer Science',
-        institution: 'American University of Sharjah',
-        graduationYear: '2018'
-      }
-    ]
+    professionalSummary: cvData?.professionalSummary || '',
+    technicalSkills: cvData?.technicalSkills || [],
+    softSkills: cvData?.softSkills || [],
+    experience: cvData?.experience || [],
+    education: cvData?.education || []
   };
 
   const renderGovernmentExecutive = () => (
@@ -148,14 +132,21 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           PROFESSIONAL EXPERIENCE
         </h2>
         {sampleData.experience.map((exp, index) => (
-          <div key={index} className="mb-2">
-            <div className="flex justify-between items-start">
+          <div key={index} className="mb-4">
+            <div className="flex justify-between items-start mb-1">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">{exp.jobTitle}</h3>
-                <p className="text-xs text-gray-700">{exp.company}</p>
+                <h3 className="text-sm font-bold text-gray-900">{exp.jobTitle}</h3>
+                <p className="text-xs text-blue-700 font-medium">{exp.company}</p>
               </div>
               <span className="text-xs text-gray-600">{exp.startDate} - {exp.endDate}</span>
             </div>
+            {exp.responsibilities && (
+              <div className="text-xs text-gray-700 leading-relaxed pl-2">
+                {exp.responsibilities.split('\n').map((line, i) => (
+                  <p key={i} className="mb-0.5">• {line.replace(/^•\s*/, '')}</p>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -176,52 +167,94 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   );
 
   const renderTechInnovator = () => (
-    <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-6 h-full">
+    <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-6 h-full font-sans">
       {/* Modern Tech Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-4 mb-4">
-        <h1 className="text-xl font-bold mb-2">
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-6 mb-6 shadow-md">
+        <h1 className="text-2xl font-bold mb-2 tracking-wide">
           {sampleData.personalInfo.firstName} {sampleData.personalInfo.lastName}
         </h1>
-        <div className="text-sm opacity-90 space-y-1">
-          <div>{sampleData.personalInfo.email} • {sampleData.personalInfo.phone}</div>
+        <div className="text-sm opacity-95 space-y-1 font-medium">
+          <div className="flex items-center gap-4">
+            <span>{sampleData.personalInfo.email}</span>
+            <span>•</span>
+            <span>{sampleData.personalInfo.phone}</span>
+          </div>
           <div>{sampleData.personalInfo.location}</div>
         </div>
       </div>
 
-      {/* Skills Matrix */}
-      <div className="mb-4">
+      {/* Professional Summary */}
+      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-purple-100">
         <h2 className="text-lg font-bold text-purple-800 mb-2 flex items-center">
-          <Zap className="w-4 h-4 mr-1" />
-          TECHNICAL EXPERTISE
+          <User className="w-4 h-4 mr-2" />
+          PROFESSIONAL SUMMARY
         </h2>
-        <div className="grid grid-cols-3 gap-1">
-          {sampleData.technicalSkills.slice(0, 6).map((skill, index) => (
-            <span key={index} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs text-center">
-              {skill}
-            </span>
-          ))}
+        <p className="text-xs text-gray-700 leading-relaxed text-justify">
+          {sampleData.professionalSummary}
+        </p>
+      </div>
+
+      {/* Skills Matrix */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-100">
+          <h2 className="text-sm font-bold text-purple-800 mb-3 flex items-center">
+            <Zap className="w-4 h-4 mr-2" />
+            TECHNICAL SKILLS
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {sampleData.technicalSkills.map((skill, index) => (
+              <span key={index} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-100">
+          <h2 className="text-sm font-bold text-blue-800 mb-3 flex items-center">
+            <Users className="w-4 h-4 mr-2" />
+            SOFT SKILLS
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {sampleData.softSkills.map((skill, index) => (
+              <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                {skill}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Experience with modern layout */}
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-purple-800 mb-2 flex items-center">
-          <Building2 className="w-4 h-4 mr-1" />
+      <div className="mb-6">
+        <h2 className="text-lg font-bold text-purple-800 mb-3 flex items-center">
+          <Building2 className="w-4 h-4 mr-2" />
           EXPERIENCE
         </h2>
-        {sampleData.experience.map((exp, index) => (
-          <div key={index} className="bg-white rounded-lg p-3 mb-2 border-l-4 border-purple-500">
-            <div className="flex justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">{exp.jobTitle}</h3>
-                <p className="text-xs text-purple-700">{exp.company}</p>
+        <div className="space-y-3">
+          {sampleData.experience.map((exp, index) => (
+            <div key={index} className="bg-white rounded-lg p-4 border-l-4 border-purple-500 shadow-sm">
+              <div className="flex justify-between items-baseline mb-2">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 leading-tight">{exp.jobTitle}</h3>
+                  <p className="text-xs text-purple-700 font-medium">{exp.company}</p>
+                </div>
+                <span className="text-xs text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded-full whitespace-nowrap ml-2">
+                  {exp.startDate} - {exp.endDate}
+                </span>
               </div>
-              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                {exp.startDate} - {exp.endDate}
-              </span>
+              {exp.responsibilities && (
+                <div className="text-xs text-gray-600 leading-relaxed mt-2 pl-2 border-l border-gray-100">
+                  {exp.responsibilities.split('\n').map((line, i) => (
+                    <p key={i} className="mb-1 last:mb-0 flex items-start">
+                      <span className="mr-2 text-purple-400">•</span>
+                      <span>{line.replace(/^•\s*/, '')}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Education */}
@@ -294,8 +327,8 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           PROFESSIONAL EXPERIENCE
         </h2>
         {sampleData.experience.map((exp, index) => (
-          <div key={index} className="mb-3 border-l-2 border-green-400 pl-3">
-            <div className="flex justify-between items-start">
+          <div key={index} className="mb-4 border-l-2 border-green-400 pl-3">
+            <div className="flex justify-between items-start mb-1">
               <div>
                 <h3 className="text-sm font-bold text-gray-900">{exp.jobTitle}</h3>
                 <p className="text-xs font-medium text-green-700">{exp.company}</p>
@@ -304,6 +337,11 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                 {exp.startDate} - {exp.endDate}
               </span>
             </div>
+            {exp.responsibilities && (
+              <p className="text-xs text-gray-700 mt-1 whitespace-pre-line leading-relaxed">
+                {exp.responsibilities}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -337,7 +375,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   };
 
   return (
-    <div className={`transform scale-75 origin-top-left ${className}`}>
+    <div className={`w-full ${className}`}>
       {renderTemplate()}
     </div>
   );

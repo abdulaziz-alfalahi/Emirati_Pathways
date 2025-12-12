@@ -103,14 +103,29 @@ class CVParser:
             # Create comprehensive prompt for Gemini
             prompt = self._create_parsing_prompt(text)
             
-            # Call Gemini API
-            response = self.model.generate_content(prompt)
+            # Call Gemini API with retries
+            import time
+            max_retries = 3
+            retry_delay = 2
+            response = None
+            last_error = None
+            
+            for attempt in range(max_retries):
+                try:
+                    response = self.model.generate_content(prompt)
+                    if response and response.text:
+                        break
+                except Exception as e:
+                    last_error = e
+                    logger.warning(f"Gemini API attempt {attempt + 1} failed: {str(e)}")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay * (attempt + 1)) # Exponential backoff
             
             if not response or not response.text:
-                return {
-                    'success': False,
-                    'message': 'Failed to get response from AI model'
-                }
+                error_msg = str(last_error) if last_error else "Failed to get response from AI model"
+                if "429" in error_msg:
+                    raise Exception("AI Service is currently busy (Quota Exceeded). Please try again in a few minutes.")
+                raise Exception(f"AI Service Error: {error_msg}")
             
             # Parse Gemini response
             parsed_data = self._parse_gemini_response(response.text)
@@ -160,11 +175,84 @@ class CVParser:
             return result
             
         except Exception as e:
-            logger.error(f"Error parsing CV text: {str(e)}")
+            logger.error(f"Error parsing CV text with Gemini: {str(e)}")
             return {
                 'success': False,
-                'message': f'CV parsing failed: {str(e)}'
+                'message': str(e)
             }
+
+    def _fallback_parse_text(self, text: str, user_id: str = None, filename: str = None) -> Dict[str, Any]:
+        """Fallback parsing when AI is unavailable"""
+        cv_id = str(uuid.uuid4())
+        
+        # Basic extraction (placeholder)
+        # In a real scenario, we could use regex to find email, phone, etc.
+        
+        # Try to find email
+        import re
+        email = ""
+        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+        if email_match:
+            email = email_match.group(0)
+            
+        # Try to find phone (simple UAE format)
+        phone = ""
+        phone_match = re.search(r'(\+971|05)\d{8,9}', text)
+        if phone_match:
+            phone = phone_match.group(0)
+            
+        # Use first line as name (heuristic)
+        lines = [l.strip() for l in text.split('\n') if l.strip()]
+        name = lines[0] if lines else "Candidate"
+        
+        # Split name
+        name_parts = name.split()
+        first_name = name_parts[0] if name_parts else ""
+        last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
+        data = {
+            'personal_info': {
+                'full_name': name,
+                'first_name': first_name,
+                'last_name': last_name,
+                'email': email,
+                'phone': phone,
+                'nationality': 'UAE' # Default for this platform
+            },
+            'professional_summary': text[:500] + "..." if len(text) > 500 else text, # Use beginning of text as summary
+            'experience': [],
+            'education': [],
+            'skills': [],
+            'languages': [],
+            'certifications': [],
+            'achievements': [],
+            'projects': [],
+            'references': []
+        }
+        
+        # Calculate basic scores
+        analysis_results = {
+            'scores': {'overall': 50, 'completeness': 50, 'uae_relevance': 50}, # Placeholder scores
+            'insights': {'message': 'Parsed using basic fallback parser (AI unavailable)'},
+            'recommendations': ['Please review and update your details manually.']
+        }
+
+        result = {
+            'success': True,
+            'cv_id': cv_id,
+            'data': data,
+            'analysis': analysis_results,
+            'metadata': {
+                'cv_id': cv_id,
+                'user_id': user_id,
+                'filename': filename,
+                'parsed_at': datetime.utcnow().isoformat(),
+                'parser_version': '2.0-fallback',
+                'ai_model': 'none',
+                'text_length': len(text)
+            }
+        }
+        return result
     
     def _extract_text_from_file(self, file: FileStorage, mime_type: str) -> str:
         """Extract text content from uploaded file"""
