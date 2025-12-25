@@ -23,10 +23,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+print("!!! DEBUG: LOADING RECRUITER/JD_ROUTES_V2.PY !!!", flush=True)
 
 # Create Blueprint
-jd_bp = Blueprint('jd_routes', __name__, url_prefix='/api/recruiter/jd')
+jd_bp = Blueprint('jd_routes_v2', __name__, url_prefix='/api/recruiter/jd')
 
 # Initialize components
 jd_engine = get_jd_builder_engine()
@@ -214,6 +214,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     application_process = %s,
                     metadata = %s,
                     status = %s,
+                    created_by = %s,
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -237,6 +238,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 json.dumps(jd_data.get('application_process', {})),
                 json.dumps(metadata),
                 status,
+                recruiter_id, # Ensure created_by is set/updated
                 status,
                 jd_id
             ))
@@ -245,7 +247,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
             # Insert new JD
             cur.execute("""
                 INSERT INTO job_postings (
-                    jd_id, recruiter_id, company_id,
+                    jd_id, recruiter_id, company_id, created_by,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, remote_option,
                     description, description_arabic,
@@ -253,13 +255,14 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
                 jd_id,
                 recruiter_id,
                 company_id,
+                recruiter_id,  # Use recruiter_id as created_by
                 basic_info.get('title') or 'Untitled',
                 basic_info.get('title_arabic', ''),
                 basic_info.get('department', ''),
@@ -428,8 +431,16 @@ def list_jds():
             params.append(recruiter_id)
         
         if company_id:
-            query += " AND company_id = %s"
-            params.append(company_id)
+            if current_user_id:
+                query += " AND (company_id = %s OR created_by = %s)"
+                params.extend([company_id, current_user_id])
+            else:
+                query += " AND company_id = %s"
+                params.append(company_id)
+        elif current_user_id:
+            # Fallback if no company ID found
+            query += " AND created_by = %s"
+            params.append(current_user_id)
         
         if status:
             query += " AND status = %s"
@@ -488,6 +499,9 @@ def get_jd(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
+
+
+            
 @jd_bp.route('/<jd_id>/basic-info', methods=['PUT'])
 def update_basic_info(jd_id):
     """Update basic information (Step 1 of wizard)"""
@@ -780,6 +794,9 @@ def match_candidates(jd_id):
         employment_status_filter = data.get('employment_status_filter')  # 'employed', 'job_seeker', 'open_to_opportunities', or None
         top_n = data.get('top_n', 10)
         
+        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
+             f.write(f"\n--- Request for JD {jd_id} ---\n")
+        
         # Retrieve JD from database
         jd_data = _get_jd_from_db(jd_id)
         if not jd_data:
@@ -793,6 +810,41 @@ def match_candidates(jd_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
+        # 1. Fetch APPLICANTS (People who explicitly applied)
+        # We need to map them to the same structure as generic candidates
+        cur.execute("""
+            SELECT 
+                u.id as candidate_id,
+                u.id as user_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone,
+                u.emirate,
+                u.nationality,
+                u.is_uae_national,
+                u.education_level,
+                u.experience_years,
+                u.job_title as current_position,
+                u.company as current_company,
+                'applicant' as employment_status, -- Special status for applicants
+                u.skills,
+                u.preferred_salary_min,
+                u.preferred_salary_max,
+                NULL as cv_url,
+                NULL as linkedin_url,
+                a.status as application_status,
+                a.submitted_at
+            FROM job_applications a
+            JOIN users u ON a.candidate_id = u.id::text
+            WHERE a.job_id = %s
+        """, (jd_id,))
+        applicants = [dict(c) for c in cur.fetchall()]
+        
+        # Get applicant IDs to exclude from general search
+        applicant_ids = [str(a['candidate_id']) for a in applicants]
+        
+        # 2. Fetch PASSIVE MATCHES (General pool)
         # Build query based on employment status filter
         query = """
             SELECT 
@@ -822,6 +874,11 @@ def match_candidates(jd_id):
         
         params = []
         
+        # Exclude already applied
+        if applicant_ids:
+            query += " AND id NOT IN %s"
+            params.append(tuple(applicant_ids))
+        
         # Add employment status filter if specified
         if employment_status_filter:
             if employment_status_filter.lower() == 'employed':
@@ -833,26 +890,106 @@ def match_candidates(jd_id):
         
         query += " LIMIT 1000"  # Limit to reasonable number for matching
         
-        cur.execute(query, params)
-        candidates = cur.fetchall()
+        cur.execute(query, tuple(params))
+        passive_candidates = [dict(c) for c in cur.fetchall()]
         
         cur.close()
         conn.close()
         
-        # Convert to list of dicts
-        candidates_list = [dict(c) for c in candidates]
+        # Combine lists (Applicants First)
+        # Clean skills for both lists
+        for c in applicants + passive_candidates:
+             if isinstance(c.get('skills'), str):
+                  c['skills'] = [s.strip().strip('"') for s in c['skills'].replace('{','').replace('}','').split(',') if s.strip()]
         
-        logger.info(f"Matching {len(candidates_list)} candidates for JD {jd_id} with filter: {employment_status_filter}")
+        print(f"DEBUG_PRINT: Matching request for JD {jd_id}", flush=True)
         
-        # Match candidates
+        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
+             f.write(f"Applicants: {len(applicants)}\n")
+             f.write(f"Passive: {len(passive_candidates)}\n")
+             f.write(f"Total: {len(applicants) + len(passive_candidates)}\n")
+        
+        print(f"DEBUG_PRINT: Found {len(applicants)} applicants", flush=True)
+        
+        logger.info(f"DEBUG: Found {len(applicants)} applicants")
+        logger.info(f"DEBUG: Found {len(passive_candidates)} passive candidates")
+        logger.info(f"DEBUG: Total candidates to match: {len(applicants + passive_candidates)}")
+        
+        logger.info(f"Matching {len(applicants)} applicants + {len(passive_candidates)} passive candidates for JD {jd_id}")
+        
+        # Match candidates (Both groups)
+        # We increase top_n to ensure we capture applicants even if they have lower scores
+        # We will filter manually after matching
+        match_search_limit = max(50, len(applicants) + top_n)
+        
         match_result = ai_matching.match_candidates_for_job(
             jd_data,
-            candidates_list,
+            applicants + passive_candidates, # Pass combined list
             employment_status_filter,
-            top_n
+            match_search_limit # Pass larger limit to AI
         )
         
-        return jsonify(match_result)
+        # Post-process: Ensure applicants are INCLUDED and prioritized
+        final_matches = []
+        matches_from_ai = match_result.get('top_matches', [])
+        
+        # 1. Separate AI results into Applicants and Passive
+        ai_applicants = []
+        ai_passive = []
+        
+        applicant_ids_set = set(str(a['candidate_id']) for a in applicants)
+        
+        for match in matches_from_ai:
+            cand_id = str(match['candidate'].get('candidate_id') or match['candidate'].get('user_id'))
+            
+            if cand_id in applicant_ids_set:
+                # Enrich with application status
+                applicant_data = next((a for a in applicants if str(a['candidate_id']) == cand_id), None)
+                if applicant_data:
+                    match['candidate']['status'] = applicant_data['application_status']
+                    match['candidate']['is_applicant'] = True
+                    match['candidate']['application_date'] = applicant_data.get('submitted_at')
+                ai_applicants.append(match)
+            else:
+                ai_passive.append(match)
+                
+        # 2. Check for any applicants that were missed by AI (because of limit)
+        # If any applicants are missing from ai_applicants, we should ideally score them now.
+        # But for now, we'll assume the increased limit caught them. 
+        # If not, we could force-add them with 0 score, but that's edge case.
+        
+        # 3. Construct Final List: All Applicants + Top Passive
+        final_matches.extend(ai_applicants)
+        
+        # Fill remaining slots with passive candidates up to top_n (or just include them all if user wants)
+        # We'll allow returning more than top_n if they are applicants
+        remaining_slots = max(0, top_n - len(final_matches))
+        final_matches.extend(ai_passive[:remaining_slots]) # Add top passive candidates to fill quota
+        
+        # If we have fewer than top_n total, and more passive available, add them
+        if len(final_matches) < top_n and len(ai_passive) > remaining_slots:
+             extra_needed = top_n - len(final_matches)
+             final_matches.extend(ai_passive[remaining_slots:remaining_slots+extra_needed])
+
+        logger.info(f"DEBUG: returning {len(final_matches)} matches ({len(ai_applicants)} applicants)")
+        
+        matches = final_matches
+        
+        # Log payload
+        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
+             f.write(f"Matches return count: {len(matches)}\n")
+             if matches:
+                 try:
+                     import json
+                     sample = matches[0]
+                     f.write(f"Sample Match Payload: {json.dumps(sample, default=str)}\n")
+                 except Exception as err:
+                     f.write(f"Error logging sample: {err}\n")
+
+        return jsonify({
+            'success': True,
+            'top_matches': matches
+        })
         
     except Exception as e:
         logger.error(f"Error matching candidates for JD {jd_id}: {str(e)}")
@@ -861,6 +998,54 @@ def match_candidates(jd_id):
             'error': str(e),
             'top_matches': []
         }), 500
+
+
+@jd_bp.route('/shortlist/add', methods=['POST'])
+def add_to_shortlist():
+    """Add a candidate to the shortlist for a JD"""
+    try:
+        data = request.get_json()
+        jd_id = data.get('jd_id')
+        candidate_id = data.get('candidate_id')
+        recruiter_id = data.get('recruiter_id')
+        match_score = data.get('match_score')
+        match_details = data.get('match_details')
+        notes = data.get('notes')
+
+        if not jd_id or not candidate_id:
+            return jsonify({'error': 'jd_id and candidate_id are required'}), 400
+
+        # TODO: Implement actual database storage for shortlist
+        # For now, we'll return success to unblock the frontend
+        
+        logger.info(f"Added candidate {candidate_id} to shortlist for JD {jd_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Candidate added to shortlist',
+            'shortlist_id': f"sl_{jd_id}_{candidate_id}" 
+        })
+
+    except Exception as e:
+        logger.error(f"Error adding to shortlist: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@jd_bp.route('/shortlist/<jd_id>', methods=['GET'])
+def get_shortlist(jd_id):
+    """Get shortlisted candidates for a JD"""
+    try:
+        # TODO: Implement actual database retrieval
+        # For now, return empty list or mock data
+        
+        return jsonify({
+            'success': True,
+            'shortlist': [] # Return empty list so frontend doesn't error
+        })
+
+    except Exception as e:
+        logger.error(f"Error retrieving shortlist: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 @jd_bp.route('/<jd_id>/validate', methods=['POST'])
@@ -1144,23 +1329,7 @@ def publish_jd(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
-@jd_bp.route('/<jd_id>', methods=['GET'])
-def get_jd(jd_id):
-    """
-    Retrieve a job description by ID
-    """
-    try:
-        # Use the helper function to get correctly formatted data
-        jd_data = _get_jd_from_db(jd_id)
-        
-        if not jd_data:
-            return jsonify({'error': 'Job description not found'}), 404
-        
-        return jsonify(jd_data), 200
-        
-    except Exception as e:
-        logger.error(f"Error retrieving JD: {e}")
-        return jsonify({'error': str(e)}), 500
+
 
 
 

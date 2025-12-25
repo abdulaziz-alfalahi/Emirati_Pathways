@@ -435,6 +435,24 @@ class AuthenticationManager:
         except Exception:
             return False
     
+    def verify_token(self, token: str) -> Optional[Dict]:
+        """Verify JWT token and return user info"""
+        try:
+            from flask_jwt_extended import decode_token
+            # Decode token (verifies signature and expiry)
+            decoded = decode_token(token)
+            
+            # extract identity (sub)
+            user_id = decoded.get('sub')
+            if not user_id:
+                return None
+                
+            return {'user_id': user_id}
+            
+        except Exception as e:
+            self.logger.error(f"Token verification failed: {e}")
+            return None
+
     # Additional methods for compatibility with existing code
     def verify_email_token(self, token: str) -> Tuple[bool, str]:
         """Verify email verification token (placeholder)"""

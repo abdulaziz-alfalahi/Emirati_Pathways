@@ -37,6 +37,33 @@ def get_connection():
         print(f"❌ Database connection failed: {e}")
         return None
 
+def assign_admin_role(conn, user_id, role_name):
+    """Assign an admin role to a user."""
+    try:
+        cursor = conn.cursor()
+        
+        # Get role ID
+        cursor.execute("SELECT id FROM admin_roles WHERE name = %s", (role_name,))
+        result = cursor.fetchone()
+        
+        if result:
+            role_id = result[0]
+            # Check if already assigned
+            cursor.execute("SELECT 1 FROM admin_user_roles WHERE user_id = %s AND role_id = %s", (user_id, role_id))
+            if not cursor.fetchone():
+                cursor.execute("""
+                    INSERT INTO admin_user_roles (user_id, role_id, assigned_by)
+                    VALUES (%s, %s, (SELECT id FROM users WHERE email='admin@emiratijourney.ae' LIMIT 1))
+                """, (user_id, role_id))
+                conn.commit()
+                print(f"    ✓ Assigned role '{role_name}' to user {user_id}")
+        else:
+            print(f"    ⚠️ Role '{role_name}' not found")
+            
+    except Exception as e:
+        print(f"    ⚠️ Error assigning role: {e}")
+        conn.rollback()
+
 def create_recruiter_user(conn):
     """Create a recruiter user if not exists."""
     try:
@@ -78,6 +105,7 @@ def create_recruiter_user(conn):
             conn.commit()
             print(f"  ✓ Created recruiter: Omar Al Rashid (ID: {recruiter_id})")
         
+        assign_admin_role(conn, recruiter_id, 'hr_recruiter')
         return recruiter_id
     except Exception as e:
         print(f"  ⚠️  Error creating recruiter: {e}")
@@ -285,7 +313,9 @@ def create_candidates(conn):
                 candidate_id = cursor.fetchone()[0]
                 print(f"  ✓ Created candidate: {candidate['full_name']} (ID: {candidate_id})")
             
+            
             candidate_ids.append(candidate_id)
+            assign_admin_role(conn, candidate_id, 'job_seeker')
         
         conn.commit()
         return candidate_ids

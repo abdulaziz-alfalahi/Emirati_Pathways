@@ -86,7 +86,7 @@ class CVExporter:
                 
         except Exception as e:
             logger.error(f"Error exporting CV to {format}: {str(e)}")
-            return None
+            raise e
     
     def _export_json(self, cv_data: Dict[str, Any], cv_id: str, timestamp: str) -> str:
         """Export CV as JSON file"""

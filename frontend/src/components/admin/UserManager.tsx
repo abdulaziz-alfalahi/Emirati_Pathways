@@ -24,6 +24,7 @@ import {
   Download,
   Upload
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 interface User {
   id: number;
@@ -62,6 +63,7 @@ const UserManager: React.FC = () => {
   const [itemsPerPage] = useState(20);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedUserForRole, setSelectedUserForRole] = useState<User | null>(null);
 
@@ -86,18 +88,38 @@ const UserManager: React.FC = () => {
     }
   });
 
-  const availableRoles = [
+  const [availableRoles, setAvailableRoles] = useState([
     'super_admin',
     'content_admin',
     'user_admin',
     'content_editor',
     'content_reviewer',
     'job_seeker',
-    'hr_recruiter',
+    'recruiter',
+    'hr_manager',
     'mentor',
     'educator',
+    'student',
+    'guardian',
     'assessor'
-  ];
+  ]);
+
+  // Fetch roles from backend
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await restClient.get('/api/admin/roles');
+        if (response.data && response.data.data) {
+          const roles = response.data.data.map((r: any) => r.name);
+          setAvailableRoles(roles);
+        }
+      } catch (error) {
+        console.error('Failed to fetch roles:', error);
+        // Fallback to updated defaults if fetch fails
+      }
+    };
+    fetchRoles();
+  }, []);
 
   useEffect(() => {
     fetchUsers();
@@ -110,99 +132,36 @@ const UserManager: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      
-      // Mock data - replace with actual API call
-      const mockUsers: User[] = [
-        {
-          id: 1,
-          username: 'sarah.almansouri',
-          email: 'sarah.almansouri@emiratijourney.ae',
-          full_name: 'Sarah Al-Mansouri',
-          roles: ['content_admin', 'educator'],
-          is_active: true,
-          last_login: '2024-01-28T14:30:00Z',
-          created_at: '2024-01-15T10:00:00Z',
-          updated_at: '2024-01-28T14:30:00Z',
-          profile_data: {
-            phone: '+971-50-123-4567',
-            department: 'Education',
-            position: 'Senior Content Manager',
-            location: 'Dubai'
-          }
-        },
-        {
-          id: 2,
-          username: 'ahmed.alzaabi',
-          email: 'ahmed.alzaabi@emiratijourney.ae',
-          full_name: 'Ahmed Al-Zaabi',
-          roles: ['hr_recruiter', 'mentor'],
-          is_active: true,
-          last_login: '2024-01-28T09:15:00Z',
-          created_at: '2024-01-18T08:30:00Z',
-          updated_at: '2024-01-28T09:15:00Z',
-          profile_data: {
-            phone: '+971-50-234-5678',
-            department: 'Human Resources',
-            position: 'HR Manager',
-            location: 'Abu Dhabi'
-          }
-        },
-        {
-          id: 3,
-          username: 'fatima.alzahra',
-          email: 'fatima.alzahra@emiratijourney.ae',
-          full_name: 'Fatima Al-Zahra',
-          roles: ['assessor', 'content_reviewer'],
-          is_active: true,
-          last_login: '2024-01-27T16:45:00Z',
-          created_at: '2024-01-20T11:20:00Z',
-          updated_at: '2024-01-27T16:45:00Z',
-          profile_data: {
-            phone: '+971-50-345-6789',
-            department: 'Assessment',
-            position: 'Senior Assessor',
-            location: 'Sharjah'
-          }
-        },
-        {
-          id: 4,
-          username: 'mohammed.alrashid',
-          email: 'mohammed.alrashid@emiratijourney.ae',
-          full_name: 'Mohammed Al-Rashid',
-          roles: ['job_seeker'],
-          is_active: false,
-          last_login: '2024-01-25T12:00:00Z',
-          created_at: '2024-01-22T14:15:00Z',
-          updated_at: '2024-01-26T10:30:00Z',
-          profile_data: {
-            phone: '+971-50-456-7890',
-            department: 'Engineering',
-            position: 'Software Developer',
-            location: 'Dubai'
-          }
-        },
-        {
-          id: 5,
-          username: 'admin',
-          email: 'admin@emiratijourney.ae',
-          full_name: 'System Administrator',
-          roles: ['super_admin'],
-          is_active: true,
-          last_login: '2024-01-28T15:00:00Z',
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-28T15:00:00Z',
-          profile_data: {
-            department: 'IT',
-            position: 'System Administrator',
-            location: 'Dubai'
-          }
-        }
-      ];
 
-      setUsers(mockUsers);
-      setTotalPages(Math.ceil(mockUsers.length / itemsPerPage));
+      // Using restClient for real API call
+      // Note: Endpoint supports pagination with page/per_page params
+      const response = await restClient.get(`/api/admin/users`, {
+        params: {
+          page: currentPage,
+          per_page: itemsPerPage,
+          search: searchTerm,
+          role: filters.role,
+          // status: filters.status // API might not support status/dept filtering yet, but passing them won't hurt
+        }
+      });
+
+      const data = response.data.data;
+      if (data && data.users) {
+        setUsers(data.users);
+        setTotalPages(data.pages || Math.ceil(data.total / itemsPerPage));
+        // Update total users count if available
+      } else if (Array.isArray(data)) {
+        // Fallback if API returns array directly
+        setUsers(data as User[]);
+      } else {
+        // Fallback to empty
+        setUsers([]);
+      }
+
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      // Fallback to empty on error
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -214,10 +173,10 @@ const UserManager: React.FC = () => {
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(user =>
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.roles.some(role => role.toLowerCase().includes(searchTerm.toLowerCase()))
+        (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.roles || []).some(role => (role || '').toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -244,20 +203,16 @@ const UserManager: React.FC = () => {
 
   const handleCreateUser = async () => {
     try {
-      // Mock API call - replace with actual implementation
-      const newUserData: User = {
-        id: Date.now(),
+      await restClient.post('/api/admin/users', {
         username: newUser.username,
         email: newUser.email,
         full_name: newUser.full_name,
+        password: newUser.password,
         roles: newUser.roles,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        profile_data: newUser.profile_data
-      };
+        // Backend doesn't support profile_data in create_user yet, but we'll send it if supported later
+        // or we could add a subsequent update call. For now, we stick to basic fields.
+      });
 
-      setUsers([newUserData, ...users]);
       setShowCreateModal(false);
       setNewUser({
         username: '',
@@ -272,53 +227,97 @@ const UserManager: React.FC = () => {
           location: ''
         }
       });
+      fetchUsers(); // Refresh list to get new user with ID and correct data
     } catch (error) {
       console.error('Failed to create user:', error);
+      alert('Failed to create user');
     }
   };
 
   const handleUpdateUserStatus = async (userId: number, isActive: boolean) => {
     try {
-      setUsers(users.map(user =>
-        user.id === userId ? { ...user, is_active: isActive, updated_at: new Date().toISOString() } : user
-      ));
+      // isActive parameter represents the DESIRED state
+      if (isActive) {
+        await restClient.post(`/api/admin/users/${userId}/activate`);
+      } else {
+        await restClient.post(`/api/admin/users/${userId}/suspend`, { reason: 'Admin Action' });
+      }
+
+      // Update local state to reflect change immediately (optimistic update) or fetchUsers
+      fetchUsers();
     } catch (error) {
       console.error('Failed to update user status:', error);
+      alert('Failed to update user status');
     }
   };
 
   const handleUpdateUserRoles = async (userId: number, newRoles: string[]) => {
     try {
-      setUsers(users.map(user =>
-        user.id === userId ? { ...user, roles: newRoles, updated_at: new Date().toISOString() } : user
-      ));
+      await restClient.put(`/api/admin/users/${userId}/roles`, { roles: newRoles });
       setShowRoleModal(false);
       setSelectedUserForRole(null);
+      fetchUsers();
     } catch (error) {
       console.error('Failed to update user roles:', error);
+      alert('Failed to update user roles');
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await restClient.get('/api/admin/users/export', {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'text/csv'
+        }
+      });
+
+      // Check content type
+      const contentType = response.headers['content-type'];
+      if (contentType && contentType.includes('application/json')) {
+        // It's an error message disguised as a blob
+        const text = await response.data.text();
+        const json = JSON.parse(text);
+        throw new Error(json.message || 'Export failed');
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error: any) {
+      console.error('Failed to export users:', error);
+      alert(`Failed to export users: ${error.message || 'Unknown error'}`);
     }
   };
 
   const handleBulkAction = async (action: string) => {
     try {
-      switch (action) {
-        case 'activate':
-          setUsers(users.map(user =>
-            selectedUsers.includes(user.id) ? { ...user, is_active: true } : user
-          ));
-          break;
-        case 'deactivate':
-          setUsers(users.map(user =>
-            selectedUsers.includes(user.id) ? { ...user, is_active: false } : user
-          ));
-          break;
-        case 'delete':
-          setUsers(users.filter(user => !selectedUsers.includes(user.id)));
-          break;
-      }
+      const promises = selectedUsers.map(userId => {
+        switch (action) {
+          case 'activate':
+            return restClient.post(`/api/admin/users/${userId}/activate`);
+          case 'deactivate':
+            return restClient.post(`/api/admin/users/${userId}/suspend`, { reason: 'Bulk Action' });
+          case 'delete':
+            if (!window.confirm(`Are you sure you want to permanently delete user ID ${userId}? This action cannot be undone.`)) {
+              return Promise.resolve();
+            }
+            return restClient.delete(`/api/admin/users/${userId}`);
+          default:
+            return Promise.resolve();
+        }
+      });
+
+      await Promise.all(promises);
       setSelectedUsers([]);
+      fetchUsers();
     } catch (error) {
       console.error('Failed to perform bulk action:', error);
+      alert('Failed to perform bulk action');
     }
   };
 
@@ -352,7 +351,7 @@ const UserManager: React.FC = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -401,7 +400,7 @@ const UserManager: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowFilters(!showFilters)}
@@ -411,13 +410,21 @@ const UserManager: React.FC = () => {
                 Filters
                 <ChevronDown className={`w-4 h-4 ml-2 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
-              
+
               <button
                 onClick={fetchUsers}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
+              </button>
+
+              <button
+                onClick={handleExport}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
               </button>
             </div>
           </div>
@@ -611,9 +618,9 @@ const UserManager: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {user.roles.slice(0, 2).map((role, index) => (
+                          {(user.roles || []).filter(r => r).slice(0, 2).map((role, index) => (
                             <span key={index} className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRoleColor(role)}`}>
-                              {role.replace('_', ' ')}
+                              {(role || 'User').replace('_', ' ')}
                             </span>
                           ))}
                           {user.roles.length > 2 && (
@@ -634,16 +641,19 @@ const UserManager: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors">
+                          <button
+                            onClick={() => setViewingUser(user)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors"
+                          >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => setEditingUser(user)}
                             className="text-green-600 hover:text-green-900 p-1 rounded-md hover:bg-green-50 transition-colors"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => {
                               setSelectedUserForRole(user);
                               setShowRoleModal(true);
@@ -654,11 +664,10 @@ const UserManager: React.FC = () => {
                           </button>
                           <button
                             onClick={() => handleUpdateUserStatus(user.id, !user.is_active)}
-                            className={`p-1 rounded-md transition-colors ${
-                              user.is_active 
-                                ? 'text-red-600 hover:text-red-900 hover:bg-red-50' 
-                                : 'text-green-600 hover:text-green-900 hover:bg-green-50'
-                            }`}
+                            className={`p-1 rounded-md transition-colors ${user.is_active
+                              ? 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                              : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                              }`}
                           >
                             {user.is_active ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                           </button>
@@ -702,205 +711,373 @@ const UserManager: React.FC = () => {
       </div>
 
       {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+      {
+        showCreateModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input
+                      type="text"
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter username"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter email"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                   <input
                     type="text"
-                    value={newUser.username}
-                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                    value={newUser.full_name}
+                    onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter username"
+                    placeholder="Enter full name"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                   <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter email"
+                    placeholder="Enter password"
                   />
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={newUser.full_name}
-                  onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter full name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter password"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Roles</label>
-                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                  {availableRoles.map(role => (
-                    <label key={role} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={newUser.roles.includes(role)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewUser({ ...newUser, roles: [...newUser.roles, role] });
-                          } else {
-                            setNewUser({ ...newUser, roles: newUser.roles.filter(r => r !== role) });
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700">
-                        {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <input
-                    type="text"
-                    value={newUser.profile_data.department}
-                    onChange={(e) => setNewUser({ 
-                      ...newUser, 
-                      profile_data: { ...newUser.profile_data, department: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter department"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Roles</label>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                    {availableRoles.map(role => (
+                      <label key={role} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={newUser.roles.includes(role)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewUser({ ...newUser, roles: [...newUser.roles, role] });
+                            } else {
+                              setNewUser({ ...newUser, roles: newUser.roles.filter(r => r !== role) });
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
-                  <input
-                    type="text"
-                    value={newUser.profile_data.position}
-                    onChange={(e) => setNewUser({ 
-                      ...newUser, 
-                      profile_data: { ...newUser.profile_data, position: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter position"
-                  />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input
+                      type="text"
+                      value={newUser.profile_data.department}
+                      onChange={(e) => setNewUser({
+                        ...newUser,
+                        profile_data: { ...newUser.profile_data, department: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter department"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                    <input
+                      type="text"
+                      value={newUser.profile_data.position}
+                      onChange={(e) => setNewUser({
+                        ...newUser,
+                        profile_data: { ...newUser.profile_data, position: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter position"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex items-center justify-end space-x-4 mt-6">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateUser}
-                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Create User
-              </button>
+
+              <div className="flex items-center justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateUser}
+                  className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Create User
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Role Management Modal */}
-      {showRoleModal && selectedUserForRole && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Manage User Roles</h3>
-              <button
-                onClick={() => {
-                  setShowRoleModal(false);
-                  setSelectedUserForRole(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
-                Managing roles for: <strong>{selectedUserForRole.full_name}</strong>
-              </p>
-            </div>
-            
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {availableRoles.map(role => (
-                <label key={role} className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={selectedUserForRole.roles.includes(role)}
-                    onChange={(e) => {
-                      const newRoles = e.target.checked
-                        ? [...selectedUserForRole.roles, role]
-                        : selectedUserForRole.roles.filter(r => r !== role);
-                      setSelectedUserForRole({ ...selectedUserForRole, roles: newRoles });
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getRoleColor(role)}`}>
-                    {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </span>
-                </label>
-              ))}
-            </div>
-            
-            <div className="flex items-center justify-end space-x-4 mt-6">
-              <button
-                onClick={() => {
-                  setShowRoleModal(false);
-                  setSelectedUserForRole(null);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleUpdateUserRoles(selectedUserForRole.id, selectedUserForRole.roles)}
-                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Update Roles
-              </button>
+      {
+        showRoleModal && selectedUserForRole && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Manage User Roles</h3>
+                <button
+                  onClick={() => {
+                    setShowRoleModal(false);
+                    setSelectedUserForRole(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  Managing roles for: <strong>{selectedUserForRole.full_name}</strong>
+                </p>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {availableRoles.map(role => (
+                  <label key={role} className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={selectedUserForRole.roles.includes(role)}
+                      onChange={(e) => {
+                        const newRoles = e.target.checked
+                          ? [...selectedUserForRole.roles, role]
+                          : selectedUserForRole.roles.filter(r => r !== role);
+                        setSelectedUserForRole({ ...selectedUserForRole, roles: newRoles });
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getRoleColor(role)}`}>
+                      {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => {
+                    setShowRoleModal(false);
+                    setSelectedUserForRole(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleUpdateUserRoles(selectedUserForRole.id, selectedUserForRole.roles)}
+                  className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Update Roles
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+      {/* View User Modal */}
+      {
+        viewingUser && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">User Details</h3>
+                <button
+                  onClick={() => setViewingUser(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Username</label>
+                    <p className="text-gray-900">{viewingUser.username}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Email</label>
+                    <p className="text-gray-900">{viewingUser.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Full Name</label>
+                    <p className="text-gray-900">{viewingUser.full_name}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Status</label>
+                    <p className={viewingUser.is_active ? "text-green-600" : "text-red-600"}>
+                      {viewingUser.is_active ? 'Active' : 'Inactive'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Department</label>
+                    <p className="text-gray-900">{viewingUser.profile_data?.department || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Position</label>
+                    <p className="text-gray-900">{viewingUser.profile_data?.position || '-'}</p>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Roles</label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(viewingUser.roles || []).length > 0 ? (
+                      (viewingUser.roles || []).filter(r => r).map(role => (
+                        <span key={role} className={`px-2 py-1 text-xs rounded-full ${getRoleColor(role)}`}>
+                          {(role || 'User').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-gray-400 text-xs italic">
+                        No roles assigned
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setViewingUser(null)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Edit User Modal */}
+      {
+        editingUser && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input
+                      type="text"
+                      value={editingUser.full_name || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                      className="mt-1 w-full px-3 py-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      value={editingUser.email || ''}
+                      onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                      className="mt-1 w-full px-3 py-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Department</label>
+                    <input
+                      type="text"
+                      value={editingUser.profile_data?.department || ''}
+                      onChange={(e) => setEditingUser({
+                        ...editingUser,
+                        profile_data: { ...(editingUser.profile_data || {}), department: e.target.value }
+                      })}
+                      className="mt-1 w-full px-3 py-2 border rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Position</label>
+                    <input
+                      type="text"
+                      value={editingUser.profile_data?.position || ''}
+                      onChange={(e) => setEditingUser({
+                        ...editingUser,
+                        profile_data: { ...(editingUser.profile_data || {}), position: e.target.value }
+                      })}
+                      className="mt-1 w-full px-3 py-2 border rounded-md"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await restClient.put(`/api/admin/users/${editingUser.id}`, {
+                        full_name: editingUser.full_name,
+                        email: editingUser.email,
+                        profile_data: editingUser.profile_data
+                      });
+                      setEditingUser(null);
+                      fetchUsers(); // Refresh list
+                    } catch (e) {
+                      console.error('Failed to update user', e);
+                      alert('Failed to update user');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

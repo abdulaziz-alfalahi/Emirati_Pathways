@@ -503,14 +503,16 @@ class VideoInterviewEngine:
         }
 
     def get_interview_sessions(self, user_id: str, role: str = 'both') -> List[Dict[str, Any]]:
-        """Get interview sessions for a user"""
+        """Get interview sessions for a user (merging both AI sessions and Recruiter schedules)"""
         try:
             with self.get_db_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    query = """
+                    # 1. Fetch AI Video Sessions
+                    query_ai = """
                         SELECT vis.*, ja.job_id, j.title as job_title,
                                u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
-                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name
+                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
+                               'ai_video' as source
                         FROM video_interview_sessions vis
                         JOIN job_applications ja ON vis.application_id = ja.id
                         JOIN jobs j ON ja.job_id = j.id
@@ -518,24 +520,64 @@ class VideoInterviewEngine:
                         JOIN users u2 ON vis.interviewer_id = u2.id
                         WHERE 1=1
                     """
-                    params = []
+                    params_ai = []
                     
                     if role == 'interviewer':
-                        query += " AND vis.interviewer_id = %s"
-                        params.append(user_id)
+                        query_ai += " AND vis.interviewer_id = %s"
+                        params_ai.append(user_id)
                     elif role == 'candidate':
-                        query += " AND vis.candidate_id = %s"
-                        params.append(user_id)
+                        query_ai += " AND vis.candidate_id = %s"
+                        params_ai.append(user_id)
                     else:  # both
-                        query += " AND (vis.interviewer_id = %s OR vis.candidate_id = %s)"
-                        params.extend([user_id, user_id])
+                        query_ai += " AND (vis.interviewer_id = %s OR vis.candidate_id = %s)"
+                        params_ai.extend([user_id, user_id])
                     
-                    query += " ORDER BY vis.scheduled_time DESC"
+                    cur.execute(query_ai, params_ai)
+                    ai_sessions = [dict(s) for s in cur.fetchall()]
                     
-                    cur.execute(query, params)
-                    sessions = cur.fetchall()
+                    # 2. Fetch Recruiter Scheduled Interviews (SQL)
+                    query_sql = """
+                        SELECT i.interview_id as id, i.shortlist_id as application_id, i.recruiter_id as interviewer_id,
+                               i.candidate_id, i.interview_type, 
+                               (i.scheduled_date || ' ' || i.scheduled_time)::timestamp as scheduled_time,
+                               i.duration_minutes, i.status, i.interview_title as title,
+                               i.meeting_link as room_id,
+                               j.id as job_id, j.title as job_title,
+                               u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
+                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
+                               'recruiter_sql' as source
+                        FROM interview_schedules i
+                        LEFT JOIN jobs j ON i.jd_id = j.id
+                        LEFT JOIN users u1 ON i.candidate_id = u1.id
+                        LEFT JOIN users u2 ON i.recruiter_id = u2.id
+                        WHERE status != 'cancelled'
+                    """
+                    # Note: Using LEFT JOIN because jd_id might be text/uuid mismatch or null, but we want to show it anyway
                     
-                    return [dict(session) for session in sessions]
+                    params_sql = []
+                    if role == 'interviewer':
+                        query_sql += " AND i.recruiter_id = %s"
+                        params_sql.append(str(user_id))
+                    elif role == 'candidate':
+                        query_sql += " AND i.candidate_id = %s"
+                        params_sql.append(str(user_id))
+                    else:
+                        query_sql += " AND (i.recruiter_id = %s OR i.candidate_id = %s)"
+                        params_sql.extend([str(user_id), str(user_id)])
+                        
+                    try:
+                        cur.execute(query_sql, params_sql)
+                        sql_sessions = [dict(s) for s in cur.fetchall()]
+                    except Exception as e:
+                        logger.error(f"Error fetching SQL interviews: {e}")
+                        sql_sessions = []
+
+                    # Merge and Sort
+                    all_sessions = ai_sessions + sql_sessions
+                    # Sort by scheduled_time descending
+                    all_sessions.sort(key=lambda x: x.get('scheduled_time') or datetime.min, reverse=True)
+                    
+                    return all_sessions
                     
         except Exception as e:
             logger.error(f"Error getting interview sessions: {e}")

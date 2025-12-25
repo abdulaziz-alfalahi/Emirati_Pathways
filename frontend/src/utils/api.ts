@@ -7,10 +7,9 @@ import type { CV } from '@/types/cv'
  *  - VITE_API_BASE_URL: your main backend (Node, Rails, etc.)
  *  - VITE_FLASK_API_URL: your Python/Flask microservice (for NLP/matching, etc.)
  */
-// FORCE RELATIVE PATH FOR DEBUGGING
-// FORCE RELATIVE PATH FOR DEBUGGING - Ignore Env Var for now
-const API_BASE_URL = '' // import.meta.env.VITE_API_BASE_URL || ''
-const FLASK_API_URL = '/'
+const API_BASE_URL = ''; // Always use relative path to leverage Vite proxy
+const FLASK_API_URL = ''; // Use proxy for flask as well
+console.log('DEBUG: API_BASE_URL is relative (proxy enabled)');
 
 export interface ApiResponse<T = any> {
   success: boolean
@@ -81,6 +80,8 @@ export const cvBuilderApi = {
     wrap<CV>(restClient.post(`/api/cv/${payload.id}/duplicate`, { title: payload.title })),
 
   get: (id: string) => wrap<CV>(restClient.get(`/api/cv/${id}`)),
+
+  list: () => wrap<CV[]>(restClient.get('/api/cv/list')),
 
   getTemplates: () =>
     wrap<TemplateMeta[]>(restClient.get('/api/cv/templates')),
@@ -158,14 +159,14 @@ export const shortlistApi = {
     match_score?: number;
     match_details?: any;
     notes?: string;
-  }) => wrap<{ success: boolean; shortlist_id: string; message: string }>(restClient.post('/api/recruiter/shortlist/add', data)),
+  }) => wrap<{ success: boolean; shortlist_id: string; message: string }>(restClient.post('/api/recruiter/jd/shortlist/add', data)),
 
   get: (jdId: string) => wrap<Array<{
     candidate_id: string;
     status: string;
     match_score: number;
     notes?: string;
-  }>>(restClient.get(`/api/recruiter/shortlist/${jdId}`)),
+  }>>(restClient.get(`/api/recruiter/jd/shortlist/${jdId}`)),
 }
 
 // ---------- Health API ----------

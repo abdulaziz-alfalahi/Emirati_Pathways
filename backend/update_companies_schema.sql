@@ -1,0 +1,9 @@
+
+-- Add new columns to companies table to support Nafis CSV data
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry VARCHAR(255);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS trade_license_no VARCHAR(255);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS emirate VARCHAR(100);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS business_type VARCHAR(100);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS website VARCHAR(255);

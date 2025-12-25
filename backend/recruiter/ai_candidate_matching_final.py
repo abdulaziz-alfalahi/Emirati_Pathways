@@ -242,7 +242,7 @@ class AICandidateMatchingEngineFinal:
             jd_formatted = {
                 'title': jd_data.get('basic_info', {}).get('title', ''),
                 'description': jd_data.get('description', ''),
-                'requirements': [req.get('description', '') for req in jd_data.get('requirements', [])],
+                'requirements': [req.get('description', '') if isinstance(req, dict) else str(req) for req in jd_data.get('requirements', [])],
                 'responsibilities': [resp.get('description', '') for resp in jd_data.get('responsibilities', [])],
                 'location': jd_data.get('basic_info', {}).get('emirate', ''),
                 'job_type': jd_data.get('basic_info', {}).get('job_type', ''),
@@ -319,15 +319,18 @@ class AICandidateMatchingEngineFinal:
             self.logger.info(f"JD Requirements count: {len(jd_requirements)}")
             required_skills = []
             for req in jd_requirements:
-                if req.get('category') == 'skills':
-                    required_skills.append(req.get('description', '').lower())
+                if isinstance(req, dict):
+                    if req.get('category') == 'skills':
+                        required_skills.append(req.get('description', '').lower())
+                elif isinstance(req, str):
+                    required_skills.append(req.lower())
             
             with open('debug_direct.txt', 'a') as f:
                 f.write(f"Required Skills: {required_skills}\n")
                 f.write(f"Candidate Skills: {candidate.get('skills', [])}\n")
 
             self.logger.info(f"Required skills: {required_skills}")
-            candidate_skills = [s.lower() for s in candidate.get('skills', [])]
+            candidate_skills = [s.lower() for s in candidate.get('skills', []) if s is not None and isinstance(s, str)]
             self.logger.info(f"Candidate skills: {candidate_skills}")
             
             if required_skills:
@@ -442,8 +445,14 @@ class AICandidateMatchingEngineFinal:
         """Extract years of experience required from JD"""
         requirements = jd_data.get('requirements', [])
         for req in requirements:
-            if req.get('category') == 'experience':
-                desc = req.get('description', '').lower()
+            desc = ''
+            if isinstance(req, dict):
+                if req.get('category') == 'experience':
+                    desc = req.get('description', '').lower()
+            elif isinstance(req, str):
+                desc = req.lower()
+            
+            if desc:
                 # Try to extract number of years
                 import re
                 match = re.search(r'(\d+)\s*(?:years?|yrs?)', desc)
@@ -455,8 +464,14 @@ class AICandidateMatchingEngineFinal:
         """Extract education requirement from JD"""
         requirements = jd_data.get('requirements', [])
         for req in requirements:
-            if req.get('category') == 'education':
-                desc = req.get('description', '').lower()
+            desc = ''
+            if isinstance(req, dict):
+                if req.get('category') == 'education':
+                    desc = req.get('description', '').lower()
+            elif isinstance(req, str):
+                desc = req.lower()
+                
+            if desc:
                 if 'phd' in desc or 'doctorate' in desc:
                     return 'phd'
                 elif 'master' in desc:

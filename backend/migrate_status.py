@@ -1,0 +1,30 @@
+
+import os
+import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv('.env')
+
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'emirati_journey'),
+    'user': os.getenv('DB_USER', 'emirati_user'),
+    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+    'port': int(os.getenv('DB_PORT', 5432))
+}
+
+def migrate_status():
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        print(f"Connected to {DB_CONFIG['database']}...")
+        
+        cur.execute("UPDATE job_applications SET status = 'pending' WHERE status = 'submitted';")
+        conn.commit()
+        print(f"✅ Updated {cur.rowcount} applications to 'pending'.")
+        conn.close()
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+
+if __name__ == "__main__":
+    migrate_status()

@@ -97,7 +97,7 @@ def get_conversation_messages(conversation_id):
         current_user_id = get_jwt_identity()
         
         # Check if user is participant in conversation
-        conversation = communication_service.conversations_db.get(conversation_id)
+        conversation = communication_service.get_conversation(conversation_id)
         if not conversation or current_user_id not in conversation.participants:
             return jsonify({
                 'success': False,

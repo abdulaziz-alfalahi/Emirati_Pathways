@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,10 @@ import {
 import ProfileForm from '@/components/candidate/ProfileForm';
 import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
+import Messages from '@/components/candidate/Messages';
+import CandidateInterviews from '@/components/candidate/Interviews';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 
 interface DashboardData {
   profile: {
@@ -75,24 +78,28 @@ const CandidateDashboard: React.FC = () => {
     recentActivity: []
   });
   const [activeTab, setActiveTab] = useState('overview');
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const tab = location.hash.replace('#', '');
+      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages'].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const headers: any = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const response = await fetch('/api/candidate/dashboard/stats', { headers });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            setDashboardData(prev => ({
-              ...prev,
-              profile: { ...prev.profile, ...result.data.profile },
-              stats: { ...prev.stats, ...result.data.stats }
-            }));
-          }
+        const response = await restClient.get('/api/candidate/dashboard/stats');
+        if (response.data.success) {
+          const result = response.data;
+          setDashboardData(prev => ({
+            ...prev,
+            profile: { ...prev.profile, ...result.data.profile },
+            stats: { ...prev.stats, ...result.data.stats }
+          }));
         }
       } catch (error) {
         console.error('Failed to fetch dashboard stats', error);
@@ -173,6 +180,8 @@ const CandidateDashboard: React.FC = () => {
               <TabsTrigger value="profile">Profile & CV</TabsTrigger>
               <TabsTrigger value="jobs">Job Matches ({dashboardData.stats.jobMatches})</TabsTrigger>
               <TabsTrigger value="applications">Applications</TabsTrigger>
+              <TabsTrigger value="interviews">Interviews</TabsTrigger>
+              <TabsTrigger value="messages">Messages</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -361,6 +370,14 @@ const CandidateDashboard: React.FC = () => {
 
             <TabsContent value="applications" className="space-y-6 mt-6">
               <ApplicationTracker />
+            </TabsContent>
+
+            <TabsContent value="interviews" className="space-y-6 mt-6">
+              <CandidateInterviews />
+            </TabsContent>
+
+            <TabsContent value="messages" className="space-y-6 mt-6">
+              <Messages />
             </TabsContent>
           </Tabs>
         </div>

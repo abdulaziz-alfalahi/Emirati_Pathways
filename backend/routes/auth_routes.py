@@ -532,28 +532,59 @@ def internal_error(error):
 @auth_bp.route('/dev-login', methods=['POST'])
 def dev_login():
     """
-    Development only: Generate a token for a mock user
+    Development only: Generate a token for a mock user, ensuring they exist in DB
     """
     try:
         data = request.get_json()
-        user_id = data.get('user_id')
+        mock_user_id = data.get('user_id')
         role = data.get('role', 'candidate')
         email = data.get('email')
         
-        if not user_id:
-            return jsonify({'success': False, 'message': 'user_id required'}), 400
+        if not email:
+            return jsonify({'success': False, 'message': 'email required'}), 400
 
-        # Create access token with identity as user_id
+        # Initialize authentication manager
+        auth_manager = AuthenticationManager()
+        
+        # Check if user exists
+        # Navigate name mangling/protected method access for dev utility
+        user = auth_manager._get_user_by_email(email)
+        
+        real_user_id = None
+        
+        if user:
+            real_user_id = user['id']
+            # Update role if needed? No, respect DB role.
+        else:
+            # Create user if not exists
+            logger.info(f"Dev Login: Creating missing user {email}")
+            user_data = {
+                'email': email,
+                'password': 'DevPassword123!', # Default dev password
+                'first_name': 'Dev',
+                'last_name': role.capitalize(),
+                'role': role,
+                'phone': '+971500000000', # Dummy phone
+                'nationality': 'UAE',
+                'emirate': 'Dubai'
+            }
+            success, msg, res = auth_manager.register_user(user_data)
+            if success and res:
+                 real_user_id = res['user_id']
+            else:
+                 return jsonify({'success': False, 'message': f'Failed to create dev user: {msg}'}), 500
+
+        # Create access token with REAL identity
         # Add role to claims if needed by your JWT setup
         additional_claims = {'role': role, 'email': email}
-        access_token = create_access_token(identity=str(user_id), additional_claims=additional_claims)
+        access_token = create_access_token(identity=str(real_user_id), additional_claims=additional_claims)
         
         return jsonify({
             'success': True,
             'data': {
                 'access_token': access_token,
                 'user': {
-                    'id': user_id,
+                    'id': str(real_user_id),
                     'role': role,
                     'email': email
                 }

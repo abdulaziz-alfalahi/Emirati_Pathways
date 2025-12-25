@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Briefcase, 
-  MapPin, 
-  Clock, 
-  DollarSign, 
+import {
+  Briefcase,
+  MapPin,
+  Clock,
+  DollarSign,
   Star,
   Heart,
   ExternalLink,
@@ -21,7 +22,7 @@ interface Job {
   title: string;
   company: string;
   location: string;
-  type: 'full-time' | 'part-time' | 'contract' | 'internship';
+  type: string;
   salary: string;
   matchScore: number;
   description: string;
@@ -48,17 +49,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const loadJobMatches = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:5001/api/candidate/job-matches', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await restClient.get('/api/candidate/job-matches');
 
-      if (response.ok) {
-        const data = await response.json();
-        setJobs(data.jobs || []);
+      if (response.data.success) {
+        setJobs(response.data.jobs || []);
+      } else {
+        console.error('Failed to load job matches:', response.data.error);
+        // throw new Error(response.data.error); // Fallback to mock data on error
       }
     } catch (error) {
       console.error('Error loading job matches:', error);
@@ -149,22 +146,19 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
 
   const handleApply = async (jobId: string) => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:5001/api/candidate/apply/${jobId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await restClient.post('/api/jobs/apply', {
+        job_id: jobId,
+        cover_letter: 'Immediate application from Candidate Dashboard'
       });
 
-      if (response.ok) {
-        // Show success message or update UI
+      if (response.data.success) {
         alert('Application submitted successfully!');
+      } else {
+        alert(response.data.message || 'Application failed');
       }
     } catch (error) {
       console.error('Error applying to job:', error);
-      alert('Application submitted successfully!'); // Mock success for demo
+      alert('Failed to submit application. Please try again.');
     }
   };
 
@@ -197,7 +191,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       default:
         return true;
     }
-  });
+  }).sort((a, b) => b.matchScore - a.matchScore);
 
   if (loading) {
     return (
@@ -308,21 +302,27 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                     <div>
                       <h4 className="text-sm font-medium mb-2">Requirements:</h4>
                       <div className="flex flex-wrap gap-1">
-                        {job.requirements.map((req, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {req}
-                          </Badge>
-                        ))}
+                        {job.requirements.map((req, index) => {
+                          const text = typeof req === 'string' ? req : (req.description || req.name || req.title || 'Requirement');
+                          return (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {text}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium mb-2">Benefits:</h4>
                       <div className="flex flex-wrap gap-1">
-                        {job.benefits.map((benefit, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {benefit}
-                          </Badge>
-                        ))}
+                        {job.benefits.map((benefit, index) => {
+                          const text = typeof benefit === 'string' ? benefit : (benefit.description || benefit.name || benefit.title || 'Benefit');
+                          return (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {text}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -336,7 +336,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                   </div>
 
                   <div className="flex space-x-2">
-                    <Button 
+                    <Button
                       onClick={() => handleApply(job.id)}
                       className="flex-1"
                     >

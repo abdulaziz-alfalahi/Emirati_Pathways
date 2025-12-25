@@ -47,9 +47,46 @@ const MockLogin: React.FC = () => {
     setLoading(true);
 
     try {
+      // 1. Verify OTP locally (simulation)
       const result = await MockAuthService.verifyOTP(phoneNumber, otp);
 
       if (result.success && result.user) {
+
+        // 2. Perform REAL backend login to get valid JWT
+        try {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+          const devLoginRes = await fetch(`${baseUrl}/api/auth/dev-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: result.user.email,
+              role: result.user.user_type,
+              user_id: result.user.id // Optional, backend might map it
+            })
+          });
+
+          if (devLoginRes.ok) {
+            const loginData = await devLoginRes.json();
+            if (loginData.success && loginData.data) {
+              // Determine which user object to store - merge them if needed
+              // Priority to backend user, but keep frontend props if needed
+              const realUser = loginData.data.user;
+              const finalUser = { ...result.user, ...realUser, id: realUser.id }; // Ensure ID matches backend
+
+              localStorage.setItem('access_token', loginData.data.access_token);
+              // localStorage.setItem('refresh_token', loginData.data.refresh_token); // If available
+              localStorage.setItem('user', JSON.stringify(finalUser));
+
+              console.log("✅ Authenticated with REAL Backend as", finalUser.email);
+            }
+          } else {
+            console.warn("⚠️ Backend dev-login failed, falling back to mock token (some features may not work)");
+            // Fallback: The MockAuthService.verifyOTP already sets mock token
+          }
+        } catch (backendErr) {
+          console.error("Failed to connect to backend auth:", backendErr);
+        }
+
         const dashboardRoute = MockAuthService.getDashboardRoute(result.user.user_type);
         navigate(dashboardRoute);
       } else {

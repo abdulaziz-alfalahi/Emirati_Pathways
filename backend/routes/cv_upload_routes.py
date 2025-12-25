@@ -19,7 +19,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from ..cv_parser import CVParser
-from ..auth.auth_manager import AuthManager
+from ..auth.auth_manager import AuthenticationManager as AuthManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

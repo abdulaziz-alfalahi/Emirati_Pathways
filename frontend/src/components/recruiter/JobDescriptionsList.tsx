@@ -19,7 +19,9 @@ import {
   Building,
   MapPin,
   Briefcase,
-  Trash2
+  Trash2,
+  Search,
+  Settings
 } from 'lucide-react';
 import {
   Dialog,
@@ -48,6 +50,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { restClient, healthApi, jobApi, type JobDescription } from '@/utils/api';
+import { VacancyDashboard } from './vacancy/VacancyDashboard';
 
 const JobDescriptionsList = () => {
   const navigate = useNavigate();
@@ -61,6 +64,7 @@ const JobDescriptionsList = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [jobText, setJobText] = useState('');
   const [selectedJob, setSelectedJob] = useState<JobDescription | null>(null);
+  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null); // For Layout Switching
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<JobDescription | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -90,6 +94,23 @@ const JobDescriptionsList = () => {
     },
     refetchInterval: 60000, // Check health every minute
   });
+
+  // If a vacancy is selected, show the Dashboard instead of list
+  if (selectedVacancyId) {
+    const vacancy = jobDescriptions?.find((j: any) =>
+      String(j.id) === String(selectedVacancyId) || String(j.jd_id) === String(selectedVacancyId)
+    );
+    return (
+      <VacancyDashboard
+        job={vacancy}
+        onBack={() => setSelectedVacancyId(null)}
+      />
+    );
+  }
+
+  // ... Rest of the file/Handlers ...
+  // Need to update the "View" or "Manage" button to set setSelectedVacancyId
+
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,9 +226,11 @@ const JobDescriptionsList = () => {
   };
 
   // Navigate to find matching candidates
-  const handleFindMatches = (job: JobDescription) => {
+  const handleFindMatches = (job: JobDescription, viewMode: 'applicants' | 'matching' = 'matching') => {
+    console.log(`Navigating to matches with mode: ${viewMode} for job:`, job.id);
     // Store the selected job for the matching component
     localStorage.setItem('selectedJobForMatching', JSON.stringify(job));
+    localStorage.setItem('candidateViewMode', viewMode);
     // Navigate to the dashboard candidates tab
     navigate('/recruiter-dashboard?tab=candidates');
   };
@@ -382,13 +405,14 @@ const JobDescriptionsList = () => {
                             <Eye className="h-4 w-4 mr-1" />
                             Edit
                           </Button>
-                          {job.status === 'published' && (
+                          {(job.status === 'published' || job.status === 'active') && (
                             <Button
                               size="sm"
-                              onClick={() => handleFindMatches(job)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={() => setSelectedVacancyId(job.jd_id || job.id)}
                             >
-                              <Users className="h-4 w-4 mr-1" />
-                              Find Candidates
+                              <Settings className="h-4 w-4 mr-1" />
+                              Manage Vacancy
                             </Button>
                           )}
                           <Button

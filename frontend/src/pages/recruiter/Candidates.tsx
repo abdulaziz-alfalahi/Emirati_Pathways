@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+import { restClient } from '@/utils/api';
+
+// Removing custom API helper and manual token logic
 
 export default function RecruiterCandidatesPage() {
   const { toast } = useToast();
@@ -27,24 +29,22 @@ export default function RecruiterCandidatesPage() {
   const [mSortBy, setMSortBy] = useState<'percentage' | 'name'>('percentage');
   const [mSortOrder, setMSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  // Auth handled by restClient interceptor
 
   useEffect(() => {
     // Attempt to prefill latest job id
     (async () => {
       try {
-        const r = await fetch(API('/api/hr/jobs/?limit=20'), { headers: H as any });
-        if (r.ok) {
-          const j = await r.json();
-          const list = j?.data?.job_postings || [];
+        const r = await restClient.get('/api/hr/jobs/?limit=20');
+        if (r.status === 200) {
+          const list = r.data?.data?.job_postings || [];
           setJobs(list);
           const id = list?.[0]?.id;
           if (id) setJobId(id);
         }
       } catch { }
     })();
-  }, [H]);
+  }, []);
 
   const runSearch = async () => {
     setLoading(true);
@@ -57,9 +57,9 @@ export default function RecruiterCandidatesPage() {
       params.set('offset', String((page - 1) * pageSize));
       params.set('sort_by', sortBy);
       params.set('sort_order', sortOrder);
-      const r = await fetch(API(`/api/hr/candidates/search?${params.toString()}`), { headers: H as any });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
+
+      const r = await restClient.get(`/api/hr/candidates/search?${params.toString()}`);
+      const j = r.data;
       setResults(j?.data?.candidates || []);
       setTotal(j?.data?.total_count || 0);
     } catch (e: any) {
@@ -75,12 +75,10 @@ export default function RecruiterCandidatesPage() {
       return;
     }
     try {
-      const r = await fetch(API(`/api/hr/jobs/${jobId}/shortlist`), {
-        method: 'POST',
-        headers: { ...(H as any), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidate_id: candidateId, notes: 'Shortlisted from search' })
+      const r = await restClient.post(`/api/hr/jobs/${jobId}/shortlist`, {
+        candidate_id: candidateId,
+        notes: 'Shortlisted from search'
       });
-      if (!r.ok) throw new Error(await r.text());
       toast({ title: 'Shortlisted', description: `Candidate ${candidateId} added to shortlist` });
     } catch (e: any) {
       toast({ title: 'Failed to shortlist', description: e?.message || 'Error', variant: 'destructive' });
@@ -230,9 +228,8 @@ export default function RecruiterCandidatesPage() {
               <div className="flex items-center gap-2 mb-4">
                 <Button onClick={async () => {
                   try {
-                    const r = await fetch(API(`/api/hr/jobs/${jobId}/publish-and-match`), { method: 'POST', headers: H as any });
-                    if (!r.ok) throw new Error(await r.text());
-                    const j = await r.json();
+                    const r = await restClient.post(`/api/hr/jobs/${jobId}/publish-and-match`);
+                    const j = r.data;
                     setMatches(j?.data?.top_matches || []);
                     toast({ title: 'Matched', description: `${(j?.data?.top_matches || []).length} candidates` });
                   } catch (e: any) {

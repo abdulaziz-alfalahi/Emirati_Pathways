@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS educational_institutions (
 -- Educator Profiles (Depends on users and educational_institutions)
 CREATE TABLE IF NOT EXISTS educator_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     institution_id UUID REFERENCES educational_institutions(id),
     position_title VARCHAR(255) NOT NULL,
     department VARCHAR(255),
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS course_modules (
 CREATE TABLE IF NOT EXISTS course_enrollments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    student_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     enrollment_status VARCHAR(50) DEFAULT 'active', -- active, completed, withdrawn, suspended
     payment_status VARCHAR(50) DEFAULT 'pending', -- pending, paid, refunded
@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS educator_analytics (
 -- Mentor Profiles (Depends on users)
 CREATE TABLE IF NOT EXISTS mentor_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     professional_title VARCHAR(255) NOT NULL,
     current_company VARCHAR(255),
     industry VARCHAR(255),
@@ -361,7 +361,7 @@ CREATE TABLE IF NOT EXISTS mentorship_programs (
 CREATE TABLE IF NOT EXISTS mentorship_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     mentor_id UUID NOT NULL REFERENCES mentor_profiles(id) ON DELETE CASCADE,
-    mentee_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mentee_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     program_id UUID REFERENCES mentorship_programs(id),
     session_title VARCHAR(255),
     session_description TEXT,
@@ -387,7 +387,7 @@ CREATE TABLE IF NOT EXISTS mentorship_sessions (
 -- Mentorship Goals (Depends on users, mentor_profiles, mentorship_programs)
 CREATE TABLE IF NOT EXISTS mentorship_goals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    mentee_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mentee_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     mentor_id UUID NOT NULL REFERENCES mentor_profiles(id) ON DELETE CASCADE,
     program_id UUID REFERENCES mentorship_programs(id),
     goal_title VARCHAR(255) NOT NULL,
@@ -426,7 +426,7 @@ CREATE TABLE IF NOT EXISTS mentorship_feedback (
 -- Mentorship Matching (Depends on users and mentor_profiles)
 CREATE TABLE IF NOT EXISTS mentorship_matching (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    mentee_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mentee_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     mentor_id UUID NOT NULL REFERENCES mentor_profiles(id) ON DELETE CASCADE,
     match_score DECIMAL(5,2), -- AI-calculated compatibility score
     match_criteria JSONB DEFAULT '{}'::jsonb,
@@ -469,7 +469,7 @@ CREATE TABLE IF NOT EXISTS mentorship_resources (
 CREATE TABLE IF NOT EXISTS mentorship_analytics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     mentor_id UUID REFERENCES mentor_profiles(id),
-    mentee_user_id UUID REFERENCES users(id),
+    mentee_user_id INTEGER REFERENCES users(id),
     program_id UUID REFERENCES mentorship_programs(id),
     metric_name VARCHAR(100) NOT NULL,
     metric_value DECIMAL(15,2),
@@ -481,7 +481,7 @@ CREATE TABLE IF NOT EXISTS mentorship_analytics (
 -- Career Development Plans (Depends on users and mentor_profiles)
 CREATE TABLE IF NOT EXISTS career_development_plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    mentee_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mentee_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     mentor_id UUID NOT NULL REFERENCES mentor_profiles(id) ON DELETE CASCADE,
     plan_title VARCHAR(255) NOT NULL,
     current_position VARCHAR(255),

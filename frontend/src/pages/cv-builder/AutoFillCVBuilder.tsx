@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import jsPDF from 'jspdf';
@@ -99,6 +101,7 @@ interface CVFormData {
 }
 
 const AutoFillCVBuilder: React.FC = () => {
+  const navigate = useNavigate();
   const { t, language, isRTL, toggleLanguage } = useLanguage();
   const { i18n } = useTranslation();
 
@@ -489,39 +492,73 @@ const AutoFillCVBuilder: React.FC = () => {
     }
   };
 
-  const autoFillForm = (analysisData: CVData) => {
+  const autoFillForm = (analysisData: any) => {
     skipAutosaveRef.current = true;
     console.log('🔄 Auto-filling form with analysis data:', analysisData);
 
-    const nameParts = analysisData.personal_info?.name?.split(' ') || ['', ''];
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+    // Handle name mapping (backend returns full_name/first_name/last_name)
+    let firstName = '';
+    let lastName = '';
+    // Handle both wrapped and direct structures
+    const pInfo = analysisData.personal_info || {};
+
+    if (pInfo.first_name || pInfo.last_name) {
+      firstName = pInfo.first_name || '';
+      lastName = pInfo.last_name || '';
+    } else if (pInfo.full_name) {
+      const parts = pInfo.full_name.split(' ');
+      firstName = parts[0] || '';
+      lastName = parts.slice(1).join(' ') || '';
+    } else if (pInfo.name) {
+      const parts = pInfo.name.split(' ');
+      firstName = parts[0] || '';
+      lastName = parts.slice(1).join(' ') || '';
+    }
+
+    // Handle skills mapping (backend returns array of objects with category)
+    let techSkills: string[] = [];
+    let softSkills: string[] = [];
+
+    if (Array.isArray(analysisData.skills)) {
+      // New backend format: array of objects
+      analysisData.skills.forEach((s: any) => {
+        if (s.category?.toLowerCase().includes('technical') || s.type?.toLowerCase().includes('hard')) {
+          techSkills.push(s.name);
+        } else {
+          softSkills.push(s.name);
+        }
+      });
+    } else if (analysisData.skills?.technical || analysisData.skills?.soft) {
+      // Old/Direct format
+      techSkills = analysisData.skills.technical || [];
+      softSkills = analysisData.skills.soft || [];
+    }
 
     const newFormData = {
       personalInfo: {
         firstName,
         lastName,
-        email: analysisData.personal_info?.email || '',
-        phone: analysisData.personal_info?.phone || '',
-        location: analysisData.personal_info?.location || '',
-        nationality: analysisData.personal_info?.nationality || 'UAE'
+        email: pInfo.email || '',
+        phone: pInfo.phone || '',
+        location: pInfo.location || pInfo.address || '',
+        nationality: pInfo.nationality || 'UAE'
       },
       professionalSummary: analysisData.professional_summary || '',
-      technicalSkills: analysisData.skills?.technical || [],
-      softSkills: analysisData.skills?.soft || [],
-      experience: analysisData.experience?.map(exp => ({
-        jobTitle: exp.job_title || '',
+      technicalSkills: techSkills,
+      softSkills: softSkills,
+      experience: analysisData.experience?.map((exp: any) => ({
+        jobTitle: exp.job_title || exp.position || '',
         company: exp.company || '',
         location: exp.location || '',
         startDate: exp.start_date || '',
         endDate: exp.end_date || '',
-        responsibilities: exp.responsibilities || ''
+        responsibilities: exp.description || exp.responsibilities || ''
       })) || [],
-      education: analysisData.education?.map(edu => ({
+      education: analysisData.education?.map((edu: any) => ({
         degree: edu.degree || '',
         institution: edu.institution || '',
-        graduationYear: edu.graduation_year || '',
-        field: edu.field || ''
+        graduationYear: edu.end_date || edu.graduation_year || '',
+        field: edu.field_of_study || edu.field || ''
       })) || []
     };
 
@@ -1628,23 +1665,42 @@ const AutoFillCVBuilder: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-center space-x-4 flex-wrap gap-y-4">
         <button
           onClick={() => setCurrentStep('form')}
           className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
           {t('cvBuilder.editCV', 'Edit CV')}
         </button>
+
         <button
-          onClick={async () => {
-            const res = await cvStorageService.getTopVacancyMatches(10);
-            if (!res.success) {
-              alert(res.message);
-              return;
-            }
-            const lines = (res.data || []).map((m: any, i: number) => `${i + 1}. ${m.title} (${m.employer || 'N/A'}) — ${m.match_score}%`);
-            alert(lines.length ? `Top matches:\n\n${lines.join('\n')}` : 'No matches found.');
-          }}
+          onClick={() => setShowSaveDialog(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+        >
+          <Save className="w-4 h-4 mr-2" />
+          {currentCVId ? t('cvBuilder.updateCV', 'Update CV') : t('cvBuilder.saveCV', 'Save CV')}
+        </button>
+
+        {currentCVId && (
+          <button
+            onClick={async () => {
+              const res = await cvStorageService.setVisible(currentCVId);
+              if (res.success) {
+                alert('CV is now visible to recruiters!');
+                loadSavedCVs();
+              } else {
+                alert('Failed to publish: ' + res.message);
+              }
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Publish / Make Visible
+          </button>
+        )}
+
+        <button
+          onClick={() => navigate('/candidate-dashboard#jobs')}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
         >
           {t('cvBuilder.matchToVacancies', 'Match to Vacancies')}

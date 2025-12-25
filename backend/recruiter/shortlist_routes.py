@@ -108,6 +108,24 @@ def add_to_shortlist():
         existing = cur.fetchone()
         
         if existing:
+            # Check if we should reactivate
+            cur.execute("SELECT status FROM candidate_shortlist WHERE shortlist_id = %s", (existing[0],))
+            status_row = cur.fetchone()
+            current_status = status_row[0] if status_row else None
+            
+            if current_status in ['rejected', 'withdrawn', 'archived']:
+                cur.execute("""
+                    UPDATE candidate_shortlist 
+                    SET status = 'shortlisted', updated_at = CURRENT_TIMESTAMP, notes = COALESCE(notes, '') || %s 
+                    WHERE shortlist_id = %s
+                """, (f"\n{datetime.now().strftime('%Y-%m-%d %H:%M')}: Reactivated via re-add", existing[0]))
+                conn.commit()
+                return jsonify({
+                    'success': True,
+                    'shortlist_id': existing[0],
+                    'message': 'Candidate reactivated in shortlist'
+                }), 200
+            
             return jsonify({
                 'success': False,
                 'message': 'Candidate already shortlisted for this job',

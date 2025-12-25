@@ -12,8 +12,8 @@ import logging
 from functools import wraps
 from typing import Dict, Any, Optional
 
-from ..administrator_system import AdministratorSystem
-from ..auth.auth_manager import AuthManager
+from administrator_system import AdministratorSystem
+from auth.auth_manager_fixed import AuthenticationManager as AuthManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,7 +30,7 @@ def init_admin_routes(app, db_config: Dict[str, str]):
     """Initialize administrator routes with database configuration"""
     global admin_system, auth_manager
     admin_system = AdministratorSystem(db_config)
-    auth_manager = AuthManager(db_config)
+    auth_manager = AuthManager()  # Do not pass db_config as it expects redis_client
 
 def admin_required(f):
     """Decorator to require admin authentication"""
@@ -39,19 +39,40 @@ def admin_required(f):
         try:
             # Get authorization header
             auth_header = request.headers.get('Authorization')
+            print(f"DEBUG: Admin Route {request.path} - Auth Header: {auth_header}", flush=True)
+
             if not auth_header or not auth_header.startswith('Bearer '):
+                print(f"DEBUG: Missing Authorization header: {auth_header}", flush=True)
                 return jsonify({'error': 'Authentication required'}), 401
             
             token = auth_header.split(' ')[1]
+            print(f"DEBUG: Token received: {token[:10]}...", flush=True)
             
             # Verify token and get user info
             user_info = auth_manager.verify_token(token)
             if not user_info:
+                print("DEBUG: auth_manager.verify_token returned None", flush=True)
                 return jsonify({'error': 'Invalid token'}), 401
             
             # Check if user has admin role
             user_details = admin_system.get_user_details(user_info['user_id'])
-            if not user_details or 'admin' not in (user_details.get('roles') or []):
+            print(f"DEBUG: User details looked up: {user_details}", flush=True)
+
+            if not user_details:
+                print(f"DEBUG: User not found in DB: {user_info['user_id']}", flush=True)
+                return jsonify({'error': 'User not found'}), 401
+            
+            roles = user_details.get('roles') or []
+            
+            # Check 'role' column from users table as well (for dev/simple users)
+            if user_details.get('role'):
+                roles.append(user_details['role'])
+            
+            print(f"DEBUG: User roles: {roles}", flush=True)
+                
+            # Allow admin or super_admin
+            if 'admin' not in roles and 'super_admin' not in roles and 'platform_administrator' not in roles:
+                logger.warning(f"Access denied for user {user_info['user_id']}. Roles: {roles}")
                 return jsonify({'error': 'Admin access required'}), 403
             
             # Add user info to request context
@@ -73,6 +94,14 @@ def permission_required(permission: str):
                 if not user:
                     return jsonify({'error': 'Authentication required'}), 401
                 
+                # Check for admin roles to bypass specific permission checks
+                roles = user.get('roles', [])
+                if user.get('role'):
+                    roles.append(user['role'])
+                    
+                if 'super_admin' in roles or 'admin' in roles or 'platform_administrator' in roles:
+                    return f(*args, **kwargs)
+
                 user_permissions = user.get('permissions', [])
                 
                 # Check for wildcard permission or specific permission
@@ -174,6 +203,27 @@ def get_users():
         return jsonify({
             'status': 'error',
             'message': 'Failed to retrieve users'
+        }), 500
+
+@admin_bp.route('/users/export', methods=['GET'])
+@admin_required
+@permission_required('users.view')
+def export_users():
+    """Export users as CSV"""
+    try:
+        csv_data = admin_system.export_users_csv()
+        
+        from flask import Response
+        return Response(
+            csv_data,
+            mimetype="text/csv",
+            headers={"Content-disposition": "attachment; filename=users_export.csv"}
+        )
+    except Exception as e:
+        logger.error(f"Failed to export users: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to export users'
         }), 500
 
 @admin_bp.route('/users/<int:user_id>', methods=['GET'])
@@ -282,6 +332,38 @@ def update_user(user_id: int):
             'message': 'Failed to update user'
         }), 500
 
+@admin_bp.route('/users/<int:user_id>/roles', methods=['PUT'])
+@admin_required
+@permission_required('users.edit')
+def update_user_roles(user_id: int):
+    """Update user roles"""
+    try:
+        data = request.get_json()
+        roles = data.get('roles', [])
+        
+        success = admin_system.update_user_roles(
+            user_id=user_id,
+            roles=roles,
+            admin_user_id=request.current_user['id']
+        )
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': 'User roles updated successfully'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to update user roles'
+            }), 500
+    except Exception as e:
+        logger.error(f"Failed to update user roles: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to update user roles'
+        }), 500
+
 @admin_bp.route('/users/<int:user_id>/suspend', methods=['POST'])
 @admin_required
 @permission_required('users.suspend')
@@ -340,6 +422,42 @@ def activate_user(user_id: int):
         return jsonify({
             'status': 'error',
             'message': 'Failed to activate user'
+        }), 500
+
+@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+@permission_required('users.delete')
+def delete_user(user_id: int):
+    """
+    Permanently delete a user account.
+    Fails if user has dependent data that cannot be safely removed.
+    """
+    try:
+        # Prevent self-deletion
+        if user_id == request.current_user['id']:
+            return jsonify({'error': 'Cannot delete your own account'}), 400
+
+        success, message = admin_system.delete_user(
+            user_id=user_id,
+            admin_user_id=request.current_user['id']
+        )
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': message
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': message
+            }), 400 # Bad Request if failed due to constraints
+            
+    except Exception as e:
+        logger.error(f"Failed to delete user: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Internal server error during user deletion'
         }), 500
 
 # System Settings Endpoints
@@ -562,6 +680,96 @@ def create_notification():
         logger.error(f"Failed to create notification: {str(e)}")
         return jsonify({
             'status': 'error',
+            'message': 'Internal server error during notification creation'
+        }), 500
+
+# Role Management Routes
+
+@admin_bp.route('/roles', methods=['GET'])
+@admin_required
+def get_roles():
+    """Get all defined roles"""
+    try:
+        roles = admin_system.get_roles()
+        return jsonify({
+            'status': 'success',
+            'data': roles
+        })
+    except Exception as e:
+        logger.error(f"Failed to get roles: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve roles'
+        }), 500
+
+@admin_bp.route('/roles', methods=['POST'])
+@admin_required
+@permission_required('roles.create')
+def create_role():
+    """Create a new role"""
+    try:
+        data = request.get_json()
+        required = ['name', 'display_name', 'permissions']
+        if not all(k in data for k in required):
+            return jsonify({'error': 'Missing required fields'}), 400
+            
+        role = admin_system.create_role(
+            name=data['name'],
+            display_name=data['display_name'],
+            description=data.get('description'),
+            permissions=data['permissions'],
+            admin_user_id=request.current_user['id']
+        )
+        return jsonify({
+            'status': 'success',
+            'data': role
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to create role: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@admin_bp.route('/roles/<int:role_id>', methods=['PUT'])
+@admin_required
+@permission_required('roles.edit')
+def update_role(role_id):
+    """Update role"""
+    try:
+        data = request.get_json()
+        success = admin_system.update_role(
+            role_id=role_id,
+            updates=data,
+            admin_user_id=request.current_user['id']
+        )
+        if success:
+            return jsonify({'status': 'success', 'message': 'Role updated'})
+        return jsonify({'error': 'Failed to update role'}), 400
+    except Exception as e:
+        logger.error(f"Failed to update role: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/roles/<int:role_id>', methods=['DELETE'])
+@admin_required
+@permission_required('roles.delete')
+def delete_role(role_id):
+    """Delete role"""
+    try:
+        success = admin_system.delete_role(
+            role_id=role_id,
+            admin_user_id=request.current_user['id']
+        )
+        if success:
+            return jsonify({'status': 'success', 'message': 'Role deleted'})
+        return jsonify({'error': 'Failed to delete role'}), 400
+    except Exception as e:
+        logger.error(f"Failed to delete role: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        logger.error(f"Failed to create notification: {str(e)}")
+        return jsonify({
+            'status': 'error',
             'message': 'Failed to create notification'
         }), 500
 
@@ -584,8 +792,14 @@ def get_dashboard_data():
             unread_only=True
         )
         
+        # Get recent audit logs for activity feed
+        recent_activity = admin_system.get_recent_audit_logs(limit=10)
+        
         # Get user statistics
         user_stats = admin_system.get_all_users(page=1, per_page=1)
+        
+        # Get analytics data
+        analytics_data = admin_system.get_dashboard_analytics()
         
         dashboard_data = {
             'health': health_data,
@@ -603,11 +817,12 @@ def get_dashboard_data():
             },
             'notifications': {
                 'unread_count': len(notifications),
-                'recent': notifications[:5]
+                'recent': recent_activity
             },
             'users': {
                 'total': user_stats.get('total', 0)
             },
+            'analytics': analytics_data,
             'timestamp': datetime.utcnow().isoformat()
         }
         

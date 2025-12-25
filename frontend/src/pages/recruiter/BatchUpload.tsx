@@ -1,17 +1,18 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Download } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+import { restClient } from '@/utils/api';
 
 export default function BatchUploadPage() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
-  const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const parseCSV = async (text: string) => {
     const lines = text.split(/\r?\n/).filter(Boolean);
@@ -34,7 +35,11 @@ export default function BatchUploadPage() {
       const jobs = rows.map((r: any) => ({
         title: r.title,
         description: r.description,
-        requirements: { skills: (r.skills || '').split('|').filter(Boolean), min_experience: Number(r.min_experience || 0), education_level: r.education_level || '' },
+        requirements: {
+          skills: (r.skills || '').split('|').filter(Boolean),
+          min_experience: Number(r.min_experience || 0),
+          education_level: r.education_level || ''
+        },
         responsibilities: (r.responsibilities || '').split('|').filter(Boolean),
         benefits: (r.benefits || '').split('|').filter(Boolean),
         salary_range_min: r.salary_min ? Number(r.salary_min) : undefined,
@@ -46,12 +51,51 @@ export default function BatchUploadPage() {
         experience_level: r.experience_level || 'mid',
         priority_level: r.priority || 'normal',
       }));
-      const r = await fetch(API('/api/hr/jobs/batch'), { method: 'POST', headers: { ...(H as any), 'Content-Type': 'application/json' }, body: JSON.stringify({ jobs }) });
-      if (!r.ok) throw new Error(await r.text());
-      toast({ title: 'Batch created', description: `${jobs.length} jobs submitted` });
+
+      const response = await restClient.post('/api/hr/jobs/batch', { jobs });
+
+      if (response.data && response.data.success) {
+        navigate('/recruiter/jobs', {
+          state: {
+            batchSuccess: true,
+            count: jobs.length
+          }
+        });
+      } else {
+        throw new Error(response.data.message || 'Batch upload failed');
+      }
     } catch (e: any) {
+      console.error(e);
       toast({ title: 'Batch upload failed', description: e?.message || 'Error', variant: 'destructive' });
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      'title', 'description', 'skills', 'min_experience', 'education_level',
+      'responsibilities', 'benefits', 'salary_min', 'salary_max', 'currency',
+      'location', 'remote', 'employment_type', 'experience_level', 'priority'
+    ];
+    const exampleRow = [
+      'Software Engineer', 'Develop awesome apps', 'React|Node.js|TypeScript', '3', 'Bachelor',
+      'Write code|Review PRs', 'Healthcare|Remote', '15000', '25000', 'AED',
+      'Dubai', 'yes', 'full-time', 'mid', 'normal'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      exampleRow.join(',')
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'job_upload_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -69,6 +113,10 @@ export default function BatchUploadPage() {
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={upload}>Upload</Button>
+              <Button variant="outline" onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                Download Template
+              </Button>
             </div>
             <div className="text-xs text-slate-500">
               Example columns: title,description,skills,min_experience,education_level,responsibilities,benefits,salary_min,salary_max,currency,location,remote,employment_type,experience_level,priority

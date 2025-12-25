@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/dialog';
 import { JobPostStrengthMeter } from '@/components/recruiter/job-wizard/JobPostStrengthMeter';
 import { Wand2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 // Smart Defaults Dictionary
 const SMART_DEFAULTS: Record<string, any> = {
@@ -154,12 +155,14 @@ const BENEFIT_CATEGORIES = [
 ];
 
 interface JDWizardProps {
-  recruiterId: string;
-  companyId: string;
+  recruiterId?: string;
+  companyId?: string;
   initialData?: any;
   initialJdId?: string;
-  onComplete?: (jdId: string) => void;
+  onComplete?: (jdIdOrData: string | any) => void;
   onCancel?: () => void;
+  onSave?: () => Promise<void>;
+  mode?: 'authenticated' | 'public';
 }
 
 interface JDData {
@@ -184,6 +187,7 @@ interface JDData {
   responsibilities: Array<{
     description: string;
     category: string;
+
   }>;
   benefits: Array<{
     category: string;
@@ -194,6 +198,7 @@ interface JDData {
     salary_max?: number;
     salary_currency: string;
   };
+  metadata?: any;
 }
 
 interface MatchedCandidate {
@@ -212,11 +217,52 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   initialData,
   initialJdId,
   onComplete,
-  onCancel
+  onCancel,
+  onSave,
+  mode = 'authenticated'
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
+
+  // Helper to normalize generic list data
+  const normalizeList = (data: any) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'string') {
+      // Try to string split if it looks like a pipe-separated list (common in this app)
+      if (data.includes('|')) return data.split('|').filter(Boolean);
+      return [data];
+    }
+    return [];
+  };
+
+  // Helper to normalize requirements data
+  const normalizeRequirements = (reqs: any) => {
+    if (!reqs) return [];
+    if (Array.isArray(reqs)) return reqs;
+    if (typeof reqs === 'string') return []; // Invalid for requirements array
+
+    // Convert object format to array
+    if (typeof reqs === 'object') {
+      const normalized: any[] = [];
+      const r = reqs as any;
+      if (r.skills && Array.isArray(r.skills)) {
+        r.skills.forEach((skill: string) => {
+          normalized.push({ category: 'skills', description: skill, is_required: true });
+        });
+      }
+      if (r.min_experience) {
+        normalized.push({ category: 'experience', description: `Minimum ${r.min_experience} years of experience`, is_required: true });
+      }
+      if (r.education_level) {
+        normalized.push({ category: 'education', description: r.education_level, is_required: true });
+      }
+      if (normalized.length > 0) return normalized;
+    }
+    return [];
+  };
 
   const [jdData, setJDData] = useState<JDData>(() => {
     if (initialData) {
@@ -235,9 +281,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         },
         description: initialData.description || '',
         description_arabic: initialData.description_arabic || '',
-        requirements: initialData.requirements || [],
-        responsibilities: initialData.responsibilities || [],
-        benefits: initialData.benefits || [],
+        requirements: normalizeRequirements(initialData.requirements),
+        responsibilities: normalizeList(initialData.responsibilities),
+        benefits: normalizeList(initialData.benefits),
         compensation: initialData.compensation || {
           salary_currency: 'AED'
         }
@@ -273,15 +319,16 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   useEffect(() => {
     if (initialData) {
       console.log('Updating with loaded data:', initialData);
+
       setJDData(prev => ({
         ...prev,
         jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
         basic_info: initialData.basic_info || prev.basic_info,
         description: initialData.description || prev.description,
         description_arabic: initialData.description_arabic || prev.description_arabic,
-        requirements: initialData.requirements || prev.requirements,
-        responsibilities: initialData.responsibilities || prev.responsibilities,
-        benefits: initialData.benefits || prev.benefits,
+        requirements: normalizeRequirements(initialData.requirements),
+        responsibilities: normalizeList(initialData.responsibilities),
+        benefits: normalizeList(initialData.benefits),
         compensation: initialData.compensation || prev.compensation
       }));
     }
@@ -294,6 +341,17 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   // Initialize JD ID on mount
   useEffect(() => {
     const initializeJD = async () => {
+      // In public mode, we just rely on initialData and don't fetch/create JDs via API
+      if (mode === 'public') {
+        if (initialData) {
+          setJDData(prev => ({
+            ...prev,
+            ...initialData
+          }));
+        }
+        return;
+      }
+
       // Determine effective JD ID (Prop > URL > State)
       const effectiveId = initialJdId || urlJdId || jdData.jd_id;
 
@@ -367,7 +425,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     { id: 'responsibilities', title: 'Responsibilities', icon: Award },
     { id: 'benefits', title: 'Benefits', icon: Sparkles },
     { id: 'compensation', title: 'Compensation', icon: DollarSign },
-    { id: 'review', title: 'Review & Match', icon: Users }
+    ...(mode === 'authenticated' ? [{ id: 'review', title: 'Review & Match', icon: Users }] : [])
   ];
 
   // Calculate completion score
@@ -423,16 +481,34 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       return;
     }
 
+    if (mode === 'public') {
+      handleAIGenerate('description');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Ensure basic info is saved so JD exists in backend
+      if (jdData.jd_id) {
+        try {
+          await restClient.put(`/api/recruiter/jd/${jdData.jd_id}/basic-info`, {
+            basic_info: jdData.basic_info,
+            recruiter_id: recruiterId || user?.id || 'unknown',
+            company_id: companyId || (user as any)?.company_id || 'unknown'
+          });
+        } catch (saveError) {
+          console.warn("Auto-save prior to generation failed", saveError);
+        }
+      }
+
       const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/generate-description`, {
         industry: 'General' // Could be made dynamic
       });
 
-      if (response.data && response.data.success && response.data.generated_description) {
+      if (response.data && response.data.success && (response.data.generated_description || response.data.description)) {
         setJDData(prev => ({
           ...prev,
-          description: response.data.generated_description
+          description: response.data.generated_description || response.data.description
         }));
         toast.success("Job description generated successfully");
       } else {
@@ -498,6 +574,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handlePublish = async () => {
+    if (mode === 'public') {
+      // In public mode, we just pass the data back to the parent
+      if (onComplete) {
+        onComplete(jdData);
+      }
+      return;
+    }
+
     setLoading(true);
     try {
       // Validate completion score
@@ -864,7 +948,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Alert>
       )}
 
-      {jdData.requirements.map((req, index) => (
+      {Array.isArray(jdData.requirements) && jdData.requirements.map((req, index) => (
         <Card key={index}>
           <CardContent className="pt-4">
             <div className="grid grid-cols-3 gap-4">
@@ -963,7 +1047,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Button>
       </div>
 
-      {jdData.responsibilities.map((resp, index) => (
+      {Array.isArray(jdData.responsibilities) && jdData.responsibilities.map((resp, index) => (
         <Card key={index}>
           <CardContent className="pt-4">
             <div className="space-y-2">
@@ -1035,7 +1119,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Button>
       </div>
 
-      {jdData.benefits.map((benefit, index) => (
+      {Array.isArray(jdData.benefits) && jdData.benefits.map((benefit, index) => (
         <Card key={index}>
           <CardContent className="pt-4">
             <div className="grid grid-cols-3 gap-4">
@@ -1323,7 +1407,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           <JobPostStrengthMeter
             title={jdData.basic_info.title}
             description={jdData.description}
-            skills={jdData.requirements.filter(r => r.category === 'skills').map(r => r.description).join(', ')}
+            skills={Array.isArray(jdData.requirements) ? jdData.requirements.filter(r => r.category === 'skills').map(r => r.description).join(', ') : ''}
             salaryMin={jdData.compensation.salary_min || 0}
             salaryMax={jdData.compensation.salary_max || 0}
             location={jdData.basic_info.city || ''}

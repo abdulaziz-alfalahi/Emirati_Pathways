@@ -46,6 +46,7 @@ def create_app() -> Flask:
         "http://127.0.0.1:8080",
         "http://127.0.0.1:8081",
         "http://127.0.0.1:3000",
+        "https://archdiocesan-complimentarily-marianna.ngrok-free.dev",
     ]
     
     if not allowed_origins:
@@ -325,6 +326,20 @@ def create_app() -> Flask:
         logger.info("Registered: Training recommendation routes")
     except Exception as e:
         logger.error(f"Failed registering training routes: {e}")
+
+    try:
+        from job_application_routes import job_application_bp
+        app.register_blueprint(job_application_bp)
+        logger.info("Registered: Job Application routes")
+    except Exception as e:
+        logger.error(f"Failed registering Job Application routes: {e}")
+
+    try:
+        from candidate_job_routes import candidate_job_bp
+        app.register_blueprint(candidate_job_bp)
+        logger.info("Registered: Candidate Job routes (Simple)")
+    except Exception as e:
+        logger.error(f"Failed registering Candidate Job routes: {e}")
 
     try:
         from recruiter.mentorship_routes import mentorship_bp

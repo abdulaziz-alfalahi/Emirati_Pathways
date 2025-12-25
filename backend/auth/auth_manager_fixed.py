@@ -325,3 +325,26 @@ class AuthenticationManager:
         """Setup MFA (simplified implementation)"""
         # For now, just return success
         return True, "MFA setup successful", {'qr_code': 'mock_qr_code'}
+
+    def verify_token(self, token: str) -> Optional[Dict]:
+        """Verify JWT token and return user info"""
+        try:
+            print(f"DEBUG: Verifying token: {token[:20]}...", flush=True)
+            from flask_jwt_extended import decode_token
+            # Decode token (verifies signature and expiry)
+            decoded = decode_token(token)
+            print(f"DEBUG: Token decoded successfully: {decoded}", flush=True)
+            
+            # extract identity (sub)
+            user_id = decoded.get('sub')
+            if not user_id:
+                print("DEBUG: No identity (sub) in token", flush=True)
+                return None
+            
+            # Additional check: does user exist?
+            return {'user_id': user_id}
+            
+        except Exception as e:
+            self.logger.error(f"Token verification failed: {e}")
+            print(f"DEBUG: Token verification exception: {e}", flush=True)
+            return None

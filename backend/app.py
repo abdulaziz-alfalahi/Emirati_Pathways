@@ -4,7 +4,7 @@ Version 4.0 - Includes Gemini 2.5 PRO optimization, advanced scoring, enhanced a
 """
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 
 import json
@@ -61,6 +61,8 @@ cors_origins = [
     "http://localhost:8080",
     "http://localhost:8081",
     "http://localhost:3000",
+    "http://localhost:8089",
+    "http://localhost:5173",
     r"https?://.*\.ngrok\.io",
     r"https?://.*\.ngrok\.app",
     r"https?://.*\.ngrok-free\.app",
@@ -271,6 +273,14 @@ try:
 except ImportError as e:
     logger.error(f"❌ Failed to import HR dashboard routes: {e}")
 
+# Import and register Company Team routes
+try:
+    from routes.company_team_routes import company_team_bp
+    app.register_blueprint(company_team_bp)
+    logger.info("✅ Company Team routes registered successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import Company Team routes: {e}")
+
 # Import and register video interview routes
 try:
     from video_interview_routes import video_interview_bp
@@ -473,6 +483,14 @@ try:
     logger.info("✅ HR Candidate Search Blueprint registered successfully")
 except ImportError as e:
     logger.warning(f"⚠️ HR Candidate Search Blueprint not available: {e}")
+
+# Register HR Dashboard Blueprint
+try:
+    from hr_dashboard_routes import hr_dashboard_bp
+    app.register_blueprint(hr_dashboard_bp)
+    logger.info("✅ HR Dashboard Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Dashboard Blueprint not available: {e}")
 
 # Register HR Interview Scheduling Blueprint
 try:

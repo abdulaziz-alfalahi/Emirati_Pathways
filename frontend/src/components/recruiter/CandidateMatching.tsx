@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'; // Force rebuild
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -46,7 +47,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { jobApi, shortlistApi, restClient, type JobDescription } from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
+// import { useAuth } from '@/context/AuthContext';
+import { useMockAuth } from '@/context/MockAuthContext';
 import TrainingRecommendationsDialog from './TrainingRecommendationsDialog';
 import MentorRecommendationsDialog from './MentorRecommendationsDialog';
 import { ShortlistManager } from './shortlist/ShortlistManager';
@@ -113,6 +115,8 @@ interface MatchingResult {
     languages: string[];
     certifications: string[];
   };
+  is_applicant?: boolean;
+  application_date?: string;
 }
 
 interface AnalyticsData {
@@ -132,10 +136,11 @@ interface AnalyticsData {
 }
 
 const CandidateMatching = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user } = useMockAuth(); // Use MockAuth to align with ProtectedRoute
   const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState<JobDescription | null>(null);
-  const [matchThreshold, setMatchThreshold] = useState(60);
+  const [matchThreshold, setMatchThreshold] = useState(20);
   const [candidates, setCandidates] = useState<MatchingResult[]>([]);
   const [isMatching, setIsMatching] = useState(false);
   const [sortBy, setSortBy] = useState('score');
@@ -189,12 +194,29 @@ const CandidateMatching = () => {
   // Check for stored job from "Find Candidates" navigation
   useEffect(() => {
     const storedJob = localStorage.getItem('selectedJobForMatching');
+    const viewMode = localStorage.getItem('candidateViewMode');
+
+    console.log('useEffect - Initializing from storage:', { storedJobPresent: !!storedJob, viewMode });
+
     if (storedJob) {
       try {
         const job = JSON.parse(storedJob);
         setSelectedJob(job);
+
+        // Set filter based on view mode
+        if (viewMode === 'applicants') {
+          console.log('Setting filter to APPLICANTS based on storage');
+          setFilterBy('applicants');
+        } else {
+          setFilterBy('all');
+        }
+
+        // Auto-trigger search
+        handleFindMatches(job);
+
         // Clear it so it doesn't persist if they navigate away and back manually
         localStorage.removeItem('selectedJobForMatching');
+        localStorage.removeItem('candidateViewMode');
       } catch (e) {
         console.error('Failed to parse stored job', e);
       }
@@ -202,8 +224,12 @@ const CandidateMatching = () => {
   }, []);
 
   // Find matching candidates
-  const handleFindMatches = async () => {
-    if (!selectedJob) {
+  const handleFindMatches = async (jobOverride?: JobDescription) => {
+    const jobToUse = jobOverride || selectedJob;
+
+    console.log('handleFindMatches - jobToUse:', jobToUse);
+
+    if (!jobToUse) {
       toast({
         variant: 'destructive',
         title: 'No Job Selected',
@@ -217,7 +243,8 @@ const CandidateMatching = () => {
     try {
       // Call backend for candidate matching
       // jd_id is either id or jd_id depending on where the job object came from
-      const jdId = selectedJob.jd_id || selectedJob.id;
+      const jdId = jobToUse.jd_id || jobToUse.id;
+      console.log('handleFindMatches - extracted jdId:', jdId);
 
       const response = await restClient.post(`/api/recruiter/jd/${jdId}/match-candidates`, {
         employment_status_filter: null,
@@ -280,7 +307,9 @@ const CandidateMatching = () => {
             languages: match.candidate.languages || [],
             certifications: match.candidate.certifications || []
           },
-          status: match.candidate.status // preserve status if available
+          status: match.candidate.status, // preserve status if available
+          is_applicant: match.is_applicant || match.candidate.is_applicant, // Check both levels for safety
+          application_date: match.application_date || match.candidate.application_date
         }));
 
         // Fetch existing shortlist status
@@ -306,13 +335,12 @@ const CandidateMatching = () => {
           console.error('Failed to fetch shortlist status:', error);
         }
 
-        // Filter by threshold
-        const filtered = matchingCandidates.filter(c => c.overall_score >= matchThreshold);
-        setCandidates(filtered);
+        // Store ALL candidates, filtering happens in render
+        setCandidates(matchingCandidates);
 
         toast({
           title: 'Candidates Found',
-          description: `Found ${filtered.length} matching candidates above ${matchThreshold}% threshold.`,
+          description: `Found ${matchingCandidates.length} potential matches.`,
         });
       } else {
         throw new Error('Failed to find matching candidates');
@@ -332,6 +360,8 @@ const CandidateMatching = () => {
 
   // Handle candidate actions
   const handleCandidateAction = async (candidateId: string, action: 'shortlist' | 'reject' | 'message' | 'interview') => {
+    console.log('handleCandidateAction triggered:', { candidateId, action, user }); // DEBUG LOG
+
     // Update local state
     setCandidates(prev =>
       prev.map(candidate => {
@@ -387,10 +417,38 @@ const CandidateMatching = () => {
         });
         break;
       case 'message':
-        toast({
-          title: 'Message Feature',
-          description: 'Messaging functionality will be implemented soon.',
-        });
+        if (user) {
+          try {
+            const response = await restClient.post('/api/communication/conversations', {
+              participants: [String(user.id), candidateId],
+              title: 'Recruiter Chat'
+            });
+            if (response.data && response.data.success) {
+              console.log('Conversation created response:', response.data);
+              // Backend returns data directly, not wrapped in 'conversation'
+              const conversationId = response.data.data.id || response.data.data.conversation?.id;
+
+              if (!conversationId) {
+                throw new Error('Conversation ID missing in response');
+              }
+
+              toast({
+                title: 'Conversation Started',
+                description: 'Redirecting to messages...',
+              });
+              navigate(`/recruiter-dashboard?tab=messages&conversationId=${conversationId}`);
+            } else {
+              throw new Error('Failed to create conversation');
+            }
+          } catch (error) {
+            console.error('Failed to start conversation:', error);
+            toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Failed to start conversation.',
+            });
+          }
+        }
         break;
       case 'interview':
         toast({
@@ -436,10 +494,33 @@ const CandidateMatching = () => {
   // Filter and sort candidates
   const filteredAndSortedCandidates = candidates
     .filter(candidate => {
-      if (filterBy === 'all') return true;
+      // DEBUG LOGGING - FIXED ACCESSORS
+      const cName = (candidate.candidate_name || '').toLowerCase();
+      if (cName.includes('khalid')) {
+        console.log('Checking Khalid:', {
+          filterBy,
+          isApplicant: candidate.is_applicant,
+          score: candidate.overall_score,
+          threshold: matchThreshold,
+          passApplicants: filterBy === 'applicants' && candidate.is_applicant === true,
+          passThreshold: candidate.overall_score >= matchThreshold
+        });
+      }
+
+      // 1. First apply View Mode / Filter By logic
+      if (filterBy === 'applicants') {
+        // If viewing applicants, MUST be an applicant. Ignore threshold.
+        return (candidate as any).is_applicant === true;
+      }
+
+      // 2. For other modes, apply Threshold
+      if (candidate.overall_score < matchThreshold) return false;
+
+      // 3. Apply Quality Filters
       if (filterBy === 'excellent') return candidate.overall_score >= 80;
       if (filterBy === 'good') return candidate.overall_score >= 60 && candidate.overall_score < 80;
       if (filterBy === 'fair') return candidate.overall_score >= 40 && candidate.overall_score < 60;
+
       return true;
     })
     .sort((a, b) => {
@@ -581,7 +662,7 @@ const CandidateMatching = () => {
 
             <div className="flex items-end gap-2">
               <Button
-                onClick={handleFindMatches}
+                onClick={() => handleFindMatches()}
                 disabled={!selectedJob || isMatching}
                 className="flex-1"
               >
@@ -656,6 +737,22 @@ const CandidateMatching = () => {
       )}
 
       {/* Candidates Results (Matching View) */}
+      {viewMode === 'matching' && !isMatching && candidates.length === 0 && selectedJob && (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+            <Users className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Matching Candidates Found</h3>
+            <p className="text-muted-foreground max-w-sm mb-6">
+              We couldn't find any candidates matching the criteria above {matchThreshold}%.
+              Try lowering the match threshold or adjusting your job description requirements.
+            </p>
+            <Button variant="outline" onClick={() => setMatchThreshold(0)}>
+              Search with 0% Threshold
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {viewMode === 'matching' && candidates.length > 0 && (
         <Card>
           <CardHeader className="flex-row justify-between items-center">
@@ -671,6 +768,7 @@ const CandidateMatching = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="applicants">Applicants Only</SelectItem>
                   <SelectItem value="all">All Candidates</SelectItem>
                   <SelectItem value="excellent">Excellent (80%+)</SelectItem>
                   <SelectItem value="good">Good (60-79%)</SelectItem>
@@ -764,6 +862,13 @@ const CandidateMatching = () => {
                                 // Handle bulk selection logic here
                               }}
                             />
+                            {/* Applicant Badge */}
+                            {(candidate as any).is_applicant && (
+                              <Badge className="bg-purple-600 text-white hover:bg-purple-700">
+                                <Briefcase className="h-3 w-3 mr-1" />
+                                APPLICANT
+                              </Badge>
+                            )}
 
                             <div>
                               <div className="flex items-center gap-3">

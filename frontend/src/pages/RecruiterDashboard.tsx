@@ -6,6 +6,8 @@ import CandidateMatching from '@/components/recruiter/CandidateMatching';
 import JobDescriptionsList from '@/components/recruiter/JobDescriptionsList';
 import Interviews from '@/components/recruiter/Interviews';
 import OffersPage from '@/pages/recruiter/Offers';
+import Messages from '@/components/recruiter/Messages';
+import RecruiterInterviews from '@/components/recruiter/Interviews'; // Use standard component instead of page wrapper? 
 import RecruiterAnalyticsPage from '@/pages/recruiter/Analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -265,6 +267,7 @@ const RecruiterDashboard: React.FC = () => {
               <TabsTrigger value="candidates" className="font-dubai-medium" onClick={() => handleTabChange('candidates')}>Candidates</TabsTrigger>
               <TabsTrigger value="interviews" className="font-dubai-medium" onClick={() => handleTabChange('interviews')}>Interviews</TabsTrigger>
               <TabsTrigger value="offers" className="font-dubai-medium" onClick={() => handleTabChange('offers')}>Offers & Approvals</TabsTrigger>
+              <TabsTrigger value="messages" className="font-dubai-medium" onClick={() => handleTabChange('messages')}>Messages</TabsTrigger>
               <TabsTrigger value="analytics" className="font-dubai-medium" onClick={() => handleTabChange('analytics')}>Analytics</TabsTrigger>
             </TabsList>
 
@@ -485,6 +488,11 @@ const RecruiterDashboard: React.FC = () => {
             {/* Offers & Approvals Tab */}
             <TabsContent value="offers" className="space-y-6">
               <OffersPage />
+            </TabsContent>
+
+            {/* Messages Tab */}
+            <TabsContent value="messages" className="space-y-6">
+              <Messages />
             </TabsContent>
 
             {/* Analytics Tab */}

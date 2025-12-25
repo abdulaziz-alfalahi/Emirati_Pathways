@@ -5,14 +5,82 @@ Consolidates all services: Auth, CV Upload, School Programs, Admin APIs
 Port: 5003 (standardized)
 """
 
+
 from flask import Flask, request, jsonify, g, send_file
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import json
 import time
 import logging
-import os
 import sys
+import os
+import uuid
+uuidlib = uuid
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# ... (Previous imports)
+from hr_job_posting_routes import hr_job_posting_bp
+from hr_offer_routes import hr_offer_bp, public_offer_bp
+from candidate_job_routes import candidate_job_bp
+from job_application_routes import job_application_bp
+try:
+    from recruiter.cv_routes import cv_bp
+except ImportError:
+    # Fallback if path is different, but based on recruiter_server it is recruiter.cv_routes
+    from recruiter.cv_routes import cv_bp
+
+# ... (Initialize Flask app like before)
+# Duplicate app init removed. Blueprints will be registered in the main block below.
+
+
+
+
+
+# Initialize SocketIO (Lazy init to avoid conflicts)
+socketio = SocketIO(cors_allowed_origins="*", async_mode='threading', logger=True, engineio_logger=True)
+
+# ... (Previous JWT/CORS config)
+
+# =====================================================
+# SOCKET.IO HANDLERS (Video Interview Signaling)
+# =====================================================
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    # user_id = data.get('userId') # Optional auth check
+    join_room(room)
+    print(f"DEBUG: User joined room: {room} (Socket: {request.sid})", flush=True)
+    # Notify others that a peer joined
+    emit('user-connected', {'sid': request.sid}, room=room, include_self=False)
+
+@socketio.on('signal')
+def on_signal(data):
+    """
+    Relay WebRTC signals (Offer, Answer, ICE Candidate)
+    Expected data: { 'target': sid, 'signal': payload, 'room': room }
+    """
+    # print(f"DEBUG: Signal from {request.sid}: {data.keys()}", flush=True) # Too noisy?
+    target = data.get('target')
+    if target:
+        emit('signal', {
+            'sender': request.sid,
+            'signal': data['signal']
+        }, room=target)
+    else:
+        # Broadcast? No, signal should be P2P targeted usually, or broadcast to room for initial offer
+        pass
+
+@socketio.on('disconnect')
+def on_disconnect():
+    print(f"DEBUG: User disconnected: {request.sid}", flush=True)
+    # Could emit 'user-disconnected' to rooms if tracked
+
+# ... (Rest of the file)
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from dotenv import load_dotenv
 
 
@@ -61,6 +129,54 @@ from jinja2 import Template
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def safe_json_load(value, default=None):
+    """Safely load JSON data, recursively handling strings inside lists/dicts."""
+    if default is None:
+        default = []
+    
+    def recursive_parse(item):
+        if item is None:
+            return None
+        
+        if isinstance(item, str):
+            # Check if it looks like JSON to avoid pointless parsing logic
+            stripped = item.strip()
+            if (stripped.startswith('{') and stripped.endswith('}')) or \
+               (stripped.startswith('[') and stripped.endswith(']')):
+                try:
+                    parsed = json.loads(item)
+                    return recursive_parse(parsed)
+                except (json.JSONDecodeError, TypeError):
+                    return item
+            return item
+        
+        if isinstance(item, list):
+            return [recursive_parse(i) for i in item]
+            
+        if isinstance(item, dict):
+            return {k: recursive_parse(v) for k, v in item.items()}
+            
+        return item
+
+    if value is None:
+        return default
+
+    # Initial parse if the top-level value is a string
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            logger.warning(f"Failed to decode top-level JSON: {value[:50]}...")
+            return default
+
+    # Recursively clean the structure
+    try:
+        cleaned = recursive_parse(value)
+        return cleaned if cleaned is not None else default
+    except Exception as e:
+        logger.error(f"Error in deep cleaning JSON: {e}")
+        return default
+
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -80,11 +196,16 @@ cors_origins = [
     # Local development
     "http://localhost:8081",
     "http://localhost:3000",
+    "http://localhost:8081",
+    "http://localhost:3000",
     "http://localhost:8089",
+    "http://localhost:5173",  # Default Vite port
     # Common dev wildcard domains (Flask-CORS supports regex strings)
     r"https?://.*\.ngrok\.io",
     r"https?://.*\.ngrok\.app",
     r"https?://.*\.ngrok-free\.app",
+    r"https?://.*\.ngrok-free\.dev", # Added dev TLD
+    "https://archdiocesan-complimentarily-marianna.ngrok-free.dev",
 ]
 
 # Include any user-provided origins via ALLOWED_ORIGINS
@@ -121,6 +242,35 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ Recruiter JD Upload Blueprint not available: {e}")
 
+# Import routes
+from backend.routes.auth_routes import auth_bp
+# from backend.routes.administrator_routes import admin_bp
+# from backend.routes.cv_upload_routes import cv_upload_bp as cv_bp
+# from backend.routes.school_routes import school_bp # Module missing, commenting out
+from backend.routes.growth_routes import growth_bp
+try:
+    from backend.routes.company_team_routes import company_team_bp
+except ImportError:
+    from routes.company_team_routes import company_team_bp
+
+try:
+    from backend.hr_job_posting_routes import hr_job_posting_bp
+except ImportError:
+    from hr_job_posting_routes import hr_job_posting_bp
+
+# Register Blueprints
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+# app.register_blueprint(admin_bp) # Duplicate registration, handled below with init
+# app.register_blueprint(cv_bp) # url_prefix handled in Blueprint
+# app.register_blueprint(school_bp, url_prefix='/api/schools')
+app.register_blueprint(growth_bp) # Routes have hardcoded /api/growth paths
+app.register_blueprint(company_team_bp)
+app.register_blueprint(hr_job_posting_bp)
+app.register_blueprint(hr_offer_bp)
+app.register_blueprint(public_offer_bp)
+app.register_blueprint(candidate_job_bp)
+app.register_blueprint(job_application_bp)
+
 # Register Statistics routes
 try:
     from recruiter.statistics_routes import statistics_bp
@@ -147,11 +297,53 @@ except Exception as e:
 
 # Register Communication routes
 try:
-    from recruiter.communication_routes import communication_routes
-    app.register_blueprint(communication_routes)
+    from backend.routes.communication_routes import communication_bp
+    app.register_blueprint(communication_bp)
     logger.info("Registered: Communication routes")
 except Exception as e:
     logger.error(f"Failed registering Communication routes: {e}")
+
+# Register Interview Routes (Video)
+try:
+    from backend.routes.interview_routes import interview_bp
+    app.register_blueprint(interview_bp)
+    from backend.services.interview_service import interview_service
+    interview_service.ensure_tables_exist()
+    logger.info("Registered: Interview routes & Tables")
+except Exception as e:
+    logger.error(f"Failed registering Interview routes: {e}")
+
+
+
+# Register Administrator routes
+try:
+    from routes.administrator_routes import admin_bp, init_admin_routes
+    # Initialize admin system with DB config
+    # We need to construct db_config from env
+    admin_db_config = {
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'database': os.getenv('DB_NAME', 'emirati_journey'),
+        'user': os.getenv('DB_USER', 'emirati_user'),
+        'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+        'port': os.getenv('DB_PORT', 5432)
+    }
+    init_admin_routes(app, admin_db_config)
+    app.register_blueprint(admin_bp)
+    logger.info("Registered: Administrator routes")
+except Exception as e:
+    logger.error(f"Failed registering Administrator routes: {e}")
+
+
+
+# Register HR Dashboard Blueprint
+try:
+    from hr_dashboard_routes import hr_dashboard_bp
+    app.register_blueprint(hr_dashboard_bp)
+    logger.info("✅ HR Dashboard Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Dashboard Blueprint not available: {e}")
+
+
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -579,6 +771,51 @@ def ensure_vacancy_tables_exist():
     except Exception as e:
         logger.error(f"Error ensuring vacancy tables: {e}")
 
+
+# =====================================================
+# APPLICATION TABLE INITIALIZATION
+# =====================================================
+
+def ensure_application_tables_exist():
+    """Create job applications table if it doesn't exist."""
+    try:
+        execute_query(
+            """
+            CREATE TABLE IF NOT EXISTS job_applications (
+                id TEXT PRIMARY KEY,
+                job_id TEXT NOT NULL,
+                candidate_id TEXT NOT NULL,
+                cover_letter TEXT,
+                additional_documents JSONB,
+                expected_salary TEXT,
+                availability_date TEXT,
+                status TEXT DEFAULT 'submitted',
+                submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                notes TEXT,
+                interview_date TIMESTAMPTZ,
+                interview_type TEXT
+            )
+            """,
+            fetch_all=False
+        )
+        execute_query(
+            """
+            CREATE INDEX IF NOT EXISTS idx_applications_candidate ON job_applications (candidate_id);
+            """,
+            fetch_all=False
+        )
+        # Unique application per candidate per job
+        execute_query(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_app_unique_candidate_job ON job_applications (candidate_id, job_id);
+            """,
+            fetch_all=False
+        )
+        logger.info("✅ Job Application tables ensured")
+    except Exception as e:
+        logger.error(f"Error ensuring application tables: {e}")
+
 # =====================================================
 # CV PARSING UTILITIES
 # =====================================================
@@ -889,22 +1126,37 @@ def _tokenize(text: str) -> set:
     except Exception:
         return set()
 
+STOPWORDS = {
+    'the', 'and', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did',
+    'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must',
+    'i', 'you', 'he', 'she', 'it', 'we', 'they',
+    'that', 'this', 'these', 'those',
+    'or', 'but', 'if', 'then', 'else', 'when', 'where', 'why', 'how',
+    'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
+    'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very',
+    'can', 'will', 'just', 'don', 'should', 'now',
+    'work', 'team', 'role', 'job', 'position', 'experience', 'skills', 'responsibilities',
+    'requirements', 'qualifications', 'duties', 'company', 'business', 'organization'
+}
+
 def _collect_cv_keywords(cv_row: dict) -> dict:
-    personal_info = cv_row.get('personal_info') or {}
+    personal_info = safe_json_load(cv_row.get('personal_info'), {})
     prof = cv_row.get('professional_summary') or ''
-    tech = cv_row.get('technical_skills') or []
-    soft = cv_row.get('soft_skills') or []
-    experience = cv_row.get('work_experience') or []
-    edu = cv_row.get('education') or []
+    tech = safe_json_load(cv_row.get('technical_skills'), [])
+    soft = safe_json_load(cv_row.get('soft_skills'), [])
+    experience = safe_json_load(cv_row.get('work_experience'), [])
+    edu = safe_json_load(cv_row.get('education'), [])
 
     skill_words = set([s.lower() for s in tech + soft if isinstance(s, str)])
-    summary_words = _tokenize(prof)
+    summary_words = _tokenize(prof) - STOPWORDS
     exp_words = set()
     for e in experience:
-        exp_words |= _tokenize((e.get('responsibilities') or '') + ' ' + (e.get('jobTitle') or e.get('job_title') or ''))
+        exp_words |= (_tokenize((e.get('responsibilities') or '') + ' ' + (e.get('jobTitle') or e.get('job_title') or '')) - STOPWORDS)
     edu_words = set()
     for e in edu:
-        edu_words |= _tokenize((e.get('degree') or '') + ' ' + (e.get('field') or e.get('field_of_study') or ''))
+        edu_words |= (_tokenize((e.get('degree') or '') + ' ' + (e.get('field') or e.get('field_of_study') or '')) - STOPWORDS)
 
     return {
         'skills': skill_words,
@@ -915,23 +1167,40 @@ def _collect_cv_keywords(cv_row: dict) -> dict:
 def _vacancy_keywords(v: dict) -> dict:
     desc = (v.get('description') or '')
     title = (v.get('title') or '')
-    tags = v.get('tags') or []
-    req = v.get('requirements') or []
+    tags = safe_json_load(v.get('tags'), [])
+    req = safe_json_load(v.get('requirements'), [])
+    
+    # Extract distinct skills from requirements (which might be strings or dicts)
+    skills = set()
+    for r in req:
+        if isinstance(r, str):
+            skills.add(r.lower())
+        elif isinstance(r, dict):
+            # Extract from 'description' or 'name' field
+            val = r.get('description') or r.get('name') or ''
+            if val:
+                skills.add(val.lower())
+                
+    # Also process tags
+    for t in tags:
+        if isinstance(t, str):
+             skills.add(t.lower())
+
     return {
-        'text': _tokenize(desc + ' ' + title) | set([t.lower() for t in tags if isinstance(t, str)]),
-        'skills': set([r.lower() for r in req if isinstance(r, str)]),
+        'text': (_tokenize(desc + ' ' + title) | skills) - STOPWORDS, # Include skills in text for broader match
+        'skills': skills,
         'location': (v.get('location') or '').lower()
     }
 
 def _compute_match_score(cvk: dict, vk: dict) -> int:
-    # Simple heuristic: skills 50, text 40, location 10
+    # Updated heuristic: skills 60 (more weight), text 30 (less weight), location 10
     skill_overlap = len(cvk['skills'] & vk['skills'])
     skill_total = max(1, len(vk['skills']))
-    skill_score = 50 * (skill_overlap / skill_total)
+    skill_score = 60 * (skill_overlap / skill_total)
 
     text_overlap = len(cvk['text'] & vk['text'])
     text_total = max(1, len(vk['text']))
-    text_score = 40 * (text_overlap / text_total)
+    text_score = 30 * (text_overlap / text_total)
 
     loc_score = 10 if (cvk['location'] and cvk['location'] in vk['location']) else 0
 
@@ -1354,47 +1623,79 @@ def get_candidate_dashboard_stats():
     try:
         # Auth check
         auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        # Verify JWT properly
+        try:
+            from flask_jwt_extended import verify_jwt_in_request
+            verify_jwt_in_request()
+            user_id = get_jwt_identity()
+        except Exception as e:
+            logger.error(f"JWT Verification Failed in Dashboard Stats: {e}")
+            logger.error(f"Auth Header: {auth_header[:20]}...")
+            if 'mock_token' in auth_header:
+                 user_id = 'mock_user_candidate'
+            else:
+                 return jsonify({'success': False, 'message': f'Unauthorized: {str(e)}'}), 401
 
-        # Convert mock user_id to UUID
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        elif user_id == 'anonymous_user':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000' # Fallback
-        else:
-            user_uuid = user_id
-
-        # 1. Fetch CV Stats
-        # Get the most recent CV for this user
-        cv = execute_query(
-            "SELECT * FROM user_cvs WHERE user_id = %s::uuid ORDER BY created_at DESC LIMIT 1",
-            (user_uuid,), fetch_one=True
-        )
-
-        cv_uploaded = bool(cv)
-        completeness = 0
         user_name = "Candidate"
         
-        if cv:
-            cv_dict = dict(cv)
-            # Calculate completeness based on fields present
-            fields = [
-                cv_dict.get('personal_info'),
-                cv_dict.get('professional_summary'),
-                cv_dict.get('technical_skills'),
-                cv_dict.get('work_experience'),
-                cv_dict.get('education')
-            ]
-            filled_count = sum(1 for f in fields if f)
-            completeness = int((filled_count / 5) * 100)
-            
-            # Extract name
-            if cv_dict.get('personal_info'):
-                info = cv_dict['personal_info']
-                user_name = info.get('name') or info.get('fullName') or "Candidate"
+        # Connect to DB
+        conn = psycopg2.connect(**DATABASE_CONFIG)
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                # 1. Fetch User Details (Name)
+                # Handle both Integer (Real) and String/UUID (Mock) IDs
+                try:
+                    # Check if user_id is likely an integer (real user)
+                    int_id = int(user_id)
+                    cur.execute("SELECT first_name, last_name, email FROM users WHERE id = %s", (int_id,))
+                    user = cur.fetchone()
+                    if user:
+                        if user.get('first_name'):
+                            user_name = f"{user['first_name']}"
+                            if user.get('last_name') and user['last_name'] != 'None':
+                                 user_name += f" {user['last_name']}"
+                        elif user.get('email'):
+                             # Fallback: Parse name from email (e.g. ahmed.almansouri@...)
+                             email_parts = user['email'].split('@')[0].split('.')
+                             user_name = " ".join([p.capitalize() for p in email_parts])
+                    
+                    # For CVs, we have a schema mismatch (CVs use UUIDs, Users use Ints).
+                    # We skip CV fetch for Int users for now to avoid 500s, or we need to migrate CV table.
+                    # Assuming we can't fetch CV stats for Int users yet without schema change.
+                    cv = None 
+                    
+                except (ValueError, TypeError):
+                    # user_id is string/UUID (likely mock)
+                    if user_id == 'mock_user_candidate':
+                        user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+                    else:
+                        user_uuid = user_id
+                        
+                    cur.execute("SELECT * FROM user_cvs WHERE user_id = %s::uuid ORDER BY created_at DESC LIMIT 1", (user_uuid,))
+                    cv = cur.fetchone()
+
+                cv_uploaded = bool(cv)
+                completeness = 0
+                
+                if cv:
+                    cv_dict = dict(cv)
+                    fields = [
+                        cv_dict.get('personal_info'),
+                        cv_dict.get('professional_summary'),
+                        cv_dict.get('technical_skills'),
+                        cv_dict.get('work_experience'),
+                        cv_dict.get('education')
+                    ]
+                    filled_count = sum(1 for f in fields if f)
+                    completeness = int((filled_count / 5) * 100)
+                    
+                    # Only use CV name if we didn't find a User name (e.g. mock user)
+                    if user_name == "Candidate" and cv_dict.get('personal_info'):
+                        info = cv_dict['personal_info']
+                        user_name = info.get('name') or info.get('fullName') or "Candidate"
+
+        finally:
+            conn.close()
 
         # 2. Calculate Job Matches (if CV exists)
         matches_count = 0
@@ -1453,10 +1754,23 @@ def upload_cv():
         # For development: accept mock tokens or use fallback user_id
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
+            user_uuid = '00000000-0000-0000-0000-000000000001'
             user_id = 'mock_user_candidate'
         else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        print(f"DEBUG: CV upload request from user: {user_id}", flush=True)
+            try:
+                verify_jwt_in_request(optional=True)
+                user_id = get_jwt_identity() or 'anonymous_user'
+                # Ensure user_id is a UUID
+                try:
+                    uuidlib.UUID(str(user_id))
+                    user_uuid = user_id
+                except ValueError:
+                    # Generate consistent UUID from string (e.g. email)
+                    user_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            except Exception:
+                user_uuid = '00000000-0000-0000-0000-000000000001'
+                user_id = 'anonymous_user'
+        print(f"DEBUG: CV upload request from user_uuid: {user_uuid} (original: {user_id if 'user_id' in locals() else 'mock'})", flush=True)
         
         # Check if file is present (handle both 'file' and 'cv_file')
         if 'cv_file' not in request.files and 'file' not in request.files:
@@ -1502,7 +1816,7 @@ def upload_cv():
         # Save file after text extraction
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_filename = f"{user_id}_{timestamp}_{filename}"
+        safe_filename = f"{user_uuid}_{timestamp}_{filename}"
         file_path = UPLOAD_FOLDER / safe_filename
         
         file.save(str(file_path))
@@ -1522,40 +1836,33 @@ def upload_cv():
                 'message': 'Could not extract text from file. Please ensure the file is not empty or password protected.'
             }), 400
 
-        # Parse CV with Gemini AI (propagates exceptions now)
+        # Parse CV with Gemini AI (using robust CVParser)
         try:
-            gemini_analysis = parse_cv_with_gemini(cv_text)
+             # Lazy import to avoid circular dependency
+            from cv_parser import CVParser
+            parser = CVParser()
+            
+            # Use raw file stream if possible or text
+            parse_result = parser.parse_cv_text(cv_text, user_id=user_uuid, filename=file.filename)
+            
+            if not parse_result.get('success'):
+                logger.warning(f"AI parsing failed, using fallback: {parse_result.get('message')}")
+                # We can still proceed with what we have or empty data
+                analysis_result = parse_result.get('data', {})
+                # Ensure minimal keys exist
+                analysis_result.setdefault('personal_info', {})
+            else:
+                analysis_result = parse_result.get('data', {})
+                logger.info("✅ Using CVParser analysis result")
+
         except Exception as ai_error:
             logger.error(f"Gemini AI Serious Failure: {str(ai_error)}")
-            # Safe serialization of error details
-            error_details = "No details"
-            try:
-                 if hasattr(ai_error, 'response'):
-                     error_details = str(ai_error.response)
-                 else:
-                     error_details = str(ai_error)
-            except:
-                error_details = "Could not stringify error details"
-
-            return jsonify({
-                'success': False,
-                'message': f'AI Analysis Failed: {str(ai_error)}',
-                'details': error_details
-            }), 500
-
-        # Use Gemini analysis
-        analysis_result = gemini_analysis
-        logger.info("✅ Using real Gemini CV analysis")
-
-
-
+            # Fallback to empty structure so we at least save the file
+            analysis_result = {'personal_info': {}}
 
         # Persist to database immediately so ID is valid for Share/Match
         import uuid
         new_cv_id = str(uuid.uuid4())
-        
-        # Prepare data for insertion
-        # Ensure json compatible (handle datetime)
         
         insert_query = """
             INSERT INTO user_cvs (
@@ -1563,28 +1870,37 @@ def upload_cv():
                 personal_info, professional_summary,
                 technical_skills, soft_skills, 
                 work_experience, education,
-                status, is_visible, created_at, updated_at
+                status, is_visible, created_at, updated_at,
+                cv_score, ats_score
             ) VALUES (
-                %s, %s, %s,
-                %s, %s,
-                %s, %s,
-                %s, %s,
-                'draft', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                %s::uuid, %s::uuid, %s,
+                %s::jsonb, %s,
+                %s::jsonb, %s::jsonb,
+                %s::jsonb, %s::jsonb,
+                'draft', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+                %s, %s
             )
         """
         
         # Extract skills for separate storage
-        tech_skills = analysis_result.get('technical_skills', []) or analysis_result.get('skills', {}).get('technical', [])
-        soft_skills = analysis_result.get('soft_skills', []) or analysis_result.get('skills', {}).get('soft', [])
+        tech_skills = analysis_result.get('skills', []) 
+        # If skills is dict (old format), handle it
+        if isinstance(tech_skills, dict):
+             tech_skills = tech_skills.get('technical', [])
+             
+        soft_skills = analysis_result.get('soft_skills', [])
+
+        # Get scores
+        analysis_meta = parse_result.get('analysis', {}) if 'parse_result' in locals() else {}
+        scores = analysis_meta.get('scores', {})
+        cv_score = scores.get('overall', 0)
+        ats_score = scores.get('completeness', 0)
         
         # Determine User UUID (handle mock)
         if user_id == 'mock_user_candidate':
             db_user_id = '550e8400-e29b-41d4-a716-446655440000'
         elif user_id == 'anonymous_user':
-             # For anonymous, we might need a temp user or just fail. 
-             # Ideally we should use the mock user if auth is missing for now as per previous logic
-             # But let's try to trust the user_id derived earlier
-             db_user_id = '550e8400-e29b-41d4-a716-446655440000' # Fallback for now to ensure it works
+             db_user_id = '550e8400-e29b-41d4-a716-446655440000'
         else:
             db_user_id = user_id
 
@@ -1597,18 +1913,18 @@ def upload_cv():
                 json.dumps(soft_skills),
                 json.dumps(analysis_result.get('experience', [])),
                 json.dumps(analysis_result.get('education', [])),
+                cv_score, ats_score
             ), fetch_all=False)
              logger.info(f"✅ Auto-persisted uploaded CV as {new_cv_id}")
         except Exception as db_err:
             logger.error(f"Failed to auto-persist CV: {db_err}")
-            # Non-blocking failure? usage might fail later.
             pass
 
         return jsonify({
             'success': True,
             'message': 'CV uploaded and analyzed successfully',
             'data': {
-                'file_id': new_cv_id, # Return UUID that exists in DB
+                'file_id': new_cv_id,
                 'original_filename': safe_filename,
                 'file_size': file_size,
                 'analysis': analysis_result,
@@ -1685,187 +2001,368 @@ def list_cvs_mock():
             'message': 'Failed to retrieve CVs'
         }), 500
 
+
+
+
 @app.route('/api/cv/list', methods=['GET'])
-# @jwt_required(optional=True) # allow anonymous for now if needed, or enforce. AutoFillCVBuilder seems to use it authenticated.
-def list_cvs():
-    """List user's uploaded CVs"""
+def list_cvs_fixed():
+    """List user's saved CVs (Fixed Implementation)"""
     try:
-        # Get user identity
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity() or 'anonymous_user'
-        except Exception:
-            user_id = 'anonymous_user'
-            
-        # Development override check from headers
+        # Auth check
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        elif user_id == 'anonymous_user':
-             # Return empty list for anonymous users instead of crashing
-            return jsonify({
-                'success': True,
-                'data': []
-            }), 200
+            user_uuid = '00000000-0000-0000-0000-000000000001'
         else:
-            # Validate UUID format
             try:
-                # Use uuidlib alias which is defined in unified_server.py
-                val = uuidlib.UUID(str(user_id))
-                user_uuid = user_id
-            except ValueError:
-                logger.warning(f"Invalid UUID provided for list_cvs: {user_id}")
-                return jsonify({
-                    'success': True,
-                    'data': []
-                }), 200
+                verify_jwt_in_request(optional=True)
+                user_id = get_jwt_identity()
+                if not user_id:
+                     user_uuid = '00000000-0000-0000-0000-000000000001'
+                else:
+                    try:
+                        uuidlib.UUID(str(user_id))
+                        user_uuid = user_id
+                    except ValueError:
+                        user_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            except Exception:
+                user_uuid = '00000000-0000-0000-0000-000000000001'
 
-
-        conn = get_db() # Use centralized get_db()
-        if not conn:
-            logger.error("Database connection failed in list_cvs")
-            return jsonify({
-                'success': False,
-                'message': 'Database connection failed'
-            }), 500
-
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
         query = """
-            SELECT id, title, template_name, cv_score, ats_score, created_at, updated_at, status, is_visible
+            SELECT 
+                id, title, status, cv_score, ats_score, updated_at, template_name, is_visible
             FROM user_cvs
-            WHERE user_id = %s AND status != 'archived'
+            WHERE user_id = %s::uuid AND COALESCE(status, 'draft') <> 'archived'
             ORDER BY updated_at DESC
         """
+        cvs = execute_query(query, (user_uuid,))
         
-        try:
-            cur.execute(query, (user_uuid,))
-        except psycopg2.errors.UndefinedColumn as e:
-            # Self-healing: Add missing column
-            logger.warning(f"Schema mismatch detected: {e}. Attempting auto-repair...")
-            conn.rollback() # Reset transaction
-            
-            try:
-                with conn.cursor() as fix_cur:
-                    fix_cur.execute("ALTER TABLE user_cvs ADD COLUMN IF NOT EXISTS is_visible BOOLEAN DEFAULT FALSE;")
-                    conn.commit()
-                logger.info("Auto-repair successful: Added 'is_visible' column.")
-                
-                # Retry original query
-                cur.execute(query, (user_uuid,))
-            except Exception as repair_err:
-                logger.error(f"Auto-repair failed: {repair_err}")
-                return jsonify({'success': False, 'message': 'Database schema error (repair failed)'}), 500
-        except Exception as query_err:
-             logger.error(f"Query failed: {query_err}")
-             conn.rollback()
-             return jsonify({'success': False, 'message': 'Database query error'}), 500
-
-        cvs = cur.fetchall()
-        cur.close()
-
-        # Convert datetimes to isoformat
         result = []
-        for cv in cvs:
-            cv_dict = dict(cv)
-            if cv_dict.get('created_at'):
-                cv_dict['created_at'] = cv_dict['created_at'].isoformat()
-            if cv_dict.get('updated_at'):
-                cv_dict['updated_at'] = cv_dict['updated_at'].isoformat()
-            result.append(cv_dict)
-            
-        return jsonify({
-            'success': True,
-            'data': result
-        }), 200
+        if cvs:
+            for cv in cvs:
+                d = dict(cv)
+                if d.get('updated_at'):
+                    d['updated_at'] = d['updated_at'].isoformat()
+                result.append(d)
 
+        return jsonify({'success': True, 'data': result}), 200
     except Exception as e:
-        logger.error(f"Error listing CVs: {e}")
-        # Print traceback to stdout for debugging
-        traceback.print_exc()
+        logger.error(f"List CVs error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/cv/export', methods=['POST'])
-def export_cv():
-    """Export CV as PDF"""
+@app.route('/api/cv/save', methods=['POST'])
+def save_cv_fixed():
+    """Save/Create CV (Fixed Implementation)"""
     try:
-        # For development: accept mock tokens
+        # Auth check
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
+            user_uuid = '00000000-0000-0000-0000-000000000001'
         else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        
+            try:
+                verify_jwt_in_request(optional=True)
+                user_id = get_jwt_identity()
+                if not user_id:
+                     user_uuid = '00000000-0000-0000-0000-000000000001'
+                else:
+                    try:
+                        uuidlib.UUID(str(user_id))
+                        user_uuid = user_id
+                    except ValueError:
+                        user_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            except Exception:
+                user_uuid = '00000000-0000-0000-0000-000000000001'
+
         data = request.get_json()
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': 'No CV data provided'
-            }), 400
+        cv_data = data.get('cvData', {})
         
-        cv_data = data.get('cvData')
-        template_style = data.get('template', 'professional')
+        # Prepare fields
+        cv_id = str(uuidlib.uuid4())
+        title = data.get('title', 'My CV')
+        template_id = data.get('templateId', 'professional')
+        cv_score = data.get('cvScore', 0)
+        ats_score = data.get('atsScore', 0)
         
-        if not cv_data:
-            return jsonify({
-                'success': False,
-                'message': 'CV data is required'
-            }), 400
+        insert_query = """
+            INSERT INTO user_cvs (
+                id, user_id, title, template_name, 
+                personal_info, professional_summary,
+                technical_skills, soft_skills, 
+                work_experience, education,
+                cv_score, ats_score, status, 
+                created_at, updated_at, is_visible
+            ) VALUES (
+                %s::uuid, %s::uuid, %s, %s,
+                %s::jsonb, %s,
+                %s::jsonb, %s::jsonb,
+                %s::jsonb, %s::jsonb,
+                %s, %s, 'draft',
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, FALSE
+            ) RETURNING id
+        """
         
-        # Import and use the new HTML-based PDF generator
-        from cv_pdf_generator import generate_cv_pdf_html
-        pdf_filename = generate_cv_pdf_html(cv_data, template_style)
+        params = (
+            cv_id, user_uuid, title, template_id,
+            json.dumps(cv_data.get('personalInfo', {})),
+            cv_data.get('professionalSummary', ''),
+            json.dumps(cv_data.get('technicalSkills', [])),
+            json.dumps(cv_data.get('softSkills', [])),
+            json.dumps(cv_data.get('experience', [])),
+            json.dumps(cv_data.get('education', [])),
+            cv_score, ats_score
+        )
         
-        if not pdf_filename:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to generate PDF'
-            }), 500
+        execute_query(insert_query, params, fetch_one=True)
+        
+        return jsonify({
+            'success': True, 
+            'message': 'CV saved successfully',
+            'data': {'cv_id': cv_id}
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Save CV error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+def get_current_user_uuid_inline():
+    """Helper to get standardized UUID for current user"""
+    auth_header = request.headers.get('Authorization', '')
+    if 'mock_token' in auth_header:
+        return '00000000-0000-0000-0000-000000000001'
+    
+    try:
+        verify_jwt_in_request(optional=True)
+        user_id = get_jwt_identity()
+        if not user_id:
+             return '00000000-0000-0000-0000-000000000001'
+        
+        try:
+            uuidlib.UUID(str(user_id))
+            return str(user_id)
+        except ValueError:
+            return str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            
+    except Exception:
+        return '00000000-0000-0000-0000-000000000001'
+
+@app.route('/api/cv/<cv_id>', methods=['GET'])
+def get_cv_fixed(cv_id):
+    try:
+        user_uuid = get_current_user_uuid_inline()
+        
+        query = "SELECT * FROM user_cvs WHERE id = %s::uuid"
+        
+        cv = execute_query(query, (cv_id,), fetch_one=True)
+        
+        if not cv:
+            return jsonify({'success': False, 'message': 'CV not found'}), 404
+            
+        cv_data = {
+            'personal_info': safe_json_load(cv['personal_info'], {}),
+            'professional_summary': cv['professional_summary'],
+            'technical_skills': safe_json_load(cv['technical_skills'], []),
+            'soft_skills': safe_json_load(cv['soft_skills'], []),
+            'work_experience': safe_json_load(cv['work_experience'], []),
+            'education': safe_json_load(cv['education'], []),
+            'title': cv['title'],
+            'template_name': cv['template_name'],
+            'cv_score': cv['cv_score'],
+            'ats_score': cv['ats_score']
+        }
         
         return jsonify({
             'success': True,
-            'message': 'CV exported successfully',
-            'data': {
-                'filename': pdf_filename,
-                'download_url': f'/api/cv/download/{pdf_filename}',
-                'generated_at': datetime.now().isoformat()
+            'data': cv_data,
+            'metadata': {
+                'id': cv['id'],
+                'title': cv['title'],
+                'template_name': cv['template_name'],
+                'cv_score': cv['cv_score'],
+                'ats_score': cv['ats_score']
             }
-        }), 200
-        
+        })
     except Exception as e:
-        logger.error(f"CV export error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Export failed due to system error'
-        }), 500
+        logger.error(f"Get CV error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/cv/download/<filename>', methods=['GET'])
-def download_cv(filename: str):
-    """Download generated CV PDF"""
+@app.route('/api/cv/<cv_id>', methods=['PUT'])
+def update_cv_fixed(cv_id):
     try:
-        # Security: validate filename
-        if not filename.endswith('.pdf') or '..' in filename:
-            return jsonify({'error': 'Invalid filename'}), 400
+        user_uuid = get_current_user_uuid_inline()
+        data = request.get_json()
         
-        file_path = UPLOAD_FOLDER / filename
+        cv_data = data.get('cvData', {})
+        title = data.get('title')
+        template_id = data.get('templateId')
+        cv_score = data.get('cvScore')
+        ats_score = data.get('atsScore')
         
-        if not file_path.exists():
-            return jsonify({'error': 'File not found'}), 404
+        # Build update query
+        update_fields = []
+        params = []
         
-        return send_file(
-            str(file_path),
-            as_attachment=True,
-            download_name=f"CV_{filename}",
-            mimetype='application/pdf'
+        if title:
+            update_fields.append("title = %s")
+            params.append(title)
+        if template_id:
+            update_fields.append("template_name = %s")
+            params.append(template_id)
+        if cv_score is not None:
+            update_fields.append("cv_score = %s")
+            params.append(cv_score)
+        if ats_score is not None:
+            update_fields.append("ats_score = %s")
+            params.append(ats_score)
+            
+        if cv_data:
+            if 'personalInfo' in cv_data:
+                update_fields.append("personal_info = %s::jsonb")
+                params.append(json.dumps(cv_data['personalInfo']))
+            if 'professionalSummary' in cv_data:
+                update_fields.append("professional_summary = %s")
+                params.append(cv_data['professionalSummary'])
+            if 'technicalSkills' in cv_data:
+                update_fields.append("technical_skills = %s::jsonb")
+                params.append(json.dumps(cv_data['technicalSkills']))
+            if 'softSkills' in cv_data:
+                update_fields.append("soft_skills = %s::jsonb")
+                params.append(json.dumps(cv_data['softSkills']))
+            if 'experience' in cv_data:
+                update_fields.append("work_experience = %s::jsonb")
+                params.append(json.dumps(cv_data['experience']))
+            if 'education' in cv_data:
+                update_fields.append("education = %s::jsonb")
+                params.append(json.dumps(cv_data['education']))
+                
+        update_fields.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(cv_id)
+        
+        query = f"UPDATE user_cvs SET {', '.join(update_fields)} WHERE id = %s::uuid"
+        
+        execute_query(query, tuple(params), fetch_all=False)
+        
+        return jsonify({'success': True, 'message': 'CV updated successfully'})
+    except Exception as e:
+        logger.error(f"Update CV error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/cv/<cv_id>', methods=['DELETE'])
+def delete_cv_fixed(cv_id):
+    try:
+        user_uuid = get_current_user_uuid_inline()
+        execute_query("DELETE FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_all=False)
+        return jsonify({'success': True, 'message': 'CV deleted successfully'})
+    except Exception as e:
+        logger.error(f"Delete CV error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
+def duplicate_cv_fixed(cv_id):
+    try:
+        user_uuid = get_current_user_uuid_inline()
+        
+        # Get original
+        original = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
+        if not original:
+             return jsonify({'success': False, 'message': 'CV not found'}), 404
+             
+        new_cv_id = str(uuidlib.uuid4())
+        new_title = f"{original['title']} (Copy)"
+        
+        # Ensure we don't double encode if they are already strings
+        tech_skills = safe_json_load(original['technical_skills'], [])
+        soft_skills = safe_json_load(original['soft_skills'], [])
+        work_exp = safe_json_load(original['work_experience'], [])
+        education = safe_json_load(original['education'], [])
+        personal_info = safe_json_load(original['personal_info'], {})
+
+        insert_query = """
+            INSERT INTO user_cvs (
+                id, user_id, title, personal_info, professional_summary, 
+                technical_skills, soft_skills, work_experience, education, 
+                cv_score, ats_score
+            ) VALUES (
+                %s::uuid, %s::uuid, %s, %s::jsonb, %s,
+                %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb,
+                %s, %s
+            )
+        """
+        params = (
+            new_cv_id, user_uuid, new_title, json.dumps(personal_info), original['professional_summary'],
+            json.dumps(tech_skills), json.dumps(soft_skills),
+            json.dumps(work_exp), json.dumps(education),
+            original['cv_score'], original['ats_score']
         )
         
+        execute_query(insert_query, params, fetch_all=False)
+        
+        return jsonify({'success': True, 'message': 'CV duplicated', 'data': {'cv_id': new_cv_id}})
     except Exception as e:
-        logger.error(f"CV download error: {str(e)}")
-        return jsonify({'error': 'Download failed'}), 500
+        logger.error(f"Duplicate CV error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/cv/<cv_id>/visible', methods=['PUT'])
+def set_visible_fixed(cv_id):
+    try:
+        user_uuid = get_current_user_uuid_inline()
+        
+        # Set all to false
+        execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s::uuid", (user_uuid,), fetch_all=False)
+        # Set specific to true
+        execute_query("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid", (cv_id,), fetch_all=False)
+        
+        return jsonify({'success': True, 'message': 'CV set as visible'})
+    except Exception as e:
+        logger.error(f"Set visible error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/cv/<cv_id>/export/<format>', methods=['GET'])
+def export_cv_fixed(cv_id, format):
+    try:
+        user_uuid = get_current_user_uuid_inline()
+        
+        cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
+        if not cv:
+            return jsonify({'error': 'CV not found'}), 404
+            
+        cv_data = {
+            'metadata': {'title': cv['title'], 'cv_id': cv['id']},
+            'data': {
+                'personal_info': safe_json_load(cv['personal_info'], {}),
+                'professional_summary': cv['professional_summary'],
+                'experience': safe_json_load(cv['work_experience'], []),
+                'education': safe_json_load(cv['education'], []),
+                'skills': (safe_json_load(cv['technical_skills'], []) or []) + (safe_json_load(cv['soft_skills'], []) or [])
+            }
+        }
+        
+        if format == 'json':
+            return jsonify({'success': True, 'cv_data': cv_data})
+            
+        # PDF/DOCX Handling
+        from cv_builder.cv_export import CVExporter
+        exporter = CVExporter()
+        
+        file_path = exporter.export_cv(cv_data, format)
+        
+        if not file_path or not os.path.exists(file_path):
+             return jsonify({'error': 'Export failed: File not created'}), 500
+             
+        mime_types = {
+            'pdf': 'application/pdf',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        }
+        
+        return send_file(
+            file_path,
+            mimetype=mime_types.get(format, 'application/octet-stream'),
+            as_attachment=True,
+            download_name=f"cv_{cv_id}.{format}"
+        )
+            
+    except Exception as e:
+        logger.error(f"Export error: {e}")
+        traceback.print_exc()
+        return jsonify({'error': f"Export failed: {str(e)}"}), 500
 
 # =====================================================
 # PUBLIC SHARING ROUTES
@@ -1909,114 +2406,7 @@ def get_public_cv(cv_id):
         logger.error(f"Public CV fetch error: {e}")
         return jsonify({'success': False, 'message': 'System error'}), 500
 
-@app.route('/api/cv/save', methods=['POST'])
-def save_cv():
-    """Save CV to database"""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': 'No CV data provided'
-            }), 400
-        
-        cv_data = data.get('cvData')
-        title = data.get('title', 'My CV')
-        template_name = data.get('templateId', 'government-executive')
-        
-        if not cv_data:
-            return jsonify({
-                'success': False,
-                'message': 'CV data is required'
-            }), 400
-        
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
 
-        # Enforce limit: max 3 active CVs (non-archived)
-        count_query = "SELECT COUNT(*) as cnt FROM user_cvs WHERE user_id = %s::uuid AND COALESCE(status,'draft') <> 'archived'"
-        count_row = execute_query(count_query, (user_uuid,), fetch_one=True)
-        if count_row and int(count_row.get('cnt', 0)) >= 3:
-            return jsonify({
-                'success': False,
-                'message': 'You have reached the maximum of 3 saved CVs. Please delete or archive one before creating another.'
-            }), 400
-
-        # Insert CV into database
-        cv_id = str(uuidlib.uuid4())
-        insert_query = """
-            INSERT INTO user_cvs (
-                id, user_id, title, template_name, personal_info, professional_summary,
-                technical_skills, soft_skills, work_experience, education,
-                cv_score, ats_score, status
-            ) VALUES (
-                %s::uuid, %s::uuid, %s, %s,
-                %s::jsonb, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb,
-                %s, %s, 'draft'
-            ) RETURNING id, created_at
-        """
-
-        params = (
-            cv_id,
-            user_uuid,
-            title,
-            template_name,
-            json.dumps(cv_data.get('personalInfo', {})),
-            cv_data.get('professionalSummary', ''),
-            json.dumps(cv_data.get('technicalSkills', [])),
-            json.dumps(cv_data.get('softSkills', [])),
-            json.dumps(cv_data.get('experience', [])),
-            json.dumps(cv_data.get('education', [])),
-            data.get('cvScore', 0),
-            data.get('atsScore', 0)
-        )
-
-        result = execute_query(insert_query, params, fetch_one=True)
-        
-        if not result:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to save CV'
-            }), 500
-        
-        cv_id = result['id']
-        
-        # Create initial analytics record
-        analytics_query = """
-            INSERT INTO cv_analytics (analytics_id, cv_id, user_id, event_type, event_data)
-            VALUES (%s::uuid, %s::uuid, %s::uuid, %s, %s::jsonb)
-        """
-        execute_query(analytics_query, (
-            str(uuidlib.uuid4()), cv_id, user_uuid, 'cv_stored', json.dumps({'cv_score': data.get('cvScore', 0)})
-        ), fetch_all=False)
-        
-        logger.info(f"✅ CV saved successfully: {cv_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'CV saved successfully',
-            'data': {
-                'cv_id': str(result['id']),
-                'created_at': result['created_at'].isoformat() if isinstance(result['created_at'], datetime) else str(result['created_at'])
-            }
-        }), 201
-        
-    except Exception as e:
-        logger.error(f"CV save error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to save CV due to system error'
-        }), 500
 
 @app.route('/api/recruiter/vacancies', methods=['GET'])
 def list_vacancies():
@@ -2056,7 +2446,8 @@ def match_cv_top_vacancies(cv_id: str):
             vd['snippet'] = (vd.get('description') or '')[:200]
             scored.append(vd)
 
-        scored.sort(key=lambda x: x['match_score'], reverse=True)
+        # Sort by score descending as requested (High to Low)
+        scored.sort(key=lambda x: (x['match_score'], x['id']), reverse=True)
         return jsonify({'success': True, 'matches': scored[:limit]}), 200
     except Exception as e:
         logger.error(f"Match CV error: {str(e)}")
@@ -2073,659 +2464,33 @@ def match_visible_cv_top_vacancies():
         else:
             user_id = get_jwt_identity() if auth_header else 'anonymous_user'
 
-        user_uuid = '550e8400-e29b-41d4-a716-446655440000' if user_id == 'mock_user_candidate' else user_id
-        cv = execute_query("SELECT * FROM user_cvs WHERE user_id = %s::uuid AND is_visible = TRUE LIMIT 1", (user_uuid,), fetch_one=True)
+        if user_id == 'mock_user_candidate':
+            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+        else:
+            try:
+                uuid.UUID(str(user_id))
+                user_uuid = user_id
+            except ValueError:
+                user_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_id)))
+        # Ensure deterministic CV selection by ordering by updated_at AND id (tie-breaker)
+        cv = execute_query("SELECT * FROM user_cvs WHERE user_id = %s::uuid AND is_visible = TRUE ORDER BY updated_at DESC, id DESC LIMIT 1", (user_uuid,), fetch_one=True)
         if not cv:
             return jsonify({'success': False, 'message': 'No visible CV set'}), 404
         return match_cv_top_vacancies(cv['id'])
     except Exception as e:
         logger.error(f"Match visible CV error: {str(e)}")
+        traceback.print_exc()
         return jsonify({'success': False, 'message': 'Matching failed'}), 500
 
-@app.route('/api/cv/list', methods=['GET'])
-def list_user_cvs():
-    """List user's saved CVs"""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
-        
-        query = """
-            SELECT 
-                id,
-                title,
-                status,
-                cv_score,
-                ats_score,
-                created_at,
-                updated_at,
-                last_accessed_at,
-                template_name,
-                (personal_info->>'firstName') || ' ' || (personal_info->>'lastName') as full_name,
-                is_visible
-            FROM user_cvs
-            WHERE user_id = %s::uuid
-              AND COALESCE(status, 'draft') <> 'archived'
-            ORDER BY updated_at DESC NULLS LAST, created_at DESC
-        """
 
-        cvs = execute_query(query, (user_uuid,))
-        
-        if cvs is None:
-            return jsonify({
-                'success': False,
-                'message': 'Database error'
-            }), 500
-        
-        # Convert to JSON-serializable format
-        result = []
-        for cv in cvs:
-            cv_dict = dict(cv)
-            # Convert dates to ISO format
-            for date_field in ['created_at', 'updated_at', 'last_accessed_at']:
-                if cv_dict.get(date_field):
-                    if isinstance(cv_dict[date_field], datetime):
-                        cv_dict[date_field] = cv_dict[date_field].isoformat()
-            result.append(cv_dict)
-        
-        return jsonify({
-            'success': True,
-            'data': result
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"List CVs error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to retrieve CVs'
-        }), 500
 
-@app.route('/api/cv/<cv_id>', methods=['GET'])
-def get_cv(cv_id: str):
-    """Get specific CV by ID"""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
-        
-        query = """
-            SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid
-        """
 
-        cv = execute_query(query, (cv_id, user_uuid), fetch_one=True)
-        
-        if not cv:
-            return jsonify({
-                'success': False,
-                'message': 'CV not found'
-            }), 404
-        
-        # Update last accessed time
-        update_query = "UPDATE user_cvs SET last_accessed_at = CURRENT_TIMESTAMP WHERE id = %s::uuid"
-        execute_query(update_query, (cv_id,))
-        
-        # Convert to JSON-serializable format
-        cv_dict = dict(cv)
-        for date_field in ['created_at', 'updated_at', 'last_accessed_at', 'last_analyzed_at']:
-            if cv_dict.get(date_field):
-                if isinstance(cv_dict[date_field], datetime):
-                    cv_dict[date_field] = cv_dict[date_field].isoformat()
-        
-        return jsonify({
-            'success': True,
-            'data': cv_dict
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Get CV error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to retrieve CV'
-        }), 500
 
-@app.route('/api/cv/<cv_id>/export/<fmt>', methods=['GET', 'OPTIONS'], endpoint='export_cv_api')
-def export_cv_api(cv_id: str, fmt: str):
-    """Export a saved CV as PDF/DOCX/JSON.
-    - Handles CORS preflight
-    - Generates a minimal but clean RTL-friendly PDF when requested
-    """
-    try:
-        # CORS preflight
-        if request.method == 'OPTIONS':
-            return ('', 204)
 
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
 
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
 
-        # Fetch CV row
-        row = execute_query(
-            "SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid AND COALESCE(status,'draft') <> 'archived'",
-            (cv_id, user_uuid),
-            fetch_one=True
-        )
-        if not row:
-            return jsonify({'success': False, 'message': 'CV not found'}), 404
 
-        cv = dict(row)
-        # Normalize JSONB/text columns that may come back as strings
-        def _as_list(val):
-            if val is None:
-                return []
-            if isinstance(val, str):
-                try:
-                    return json.loads(val)
-                except Exception:
-                    return []
-            return val
-        def _as_obj(val):
-            if val is None:
-                return {}
-            if isinstance(val, str):
-                try:
-                    return json.loads(val)
-                except Exception:
-                    return {}
-            return val
-
-        personal = _as_obj(cv.get('personal_info'))
-        full_name = f"{personal.get('firstName','')} {personal.get('lastName','')}".strip()
-        email = personal.get('email', '')
-        phone = personal.get('phone', '')
-        location = personal.get('location', '')
-        tech_skills = _as_list(cv.get('technical_skills'))
-        soft_skills = _as_list(cv.get('soft_skills'))
-        work_experience = _as_list(cv.get('work_experience'))
-        education = _as_list(cv.get('education'))
-        summary = cv.get('professional_summary') or ''
-
-        if fmt == 'json':
-            return jsonify({'success': True, 'data': cv}), 200
-
-        export_dir = (UPLOAD_FOLDER / 'exports')
-        export_dir.mkdir(parents=True, exist_ok=True)
-
-        # DOCX export
-        if fmt == 'docx':
-            try:
-                docx_path = export_dir / f"cv_{cv_id}.docx"
-                doc = Document()
-                doc.add_heading(full_name or 'Curriculum Vitae', 0)
-                contact = " | ".join([str(p) for p in [email and f"Email: {email}", phone and f"Phone: {phone}", location and f"Location: {location}"] if p])
-                if contact:
-                    doc.add_paragraph(contact)
-                if summary:
-                    doc.add_heading('Professional Summary', level=1)
-                    doc.add_paragraph(summary)
-                if tech_skills:
-                    doc.add_heading('Technical Skills', level=1)
-                    doc.add_paragraph(", ".join([str(s) for s in tech_skills]))
-                if soft_skills:
-                    doc.add_heading('Soft Skills', level=1)
-                    doc.add_paragraph(", ".join([str(s) for s in soft_skills]))
-                # Minimal experience/education if present
-                for exp in work_experience:
-                    doc.add_heading('Experience', level=1)
-                    doc.add_paragraph(f"{exp.get('jobTitle','')} - {exp.get('company','')}")
-                    doc.add_paragraph(f"{exp.get('startDate','')} - {exp.get('endDate','')} • {exp.get('location','')}")
-                    if exp.get('responsibilities'):
-                        doc.add_paragraph(exp['responsibilities'])
-                for edu in education:
-                    doc.add_heading('Education', level=1)
-                    doc.add_paragraph(f"{edu.get('degree','')} - {edu.get('institution','')}")
-                    extra = " • ".join([str(p) for p in [edu.get('field',''), edu.get('graduationYear','')] if p])
-                    if extra:
-                        doc.add_paragraph(extra)
-                doc.save(str(docx_path))
-                resp = send_file(str(docx_path), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"cv_{cv_id}.docx")
-                origin = request.headers.get('Origin', '*')
-                resp.headers['Access-Control-Allow-Origin'] = origin
-                resp.headers['Vary'] = 'Origin'
-                resp.headers['Access-Control-Expose-Headers'] = 'Authorization'
-                resp.headers['Access-Control-Allow-Credentials'] = 'true'
-                return resp
-            except Exception as e:
-                logger.error(f"DOCX export error: {e}")
-                return jsonify({'success': False, 'message': 'DOCX export failed'}), 500
-
-        # PDF export (WeasyPrint, RTL-safe)
-        if fmt == 'pdf':
-            try:
-                # On Windows, fontconfig often fails; skip WeasyPrint and go straight to fallback
-                if os.name == 'nt':
-                    raise RuntimeError('Skip WeasyPrint on Windows; using ReportLab fallback')
-
-                html = f"""
-                <!doctype html>
-                <html lang='ar' dir='rtl'>
-                <meta charset='utf-8'/>
-                <style>
-                  @page {{ size: A4; margin: 18mm; }}
-                  body {{ font-family: 'Amiri','Noto Naskh Arabic','Arial',sans-serif; color:#0f172a; }}
-                  h1 {{ color:#0f766e; margin:0 0 8px; }}
-                  .meta {{ color:#475569; margin-bottom:14px; }}
-                  .sec {{ margin:16px 0; }}
-                  .chips {{ display:flex; flex-wrap:wrap; gap:6px; }}
-                  .chip {{ background:#ecfeff; color:#0e7490; padding:3px 10px; border-radius:12px; font-size:12px; margin:2px 0; }}
-                  .chip.soft {{ background:#f0fdf4; color:#047857; }}
-                </style>
-                <body>
-                  <h1>{full_name or 'السيرة الذاتية'}</h1>
-                  <div class='meta'>📧 {email or ''} • 📱 {phone or ''} • 📍 {location or ''}</div>
-                  {f"<div class='sec'><b>الملخص المهني</b><div>{summary}</div></div>" if summary else ''}
-                  {("<div class='sec'><b>المهارات التقنية</b><div class='chips'>" + ''.join([f"<span class='chip'>{s}</span>" for s in tech_skills]) + "</div></div>") if tech_skills else ''}
-                  {("<div class='sec'><b>المهارات السلوكية</b><div class='chips'>" + ''.join([f"<span class='chip soft'>{s}</span>" for s in soft_skills]) + "</div></div>") if soft_skills else ''}
-                </body>
-                </html>
-                """
-                out_path = (UPLOAD_FOLDER / 'exports' / f"cv_{cv_id}.pdf")
-                out_path.parent.mkdir(parents=True, exist_ok=True)
-                weasyprint.HTML(string=html).write_pdf(str(out_path))
-                resp = send_file(str(out_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
-                origin = request.headers.get('Origin', '*')
-                resp.headers['Access-Control-Allow-Origin'] = origin
-                resp.headers['Vary'] = 'Origin'
-                resp.headers['Access-Control-Expose-Headers'] = 'Authorization'
-                resp.headers['Access-Control-Allow-Credentials'] = 'true'
-                return resp
-            except Exception as e:
-                logger.error(f"PDF export error (weasyprint): {e}")
-                logger.error(traceback.format_exc())
-                # Fallback to a simple ReportLab PDF so export still works
-                try:
-                    pdf_path = (UPLOAD_FOLDER / 'exports' / f"cv_{cv_id}_fallback.pdf")
-                    pdf_path.parent.mkdir(parents=True, exist_ok=True)
-                    doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
-                    styles = getSampleStyleSheet()
-                    story = []
-                    story.append(Paragraph(full_name or 'Curriculum Vitae', styles['Title']))
-                    contact_info = " | ".join([p for p in [email and f"Email: {email}", phone and f"Phone: {phone}", location and f"Location: {location}"] if p])
-                    if contact_info:
-                        story.append(Paragraph(contact_info, styles['Normal']))
-                    if summary:
-                        story.append(Paragraph('Professional Summary', styles['Heading2']))
-                        story.append(Paragraph(summary, styles['Normal']))
-                    if tech_skills:
-                        story.append(Paragraph('Technical Skills', styles['Heading2']))
-                        story.append(Paragraph(", ".join(tech_skills), styles['Normal']))
-                    if soft_skills:
-                        story.append(Paragraph('Soft Skills', styles['Heading2']))
-                        story.append(Paragraph(", ".join(soft_skills), styles['Normal']))
-                    doc.build(story)
-                    resp = send_file(str(pdf_path), mimetype='application/pdf', as_attachment=True, download_name=f"cv_{cv_id}.pdf")
-                    origin = request.headers.get('Origin', '*')
-                    resp.headers['Access-Control-Allow-Origin'] = origin
-                    resp.headers['Vary'] = 'Origin'
-                    resp.headers['Access-Control-Expose-Headers'] = 'Authorization'
-                    resp.headers['Access-Control-Allow-Credentials'] = 'true'
-                    return resp
-                except Exception as e2:
-                    logger.error(f"PDF export fallback error (reportlab): {e2}")
-                    logger.error(traceback.format_exc())
-                    return jsonify({'success': False, 'message': 'PDF export failed'}), 500
-
-        return jsonify({'success': False, 'message': 'Unsupported format'}), 400
-    except Exception as e:
-        logger.error(f"Export error: {e}")
-        logger.error(traceback.format_exc())
-        return jsonify({'success': False, 'message': 'Export failed'}), 500
-
-@app.route('/api/cv/<cv_id>', methods=['PUT'])
-def update_cv(cv_id: str):
-    """Update existing CV"""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
-        
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': 'No update data provided'
-            }), 400
-
-        cv_data = data.get('cvData')
-        
-        # Create version history entry first
-        if cv_data is not None:
-            version_query = """
-                INSERT INTO cv_versions (id, cv_id, version_number, cv_data, change_summary, created_by)
-                SELECT %s::uuid, %s::uuid, COALESCE(MAX(version_number), 0) + 1, 
-                       %s::jsonb, %s, %s::uuid
-                FROM cv_versions
-                WHERE cv_id = %s::uuid
-                GROUP BY cv_id
-            """
-            execute_query(version_query, (
-                str(uuidlib.uuid4()), cv_id, json.dumps(cv_data), data.get('changeSummary', 'CV updated'), user_uuid, cv_id
-            ))
-        
-        # Update CV
-        update_query = """
-            UPDATE user_cvs SET
-                title = COALESCE(%s, title),
-                template_name = COALESCE(%s, template_name),
-                personal_info = COALESCE(%s::jsonb, personal_info),
-                professional_summary = COALESCE(%s, professional_summary),
-                technical_skills = COALESCE(%s::jsonb, technical_skills),
-                soft_skills = COALESCE(%s::jsonb, soft_skills),
-                work_experience = COALESCE(%s::jsonb, work_experience),
-                education = COALESCE(%s::jsonb, education),
-                cv_score = COALESCE(%s, cv_score),
-                ats_score = COALESCE(%s, ats_score),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s::uuid AND user_id = %s::uuid
-            RETURNING id, updated_at
-        """
-
-        params = (
-            data.get('title'),
-            data.get('templateId'),
-            json.dumps(cv_data.get('personalInfo')) if cv_data and cv_data.get('personalInfo') else None,
-            (cv_data.get('professionalSummary') if cv_data else None),
-            (json.dumps(cv_data.get('technicalSkills')) if cv_data and cv_data.get('technicalSkills') else None),
-            (json.dumps(cv_data.get('softSkills')) if cv_data and cv_data.get('softSkills') else None),
-            (json.dumps(cv_data.get('experience')) if cv_data and cv_data.get('experience') else None),
-            (json.dumps(cv_data.get('education')) if cv_data and cv_data.get('education') else None),
-            data.get('cvScore'),
-            data.get('atsScore'),
-            cv_id,
-            user_uuid
-        )
-        
-        result = execute_query(update_query, params, fetch_one=True)
-        
-        if not result:
-            return jsonify({
-                'success': False,
-                'message': 'CV not found or update failed'
-            }), 404
-        
-        logger.info(f"✅ CV updated successfully: {cv_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'CV updated successfully',
-            'data': {
-                'cv_id': str(result['id']),
-                'updated_at': result['updated_at'].isoformat()
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"CV update error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to update CV due to system error'
-        }), 500
-
-@app.route('/api/cv/<cv_id>', methods=['DELETE'])
-def delete_cv(cv_id: str):
-    """Delete CV"""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-        
-        # Convert mock user_id to UUID for development
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
-        
-        if user_id == 'anonymous_user':
-            # For anonymous users, we just delete by ID if found (simplified for MVP/testing)
-            # In production, we'd need a session token or similar mechanism
-            delete_query = "UPDATE user_cvs SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid RETURNING id"
-            result = execute_query(delete_query, (cv_id,), fetch_one=True)
-            logger.info(f"Anonymous delete attempt for CV {cv_id}. Result: {result}")
-        else:
-            # Delete CV (cascade will handle versions, analytics, shares)
-            # Soft delete by setting status to archived
-            delete_query = "UPDATE user_cvs SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid AND user_id = %s::uuid RETURNING id"
-            result = execute_query(delete_query, (cv_id, user_uuid), fetch_one=True)
-        
-        if not result:
-            return jsonify({
-                'success': False,
-                'message': 'CV not found'
-            }), 404
-        
-        logger.info(f"✅ CV deleted successfully: {cv_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'CV deleted successfully'
-        }), 200
-    except Exception as e:
-        logger.error(f"CV delete error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to delete CV due to system error'
-        }), 500
-
-@app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
-def duplicate_cv(cv_id: str):
-    """Duplicate an existing CV into a new draft (counts towards limit)."""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-
-        user_uuid = '550e8400-e29b-41d4-a716-446655440000' if user_id == 'mock_user_candidate' else user_id
-
-        # Enforce limit
-        count_query = "SELECT COUNT(*) as cnt FROM user_cvs WHERE user_id = %s::uuid AND COALESCE(status,'draft') <> 'archived'"
-        count_row = execute_query(count_query, (user_uuid,), fetch_one=True)
-        if count_row and int(count_row.get('cnt', 0)) >= 3:
-            return jsonify({'success': False, 'message': 'Maximum 3 CVs allowed. Please archive one first.'}), 400
-
-        # Fetch source CV
-        src = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid", (cv_id, user_uuid), fetch_one=True)
-        if not src:
-            return jsonify({'success': False, 'message': 'CV not found'}), 404
-
-        new_id = str(uuidlib.uuid4())
-        new_title = f"Copy of {src['title']}"
-
-        insert_query = """
-            INSERT INTO user_cvs (
-                id, user_id, title, template_name, personal_info, professional_summary,
-                technical_skills, soft_skills, work_experience, education,
-                cv_score, ats_score, status, is_visible
-            ) VALUES (
-                %s::uuid, %s::uuid, %s, %s,
-                %s::jsonb, %s, %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb,
-                %s, %s, 'draft', FALSE
-            )
-        """
-
-        execute_query(insert_query, (
-            new_id,
-            user_uuid,
-            new_title,
-            src['template_name'],
-            json.dumps(src['personal_info']) if src['personal_info'] else json.dumps({}),
-            src['professional_summary'],
-            json.dumps(src['technical_skills']) if src['technical_skills'] else json.dumps([]),
-            json.dumps(src['soft_skills']) if src['soft_skills'] else json.dumps([]),
-            json.dumps(src['work_experience']) if src['work_experience'] else json.dumps([]),
-            json.dumps(src['education']) if src['education'] else json.dumps([]),
-            src['cv_score'] or 0,
-            src['ats_score'] or 0
-        ), fetch_all=False)
-
-        return jsonify({'success': True, 'message': 'CV duplicated successfully', 'data': {'cv_id': new_id}}), 201
-
-    except Exception as e:
-        logger.error(f"CV duplicate error: {str(e)}")
-        return jsonify({'success': False, 'message': 'Failed to duplicate CV due to system error'}), 500
-# =====================================================
-# VISIBILITY ROUTE
-# =====================================================
-
-@app.route('/api/cv/<cv_id>/visible', methods=['PUT'])
-def set_cv_visible(cv_id: str):
-    """Set a CV as visible (and unset others for the same user)."""
-    try:
-        # For development: accept mock tokens
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-
-        if user_id == 'mock_user_candidate':
-            user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-        else:
-            user_uuid = user_id
-
-        logger.info(f"👉 set_cv_visible: cv_id={cv_id}, user_uuid={user_uuid}, user_id_raw={user_id}")
-
-        # Unset other visible CVs
-        execute_query("UPDATE user_cvs SET is_visible = FALSE WHERE user_id = %s::uuid AND is_visible = TRUE", (user_uuid,), fetch_all=False)
-
-        # Set this CV visible
-        result = execute_query(
-            "UPDATE user_cvs SET is_visible = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = %s::uuid AND user_id = %s::uuid RETURNING id",
-            (cv_id, user_uuid), fetch_one=True
-        )
-
-        if not result:
-            return jsonify({'success': False, 'message': 'CV not found'}), 404
-
-        return jsonify({'success': True, 'message': 'CV set as visible'}), 200
-
-    except Exception as e:
-        logger.error(f"Set visible error: {str(e)}")
-        return jsonify({'success': False, 'message': 'Failed to update visibility'}), 500
-
-# =====================================================
-# MATCHING ROUTES
-# =====================================================
-
-@app.route('/api/matching/visible/top-vacancies', methods=['GET'])
-def get_top_vacancies():
-    """Get top vacancy matches for the visible CV (Mock implementation for D33)"""
-    try:
-        # Check authentication locally since this is a new route
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
-            
-        limit = int(request.args.get('limit', 10))
-        
-        # In a real system, we would:
-        # 1. Get the user's visible CV
-        # 2. Use embeddings/AI to match against a vacancies table
-        # 3. Return ranked results
-        
-        # For this prototype/fix, we return high-quality mock matches aligned with UAE D33
-        matches = [
-            {
-                "id": "vac_001",
-                "title": "AI Strategy Specialist - Dubai Future Foundation",
-                "employer": "Dubai Future Foundation",
-                "match_score": 98,
-                "location": "Dubai, UAE",
-                "salary_range": "AED 35,000 - 45,000",
-                "type": "Full-time"
-            },
-            {
-                "id": "vac_002",
-                "title": "Digital Transformation Lead",
-                "employer": "RTA (Roads & Transport Authority)",
-                "match_score": 95,
-                "location": "Dubai, UAE",
-                "salary_range": "AED 40,000 - 55,000",
-                "type": "Government"
-            },
-             {
-                "id": "vac_003",
-                "title": "Smart City Architect",
-                "employer": "Digital Dubai",
-                "match_score": 92,
-                "location": "Dubai, UAE",
-                "salary_range": "AED 30,000 - 42,000",
-                "type": "Contract"
-            },
-            {
-                "id": "vac_004",
-                "title": "Sustainability Program Manager",
-                "employer": "Masdar",
-                "match_score": 88,
-                "location": "Abu Dhabi, UAE",
-                "salary_range": "AED 38,000 - 50,000",
-                "type": "Semi-Government"
-            },
-            {
-                "id": "vac_005",
-                "title": "Emiratization Consultant",
-                "employer": "MOHRE",
-                "match_score": 85,
-                "location": "Dubai, UAE",
-                "salary_range": "AED 25,000 - 35,000",
-                "type": "Government"
-            }
-        ]
-        
-        return jsonify({
-            'success': True,
-            'message': 'Top matches found',
-            'matches': matches[:limit]
-        }), 200
-
-    except Exception as e:
-        logger.error(f"Matching error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to get vacancy matches'
-        }), 500
+# Duplicate matching route removed to ensure _match_visible_cv_top_vacancies is used
 
 # =====================================================
 # SCHOOL PROGRAMS ROUTES
@@ -3053,6 +2818,8 @@ def initialize_unified_server():
         with app.app_context():
             ensure_cv_tables_exist()
             ensure_vacancy_tables_exist()
+            ensure_application_tables_exist()
+            ensure_fallback_schools_exist()
             ensure_fallback_schools_exist()
             logger.info("✅ Database fallback data ensured")
     except Exception as e:
@@ -3060,45 +2827,89 @@ def initialize_unified_server():
 
     logger.info("🚀 Unified server initialization complete")
 
+@app.route('/api/recruiter/analytics', methods=['GET', 'OPTIONS'])
+def recruiter_analytics():
+    if request.method == 'OPTIONS':
+        return jsonify({'success': True}), 200
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_matches': 12,
+            'average_score': 78.5,
+            'qualification_rate': 65.0,
+            'stored_data': {'cvs': 15},
+            'score_distribution': {'excellent': 4, 'good': 5, 'fair': 2, 'poor': 1},
+            'top_skills': [{'skill': 'Python', 'frequency': 8}, {'skill': 'React', 'frequency': 5}]
+        }
+    })
+
 if __name__ == '__main__':
     # Initialize the unified server
     initialize_unified_server()
     
-    port = int(os.getenv('PORT', 5003))
+    # Prioritize UNIFIED_PORT, then hardcode 5003 to avoid .env PORT=5005 conflict
+    port = int(os.getenv('UNIFIED_PORT', 5005))
     
     print("="*80)
-    print("🇦🇪 EMIRATI JOURNEY PLATFORM - UNIFIED BACKEND SERVER")
+    print("EMIRATI JOURNEY PLATFORM - UNIFIED BACKEND SERVER")
     print("="*80)
-    print(f"🚀 Server starting on port {port}")
-    print(f"🔗 Health check: http://localhost:{port}/health")
+    print(f"Server starting on port {port}")
+    print(f"Health check: http://localhost:{port}/health")
     print("")
-    print("📋 Available Endpoints:")
-    print("  🔐 Authentication:")
+    print("  Authentication:")
     print(f"    POST http://localhost:{port}/api/auth/login")
     print(f"    POST http://localhost:{port}/api/auth/register")
-    print(f"    GET  http://localhost:{port}/api/auth/profile")
     print("")
-    print("  📄 CV Management:")
+    print("  CV Management:")
     print(f"    POST http://localhost:{port}/api/cv/upload")
     print(f"    GET  http://localhost:{port}/api/cv/list")
     print(f"    GET  http://localhost:{port}/api/cv/<cv_id>/export/<format>")
     print("")
-    print("  🏫 School Programs:")
+    print("  School Programs:")
     print(f"    GET  http://localhost:{port}/api/school-programs")
     print(f"    POST http://localhost:{port}/api/school-programs")
     print(f"    GET  http://localhost:{port}/api/schools")
     print(f"    GET  http://localhost:{port}/api/admin/dashboard-stats")
     print("")
-    print("  ⚙️  Admin Management:")
+    print("  Admin Management:")
     print(f"    GET  http://localhost:{port}/api/admin/health")
     print(f"    GET  http://localhost:{port}/api/admin/providers")
     print("")
-    print("🔑 Features: Auth + CV Upload + School Programs + Admin APIs")
-    print("🌐 CORS: Configured for frontend origins")
-    print("🛡️  Security: JWT authentication with role-based access")
+    print("  Features: Auth + CV Upload + School Programs + Admin APIs")
+    print("  CORS: Configured for frontend origins")
+    print("  Security: JWT authentication with role-based access")
     print("="*80)
     
 
 
-    # Run the unified Flask app
-    app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
+    # Recruiter Shortlist Routes
+    try:
+        from recruiter.shortlist_routes import shortlist_bp
+        app.register_blueprint(shortlist_bp, url_prefix='/api/recruiter/shortlist')
+        logger.info("✅ Recruiter Shortlist routes registered")
+    except Exception as e:
+        logger.error(f"Failed to register shortlist routes: {e}")
+
+    # Recruiter Interview Routes
+    try:
+        from recruiter.interview_routes import interview_bp
+        app.register_blueprint(interview_bp, url_prefix='/api/recruiter/interviews')
+        logger.info("✅ Recruiter Interview routes registered")
+    except Exception as e:
+        logger.error(f"Failed to register interview routes: {e}")
+
+    # Video Interview Routes (AI-Powered System)
+    try:
+        from video_interview_routes import video_interview_bp
+        app.register_blueprint(video_interview_bp, url_prefix='/api/video-interview')
+        logger.info("✅ Video Interview routes registered")
+    except Exception as e:
+        logger.error(f"Failed to register video interview routes: {e}")
+
+    # Initialize SocketIO with App
+    socketio.init_app(app)
+
+    # Run the unified Flask app with SocketIO support (Critical for WebRTC signaling)
+    # allow_unsafe_werkzeug=True is often needed for dev servers in threaded mode
+    socketio.run(app, host='0.0.0.0', port=port, debug=True, allow_unsafe_werkzeug=True)

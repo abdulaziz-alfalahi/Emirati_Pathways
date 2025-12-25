@@ -193,43 +193,44 @@ def health_check():
         ]
     })
 
-@hr_job_posting_bp.route('/', methods=['GET'])
+@hr_job_posting_bp.route('', methods=['GET'])
 @jwt_required()
 def get_job_postings():
     """Get job postings for the HR user's company"""
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
         status = request.args.get('status', 'all')
         limit = int(request.args.get('limit', 20))
         offset = int(request.args.get('offset', 0))
+        offset = int(request.args.get('offset', 0))
         search = request.args.get('search', '')
+
+        logger.info(f"DEBUG: Fetching jobs for user {current_user_id}, status={status}")
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Get company ID from HR profile
-            cursor.execute("""
-                SELECT company_id FROM hr_profiles WHERE user_id = %s
-            """, (current_user_id,))
-            
+            # Try to get company ID, but don't hard fail if missing
+            cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
             hr_profile = cursor.fetchone()
-            if not hr_profile or not hr_profile['company_id']:
-                return jsonify({
-                    'success': False,
-                    'message': 'No company associated with your profile'
-                }), 400
-            
-            company_id = hr_profile['company_id']
+            company_id = hr_profile['company_id'] if hr_profile else None
             
             # Build query
-            where_conditions = ["jp.company_id = %s"]
-            params = [company_id]
+            where_conditions = []
+            params = []
+            
+            if company_id:
+                where_conditions.append("(jp.company_id = %s OR jp.created_by = %s)")
+                params.extend([company_id, current_user_id])
+            else:
+                where_conditions.append("jp.created_by = %s")
+                params.append(current_user_id)
             
             if status != 'all':
                 where_conditions.append("jp.status = %s")
@@ -251,9 +252,9 @@ def get_job_postings():
                     COUNT(ja.id) as application_count,
                     COUNT(CASE WHEN ja.application_status = 'submitted' THEN 1 END) as new_applications
                 FROM job_postings jp
-                LEFT JOIN companies c ON jp.company_id = c.id
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN users u ON jp.created_by = u.id
-                LEFT JOIN job_applications ja ON jp.id::text = ja.job_id
+                LEFT JOIN job_applications ja ON jp.id::text = ja.job_id::text
                 WHERE {where_clause}
                 GROUP BY jp.id, c.name, u.first_name, u.last_name
                 ORDER BY jp.created_at DESC
@@ -288,6 +289,22 @@ def get_job_postings():
                 
                 jobs_data.append(job_data)
             
+            # Convert datetime/date objects to strings
+            # Convert datetime/date, Decimal, UUID objects to strings
+            from datetime import date, datetime
+            from decimal import Decimal
+            from uuid import UUID
+            
+            for job in jobs_data:
+                for key, value in job.items():
+                    if isinstance(value, (datetime, date, Decimal, UUID)):
+                        # logger.info(f"DEBUG: Converting {key} {type(value)} to string")
+                        job[key] = str(value)
+                        if isinstance(value, (datetime, date)):
+                            job[key] = value.isoformat()
+            
+            logger.info("DEBUG: Serialization complete, returning JSON")
+            
             return jsonify({
                 'success': True,
                 'data': {
@@ -301,13 +318,18 @@ def get_job_postings():
         finally:
             cursor.close()
             conn.close()
-            
+
     except Exception as e:
-        logger.error(f"Error getting job postings: {str(e)}")
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"CRITICAL ERROR in get_job_postings: {str(e)}\n{error_details}")
         return jsonify({
             'success': False,
-            'message': 'Failed to retrieve job postings'
+            'error': str(e),
+            'details': error_details
         }), 500
+            
+
 
 @hr_job_posting_bp.route('/batch', methods=['POST'])
 @jwt_required()
@@ -316,7 +338,7 @@ def create_job_postings_batch():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json() or {}
         jobs = data.get('jobs', [])
@@ -336,7 +358,9 @@ def create_job_postings_batch():
                     return jsonify({'success': False, 'message': 'Each job requires title and description'}), 400
 
                 compliance_result = UAEComplianceChecker.check_job_posting_compliance(job)
-                job_id = str(uuid.uuid4())
+                
+                # Generate a jd_id (used as public ID) instead of primary key id
+                jd_id = str(uuid.uuid4())
 
                 application_deadline = None
                 expires_at = None
@@ -350,22 +374,27 @@ def create_job_postings_batch():
                         expires_at = datetime.strptime(job['expires_at'], '%Y-%m-%d').date()
                     except ValueError:
                         return jsonify({'success': False, 'message': 'Invalid expires_at format. Use YYYY-MM-DD'}), 400
-
+                
                 cursor.execute(
                     """
                     INSERT INTO job_postings (
-                        id, company_id, created_by, title, description, requirements,
+                        jd_id, recruiter_id, company_id, created_by, title, description, requirements,
                         responsibilities, benefits, salary_range_min, salary_range_max,
-                        currency, location, remote_work_allowed, employment_type,
+                        currency, location, remote_option, employment_type,
                         experience_level, status, priority_level, application_deadline,
                         expires_at, uae_compliance_checked, emiratization_target,
                         visa_sponsorship_available, tags, seo_keywords
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     ) RETURNING *
                     """,
                     (
-                        job_id, company_id, current_user_id, job['title'], job['description'],
+                        jd_id,
+                        current_user_id, # recruiter_id
+                        company_id, 
+                        current_user_id, # created_by matches recruiter_id
+                        job['title'], 
+                        job['description'],
                         json.dumps(job.get('requirements', {})),
                         json.dumps(job.get('responsibilities', [])),
                         json.dumps(job.get('benefits', [])),
@@ -405,7 +434,7 @@ def create_job_posting():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -573,7 +602,7 @@ def upload_job_document(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         if 'file' not in request.files:
@@ -722,10 +751,10 @@ def get_job_posting(job_id):
                     u.first_name || ' ' || u.last_name as created_by_name,
                     COUNT(ja.id) as application_count
                 FROM job_postings jp
-                LEFT JOIN companies c ON jp.company_id = c.id
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN users u ON jp.created_by = u.id
-                LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                LEFT JOIN job_applications ja ON jp.id::text = ja.job_id
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
+                LEFT JOIN job_applications ja ON jp.id::text = ja.job_id::text
                 WHERE jp.id = %s AND hp.user_id = %s
                 GROUP BY jp.id, c.name, u.first_name, u.last_name
             """, (job_id, current_user_id))
@@ -788,7 +817,7 @@ def update_job_posting(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -1000,7 +1029,7 @@ def publish_and_match(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1144,7 +1173,7 @@ def add_to_shortlist(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         payload = request.get_json() or {}
@@ -1155,21 +1184,42 @@ def add_to_shortlist(job_id):
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
+            # Self-healing: Ensure table exists
+            cursor.execute("SELECT to_regclass('public.job_shortlists') as exists")
+            if not cursor.fetchone()['exists']:
+                # Get ID type of job_postings
+                cursor.execute("SELECT data_type FROM information_schema.columns WHERE table_name = 'job_postings' AND column_name = 'id'")
+                row = cursor.fetchone()
+                id_type = row['data_type'] if row else 'UUID' # Default to UUID if not found
+                
+                # Create table
+                cursor.execute(f"""
+                    CREATE TABLE IF NOT EXISTS job_shortlists (
+                        job_posting_id {id_type} REFERENCES job_postings(id) ON DELETE CASCADE,
+                        candidate_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        added_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        notes TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (job_posting_id, candidate_id)
+                    )
+                """)
+                conn.commit()
+
             # Verify HR ownership of the job
             cursor.execute(
                 """
                 SELECT 1
                 FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text AND hp.user_id = %s
+                WHERE jp.id = %s AND (hp.user_id IS NOT NULL OR jp.recruiter_id = %s)
                 """,
-                (job_id, current_user_id),
+                (current_user_id, job_id, str(current_user_id)),
             )
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
 
             # Ensure candidate exists and is a candidate
-            cursor.execute("SELECT 1 FROM users WHERE id = %s AND COALESCE(role,'candidate') = 'candidate'", (candidate_id,))
+            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'candidate'", (candidate_id,))
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Candidate not found'}), 404
 
@@ -1200,7 +1250,7 @@ def remove_from_shortlist(job_id, candidate_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1210,10 +1260,10 @@ def remove_from_shortlist(job_id, candidate_id):
                 """
                 SELECT 1
                 FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
+                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text AND hp.user_id = %s
+                WHERE jp.id = %s AND (hp.user_id IS NOT NULL OR jp.recruiter_id = %s)
                 """,
-                (job_id, current_user_id),
+                (current_user_id, job_id, str(current_user_id)),
             )
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
@@ -1229,8 +1279,9 @@ def remove_from_shortlist(job_id, candidate_id):
         finally:
             cursor.close(); conn.close()
     except Exception as e:
-        logger.error(f"Error removing from shortlist: {str(e)}")
-        return jsonify({'success': False, 'message': 'Failed to remove from shortlist'}), 500
+        error_msg = f"Error removing candidate {candidate_id} from job {job_id} shortlist: {str(e)}"
+        logger.error(error_msg)
+        return jsonify({'success': False, 'message': error_msg}), 500
 
 @hr_job_posting_bp.route('/<job_id>/compliance-check', methods=['POST'])
 @jwt_required()
@@ -1249,7 +1300,7 @@ def check_compliance(job_id):
             # Get job posting
             cursor.execute("""
                 SELECT jp.* FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
+                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 WHERE jp.id = %s AND hp.user_id = %s
             """, (job_id, current_user_id))
             
@@ -1416,3 +1467,61 @@ def create_job_template():
     except Exception as e:
         logger.error(f"Error creating job template: {str(e)}")
         return jsonify({'success': False, 'message': 'Failed to create job template'}), 500
+
+@hr_job_posting_bp.route('/shortlisted-candidates', methods=['GET'])
+@jwt_required()
+def get_my_shortlisted_candidates():
+    """Retrieve all shortlisted candidates for the current HR user's company"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Get company ID first
+            cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+            hr_profile = cursor.fetchone()
+            
+            query = """
+                SELECT 
+                    js.candidate_id,
+                    js.job_posting_id,
+                    js.notes,
+                    js.created_at,
+                    u.first_name,
+                    u.last_name,
+                    u.email,
+                    u.job_title as current_title,
+                    jp.title as job_title,
+                    js.added_by
+                FROM job_shortlists js
+                JOIN job_postings jp ON js.job_posting_id = jp.id
+                JOIN users u ON js.candidate_id = u.id
+                WHERE 1=1
+            """
+            params = []
+
+            if hr_profile and hr_profile['company_id']:
+                query += " AND jp.company_id::text = %s"
+                params.append(str(hr_profile['company_id']))
+            else:
+                # Fallback: only jobs created by this user if no company link
+                query += " AND jp.created_by = %s"
+                params.append(current_user_id)
+            
+            query += " ORDER BY js.created_at DESC LIMIT 50"
+            
+            cursor.execute(query, tuple(params))
+            rows = [dict(r) for r in cursor.fetchall()]
+
+            return jsonify({'success': True, 'data': rows})
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error getting my shortlisted candidates: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to fetch shortlisted candidates'}), 500
+

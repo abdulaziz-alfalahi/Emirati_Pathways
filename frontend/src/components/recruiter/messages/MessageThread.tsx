@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ interface MessageThreadProps {
   selectedConversation: string;
   conversations: Conversation[];
   onScheduleInterview: () => void;
+  currentUserId: string; // Added prop
 }
 
 const MessageThread: React.FC<MessageThreadProps> = ({
@@ -27,13 +28,23 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   selectedConversation,
   conversations,
   onScheduleInterview,
+  currentUserId,
 }) => {
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
   if (!selectedConversationData) return null;
 
+  // Auto-scroll to bottom
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   return (
     <>
-      <CardHeader className="px-6 pb-0 border-b pb-4 mb-4">
+      <CardHeader className="px-6 py-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Avatar>
@@ -55,10 +66,19 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col p-0">
-        <div className="flex-grow p-6 overflow-y-auto h-[400px]">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+        <div ref={scrollRef} className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-6">
+            {messages.length === 0 && (
+              <div className="flex flex-col justify-center items-center h-full text-muted-foreground opacity-50 space-y-2 translate-y-20">
+                <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800">
+                  <Send className="h-6 w-6 text-slate-400" />
+                </div>
+                <p>No messages yet. Start the conversation!</p>
+              </div>
+            )}
             {messages.map((message, index) => {
+              const isCurrentUser = message.senderId === currentUserId;
               const isFirstInGroup = index === 0 || messages[index - 1].senderId !== message.senderId;
               const showTimestamp = index === 0 ||
                 new Date(message.timestamp).toDateString() !==
@@ -73,20 +93,20 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                       </Badge>
                     </div>
                   )}
-                  <div className={`flex ${message.senderId === 'recruiter' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex ${message.senderId === 'recruiter' ? 'flex-row-reverse' : 'flex-row'} gap-2 max-w-[80%]`}>
-                      {isFirstInGroup && message.senderId !== 'recruiter' && (
+                  <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2 max-w-[80%]`}>
+                      {isFirstInGroup && !isCurrentUser && (
                         <Avatar className="mt-1">
                           <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
                         </Avatar>
                       )}
                       <div>
-                        {isFirstInGroup && message.senderId !== 'recruiter' && (
+                        {isFirstInGroup && !isCurrentUser && (
                           <div className="text-sm font-medium mb-1">{message.senderName}</div>
                         )}
-                        <div className={`rounded-lg p-3 ${message.senderId === 'recruiter'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                        <div className={`rounded-2xl px-4 py-2 text-sm shadow-sm ${isCurrentUser
+                          ? 'bg-blue-600 text-white rounded-br-none'
+                          : 'bg-white border rounded-bl-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                           }`}>
                           {message.content}
                         </div>

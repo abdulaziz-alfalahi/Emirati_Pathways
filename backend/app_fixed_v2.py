@@ -73,6 +73,22 @@ try:
 except ImportError as e:
     logger.error(f"❌ Failed to import CV upload routes: {e}")
 
+# Register HR Dashboard Blueprint
+try:
+    from hr_dashboard_routes import hr_dashboard_bp
+    app.register_blueprint(hr_dashboard_bp)
+    logger.info("✅ HR Dashboard Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Dashboard Blueprint not available: {e}")
+
+# Register HR Job Posting Blueprint
+try:
+    from hr_job_posting_routes import hr_job_posting_bp
+    app.register_blueprint(hr_job_posting_bp)
+    logger.info("✅ HR Job Posting Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Job Posting Blueprint not available: {e}")
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):

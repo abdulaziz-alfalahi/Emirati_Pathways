@@ -17,6 +17,7 @@ import DashboardLoading from '@/components/dashboard/DashboardLoading';
 // Auth Pages (not lazy loaded for faster initial access)
 import AuthPage from '@/pages/auth';
 import MockLogin from '@/pages/auth/MockLogin';
+import { VerifyJob } from '@/pages/public/VerifyJob';
 
 // Lazy loaded components for better performance
 const CandidateDashboard = lazy(() => import('@/pages/CandidateDashboard'));
@@ -32,6 +33,7 @@ const RecruiterCandidates = lazy(() => import('@/pages/recruiter/Candidates'));
 const VideoInterviewPage = lazy(() => import('@/pages/recruiter/VideoInterviewPage'));
 const InterviewAnalyticsPage = lazy(() => import('@/pages/recruiter/InterviewAnalyticsPage'));
 const RecruiterOffers = lazy(() => import('@/pages/recruiter/Offers'));
+const GuestLobby = lazy(() => import('@/pages/public/GuestLobby'));
 
 
 const RecruiterApprovals = lazy(() => import('@/pages/recruiter/Approvals'));
@@ -92,6 +94,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 // Role-based Dashboard Components
 // Removed old RecruiterDashboard import - now using the new one from pages
+import OperatorDashboard from './pages/OperatorDashboard';
 
 // Global Styles
 import './index.css';
@@ -125,10 +128,22 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<BilingualHomePage />} />
             <Route path="/auth" element={<MockLogin />} />
             <Route path="/cv/share/:id" element={<PublicCVViewer />} />
+            <Route path="/verify-job/:token" element={<VerifyJob />} />
+            <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
             {/* Protected Dashboard Routes */}
             <Route
+              path="/operator-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'operator']}>
+                  <OperatorDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/candidate-dashboard"
+              // ...
               element={
                 <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
                   <CandidateDashboard />
@@ -202,7 +217,7 @@ const AppContent: React.FC = () => {
               }
             />
             <Route
-              path="/recruiter/jobs/batch-upload"
+              path="/recruiter/batch-upload"
               element={
                 <ProtectedRoute>
                   <BatchUploadPage />
@@ -347,6 +362,26 @@ const AppContent: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['mentor']}>
                   <MentorDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/user-roles"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <Suspense fallback={<DashboardLoading />}>
+                    {/* Lazy load UserManager if possible, but importing directly for now since it's not exported lazy above. 
+                        Actually I should import it at the top or Lazy load it.
+                        For safety, I'll use a direct import at the top (checking if imported). 
+                        Wait, UserManager is NOT imported. I need to add import.
+                        But I can't add import easily with replace_file_content in the middle.
+                        I will add a Lazy definition here or just assume I can add it.
+                        Let's use React.lazy inline for now or add top level import in a separate call?
+                        No, let's just make it lazy here.
+                     */}
+                    {React.createElement(lazy(() => import('@/components/admin/UserManager')))}
+                  </Suspense>
                 </ProtectedRoute>
               }
             />

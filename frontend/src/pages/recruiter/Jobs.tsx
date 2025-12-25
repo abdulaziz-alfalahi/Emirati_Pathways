@@ -1,15 +1,35 @@
 import React from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import JobDescriptionsList from '@/components/recruiter/JobDescriptionsList';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const RecruiterJobs: React.FC = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    // Check for success message from navigation (e.g. from Batch Upload)
+    const state = location.state as { batchSuccess?: boolean; count?: number } | null;
+
+    // Only show toast when loading is finished, otherwise it might be missed during spinner
+    if (!isLoading && state?.batchSuccess) {
+      toast({
+        title: 'Batch Upload Successful',
+        description: `${state.count} jobs have been created and are listed below.`
+      });
+      // Clear state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+    }
+
+    console.log('RecruiterJobs: Auth State:', { user, isLoading, roles: user?.roles });
+  }, [user, isLoading, location, toast]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -23,11 +43,6 @@ const RecruiterJobs: React.FC = () => {
     );
   }
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('RecruiterJobs: Auth State:', { user, isLoading, roles: user?.roles });
-  }, [user, isLoading]);
-
   // Check if the user is authenticated
   if (!user) {
     console.log('RecruiterJobs: Redirecting to /auth (User is null)');
@@ -37,6 +52,9 @@ const RecruiterJobs: React.FC = () => {
   // Check if the user has the recruiter role
   const roles = user.roles || [];
   const userType = user.user_type || user.role || '';
+
+  // Check if user is HR Manager (to unify theme)
+  const isHrManager = userType === 'hr_manager' || (roles && (roles.includes('hr_manager') || roles.includes('hr')));
 
   const isRecruiter = (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
     userType === 'recruiter' ||
@@ -51,7 +69,7 @@ const RecruiterJobs: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+    <div className={`min-h-screen font-dubai ${isHrManager ? 'bg-gray-50' : 'bg-gradient-to-br from-slate-50 to-teal-50'}`}>
       {/* Navigation */}
       <HybridGovernmentNavFixed showAuthButtons={true} />
 
@@ -61,12 +79,16 @@ const RecruiterJobs: React.FC = () => {
           <div className="flex justify-between items-center mb-8">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Link to="/recruiter-dashboard" className="text-slate-500 hover:text-teal-600 transition-colors">
+                <Link to={isHrManager ? "/hr-dashboard" : "/recruiter-dashboard"} className="text-slate-500 hover:text-teal-600 transition-colors">
                   <ArrowLeft className="h-5 w-5" />
                 </Link>
-                <h1 className="text-3xl font-dubai-bold text-slate-900">Job Descriptions</h1>
+                <h1 className="text-3xl font-dubai-bold text-slate-900">
+                  {isHrManager ? 'Position Management' : 'Job Descriptions'}
+                </h1>
               </div>
-              <p className="text-slate-600 font-dubai-medium ml-7">Manage your job postings and descriptions</p>
+              <p className="text-slate-600 font-dubai-medium ml-7">
+                {isHrManager ? 'Manage your job positions and requirements' : 'Manage your job postings and descriptions'}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -81,7 +103,7 @@ const RecruiterJobs: React.FC = () => {
                 onClick={() => navigate('/recruiter/jd-builder')}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Create New JD
+                Create New Position
               </Button>
             </div>
           </div>

@@ -47,6 +47,7 @@ class CandidateSearchEngine:
                 u.id,
                 u.first_name,
                 u.last_name,
+                u.full_name,
                 u.email,
                 u.phone,
                 u.emirate,
@@ -68,7 +69,7 @@ class CandidateSearchEngine:
                     ELSE 'inactive'
                 END as activity_status
             FROM users u
-            LEFT JOIN job_applications ja ON u.id = ja.user_id
+            LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
         """
         
         where_conditions = ["u.role = 'candidate'"]
@@ -166,10 +167,10 @@ class CandidateSearchEngine:
         
         # Application activity filters
         if filters.get('has_applied_recently'):
-            where_conditions.append("EXISTS (SELECT 1 FROM job_applications ja2 WHERE ja2.user_id = u.id AND ja2.submitted_at > NOW() - INTERVAL '30 days')")
+            where_conditions.append("EXISTS (SELECT 1 FROM job_applications ja2 WHERE ja2.candidate_id ~ '^[0-9]+$' AND ja2.candidate_id::integer = u.id AND ja2.submitted_at > NOW() - INTERVAL '30 days')")
         
         if filters.get('never_applied'):
-            where_conditions.append("NOT EXISTS (SELECT 1 FROM job_applications ja2 WHERE ja2.user_id = u.id)")
+            where_conditions.append("NOT EXISTS (SELECT 1 FROM job_applications ja2 WHERE ja2.candidate_id ~ '^[0-9]+$' AND ja2.candidate_id::integer = u.id)")
         
         # Registration date filters
         if filters.get('registered_after'):
@@ -183,7 +184,7 @@ class CandidateSearchEngine:
         # Build final query
         where_clause = " AND ".join(where_conditions)
         group_by = """
-            GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.emirate, 
+            GROUP BY u.id, u.first_name, u.last_name, u.full_name, u.email, u.phone, u.emirate, 
                      u.nationality, u.education_level, u.experience_years, u.preferred_salary_min,
                      u.preferred_salary_max, u.preferred_location, u.is_uae_national, u.skills,
                      u.created_at, u.last_login
@@ -215,7 +216,7 @@ class CandidateSearchEngine:
         count_query = f"""
             SELECT COUNT(DISTINCT u.id)
             FROM users u
-            LEFT JOIN job_applications ja ON u.id = ja.user_id
+            LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
             WHERE {where_clause}
         """
         
@@ -512,6 +513,12 @@ def search_candidates():
             for candidate in candidates:
                 candidate_data = dict(candidate)
                 
+                # Handle missing first/last name by splitting full_name
+                if (not candidate_data.get('first_name') or not candidate_data.get('last_name')) and candidate_data.get('full_name'):
+                    names = candidate_data['full_name'].split(' ', 1)
+                    candidate_data['first_name'] = names[0]
+                    candidate_data['last_name'] = names[1] if len(names) > 1 else ''
+                
                 # Convert skills array to list if it's a string
                 if candidate_data.get('skills'):
                     if isinstance(candidate_data['skills'], str):
@@ -556,6 +563,9 @@ def search_candidates():
             
     except Exception as e:
         logger.error(f"Error searching candidates: {str(e)}")
+        with open("debug_error.log", "w") as f:
+            f.write(f"Error: {str(e)}\n")
+            f.write(traceback.format_exc())
         return jsonify({
             'success': False,
             'message': 'Failed to search candidates'
@@ -591,7 +601,7 @@ def get_candidate_details(candidate_id):
                     MAX(ja.submitted_at) as last_application_date,
                     MAX(u.last_login) as last_activity
                 FROM users u
-                LEFT JOIN job_applications ja ON u.id = ja.user_id
+                LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
                 WHERE u.id = %s AND u.role = 'candidate'
                 GROUP BY u.id
             """, (candidate_id,))
@@ -621,7 +631,7 @@ def get_candidate_details(candidate_id):
                 FROM job_applications ja
                 LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
                 LEFT JOIN companies c ON jp.company_id::uuid = c.id
-                WHERE ja.user_id = %s
+                WHERE ja.candidate_id = %s
                 ORDER BY ja.submitted_at DESC
                 LIMIT 5
             """, (candidate_id,))
@@ -740,7 +750,7 @@ def match_candidates_to_job(job_id):
                     u.is_uae_national, u.skills, u.created_at, u.last_login,
                     COUNT(DISTINCT ja.id) as total_applications
                 FROM users u
-                LEFT JOIN job_applications ja ON u.id = ja.user_id
+                LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
                 WHERE u.role = 'candidate' AND u.is_active = true
                 GROUP BY u.id
                 ORDER BY u.last_login DESC NULLS LAST

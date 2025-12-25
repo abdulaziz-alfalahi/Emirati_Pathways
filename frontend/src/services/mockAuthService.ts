@@ -23,10 +23,10 @@ export interface MockUser {
 export const TEST_USERS: Record<string, MockUser> = {
   '+971501234567': {
     id: '1',
-    email: 'ahmed.almansouri@gmail.com',
-    first_name: 'Ahmed',
-    last_name: 'Al Mansouri',
-    full_name: 'Ahmed Al Mansouri',
+    email: 'khalid.almazrouei@email.ae',
+    first_name: 'Khalid',
+    last_name: 'Al Mazrouei',
+    full_name: 'Khalid Al Mazrouei',
     user_type: 'candidate',
     role: 'candidate',
     phone: '+971501234567',
@@ -34,18 +34,18 @@ export const TEST_USERS: Record<string, MockUser> = {
     nationality: 'UAE',
     is_verified: true,
     profile_data: {
-      bio: 'Experienced software engineer passionate about AI and blockchain technology',
-      skills: ['Python', 'React', 'AI/ML'],
+      bio: 'Aspiring professional seeking opportunities in the technology sector',
+      skills: ['Project Management', 'Communication', 'Data Analysis'],
       location: 'Dubai, UAE'
     },
-    avatar: 'AAE'
+    avatar: 'KAM'
   },
   '+971502345678': {
     id: '2',
-    email: 'sara.saeed@company.ae',
-    first_name: 'Sara',
+    email: 'zara.saeed@company.ae',
+    first_name: 'Zara',
     last_name: 'Saeed',
-    full_name: 'Sara Saeed',
+    full_name: 'Zara Saeed',
     user_type: 'hr_manager',
     role: 'hr_manager',
     phone: '+971502345678',
@@ -53,10 +53,10 @@ export const TEST_USERS: Record<string, MockUser> = {
     nationality: 'UAE',
     is_verified: true,
     profile_data: {
-      company: 'Emirates National Bank',
+      company: 'Emirates Tech Solutions',
       department: 'Human Resources'
     },
-    avatar: 'SSA'
+    avatar: 'ZSA'
   },
   '+971503456789': {
     id: '3',
@@ -91,6 +91,23 @@ export const TEST_USERS: Record<string, MockUser> = {
       permissions: ['Full Access']
     },
     avatar: 'ADM'
+  },
+  '+971509998888': {
+    id: '8',
+    email: 'ops@emiratijourney.ae',
+    first_name: 'Growth',
+    last_name: 'Operator',
+    full_name: 'Growth Operator',
+    user_type: 'operator',
+    role: 'operator',
+    phone: '+971509998888',
+    emirate: 'Dubai',
+    nationality: 'UAE',
+    is_verified: true,
+    profile_data: {
+      permissions: ['Growth Operations', 'Verify Companies']
+    },
+    avatar: 'OPS'
   }
 };
 
@@ -180,7 +197,7 @@ export class MockAuthService {
     }
 
     // Perform Login
-    this.loginUser(user);
+    await this.loginUser(user);
     return { success: true, user };
   }
 
@@ -217,19 +234,54 @@ export class MockAuthService {
     return newUser;
   }
 
-  private static loginUser(user: MockUser) {
+  private static async loginUser(user: MockUser) {
     this.currentUser = user;
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
-    // Set a temporary mock token
+
+    // Try to get a REAL token from the backend using dev-login (guaranteed token)
+    try {
+      console.log('🔄 Attempting to fetch REAL backend token via dev-login...');
+      // Use relative path to leverage Vite Proxy (or API_BASE_URL logic if moved to api.ts)
+      // This ensures it works on Ngrok/Mobile too
+      const response = await fetch('/api/auth/dev-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          role: user.role,
+          email: user.email
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && data.data.access_token) {
+          console.log('✅ Real Backend Token acquired!');
+          localStorage.setItem('access_token', data.data.access_token);
+          // Also set legacy keys just in case
+          localStorage.setItem('accessToken', data.data.access_token);
+          localStorage.setItem('auth_token', data.data.access_token);
+          return;
+        }
+      } else {
+        console.warn('⚠️ Backend dev-login failed, falling back to mock token');
+      }
+    } catch (error) {
+      console.error('⚠️ Could not connect to backend for token:', error);
+    }
+
+    // Fallback if backend is down or auth fails
     localStorage.setItem('access_token', `mock_token_${user.id}`);
     localStorage.setItem('user', JSON.stringify(user));
-    console.log(`✅ Logged in as ${user.full_name}`);
+    console.log(`✅ Logged in as ${user.full_name} (Mock Token)`);
   }
 
   static logout() {
     this.currentUser = null;
     localStorage.removeItem(this.STORAGE_KEY);
     localStorage.removeItem('access_token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
   }
 
@@ -259,6 +311,8 @@ export class MockAuthService {
         return '/mentor-dashboard';
       case 'assessor':
         return '/assessor-dashboard';
+      case 'operator':
+        return '/operator-dashboard';
       case 'admin':
       case 'administrator':
         return '/admin-dashboard';

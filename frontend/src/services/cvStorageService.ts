@@ -2,8 +2,7 @@
  * CV Storage Service
  * Handles CV save/load operations with the backend database
  */
-
-const API_BASE_URL = ''; // Forced relative path for proxy
+import { restClient } from '@/utils/api';
 
 export interface SavedCV {
   id: string;
@@ -60,36 +59,16 @@ export interface UpdateCVRequest extends SaveCVRequest {
 }
 
 class CVStorageService {
-  private getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : 'Bearer mock_token_1'
-    };
-  }
-
 
   async setVisible(cvId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const headers = this.getAuthHeaders();
-      console.log('👀 DEBUG: Sending setVisible headers:', headers);
-
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/visible`, {
-        method: 'PUT',
-        headers: headers
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to set CV visible');
-      }
-
-      return { success: true, message: result.message || 'CV set as visible' };
-    } catch (error) {
+      const response = await restClient.put(`/api/cv/${cvId}/visible`);
+      return { success: true, message: response.data.message || 'CV set as visible' };
+    } catch (error: any) {
       console.error('Set visible error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to set CV visible'
+        message: error.response?.data?.message || error.message || 'Failed to set CV visible'
       };
     }
   }
@@ -99,28 +78,17 @@ class CVStorageService {
    */
   async saveCV(data: SaveCVRequest): Promise<{ success: boolean; cv_id?: string; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/save`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to save CV');
-      }
-
+      const response = await restClient.post('/api/cv/save', data);
       return {
         success: true,
-        cv_id: result.data?.cv_id,
-        message: result.message || 'CV saved successfully'
+        cv_id: response.data.data?.cv_id,
+        message: response.data.message || 'CV saved successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save CV error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to save CV'
+        message: error.response?.data?.message || error.message || 'Failed to save CV'
       };
     }
   }
@@ -130,27 +98,17 @@ class CVStorageService {
    */
   async listCVs(): Promise<{ success: boolean; data?: SavedCV[]; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/list`, {
-        method: 'GET',
-        headers: this.getAuthHeaders()
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to load CVs');
-      }
-
+      const response = await restClient.get('/api/cv/list');
       return {
         success: true,
-        data: result.data || [],
-        message: result.message || 'CVs loaded successfully'
+        data: response.data.data || [],
+        message: response.data.message || 'CVs loaded successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('List CVs error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to load CVs'
+        message: error.response?.data?.message || error.message || 'Failed to load CVs'
       };
     }
   }
@@ -160,27 +118,17 @@ class CVStorageService {
    */
   async getCV(cvId: string): Promise<{ success: boolean; data?: any; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders()
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to load CV');
-      }
-
+      const response = await restClient.get(`/api/cv/${cvId}`);
       return {
         success: true,
-        data: result.data,
-        message: result.message || 'CV loaded successfully'
+        data: response.data.data,
+        message: response.data.message || 'CV loaded successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get CV error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to load CV'
+        message: error.response?.data?.message || error.message || 'Failed to load CV'
       };
     }
   }
@@ -190,27 +138,16 @@ class CVStorageService {
    */
   async updateCV(cvId: string, data: UpdateCVRequest): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}`, {
-        method: 'PUT',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to update CV');
-      }
-
+      const response = await restClient.put(`/api/cv/${cvId}`, data);
       return {
         success: true,
-        message: result.message || 'CV updated successfully'
+        message: response.data.message || 'CV updated successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update CV error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to update CV'
+        message: error.response?.data?.message || error.message || 'Failed to update CV'
       };
     }
   }
@@ -220,17 +157,11 @@ class CVStorageService {
    */
   async renameCV(cvId: string, title: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}`, {
-        method: 'PUT',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({ title })
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Failed to rename CV');
-      return { success: true, message: result.message || 'CV renamed successfully' };
-    } catch (error) {
+      const response = await restClient.put(`/api/cv/${cvId}`, { title });
+      return { success: true, message: response.data.message || 'CV renamed successfully' };
+    } catch (error: any) {
       console.error('Rename CV error:', error);
-      return { success: false, message: error instanceof Error ? error.message : 'Failed to rename CV' };
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to rename CV' };
     }
   }
 
@@ -239,16 +170,11 @@ class CVStorageService {
    */
   async duplicateCV(cvId: string): Promise<{ success: boolean; cv_id?: string; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/duplicate`, {
-        method: 'POST',
-        headers: this.getAuthHeaders()
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Failed to duplicate CV');
-      return { success: true, cv_id: result.data?.cv_id, message: result.message || 'CV duplicated successfully' };
-    } catch (error) {
+      const response = await restClient.post(`/api/cv/${cvId}/duplicate`);
+      return { success: true, cv_id: response.data.data?.cv_id, message: response.data.message || 'CV duplicated successfully' };
+    } catch (error: any) {
       console.error('Duplicate CV error:', error);
-      return { success: false, message: error instanceof Error ? error.message : 'Failed to duplicate CV' };
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to duplicate CV' };
     }
   }
 
@@ -257,26 +183,16 @@ class CVStorageService {
    */
   async deleteCV(cvId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}`, {
-        method: 'DELETE',
-        headers: this.getAuthHeaders()
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to delete CV');
-      }
-
+      const response = await restClient.delete(`/api/cv/${cvId}`);
       return {
         success: true,
-        message: result.message || 'CV deleted successfully'
+        message: response.data.message || 'CV deleted successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete CV error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to delete CV'
+        message: error.response?.data?.message || error.message || 'Failed to delete CV'
       };
     }
   }
@@ -286,32 +202,11 @@ class CVStorageService {
    */
   async getTopVacancyMatches(limit = 10): Promise<{ success: boolean; data?: any[]; message: string }> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/matching/visible/top-vacancies?limit=${limit}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders()
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to get matches');
-      }
-      return { success: true, data: result.matches || [], message: result.message || 'OK' };
-    } catch (error) {
+      const response = await restClient.get(`/api/matching/visible/top-vacancies?limit=${limit}`);
+      return { success: true, data: response.data.matches || [], message: response.data.message || 'OK' };
+    } catch (error: any) {
       console.error('Get matches error:', error);
-      return { success: false, message: error instanceof Error ? error.message : 'Failed to get matches' };
-    }
-  }
-  /**
-   * Export CV to specified format
-   */
-  async exportCV(cvId: string, format: string, options?: any): Promise<Response> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/cv/${cvId}/export/${format}`, {
-        method: 'GET',
-        headers: this.getAuthHeaders()
-      });
-      return response;
-    } catch (error) {
-      throw error;
+      return { success: false, message: error.response?.data?.message || error.message || 'Failed to get matches' };
     }
   }
 }

@@ -36,21 +36,22 @@ const JobDescriptionWizardPage: React.FC = () => {
   useEffect(() => {
     const jdId = searchParams.get('jd_id');
     console.log('Page: URL jd_id param:', jdId);
-    
+
     if (jdId) {
       setInitialJdId(jdId);
       setInitialData(null); // Clear previous data to prevent stale state
-      
+
       // Load JD data from backend
       const loadJD = async () => {
         try {
           console.log('Page: Fetching JD data for', jdId);
           const response = await restClient.get(`/api/recruiter/jd/${jdId}`);
           console.log('Page: JD Fetch response:', response);
-          
+
           if (response.data) {
             console.log('Page: Setting initial data', response.data);
-            setInitialData(response.data);
+            // Unwrap the jd object if it exists (from { success: true, jd: ... } response)
+            setInitialData(response.data.jd || response.data);
           } else {
             console.warn('Page: No data in response');
           }
@@ -58,7 +59,7 @@ const JobDescriptionWizardPage: React.FC = () => {
           console.error('Failed to load JD:', error);
         }
       };
-      
+
       loadJD();
     }
   }, [searchParams]);

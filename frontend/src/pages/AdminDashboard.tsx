@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { MockAuthService } from '@/services/mockAuthService';
 import { useNavigate } from 'react-router-dom';
+import { MockAuthService } from '@/services/mockAuthService';
+import { restClient } from '@/utils/api';
+import UserManager from '@/components/admin/UserManager';
+import AdminRoles from '@/components/admin/AdminRoles';
+import GrowthTools from '@/components/admin/GrowthTools';
+import AdminInterviews from '@/components/admin/AdminInterviews';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,10 +25,10 @@ import {
   UserCheck,
   FileText,
   MessageSquare,
-  Activity
+  Activity,
+  Rocket,
+  Video
 } from 'lucide-react';
-
-
 
 const AdminDashboard = () => {
   // Use MockAuthService directly as it's the source of truth for soft launch
@@ -50,7 +55,14 @@ const AdminDashboard = () => {
       flaggedUsers: 0,
       systemAlerts: 0
     },
-    activity: []
+    activity: [],
+    system: {
+      cpu_percent: 0,
+      memory_percent: 0,
+      disk_percent: 0,
+      disk_total: 0,
+      disk_free: 0
+    }
   });
 
   // Redirect if not authenticated (Mock Check)
@@ -82,25 +94,57 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      if (!token) {
-        console.log('No token found, using mock data');
-        setMockData();
-        return;
-      }
+      // Use restClient which handles auth token automatically
+      const response = await restClient.get('/api/admin/dashboard');
 
-      const response = await fetch('http://127.0.0.1:5005/api/admin/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      if (response.data && response.data.data) {
+        const apiData = response.data.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data.data || {});
+        // Transform backend data to frontend structure
+        setDashboardData({
+          platform: {
+            totalUsers: apiData.users?.total || 0,
+            activeUsers: apiData.health?.components?.users?.active_users || 0,
+            newRegistrations: apiData.health?.components?.users?.new_users_24h || 0,
+            totalJobs: apiData.health?.components?.content?.total_content || 0, // Placeholder
+            totalApplications: 0, // Placeholder
+            successfulMatches: 0 // Placeholder
+          },
+          analytics: {
+            userGrowthRate: apiData.analytics?.userGrowthRate || 0,
+            applicationSuccessRate: apiData.analytics?.applicationSuccessRate || 0,
+            averageMatchScore: apiData.analytics?.averageMatchScore || 0,
+            systemUptime: apiData.analytics?.systemUptime || 99.9,
+            visitorTrends: apiData.analytics?.visitorTrends || [],
+            userActivity: apiData.analytics?.userActivity || [
+              { name: 'Active', value: 0 },
+              { name: 'Inactive', value: 0 }
+            ]
+          },
+          moderation: {
+            pendingReviews: apiData.notifications?.unread_count || 0, // Map notifications to reviews as proxy
+            reportedContent: 0,
+            flaggedUsers: 0,
+            systemAlerts: apiData.notifications?.recent?.length || 0
+          },
+          activity: (apiData.notifications?.recent || []).map((n: any, i: number) => ({
+            id: i,
+            type: n.notification_type || 'system_alert',
+            title: n.title,
+            description: n.message,
+            timestamp: n.created_at || new Date().toISOString(),
+            severity: n.severity || 'info'
+          })),
+          system: {
+            cpu_percent: apiData.health?.system_resources?.cpu_percent || 0,
+            memory_percent: apiData.health?.system_resources?.memory_percent || 0,
+            disk_percent: apiData.health?.system_resources?.disk_percent || 0,
+            disk_total: apiData.health?.system_resources?.disk_total_gb || 0,
+            disk_free: apiData.health?.system_resources?.disk_free_gb || 0
+          }
+        });
       } else {
-        console.log('API call failed, using mock data');
+        console.log('API call returned no data, using mock data');
         setMockData();
       }
     } catch (error) {
@@ -199,6 +243,15 @@ const AdminDashboard = () => {
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="users">User Management</TabsTrigger>
+                <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
+                <TabsTrigger value="growth" className="flex items-center gap-2">
+                  <Rocket className="h-4 w-4" />
+                  Growth Tools
+                </TabsTrigger>
+                <TabsTrigger value="interviews" className="flex items-center gap-2">
+                  <Video className="h-4 w-4" />
+                  Interviews
+                </TabsTrigger>
                 <TabsTrigger value="system">System Health</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
               </TabsList>
@@ -409,23 +462,33 @@ const AdminDashboard = () => {
 
               {/* User Management Tab */}
               <TabsContent value="users" className="space-y-6">
+                <UserManager />
+              </TabsContent>
+
+              {/* Roles Tab */}
+              <TabsContent value="roles" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>
-                      Manage platform users and their permissions
-                    </CardDescription>
+                    <CardTitle>Role Management</CardTitle>
+                    <CardDescription>Manage user roles and permissions</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">User Management Tools</h3>
-                      <p className="text-gray-500 mb-4">Advanced user management and permission controls</p>
-                      <Button>Manage Users</Button>
-                    </div>
+                    <AdminRoles />
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {/* Growth Tools Tab */}
+              <TabsContent value="growth" className="space-y-6">
+                <GrowthTools />
+              </TabsContent>
+
+              {/* Interviews Tab */}
+              <TabsContent value="interviews" className="space-y-6">
+                <AdminInterviews />
+              </TabsContent>
+
+
 
               {/* System Health Tab */}
               <TabsContent value="system" className="space-y-6">
@@ -443,8 +506,8 @@ const AdminDashboard = () => {
                           <CardTitle className="text-sm">CPU Usage</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-green-600">23%</div>
-                          <Progress value={23} className="w-full mt-2" />
+                          <div className="text-2xl font-bold text-green-600">{dashboardData.system?.cpu_percent || 0}%</div>
+                          <Progress value={dashboardData.system?.cpu_percent || 0} className="w-full mt-2" />
                         </CardContent>
                       </Card>
 
@@ -453,8 +516,8 @@ const AdminDashboard = () => {
                           <CardTitle className="text-sm">Memory Usage</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-yellow-600">67%</div>
-                          <Progress value={67} className="w-full mt-2" />
+                          <div className="text-2xl font-bold text-yellow-600">{dashboardData.system?.memory_percent || 0}%</div>
+                          <Progress value={dashboardData.system?.memory_percent || 0} className="w-full mt-2" />
                         </CardContent>
                       </Card>
 
@@ -463,8 +526,9 @@ const AdminDashboard = () => {
                           <CardTitle className="text-sm">Disk Usage</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-blue-600">45%</div>
-                          <Progress value={45} className="w-full mt-2" />
+                          <div className="text-2xl font-bold text-blue-600">{dashboardData.system?.disk_percent || 0}%</div>
+                          <Progress value={dashboardData.system?.disk_percent || 0} className="w-full mt-2" />
+                          <p className="text-xs text-gray-500 mt-1">{dashboardData.system?.disk_free || 0} GB free of {dashboardData.system?.disk_total || 0} GB</p>
                         </CardContent>
                       </Card>
 

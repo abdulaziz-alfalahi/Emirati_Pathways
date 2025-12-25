@@ -51,6 +51,7 @@ import {
 } from '@mui/icons-material';
 // import axios from 'axios'; // Removed axios
 import { restClient } from '@/utils/api';
+import { useMockAuth } from '@/context/MockAuthContext';
 
 interface ShortlistedCandidate {
   shortlist_id: string;
@@ -123,6 +124,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClose }) => {
+  const { user } = useMockAuth();
   const [shortlist, setShortlist] = useState<ShortlistedCandidate[]>([]);
   const [stats, setStats] = useState<ShortlistStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -227,7 +229,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/notes`,
         {
           note: newNote,
-          recruiter_id: 'current_recruiter', // TODO: Get from auth context
+          recruiter_id: user?.id?.toString() || '45',
         }
       );
 
@@ -771,7 +773,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                 phone_number: c.phone_number,
               }))}
             jdId={jdId}
-            recruiterId="recruiter_001"
+            recruiterId={user?.id?.toString() || "45"}
             onClose={() => setMessageDialogOpen(false)}
             onSent={() => {
               setMessageDialogOpen(false);
@@ -791,7 +793,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         }}
         jdId={jdId}
         shortlistId={selectedShortlistId || undefined}
-        recruiterId="recruiter_001"
+        recruiterId={user?.id?.toString() || "45"}
         onSuccess={() => {
           setSuccess('Interview scheduled successfully');
           loadShortlist();
@@ -917,6 +919,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                     <TableCell>Rating</TableCell>
                     <TableCell>Recommendation</TableCell>
                     <TableCell>Feedback</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -990,6 +993,19 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                         ) : (
                           <Typography color="textSecondary">-</Typography>
                         )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color="primary"
+                            disabled={interview.status === 'completed' || interview.status === 'cancelled'}
+                            onClick={() => window.open(`/recruiter-dashboard?tab=interviews`, '_blank')}
+                          >
+                            Join
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}

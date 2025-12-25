@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Clock, 
-  Eye, 
-  Calendar, 
-  CheckCircle, 
+import {
+  Clock,
+  Eye,
+  Calendar,
+  CheckCircle,
   XCircle,
   MessageSquare,
   FileText,
@@ -16,6 +16,7 @@ import {
   Phone,
   Mail
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 interface Application {
   id: string;
@@ -51,84 +52,14 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
   const loadApplications = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:5001/api/candidate/applications', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setApplications(data.applications || []);
+      const response = await restClient.get('/api/jobs/applications');
+      if (response.data.success) {
+        setApplications(response.data.data.applications || []);
       }
     } catch (error) {
       console.error('Error loading applications:', error);
-      // Set mock data for demonstration
-      setApplications([
-        {
-          id: '1',
-          jobTitle: 'Senior Software Engineer',
-          company: 'ADNOC Digital',
-          location: 'Abu Dhabi, UAE',
-          appliedDate: '2024-09-10',
-          status: 'interview',
-          lastUpdate: '2024-09-13',
-          interviewDate: '2024-09-16',
-          interviewType: 'video',
-          contactPerson: {
-            name: 'Sarah Al-Mansouri',
-            email: 'sarah.almansouri@adnoc.ae',
-            phone: '+971 2 123 4567'
-          },
-          notes: 'Technical interview scheduled with the development team.'
-        },
-        {
-          id: '2',
-          jobTitle: 'Data Analyst',
-          company: 'Emirates NBD',
-          location: 'Dubai, UAE',
-          appliedDate: '2024-09-12',
-          status: 'reviewed',
-          lastUpdate: '2024-09-14',
-          notes: 'Application under review by HR department.'
-        },
-        {
-          id: '3',
-          jobTitle: 'UX Designer',
-          company: 'Careem',
-          location: 'Dubai, UAE',
-          appliedDate: '2024-09-11',
-          status: 'pending',
-          lastUpdate: '2024-09-11',
-          notes: 'Application submitted successfully.'
-        },
-        {
-          id: '4',
-          jobTitle: 'Marketing Specialist',
-          company: 'Dubai Tourism',
-          location: 'Dubai, UAE',
-          appliedDate: '2024-09-09',
-          status: 'offer',
-          lastUpdate: '2024-09-14',
-          contactPerson: {
-            name: 'Ahmed Al-Rashid',
-            email: 'ahmed.alrashid@dubaitourism.ae'
-          },
-          notes: 'Congratulations! Job offer received. Please respond by September 20th.'
-        },
-        {
-          id: '5',
-          jobTitle: 'Project Manager',
-          company: 'DP World',
-          location: 'Dubai, UAE',
-          appliedDate: '2024-09-08',
-          status: 'rejected',
-          lastUpdate: '2024-09-12',
-          notes: 'Thank you for your interest. We have decided to move forward with another candidate.'
-        }
-      ]);
+      // Fallback to empty list or handle error UI
+      setApplications([]);
     } finally {
       setLoading(false);
     }
@@ -303,7 +234,11 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               Respond to Offer
             </Button>
           )}
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.hash = '#messages'}
+          >
             <MessageSquare className="h-4 w-4 mr-2" />
             Contact Employer
           </Button>

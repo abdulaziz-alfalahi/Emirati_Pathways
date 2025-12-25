@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS classes (
     section VARCHAR(10), -- A, B, C, etc.
     subject VARCHAR(100), -- For subject-specific classes
     academic_year VARCHAR(20) NOT NULL, -- e.g., "2024-2025"
-    educator_id UUID NOT NULL REFERENCES users(id),
-    institution_id UUID REFERENCES institutions(id),
+    educator_id INTEGER NOT NULL REFERENCES users(id),
+    institution_id UUID REFERENCES educational_institutions(id),
     classroom VARCHAR(50),
     max_capacity INTEGER DEFAULT 30,
     current_enrollment INTEGER DEFAULT 0,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     arrival_time TIME,
     departure_time TIME,
     notes TEXT,
-    marked_by UUID REFERENCES users(id),
+    marked_by INTEGER REFERENCES users(id),
     marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(student_id, class_id, attendance_date)
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS student_behavior (
     action_taken TEXT,
     follow_up_required BOOLEAN DEFAULT false,
     follow_up_date DATE,
-    reported_by UUID NOT NULL REFERENCES users(id),
+    reported_by INTEGER NOT NULL REFERENCES users(id),
     parent_notified BOOLEAN DEFAULT false,
     parent_notification_date DATE,
     resolution_status VARCHAR(20) DEFAULT 'open' CHECK (resolution_status IN ('open', 'in_progress', 'resolved')),
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS parent_communications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
     guardian_id UUID REFERENCES student_guardians(id),
-    educator_id UUID NOT NULL REFERENCES users(id),
+    educator_id INTEGER NOT NULL REFERENCES users(id),
     communication_type VARCHAR(50) CHECK (communication_type IN ('email', 'phone', 'meeting', 'message', 'report')),
     subject VARCHAR(200),
     content TEXT NOT NULL,
