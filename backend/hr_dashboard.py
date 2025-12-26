@@ -345,7 +345,8 @@ class HRDashboardEngine:
             return job_data.get('description', '')
 
     def get_job_postings(self, hr_user_id: str, company_id: Optional[str] = None, 
-                        status_filter: Optional[str] = None) -> List[JobPosting]:
+                        status_filter: Optional[str] = None,
+                        opportunity_type: Optional[str] = None) -> List[JobPosting]:
         """Get job postings for HR user"""
         try:
             with self.get_db_connection() as conn:
@@ -373,6 +374,10 @@ class HRDashboardEngine:
                     if status_filter:
                         query += " AND j.status = %s"
                         params.append(status_filter)
+
+                    if opportunity_type:
+                        query += " AND j.job_type = %s"
+                        params.append(opportunity_type)
                     
                     query += """
                         GROUP BY j.id, jv.views_count

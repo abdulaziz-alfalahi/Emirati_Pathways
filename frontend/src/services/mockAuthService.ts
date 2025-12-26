@@ -64,8 +64,8 @@ export const TEST_USERS: Record<string, MockUser> = {
     first_name: 'Omar',
     last_name: 'Al Rashid',
     full_name: 'Omar Al Rashid',
-    user_type: 'recruiter',
-    role: 'recruiter',
+    user_type: 'hr_recruiter', // Updated to match backend
+    role: 'hr_recruiter', // Updated to match backend
     phone: '+971503456789',
     emirate: 'Sharjah',
     nationality: 'UAE',
@@ -304,6 +304,7 @@ export class MockAuthService {
       case 'hr':
         return '/hr-dashboard';
       case 'recruiter':
+      case 'hr_recruiter':
         return '/recruiter-dashboard';
       case 'educator':
         return '/educator-dashboard';

@@ -4,7 +4,11 @@ UAE Nationals Only - Updated Requirements with Working Week Configuration
 """
 
 from flask import Blueprint, request, jsonify, current_app
+import psycopg2
+import psycopg2.extras
+import uuid
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
+
 from auth.auth_manager_fixed import AuthenticationManager
 from models.user_profile import UserProfile
 import logging
@@ -529,6 +533,77 @@ def internal_error(error):
         'message': 'Internal server error'
     }), 500
 
+
+def _seed_dev_data(user_id, email, role):
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            database=os.getenv('DB_NAME', 'emirati_journey'),
+            user=os.getenv('DB_USER', 'emirati_user'),
+            password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
+        )
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # 1. Ensure HR Profile
+        cursor.execute("SELECT * FROM hr_profiles WHERE user_id = %s", (user_id,))
+        profile = cursor.fetchone()
+        company_id = None
+        
+        if not profile:
+            # Check for existing company or create one
+            cursor.execute("SELECT id FROM companies LIMIT 1")
+            company = cursor.fetchone()
+            if company:
+                company_id = company['id']
+            else:
+                # Create default company
+                company_id = str(uuid.uuid4())
+                cursor.execute("""
+                    INSERT INTO companies (id, name, industry, description)
+                    VALUES (%s, 'UAE Talent Solutions', 'Technology', 'Leading recruitment agency')
+                    RETURNING id
+                """, (company_id,))
+                company_id = cursor.fetchone()['id']
+                conn.commit()
+            
+            # Create HR Profile
+            cursor.execute("""
+                INSERT INTO hr_profiles (user_id, company_id, position, department)
+                VALUES (%s, %s, 'Recruiter', 'HR')
+            """, (user_id, company_id))
+            conn.commit()
+            logger.info(f"Seeded HR Profile for {email}")
+        else:
+            company_id = profile['company_id']
+            
+        # 2. Ensure Job Posting
+        cursor.execute("SELECT id FROM job_postings WHERE created_by = %s", (user_id,))
+        job = cursor.fetchone()
+        
+        if not job and company_id:
+            jd_id = str(uuid.uuid4()) # Public ID
+            job_uuid = str(uuid.uuid4()) # Primary Key
+            cursor.execute("""
+                INSERT INTO job_postings (
+                    id, jd_id, recruiter_id, company_id, created_by, title, description, 
+                    status, salary_range_min, salary_range_max, currency,
+                    location, employment_type, experience_level
+                ) VALUES (
+                    %s, %s, %s, %s, %s, 'Senior Software Engineer', 'We are looking for a skilled engineer to join our team.',
+                    'active', 15000, 25000, 'AED',
+                    'Dubai', 'full-time', 'mid'
+                )
+            """, (job_uuid, jd_id, user_id, company_id, user_id))
+            conn.commit()
+            logger.info(f"Seeded Sample Job for {email}")
+            
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Seeding error: {e}")
+        # Don't raise, just log, so login still works
+        pass
+
 @auth_bp.route('/dev-login', methods=['POST'])
 def dev_login():
     """
@@ -578,6 +653,13 @@ def dev_login():
         # Add role to claims if needed by your JWT setup
         additional_claims = {'role': role, 'email': email}
         access_token = create_access_token(identity=str(real_user_id), additional_claims=additional_claims)
+        
+        # Seed data for HR roles if missing
+        if role in ('hr_recruiter', 'recruiter', 'hr', 'hr_manager'):
+             try:
+                _seed_dev_data(str(real_user_id), email, role)
+             except Exception as seed_err:
+                 logger.error(f"Seeding failed: {seed_err}")
         
         return jsonify({
             'success': True,

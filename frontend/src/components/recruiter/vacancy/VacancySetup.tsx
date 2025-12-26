@@ -46,17 +46,26 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
         setIsUploading(true);
         setActiveUploadType(type);
 
-        // Simulate upload delay
+        // Simulate upload delay (Replace with actual API call later)
         setTimeout(() => {
             setIsUploading(false);
             setActiveUploadType(null);
+
+            if (type === 'jd') {
+                setVacancyData(prev => ({
+                    ...prev,
+                    jdFile: files[0].name,
+                    lastUpdated: "Just now"
+                }));
+            }
+
             toast({
                 title: type === 'jd' ? "JD Updated" : "Batch Uploaded",
                 description: type === 'jd'
-                    ? "Job Description re-parsed successfully."
+                    ? `Job Description updated to ${files[0].name}.`
                     : `${files.length} candidate files uploaded to sourcing pool.`
             });
-        }, 2000);
+        }, 1500);
     };
 
     return (

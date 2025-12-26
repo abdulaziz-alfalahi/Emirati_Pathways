@@ -315,7 +315,7 @@ const AppContent: React.FC = () => {
             <Route
               path="/recruiter-dashboard"
               element={
-                <ProtectedRoute allowedRoles={['recruiter']}>
+                <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
                   <RecruiterDashboard />
                 </ProtectedRoute>
               }

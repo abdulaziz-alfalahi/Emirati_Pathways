@@ -484,13 +484,7 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ HR Candidate Search Blueprint not available: {e}")
 
-# Register HR Dashboard Blueprint
-try:
-    from hr_dashboard_routes import hr_dashboard_bp
-    app.register_blueprint(hr_dashboard_bp)
-    logger.info("✅ HR Dashboard Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ HR Dashboard Blueprint not available: {e}")
+# Duplicate HR Dashboard Blueprint registration removed
 
 # Register HR Interview Scheduling Blueprint
 try:
@@ -543,7 +537,7 @@ except ImportError as e:
 
 # Register Recruiter JD Blueprint
 try:
-    from recruiter.jd_routes import jd_bp
+    from recruiter.jd_routes_v2 import jd_bp
     app.register_blueprint(jd_bp, url_prefix='/api/recruiter/jd')
     logger.info("✅ Recruiter JD Blueprint registered successfully")
 except ImportError as e:
@@ -1221,8 +1215,8 @@ if __name__ == '__main__':
     else:
         print("🔍 JD Processing: Basic JD Parsing")
     
-    # Get port from environment variable or default to 5001
-    port = int(os.getenv('PORT', 5001))
+    # Get port from environment variable or default to 5005
+    port = int(os.getenv('PORT', 5005))
     logger.info(f"🌐 Server: http://0.0.0.0:{port}")
     
     print("\n📋 Available Endpoints:")

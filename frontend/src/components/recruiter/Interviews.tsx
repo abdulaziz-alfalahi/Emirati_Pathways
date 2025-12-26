@@ -22,6 +22,15 @@ export default function RecruiterInterviews() {
   // Schedule Dialog
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [showCancelled, setShowCancelled] = useState(false);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
+
+  useEffect(() => {
+    fetchSessions();
+    fetchJobs();
+    fetchTeamMembers();
+  }, []);
+
   const [candidates, setCandidates] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]); // Team members for attendees
   const [newSessionData, setNewSessionData] = useState({
@@ -35,12 +44,6 @@ export default function RecruiterInterviews() {
 
   const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // Mock/Auth derived
 
-  useEffect(() => {
-    fetchSessions();
-    fetchCandidates();
-    fetchTeamMembers();
-  }, []);
-
   const fetchTeamMembers = async () => {
     try {
       const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`);
@@ -52,16 +55,31 @@ export default function RecruiterInterviews() {
     }
   };
 
-  const fetchCandidates = async () => {
+  const fetchJobs = async () => {
     try {
-      const response = await restClient.get('/api/hr/candidates/search?limit=50');
+      const response = await restClient.get('/api/hr/jobs?limit=100&status=active');
       if (response.data.success) {
-        setCandidates(response.data.data.candidates || []);
+        setJobs(response.data.data.job_postings || []);
       }
     } catch (error) {
-      console.error("Error fetching candidates:", error);
+      console.error("Error fetching jobs:", error);
     }
   };
+
+  const fetchShortlist = async (jobId: string) => {
+    try {
+      setCandidates([]); // Clear previous
+      const response = await restClient.get(`/api/recruiter/shortlist/${jobId}?limit=100`);
+      if (response.data.success) {
+        setCandidates(response.data.shortlist || []);
+      }
+    } catch (error) {
+      console.error("Error fetching shortlist:", error);
+    }
+  };
+
+  // Removed generic fetchCandidates
+
 
   const fetchSessions = async () => {
     try {
@@ -114,9 +132,8 @@ export default function RecruiterInterviews() {
 
       // Use the Recruiter API for scheduling (it handles DB inserts)
       await restClient.post('/api/recruiter/interviews/create', {
-        shortlist_id: newSessionData.candidateId, // Note: Frontend var name suggests ID, need to ensure it maps to shortlist_id if that's what backend wants
-        candidate_id: "candidate_001", // Placeholder, backend derives from shortlist
-        recruiter_id: "recruiter_001", // Should match auth user
+        shortlist_id: newSessionData.candidateId, // This is shortlist_id from selection
+        recruiter_id: "recruiter_001",
         interview_type: "video",
         interview_round: 1,
         interview_title: newSessionData.title,
@@ -124,9 +141,8 @@ export default function RecruiterInterviews() {
         scheduled_time: newSessionData.time + ":00",
         duration_minutes: 60,
         notes: "Scheduled via Dashboard",
-        // Additional fields for video system
-        application_id: "mock-app-id",
-        attendees: newSessionData.attendees
+        meeting_platform: "built-in", // Suggested field
+        interviewers: newSessionData.attendees // Pass attendees as interviewers
       });
 
       setScheduleOpen(false);
@@ -197,24 +213,46 @@ export default function RecruiterInterviews() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Candidate</label>
+                  <label className="text-sm font-medium">Job Position</label>
                   <Select
                     onValueChange={(value) => {
-                      const candidate = candidates.find(c => c.id.toString() === value);
+                      setSelectedJobId(value);
+                      fetchShortlist(value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select job position..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jobs.map(job => (
+                        <SelectItem key={job.id} value={job.jd_id || job.id}>
+                          {job.title} ({job.status})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Candidate (from Shortlist)</label>
+                  <Select
+                    disabled={!selectedJobId}
+                    onValueChange={(value) => {
+                      const candidate = candidates.find(c => c.shortlist_id === value);
                       setNewSessionData({
                         ...newSessionData,
-                        candidateId: value,
+                        candidateId: value, // This is now shortlist_id
                         candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : ""
                       });
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select candidate..." />
+                      <SelectValue placeholder={selectedJobId ? "Select candidate..." : "Select a job first"} />
                     </SelectTrigger>
                     <SelectContent>
                       {candidates.map(candidate => (
-                        <SelectItem key={candidate.id} value={candidate.id.toString()}>
-                          {candidate.first_name} {candidate.last_name} ({candidate.email})
+                        <SelectItem key={candidate.shortlist_id} value={candidate.shortlist_id}>
+                          {candidate.first_name} {candidate.last_name} (Match: {candidate.match_score}%)
                         </SelectItem>
                       ))}
                     </SelectContent>
