@@ -3,7 +3,7 @@
  * Advanced dashboard for recruiters with candidate management, JD analysis, and UAE-specific features
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Users, FileText, BarChart3, MessageSquare, 
   Calendar, Video, Star, MapPin, Globe, Award, TrendingUp,

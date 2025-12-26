@@ -1,5 +1,12 @@
+/**
+ * ConversationList Component
+ * Displays a searchable list of message conversations
+ * 
+ * @description This component renders a list of conversations that the
+ * recruiter can select to view and respond to messages.
+ */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Search } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -25,8 +32,17 @@ const ConversationList: React.FC<ConversationListProps> = ({
 }) => {
   // Filter conversations by search query
   const filteredConversations = conversations.filter(conversation => 
-    conversation.participantName.toLowerCase().includes(searchQuery.toLowerCase())
+    conversation.participantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conversation.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, conversationId: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelectConversation(conversationId);
+    }
+  }, [onSelectConversation]);
 
   return (
     <>
@@ -34,32 +50,47 @@ const ConversationList: React.FC<ConversationListProps> = ({
         <CardTitle>Conversations</CardTitle>
         <CardDescription>Your recent message threads</CardDescription>
         <div className="relative my-2">
-          <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+          <Search 
+            className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" 
+            aria-hidden="true" 
+          />
           <Input 
             placeholder="Search conversations..." 
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search conversations"
+            type="search"
           />
         </div>
       </CardHeader>
       <CardContent className="px-2 h-[500px] overflow-y-auto">
-        <div className="space-y-1">
+        <div 
+          className="space-y-1" 
+          role="listbox" 
+          aria-label="Conversations"
+          aria-activedescendant={selectedConversation ? `conversation-${selectedConversation}` : undefined}
+        >
           {filteredConversations.length > 0 ? (
             filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                id={`conversation-${conversation.id}`}
+                role="option"
+                aria-selected={selectedConversation === conversation.id}
+                tabIndex={0}
+                className={`p-3 rounded-lg cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
                   selectedConversation === conversation.id
                     ? 'bg-secondary'
                     : 'hover:bg-secondary/50'
                 }`}
                 onClick={() => onSelectConversation(conversation.id)}
+                onKeyDown={(e) => handleKeyDown(e, conversation.id)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarFallback>
+                      <AvatarFallback aria-hidden="true">
                         {conversation.participantName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
@@ -77,7 +108,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       {formatDate(conversation.lastMessageTime)}
                     </div>
                     {conversation.unreadCount > 0 && (
-                      <Badge variant="destructive" className="p-1 h-5 min-w-5 flex items-center justify-center rounded-full">
+                      <Badge 
+                        variant="destructive" 
+                        className="p-1 h-5 min-w-5 flex items-center justify-center rounded-full"
+                        aria-label={`${conversation.unreadCount} unread messages`}
+                      >
                         {conversation.unreadCount}
                       </Badge>
                     )}
@@ -86,8 +121,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
               </div>
             ))
           ) : (
-            <div className="py-10 text-center text-muted-foreground">
-              No conversations found
+            <div 
+              className="py-10 text-center text-muted-foreground"
+              role="status"
+              aria-live="polite"
+            >
+              {searchQuery ? 'No conversations match your search' : 'No conversations found'}
             </div>
           )}
         </div>
