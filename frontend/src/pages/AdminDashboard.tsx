@@ -5,6 +5,7 @@ import { restClient } from '@/utils/api';
 import UserManager from '@/components/admin/UserManager';
 import AdminRoles from '@/components/admin/AdminRoles';
 import GrowthTools from '@/components/admin/GrowthTools';
+import GrowthOperatorManager from '@/components/admin/GrowthOperatorManager';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -240,10 +241,14 @@ const AdminDashboard = () => {
 
           <div className="container mx-auto px-4 py-8">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="users">User Management</TabsTrigger>
                 <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
+                <TabsTrigger value="operators" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Growth Operators
+                </TabsTrigger>
                 <TabsTrigger value="growth" className="flex items-center gap-2">
                   <Rocket className="h-4 w-4" />
                   Growth Tools
@@ -476,6 +481,11 @@ const AdminDashboard = () => {
                     <AdminRoles />
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Growth Operators Tab */}
+              <TabsContent value="operators" className="space-y-6">
+                <GrowthOperatorManager />
               </TabsContent>
 
               {/* Growth Tools Tab */}
