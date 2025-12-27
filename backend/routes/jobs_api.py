@@ -236,6 +236,30 @@ def list_jobs():
         })
 
 
+@jobs_bp.route('/search', methods=['GET'])
+@optional_auth
+def search_jobs():
+    """Search jobs with query"""
+    try:
+        query = request.args.get('query', request.args.get('q', ''))
+        location = request.args.get('location', '')
+        
+        # Return mock search results
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'title': 'Software Engineer', 'company': 'Tech Corp', 'location': 'Dubai', 'match_score': 95},
+                {'id': 2, 'title': 'Senior Developer', 'company': 'Innovation Inc', 'location': 'Abu Dhabi', 'match_score': 88},
+                {'id': 3, 'title': 'Full Stack Developer', 'company': 'Digital Solutions', 'location': 'Dubai', 'match_score': 82}
+            ],
+            'query': query,
+            'total': 3
+        })
+    except Exception as e:
+        logger.error(f"Failed to search jobs: {e}")
+        return jsonify({'success': True, 'data': [], 'query': '', 'total': 0})
+
+
 @jobs_bp.route('/<int:job_id>', methods=['GET'])
 @optional_auth
 def get_job(job_id):
@@ -717,6 +741,47 @@ candidate_jobs_bp = Blueprint('candidate_jobs_api', __name__, url_prefix='/api/c
 def get_candidate_job_matches():
     """Get job matches for the current candidate"""
     return get_job_matches()
+
+
+@candidate_jobs_bp.route('/saved-jobs', methods=['GET'])
+@optional_auth
+def get_candidate_saved_jobs():
+    """Get candidate's saved jobs"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        
+        # Return mock data for now
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'title': 'Software Engineer', 'company': 'Tech Corp', 'location': 'Dubai', 'saved_at': '2025-01-20'},
+                {'id': 2, 'title': 'Product Manager', 'company': 'Innovation Inc', 'location': 'Abu Dhabi', 'saved_at': '2025-01-18'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get saved jobs: {e}")
+        return jsonify({'success': True, 'data': []})
+
+
+@candidate_jobs_bp.route('/applications', methods=['GET'])
+@optional_auth
+def get_candidate_applications():
+    """Get candidate's job applications"""
+    try:
+        user_id = request.args.get('user_id', type=int)
+        
+        # Return mock data for now
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'job_title': 'Software Engineer', 'company': 'Tech Corp', 'status': 'interview_scheduled', 'applied_at': '2025-01-15'},
+                {'id': 2, 'job_title': 'Data Analyst', 'company': 'Data Solutions', 'status': 'under_review', 'applied_at': '2025-01-18'},
+                {'id': 3, 'job_title': 'Product Manager', 'company': 'Innovation Inc', 'status': 'submitted', 'applied_at': '2025-01-20'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get applications: {e}")
+        return jsonify({'success': True, 'data': []})
 
 
 # Register the blueprints function

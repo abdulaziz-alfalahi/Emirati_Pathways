@@ -410,6 +410,14 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ Growth Operator Assignment API Blueprint not available: {e}")
 
+# Register JD Templates API Blueprint
+try:
+    from routes.jd_templates_api import jd_templates_bp
+    app.register_blueprint(jd_templates_bp)
+    logger.info("✅ JD Templates API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ JD Templates API Blueprint not available: {e}")
+
 # Register User Management API Blueprint
 try:
     from routes.user_management_api import user_management_bp

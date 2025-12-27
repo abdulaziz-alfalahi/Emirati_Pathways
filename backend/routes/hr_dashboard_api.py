@@ -128,6 +128,152 @@ def optional_auth(f):
 # SHORTLISTED CANDIDATES ENDPOINTS
 # =====================================================
 
+@hr_dashboard_api_bp.route('/dashboard', methods=['GET'])
+@optional_auth
+def get_hr_dashboard():
+    """Get HR dashboard overview"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': {
+                'totalJobs': 24,
+                'activeJobs': 18,
+                'totalCandidates': 456,
+                'shortlistedCandidates': 89,
+                'scheduledInterviews': 12,
+                'pendingApprovals': 5,
+                'recentActivity': [
+                    {'type': 'shortlist', 'message': 'Candidate shortlisted for Software Engineer', 'time': '1 hour ago'},
+                    {'type': 'interview', 'message': 'Interview completed', 'time': '3 hours ago'},
+                    {'type': 'approval', 'message': 'Offer approved', 'time': '1 day ago'}
+                ]
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to get HR dashboard: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/dashboard/shortlisted', methods=['GET'])
+@optional_auth
+def get_shortlisted_candidates_dashboard():
+    """Get shortlisted candidates for dashboard"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'name': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'interview_scheduled', 'score': 92},
+                {'id': 2, 'name': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'shortlisted', 'score': 88},
+                {'id': 3, 'name': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'offer_pending', 'score': 85}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get shortlisted candidates: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/dashboard/team', methods=['GET'])
+@optional_auth
+def get_team_members_dashboard():
+    """Get team members for dashboard"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'name': 'Sara Al Ketbi', 'role': 'Senior Recruiter', 'activeJobs': 8, 'status': 'online'},
+                {'id': 2, 'name': 'Omar Al Suwaidi', 'role': 'Recruiter', 'activeJobs': 5, 'status': 'online'},
+                {'id': 3, 'name': 'Layla Al Shamsi', 'role': 'HR Coordinator', 'activeJobs': 3, 'status': 'away'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get team members: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/dashboard/candidates/search', methods=['GET'])
+@optional_auth
+def search_candidates_dashboard():
+    """Search candidates from dashboard"""
+    try:
+        query = request.args.get('query', '')
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'name': 'Ahmed Al Maktoum', 'skills': ['Python', 'JavaScript'], 'experience': '5 years', 'match_score': 92},
+                {'id': 2, 'name': 'Fatima Al Nahyan', 'skills': ['Product Management', 'Agile'], 'experience': '7 years', 'match_score': 88}
+            ],
+            'query': query,
+            'total': 2
+        })
+    except Exception as e:
+        logger.error(f"Failed to search candidates: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/dashboard/metrics', methods=['GET'])
+@optional_auth
+def get_hr_metrics_dashboard():
+    """Get HR metrics for dashboard"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': {
+                'timeToHire': 28,
+                'offerAcceptanceRate': 78,
+                'candidateSatisfaction': 4.2,
+                'interviewToOfferRatio': 3.5,
+                'monthlyHires': 12,
+                'openPositions': 18
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to get HR metrics: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/approval-workflows', methods=['GET'])
+@optional_auth
+def get_approval_workflows():
+    """Get approval workflows"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'type': 'offer_approval', 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'pending', 'submitted': '2025-01-20'},
+                {'id': 2, 'type': 'salary_exception', 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'approved', 'submitted': '2025-01-18'},
+                {'id': 3, 'type': 'offer_approval', 'candidate': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'pending', 'submitted': '2025-01-22'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get approval workflows: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/approval-workflows/delegate', methods=['POST'])
+@optional_auth
+def delegate_approval():
+    """Delegate an approval workflow"""
+    try:
+        data = request.get_json()
+        workflow_id = data.get('workflow_id')
+        delegate_to = data.get('delegate_to')
+        reason = data.get('reason', '')
+        
+        return jsonify({
+            'success': True,
+            'message': f'Approval workflow {workflow_id} delegated successfully',
+            'data': {
+                'workflow_id': workflow_id,
+                'delegated_to': delegate_to,
+                'reason': reason,
+                'delegated_at': datetime.now().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to delegate approval: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @hr_dashboard_api_bp.route('/jobs/shortlisted-candidates', methods=['GET'])
 @optional_auth
 def get_all_shortlisted_candidates():

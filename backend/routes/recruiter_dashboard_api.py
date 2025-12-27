@@ -131,6 +131,149 @@ def optional_auth(f):
 # DASHBOARD OVERVIEW ENDPOINT
 # =====================================================
 
+@recruiter_dashboard_bp.route('/jd', methods=['GET'])
+@optional_auth
+def get_jd_list():
+    """Get list of job descriptions"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'title': 'Software Engineer', 'company': 'Tech Corp', 'status': 'active', 'applications': 45, 'created': '2025-01-15'},
+                {'id': 2, 'title': 'Product Manager', 'company': 'Innovation Inc', 'status': 'active', 'applications': 32, 'created': '2025-01-10'},
+                {'id': 3, 'title': 'Data Analyst', 'company': 'Data Solutions', 'status': 'draft', 'applications': 0, 'created': '2025-01-20'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get JD list: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/jd', methods=['POST'])
+@optional_auth
+def create_jd():
+    """Create a new job description"""
+    try:
+        data = request.get_json()
+        return jsonify({
+            'success': True,
+            'message': 'Job description created successfully',
+            'data': {
+                'id': 4,
+                'title': data.get('title'),
+                'company': data.get('company'),
+                'status': 'draft',
+                'created': datetime.now().isoformat()
+            }
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to create JD: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/jd/<int:jd_id>/match', methods=['POST'])
+@optional_auth
+def match_candidates(jd_id):
+    """AI-powered candidate matching for a job description"""
+    try:
+        data = request.get_json() or {}
+        limit = data.get('limit', 10)
+        return jsonify({
+            'success': True,
+            'data': {
+                'jd_id': jd_id,
+                'matches': [
+                    {'id': 1, 'name': 'Ahmed Al Maktoum', 'match_score': 92, 'skills_match': ['Python', 'JavaScript', 'React'], 'experience_years': 5},
+                    {'id': 2, 'name': 'Fatima Al Nahyan', 'match_score': 88, 'skills_match': ['Python', 'Django', 'PostgreSQL'], 'experience_years': 4},
+                    {'id': 3, 'name': 'Mohammed Al Rashid', 'match_score': 85, 'skills_match': ['JavaScript', 'Node.js', 'MongoDB'], 'experience_years': 3}
+                ][:limit],
+                'total_matches': 3
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to match candidates: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/shortlist', methods=['GET'])
+@optional_auth
+def get_shortlist():
+    """Get shortlisted candidates"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'candidate_id': 1, 'name': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'interview_scheduled', 'added': '2025-01-18'},
+                {'id': 2, 'candidate_id': 2, 'name': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'shortlisted', 'added': '2025-01-19'},
+                {'id': 3, 'candidate_id': 3, 'name': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'offer_sent', 'added': '2025-01-15'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get shortlist: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/dashboard/overview', methods=['GET'])
+@optional_auth
+def get_dashboard_overview():
+    """Get recruiter dashboard overview statistics"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': {
+                'activeJobs': 12,
+                'totalApplications': 156,
+                'shortlistedCandidates': 34,
+                'scheduledInterviews': 8,
+                'pendingOffers': 5,
+                'acceptedOffers': 23,
+                'recentActivity': [
+                    {'type': 'application', 'message': 'New application received', 'time': '2 hours ago'},
+                    {'type': 'interview', 'message': 'Interview scheduled', 'time': '4 hours ago'},
+                    {'type': 'offer', 'message': 'Offer accepted', 'time': '1 day ago'}
+                ]
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to get dashboard overview: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/dashboard/vacancies', methods=['GET'])
+@optional_auth
+def get_dashboard_vacancies():
+    """Get active vacancies for dashboard"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'title': 'Software Engineer', 'applications': 45, 'status': 'active', 'posted': '2025-01-15'},
+                {'id': 2, 'title': 'Product Manager', 'applications': 32, 'status': 'active', 'posted': '2025-01-10'},
+                {'id': 3, 'title': 'Data Analyst', 'applications': 28, 'status': 'active', 'posted': '2025-01-08'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get vacancies: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/dashboard/offers', methods=['GET'])
+@optional_auth
+def get_dashboard_offers():
+    """Get offers for dashboard"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 1, 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'status': 'pending', 'sent': '2025-01-20'},
+                {'id': 2, 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'status': 'accepted', 'sent': '2025-01-18'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get offers: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @recruiter_dashboard_bp.route('/dashboard', methods=['GET'])
 @optional_auth
 def get_recruiter_dashboard():

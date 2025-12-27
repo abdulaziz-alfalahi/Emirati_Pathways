@@ -1,0 +1,377 @@
+{
+  "timestamp": "2025-12-27T13:53:26.800005",
+  "summary": {
+    "total": 48,
+    "passed": 36,
+    "failed": 12,
+    "pass_rate": "75.0%"
+  },
+  "by_category": {
+    "Candidate": {
+      "passed": 4,
+      "failed": 4
+    },
+    "Recruiter": {
+      "passed": 7,
+      "failed": 1
+    },
+    "HR Manager": {
+      "passed": 6,
+      "failed": 2
+    },
+    "Growth Operator": {
+      "passed": 7,
+      "failed": 0
+    },
+    "Administrator": {
+      "passed": 9,
+      "failed": 1
+    },
+    "Communication": {
+      "passed": 1,
+      "failed": 2
+    },
+    "Interviews": {
+      "passed": 2,
+      "failed": 2
+    }
+  },
+  "results": [
+    {
+      "category": "Candidate",
+      "test": "GET /api/cv/templates",
+      "passed": false,
+      "details": "{'message': 'CV not found', 'success': False}",
+      "timestamp": "2025-12-27T13:53:26.688084"
+    },
+    {
+      "category": "Candidate",
+      "test": "GET /api/cv/data/{id}",
+      "passed": false,
+      "details": "{'error': 'Not found', 'method': 'GET', 'path': '/api/cv/data/1'}",
+      "timestamp": "2025-12-27T13:53:26.690422"
+    },
+    {
+      "category": "Candidate",
+      "test": "POST /api/cv/save",
+      "passed": false,
+      "details": "{'data': {'cv_id': '5e858825-1fa4-4e3f-8196-ad7f8bf6c3d6'}, 'message': 'CV saved successfully', 'success': True}",
+      "timestamp": "2025-12-27T13:53:26.693300"
+    },
+    {
+      "category": "Candidate",
+      "test": "GET /api/jobs",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.697388"
+    },
+    {
+      "category": "Candidate",
+      "test": "GET /api/jobs/search",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.699474"
+    },
+    {
+      "category": "Candidate",
+      "test": "GET /api/candidate/saved-jobs",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.701472"
+    },
+    {
+      "category": "Candidate",
+      "test": "GET /api/candidate/applications",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.703585"
+    },
+    {
+      "category": "Candidate",
+      "test": "GET /api/candidate/job-matches",
+      "passed": false,
+      "details": "{'error': 'Database connection failed', 'success': False}",
+      "timestamp": "2025-12-27T13:53:26.705826"
+    },
+    {
+      "category": "Recruiter",
+      "test": "GET /api/jd/templates",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.707699"
+    },
+    {
+      "category": "Recruiter",
+      "test": "GET /api/recruiter/jd",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.709594"
+    },
+    {
+      "category": "Recruiter",
+      "test": "POST /api/recruiter/jd",
+      "passed": false,
+      "details": "{'data': {'company': 'Test Company', 'created': '2025-12-27T13:53:26.710861', 'id': 4, 'status': 'draft', 'title': 'Software Engineer'}, 'message': 'Job description created successfully', 'success': True}",
+      "timestamp": "2025-12-27T13:53:26.711506"
+    },
+    {
+      "category": "Recruiter",
+      "test": "POST /api/recruiter/jd/{id}/match",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.713604"
+    },
+    {
+      "category": "Recruiter",
+      "test": "GET /api/recruiter/shortlist",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.715503"
+    },
+    {
+      "category": "Recruiter",
+      "test": "GET /api/recruiter/dashboard/overview",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.717278"
+    },
+    {
+      "category": "Recruiter",
+      "test": "GET /api/recruiter/dashboard/vacancies",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.719196"
+    },
+    {
+      "category": "Recruiter",
+      "test": "GET /api/recruiter/dashboard/offers",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.720944"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/dashboard",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.722725"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/jobs",
+      "passed": false,
+      "details": "{'message': 'Authorization token is required'}",
+      "timestamp": "2025-12-27T13:53:26.724489"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/dashboard/shortlisted",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.726225"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/dashboard/team",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.727970"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/dashboard/candidates/search",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.729744"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/dashboard/metrics",
+      "passed": false,
+      "details": "{'message': 'Authorization token is required'}",
+      "timestamp": "2025-12-27T13:53:26.731522"
+    },
+    {
+      "category": "HR Manager",
+      "test": "GET /api/hr/approval-workflows",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.733360"
+    },
+    {
+      "category": "HR Manager",
+      "test": "POST /api/hr/approval-workflows/delegate",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.735233"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/metrics",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.739670"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/candidate/list",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.742288"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/company/list",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.745150"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/education/programs",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.748087"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/assessment/list",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.750483"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/mentorship/matches",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.752708"
+    },
+    {
+      "category": "Growth Operator",
+      "test": "GET /api/growth-operator/community/stats",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.754836"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/dashboard/stats",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.758179"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/alerts",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.760802"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/activity/recent",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.763909"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/users",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.766548"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/users/{id}",
+      "passed": false,
+      "details": "{'message': 'User not found', 'success': False}",
+      "timestamp": "2025-12-27T13:53:26.768701"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/users/statistics",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.771588"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/roles",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.773416"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/growth-operators/domains",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.777590"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/growth-operators",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.780179"
+    },
+    {
+      "category": "Administrator",
+      "test": "GET /api/admin/growth-operators/statistics",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.786224"
+    },
+    {
+      "category": "Communication",
+      "test": "GET /api/communication/conversations",
+      "passed": false,
+      "details": "{'message': 'Authorization token is required'}",
+      "timestamp": "2025-12-27T13:53:26.788162"
+    },
+    {
+      "category": "Communication",
+      "test": "GET /api/communication/messages",
+      "passed": false,
+      "details": "<!doctype html>\n<html lang=en>\n<title>405 Method Not Allowed</title>\n<h1>Method Not Allowed</h1>\n<p>The method is not allowed for the requested URL.</p>\n",
+      "timestamp": "2025-12-27T13:53:26.790140"
+    },
+    {
+      "category": "Communication",
+      "test": "GET /api/communication/notifications/preferences",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.791963"
+    },
+    {
+      "category": "Interviews",
+      "test": "GET /api/interviews/sessions",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.794064"
+    },
+    {
+      "category": "Interviews",
+      "test": "GET /api/interviews/sessions/my",
+      "passed": false,
+      "details": "{'message': 'Authorization token is required'}",
+      "timestamp": "2025-12-27T13:53:26.795846"
+    },
+    {
+      "category": "Interviews",
+      "test": "GET /api/interviews/upcoming",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-27T13:53:26.797946"
+    },
+    {
+      "category": "Interviews",
+      "test": "POST /api/interviews/sessions",
+      "passed": false,
+      "details": "{'message': 'Authorization token is required'}",
+      "timestamp": "2025-12-27T13:53:26.799758"
+    }
+  ]
+}

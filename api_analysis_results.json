@@ -1,0 +1,1126 @@
+{
+  "missing_count": 152,
+  "missing_endpoints": [
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/dashboard/stats",
+      "files": [
+        "components/admin/AdminDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/alerts",
+      "files": [
+        "components/admin/AdminDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/activity/recent",
+      "files": [
+        "components/admin/AdminDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/roles",
+      "files": [
+        "components/admin/AdminRoles.tsx",
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/users",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/admin/users",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/admin/users/{id}/activate",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/admin/users/{id}/suspend",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/api/admin/users/{id}/roles",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/users/export",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/api/admin/users/{id}",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/api/admin/users/{id}",
+      "files": [
+        "components/admin/UserManager.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/interviews/sessions/admin/all",
+      "files": [
+        "components/admin/AdminInterviews.tsx"
+      ]
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/api/admin/roles/{id}",
+      "files": [
+        "components/admin/AdminRoles.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/admin/roles",
+      "files": [
+        "components/admin/AdminRoles.tsx"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/api/admin/roles/{id}",
+      "files": [
+        "components/admin/AdminRoles.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/advanced-analytics/dashboard",
+      "files": [
+        "components/analytics/AdvancedAnalyticsDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/auth/login",
+      "files": [
+        "components/auth/AuthComponents.tsx",
+        "components/auth/LoginTest.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/auth/register",
+      "files": [
+        "components/auth/AuthComponents.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/applications",
+      "files": [
+        "components/candidate/ApplicationTracker.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/test/cv/parse-text",
+      "files": [
+        "components/candidate/CVUpload.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/candidate/job-matches",
+      "files": [
+        "components/candidate/JobMatches.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/jobs/apply",
+      "files": [
+        "components/candidate/JobMatches.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/interviews/sessions/my",
+      "files": [
+        "components/candidate/Interviews.tsx",
+        "components/hr/InterviewsTab.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/communication/conversations",
+      "files": [
+        "components/candidate/Messages.tsx",
+        "components/recruiter/Messages.tsx",
+        "services/messagingService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/communication/conversations/{id}/messages",
+      "files": [
+        "components/candidate/Messages.tsx",
+        "components/recruiter/Messages.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/communication/messages",
+      "files": [
+        "pages/HRDashboard.tsx",
+        "components/candidate/Messages.tsx",
+        "components/recruiter/Messages.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/interviews/sessions/{id}/record/chunk",
+      "files": [
+        "components/common/VideoRoom.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/health",
+      "files": [
+        "components/cv-builder/CVUploadParser.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/dashboard",
+      "files": [
+        "pages/AdminDashboard.tsx",
+        "components/dashboard/role-dashboards/AdminDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/dashboard",
+      "files": [
+        "components/dashboard/role-dashboards/recruiter-dashboard/RecruiterDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/curriculum/standards",
+      "files": [
+        "components/educator/CurriculumPlanning.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs",
+      "files": [
+        "components/mobile/MobileJobSearch.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/saved",
+      "files": [
+        "components/mobile/MobileJobSearch.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications",
+      "files": [
+        "components/mobile/MobileJobSearch.tsx"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/api/jobs/{id}/save",
+      "files": [
+        "components/mobile/MobileJobSearch.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/jobs/{id}/save",
+      "files": [
+        "components/mobile/MobileJobSearch.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/jobs/{id}/apply",
+      "files": [
+        "components/mobile/MobileJobSearch.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/notifications/preferences",
+      "files": [
+        "components/notifications/NotificationSystem.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/notifications/preferences",
+      "files": [
+        "components/notifications/NotificationSystem.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/{id}/match-candidates",
+      "files": [
+        "components/recruiter/CandidateMatching.tsx",
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/communication/conversations",
+      "files": [
+        "components/recruiter/CandidateMatching.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/educational/enhance",
+      "files": [
+        "components/recruiter/EnhancedJobPosting.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/opportunities/create",
+      "files": [
+        "components/recruiter/EnhancedJobPosting.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/company/team/members",
+      "files": [
+        "pages/HRDashboard.tsx",
+        "components/recruiter/Interviews.tsx",
+        "components/hr/TeamManagementTab.tsx",
+        "components/hr/ApprovalWorkflow.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/jobs",
+      "files": [
+        "pages/recruiter/Distribution.tsx",
+        "components/recruiter/Interviews.tsx",
+        "pages/HRDashboard.tsx",
+        "pages/recruiter/Candidates.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/shortlist/{id}",
+      "files": [
+        "components/recruiter/ScheduleInterviewDialog.tsx",
+        "components/recruiter/Interviews.tsx",
+        "components/recruiter/offers/CreateOfferDialog.tsx",
+        "components/recruiter/shortlist/ShortlistManager.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/video-interview/sessions",
+      "files": [
+        "components/recruiter/Interviews.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/interviews/sessions/{id}/analyze",
+      "files": [
+        "components/recruiter/Interviews.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/interviews/create",
+      "files": [
+        "components/recruiter/Interviews.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/interviews/sessions/{id}/cancel",
+      "files": [
+        "components/recruiter/Interviews.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jd/enhanced/analytics/dashboard",
+      "files": [
+        "components/recruiter/JDAnalyticsDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jd/enhanced/analytics/export",
+      "files": [
+        "components/recruiter/JDAnalyticsDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/jd/list",
+      "files": [
+        "components/recruiter/ScheduleInterviewDialog.tsx",
+        "components/recruiter/JobDescriptionsList.tsx",
+        "components/recruiter/ManageShortlistDialog.tsx",
+        "pages/recruiter/ActiveVacancies.tsx",
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/mentorship/recommend",
+      "files": [
+        "components/recruiter/MentorRecommendationsDialog.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/interviews/schedule",
+      "files": [
+        "components/recruiter/ScheduleInterviewDialog.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/candidates/search",
+      "files": [
+        "components/recruiter/SourceCandidatesDialog.tsx",
+        "pages/recruiter/Candidates.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/training/recommend",
+      "files": [
+        "components/recruiter/TrainingRecommendationsDialog.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/jd/upload/batch",
+      "files": [
+        "components/recruiter/job-descriptions/JDFileUpload.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/jd/upload/parse",
+      "files": [
+        "components/recruiter/job-descriptions/JDFileUpload.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/jd/{id}",
+      "files": [
+        "components/recruiter/offers/CreateOfferDialog.tsx",
+        "pages/recruiter/JobDescriptionWizardPage.tsx",
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/create",
+      "files": [
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/api/recruiter/jd/{id}/basic-info",
+      "files": [
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/{id}/generate-description",
+      "files": [
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/{id}/save",
+      "files": [
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/shortlist/add",
+      "files": [
+        "components/recruiter/job-descriptions/JobDescriptionWizard.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/offers/create",
+      "files": [
+        "components/recruiter/offers/CreateOfferDialog.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/offers/{id}",
+      "files": [
+        "components/recruiter/offers/NegotiationDialog.tsx",
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/offers/{id}/send",
+      "files": [
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/offers/{id}/approve",
+      "files": [
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/offers/{id}/reject",
+      "files": [
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/offers/{id}/withdraw",
+      "files": [
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/api/recruiter/offers/{id}",
+      "files": [
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/offers/{id}/response",
+      "files": [
+        "components/recruiter/offers/OfferDetailsDialog.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/offers/jd/{id}",
+      "files": [
+        "components/recruiter/offers/OfferManager.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/offers/statistics/{id}",
+      "files": [
+        "components/recruiter/offers/OfferManager.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/shortlist/{id}/stats",
+      "files": [
+        "components/recruiter/shortlist/ShortlistManager.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/company/team/invite",
+      "files": [
+        "components/hr/TeamManagementTab.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/company/team/remove",
+      "files": [
+        "components/hr/TeamManagementTab.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/approvals",
+      "files": [
+        "components/hr/ApprovalWorkflow.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/delegations",
+      "files": [
+        "components/hr/ApprovalWorkflow.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/approvals/{id}/approve",
+      "files": [
+        "components/hr/ApprovalWorkflow.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/approvals/{id}/reject",
+      "files": [
+        "components/hr/ApprovalWorkflow.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/delegations",
+      "files": [
+        "components/hr/ApprovalWorkflow.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/candidates",
+      "files": [
+        "components/growth-operator/CandidateOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/candidates/metrics",
+      "files": [
+        "components/growth-operator/CandidateOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/companies",
+      "files": [
+        "components/growth-operator/CompanyOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/education",
+      "files": [
+        "components/growth-operator/EducationOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/assessment",
+      "files": [
+        "components/growth-operator/AssessmentOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/mentors",
+      "files": [
+        "components/growth-operator/MentorshipOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/communities",
+      "files": [
+        "components/growth-operator/CommunityOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/events",
+      "files": [
+        "components/growth-operator/CommunityOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/reports",
+      "files": [
+        "components/growth-operator/CommunityOperations.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/employer/dashboard",
+      "files": [
+        "pages/EmployerDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/government/dashboard",
+      "files": [
+        "pages/GovernmentDashboard.tsx"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/api/hr/jobs/{id}/shortlist/{id}",
+      "files": [
+        "pages/HRDashboard.tsx"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/api/recruiter/jd/{id}",
+      "files": [
+        "pages/HRDashboard.tsx",
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/interviews/sessions",
+      "files": [
+        "pages/HRDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/dashboard/metrics",
+      "files": [
+        "pages/HRDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/jobs/shortlisted-candidates",
+      "files": [
+        "pages/HRDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/statistics/dashboard",
+      "files": [
+        "pages/RecruiterDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/candidates/{id}",
+      "files": [
+        "pages/CandidateProfilePage.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/growth-operator/metrics",
+      "files": [
+        "pages/GrowthOperatorDashboard.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/auth/dev-login",
+      "files": [
+        "pages/auth/MockLogin.tsx",
+        "services/mockAuthService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/approvals/requests",
+      "files": [
+        "pages/recruiter/Approvals.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/approvals/requests/{id}/{id}",
+      "files": [
+        "pages/recruiter/Approvals.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/jobs/batch",
+      "files": [
+        "pages/recruiter/BatchUpload.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/jobs/{id}/shortlist",
+      "files": [
+        "pages/recruiter/Candidates.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/jobs/{id}/publish-and-match",
+      "files": [
+        "pages/recruiter/Candidates.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/distribution/jobs/{id}/distribute",
+      "files": [
+        "pages/recruiter/Distribution.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/distribution/jobs/{id}",
+      "files": [
+        "pages/recruiter/Distribution.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/offers",
+      "files": [
+        "pages/recruiter/Offers.tsx"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/hr/offers/{id}/send",
+      "files": [
+        "pages/recruiter/Offers.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/hr/offers/{id}",
+      "files": [
+        "pages/recruiter/Offers.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/candidate/cv/parse-text",
+      "files": [
+        "pages/resume-builder/index.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/interviews/guest/{id}",
+      "files": [
+        "pages/public/GuestLobby.tsx"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/extract-resume",
+      "files": [
+        "components/resume/utils/parsers/parsingMethods.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/analytics/applications",
+      "files": [
+        "services/adminService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/users/{id}/status",
+      "files": [
+        "services/adminService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/users/{id}/role",
+      "files": [
+        "services/adminService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/users/{id}",
+      "files": [
+        "services/adminService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/admin/system/health",
+      "files": [
+        "services/adminService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/apply",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/my-applications",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}/status",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}/withdraw",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/job/{id}",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}/notes",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}/interview",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}/offer",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/{id}/offer/respond",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/applications/stats",
+      "files": [
+        "services/applicationService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/create",
+      "files": [
+        "services/jobService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/{id}",
+      "files": [
+        "services/jobService.ts",
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/{id}/apply",
+      "files": [
+        "services/jobService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/my-jobs",
+      "files": [
+        "services/jobService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/jobs/{id}/applications",
+      "files": [
+        "services/jobService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/communication/messages/{id}/read",
+      "files": [
+        "services/messagingService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/communication/notifications",
+      "files": [
+        "services/messagingService.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/communication/upload",
+      "files": [
+        "services/messagingService.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/cv",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/api/cv/{id}",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/cv/{id}/export",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/cv/{id}/analytics",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/jobs",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/api/jobs/{id}",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/api/jobs/{id}",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/upload",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/parse-text",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/recruiter/jd/shortlist/add",
+      "files": [
+        "utils/api.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/recruiter/jd/shortlist/{id}",
+      "files": [
+        "utils/api.ts"
+      ]
+    }
+  ],
+  "domains": {
+    "admin": 20,
+    "interviews": 7,
+    "advanced-analytics": 1,
+    "auth": 3,
+    "jobs": 15,
+    "test": 1,
+    "candidate": 2,
+    "communication": 7,
+    "health": 1,
+    "recruiter": 33,
+    "curriculum": 1,
+    "applications": 12,
+    "notifications": 2,
+    "educational": 1,
+    "opportunities": 1,
+    "company": 3,
+    "hr": 21,
+    "video-interview": 1,
+    "jd": 2,
+    "growth-operator": 10,
+    "employer": 1,
+    "government": 1,
+    "extract-resume": 1,
+    "analytics": 1,
+    "cv": 4
+  }
+}
