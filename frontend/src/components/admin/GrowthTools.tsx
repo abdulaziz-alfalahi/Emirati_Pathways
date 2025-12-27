@@ -174,7 +174,7 @@ export default function GrowthTools() {
         let existingRowsCount = 0;
         try {
             const token = localStorage.getItem('token');
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
             const response = await restClient.post(`/api/growth/check-companies`, {
                 companies: Array.from(uniqueCompanyNames)
             });
@@ -269,7 +269,7 @@ export default function GrowthTools() {
 
         try {
             const token = localStorage.getItem('token');
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
 
             const response = await restClient.post(`/api/growth/import`, formData, {
                 headers: {

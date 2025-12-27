@@ -54,7 +54,7 @@ const MockLogin: React.FC = () => {
 
         // 2. Perform REAL backend login to get valid JWT
         try {
-          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
           const devLoginRes = await fetch(`${baseUrl}/api/auth/dev-login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

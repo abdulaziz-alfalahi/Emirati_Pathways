@@ -269,7 +269,9 @@ app.register_blueprint(hr_job_posting_bp)
 app.register_blueprint(hr_offer_bp)
 app.register_blueprint(public_offer_bp)
 app.register_blueprint(candidate_job_bp)
+logger.info("✅ Candidate Job routes registered (prefix: /api/candidate)")
 app.register_blueprint(job_application_bp)
+logger.info("✅ Job Application routes registered")
 
 # Register Statistics routes
 try:
@@ -2861,9 +2863,14 @@ if __name__ == '__main__':
     print(f"    POST http://localhost:{port}/api/auth/login")
     print(f"    POST http://localhost:{port}/api/auth/register")
     print("")
+    print("  Candidate Dashboard:")
+    print(f"    GET  http://localhost:{port}/api/candidate/dashboard/stats")
+    print(f"    GET  http://localhost:{port}/api/candidate/job-matches")
+    print("")
     print("  CV Management:")
     print(f"    POST http://localhost:{port}/api/cv/upload")
     print(f"    GET  http://localhost:{port}/api/cv/list")
+    print(f"    GET  http://localhost:{port}/api/cv/<cv_id>")
     print(f"    GET  http://localhost:{port}/api/cv/<cv_id>/export/<format>")
     print("")
     print("  School Programs:")
@@ -2909,6 +2916,30 @@ if __name__ == '__main__':
 
     # Initialize SocketIO with App
     socketio.init_app(app)
+
+    # Debug: List all registered routes
+    print("\n" + "="*80)
+    print("DEBUG: ALL REGISTERED ROUTES")
+    print("="*80)
+    routes_by_prefix = {}
+    for rule in app.url_map.iter_rules():
+        prefix = rule.rule.split('/')[1] if '/' in rule.rule else 'root'
+        if prefix not in routes_by_prefix:
+            routes_by_prefix[prefix] = []
+        routes_by_prefix[prefix].append(f"{', '.join(rule.methods - {'OPTIONS', 'HEAD'}):8} {rule.rule}")
+    
+    for prefix in sorted(routes_by_prefix.keys()):
+        if prefix in ['api', 'health', 'debug', 'static']:
+            print(f"\n  /{prefix}:")
+            for route in sorted(routes_by_prefix[prefix])[:20]:  # Limit to 20 per prefix
+                print(f"    {route}")
+    
+    # Check specifically for candidate routes
+    candidate_routes = [r.rule for r in app.url_map.iter_rules() if 'candidate' in r.rule]
+    print(f"\n  CANDIDATE ROUTES FOUND: {len(candidate_routes)}")
+    for route in candidate_routes:
+        print(f"    {route}")
+    print("="*80 + "\n")
 
     # Run the unified Flask app with SocketIO support (Critical for WebRTC signaling)
     # allow_unsafe_werkzeug=True is often needed for dev servers in threaded mode
