@@ -1,0 +1,669 @@
+"""
+HR Dashboard API Routes (Enhanced)
+
+This module provides additional API endpoints for the HR Dashboard that are
+not covered by the existing hr_dashboard_routes.py, including:
+- Shortlisted candidates management
+- Team members listing
+- Enhanced candidate search
+"""
+
+from flask import Blueprint, request, jsonify
+from datetime import datetime, timedelta
+import json
+import logging
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import os
+from functools import wraps
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Create Blueprint - different prefix to avoid conflicts with existing hr_dashboard_bp
+hr_dashboard_api_bp = Blueprint('hr_dashboard_api', __name__, url_prefix='/api/hr')
+
+# Database configuration
+DATABASE_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'emirati_journey'),
+    'user': os.getenv('DB_USER', 'emirati_user'),
+    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+    'port': int(os.getenv('DB_PORT', 5432))
+}
+
+def get_db_connection():
+    """Get database connection"""
+    try:
+        return psycopg2.connect(**DATABASE_CONFIG)
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        return None
+
+def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
+    """Execute a database query with error handling"""
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(query, params)
+            if return_id:
+                result = cursor.fetchone()
+                conn.commit()
+                return result.get('id') if result else None
+            elif fetch_one:
+                result = cursor.fetchone()
+                return dict(result) if result else None
+            elif fetch_all:
+                return [dict(row) for row in cursor.fetchall()]
+            else:
+                conn.commit()
+                return True
+    except Exception as e:
+        logger.error(f"Query execution failed: {e}")
+        conn.rollback()
+        return None
+    finally:
+        conn.close()
+
+def ensure_tables_exist():
+    """Ensure required tables exist"""
+    conn = get_db_connection()
+    if not conn:
+        return
+    
+    try:
+        with conn.cursor() as cursor:
+            # Create shortlisted_candidates table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS shortlisted_candidates (
+                    id SERIAL PRIMARY KEY,
+                    job_id INTEGER NOT NULL,
+                    candidate_id INTEGER NOT NULL,
+                    hr_user_id INTEGER NOT NULL,
+                    notes TEXT,
+                    status VARCHAR(50) DEFAULT 'shortlisted',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(job_id, candidate_id)
+                )
+            """)
+            
+            # Create team_members table if not exists
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS team_members (
+                    id SERIAL PRIMARY KEY,
+                    company_id INTEGER,
+                    user_id INTEGER NOT NULL,
+                    role VARCHAR(100),
+                    department VARCHAR(100),
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            conn.commit()
+            logger.info("HR Dashboard tables ensured")
+    except Exception as e:
+        logger.error(f"Failed to create tables: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+# Initialize tables
+ensure_tables_exist()
+
+def optional_auth(f):
+    """Decorator that allows requests with or without authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# =====================================================
+# SHORTLISTED CANDIDATES ENDPOINTS
+# =====================================================
+
+@hr_dashboard_api_bp.route('/jobs/shortlisted-candidates', methods=['GET'])
+@optional_auth
+def get_all_shortlisted_candidates():
+    """
+    Get all shortlisted candidates across all jobs
+    
+    Query params:
+        job_id: Filter by specific job
+        status: Filter by status
+    """
+    try:
+        job_id = request.args.get('job_id', type=int)
+        status = request.args.get('status')
+        
+        query = """
+            SELECT 
+                sc.id,
+                sc.job_id,
+                sc.candidate_id,
+                sc.notes,
+                sc.status,
+                sc.created_at,
+                u.username as candidate_name,
+                u.email as candidate_email,
+                u.full_name as candidate_full_name,
+                j.title as job_title,
+                j.company as company_name,
+                cv.title as cv_title,
+                cv.id as cv_id
+            FROM shortlisted_candidates sc
+            LEFT JOIN users u ON sc.candidate_id = u.id
+            LEFT JOIN job_descriptions j ON sc.job_id = j.id
+            LEFT JOIN cv_data cv ON sc.candidate_id = cv.user_id AND cv.is_visible = true
+            WHERE 1=1
+        """
+        params = []
+        
+        if job_id:
+            query += " AND sc.job_id = %s"
+            params.append(job_id)
+        
+        if status:
+            query += " AND sc.status = %s"
+            params.append(status)
+        
+        query += " ORDER BY sc.created_at DESC"
+        
+        candidates = execute_query(query, tuple(params) if params else None)
+        
+        return jsonify({
+            'success': True,
+            'data': candidates or [],
+            'total': len(candidates) if candidates else 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get shortlisted candidates: {e}")
+        return jsonify({
+            'success': True,
+            'data': [],
+            'total': 0
+        })
+
+
+@hr_dashboard_api_bp.route('/jobs/<int:job_id>/shortlist', methods=['POST'])
+@optional_auth
+def add_to_shortlist(job_id):
+    """
+    Add a candidate to the shortlist for a job
+    
+    Body:
+        candidate_id: ID of the candidate
+        notes: Optional notes
+    """
+    try:
+        data = request.get_json()
+        candidate_id = data.get('candidate_id')
+        notes = data.get('notes', '')
+        hr_user_id = data.get('hr_user_id', 1)  # Should come from auth
+        
+        if not candidate_id:
+            return jsonify({
+                'success': False,
+                'message': 'Candidate ID required'
+            }), 400
+        
+        # Check if already shortlisted
+        check_query = """
+            SELECT id FROM shortlisted_candidates 
+            WHERE job_id = %s AND candidate_id = %s
+        """
+        existing = execute_query(check_query, (job_id, candidate_id), fetch_one=True)
+        
+        if existing:
+            return jsonify({
+                'success': False,
+                'message': 'Candidate already shortlisted for this job'
+            }), 400
+        
+        # Add to shortlist
+        insert_query = """
+            INSERT INTO shortlisted_candidates (job_id, candidate_id, hr_user_id, notes)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+        """
+        shortlist_id = execute_query(
+            insert_query, 
+            (job_id, candidate_id, hr_user_id, notes),
+            return_id=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'data': {'id': shortlist_id},
+            'message': 'Candidate added to shortlist'
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Failed to add to shortlist: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to add candidate to shortlist'
+        }), 500
+
+
+@hr_dashboard_api_bp.route('/jobs/<int:job_id>/shortlist/<int:candidate_id>', methods=['DELETE'])
+@optional_auth
+def remove_from_shortlist(job_id, candidate_id):
+    """Remove a candidate from the shortlist"""
+    try:
+        query = """
+            DELETE FROM shortlisted_candidates 
+            WHERE job_id = %s AND candidate_id = %s
+        """
+        execute_query(query, (job_id, candidate_id), fetch_all=False)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Candidate removed from shortlist'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to remove from shortlist: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to remove candidate from shortlist'
+        }), 500
+
+
+@hr_dashboard_api_bp.route('/jobs/<int:job_id>/shortlist/<int:candidate_id>/status', methods=['PUT'])
+@optional_auth
+def update_shortlist_status(job_id, candidate_id):
+    """Update the status of a shortlisted candidate"""
+    try:
+        data = request.get_json()
+        status = data.get('status')
+        notes = data.get('notes')
+        
+        valid_statuses = ['shortlisted', 'interviewing', 'offered', 'hired', 'rejected']
+        if status and status not in valid_statuses:
+            return jsonify({
+                'success': False,
+                'message': f'Invalid status. Must be one of: {valid_statuses}'
+            }), 400
+        
+        updates = []
+        params = []
+        
+        if status:
+            updates.append("status = %s")
+            params.append(status)
+        
+        if notes is not None:
+            updates.append("notes = %s")
+            params.append(notes)
+        
+        if updates:
+            updates.append("updated_at = CURRENT_TIMESTAMP")
+            query = f"""
+                UPDATE shortlisted_candidates 
+                SET {', '.join(updates)}
+                WHERE job_id = %s AND candidate_id = %s
+            """
+            params.extend([job_id, candidate_id])
+            execute_query(query, tuple(params), fetch_all=False)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Shortlist status updated'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to update shortlist status: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update status'
+        }), 500
+
+
+# =====================================================
+# TEAM MEMBERS ENDPOINTS
+# =====================================================
+
+@hr_dashboard_api_bp.route('/team/members', methods=['GET'])
+@optional_auth
+def get_team_members():
+    """
+    Get team members for the company
+    
+    Query params:
+        company_id: Filter by company
+        department: Filter by department
+    """
+    try:
+        company_id = request.args.get('company_id', type=int)
+        department = request.args.get('department')
+        
+        # First try to get from team_members table
+        query = """
+            SELECT 
+                tm.id,
+                tm.user_id,
+                tm.role,
+                tm.department,
+                tm.is_active,
+                tm.created_at,
+                u.username,
+                u.email,
+                u.full_name
+            FROM team_members tm
+            LEFT JOIN users u ON tm.user_id = u.id
+            WHERE tm.is_active = true
+        """
+        params = []
+        
+        if company_id:
+            query += " AND tm.company_id = %s"
+            params.append(company_id)
+        
+        if department:
+            query += " AND tm.department = %s"
+            params.append(department)
+        
+        query += " ORDER BY u.full_name"
+        
+        members = execute_query(query, tuple(params) if params else None)
+        
+        # If no team members found, return users with HR/recruiter roles
+        if not members:
+            fallback_query = """
+                SELECT 
+                    id,
+                    id as user_id,
+                    role,
+                    'General' as department,
+                    is_active,
+                    created_at,
+                    username,
+                    email,
+                    full_name
+                FROM users
+                WHERE role IN ('hr_manager', 'recruiter', 'hr', 'hiring_manager')
+                AND is_active = true
+                ORDER BY full_name
+            """
+            members = execute_query(fallback_query)
+        
+        return jsonify({
+            'success': True,
+            'data': members or [],
+            'total': len(members) if members else 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get team members: {e}")
+        return jsonify({
+            'success': True,
+            'data': [],
+            'total': 0
+        })
+
+
+# =====================================================
+# ENHANCED CANDIDATE SEARCH
+# =====================================================
+
+@hr_dashboard_api_bp.route('/candidates/search', methods=['GET', 'POST'])
+@optional_auth
+def search_candidates():
+    """
+    Search for candidates with various filters
+    
+    Query params / Body:
+        query: Search query string
+        skills: List of required skills
+        experience_min: Minimum years of experience
+        experience_max: Maximum years of experience
+        location: Preferred location
+        education: Education level
+        availability: Availability status
+    """
+    try:
+        # Get parameters from either query string or body
+        if request.method == 'POST':
+            data = request.get_json() or {}
+        else:
+            data = request.args.to_dict()
+        
+        search_query = data.get('query', data.get('q', ''))
+        skills = data.get('skills', [])
+        if isinstance(skills, str):
+            skills = [s.strip() for s in skills.split(',') if s.strip()]
+        
+        experience_min = data.get('experience_min', type=int) if request.method == 'GET' else data.get('experience_min')
+        experience_max = data.get('experience_max', type=int) if request.method == 'GET' else data.get('experience_max')
+        location = data.get('location', '')
+        education = data.get('education', '')
+        page = int(data.get('page', 1))
+        per_page = int(data.get('per_page', 20))
+        
+        offset = (page - 1) * per_page
+        
+        # Build search query
+        query = """
+            SELECT DISTINCT
+                u.id,
+                u.username,
+                u.email,
+                u.full_name,
+                u.created_at,
+                cv.id as cv_id,
+                cv.title as cv_title,
+                cv.parsed_data,
+                cv.skills
+            FROM users u
+            LEFT JOIN cv_data cv ON u.id = cv.user_id AND cv.is_visible = true
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
+            AND u.is_active = true
+        """
+        params = []
+        
+        # Text search
+        if search_query:
+            query += """
+                AND (
+                    u.username ILIKE %s 
+                    OR u.email ILIKE %s 
+                    OR u.full_name ILIKE %s
+                    OR cv.title ILIKE %s
+                    OR cv.parsed_data::text ILIKE %s
+                )
+            """
+            search_param = f"%{search_query}%"
+            params.extend([search_param] * 5)
+        
+        # Skills filter
+        if skills:
+            skill_conditions = []
+            for skill in skills:
+                skill_conditions.append("cv.skills::text ILIKE %s")
+                params.append(f"%{skill}%")
+            query += f" AND ({' OR '.join(skill_conditions)})"
+        
+        # Location filter
+        if location:
+            query += " AND (cv.parsed_data->>'location' ILIKE %s OR cv.parsed_data->>'city' ILIKE %s)"
+            params.extend([f"%{location}%", f"%{location}%"])
+        
+        query += " ORDER BY cv.created_at DESC NULLS LAST LIMIT %s OFFSET %s"
+        params.extend([per_page, offset])
+        
+        candidates = execute_query(query, tuple(params))
+        
+        # Process results
+        results = []
+        if candidates:
+            for candidate in candidates:
+                parsed_data = candidate.get('parsed_data') or {}
+                if isinstance(parsed_data, str):
+                    try:
+                        parsed_data = json.loads(parsed_data)
+                    except:
+                        parsed_data = {}
+                
+                skills_data = candidate.get('skills') or []
+                if isinstance(skills_data, str):
+                    try:
+                        skills_data = json.loads(skills_data)
+                    except:
+                        skills_data = []
+                
+                results.append({
+                    'id': candidate.get('id'),
+                    'username': candidate.get('username'),
+                    'email': candidate.get('email'),
+                    'full_name': candidate.get('full_name'),
+                    'cv_id': candidate.get('cv_id'),
+                    'cv_title': candidate.get('cv_title'),
+                    'skills': skills_data[:10] if skills_data else [],
+                    'location': parsed_data.get('location', parsed_data.get('city', '')),
+                    'experience': parsed_data.get('experience', []),
+                    'education': parsed_data.get('education', [])
+                })
+        
+        # Get total count
+        count_query = """
+            SELECT COUNT(DISTINCT u.id) as total
+            FROM users u
+            LEFT JOIN cv_data cv ON u.id = cv.user_id
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
+            AND u.is_active = true
+        """
+        total_result = execute_query(count_query, fetch_one=True)
+        total = total_result.get('total', 0) if total_result else 0
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'candidates': results,
+                'total': total,
+                'page': page,
+                'per_page': per_page,
+                'total_pages': (total + per_page - 1) // per_page
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to search candidates: {e}")
+        return jsonify({
+            'success': True,
+            'data': {
+                'candidates': [],
+                'total': 0,
+                'page': 1,
+                'per_page': 20,
+                'total_pages': 0
+            }
+        })
+
+
+# =====================================================
+# HR METRICS ENDPOINT (Fallback without JWT)
+# =====================================================
+
+@hr_dashboard_api_bp.route('/metrics', methods=['GET'])
+@optional_auth
+def get_hr_metrics():
+    """
+    Get HR dashboard metrics (fallback endpoint without JWT requirement)
+    """
+    try:
+        metrics = {
+            'overview': {
+                'total_jobs': 0,
+                'active_jobs': 0,
+                'total_applications': 0,
+                'new_applications': 0,
+                'interviews_scheduled': 0,
+                'offers_extended': 0,
+                'positions_filled': 0
+            },
+            'performance': {
+                'emiratization_rate': 0,
+                'avg_time_to_hire': 0,
+                'success_rate': 0
+            }
+        }
+        
+        # Get job counts
+        jobs_query = """
+            SELECT 
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE status = 'active' OR status = 'published') as active
+            FROM job_descriptions
+        """
+        jobs_stats = execute_query(jobs_query, fetch_one=True)
+        if jobs_stats:
+            metrics['overview']['total_jobs'] = jobs_stats.get('total', 0) or 0
+            metrics['overview']['active_jobs'] = jobs_stats.get('active', 0) or 0
+        
+        # Get application counts
+        apps_query = """
+            SELECT 
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE) as new_today,
+                COUNT(*) FILTER (WHERE status = 'interview') as interviewing,
+                COUNT(*) FILTER (WHERE status = 'offered') as offered,
+                COUNT(*) FILTER (WHERE status = 'hired') as hired
+            FROM job_applications
+        """
+        apps_stats = execute_query(apps_query, fetch_one=True)
+        if apps_stats:
+            metrics['overview']['total_applications'] = apps_stats.get('total', 0) or 0
+            metrics['overview']['new_applications'] = apps_stats.get('new_today', 0) or 0
+            metrics['overview']['interviews_scheduled'] = apps_stats.get('interviewing', 0) or 0
+            metrics['overview']['offers_extended'] = apps_stats.get('offered', 0) or 0
+            metrics['overview']['positions_filled'] = apps_stats.get('hired', 0) or 0
+        
+        # Calculate success rate
+        if metrics['overview']['total_applications'] > 0:
+            metrics['performance']['success_rate'] = round(
+                (metrics['overview']['positions_filled'] / metrics['overview']['total_applications']) * 100, 1
+            )
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics,
+            'generated_at': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get HR metrics: {e}")
+        return jsonify({
+            'success': True,
+            'metrics': {
+                'overview': {
+                    'total_jobs': 0,
+                    'active_jobs': 0,
+                    'total_applications': 0,
+                    'new_applications': 0,
+                    'interviews_scheduled': 0,
+                    'offers_extended': 0,
+                    'positions_filled': 0
+                },
+                'performance': {
+                    'emiratization_rate': 0,
+                    'avg_time_to_hire': 0,
+                    'success_rate': 0
+                }
+            },
+            'generated_at': datetime.utcnow().isoformat()
+        })
+
+
+# Register the blueprint function
+def register_hr_dashboard_api_routes(app):
+    """Register HR dashboard API routes with the Flask app"""
+    app.register_blueprint(hr_dashboard_api_bp)
+    logger.info("✅ HR Dashboard API routes registered")

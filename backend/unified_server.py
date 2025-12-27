@@ -377,6 +377,31 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ Interview Sessions API Blueprint not available: {e}")
 
+# Register HR Dashboard API Blueprint (enhanced endpoints)
+try:
+    from routes.hr_dashboard_api import hr_dashboard_api_bp
+    app.register_blueprint(hr_dashboard_api_bp)
+    logger.info("✅ HR Dashboard API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Dashboard API Blueprint not available: {e}")
+
+# Register Recruiter Dashboard API Blueprint
+try:
+    from routes.recruiter_dashboard_api import recruiter_dashboard_bp
+    app.register_blueprint(recruiter_dashboard_bp)
+    logger.info("✅ Recruiter Dashboard API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Recruiter Dashboard API Blueprint not available: {e}")
+
+# Register Jobs API Blueprint
+try:
+    from routes.jobs_api import jobs_bp, candidate_jobs_bp
+    app.register_blueprint(jobs_bp)
+    app.register_blueprint(candidate_jobs_bp)
+    logger.info("✅ Jobs API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Jobs API Blueprint not available: {e}")
+
 
 
 # Database configuration
