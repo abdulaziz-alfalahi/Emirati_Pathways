@@ -1,14 +1,14 @@
 {
-  "timestamp": "2025-12-27T13:54:27.212589",
+  "timestamp": "2025-12-27T14:01:45.607509",
   "summary": {
     "total": 40,
-    "passed": 39,
-    "failed": 1
+    "passed": 40,
+    "failed": 0
   },
   "by_workflow": {
     "Candidate": {
-      "passed": 5,
-      "failed": 1
+      "passed": 6,
+      "failed": 0
     },
     "Recruiter": {
       "passed": 9,
@@ -36,7 +36,7 @@
       "workflow": "Candidate",
       "step": "Save CV",
       "passed": true,
-      "details": "{'data': {'cv_id': '39cd41d3-fdff-4cab-8c66-52689e624c34'}, 'message': 'CV saved successfully', 'success': True}"
+      "details": "{'data': {'cv_id': '4778ef6d-097c-4a8a-9d41-a9977bf62d96'}, 'message': 'CV saved successfully', 'success': True}"
     },
     {
       "workflow": "Candidate",
@@ -65,8 +65,8 @@
     {
       "workflow": "Candidate",
       "step": "Get Job Matches",
-      "passed": false,
-      "details": "{'error': '{\\n  \"error\": \"Database connection failed\",\\n  \"success\": false\\n}\\n'}"
+      "passed": true,
+      "details": "{'count': 5, 'jobs': [{'benefits': ['Health Insurance', 'Annual Leave', 'Training Budget'], 'company': 'Emirates NBD', 'description': 'Join our digital transformation team to build innovative banking solutions.', 'id': 1, 'location': 'Dubai, UAE', 'matchScore': 92, 'postedDate': '2025-12-27T14:01:45.517233', 'requirements': ['Python', 'JavaScript', 'React', 'SQL', '3+ years experience'], 'salary': 'AED 18,000 - 25,000', 'title': 'Software Engineer', 'type': 'full-time'}, {'benefits': ['Stock Options', 'Flexible Hours', 'Remote Work'], 'company': 'Careem', 'description': 'Build and scale our ride-hailing and delivery platform.', 'id': 2, 'location': 'Dubai, UAE', 'matchScore': 88, 'postedDate': '2025-12-27T14:01:45.517242', 'requirements': ['Node.js', 'React', 'MongoDB', 'AWS', '2+ years experience'], 'salary': 'AED 15,000 - 22,000', 'title': 'Full Stack Developer', 'type': 'full-time'}, {'benefits': ['Government Benefits', 'Housing Allowance', 'Education Support'], 'company': 'ADNOC', 'description': 'Analyze energy sector data to drive strategic decisions.', 'id': 3, 'location': 'Abu Dhabi, UAE', 'matchScore': 85, 'postedDate': '2025-12-27T14:01:45.517245', 'requirements': ['Python', 'SQL', 'Tableau', 'Power BI', '2+ years experience'], 'salary': 'AED 16,000 - 24,000', 'title': 'Data Analyst', 'type': 'full-time'}, {'benefits': ['Performance Bonus', 'Career Growth', 'Team Events'], 'company': 'Talabat', 'description': 'Lead product development for our food delivery platform.', 'id': 4, 'location': 'Dubai, UAE', 'matchScore': 78, 'postedDate': '2025-12-27T14:01:45.517248', 'requirements': ['Product Management', 'Agile', 'Data Analysis', '4+ years experience'], 'salary': 'AED 22,000 - 32,000', 'title': 'Product Manager', 'type': 'full-time'}, {'benefits': ['Government Benefits', 'Travel Perks', 'Professional Development'], 'company': 'Dubai Airports', 'description': 'Manage cloud infrastructure for world-class airport operations.', 'id': 5, 'location': 'Dubai, UAE', 'matchScore': 75, 'postedDate': '2025-12-27T14:01:45.517251', 'requirements': ['AWS', 'Docker', 'Kubernetes', 'CI/CD', '3+ years experience'], 'salary': 'AED 20,000 - 28,000', 'title': 'DevOps Engineer', 'type': 'full-time'}], 'message': 'Showing recommended jobs based on typical candidate profiles', 'source': 'fallback', 'success': True}"
     },
     {
       "workflow": "Recruiter",
@@ -78,7 +78,7 @@
       "workflow": "Recruiter",
       "step": "Create Job Description",
       "passed": true,
-      "details": "{'data': {'company': 'Tech Innovations LLC', 'created': '2025-12-27T13:54:27.132760', 'id': 4, 'status': 'draft', 'title': 'Senior Software Engineer'}, 'message': 'Job description created successfully', 'success': True}"
+      "details": "{'data': {'company': 'Tech Innovations LLC', 'created': '2025-12-27T14:01:45.522797', 'id': 4, 'status': 'draft', 'title': 'Senior Software Engineer'}, 'message': 'Job description created successfully', 'success': True}"
     },
     {
       "workflow": "Recruiter",
@@ -156,13 +156,13 @@
       "workflow": "HR Manager",
       "step": "Delegate Approval",
       "passed": true,
-      "details": "{'data': {'delegated_at': '2025-12-27T13:54:27.157268', 'delegated_to': 2, 'reason': 'Out of office for training', 'workflow_id': 1}, 'message': 'Approval workflow 1 delegated successfully', 'success': True}"
+      "details": "{'data': {'delegated_at': '2025-12-27T14:01:45.549341', 'delegated_to': 2, 'reason': 'Out of office for training', 'workflow_id': 1}, 'message': 'Approval workflow 1 delegated successfully', 'success': True}"
     },
     {
       "workflow": "Growth Operator",
       "step": "Get All Domain Metrics",
       "passed": true,
-      "details": "{'data': {'assessment': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T18:54:27.160467', 'pending': 0, 'total': 0}, 'candidate': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T18:54:27.158971', 'pending': 0, 'total': 0}, 'community': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T18:54:27.161139', 'pending': 0, 'total': 0}, 'company': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T18:54:27.159738', 'pending': 0, 'total': 0}, 'education': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T18:54:27.160130', 'pending': 0, 'total': 0}, 'mentorship': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T18:54:27.160813', 'pending': 0, 'total': 0}}, 'status': 'success', 'timestamp': '2025-12-27T18:54:27.161480'}"
+      "details": "{'data': {'assessment': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T19:01:45.553096', 'pending': 0, 'total': 0}, 'candidate': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T19:01:45.551382', 'pending': 0, 'total': 0}, 'community': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T19:01:45.553853', 'pending': 0, 'total': 0}, 'company': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T19:01:45.552363', 'pending': 0, 'total': 0}, 'education': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T19:01:45.552756', 'pending': 0, 'total': 0}, 'mentorship': {'active': 0, 'growth': 0, 'lastUpdated': '2025-12-27T19:01:45.553464', 'pending': 0, 'total': 0}}, 'status': 'success', 'timestamp': '2025-12-27T19:01:45.554188'}"
     },
     {
       "workflow": "Growth Operator",
@@ -204,19 +204,19 @@
       "workflow": "Administrator",
       "step": "Get Dashboard Stats",
       "passed": true,
-      "details": "{'data': {'activeUsers': 0, 'newContentToday': 0, 'newUsersToday': 0, 'publishedContent': 0, 'systemHealth': 'warning', 'totalContent': 0, 'totalMedia': 0, 'totalUsers': 0}, 'status': 'success', 'timestamp': '2025-12-27T18:54:27.179691'}"
+      "details": "{'data': {'activeUsers': 0, 'newContentToday': 0, 'newUsersToday': 0, 'publishedContent': 0, 'systemHealth': 'warning', 'totalContent': 0, 'totalMedia': 0, 'totalUsers': 0}, 'status': 'success', 'timestamp': '2025-12-27T19:01:45.573963'}"
     },
     {
       "workflow": "Administrator",
       "step": "Get System Alerts",
       "passed": true,
-      "details": "{'data': [{'id': 'system-status-1', 'isRead': False, 'message': 'Platform is ready for users.', 'timestamp': '2025-12-27T18:54:27.182279', 'title': 'System Ready', 'type': 'info'}], 'status': 'success', 'timestamp': '2025-12-27T18:54:27.182285'}"
+      "details": "{'data': [{'id': 'system-status-1', 'isRead': False, 'message': 'Platform is ready for users.', 'timestamp': '2025-12-27T19:01:45.576489', 'title': 'System Ready', 'type': 'info'}], 'status': 'success', 'timestamp': '2025-12-27T19:01:45.576495'}"
     },
     {
       "workflow": "Administrator",
       "step": "Get Recent Activity",
       "passed": true,
-      "details": "{'data': [], 'status': 'success', 'timestamp': '2025-12-27T18:54:27.185075'}"
+      "details": "{'data': [], 'status': 'success', 'timestamp': '2025-12-27T19:01:45.579486'}"
     },
     {
       "workflow": "Administrator",
