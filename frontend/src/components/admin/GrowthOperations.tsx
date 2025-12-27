@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, CheckCircle, Mail, Filter, RefreshCw, Send } from 'lucide-react';
+import { Filter, RefreshCw, Send, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
-
-// Use environment variable or default
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+import { restClient } from '@/utils/api';
 
 interface CompanyCandidate {
     company_id: string;
@@ -29,20 +25,27 @@ export const GrowthOperations: React.FC = () => {
     const [minVacancies, setMinVacancies] = useState(5);
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
     const [sending, setSending] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchCandidates = async () => {
         setLoading(true);
+        setError(null);
         try {
-            // Using axios directly for simplicity in this demo component, usually would use a wrapped client
-            const response = await axios.get(`${API_BASE_URL}/api/growth/candidates?min_vacancies=${minVacancies}`);
+            const response = await restClient.get(`/api/growth/candidates`, {
+                params: { min_vacancies: minVacancies }
+            });
             if (response.data.success) {
-                setCandidates(response.data.candidates);
-                // Reset selection when list changes
+                setCandidates(response.data.candidates || []);
                 setSelectedCompanies([]);
+            } else {
+                setError(response.data.error || 'Failed to fetch candidates');
+                setCandidates([]);
             }
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to fetch growth candidates");
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.error || err?.message || 'Failed to fetch growth candidates';
+            setError(errorMessage);
+            toast.error(errorMessage);
+            setCandidates([]);
         } finally {
             setLoading(false);
         }
@@ -51,10 +54,10 @@ export const GrowthOperations: React.FC = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchCandidates();
-        }, 500); // Debounce for 500ms
+        }, 500);
 
         return () => clearTimeout(timer);
-    }, [minVacancies]); // Refetch when filter changes
+    }, [minVacancies]);
 
     const toggleSelectAll = (checked: boolean) => {
         if (checked) {
@@ -81,21 +84,21 @@ export const GrowthOperations: React.FC = () => {
 
         setSending(true);
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/growth/send-emails`, {
+            const response = await restClient.post(`/api/growth/send-emails`, {
                 company_ids: selectedCompanies
             });
 
             if (response.data.success) {
                 const report = response.data.report;
                 toast.success(`Sent: ${report.sent}, Failed: ${report.failed}`);
-                // Refresh list if needed, or just clear selection
                 setSelectedCompanies([]);
+                fetchCandidates();
             } else {
                 toast.error(response.data.error || "Failed to send emails");
             }
-        } catch (error: any) {
-            console.error(error);
-            toast.error("Failed to trigger email send");
+        } catch (err: any) {
+            const errorMessage = err?.response?.data?.error || err?.message || 'Failed to trigger email send';
+            toast.error(errorMessage);
         } finally {
             setSending(false);
         }
@@ -104,7 +107,6 @@ export const GrowthOperations: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Filter Card */}
                 <Card className="md:col-span-1">
                     <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -144,7 +146,6 @@ export const GrowthOperations: React.FC = () => {
                     </CardContent>
                 </Card>
 
-                {/* Stats Card */}
                 <Card className="md:col-span-2 bg-slate-50 border-dashed">
                     <CardHeader>
                         <CardTitle className="text-lg">Campaign Overview</CardTitle>
@@ -168,7 +169,18 @@ export const GrowthOperations: React.FC = () => {
                 </Card>
             </div>
 
-            {/* Main Table */}
+            {error && (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="flex items-center gap-2 py-4">
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <span className="text-red-700">{error}</span>
+                        <Button variant="outline" size="sm" onClick={fetchCandidates} className="ml-auto">
+                            Retry
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -209,7 +221,14 @@ export const GrowthOperations: React.FC = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {candidates.length === 0 ? (
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+                                            Loading candidates...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : candidates.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-24 text-center">
                                             No companies found matching criteria.

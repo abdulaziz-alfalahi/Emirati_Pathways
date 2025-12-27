@@ -37,7 +37,7 @@ import {
   Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 // Types
 interface Job {
@@ -114,7 +114,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
       if (searchFilters.emiratization_only) params.append('emiratization', 'true');
       if (searchFilters.remote_only) params.append('remote', 'true');
       
-      const response = await axios.get(`/api/jobs?${params.toString()}`, {
+      const response = await restClient.get(`/api/jobs?${params.toString()}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
 
@@ -133,10 +133,10 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
   const loadUserJobData = useCallback(async () => {
     try {
       const [savedResponse, appliedResponse] = await Promise.all([
-        axios.get('/api/jobs/saved', {
+        restClient.get('/api/jobs/saved', {
           headers: { Authorization: `Bearer ${authToken}` }
         }),
-        axios.get('/api/applications', {
+        restClient.get('/api/applications', {
           headers: { Authorization: `Bearer ${authToken}` }
         })
       ]);
@@ -159,7 +159,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
       const isSaved = savedJobs.has(jobId);
       
       if (isSaved) {
-        await axios.delete(`/api/jobs/${jobId}/save`, {
+        await restClient.delete(`/api/jobs/${jobId}/save`, {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         setSavedJobs(prev => {
@@ -169,7 +169,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
         });
         toast.success('Job removed from saved');
       } else {
-        await axios.post(`/api/jobs/${jobId}/save`, {}, {
+        await restClient.post(`/api/jobs/${jobId}/save`, {}, {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         setSavedJobs(prev => new Set(prev).add(jobId));
@@ -184,7 +184,7 @@ const MobileJobSearch: React.FC<MobileJobSearchProps> = ({
   // Apply to job
   const applyToJob = async (jobId: string) => {
     try {
-      const response = await axios.post(`/api/jobs/${jobId}/apply`, {
+      const response = await restClient.post(`/api/jobs/${jobId}/apply`, {
         cover_letter: `I am interested in applying for this position. My profile demonstrates the skills and experience required for this role.`
       }, {
         headers: { Authorization: `Bearer ${authToken}` }

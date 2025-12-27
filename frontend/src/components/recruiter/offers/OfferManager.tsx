@@ -33,7 +33,7 @@ import {
   Description as DescriptionIcon,
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface JobOffer {
   offer_id: string;
@@ -112,7 +112,7 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/jd/${jdId}`);
+      const response = await restClient.get(`/api/recruiter/offers/jd/${jdId}`);
       setOffers(response.data.offers || []);
     } catch (err: any) {
       console.error('Error loading offers:', err);
@@ -124,7 +124,7 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/statistics/${jdId}`);
+      const response = await restClient.get(`/api/recruiter/offers/statistics/${jdId}`);
       setStats(response.data.statistics);
     } catch (err: any) {
       console.error('Error loading statistics:', err);

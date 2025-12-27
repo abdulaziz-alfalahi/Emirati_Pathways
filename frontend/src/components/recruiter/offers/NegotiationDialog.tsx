@@ -27,7 +27,7 @@ import {
   Message as MessageIcon,
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface JobOffer {
   offer_id: string;
@@ -81,7 +81,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
   const loadNegotiationHistory = async () => {
     try {
       // Fetch fresh offer details to get latest negotiation history
-      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/${offer.offer_id}`);
+      const response = await restClient.get(`/api/recruiter/offers/${offer.offer_id}`);
       console.log('Loaded offer details:', response.data.offer);
       console.log('Negotiation history from API:', response.data.offer?.negotiation_history);
 
@@ -144,8 +144,8 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
         payload.proposed_benefits = proposedBenefits;
       }
 
-      await axios.post(
-        `http://127.0.0.1:5005/api/recruiter/offers/${offer.offer_id}/negotiate`,
+      await restClient.post(
+        `/api/recruiter/offers/${offer.offer_id}/negotiate`,
         payload
       );
 

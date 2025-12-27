@@ -17,7 +17,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { Close as CloseIcon, Star as StarIcon } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface Interview {
   interview_id: string;
@@ -68,7 +68,7 @@ export const InterviewFeedbackDialog: React.FC<InterviewFeedbackDialogProps> = (
       setLoading(true);
       setError(null);
 
-      const response = await axios.post(
+      const response = await restClient.post(
         `${API_BASE_URL}/api/recruiter/interviews/${interview.interview_id}/complete`,
         formData
       );

@@ -30,7 +30,7 @@ import {
   VolumeX
 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 // Types
 interface Notification {
@@ -236,7 +236,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const loadPreferences = async () => {
     try {
-      const response = await axios.get('/api/notifications/preferences', {
+      const response = await restClient.get('/api/notifications/preferences', {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       setPreferences(response.data.preferences);
@@ -265,7 +265,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const updatePreferences = useCallback(async (newPreferences: NotificationPreferences) => {
     try {
-      await axios.post('/api/notifications/preferences', newPreferences, {
+      await restClient.post('/api/notifications/preferences', newPreferences, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       setPreferences(newPreferences);

@@ -53,7 +53,7 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 // Types
 interface AnalyticsInsight {
@@ -122,7 +122,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       setLoading(true);
       setError(null);
 
-      const response = await axios.get('/api/advanced-analytics/dashboard', {
+      const response = await restClient.get('/api/advanced-analytics/dashboard', {
         headers: { Authorization: `Bearer ${authToken}` }
       });
 

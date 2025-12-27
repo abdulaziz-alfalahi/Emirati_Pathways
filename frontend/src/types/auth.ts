@@ -6,7 +6,24 @@ export type UserRole =
   | 'hr'
   | 'recruiter'
   | 'administrator'
-  | 'admin';
+  | 'admin'
+  // Growth Operator Roles (Domain-Specific)
+  | 'growth_operator'
+  | 'growth_operator_candidate'
+  | 'growth_operator_company'
+  | 'growth_operator_education'
+  | 'growth_operator_assessment'
+  | 'growth_operator_mentorship'
+  | 'growth_operator_community';
+
+// Growth Operator Domain Types
+export type GrowthOperatorDomain = 
+  | 'candidate'
+  | 'company'
+  | 'education'
+  | 'assessment'
+  | 'mentorship'
+  | 'community';
 
 // User Status Types
 export type UserStatus = 
@@ -30,7 +47,20 @@ export type Permission =
   | 'manage_users'
   | 'system_settings'
   | 'view_all_analytics'
-  | 'manage_all';
+  | 'manage_all'
+  // Growth Operator Permissions
+  | 'onboard_candidates'
+  | 'manage_candidate_engagement'
+  | 'onboard_companies'
+  | 'manage_company_engagement'
+  | 'onboard_education'
+  | 'manage_education_partnerships'
+  | 'onboard_assessment'
+  | 'manage_assessment_centers'
+  | 'onboard_mentors'
+  | 'manage_mentorship_programs'
+  | 'moderate_communities'
+  | 'manage_community_events';
 
 // Authentication Types
 export interface AuthUser {
@@ -49,6 +79,7 @@ export interface AuthUser {
   updated_at?: string;
   email_verified?: boolean;
   phone_verified?: boolean;
+  growth_operator_domains?: GrowthOperatorDomain[];
   user_metadata?: {
     full_name?: string;
     name?: string;
@@ -56,6 +87,7 @@ export interface AuthUser {
     last_name?: string;
     user_type?: UserRole;
     roles?: UserRole[];
+    growth_operator_domains?: GrowthOperatorDomain[];
   };
 }
 
@@ -106,6 +138,14 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'recruiter': '/recruiter-dashboard',
   'administrator': '/admin-dashboard',
   'admin': '/admin-dashboard',
+  // Growth Operator Routes
+  'growth_operator': '/growth-operator-dashboard',
+  'growth_operator_candidate': '/growth-operator-dashboard/candidates',
+  'growth_operator_company': '/growth-operator-dashboard/companies',
+  'growth_operator_education': '/growth-operator-dashboard/education',
+  'growth_operator_assessment': '/growth-operator-dashboard/assessment',
+  'growth_operator_mentorship': '/growth-operator-dashboard/mentorship',
+  'growth_operator_community': '/growth-operator-dashboard/community',
 };
 
 // Role Display Names
@@ -117,9 +157,62 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'recruiter': 'Recruiter',
   'administrator': 'Administrator',
   'admin': 'Administrator',
+  // Growth Operator Display Names
+  'growth_operator': 'Growth Operator',
+  'growth_operator_candidate': 'Candidate Growth Operator',
+  'growth_operator_company': 'Company Growth Operator',
+  'growth_operator_education': 'Education Growth Operator',
+  'growth_operator_assessment': 'Assessment Growth Operator',
+  'growth_operator_mentorship': 'Mentorship Growth Operator',
+  'growth_operator_community': 'Community Growth Operator',
 };
 
-// Role Permissions - Fixed typing
+// Growth Operator Domain Configuration
+export const GROWTH_OPERATOR_DOMAINS: Record<GrowthOperatorDomain, {
+  label: string;
+  description: string;
+  icon: string;
+  permissions: Permission[];
+}> = {
+  'candidate': {
+    label: 'Candidate Operations',
+    description: 'Manage candidate acquisition, engagement, and profile quality',
+    icon: 'Users',
+    permissions: ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics']
+  },
+  'company': {
+    label: 'Company Operations',
+    description: 'Onboard companies and manage employer engagement',
+    icon: 'Building',
+    permissions: ['onboard_companies', 'manage_company_engagement', 'view_analytics']
+  },
+  'education': {
+    label: 'Education Operations',
+    description: 'Partner with schools, universities, and training institutes',
+    icon: 'GraduationCap',
+    permissions: ['onboard_education', 'manage_education_partnerships', 'view_analytics']
+  },
+  'assessment': {
+    label: 'Assessment Operations',
+    description: 'Manage assessment centers and certification bodies',
+    icon: 'ClipboardCheck',
+    permissions: ['onboard_assessment', 'manage_assessment_centers', 'view_analytics']
+  },
+  'mentorship': {
+    label: 'Mentorship Operations',
+    description: 'Onboard mentors and manage coaching programs',
+    icon: 'UserCheck',
+    permissions: ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics']
+  },
+  'community': {
+    label: 'Community Operations',
+    description: 'Moderate communities and manage events',
+    icon: 'MessageCircle',
+    permissions: ['moderate_communities', 'manage_community_events', 'view_analytics']
+  }
+};
+
+// Role Permissions
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'job_seeker': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'],
   'candidate': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'],
@@ -128,6 +221,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'recruiter': ['manage_candidates', 'post_jobs', 'screen_candidates'],
   'administrator': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'],
   'admin': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'],
+  // Growth Operator Permissions
+  'growth_operator': ['view_analytics'],
+  'growth_operator_candidate': ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'],
+  'growth_operator_company': ['onboard_companies', 'manage_company_engagement', 'view_analytics'],
+  'growth_operator_education': ['onboard_education', 'manage_education_partnerships', 'view_analytics'],
+  'growth_operator_assessment': ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'],
+  'growth_operator_mentorship': ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'],
+  'growth_operator_community': ['moderate_communities', 'manage_community_events', 'view_analytics'],
 };
 
 // Helper Functions
@@ -149,6 +250,16 @@ export const hasPermission = (userRole: UserRole | string, permission: Permissio
 
 export const isValidRole = (role: string): role is UserRole => {
   return Object.keys(ROLE_DASHBOARD_MAP).includes(role.toLowerCase());
+};
+
+export const isGrowthOperatorRole = (role: UserRole | string): boolean => {
+  return role.toString().startsWith('growth_operator');
+};
+
+export const getGrowthOperatorDomain = (role: UserRole | string): GrowthOperatorDomain | null => {
+  const roleStr = role.toString();
+  if (!roleStr.startsWith('growth_operator_')) return null;
+  return roleStr.replace('growth_operator_', '') as GrowthOperatorDomain;
 };
 
 // UAE Emirates

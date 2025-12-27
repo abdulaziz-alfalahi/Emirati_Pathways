@@ -43,7 +43,7 @@ import {
   Delete as DeleteIcon,
   Feedback as FeedbackIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface Interview {
   interview_id: string;
@@ -113,7 +113,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
       const params = new URLSearchParams();
       if (status) params.append('status', status);
 
-      const response = await axios.get(
+      const response = await restClient.get(
         `${API_BASE_URL}/api/recruiter/interviews/jd/${jdId}?${params.toString()}`
       );
 
@@ -129,7 +129,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(
+      const response = await restClient.get(
         `${API_BASE_URL}/api/recruiter/interviews/stats/${jdId}`
       );
 
@@ -149,7 +149,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
 
   const handleConfirmInterview = async (interviewId: string) => {
     try {
-      const response = await axios.post(
+      const response = await restClient.post(
         `${API_BASE_URL}/api/recruiter/interviews/${interviewId}/confirm`,
         { confirmation_status: 'confirmed' }
       );
@@ -169,7 +169,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
     if (!reason) return;
 
     try {
-      const response = await axios.post(
+      const response = await restClient.post(
         `${API_BASE_URL}/api/recruiter/interviews/${interviewId}/cancel`,
         { cancellation_reason: reason }
       );

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 import { TeamManagementTab } from '@/components/hr/TeamManagementTab';
+import { ApprovalWorkflow } from '@/components/hr/ApprovalWorkflow';
 import { Checkbox } from "@/components/ui/checkbox";
 import RecruiterInterviews from '@/components/recruiter/Interviews';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,7 +107,7 @@ const HRDashboard: React.FC = () => {
       try {
         const token = localStorage.getItem('access_token');
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-        const response = await axios.get(`${baseUrl}/api/company/team/members?company_id=${COMPANY_ID}`, {
+        const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`,
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.data.success) {
@@ -121,7 +122,7 @@ const HRDashboard: React.FC = () => {
       try {
         const token = localStorage.getItem('access_token');
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-        const response = await axios.get(`${baseUrl}/api/hr/jobs?limit=5`, {
+        const response = await restClient.get(`/api/hr/jobs?limit=5`,
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.data.success) {
@@ -155,7 +156,7 @@ const HRDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      await axios.delete(`${baseUrl}/api/hr/jobs/${jobId}/shortlist/${candidateId}`, {
+      await restClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`,
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh list
@@ -172,7 +173,7 @@ const HRDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      const response = await axios.delete(`${baseUrl}/api/recruiter/jd/${jobId}`, {
+      const response = await restClient.delete(`/api/recruiter/jd/${jobId}`,
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -192,11 +193,11 @@ const HRDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      await axios.post(`${baseUrl}/api/communication/messages`, {
+      await restClient.post(`/api/communication/messages`,
         recipient_id: selectedCandidate.candidate_id,
         content: messageContent,
         message_type: 'text'
-      }, {
+      },
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Message sent successfully');
@@ -216,13 +217,13 @@ const HRDashboard: React.FC = () => {
 
       // Look up application_id if available, otherwise might fail if strict
       // For now we assume we have enough context or backend handles it loosely
-      await axios.post(`${baseUrl}/api/interviews/sessions`, {
+      await restClient.post(`/api/interviews/sessions`,
         candidate_id: selectedCandidate.candidate_id,
         scheduled_at: new Date(interviewDate).toISOString(),
         title: interviewTitle,
         application_id: selectedCandidate.application_id, // Ensure backend provides this in shortlist view
         attendees: selectedAttendees // Pass attendees
-      }, {
+      },
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Interview scheduled successfully');
@@ -267,7 +268,7 @@ const HRDashboard: React.FC = () => {
 
       // 1. Fetch Metrics
       try {
-        const metricsResponse = await axios.get(`${baseUrl}/api/hr/dashboard/metrics`, { headers });
+        const metricsResponse = await restClient.get(`/api/hr/dashboard/metrics`, { headers });
         if (metricsResponse.data.success) {
           const m = metricsResponse.data.metrics;
           setDashboardData(prev => ({
@@ -299,14 +300,14 @@ const HRDashboard: React.FC = () => {
 
       // 2. Fetch Jobs (Positions)
       try {
-        await axios.get(`${baseUrl}/api/hr/jobs`, { headers });
+        await restClient.get(`/api/hr/jobs`, { headers });
       } catch (error) {
         console.error("Failed to fetch jobs", error);
       }
 
       // 3. Fetch Shortlisted Candidates
       try {
-        const shortlistResponse = await axios.get(`${baseUrl}/api/hr/jobs/shortlisted-candidates`, { headers });
+        const shortlistResponse = await restClient.get(`/api/hr/jobs/shortlisted-candidates`, { headers });
         if (shortlistResponse.data.success) {
           console.log("Shortlist loaded:", shortlistResponse.data.data.length);
           setShortlistedCandidates(shortlistResponse.data.data);
@@ -396,8 +397,9 @@ const HRDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
+            <TabsList className="grid w-full grid-cols-8 bg-white shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
+              <TabsTrigger value="approvals" className="font-dubai-medium">Approvals</TabsTrigger>
               <TabsTrigger value="team" className="font-dubai-medium">Team</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
               <TabsTrigger value="interviews" className="font-dubai-medium">Interviews</TabsTrigger>
@@ -540,6 +542,14 @@ const HRDashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Approvals Tab */}
+            <TabsContent value="approvals" className="space-y-6">
+              <ApprovalWorkflow 
+                companyId={COMPANY_ID} 
+                hrManagerId="hr-manager-id" 
+              />
             </TabsContent>
 
             {/* Candidates Tab */}

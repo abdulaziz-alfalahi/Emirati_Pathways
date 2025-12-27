@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { restClient } from '@/utils/api';
 import { 
   Users, 
   FileText, 
@@ -78,64 +79,31 @@ const AdminDashboard: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Simulate API calls - replace with actual API endpoints
-      const mockStats: DashboardStats = {
-        totalUsers: 1247,
-        activeUsers: 892,
-        totalContent: 156,
-        publishedContent: 134,
-        totalMedia: 89,
-        systemHealth: 'healthy',
-        newUsersToday: 23,
-        newContentToday: 7
-      };
+      // Fetch dashboard data from API with graceful fallback
+      const [statsResponse, alertsResponse, activityResponse] = await Promise.allSettled([
+        restClient.get('/api/admin/dashboard/stats', { params: { timeRange: selectedTimeRange } }),
+        restClient.get('/api/admin/alerts'),
+        restClient.get('/api/admin/activity/recent')
+      ]);
 
-      const mockAlerts: SystemAlert[] = [
-        {
-          id: '1',
-          type: 'warning',
-          title: 'High Memory Usage',
-          message: 'System memory usage is at 85%. Consider optimizing or scaling.',
-          timestamp: new Date().toISOString(),
-          isRead: false
-        },
-        {
-          id: '2',
-          type: 'success',
-          title: 'Backup Completed',
-          message: 'Daily backup completed successfully at 02:00 AM.',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          isRead: true
-        }
-      ];
+      // Process stats response
+      if (statsResponse.status === 'fulfilled' && statsResponse.value.data?.data) {
+        setStats(statsResponse.value.data.data);
+      }
 
-      const mockActivity: RecentActivity[] = [
-        {
-          id: '1',
-          type: 'user_created',
-          description: 'New user registration: ahmed.hassan@email.com',
-          user: 'System',
-          timestamp: new Date(Date.now() - 1800000).toISOString()
-        },
-        {
-          id: '2',
-          type: 'content_published',
-          description: 'Published article: "UAE Career Development Guide"',
-          user: 'Sarah Al-Mansouri',
-          timestamp: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: '3',
-          type: 'media_uploaded',
-          description: 'Uploaded new image: career-guidance-infographic.png',
-          user: 'Mohammed Al-Zaabi',
-          timestamp: new Date(Date.now() - 7200000).toISOString()
-        }
-      ];
+      // Process alerts response
+      if (alertsResponse.status === 'fulfilled' && alertsResponse.value.data?.data) {
+        setAlerts(alertsResponse.value.data.data);
+      } else {
+        setAlerts([]);
+      }
 
-      setStats(mockStats);
-      setAlerts(mockAlerts);
-      setRecentActivity(mockActivity);
+      // Process activity response
+      if (activityResponse.status === 'fulfilled' && activityResponse.value.data?.data) {
+        setRecentActivity(activityResponse.value.data.data);
+      } else {
+        setRecentActivity([]);
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {

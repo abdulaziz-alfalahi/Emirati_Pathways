@@ -33,7 +33,7 @@ import {
   InsertDriveFile as TemplateIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface Candidate {
   shortlist_id: string;
@@ -78,7 +78,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5005';
+  // API_BASE_URL handled by restClient
 
   useEffect(() => {
     loadTemplates();
@@ -86,7 +86,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
   const loadTemplates = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/recruiter/communication/templates`);
+      const response = await restClient.get('/api/recruiter/communication/templates');
       if (response.data.success) {
         setTemplates(response.data.templates);
       }
@@ -124,7 +124,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
     setSuccess(null);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/recruiter/communication/send`, {
+      const response = await restClient.post('/api/recruiter/communication/send', {
         shortlist_ids: candidates.map(c => c.shortlist_id),
         message_type: messageType,
         subject: messageType === 'email' || messageType === 'both' ? subject : undefined,

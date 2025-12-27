@@ -11,7 +11,7 @@ import {
     Rocket, Upload, CheckCircle, AlertTriangle, FileText,
     RefreshCw, XCircle, Search, Filter, Calendar, Building2
 } from 'lucide-react';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface ParsedRow {
     id: number;
@@ -175,10 +175,11 @@ export default function GrowthTools() {
         try {
             const token = localStorage.getItem('token');
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-            const response = await axios.post(`${baseUrl}/api/growth/check-companies`, {
+            const response = await restClient.post(`/api/growth/check-companies`, {
                 companies: Array.from(uniqueCompanyNames)
             }, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                // headers handled by restClient interceptor
+                // headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const existingSet = new Set(response.data.existing);
@@ -273,8 +274,9 @@ export default function GrowthTools() {
             const token = localStorage.getItem('token');
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
 
-            const response = await axios.post(`${baseUrl}/api/growth/import`, formData, {
-                headers: {
+            const response = await restClient.post(`/api/growth/import`, formData, {
+                // headers handled by restClient interceptor
+                // headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`
                 }

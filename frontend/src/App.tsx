@@ -23,6 +23,7 @@ import { VerifyJob } from '@/pages/public/VerifyJob';
 const CandidateDashboard = lazy(() => import('@/pages/CandidateDashboard'));
 const HRDashboard = lazy(() => import('@/pages/HRDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
+const GrowthOperatorDashboard = lazy(() => import('@/pages/GrowthOperatorDashboard'));
 const EmployerDashboard = lazy(() => import('@/pages/EmployerDashboard'));
 const EducatorDashboard = lazy(() => import('@/pages/EducatorDashboard'));
 const MentorDashboard = lazy(() => import('@/pages/MentorDashboard'));
@@ -335,6 +336,24 @@ const AppContent: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['administrator', 'admin']}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Growth Operator Dashboard Routes */}
+            <Route
+              path="/growth-operator-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
+                  <GrowthOperatorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/growth-operator-dashboard/:domain"
+              element={
+                <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
+                  <GrowthOperatorDashboard />
                 </ProtectedRoute>
               }
             />

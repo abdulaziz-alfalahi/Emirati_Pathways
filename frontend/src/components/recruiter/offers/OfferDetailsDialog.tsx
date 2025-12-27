@@ -36,7 +36,7 @@ import {
   Work as WorkIcon,
   CardGiftcard as CardGiftcardIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { restClient } from '@/utils/api';
 
 interface JobOffer {
   offer_id: string;
@@ -116,7 +116,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
 
   const reloadOfferDetails = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}`);
+      const response = await restClient.get(`/api/recruiter/offers/${currentOffer.offer_id}`);
       if (response.data.offer) {
         const updatedOffer = response.data.offer;
         setCurrentOffer(updatedOffer);
@@ -143,7 +143,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/send`);
+      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/send`);
       setSuccess('Offer sent successfully to candidate');
 
       // Reload offer details to show updated status and timestamps
@@ -166,7 +166,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
+      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
         approved_by: 'manager_001', // TODO: Get from auth context
       });
       setSuccess('Offer approved successfully');
@@ -191,7 +191,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
+      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
         rejected_by: 'manager_001', // TODO: Get from auth context
         rejection_reason: 'Budget constraints',
       });
@@ -221,7 +221,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
+      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/withdraw`, {
         reason: 'Position filled by another candidate',
       });
       setSuccess('Offer withdrawn successfully');
@@ -255,7 +255,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
         updates.response_deadline = responseDeadline;
       }
 
-      await axios.put(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}`, updates);
+      await restClient.put(`/api/recruiter/offers/${currentOffer.offer_id}`, updates);
       setSuccess('Offer updated successfully');
       setEditMode(false);
 
@@ -280,7 +280,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
       setError(null);
       setSuccess(null);
 
-      await axios.post(`http://127.0.0.1:5005/api/recruiter/offers/${currentOffer.offer_id}/response`, {
+      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/response`, {
         response: response,
       });
       setSuccess(`Candidate response recorded: ${response}`);
