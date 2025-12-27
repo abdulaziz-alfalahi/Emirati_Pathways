@@ -237,10 +237,23 @@ class CVExporter:
                 skills_by_category = {}
                 
                 for skill in data['skills']:
-                    category = skill.get('category', 'Other')
+                    # Handle both string and dict formats
+                    if isinstance(skill, str):
+                        # Simple string format - categorize as 'Skills'
+                        category = 'Skills'
+                        skill_name = skill
+                    elif isinstance(skill, dict):
+                        # Dict format with category and name
+                        category = skill.get('category', 'Other')
+                        skill_name = skill.get('name', str(skill))
+                    else:
+                        # Fallback for any other type
+                        category = 'Other'
+                        skill_name = str(skill)
+                    
                     if category not in skills_by_category:
                         skills_by_category[category] = []
-                    skills_by_category[category].append(skill['name'])
+                    skills_by_category[category].append(skill_name)
                 
                 for category, skills in skills_by_category.items():
                     story.append(Paragraph(f"<b>{category}:</b> {', '.join(skills)}", styles['Normal']))
@@ -421,10 +434,23 @@ class CVExporter:
                 skills_by_category = {}
                 
                 for skill in data['skills']:
-                    category = skill.get('category', 'Other')
+                    # Handle both string and dict formats
+                    if isinstance(skill, str):
+                        # Simple string format - categorize as 'Skills'
+                        category = 'Skills'
+                        skill_name = skill
+                    elif isinstance(skill, dict):
+                        # Dict format with category and name
+                        category = skill.get('category', 'Other')
+                        skill_name = skill.get('name', str(skill))
+                    else:
+                        # Fallback for any other type
+                        category = 'Other'
+                        skill_name = str(skill)
+                    
                     if category not in skills_by_category:
                         skills_by_category[category] = []
-                    skills_by_category[category].append(skill['name'])
+                    skills_by_category[category].append(skill_name)
                 
                 for category, skills in skills_by_category.items():
                     skill_para = doc.add_paragraph()
