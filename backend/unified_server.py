@@ -345,6 +345,38 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ HR Dashboard Blueprint not available: {e}")
 
+# Register Admin Dashboard API Blueprint (dashboard stats, alerts, activity)
+try:
+    from routes.admin_dashboard_api import admin_dashboard_bp
+    app.register_blueprint(admin_dashboard_bp)
+    logger.info("✅ Admin Dashboard API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Admin Dashboard API Blueprint not available: {e}")
+
+# Register Growth Operator API Blueprint
+try:
+    from routes.growth_operator_api import growth_operator_bp
+    app.register_blueprint(growth_operator_bp)
+    logger.info("✅ Growth Operator API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Growth Operator API Blueprint not available: {e}")
+
+# Register Communication API Blueprint
+try:
+    from routes.communication_api import communication_bp
+    app.register_blueprint(communication_bp)
+    logger.info("✅ Communication API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Communication API Blueprint not available: {e}")
+
+# Register Interview Sessions API Blueprint
+try:
+    from routes.interview_sessions_api import interview_sessions_bp
+    app.register_blueprint(interview_sessions_bp)
+    logger.info("✅ Interview Sessions API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Interview Sessions API Blueprint not available: {e}")
+
 
 
 # Database configuration
