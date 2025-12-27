@@ -107,9 +107,7 @@ const HRDashboard: React.FC = () => {
       try {
         const token = localStorage.getItem('access_token');
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-        const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`,
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`);
         if (response.data.success) {
           setTeamMembers(response.data.members);
         }
@@ -122,9 +120,7 @@ const HRDashboard: React.FC = () => {
       try {
         const token = localStorage.getItem('access_token');
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-        const response = await restClient.get(`/api/hr/jobs?limit=5`,
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await restClient.get(`/api/hr/jobs?limit=5`);
         if (response.data.success) {
           setActiveJobs(response.data.data.job_postings);
         }
@@ -156,9 +152,7 @@ const HRDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      await restClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`,
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await restClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`);
       // Refresh list
       setShortlistedCandidates(prev => prev.filter(c => c.candidate_id !== candidateId));
       alert('Candidate removed from shortlist');
@@ -173,9 +167,7 @@ const HRDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      const response = await restClient.delete(`/api/recruiter/jd/${jobId}`,
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await restClient.delete(`/api/recruiter/jd/${jobId}`);
 
       if (response.data.success) {
         setActiveJobs(prev => prev.filter(job => job.id !== jobId));
@@ -193,12 +185,10 @@ const HRDashboard: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
-      await restClient.post(`/api/communication/messages`,
+      await restClient.post(`/api/communication/messages`, {
         recipient_id: selectedCandidate.candidate_id,
         content: messageContent,
         message_type: 'text'
-      },
-        headers: { Authorization: `Bearer ${token}` }
       });
       alert('Message sent successfully');
       setActiveModal(null);
@@ -217,14 +207,12 @@ const HRDashboard: React.FC = () => {
 
       // Look up application_id if available, otherwise might fail if strict
       // For now we assume we have enough context or backend handles it loosely
-      await restClient.post(`/api/interviews/sessions`,
+      await restClient.post(`/api/interviews/sessions`, {
         candidate_id: selectedCandidate.candidate_id,
         scheduled_at: new Date(interviewDate).toISOString(),
         title: interviewTitle,
         application_id: selectedCandidate.application_id, // Ensure backend provides this in shortlist view
         attendees: selectedAttendees // Pass attendees
-      },
-        headers: { Authorization: `Bearer ${token}` }
       });
       alert('Interview scheduled successfully');
       setActiveModal(null);

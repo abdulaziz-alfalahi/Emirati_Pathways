@@ -177,9 +177,6 @@ export default function GrowthTools() {
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
             const response = await restClient.post(`/api/growth/check-companies`, {
                 companies: Array.from(uniqueCompanyNames)
-            }, {
-                // headers handled by restClient interceptor
-                // headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const existingSet = new Set(response.data.existing);
@@ -275,10 +272,8 @@ export default function GrowthTools() {
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
 
             const response = await restClient.post(`/api/growth/import`, formData, {
-                // headers handled by restClient interceptor
-                // headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
+                headers: {
+                    'Content-Type': 'multipart/form-data'
                 }
             });
 
