@@ -1622,6 +1622,8 @@ def get_profile():
 @app.route('/api/candidate/dashboard/stats', methods=['GET'])
 def get_candidate_dashboard_stats():
     """Get aggregated stats for candidate dashboard"""
+    logger.info("🎯 HIT: /api/candidate/dashboard/stats route in unified_server.py")
+    print("🎯 HIT: /api/candidate/dashboard/stats route in unified_server.py", flush=True)
     try:
         # Auth check
         auth_header = request.headers.get('Authorization', '')
@@ -2780,7 +2782,9 @@ def list_providers():
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Not found'}), 404
+    logger.warning(f"⚠️ 404 NOT FOUND: {request.method} {request.path}")
+    print(f"⚠️ 404 NOT FOUND: {request.method} {request.path}", flush=True)
+    return jsonify({'error': 'Not found', 'path': request.path, 'method': request.method}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
