@@ -57,7 +57,7 @@ class AIJobMatchingService:
         self._client_initialized = False
         self._initialization_error = None
         # Use Gemini 2.5 Pro
-        self.model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro-preview-06-05')
+        self.model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro')
     
     def _initialize_client(self):
         """Initialize Google Gemini client"""
