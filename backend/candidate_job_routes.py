@@ -298,27 +298,31 @@ def get_job_matches():
         
         # Try to get user ID from JWT or mock token
         user_id = None
+        original_user_id = None  # Keep track of original ID for application lookup
         auth_header = request.headers.get('Authorization', '')
         
         # Handle mock authentication (for development/testing)
         if 'mock_token' in auth_header:
             user_id = '00000000-0000-0000-0000-000000000001'
+            original_user_id = user_id
             logger.info(f"Using mock user ID: {user_id}")
         else:
             try:
                 verify_jwt_in_request(optional=True)
-                user_id = get_jwt_identity()
-                if user_id:
+                jwt_user_id = get_jwt_identity()
+                if jwt_user_id:
+                    original_user_id = str(jwt_user_id)  # Keep original for application lookup
                     # Ensure user_id is a valid UUID string
                     try:
-                        uuidlib.UUID(str(user_id))
+                        uuidlib.UUID(str(jwt_user_id))
+                        user_id = str(jwt_user_id)
                     except ValueError:
-                        # Convert non-UUID to UUID
-                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                        # Convert non-UUID to UUID for CV lookup
+                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(jwt_user_id)))
             except Exception as e:
                 logger.warning(f"JWT verification failed: {e}")
         
-        logger.info(f"User ID for job matching: {user_id}")
+        logger.info(f"User ID for job matching: {user_id}, original JWT ID: {original_user_id}")
         
         # Get candidate's CV data
         cv_data = None
@@ -351,15 +355,25 @@ def get_job_matches():
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
             # First, get list of jobs the user has already applied to
-            if user_id:
+            # Check both original JWT ID and converted UUID to handle legacy applications
+            if user_id or original_user_id:
                 try:
-                    cur.execute("""
-                        SELECT job_id FROM job_applications 
-                        WHERE candidate_id = %s
-                    """, (user_id,))
-                    applied_jobs = cur.fetchall()
-                    applied_job_ids = {row['job_id'] for row in applied_jobs}
-                    logger.info(f"User {user_id} has applied to {len(applied_job_ids)} jobs")
+                    # Build list of IDs to check
+                    ids_to_check = []
+                    if original_user_id:
+                        ids_to_check.append(original_user_id)
+                    if user_id and user_id != original_user_id:
+                        ids_to_check.append(user_id)
+                    
+                    if ids_to_check:
+                        placeholders = ','.join(['%s'] * len(ids_to_check))
+                        cur.execute(f"""
+                            SELECT job_id FROM job_applications 
+                            WHERE candidate_id IN ({placeholders})
+                        """, tuple(ids_to_check))
+                        applied_jobs = cur.fetchall()
+                        applied_job_ids = {row['job_id'] for row in applied_jobs}
+                        logger.info(f"User {original_user_id}/{user_id} has applied to {len(applied_job_ids)} jobs (checked IDs: {ids_to_check})")
                 except Exception as e:
                     logger.warning(f"Could not fetch applied jobs: {e}")
             
