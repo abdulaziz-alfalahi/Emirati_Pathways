@@ -39,27 +39,27 @@ def admin_required(f):
         try:
             # Get authorization header
             auth_header = request.headers.get('Authorization')
-            print(f"DEBUG: Admin Route {request.path} - Auth Header: {auth_header}", flush=True)
+            logger.debug(f"Admin Route {request.path} - Auth Header present: {bool(auth_header)}")
 
             if not auth_header or not auth_header.startswith('Bearer '):
-                print(f"DEBUG: Missing Authorization header: {auth_header}", flush=True)
+                logger.debug(f"Missing Authorization header")
                 return jsonify({'error': 'Authentication required'}), 401
             
             token = auth_header.split(' ')[1]
-            print(f"DEBUG: Token received: {token[:10]}...", flush=True)
+            logger.debug(f"Token received: {token[:10]}...")
             
             # Verify token and get user info
             user_info = auth_manager.verify_token(token)
             if not user_info:
-                print("DEBUG: auth_manager.verify_token returned None", flush=True)
+                logger.debug("auth_manager.verify_token returned None")
                 return jsonify({'error': 'Invalid token'}), 401
             
             # Check if user has admin role
             user_details = admin_system.get_user_details(user_info['user_id'])
-            print(f"DEBUG: User details looked up: {user_details}", flush=True)
+            logger.debug(f"User details looked up for user")
 
             if not user_details:
-                print(f"DEBUG: User not found in DB: {user_info['user_id']}", flush=True)
+                logger.debug(f"User not found in DB: {user_info['user_id']}")
                 return jsonify({'error': 'User not found'}), 401
             
             roles = user_details.get('roles') or []
@@ -68,7 +68,7 @@ def admin_required(f):
             if user_details.get('role'):
                 roles.append(user_details['role'])
             
-            print(f"DEBUG: User roles: {roles}", flush=True)
+            logger.debug(f"User roles: {roles}")
                 
             # Allow admin or super_admin
             if 'admin' not in roles and 'super_admin' not in roles and 'platform_administrator' not in roles:

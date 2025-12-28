@@ -1,4 +1,24 @@
 import React, { useState, useEffect } from 'react';
+/**
+ * @fileoverview Growth Operator Manager Component
+ * 
+ * This component provides administrators with the ability to manage Growth Operators
+ * and their domain assignments. Growth Operators are responsible for specific areas
+ * of the platform:
+ * 
+ * - **Candidate**: Manage candidate acquisition, engagement, and profile quality
+ * - **Company**: Onboard companies and manage employer engagement
+ * - **Education**: Partner with schools, universities, and training institutes
+ * - **Assessment**: Manage assessment centers and certification bodies
+ * - **Mentorship**: Onboard mentors and manage coaching relationships
+ * - **Community**: Foster community engagement and events
+ * 
+ * @module components/admin/GrowthOperatorManager
+ * @requires react
+ * @requires lucide-react
+ * @requires @/utils/api
+ */
+
 import {
   Users,
   Building,
@@ -74,27 +94,53 @@ const DOMAIN_COLORS: Record<string, string> = {
   community: 'bg-cyan-100 text-cyan-800 border-cyan-200'
 };
 
+/**
+ * Represents a Growth Operator domain area
+ * @interface Domain
+ */
 interface Domain {
+  /** Unique identifier for the domain */
   id: string;
+  /** Machine-readable key (e.g., 'candidate', 'company') */
   key: string;
+  /** Human-readable label */
   label: string;
+  /** Description of domain responsibilities */
   description: string;
+  /** Icon identifier for UI display */
   icon: string;
+  /** List of permissions granted to operators in this domain */
   permissions: string[];
+  /** Number of operators assigned to this domain */
   operatorCount: number;
 }
 
+/**
+ * Represents a Growth Operator user with their domain assignments
+ * @interface GrowthOperator
+ */
 interface GrowthOperator {
+  /** Unique user identifier */
   id: number;
+  /** Username for login */
   username: string;
+  /** Email address */
   email: string;
+  /** Full display name */
   full_name: string;
+  /** User role (should be 'growth_operator') */
   role: string;
+  /** Whether the account is active */
   is_active: boolean;
+  /** Account creation timestamp */
   created_at: string;
+  /** Last login timestamp */
   last_login?: string;
+  /** List of assigned domain keys */
   domains: string[];
+  /** Primary domain key for this operator */
   primaryDomain?: string;
+  /** Detailed assignment information */
   assignments: Array<{
     domain: string;
     is_primary: boolean;
@@ -103,14 +149,41 @@ interface GrowthOperator {
   }>;
 }
 
+/**
+ * Statistics for a Growth Operator domain
+ * @interface DomainStats
+ */
 interface DomainStats {
+  /** Domain key identifier */
   domain: string;
+  /** Human-readable domain label */
   label: string;
+  /** Number of operators assigned */
   operatorCount: number;
+  /** Recent activity count */
   activityCount: number;
+  /** Icon identifier */
   icon: string;
 }
 
+/**
+ * Growth Operator Manager Component
+ * 
+ * Provides a comprehensive interface for administrators to:
+ * - View all Growth Operators and their domain assignments
+ * - Assign/unassign operators to specific domains
+ * - Set primary domains for operators
+ * - View domain statistics and activity
+ * - Search and filter operators
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <GrowthOperatorManager />
+ * ```
+ * 
+ * @returns {JSX.Element} The Growth Operator management interface
+ */
 const GrowthOperatorManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('operators');
   const [operators, setOperators] = useState<GrowthOperator[]>([]);

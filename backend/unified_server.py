@@ -51,7 +51,7 @@ def on_join(data):
     room = data['room']
     # user_id = data.get('userId') # Optional auth check
     join_room(room)
-    print(f"DEBUG: User joined room: {room} (Socket: {request.sid})", flush=True)
+    logger.debug(f"User joined room: {room} (Socket: {request.sid})")
     # Notify others that a peer joined
     emit('user-connected', {'sid': request.sid}, room=room, include_self=False)
 
@@ -74,7 +74,7 @@ def on_signal(data):
 
 @socketio.on('disconnect')
 def on_disconnect():
-    print(f"DEBUG: User disconnected: {request.sid}", flush=True)
+    logger.debug(f"User disconnected: {request.sid}")
     # Could emit 'user-disconnected' to rooms if tracked
 
 # ... (Rest of the file)
@@ -92,9 +92,9 @@ load_dotenv(env_path)
 # Debug: Print API Key status (first 4 chars)
 api_key = os.getenv('GEMINI_API_KEY')
 if api_key:
-    print(f"DEBUG: GEMINI_API_KEY found: {api_key[:4]}...", flush=True)
+    logger.info(f"GEMINI_API_KEY found: {api_key[:4]}...")
 else:
-    print("DEBUG: GEMINI_API_KEY NOT FOUND", flush=True)
+    logger.warning("GEMINI_API_KEY NOT FOUND - AI features may not work")
 
 from datetime import datetime, timedelta
 import psycopg2
@@ -1703,8 +1703,7 @@ def get_profile():
 @app.route('/api/candidate/dashboard/stats', methods=['GET'])
 def get_candidate_dashboard_stats():
     """Get aggregated stats for candidate dashboard"""
-    logger.info("🎯 HIT: /api/candidate/dashboard/stats route in unified_server.py")
-    print("🎯 HIT: /api/candidate/dashboard/stats route in unified_server.py", flush=True)
+    logger.info("HIT: /api/candidate/dashboard/stats route")
     try:
         # Auth check
         auth_header = request.headers.get('Authorization', '')
@@ -1855,11 +1854,11 @@ def upload_cv():
             except Exception:
                 user_uuid = '00000000-0000-0000-0000-000000000001'
                 user_id = 'anonymous_user'
-        print(f"DEBUG: CV upload request from user_uuid: {user_uuid} (original: {user_id if 'user_id' in locals() else 'mock'})", flush=True)
+        logger.debug(f"CV upload request from user_uuid: {user_uuid}")
         
         # Check if file is present (handle both 'file' and 'cv_file')
         if 'cv_file' not in request.files and 'file' not in request.files:
-            print("DEBUG: No file provided", flush=True)
+            logger.debug("No file provided in CV upload request")
             return jsonify({
                 'success': False,
                 'message': 'No file provided'
@@ -1869,7 +1868,7 @@ def upload_cv():
         
         # Check if file is selected
         if file.filename == '':
-            print("DEBUG: No file selected", flush=True)
+            logger.debug("No file selected in CV upload request")
             return jsonify({
                 'success': False,
                 'message': 'No file selected'
@@ -1877,7 +1876,7 @@ def upload_cv():
         
         # Validate file
         if not allowed_file(file.filename):
-            print(f"DEBUG: Invalid file type {file.filename}", flush=True)
+            logger.debug(f"Invalid file type: {file.filename}")
             return jsonify({
                 'success': False,
                 'message': 'File type not allowed. Please upload PDF, DOCX, DOC, or TXT files.'
@@ -1895,7 +1894,7 @@ def upload_cv():
             }), 400
         
         # Extract text from file BEFORE saving (to avoid file pointer issues)
-        print(f"DEBUG: extracting text from {file.filename}", flush=True)
+        logger.debug(f"Extracting text from {file.filename}")
         cv_text = extract_text_from_file(file)
         
         # Save file after text extraction
@@ -2863,8 +2862,7 @@ def list_providers():
 
 @app.errorhandler(404)
 def not_found(error):
-    logger.warning(f"⚠️ 404 NOT FOUND: {request.method} {request.path}")
-    print(f"⚠️ 404 NOT FOUND: {request.method} {request.path}", flush=True)
+    logger.warning(f"404 NOT FOUND: {request.method} {request.path}")
     return jsonify({'error': 'Not found', 'path': request.path, 'method': request.method}), 404
 
 @app.errorhandler(500)

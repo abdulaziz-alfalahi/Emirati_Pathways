@@ -1,4 +1,21 @@
 import React, { useState, useMemo, useEffect } from 'react';
+/**
+ * @fileoverview Growth Tools Component
+ * 
+ * This component provides Growth Operators with tools for bulk importing
+ * company and job data into the platform. It includes:
+ * 
+ * - CSV file upload and parsing
+ * - Data validation with error reporting
+ * - Duplicate detection against existing database records
+ * - Filtering and preview capabilities
+ * - Bulk import to database
+ * 
+ * @module components/admin/GrowthTools
+ * @requires react
+ * @requires @/utils/api
+ */
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,34 +30,83 @@ import {
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 
+/**
+ * Represents a parsed row from the CSV import file
+ * @interface ParsedRow
+ */
 interface ParsedRow {
+    /** Unique row identifier */
     id: number;
+    /** Company name from CSV */
     companyName: string;
+    /** Company contact email */
     companyEmail: string;
+    /** Job position title */
     jobTitle: string;
+    /** NAFIS registration ID */
     nafisId: string;
+    /** Industry sector */
     industry: string;
+    /** UAE Emirate location */
     emirate: string;
+    /** Number of open vacancies */
     vacancies: number;
+    /** Target gender for position */
     genderTarget: string;
-    // New Fields
-    postedDate: string; // ISO or raw string
+    /** Job posting date (ISO format) */
+    postedDate: string;
+    /** Employment type (full-time, part-time, etc.) */
     jobType: string;
+    /** Required education level */
     educationLevel: string;
+    /** Whether row passed validation */
     isValid: boolean;
-    isExisting: boolean; // True if company already in DB
+    /** Whether company already exists in database */
+    isExisting: boolean;
+    /** List of validation errors */
     errors: string[];
+    /** Original parsed data object */
     original: any;
-    rawLine: string; // Store raw line to reconstruct CSV
+    /** Raw CSV line for reconstruction */
+    rawLine: string;
 }
 
+/**
+ * Summary report of CSV validation results
+ * @interface ValidationReport
+ */
 interface ValidationReport {
+    /** Total number of rows in CSV */
     totalRows: number;
+    /** Number of rows that passed validation */
     validRows: number;
+    /** Number of rows with validation errors */
     invalidRows: number;
+    /** Number of rows with existing companies in DB */
     existingRows: number;
 }
 
+/**
+ * Growth Tools Component
+ * 
+ * Provides a comprehensive interface for Growth Operators to import
+ * company and job data in bulk via CSV files. Features include:
+ * 
+ * - Drag-and-drop CSV upload
+ * - Real-time validation with detailed error messages
+ * - Duplicate detection against existing database
+ * - Filtering by sector, emirate, and vacancy count
+ * - Preview mode before final import
+ * - Progress tracking during import
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <GrowthTools />
+ * ```
+ * 
+ * @returns {JSX.Element} The Growth Tools interface
+ */
 export default function GrowthTools() {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
