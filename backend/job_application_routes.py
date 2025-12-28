@@ -34,16 +34,19 @@ MOCK_USER_ID = '00000000-0000-0000-0000-000000000001'
 
 def get_user_id_from_request():
     """Get user ID from JWT or mock token"""
-    # Check for mock token first
     auth_header = request.headers.get('Authorization', '')
+    logger.info(f"Auth header: {auth_header[:50]}..." if len(auth_header) > 50 else f"Auth header: {auth_header}")
+    
+    # Check for mock token first
     if 'mock_token' in auth_header:
         logger.info(f"Mock authentication detected, using mock user ID: {MOCK_USER_ID}")
         return MOCK_USER_ID
     
     # Try to get from JWT
     try:
-        verify_jwt_in_request(optional=True)
+        verify_jwt_in_request()
         user_id = get_jwt_identity()
+        logger.info(f"JWT authentication successful, user ID: {user_id}")
         if user_id:
             return user_id
     except Exception as e:
@@ -64,31 +67,43 @@ def apply_for_job():
     """Submit job application"""
     conn = None
     try:
+        logger.info("=== Job Application Request ===")
+        
         # Get user ID (supports both JWT and mock tokens)
         current_user_id = get_user_id_from_request()
         
         if not current_user_id:
+            logger.error("No user ID found - authentication failed")
             return jsonify({'success': False, 'message': 'Authentication required'}), 401
         
+        logger.info(f"User ID: {current_user_id}")
+        
         data = request.get_json()
+        logger.info(f"Request data: {data}")
         
         required_fields = ['job_id', 'cover_letter']
         for field in required_fields:
             if not data.get(field):
+                logger.error(f"Missing required field: {field}")
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
         
         job_id = data['job_id']
         cover_letter = data['cover_letter']
         
+        logger.info(f"Applying for job_id: {job_id}")
+        
         conn = get_db_connection()
         if not conn:
+            logger.error("Database connection failed")
             return jsonify({'success': False, 'message': 'Database error'}), 500
         
         cur = conn.cursor()
         
         # Check if already applied
         cur.execute("SELECT id FROM job_applications WHERE candidate_id = %s AND job_id = %s", (current_user_id, job_id))
-        if cur.fetchone():
+        existing = cur.fetchone()
+        if existing:
+            logger.warning(f"User {current_user_id} already applied for job {job_id}")
             return jsonify({'success': False, 'message': 'You have already applied for this job'}), 400
 
         application_id = f"APP-{uuid.uuid4().hex[:8].upper()}"
@@ -101,7 +116,7 @@ def apply_for_job():
         
         conn.commit()
         
-        logger.info(f"Job application submitted: {application_id} for user {current_user_id}, job {job_id}")
+        logger.info(f"✅ Job application submitted: {application_id} for user {current_user_id}, job {job_id}")
         
         return jsonify({
             'success': True,
@@ -111,6 +126,8 @@ def apply_for_job():
         
     except Exception as e:
         logger.error(f"Job application error: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         if conn: conn.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
     finally:
