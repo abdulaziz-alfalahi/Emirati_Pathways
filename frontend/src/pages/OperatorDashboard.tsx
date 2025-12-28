@@ -8,11 +8,11 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const OperatorDashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, signOut } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await signOut();
         navigate('/login');
     };
 
