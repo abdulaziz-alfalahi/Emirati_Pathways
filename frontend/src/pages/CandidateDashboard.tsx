@@ -178,7 +178,7 @@ const CandidateDashboard: React.FC = () => {
             <TabsList className="grid w-full grid-cols-4 bg-white/50 p-1 rounded-xl shadow-sm">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="profile">Profile & CV</TabsTrigger>
-              <TabsTrigger value="jobs">Job Matches ({dashboardData.stats.jobMatches})</TabsTrigger>
+              <TabsTrigger value="jobs">Job Matches</TabsTrigger>
               <TabsTrigger value="applications">Applications</TabsTrigger>
               <TabsTrigger value="interviews">Interviews</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -304,7 +304,7 @@ const CandidateDashboard: React.FC = () => {
                         className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
                         <Target className="h-4 w-4 mr-2" />
-                        Browse Job Matches ({dashboardData.stats.jobMatches})
+                        Browse Job Matches
                       </Button>
                       <Button
                         onClick={() => setActiveTab('applications')}
