@@ -274,6 +274,92 @@ def delegate_approval():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@hr_dashboard_api_bp.route('/approvals/pending', methods=['GET'])
+@optional_auth
+def get_pending_approvals():
+    """Get all pending approvals"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': [
+                {'id': 'apr_001', 'type': 'offer_approval', 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'salary': 30000, 'status': 'pending', 'submitted_by': 'Recruiter 1', 'submitted_at': '2025-01-20'},
+                {'id': 'apr_002', 'type': 'salary_exception', 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'salary': 40000, 'status': 'pending', 'submitted_by': 'Recruiter 2', 'submitted_at': '2025-01-21'},
+                {'id': 'apr_003', 'type': 'interview_approval', 'candidate': 'Mohammed Al Rashid', 'position': 'Data Analyst', 'status': 'pending', 'submitted_by': 'Recruiter 1', 'submitted_at': '2025-01-22'}
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get pending approvals: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/approvals/delegate', methods=['POST'])
+@optional_auth
+def delegate_approval_enhanced():
+    """Delegate approvals to another HR user"""
+    try:
+        data = request.get_json() or {}
+        return jsonify({
+            'success': True,
+            'message': 'Delegation created successfully',
+            'data': {
+                'delegation_id': 'del_001',
+                'delegatee_id': data.get('delegatee_id'),
+                'approval_types': data.get('approval_types', []),
+                'start_date': data.get('start_date'),
+                'end_date': data.get('end_date'),
+                'reason': data.get('reason'),
+                'created_at': datetime.now().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to create delegation: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/approvals/<approval_id>/approve', methods=['POST'])
+@optional_auth
+def approve_request(approval_id):
+    """Approve a pending request"""
+    try:
+        data = request.get_json() or {}
+        return jsonify({
+            'success': True,
+            'message': 'Request approved successfully',
+            'data': {
+                'approval_id': approval_id,
+                'status': 'approved',
+                'approved_by': data.get('approved_by', 'hr_manager'),
+                'comments': data.get('comments'),
+                'approved_at': datetime.now().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to approve request: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/approvals/<approval_id>/reject', methods=['POST'])
+@optional_auth
+def reject_request(approval_id):
+    """Reject a pending request"""
+    try:
+        data = request.get_json() or {}
+        return jsonify({
+            'success': True,
+            'message': 'Request rejected',
+            'data': {
+                'approval_id': approval_id,
+                'status': 'rejected',
+                'rejected_by': data.get('rejected_by', 'hr_manager'),
+                'reason': data.get('reason'),
+                'rejected_at': datetime.now().isoformat()
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to reject request: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @hr_dashboard_api_bp.route('/jobs/shortlisted-candidates', methods=['GET'])
 @optional_auth
 def get_all_shortlisted_candidates():

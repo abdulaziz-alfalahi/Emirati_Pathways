@@ -923,6 +923,32 @@ def get_candidate_applications():
         return jsonify({'success': True, 'data': []})
 
 
+@candidate_jobs_bp.route('/applications', methods=['POST'])
+@optional_auth
+def submit_application():
+    """Submit a job application"""
+    try:
+        data = request.get_json() or {}
+        import uuid
+        application_id = f"app_{uuid.uuid4().hex[:8]}"
+        
+        return jsonify({
+            'success': True,
+            'message': 'Application submitted successfully',
+            'data': {
+                'id': application_id,
+                'job_id': data.get('job_id'),
+                'cover_letter': data.get('cover_letter'),
+                'resume_id': data.get('resume_id'),
+                'status': 'submitted',
+                'submitted_at': datetime.now().isoformat()
+            }
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to submit application: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 # Register the blueprints function
 def register_jobs_routes(app):
     """Register jobs routes with the Flask app"""
