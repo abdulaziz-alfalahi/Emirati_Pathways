@@ -329,37 +329,6 @@ const CandidateDashboard: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="profile" className="space-y-6 mt-6">
-              {/* Integrated CV Experience */}
-              <Card className="border-teal-200 bg-gradient-to-br from-white to-teal-50/30">
-                <CardHeader>
-                  <CardTitle>Your Professional CV</CardTitle>
-                  <CardDescription>Manage your CV, update your skills, and let our AI optimize your profile.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 border rounded-xl bg-white shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="p-4 bg-teal-100 rounded-full">
-                        <FileText className="h-8 w-8 text-teal-700" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg text-gray-900">
-                          {dashboardData.profile.cvUploaded ? 'CV Available' : 'No CV Uploaded'}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {dashboardData.profile.cvUploaded
-                            ? 'Your CV is active and visible to recruiters.'
-                            : 'Upload your CV to unlock AI parsing and job matching.'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button size="lg" className="bg-teal-600 hover:bg-teal-700 shadow-md" onClick={() => navigate('/cv-builder')}>
-                      {dashboardData.profile.cvUploaded ? 'Edit / View CV' : 'Launch CV Builder'}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Unified CV-as-Profile component with ATS score and D33/Talent33 recommendations */}
               <CVProfile />
             </TabsContent>

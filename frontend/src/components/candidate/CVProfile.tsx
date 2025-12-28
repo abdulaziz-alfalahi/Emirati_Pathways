@@ -40,6 +40,7 @@ import {
   Info
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { cvStorageService } from '@/services/cvStorageService';
 
 /**
  * @fileoverview CVProfile Component - Unified CV-as-Profile view for candidates
@@ -222,13 +223,46 @@ const CVProfile: React.FC = () => {
   }, [cvData]);
 
   /**
-   * Load CV data from the backend or localStorage
+   * Load CV data from the backend using cvStorageService
+   * First checks for lastCvId in localStorage, then tries to list CVs
    */
   const loadCVData = async () => {
     try {
       setLoading(true);
       
-      // Try to load from backend first
+      // Method 1: Try to load using lastCvId from localStorage (set by CV Builder)
+      const lastCvId = localStorage.getItem('lastCvId');
+      if (lastCvId) {
+        const result = await cvStorageService.getCV(lastCvId);
+        if (result.success && result.data) {
+          // Transform the data to match our CVData interface
+          const transformedData = transformCVData(result.data);
+          setCvData(transformedData);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Method 2: List all CVs and get the most recent one
+      const listResult = await cvStorageService.listCVs();
+      if (listResult.success && listResult.data && listResult.data.length > 0) {
+        // Sort by updated_at to get the most recent
+        const sortedCVs = [...listResult.data].sort((a, b) => 
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+        const latestCV = sortedCVs[0];
+        
+        // Load the full CV data
+        const cvResult = await cvStorageService.getCV(latestCV.id);
+        if (cvResult.success && cvResult.data) {
+          const transformedData = transformCVData(cvResult.data);
+          setCvData(transformedData);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Method 3: Try the generic CV data endpoint
       try {
         const response = await restClient.get('/api/cv/data');
         if (response.data.success && response.data.data) {
@@ -237,19 +271,90 @@ const CVProfile: React.FC = () => {
           return;
         }
       } catch (apiError) {
-        console.log('API not available, trying localStorage');
+        console.log('Generic CV API not available');
       }
 
-      // Fallback to localStorage
-      const savedCV = localStorage.getItem('cv_data');
-      if (savedCV) {
-        setCvData(JSON.parse(savedCV));
-      }
+      // No CV found
+      setCvData(null);
     } catch (error) {
       console.error('Error loading CV data:', error);
+      setCvData(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Transform CV data from storage format to our component's format
+   */
+  const transformCVData = (data: any): CVData => {
+    // Handle both camelCase and snake_case field names
+    const personalInfo = data.personalInfo || data.personal_info || {};
+    const experience = data.experience || data.work_experience || [];
+    const education = data.education || [];
+    const skills = data.skills || data.technicalSkills || data.technical_skills || [];
+    const softSkills = data.softSkills || data.soft_skills || [];
+    const languages = data.languages || [];
+    const certifications = data.certifications || [];
+    const professionalSummary = data.professionalSummary || data.professional_summary || personalInfo.summary || '';
+
+    // Combine technical and soft skills
+    let allSkills: any[] = [];
+    if (Array.isArray(skills)) {
+      allSkills = skills.map((s: any) => typeof s === 'string' ? { name: s, category: 'technical' } : s);
+    }
+    if (Array.isArray(softSkills)) {
+      allSkills = [...allSkills, ...softSkills.map((s: any) => typeof s === 'string' ? { name: s, category: 'soft' } : s)];
+    }
+
+    return {
+      personalInfo: {
+        fullName: personalInfo.fullName || personalInfo.full_name || 
+                  `${personalInfo.firstName || personalInfo.first_name || ''} ${personalInfo.lastName || personalInfo.last_name || ''}`.trim() || undefined,
+        firstName: personalInfo.firstName || personalInfo.first_name,
+        lastName: personalInfo.lastName || personalInfo.last_name,
+        email: personalInfo.email,
+        phone: personalInfo.phone,
+        location: personalInfo.location,
+        nationality: personalInfo.nationality,
+        linkedIn: personalInfo.linkedIn || personalInfo.linkedin,
+        portfolio: personalInfo.portfolio || personalInfo.website,
+        summary: professionalSummary || personalInfo.summary,
+        emiratesId: personalInfo.emiratesId || personalInfo.emirates_id,
+      },
+      experience: experience.map((exp: any) => ({
+        id: exp.id,
+        jobTitle: exp.jobTitle || exp.job_title || exp.title,
+        company: exp.company,
+        location: exp.location,
+        startDate: exp.startDate || exp.start_date,
+        endDate: exp.endDate || exp.end_date,
+        isCurrentJob: exp.isCurrentJob || exp.is_current_job || exp.current,
+        description: exp.description || exp.responsibilities,
+        achievements: exp.achievements || [],
+      })),
+      education: education.map((edu: any) => ({
+        id: edu.id,
+        degree: edu.degree,
+        institution: edu.institution || edu.school,
+        fieldOfStudy: edu.fieldOfStudy || edu.field_of_study || edu.field,
+        graduationYear: edu.graduationYear || edu.graduation_year || edu.year,
+        gpa: edu.gpa,
+      })),
+      skills: allSkills,
+      languages: languages.map((lang: any) => ({
+        id: lang.id,
+        language: lang.language || lang.name,
+        proficiency: lang.proficiency || lang.level,
+      })),
+      certifications: certifications.map((cert: any) => ({
+        id: cert.id,
+        name: cert.name || cert.title,
+        issuer: cert.issuer || cert.organization,
+        date: cert.date || cert.issueDate || cert.issue_date,
+        expiryDate: cert.expiryDate || cert.expiry_date,
+      })),
+    };
   };
 
   /**
