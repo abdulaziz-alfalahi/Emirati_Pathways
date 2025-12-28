@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 // Import your existing components
-import ProfileForm from '@/components/candidate/ProfileForm';
+import CVProfile from '@/components/candidate/CVProfile';
 import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
 import Messages from '@/components/candidate/Messages';
@@ -360,8 +360,8 @@ const CandidateDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Legacy components kept for completeness if user relies on them, but logic should shift to CV Builder eventually */}
-              <ProfileForm />
+              {/* Unified CV-as-Profile component with ATS score and D33/Talent33 recommendations */}
+              <CVProfile />
             </TabsContent>
 
             <TabsContent value="jobs" className="space-y-6 mt-6">
