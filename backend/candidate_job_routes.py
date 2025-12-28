@@ -49,54 +49,112 @@ def get_db_connection():
 
 
 def get_candidate_cv(user_id):
-    """Get the candidate's most recent CV from the database"""
+    """Get the candidate's most recent CV from the database
+    
+    Checks multiple tables in order of priority:
+    1. user_cvs - where CV Builder saves data
+    2. cv_profiles - legacy CV storage
+    3. cv_data - another legacy table
+    """
     conn = None
     try:
         conn = get_db_connection()
         if not conn:
+            logger.warning("Database connection not available for CV lookup")
             return None
         
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # Try to get from cv_profiles table first
-        cur.execute("""
-            SELECT cv_data, parsed_data, raw_text 
-            FROM cv_profiles 
-            WHERE user_id = %s 
-            ORDER BY updated_at DESC 
-            LIMIT 1
-        """, (user_id,))
+        # First, try user_cvs table (where CV Builder saves data)
+        # This is the primary table used by the modern CV Builder
+        try:
+            cur.execute("""
+                SELECT id, title, template_name, personal_info, professional_summary,
+                       technical_skills, soft_skills, work_experience, education,
+                       cv_score, ats_score, status, created_at, updated_at
+                FROM user_cvs 
+                WHERE user_id = %s::uuid
+                ORDER BY updated_at DESC 
+                LIMIT 1
+            """, (user_id,))
+            
+            result = cur.fetchone()
+            if result:
+                logger.info(f"Found CV in user_cvs table for user {user_id}")
+                # Reconstruct CV data in the expected format
+                cv_data = {
+                    'personalInfo': result.get('personal_info') or {},
+                    'professionalSummary': result.get('professional_summary') or '',
+                    'technicalSkills': result.get('technical_skills') or [],
+                    'softSkills': result.get('soft_skills') or [],
+                    'experience': result.get('work_experience') or [],
+                    'education': result.get('education') or [],
+                    'skills': [],  # Will be populated from technicalSkills
+                    '_source': 'user_cvs',
+                    '_cv_id': str(result.get('id', '')),
+                    '_title': result.get('title', 'My CV')
+                }
+                
+                # Combine technical and soft skills into skills array
+                tech_skills = cv_data.get('technicalSkills', [])
+                soft_skills = cv_data.get('softSkills', [])
+                if isinstance(tech_skills, list):
+                    cv_data['skills'].extend(tech_skills)
+                if isinstance(soft_skills, list):
+                    cv_data['skills'].extend(soft_skills)
+                
+                return cv_data
+        except Exception as e:
+            logger.warning(f"Error querying user_cvs table: {e}")
         
-        result = cur.fetchone()
-        if result:
-            cv_data = result.get('cv_data') or result.get('parsed_data')
-            if cv_data:
-                if isinstance(cv_data, str):
+        # Try cv_profiles table (legacy)
+        try:
+            cur.execute("""
+                SELECT cv_data, parsed_data, raw_text 
+                FROM cv_profiles 
+                WHERE user_id = %s 
+                ORDER BY updated_at DESC 
+                LIMIT 1
+            """, (user_id,))
+            
+            result = cur.fetchone()
+            if result:
+                cv_data = result.get('cv_data') or result.get('parsed_data')
+                if cv_data:
+                    logger.info(f"Found CV in cv_profiles table for user {user_id}")
+                    if isinstance(cv_data, str):
+                        try:
+                            return json.loads(cv_data)
+                        except json.JSONDecodeError:
+                            pass
+                    return cv_data
+        except Exception as e:
+            logger.warning(f"Error querying cv_profiles table: {e}")
+        
+        # Try cv_data table (legacy fallback)
+        try:
+            cur.execute("""
+                SELECT data 
+                FROM cv_data 
+                WHERE user_id = %s 
+                ORDER BY updated_at DESC 
+                LIMIT 1
+            """, (user_id,))
+            
+            result = cur.fetchone()
+            if result and result.get('data'):
+                logger.info(f"Found CV in cv_data table for user {user_id}")
+                data = result['data']
+                if isinstance(data, str):
                     try:
-                        return json.loads(cv_data)
+                        return json.loads(data)
                     except json.JSONDecodeError:
                         pass
-                return cv_data
+                return data
+        except Exception as e:
+            logger.warning(f"Error querying cv_data table: {e}")
         
-        # Try cv_data table as fallback
-        cur.execute("""
-            SELECT data 
-            FROM cv_data 
-            WHERE user_id = %s 
-            ORDER BY updated_at DESC 
-            LIMIT 1
-        """, (user_id,))
-        
-        result = cur.fetchone()
-        if result and result.get('data'):
-            data = result['data']
-            if isinstance(data, str):
-                try:
-                    return json.loads(data)
-                except json.JSONDecodeError:
-                    pass
-            return data
-        
+        logger.info(f"No CV found for user {user_id} in any table")
         return None
         
     except Exception as e:
