@@ -350,14 +350,32 @@ Return ONLY a valid JSON object in this exact format (no markdown, no code block
   "fit_assessment": "excellent|good|moderate|poor|not_suitable"
 }}"""
 
-                # Use Gemini to generate response
+                # Use Gemini to generate response with safety settings
+                # Import safety types
+                from google.generativeai.types import HarmCategory, HarmBlockThreshold
+                
+                safety_settings = {
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                }
+                
                 response = self.client.generate_content(
                     prompt,
                     generation_config={
                         'temperature': 0.2,
                         'max_output_tokens': 1000,
-                    }
+                    },
+                    safety_settings=safety_settings
                 )
+                
+                # Check if response was blocked
+                if not response.candidates or not response.candidates[0].content.parts:
+                    # Response was blocked, check finish reason
+                    finish_reason = response.candidates[0].finish_reason if response.candidates else 'UNKNOWN'
+                    logger.warning(f"Gemini response blocked. Finish reason: {finish_reason}")
+                    raise ValueError(f"Response blocked by safety filters. Finish reason: {finish_reason}")
                 
                 result_text = response.text.strip()
                 
