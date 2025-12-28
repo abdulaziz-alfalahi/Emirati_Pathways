@@ -5,7 +5,7 @@ import { restClient } from '@/utils/api';
 import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
 import AdminRoles from '@/components/admin/AdminRoles';
 import GrowthTools from '@/components/admin/GrowthTools';
-import GrowthOperatorManager from '@/components/admin/GrowthOperatorManager';
+import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorManagerEnhanced';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -485,7 +485,7 @@ const AdminDashboard = () => {
 
               {/* Growth Operators Tab */}
               <TabsContent value="operators" className="space-y-6">
-                <GrowthOperatorManager />
+                <GrowthOperatorManagerEnhanced />
               </TabsContent>
 
               {/* Growth Tools Tab */}
