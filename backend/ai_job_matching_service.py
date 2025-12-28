@@ -1,6 +1,6 @@
 """
 AI-Powered Job Matching Service
-Uses OpenAI-compatible API for semantic matching between CVs and job postings
+Uses Google Gemini 2.5 Pro for semantic matching between CVs and job postings
 Supports experience level filtering and D33/Talent33 alignment
 """
 
@@ -10,14 +10,10 @@ import logging
 import re
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
-from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Initialize OpenAI client (uses OPENAI_API_KEY from environment)
-client = OpenAI()
 
 # Experience level definitions
 EXPERIENCE_LEVELS = {
@@ -40,11 +36,36 @@ D33_SECTORS = {
 
 
 class AIJobMatchingService:
-    """AI-powered job matching service using semantic analysis"""
+    """AI-powered job matching service using Google Gemini for semantic analysis"""
     
     def __init__(self):
-        self.client = client
-        self.model = os.getenv('OPENAI_MODEL', 'gpt-4.1-mini')
+        self._client = None
+        self._client_initialized = False
+        # Use Gemini 2.5 Pro or fall back to 2.0 Flash
+        self.model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro-preview-06-05')
+    
+    @property
+    def client(self):
+        """Lazy initialization of Google Gemini client"""
+        if not self._client_initialized:
+            self._client_initialized = True
+            try:
+                api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+                if api_key:
+                    import google.generativeai as genai
+                    genai.configure(api_key=api_key)
+                    self._client = genai.GenerativeModel(self.model)
+                    logger.info(f"Google Gemini client initialized successfully with model: {self.model}")
+                else:
+                    logger.warning("GEMINI_API_KEY not set - AI matching will use basic algorithm")
+                    self._client = None
+            except ImportError:
+                logger.warning("google-generativeai package not installed - run: pip install google-generativeai")
+                self._client = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize Gemini client: {e} - AI matching will use basic algorithm")
+                self._client = None
+        return self._client
     
     def extract_cv_profile(self, cv_data: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured profile from CV data"""
@@ -338,10 +359,26 @@ class AIJobMatchingService:
         
         score += breakdown['d33_alignment']
         
+        # Determine fit assessment
+        if score >= 80:
+            breakdown['details']['fit_assessment'] = 'excellent'
+        elif score >= 60:
+            breakdown['details']['fit_assessment'] = 'good'
+        elif score >= 40:
+            breakdown['details']['fit_assessment'] = 'moderate'
+        elif score >= 20:
+            breakdown['details']['fit_assessment'] = 'poor'
+        else:
+            breakdown['details']['fit_assessment'] = 'not_suitable'
+        
         return min(100, score), breakdown
     
     def calculate_ai_match_score(self, cv_profile: Dict[str, Any], job_requirements: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
-        """Calculate match score using AI for semantic analysis"""
+        """Calculate match score using Google Gemini for semantic analysis"""
+        # If no Gemini client available, use basic matching
+        if not self.client:
+            return self.calculate_basic_match_score(cv_profile, job_requirements)
+        
         try:
             prompt = f"""Analyze the match between this candidate profile and job posting. 
 Return a JSON object with match score and detailed breakdown.
@@ -364,20 +401,22 @@ JOB REQUIREMENTS:
 - Description: {job_requirements.get('description', 'Not specified')[:500]}
 
 SCORING CRITERIA:
-1. Skills Match (0-40 points): How well do the candidate's skills match the job requirements?
+1. Skills Match (0-40 points): How well do the candidate's skills match the job requirements? Consider semantic similarity, not just exact matches.
 2. Experience Match (0-25 points): Is the candidate's experience level appropriate? 
-   - Trainee/intern should match trainee/entry-level jobs
+   - Trainee/intern should match trainee/entry-level jobs (high score)
+   - Trainee applying to senior roles should get LOW score (0-5 points)
    - Senior candidates are overqualified for trainee positions
 3. Title/Role Match (0-20 points): Is the candidate's current role similar to the job?
 4. Location Match (0-10 points): Is the candidate in or near the job location?
 5. D33 Alignment (0-5 points): Does the candidate's background align with UAE's D33 priority sectors?
 
-IMPORTANT: 
-- A trainee with 0 years experience should NOT get high scores for senior positions requiring 5+ years
-- Match the experience level appropriately
+CRITICAL RULES:
+- A trainee with 0 years experience MUST get LOW scores (under 30%) for senior positions requiring 5+ years
+- A trainee should get HIGH scores (70%+) for entry-level, trainee, and internship positions
+- Match the experience level appropriately - this is the most important factor
 - Be realistic about skill gaps
 
-Return ONLY a valid JSON object in this exact format:
+Return ONLY a valid JSON object in this exact format (no markdown, no code blocks):
 {{
   "total_score": <0-100>,
   "breakdown": {{
@@ -393,19 +432,19 @@ Return ONLY a valid JSON object in this exact format:
   "fit_assessment": "excellent|good|moderate|poor|not_suitable"
 }}"""
 
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert job matching AI. Analyze candidate-job fit accurately and return only valid JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                max_tokens=1000
+            # Use Gemini to generate response
+            response = self.client.generate_content(
+                prompt,
+                generation_config={
+                    'temperature': 0.2,
+                    'max_output_tokens': 1000,
+                }
             )
             
-            result_text = response.choices[0].message.content.strip()
+            result_text = response.text.strip()
             
-            # Extract JSON from response
+            # Extract JSON from response (handle potential markdown code blocks)
+            result_text = result_text.replace('```json', '').replace('```', '').strip()
             json_match = re.search(r'\{[\s\S]*\}', result_text)
             if json_match:
                 result = json.loads(json_match.group())
@@ -422,14 +461,15 @@ Return ONLY a valid JSON object in this exact format:
                         'missing_skills': result.get('missing_skills', []),
                         'recommendation': result.get('recommendation', ''),
                         'fit_assessment': result.get('fit_assessment', 'moderate'),
-                        'ai_analyzed': True
+                        'ai_analyzed': True,
+                        'ai_model': self.model
                     }
                 }
                 
                 return score, breakdown
             
         except Exception as e:
-            logger.error(f"AI matching failed: {e}")
+            logger.error(f"Gemini AI matching failed: {e}")
         
         # Fallback to basic matching
         return self.calculate_basic_match_score(cv_profile, job_requirements)
@@ -445,7 +485,7 @@ Return ONLY a valid JSON object in this exact format:
             job_requirements = self.extract_job_requirements(job)
             
             # Use AI matching for better accuracy, with fallback
-            if use_ai:
+            if use_ai and self.client:
                 score, breakdown = self.calculate_ai_match_score(cv_profile, job_requirements)
             else:
                 score, breakdown = self.calculate_basic_match_score(cv_profile, job_requirements)
@@ -486,5 +526,5 @@ Return ONLY a valid JSON object in this exact format:
         return filtered
 
 
-# Singleton instance
+# Singleton instance - lazy initialization
 ai_matching_service = AIJobMatchingService()
