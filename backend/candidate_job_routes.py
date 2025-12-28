@@ -12,6 +12,7 @@ import os
 import logging
 from datetime import datetime
 import json
+import uuid as uuidlib
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -295,26 +296,48 @@ def get_job_matches():
                 'retry_after': 60
             }), 503
         
-        # Try to get user ID from JWT
+        # Try to get user ID from JWT or mock token
         user_id = None
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity()
-        except Exception:
-            pass
+        auth_header = request.headers.get('Authorization', '')
+        
+        # Handle mock authentication (for development/testing)
+        if 'mock_token' in auth_header:
+            user_id = '00000000-0000-0000-0000-000000000001'
+            logger.info(f"Using mock user ID: {user_id}")
+        else:
+            try:
+                verify_jwt_in_request(optional=True)
+                user_id = get_jwt_identity()
+                if user_id:
+                    # Ensure user_id is a valid UUID string
+                    try:
+                        uuidlib.UUID(str(user_id))
+                    except ValueError:
+                        # Convert non-UUID to UUID
+                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            except Exception as e:
+                logger.warning(f"JWT verification failed: {e}")
+        
+        logger.info(f"User ID for job matching: {user_id}")
         
         # Get candidate's CV data
         cv_data = None
         if user_id:
             cv_data = get_candidate_cv(user_id)
             logger.info(f"Loaded CV data for user {user_id}: {bool(cv_data)}")
+            if cv_data:
+                logger.info(f"CV source: {cv_data.get('_source', 'unknown')}, CV ID: {cv_data.get('_cv_id', 'N/A')}")
+        else:
+            logger.warning("No user ID available for CV lookup")
         
         # CV is required for AI matching
         if not cv_data:
+            logger.warning(f"No CV found for user {user_id}")
             return jsonify({
                 'success': False,
                 'error': 'Please upload your CV first to get personalized job matches.',
-                'cv_required': True
+                'cv_required': True,
+                'user_id': user_id  # Include for debugging
             }), 400
         
         # Get filter parameters
@@ -429,13 +452,25 @@ def get_dashboard_stats():
     """Get candidate dashboard statistics"""
     conn = None
     try:
-        # Try to get user ID from JWT
+        # Try to get user ID from JWT or mock token
         user_id = None
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity()
-        except Exception:
-            pass
+        auth_header = request.headers.get('Authorization', '')
+        
+        # Handle mock authentication (for development/testing)
+        if 'mock_token' in auth_header:
+            user_id = '00000000-0000-0000-0000-000000000001'
+            logger.info(f"Dashboard stats: Using mock user ID: {user_id}")
+        else:
+            try:
+                verify_jwt_in_request(optional=True)
+                user_id = get_jwt_identity()
+                if user_id:
+                    try:
+                        uuidlib.UUID(str(user_id))
+                    except ValueError:
+                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            except Exception:
+                pass
         
         conn = get_db_connection()
         if not conn:
