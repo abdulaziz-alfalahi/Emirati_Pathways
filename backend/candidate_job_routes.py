@@ -1,6 +1,7 @@
 """
 Candidate Job Routes - Job matching and dashboard endpoints
 Uses AI-powered matching for accurate CV-to-job matching
+Requires Google Gemini AI - no fallback to basic matching
 """
 
 from flask import Blueprint, jsonify, request
@@ -29,12 +30,13 @@ DB_CONFIG = {
 
 # Import AI matching service
 try:
-    from ai_job_matching_service import ai_matching_service, AIJobMatchingService
+    from ai_job_matching_service import ai_matching_service, AIJobMatchingService, AIServiceUnavailableError
     AI_MATCHING_AVAILABLE = True
     logger.info("AI Job Matching Service loaded successfully")
 except ImportError as e:
     AI_MATCHING_AVAILABLE = False
-    logger.warning(f"AI Job Matching Service not available: {e}")
+    AIServiceUnavailableError = Exception  # Fallback class
+    logger.error(f"AI Job Matching Service not available: {e}")
 
 
 def get_db_connection():
@@ -105,7 +107,7 @@ def get_candidate_cv(user_id):
             conn.close()
 
 
-def get_fallback_jobs(cv_data=None):
+def get_fallback_jobs():
     """Get fallback job listings when database is unavailable"""
     jobs = [
         {
@@ -210,9 +212,31 @@ def get_fallback_jobs(cv_data=None):
 
 @candidate_job_bp.route('/job-matches', methods=['GET'])
 def get_job_matches():
-    """Get job matches for the candidate based on their CV data using AI matching"""
+    """Get job matches for the candidate based on their CV data using AI matching
+    
+    Returns error if AI service is unavailable - no fallback to basic matching.
+    """
     conn = None
     try:
+        # Check if AI matching service is available
+        if not AI_MATCHING_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'error': 'AI matching service is not available. Please try again later.',
+                'service_unavailable': True,
+                'retry_after': 60
+            }), 503
+        
+        # Check if the AI service can connect
+        is_available, error_msg = ai_matching_service.check_service_available()
+        if not is_available:
+            return jsonify({
+                'success': False,
+                'error': f'AI matching service is not available: {error_msg}. Please try again later.',
+                'service_unavailable': True,
+                'retry_after': 60
+            }), 503
+        
         # Try to get user ID from JWT
         user_id = None
         try:
@@ -227,105 +251,74 @@ def get_job_matches():
             cv_data = get_candidate_cv(user_id)
             logger.info(f"Loaded CV data for user {user_id}: {bool(cv_data)}")
         
+        # CV is required for AI matching
+        if not cv_data:
+            return jsonify({
+                'success': False,
+                'error': 'Please upload your CV first to get personalized job matches.',
+                'cv_required': True
+            }), 400
+        
         # Get filter parameters
-        use_ai = request.args.get('use_ai', 'true').lower() == 'true'
         filter_by_level = request.args.get('filter_by_level', 'true').lower() == 'true'
         
+        # Get jobs from database or fallback
         conn = get_db_connection()
-        if not conn:
-            # Return fallback data when database is unavailable
-            logger.info("Database unavailable, returning fallback job matches")
-            fallback_jobs = get_fallback_jobs(cv_data)
+        if conn:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
-            # Apply AI matching if CV data available
-            if cv_data and AI_MATCHING_AVAILABLE:
-                matched_jobs = ai_matching_service.match_cv_to_jobs(cv_data, fallback_jobs, use_ai=use_ai)
-                
-                # Optionally filter by experience level
-                if filter_by_level:
-                    cv_profile = ai_matching_service.extract_cv_profile(cv_data)
-                    matched_jobs = ai_matching_service.filter_jobs_by_experience_level(
-                        matched_jobs, 
-                        cv_profile.get('experience_level', 'trainee')
-                    )
-                
-                return jsonify({
-                    'success': True,
-                    'jobs': matched_jobs,
-                    'count': len(matched_jobs),
-                    'source': 'fallback',
-                    'cv_loaded': True,
-                    'ai_matching': use_ai and AI_MATCHING_AVAILABLE,
-                    'candidate_level': cv_profile.get('experience_level', 'trainee'),
-                    'message': 'Jobs matched to your CV profile using AI analysis'
-                }), 200
-            else:
-                # No CV data - return jobs with default scores
-                for job in fallback_jobs:
-                    job['matchScore'] = 50  # Neutral score
-                    job['matchBreakdown'] = {'note': 'Upload CV for personalized matching'}
-                
-                return jsonify({
-                    'success': True,
-                    'jobs': fallback_jobs,
-                    'count': len(fallback_jobs),
-                    'source': 'fallback',
-                    'cv_loaded': False,
-                    'ai_matching': False,
-                    'message': 'Upload your CV for personalized job matching'
-                }), 200
+            # Fetch all published jobs
+            query = """
+                SELECT 
+                    j.jd_id as id,
+                    j.title,
+                    COALESCE(c.company_name, 'Confidential Company') as company,
+                    j.location,
+                    j.employment_type as type,
+                    CONCAT(j.salary_range_min, ' - ', j.salary_range_max, ' ', j.currency) as salary,
+                    j.description,
+                    j.requirements,
+                    j.benefits,
+                    j.created_at as "postedDate"
+                FROM job_postings j
+                LEFT JOIN companies c ON j.company_id::text = c.id::text
+                WHERE j.status = 'published' OR j.status = 'active'
+                ORDER BY j.created_at DESC
+                LIMIT 50
+            """
             
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        # Fetch all published jobs
-        query = """
-            SELECT 
-                j.jd_id as id,
-                j.title,
-                COALESCE(c.company_name, 'Confidential Company') as company,
-                j.location,
-                j.employment_type as type,
-                CONCAT(j.salary_range_min, ' - ', j.salary_range_max, ' ', j.currency) as salary,
-                j.description,
-                j.requirements,
-                j.benefits,
-                j.created_at as "postedDate"
-            FROM job_postings j
-            LEFT JOIN companies c ON j.company_id::text = c.id::text
-            WHERE j.status = 'published' OR j.status = 'active'
-            ORDER BY j.created_at DESC
-            LIMIT 50
-        """
-        
-        cur.execute(query)
-        jobs = cur.fetchall()
-        
-        # Transform database results to job format
-        transformed_jobs = []
-        for job in jobs:
-            reqs = job['requirements'] if isinstance(job['requirements'], list) else []
-            benefits = job['benefits'] if isinstance(job['benefits'], list) else []
+            cur.execute(query)
+            db_jobs = cur.fetchall()
             
-            transformed_jobs.append({
-                'id': job['id'],
-                'title': job['title'],
-                'company': job['company'] or 'Unknown Company',
-                'location': job['location'] or 'UAE',
-                'type': job['type'] or 'full-time',
-                'salary': job['salary'] if job['salary'] and 'None' not in job['salary'] else 'Competitive Salary',
-                'description': job['description'] or '',
-                'requirements': reqs,
-                'benefits': benefits,
-                'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat()
-            })
+            # Transform database results to job format
+            jobs = []
+            for job in db_jobs:
+                reqs = job['requirements'] if isinstance(job['requirements'], list) else []
+                benefits = job['benefits'] if isinstance(job['benefits'], list) else []
+                
+                jobs.append({
+                    'id': job['id'],
+                    'title': job['title'],
+                    'company': job['company'] or 'Unknown Company',
+                    'location': job['location'] or 'UAE',
+                    'type': job['type'] or 'full-time',
+                    'salary': job['salary'] if job['salary'] and 'None' not in job['salary'] else 'Competitive Salary',
+                    'description': job['description'] or '',
+                    'requirements': reqs,
+                    'benefits': benefits,
+                    'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat()
+                })
+            
+            # If no jobs in database, use fallback
+            if not jobs:
+                jobs = get_fallback_jobs()
+        else:
+            # Database unavailable, use fallback jobs
+            jobs = get_fallback_jobs()
         
-        # If no jobs in database, use fallback
-        if not transformed_jobs:
-            transformed_jobs = get_fallback_jobs(cv_data)
-        
-        # Apply AI matching if CV data available
-        if cv_data and AI_MATCHING_AVAILABLE:
-            matched_jobs = ai_matching_service.match_cv_to_jobs(transformed_jobs, transformed_jobs, use_ai=use_ai)
+        # Apply AI matching - this will raise AIServiceUnavailableError if it fails
+        try:
+            matched_jobs = ai_matching_service.match_cv_to_jobs(cv_data, jobs, use_ai=True)
             
             # Extract candidate level for response
             cv_profile = ai_matching_service.extract_cv_profile(cv_data)
@@ -340,28 +333,34 @@ def get_job_matches():
                 'jobs': matched_jobs,
                 'count': len(matched_jobs),
                 'cv_loaded': True,
-                'ai_matching': use_ai and AI_MATCHING_AVAILABLE,
+                'ai_matching': True,
                 'candidate_level': candidate_level,
                 'message': f'Jobs matched for {candidate_level}-level candidate using AI analysis'
             }), 200
-        else:
-            # No CV data - return jobs with default scores
-            for job in transformed_jobs:
-                job['matchScore'] = 50
-                job['matchBreakdown'] = {'note': 'Upload CV for personalized matching'}
             
+        except AIServiceUnavailableError as e:
+            logger.error(f"AI service unavailable: {e.message}")
             return jsonify({
-                'success': True, 
-                'jobs': transformed_jobs,
-                'count': len(transformed_jobs),
-                'cv_loaded': False,
-                'ai_matching': False,
-                'message': 'Upload your CV for personalized job matching'
-            }), 200
+                'success': False,
+                'error': e.message,
+                'service_unavailable': True,
+                'retry_after': e.retry_after
+            }), 503
 
+    except AIServiceUnavailableError as e:
+        logger.error(f"AI service unavailable: {e.message}")
+        return jsonify({
+            'success': False,
+            'error': e.message,
+            'service_unavailable': True,
+            'retry_after': getattr(e, 'retry_after', 30)
+        }), 503
     except Exception as e:
         logger.error(f"Error fetching job matches: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({
+            'success': False, 
+            'error': str(e)
+        }), 500
     finally:
         if conn:
             conn.close()
@@ -454,6 +453,24 @@ def get_dashboard_stats():
 def analyze_job_match():
     """Get detailed match analysis for a specific job"""
     try:
+        # Check if AI service is available
+        if not AI_MATCHING_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'error': 'AI matching service is not available. Please try again later.',
+                'service_unavailable': True,
+                'retry_after': 60
+            }), 503
+        
+        is_available, error_msg = ai_matching_service.check_service_available()
+        if not is_available:
+            return jsonify({
+                'success': False,
+                'error': f'AI matching service is not available: {error_msg}. Please try again later.',
+                'service_unavailable': True,
+                'retry_after': 60
+            }), 503
+        
         data = request.get_json()
         job_id = data.get('job_id')
         
@@ -478,30 +495,49 @@ def analyze_job_match():
                 'error': 'No CV found. Please upload your CV first.'
             }), 400
         
-        # Get job details (would fetch from database in production)
-        # For now, return analysis based on CV profile
-        if AI_MATCHING_AVAILABLE:
-            cv_profile = ai_matching_service.extract_cv_profile(cv_data)
+        cv_profile = ai_matching_service.extract_cv_profile(cv_data)
+        
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'candidate_profile': {
+                    'name': cv_profile.get('name'),
+                    'experience_level': cv_profile.get('experience_level'),
+                    'experience_years': cv_profile.get('experience_years'),
+                    'skills_count': len(cv_profile.get('skills', [])),
+                    'top_skills': cv_profile.get('skills', [])[:10]
+                },
+                'recommendation': 'Use the job matches page for detailed AI-powered analysis'
+            }
+        }), 200
             
-            return jsonify({
-                'success': True,
-                'analysis': {
-                    'candidate_profile': {
-                        'name': cv_profile.get('name'),
-                        'experience_level': cv_profile.get('experience_level'),
-                        'experience_years': cv_profile.get('experience_years'),
-                        'skills_count': len(cv_profile.get('skills', [])),
-                        'top_skills': cv_profile.get('skills', [])[:10]
-                    },
-                    'recommendation': 'Upload complete CV for detailed job-specific analysis'
-                }
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'AI matching service not available'
-            }), 503
-            
+    except AIServiceUnavailableError as e:
+        return jsonify({
+            'success': False,
+            'error': e.message,
+            'service_unavailable': True,
+            'retry_after': e.retry_after
+        }), 503
     except Exception as e:
         logger.error(f"Error analyzing job match: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@candidate_job_bp.route('/service-status', methods=['GET'])
+def get_service_status():
+    """Check if the AI matching service is available"""
+    if not AI_MATCHING_AVAILABLE:
+        return jsonify({
+            'success': True,
+            'available': False,
+            'message': 'AI matching service module not loaded'
+        }), 200
+    
+    is_available, error_msg = ai_matching_service.check_service_available()
+    
+    return jsonify({
+        'success': True,
+        'available': is_available,
+        'message': 'AI matching service is ready' if is_available else error_msg,
+        'model': ai_matching_service.model if is_available else None
+    }), 200

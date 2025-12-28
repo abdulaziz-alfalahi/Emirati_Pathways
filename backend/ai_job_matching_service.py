@@ -2,12 +2,15 @@
 AI-Powered Job Matching Service
 Uses Google Gemini 2.5 Pro for semantic matching between CVs and job postings
 Supports experience level filtering and D33/Talent33 alignment
+
+IMPORTANT: This service requires Google Gemini AI. No fallback to basic matching.
 """
 
 import os
 import json
 import logging
 import re
+import time
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 
@@ -35,37 +38,68 @@ D33_SECTORS = {
 }
 
 
+class AIServiceUnavailableError(Exception):
+    """Raised when the AI matching service is unavailable"""
+    def __init__(self, message="AI matching service is not available. Please try again later.", retry_after=30):
+        self.message = message
+        self.retry_after = retry_after
+        super().__init__(self.message)
+
+
 class AIJobMatchingService:
     """AI-powered job matching service using Google Gemini for semantic analysis"""
+    
+    MAX_RETRIES = 3
+    RETRY_DELAY = 2  # seconds
     
     def __init__(self):
         self._client = None
         self._client_initialized = False
-        # Use Gemini 2.5 Pro or fall back to 2.0 Flash
+        self._initialization_error = None
+        # Use Gemini 2.5 Pro
         self.model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro-preview-06-05')
+    
+    def _initialize_client(self):
+        """Initialize Google Gemini client"""
+        if self._client_initialized:
+            return
+        
+        self._client_initialized = True
+        try:
+            api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+            if not api_key:
+                self._initialization_error = "GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set"
+                logger.error(self._initialization_error)
+                return
+            
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            self._client = genai.GenerativeModel(self.model)
+            logger.info(f"Google Gemini client initialized successfully with model: {self.model}")
+            
+        except ImportError:
+            self._initialization_error = "google-generativeai package not installed. Run: pip install google-generativeai"
+            logger.error(self._initialization_error)
+        except Exception as e:
+            self._initialization_error = f"Failed to initialize Gemini client: {str(e)}"
+            logger.error(self._initialization_error)
     
     @property
     def client(self):
-        """Lazy initialization of Google Gemini client"""
+        """Get the Gemini client, initializing if needed"""
         if not self._client_initialized:
-            self._client_initialized = True
-            try:
-                api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
-                if api_key:
-                    import google.generativeai as genai
-                    genai.configure(api_key=api_key)
-                    self._client = genai.GenerativeModel(self.model)
-                    logger.info(f"Google Gemini client initialized successfully with model: {self.model}")
-                else:
-                    logger.warning("GEMINI_API_KEY not set - AI matching will use basic algorithm")
-                    self._client = None
-            except ImportError:
-                logger.warning("google-generativeai package not installed - run: pip install google-generativeai")
-                self._client = None
-            except Exception as e:
-                logger.warning(f"Failed to initialize Gemini client: {e} - AI matching will use basic algorithm")
-                self._client = None
+            self._initialize_client()
         return self._client
+    
+    def check_service_available(self) -> Tuple[bool, Optional[str]]:
+        """Check if the AI service is available"""
+        if not self._client_initialized:
+            self._initialize_client()
+        
+        if self._client is None:
+            return False, self._initialization_error or "AI service not initialized"
+        
+        return True, None
     
     def extract_cv_profile(self, cv_data: Dict[str, Any]) -> Dict[str, Any]:
         """Extract structured profile from CV data"""
@@ -249,138 +283,22 @@ class AIJobMatchingService:
         
         return requirements
     
-    def calculate_basic_match_score(self, cv_profile: Dict[str, Any], job_requirements: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
-        """Calculate basic match score without AI (fallback)"""
-        score = 0
-        breakdown = {
-            'skills_match': 0,
-            'experience_match': 0,
-            'title_match': 0,
-            'location_match': 0,
-            'd33_alignment': 0,
-            'details': {}
-        }
-        
-        # 1. Skills Match (40 points)
-        cv_skills = set(s.lower() for s in cv_profile.get('skills', []))
-        job_skills = set(s.lower() for s in job_requirements.get('required_skills', []))
-        
-        if job_skills:
-            matching_skills = cv_skills.intersection(job_skills)
-            skill_ratio = len(matching_skills) / len(job_skills)
-            breakdown['skills_match'] = int(skill_ratio * 40)
-            breakdown['details']['matching_skills'] = list(matching_skills)
-            breakdown['details']['missing_skills'] = list(job_skills - cv_skills)
-        else:
-            breakdown['skills_match'] = 20  # Partial credit if no specific skills listed
-        
-        score += breakdown['skills_match']
-        
-        # 2. Experience Level Match (25 points)
-        cv_level = cv_profile.get('experience_level', 'trainee')
-        job_level = job_requirements.get('experience_level', 'mid')
-        cv_years = cv_profile.get('experience_years', 0)
-        job_min_years = job_requirements.get('min_experience_years', 0)
-        
-        level_order = ['trainee', 'junior', 'mid', 'senior', 'executive']
-        cv_level_idx = level_order.index(cv_level) if cv_level in level_order else 0
-        job_level_idx = level_order.index(job_level) if job_level in level_order else 2
-        
-        # Perfect match or one level above
-        if cv_level_idx == job_level_idx:
-            breakdown['experience_match'] = 25
-        elif cv_level_idx == job_level_idx + 1:
-            breakdown['experience_match'] = 20  # Slightly overqualified
-        elif cv_level_idx == job_level_idx - 1:
-            breakdown['experience_match'] = 15  # Slightly underqualified but close
-        elif cv_level_idx > job_level_idx:
-            breakdown['experience_match'] = 10  # Overqualified
-        else:
-            breakdown['experience_match'] = 5  # Underqualified
-        
-        # Penalty for trainee applying to senior roles
-        if cv_level == 'trainee' and job_level in ['senior', 'executive']:
-            breakdown['experience_match'] = 0
-        
-        breakdown['details']['cv_level'] = cv_level
-        breakdown['details']['job_level'] = job_level
-        breakdown['details']['cv_years'] = cv_years
-        breakdown['details']['job_min_years'] = job_min_years
-        
-        score += breakdown['experience_match']
-        
-        # 3. Title/Role Match (20 points)
-        cv_title = cv_profile.get('current_title', '').lower()
-        job_title = job_requirements.get('title', '').lower()
-        
-        if cv_title and job_title:
-            cv_words = set(cv_title.split())
-            job_words = set(job_title.split())
-            
-            # Remove common words
-            common_words = {'the', 'a', 'an', 'and', 'or', 'of', 'in', 'at', 'to', 'for'}
-            cv_words -= common_words
-            job_words -= common_words
-            
-            if cv_words and job_words:
-                overlap = cv_words.intersection(job_words)
-                title_ratio = len(overlap) / max(len(cv_words), len(job_words))
-                breakdown['title_match'] = int(title_ratio * 20)
-        
-        score += breakdown['title_match']
-        
-        # 4. Location Match (10 points)
-        cv_location = cv_profile.get('location', '').lower()
-        job_location = job_requirements.get('location', '').lower()
-        
-        uae_cities = ['dubai', 'abu dhabi', 'sharjah', 'ajman', 'ras al khaimah', 'fujairah', 'umm al quwain', 'uae']
-        cv_in_uae = any(city in cv_location for city in uae_cities)
-        job_in_uae = any(city in job_location for city in uae_cities)
-        
-        if cv_location and job_location:
-            if cv_location in job_location or job_location in cv_location:
-                breakdown['location_match'] = 10
-            elif cv_in_uae and job_in_uae:
-                breakdown['location_match'] = 7
-            elif cv_in_uae or job_in_uae:
-                breakdown['location_match'] = 3
-        else:
-            breakdown['location_match'] = 5  # Partial credit if location not specified
-        
-        score += breakdown['location_match']
-        
-        # 5. D33 Alignment (5 points)
-        cv_industries = set(cv_profile.get('industries', []))
-        job_d33 = set(job_requirements.get('d33_alignment', []))
-        
-        if cv_industries and job_d33:
-            if cv_industries.intersection(job_d33):
-                breakdown['d33_alignment'] = 5
-        
-        score += breakdown['d33_alignment']
-        
-        # Determine fit assessment
-        if score >= 80:
-            breakdown['details']['fit_assessment'] = 'excellent'
-        elif score >= 60:
-            breakdown['details']['fit_assessment'] = 'good'
-        elif score >= 40:
-            breakdown['details']['fit_assessment'] = 'moderate'
-        elif score >= 20:
-            breakdown['details']['fit_assessment'] = 'poor'
-        else:
-            breakdown['details']['fit_assessment'] = 'not_suitable'
-        
-        return min(100, score), breakdown
-    
     def calculate_ai_match_score(self, cv_profile: Dict[str, Any], job_requirements: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
-        """Calculate match score using Google Gemini for semantic analysis"""
-        # If no Gemini client available, use basic matching
-        if not self.client:
-            return self.calculate_basic_match_score(cv_profile, job_requirements)
+        """Calculate match score using Google Gemini for semantic analysis with retries"""
         
-        try:
-            prompt = f"""Analyze the match between this candidate profile and job posting. 
+        # Check if service is available
+        is_available, error_msg = self.check_service_available()
+        if not is_available:
+            raise AIServiceUnavailableError(
+                f"AI matching service is not available: {error_msg}. Please try again later.",
+                retry_after=60
+            )
+        
+        last_error = None
+        
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                prompt = f"""Analyze the match between this candidate profile and job posting. 
 Return a JSON object with match score and detailed breakdown.
 
 CANDIDATE PROFILE:
@@ -432,50 +350,72 @@ Return ONLY a valid JSON object in this exact format (no markdown, no code block
   "fit_assessment": "excellent|good|moderate|poor|not_suitable"
 }}"""
 
-            # Use Gemini to generate response
-            response = self.client.generate_content(
-                prompt,
-                generation_config={
-                    'temperature': 0.2,
-                    'max_output_tokens': 1000,
-                }
-            )
-            
-            result_text = response.text.strip()
-            
-            # Extract JSON from response (handle potential markdown code blocks)
-            result_text = result_text.replace('```json', '').replace('```', '').strip()
-            json_match = re.search(r'\{[\s\S]*\}', result_text)
-            if json_match:
-                result = json.loads(json_match.group())
-                
-                score = min(100, max(0, result.get('total_score', 50)))
-                breakdown = {
-                    'skills_match': result.get('breakdown', {}).get('skills_match', 0),
-                    'experience_match': result.get('breakdown', {}).get('experience_match', 0),
-                    'title_match': result.get('breakdown', {}).get('title_match', 0),
-                    'location_match': result.get('breakdown', {}).get('location_match', 0),
-                    'd33_alignment': result.get('breakdown', {}).get('d33_alignment', 0),
-                    'details': {
-                        'matching_skills': result.get('matching_skills', []),
-                        'missing_skills': result.get('missing_skills', []),
-                        'recommendation': result.get('recommendation', ''),
-                        'fit_assessment': result.get('fit_assessment', 'moderate'),
-                        'ai_analyzed': True,
-                        'ai_model': self.model
+                # Use Gemini to generate response
+                response = self.client.generate_content(
+                    prompt,
+                    generation_config={
+                        'temperature': 0.2,
+                        'max_output_tokens': 1000,
                     }
-                }
+                )
                 
-                return score, breakdown
-            
-        except Exception as e:
-            logger.error(f"Gemini AI matching failed: {e}")
+                result_text = response.text.strip()
+                
+                # Extract JSON from response (handle potential markdown code blocks)
+                result_text = result_text.replace('```json', '').replace('```', '').strip()
+                json_match = re.search(r'\{[\s\S]*\}', result_text)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    
+                    score = min(100, max(0, result.get('total_score', 50)))
+                    breakdown = {
+                        'skills_match': result.get('breakdown', {}).get('skills_match', 0),
+                        'experience_match': result.get('breakdown', {}).get('experience_match', 0),
+                        'title_match': result.get('breakdown', {}).get('title_match', 0),
+                        'location_match': result.get('breakdown', {}).get('location_match', 0),
+                        'd33_alignment': result.get('breakdown', {}).get('d33_alignment', 0),
+                        'details': {
+                            'matching_skills': result.get('matching_skills', []),
+                            'missing_skills': result.get('missing_skills', []),
+                            'recommendation': result.get('recommendation', ''),
+                            'fit_assessment': result.get('fit_assessment', 'moderate'),
+                            'ai_analyzed': True,
+                            'ai_model': self.model
+                        }
+                    }
+                    
+                    return score, breakdown
+                else:
+                    raise ValueError("Could not parse JSON from AI response")
+                    
+            except AIServiceUnavailableError:
+                raise  # Don't retry initialization errors
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"AI matching attempt {attempt + 1}/{self.MAX_RETRIES} failed: {e}")
+                if attempt < self.MAX_RETRIES - 1:
+                    time.sleep(self.RETRY_DELAY * (attempt + 1))  # Exponential backoff
         
-        # Fallback to basic matching
-        return self.calculate_basic_match_score(cv_profile, job_requirements)
+        # All retries failed
+        raise AIServiceUnavailableError(
+            f"AI matching service temporarily unavailable after {self.MAX_RETRIES} attempts. Please try again later. Last error: {last_error}",
+            retry_after=30
+        )
     
     def match_cv_to_jobs(self, cv_data: Dict[str, Any], jobs: List[Dict[str, Any]], use_ai: bool = True) -> List[Dict[str, Any]]:
-        """Match CV to multiple jobs and return sorted results"""
+        """Match CV to multiple jobs and return sorted results
+        
+        Raises:
+            AIServiceUnavailableError: If AI service is not available
+        """
+        # First check if service is available
+        is_available, error_msg = self.check_service_available()
+        if not is_available:
+            raise AIServiceUnavailableError(
+                f"AI matching service is not available: {error_msg}. Please try again later.",
+                retry_after=60
+            )
+        
         cv_profile = self.extract_cv_profile(cv_data)
         logger.info(f"Matching CV for: {cv_profile.get('name', 'Unknown')} ({cv_profile.get('experience_level')} - {cv_profile.get('experience_years')} years)")
         
@@ -484,11 +424,8 @@ Return ONLY a valid JSON object in this exact format (no markdown, no code block
         for job in jobs:
             job_requirements = self.extract_job_requirements(job)
             
-            # Use AI matching for better accuracy, with fallback
-            if use_ai and self.client:
-                score, breakdown = self.calculate_ai_match_score(cv_profile, job_requirements)
-            else:
-                score, breakdown = self.calculate_basic_match_score(cv_profile, job_requirements)
+            # Use AI matching - will raise exception if unavailable
+            score, breakdown = self.calculate_ai_match_score(cv_profile, job_requirements)
             
             matched_job = {
                 **job,
