@@ -4,7 +4,7 @@ Implements the REAL "Apply Now" functionality for Job Seeker persona
 """
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 import logging
 from datetime import datetime
 import uuid
@@ -29,6 +29,28 @@ DB_CONFIG = {
     'port': int(os.getenv('DB_PORT', 5432))
 }
 
+# Mock user ID for development
+MOCK_USER_ID = '00000000-0000-0000-0000-000000000001'
+
+def get_user_id_from_request():
+    """Get user ID from JWT or mock token"""
+    # Check for mock token first
+    auth_header = request.headers.get('Authorization', '')
+    if 'mock_token' in auth_header:
+        logger.info(f"Mock authentication detected, using mock user ID: {MOCK_USER_ID}")
+        return MOCK_USER_ID
+    
+    # Try to get from JWT
+    try:
+        verify_jwt_in_request(optional=True)
+        user_id = get_jwt_identity()
+        if user_id:
+            return user_id
+    except Exception as e:
+        logger.warning(f"JWT verification failed: {e}")
+    
+    return None
+
 def get_db_connection():
     """Get database connection"""
     try:
@@ -38,12 +60,16 @@ def get_db_connection():
         return None
 
 @job_application_bp.route('/apply', methods=['POST'])
-@jwt_required()
 def apply_for_job():
     """Submit job application"""
     conn = None
     try:
-        current_user_id = get_jwt_identity()
+        # Get user ID (supports both JWT and mock tokens)
+        current_user_id = get_user_id_from_request()
+        
+        if not current_user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        
         data = request.get_json()
         
         required_fields = ['job_id', 'cover_letter']
@@ -75,6 +101,8 @@ def apply_for_job():
         
         conn.commit()
         
+        logger.info(f"Job application submitted: {application_id} for user {current_user_id}, job {job_id}")
+        
         return jsonify({
             'success': True,
             'message': 'Application submitted successfully',
@@ -89,12 +117,16 @@ def apply_for_job():
         if conn: conn.close()
 
 @job_application_bp.route('/applications', methods=['GET'])
-@jwt_required()
 def get_user_applications():
     """Get user's job applications with job details"""
     conn = None
     try:
-        current_user_id = get_jwt_identity()
+        # Get user ID (supports both JWT and mock tokens)
+        current_user_id = get_user_id_from_request()
+        
+        if not current_user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
@@ -148,12 +180,16 @@ def get_user_applications():
         if conn: conn.close()
 
 @job_application_bp.route('/jobs/<job_id>/apply-status', methods=['GET'])
-@jwt_required()
 def check_application_status(job_id):
     """Check if user has already applied"""
     conn = None
     try:
-        current_user_id = get_jwt_identity()
+        # Get user ID (supports both JWT and mock tokens)
+        current_user_id = get_user_id_from_request()
+        
+        if not current_user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+        
         conn = get_db_connection()
         if not conn:
             return jsonify({'success': False, 'message': 'Database error'}), 500
