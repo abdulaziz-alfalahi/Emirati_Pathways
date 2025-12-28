@@ -72,7 +72,22 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
     try {
       const response = await restClient.get('/api/jobs/applications');
       if (response.data.success) {
-        setApplications(response.data.data.applications || []);
+        // Map the backend response to match our Application interface
+        // Backend returns application_id, we need id
+        const mappedApplications = (response.data.data.applications || []).map((app: any, index: number) => ({
+          id: app.application_id || app.id || `app-${index}-${Date.now()}`, // Ensure unique ID
+          jobTitle: app.jobTitle || app.job_title || 'Unknown Position',
+          company: app.company || 'Confidential',
+          location: app.location || 'UAE',
+          appliedDate: app.appliedDate || app.applied_date || app.submitted_at || new Date().toISOString(),
+          status: app.status || 'pending',
+          lastUpdate: app.lastUpdate || app.last_updated || app.updated_at || new Date().toISOString(),
+          notes: app.notes,
+          interviewDate: app.interviewDate || app.interview_date,
+          interviewType: app.interviewType || app.interview_type,
+          contactPerson: app.contactPerson || app.contact_person
+        }));
+        setApplications(mappedApplications);
       }
     } catch (error) {
       console.error('Error loading applications:', error);
@@ -94,18 +109,23 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
     
     setWithdrawing(true);
     try {
-      const response = await restClient.post(`/api/candidate/applications/${selectedApplication.id}/withdraw`, {
+      // Store the ID to withdraw before making the API call
+      const applicationIdToWithdraw = String(selectedApplication.id);
+      
+      const response = await restClient.post(`/api/candidate/applications/${applicationIdToWithdraw}/withdraw`, {
         reason: withdrawReason
       });
       
       if (response.data.success) {
-        // Update the local state to reflect the withdrawal
+        // Update only the specific application by comparing string IDs
         setApplications(prev => 
-          prev.map(app => 
-            app.id === selectedApplication.id 
-              ? { ...app, status: 'withdrawn' as const, lastUpdate: new Date().toISOString() }
-              : app
-          )
+          prev.map(app => {
+            const appIdStr = String(app.id);
+            if (appIdStr === applicationIdToWithdraw) {
+              return { ...app, status: 'withdrawn' as const, lastUpdate: new Date().toISOString() };
+            }
+            return app;
+          })
         );
         setWithdrawDialogOpen(false);
         setSelectedApplication(null);
