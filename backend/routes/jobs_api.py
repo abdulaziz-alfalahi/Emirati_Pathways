@@ -973,46 +973,124 @@ def withdraw_candidate_application(application_id):
         if conn:
             try:
                 cursor = conn.cursor()
+                updated = False
                 
-                # Check if application exists and can be withdrawn
-                cursor.execute("""
-                    SELECT id, status FROM job_applications 
-                    WHERE id = %s OR id::text = %s
-                """, (application_id, str(application_id)))
-                
-                result = cursor.fetchone()
-                
-                if result:
-                    current_status = result[1]
-                    
-                    # Check if application can be withdrawn
-                    if current_status in ['withdrawn', 'rejected', 'offer_accepted']:
-                        cursor.close()
-                        conn.close()
-                        return jsonify({
-                            'success': False,
-                            'message': f'Cannot withdraw application with status: {current_status}'
-                        }), 400
-                    
-                    # Update the application status
+                # Try job_applications table with status column (used by job_application_routes.py)
+                try:
                     cursor.execute("""
-                        UPDATE job_applications 
-                        SET status = 'withdrawn', 
-                            notes = COALESCE(notes, '') || %s,
-                            updated_at = NOW()
-                        WHERE id = %s OR id::text = %s
-                    """, (
-                        f'\n[Withdrawn: {reason}]' if reason else '\n[Withdrawn by candidate]',
-                        application_id,
-                        str(application_id)
-                    ))
+                        SELECT id, status FROM job_applications 
+                        WHERE id = %s
+                    """, (str(application_id),))
+                    result = cursor.fetchone()
                     
-                    conn.commit()
-                    cursor.close()
-                    conn.close()
-                    
-                    logger.info(f"Application {application_id} withdrawn successfully")
-                    
+                    if result:
+                        current_status = result[1]
+                        
+                        # Check if application can be withdrawn
+                        if current_status in ['withdrawn', 'rejected', 'offer_accepted', 'hired']:
+                            cursor.close()
+                            conn.close()
+                            return jsonify({
+                                'success': False,
+                                'message': f'Cannot withdraw application with status: {current_status}'
+                            }), 400
+                        
+                        # Update the application status
+                        cursor.execute("""
+                            UPDATE job_applications 
+                            SET status = 'withdrawn', 
+                                last_updated = NOW()
+                            WHERE id = %s
+                        """, (str(application_id),))
+                        conn.commit()
+                        updated = True
+                        logger.info(f"Application {application_id} withdrawn from job_applications table (status column)")
+                except Exception as e1:
+                    logger.debug(f"job_applications table (status column) query failed: {e1}")
+                    conn.rollback()
+                
+                # Try job_applications table with application_status column (schema from create_job_application_tables.sql)
+                if not updated:
+                    try:
+                        cursor.execute("""
+                            SELECT id, application_status FROM job_applications 
+                            WHERE id::text = %s
+                        """, (str(application_id),))
+                        result = cursor.fetchone()
+                        
+                        if result:
+                            current_status = result[1]
+                            
+                            # Check if application can be withdrawn
+                            if current_status in ['withdrawn', 'rejected', 'offer_accepted', 'hired']:
+                                cursor.close()
+                                conn.close()
+                                return jsonify({
+                                    'success': False,
+                                    'message': f'Cannot withdraw application with status: {current_status}'
+                                }), 400
+                            
+                            # Update the application status
+                            cursor.execute("""
+                                UPDATE job_applications 
+                                SET application_status = 'withdrawn', 
+                                    additional_notes = COALESCE(additional_notes, '') || %s,
+                                    updated_at = NOW()
+                                WHERE id::text = %s
+                            """, (
+                                f'\n[Withdrawn: {reason}]' if reason else '\n[Withdrawn by candidate]',
+                                str(application_id)
+                            ))
+                            conn.commit()
+                            updated = True
+                            logger.info(f"Application {application_id} withdrawn from job_applications table (application_status column)")
+                    except Exception as e2:
+                        logger.debug(f"job_applications table (application_status column) query failed: {e2}")
+                        conn.rollback()
+                
+                # Try applications table if job_applications didn't work (uses status column)
+                if not updated:
+                    try:
+                        cursor.execute("""
+                            SELECT id, status FROM applications 
+                            WHERE id::text = %s
+                        """, (str(application_id),))
+                        result = cursor.fetchone()
+                        
+                        if result:
+                            current_status = result[1]
+                            
+                            # Check if application can be withdrawn
+                            if current_status in ['withdrawn', 'rejected', 'offer', 'hired']:
+                                cursor.close()
+                                conn.close()
+                                return jsonify({
+                                    'success': False,
+                                    'message': f'Cannot withdraw application with status: {current_status}'
+                                }), 400
+                            
+                            # Update the application status
+                            cursor.execute("""
+                                UPDATE applications 
+                                SET status = 'withdrawn', 
+                                    notes = COALESCE(notes, '') || %s,
+                                    updated_at = NOW()
+                                WHERE id::text = %s
+                            """, (
+                                f'\n[Withdrawn: {reason}]' if reason else '\n[Withdrawn by candidate]',
+                                str(application_id)
+                            ))
+                            conn.commit()
+                            updated = True
+                            logger.info(f"Application {application_id} withdrawn from applications table")
+                    except Exception as e2:
+                        logger.debug(f"applications table query failed: {e2}")
+                        conn.rollback()
+                
+                cursor.close()
+                conn.close()
+                
+                if updated:
                     return jsonify({
                         'success': True,
                         'message': 'Application withdrawn successfully',
@@ -1023,15 +1101,15 @@ def withdraw_candidate_application(application_id):
                         }
                     })
                 else:
-                    cursor.close()
-                    conn.close()
-                    # Application not found in DB, but we'll still return success for demo
-                    logger.warning(f"Application {application_id} not found in database, returning success anyway")
+                    logger.warning(f"Application {application_id} not found in any table")
                     
             except Exception as db_error:
                 logger.warning(f"Database error withdrawing application: {db_error}")
                 if conn:
-                    conn.close()
+                    try:
+                        conn.close()
+                    except:
+                        pass
         
         # Fallback: Return success for demo purposes when DB is unavailable
         logger.info(f"Returning fallback success for withdraw application {application_id}")
