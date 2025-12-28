@@ -345,8 +345,23 @@ def get_job_matches():
         
         # Get jobs from database or fallback
         conn = get_db_connection()
+        applied_job_ids = set()  # Track which jobs user has already applied to
+        
         if conn:
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            # First, get list of jobs the user has already applied to
+            if user_id:
+                try:
+                    cur.execute("""
+                        SELECT job_id FROM job_applications 
+                        WHERE candidate_id = %s
+                    """, (user_id,))
+                    applied_jobs = cur.fetchall()
+                    applied_job_ids = {row['job_id'] for row in applied_jobs}
+                    logger.info(f"User {user_id} has applied to {len(applied_job_ids)} jobs")
+                except Exception as e:
+                    logger.warning(f"Could not fetch applied jobs: {e}")
             
             # Fetch all published jobs
             query = """
@@ -376,9 +391,10 @@ def get_job_matches():
             for job in db_jobs:
                 reqs = job['requirements'] if isinstance(job['requirements'], list) else []
                 benefits = job['benefits'] if isinstance(job['benefits'], list) else []
+                job_id = job['id']
                 
                 jobs.append({
-                    'id': job['id'],
+                    'id': job_id,
                     'title': job['title'],
                     'company': job['company'] or 'Unknown Company',
                     'location': job['location'] or 'UAE',
@@ -387,15 +403,22 @@ def get_job_matches():
                     'description': job['description'] or '',
                     'requirements': reqs,
                     'benefits': benefits,
-                    'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat()
+                    'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat(),
+                    'hasApplied': job_id in applied_job_ids  # Add application status
                 })
             
             # If no jobs in database, use fallback
             if not jobs:
                 jobs = get_fallback_jobs()
+                # Add hasApplied field to fallback jobs
+                for job in jobs:
+                    job['hasApplied'] = job.get('id') in applied_job_ids
         else:
             # Database unavailable, use fallback jobs
             jobs = get_fallback_jobs()
+            # Add hasApplied field to fallback jobs
+            for job in jobs:
+                job['hasApplied'] = False
         
         # Apply AI matching - this will raise AIServiceUnavailableError if it fails
         try:

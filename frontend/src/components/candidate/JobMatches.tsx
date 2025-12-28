@@ -63,6 +63,7 @@ interface Job {
   candidateLevel?: string;
   jobLevel?: string;
   fitAssessment?: string;
+  hasApplied?: boolean;  // Track if user has already applied
 }
 
 interface JobMatchesProps {
@@ -204,13 +205,30 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       });
 
       if (response.data.success) {
+        // Update local state to show "Already Applied" immediately
+        setJobs(prevJobs => 
+          prevJobs.map(job => 
+            job.id === jobId ? { ...job, hasApplied: true } : job
+          )
+        );
         alert('Application submitted successfully!');
       } else {
         alert(response.data.message || 'Application failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error applying to job:', error);
-      alert('Failed to submit application. Please try again.');
+      // Check if it's a "already applied" error
+      if (error.response?.data?.message?.includes('already applied')) {
+        // Update local state to reflect the already applied status
+        setJobs(prevJobs => 
+          prevJobs.map(job => 
+            job.id === jobId ? { ...job, hasApplied: true } : job
+          )
+        );
+        alert('You have already applied for this job.');
+      } else {
+        alert('Failed to submit application. Please try again.');
+      }
     }
   };
 
@@ -723,9 +741,16 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                         <ExternalLink className="h-4 w-4 mr-2" />
                         View Details
                       </Button>
-                      <Button size="sm" onClick={() => handleApply(job.id)}>
-                        Apply Now
-                      </Button>
+                      {job.hasApplied ? (
+                        <Badge className="bg-green-100 text-green-800 px-4 py-2 flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Already Applied
+                        </Badge>
+                      ) : (
+                        <Button size="sm" onClick={() => handleApply(job.id)}>
+                          Apply Now
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
