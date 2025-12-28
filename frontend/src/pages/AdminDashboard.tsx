@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockAuthService } from '@/services/mockAuthService';
 import { restClient } from '@/utils/api';
-import UserManager from '@/components/admin/UserManager';
+import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
 import AdminRoles from '@/components/admin/AdminRoles';
 import GrowthTools from '@/components/admin/GrowthTools';
 import GrowthOperatorManager from '@/components/admin/GrowthOperatorManager';
@@ -467,7 +467,7 @@ const AdminDashboard = () => {
 
               {/* User Management Tab */}
               <TabsContent value="users" className="space-y-6">
-                <UserManager />
+                <UserManagerEnhanced />
               </TabsContent>
 
               {/* Roles Tab */}

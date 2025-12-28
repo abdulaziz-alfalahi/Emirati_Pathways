@@ -426,6 +426,13 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ User Management API Blueprint not available: {e}")
 
+# Register User Activity API Blueprint
+try:
+    from routes.user_activity_api import user_activity_bp
+    app.register_blueprint(user_activity_bp)
+    logger.info("✅ User Activity API Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ User Activity API Blueprint not available: {e}")
 
 
 # Database configuration
