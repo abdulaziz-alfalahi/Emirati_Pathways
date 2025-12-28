@@ -56,8 +56,9 @@ class AIJobMatchingService:
         self._client = None
         self._client_initialized = False
         self._initialization_error = None
-        # Use Gemini 2.5 Pro
-        self.model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro')
+        # Use Gemini 2.0 Flash (more reliable with safety settings)
+        # Gemini 2.5 Pro has stricter built-in filters that cannot be disabled
+        self.model = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
     
     def _initialize_client(self):
         """Initialize Google Gemini client"""
@@ -350,16 +351,26 @@ Return ONLY a valid JSON object in this exact format (no markdown, no code block
   "fit_assessment": "excellent|good|moderate|poor|not_suitable"
 }}"""
 
-                # Use Gemini to generate response with safety settings
-                # Import safety types
-                from google.generativeai.types import HarmCategory, HarmBlockThreshold
-                
-                safety_settings = {
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                }
+                # Use Gemini to generate response with safety settings disabled
+                # Using list format with category/threshold as required by the API
+                safety_settings = [
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE"
+                    }
+                ]
                 
                 response = self.client.generate_content(
                     prompt,
