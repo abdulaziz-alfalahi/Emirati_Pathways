@@ -4,6 +4,7 @@ import ExportReportsDialog from '@/components/recruiter/ExportReportsDialog';
 import SourceCandidatesDialog from '@/components/recruiter/SourceCandidatesDialog';
 import CandidateMatching from '@/components/recruiter/CandidateMatching';
 import JobDescriptionsList from '@/components/recruiter/JobDescriptionsList';
+import RecentApplicants from '@/components/recruiter/RecentApplicants';
 import Interviews from '@/components/recruiter/Interviews';
 import OffersPage from '@/pages/recruiter/Offers';
 import Messages from '@/components/recruiter/Messages';
@@ -259,16 +260,14 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Tabs */}
+          {/* Tabs - Simplified to 5 main tabs */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
+            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium" onClick={() => handleTabChange('overview')}>Overview</TabsTrigger>
               <TabsTrigger value="jobs" className="font-dubai-medium" onClick={() => handleTabChange('jobs')}>My Jobs</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium" onClick={() => handleTabChange('candidates')}>Candidates</TabsTrigger>
               <TabsTrigger value="interviews" className="font-dubai-medium" onClick={() => handleTabChange('interviews')}>Interviews</TabsTrigger>
-              <TabsTrigger value="offers" className="font-dubai-medium" onClick={() => handleTabChange('offers')}>Offers & Approvals</TabsTrigger>
-              <TabsTrigger value="messages" className="font-dubai-medium" onClick={() => handleTabChange('messages')}>Messages</TabsTrigger>
-              <TabsTrigger value="analytics" className="font-dubai-medium" onClick={() => handleTabChange('analytics')}>Analytics</TabsTrigger>
+              <TabsTrigger value="offers" className="font-dubai-medium" onClick={() => handleTabChange('offers')}>Offers</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -411,6 +410,12 @@ const RecruiterDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Recent Applicants Section */}
+              <RecentApplicants 
+                limit={5} 
+                onViewAll={() => handleTabChange('jobs')} 
+              />
 
               {/* Recent Activity */}
               <Card className="bg-white shadow-sm">

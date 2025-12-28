@@ -21,7 +21,10 @@ import {
   Briefcase,
   Trash2,
   Search,
-  Settings
+  Settings,
+  UserPlus,
+  ChevronRight,
+  Calendar
 } from 'lucide-react';
 import {
   Dialog,
@@ -50,7 +53,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { restClient, healthApi, jobApi, type JobDescription } from '@/utils/api';
-import { VacancyDashboard } from './vacancy/VacancyDashboard';
+import { JobApplicantsView } from './JobApplicantsView';
+
+// Interface for applicant counts
+interface ApplicantCount {
+  job_id: string;
+  job_title: string;
+  total_applicants: number;
+  new_applicants: number;
+  in_review: number;
+  in_interview: number;
+  offers_made: number;
+  last_application_date: string | null;
+}
 
 const JobDescriptionsList = () => {
   const navigate = useNavigate();
@@ -64,7 +79,7 @@ const JobDescriptionsList = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [jobText, setJobText] = useState('');
   const [selectedJob, setSelectedJob] = useState<JobDescription | null>(null);
-  const [selectedVacancyId, setSelectedVacancyId] = useState<string | null>(null); // For Layout Switching
+  const [selectedJobForApplicants, setSelectedJobForApplicants] = useState<any | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<JobDescription | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -85,6 +100,24 @@ const JobDescriptionsList = () => {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  // Fetch applicant counts for all jobs
+  const { data: applicantCounts } = useQuery({
+    queryKey: ['applicantCounts'],
+    queryFn: async () => {
+      try {
+        const response = await restClient.get('/api/recruiter/job-applicants-count');
+        if (response.data?.success) {
+          return response.data.data as ApplicantCount[];
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to fetch applicant counts:', error);
+        return [];
+      }
+    },
+    refetchInterval: 30000,
+  });
+
   // Check backend health
   const { data: healthStatus } = useQuery({
     queryKey: ['health'],
@@ -95,22 +128,20 @@ const JobDescriptionsList = () => {
     refetchInterval: 60000, // Check health every minute
   });
 
-  // If a vacancy is selected, show the Dashboard instead of list
-  if (selectedVacancyId) {
-    const vacancy = jobDescriptions?.find((j: any) =>
-      String(j.id) === String(selectedVacancyId) || String(j.jd_id) === String(selectedVacancyId)
-    );
+  // If viewing applicants for a specific job, show the applicants view
+  if (selectedJobForApplicants) {
     return (
-      <VacancyDashboard
-        job={vacancy}
-        onBack={() => setSelectedVacancyId(null)}
+      <JobApplicantsView
+        job={selectedJobForApplicants}
+        onBack={() => setSelectedJobForApplicants(null)}
       />
     );
   }
 
-  // ... Rest of the file/Handlers ...
-  // Need to update the "View" or "Manage" button to set setSelectedVacancyId
-
+  // Helper to get applicant count for a job
+  const getApplicantCount = (jobId: string): ApplicantCount | undefined => {
+    return applicantCounts?.find(ac => ac.job_id === jobId);
+  };
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,16 +256,6 @@ const JobDescriptionsList = () => {
     }
   };
 
-  // Navigate to find matching candidates
-  const handleFindMatches = (job: JobDescription, viewMode: 'applicants' | 'matching' = 'matching') => {
-    console.log(`Navigating to matches with mode: ${viewMode} for job:`, job.id);
-    // Store the selected job for the matching component
-    localStorage.setItem('selectedJobForMatching', JSON.stringify(job));
-    localStorage.setItem('candidateViewMode', viewMode);
-    // Navigate to the dashboard candidates tab
-    navigate('/recruiter-dashboard?tab=candidates');
-  };
-
   // View job details
   const handleViewJob = (job: JobDescription) => {
     setSelectedJob(job);
@@ -277,18 +298,19 @@ const JobDescriptionsList = () => {
     }
   };
 
-  // Get confidence color
-  const getConfidenceColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 70) return 'text-yellow-600';
-    return 'text-orange-600';
-  };
-
-  // Get confidence badge variant
-  const getConfidenceBadge = (score: number) => {
-    if (score >= 90) return 'default';
-    if (score >= 70) return 'secondary';
-    return 'outline';
+  // Format relative time
+  const formatRelativeTime = (dateString: string | null) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -296,16 +318,14 @@ const JobDescriptionsList = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Job Descriptions</h2>
+          <h2 className="text-2xl font-bold">My Jobs</h2>
           <p className="text-muted-foreground">
-            Upload and manage job descriptions with AI-powered parsing
+            Manage your job postings and view applicants
           </p>
         </div>
-
-        {/* Buttons removed as per requirement - functionality moved to "Create New JD" wizard */}
       </div>
 
-      {/* Health Status - FIXED: Added null safety checks */}
+      {/* Health Status */}
       {healthStatus && (
         <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
           <CardContent className="pt-4">
@@ -327,264 +347,208 @@ const JobDescriptionsList = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Job Listings</CardTitle>
-            <CardDescription>
-              {jobDescriptions?.length || 0} job descriptions parsed and ready for matching
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {jobDescriptions && jobDescriptions.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job Details</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Requirements</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {jobDescriptions.map((job: any) => (
-                    <TableRow key={job.jd_id || job.id}>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{job.title || 'Untitled Job'}</div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Building className="h-3 w-3" />
-                              {job.company || 'Unknown Company'}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {job.location || 'Location TBD'}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Briefcase className="h-3 w-3" />
-                              {job.employment_type || 'Full-time'}
-                            </div>
-                          </div>
+        <div className="space-y-4">
+          {jobDescriptions && jobDescriptions.length > 0 ? (
+            jobDescriptions.map((job: any) => {
+              const jdId = job.jd_id || job.id;
+              const applicantData = getApplicantCount(jdId);
+              const totalApplicants = applicantData?.total_applicants || 0;
+              const newApplicants = applicantData?.new_applicants || 0;
+              
+              return (
+                <Card key={jdId} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      {/* Job Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold truncate">{job.title || 'Untitled Job'}</h3>
+                          <Badge variant={job.status === 'published' ? 'default' : job.status === 'draft' ? 'secondary' : 'outline'}>
+                            {job.status || 'draft'}
+                          </Badge>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={job.status === 'published' ? 'default' : job.status === 'draft' ? 'secondary' : 'outline'}>
-                          {job.status || 'draft'}
-                        </Badge>
-                        {job.created_at && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {new Date(job.created_at).toLocaleDateString()}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Building className="h-4 w-4" />
+                            {job.company || 'Unknown Company'}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {job.location || 'Location TBD'}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Briefcase className="h-4 w-4" />
+                            {job.employment_type || 'Full-time'}
+                          </div>
+                          {job.created_at && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              Posted {new Date(job.created_at).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Applicant Count Badge */}
+                      <div className="flex items-center gap-4">
+                        {(job.status === 'published' || job.status === 'active') && (
+                          <div 
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+                            onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
+                          >
+                            <Users className="h-5 w-5 text-blue-600" />
+                            <div className="text-center">
+                              <div className="text-xl font-bold text-blue-600">{totalApplicants}</div>
+                              <div className="text-xs text-blue-600">Applicants</div>
+                            </div>
+                            {newApplicants > 0 && (
+                              <Badge className="bg-red-500 text-white ml-2">
+                                {newApplicants} New
+                              </Badge>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-blue-400" />
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="text-sm">
-                            <span className="font-medium">Requirements:</span> {Array.isArray(job.requirements) ? job.requirements.length : 0}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Responsibilities:</span> {Array.isArray(job.responsibilities) ? job.responsibilities.length : 0}
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">Benefits:</span> {Array.isArray(job.benefits) ? job.benefits.length : 0}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigate(`/recruiter/jd-builder?jd_id=${jdId}`, { replace: false });
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        {(job.status === 'published' || job.status === 'active') && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              // Navigate to JD wizard to edit
-                              const jdId = job.jd_id || job.id;
-                              navigate(`/recruiter/jd-builder?jd_id=${jdId}`, { replace: false });
-                            }}
-                            aria-label={`Edit job description ${job.title || job.jd_id}`}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Edit
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            View Applicants
                           </Button>
-                          {(job.status === 'published' || job.status === 'active') && (
-                            <Button
-                              size="sm"
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                              onClick={() => setSelectedVacancyId(job.jd_id || job.id)}
-                            >
-                              <Settings className="h-4 w-4 mr-1" />
-                              Manage Vacancy
-                            </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteClick(job)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Applicant Pipeline Summary (if has applicants) */}
+                    {applicantData && totalApplicants > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center gap-6 text-sm">
+                          <span className="text-muted-foreground">Pipeline:</span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <span>{applicantData.new_applicants} New</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                            <span>{applicantData.in_review} In Review</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                            <span>{applicantData.in_interview} Interview</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                            <span>{applicantData.offers_made} Offers</span>
+                          </div>
+                          {applicantData.last_application_date && (
+                            <span className="text-muted-foreground ml-auto">
+                              Last application: {formatRelativeTime(applicantData.last_application_date)}
+                            </span>
                           )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteClick(job)}
-                            aria-label={`Delete job description ${job.title || job.jd_id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8">
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
                 <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium mb-2">No job descriptions yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  Upload your first job description to get started with candidate matching
+                  Create your first job posting to start receiving applications
                 </p>
-                <Button onClick={() => setIsUploadOpen(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Job Description
+                <Button onClick={() => navigate('/recruiter/jd-builder')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Job Posting
                 </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
-      {/* Job Preview Dialog - FIXED: Added null safety checks */}
+      {/* Job Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Job Description Details</DialogTitle>
+            <DialogTitle>{selectedJob?.title || 'Job Details'}</DialogTitle>
             <DialogDescription>
-              Parsed job information and requirements
+              Review the parsed job description details
             </DialogDescription>
           </DialogHeader>
-
           {selectedJob && (
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Basic Information</h3>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">Title:</span> {selectedJob.title || 'Untitled Job'}</div>
-                    <div><span className="font-medium">Company:</span> {selectedJob.company || 'Unknown Company'}</div>
-                    <div><span className="font-medium">Location:</span> {selectedJob.location || 'Location TBD'}</div>
-                    <div><span className="font-medium">Type:</span> {selectedJob.employment_type || 'Full-time'}</div>
-                    <div><span className="font-medium">Work Mode:</span> {selectedJob.work_mode || 'On-site'}</div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Parsing Metadata</h3>
-                  <div className="space-y-2 text-sm">
-                    <div><span className="font-medium">Confidence:</span> {selectedJob.parsing_metadata?.confidence_score || 0}%</div>
-                    <div><span className="font-medium">Language:</span> {selectedJob.parsing_metadata?.language_detected || 'Unknown'}</div>
-                    <div><span className="font-medium">Processing Time:</span> {selectedJob.parsing_metadata?.processing_time || 0}s</div>
-                    <div><span className="font-medium">Sections:</span> {selectedJob.parsing_metadata?.successful_sections || 0}/{selectedJob.parsing_metadata?.total_sections || 0}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Requirements */}
+            <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Requirements</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium mb-1">Skills ({selectedJob.requirements?.skills?.length || 0})</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {(selectedJob.requirements?.skills || []).map((skill, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-1">Education ({selectedJob.requirements?.education?.length || 0})</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {(selectedJob.requirements?.education || []).map((edu, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {edu}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <h4 className="font-medium mb-1">Experience ({selectedJob.requirements?.experience?.length || 0})</h4>
-                    <div className="text-sm space-y-1">
-                      {(selectedJob.requirements?.experience || []).map((exp, index) => (
-                        <div key={index}>• {exp}</div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-1">Languages ({selectedJob.requirements?.languages?.length || 0})</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {(selectedJob.requirements?.languages || []).map((lang, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {lang}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <h4 className="font-medium mb-1">Company</h4>
+                <p className="text-muted-foreground">{selectedJob.company || 'Not specified'}</p>
               </div>
-
-              {/* Responsibilities */}
-              {selectedJob.responsibilities && selectedJob.responsibilities.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-1">Location</h4>
+                <p className="text-muted-foreground">{selectedJob.location || 'Not specified'}</p>
+              </div>
+              <div>
+                <h4 className="font-medium mb-1">Employment Type</h4>
+                <p className="text-muted-foreground">{selectedJob.employment_type || 'Not specified'}</p>
+              </div>
+              {selectedJob.description && (
                 <div>
-                  <h3 className="font-semibold mb-2">Responsibilities ({selectedJob.responsibilities.length})</h3>
-                  <div className="text-sm space-y-1">
-                    {selectedJob.responsibilities.map((resp, index) => (
-                      <div key={index}>• {resp}</div>
-                    ))}
-                  </div>
+                  <h4 className="font-medium mb-1">Description</h4>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{selectedJob.description}</p>
                 </div>
               )}
-
-              {/* Benefits */}
-              {selectedJob.benefits && selectedJob.benefits.length > 0 && (
+              {selectedJob.requirements && Array.isArray(selectedJob.requirements) && selectedJob.requirements.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-2">Benefits ({selectedJob.benefits.length})</h3>
-                  <div className="text-sm space-y-1">
-                    {selectedJob.benefits.map((benefit, index) => (
-                      <div key={index}>• {benefit}</div>
+                  <h4 className="font-medium mb-1">Requirements</h4>
+                  <ul className="list-disc list-inside text-muted-foreground">
+                    {selectedJob.requirements.map((req: any, idx: number) => (
+                      <li key={idx}>{typeof req === 'string' ? req : req.description || req.category}</li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
-                  Close
-                </Button>
-                <Button onClick={() => {
-                  setIsPreviewOpen(false);
-                  handleFindMatches(selectedJob);
-                }}>
-                  <Users className="h-4 w-4 mr-2" />
-                  Find Matching Candidates
-                </Button>
-              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Job Description?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the job description
-              "{jobToDelete?.title || 'Untitled Job'}" and remove it from our servers.
+              Are you sure you want to delete "{jobToDelete?.title}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setJobToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteJob} className="bg-red-600 hover:bg-red-700">
               Delete
             </AlertDialogAction>
@@ -596,4 +560,3 @@ const JobDescriptionsList = () => {
 };
 
 export default JobDescriptionsList;
-

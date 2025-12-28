@@ -2919,6 +2919,196 @@ def initialize_unified_server():
 
     logger.info("🚀 Unified server initialization complete")
 
+@app.route('/api/recruiter/job-applicants-count', methods=['GET'])
+def get_job_applicants_count():
+    """Get applicant counts for all jobs posted by the recruiter"""
+    try:
+        # Get all jobs with their applicant counts
+        query = """
+            SELECT 
+                jp.jd_id as job_id,
+                jp.title as job_title,
+                COUNT(ja.id) as total_applicants,
+                COUNT(CASE WHEN ja.status = 'pending' OR ja.status = 'submitted' THEN 1 END) as new_applicants,
+                COUNT(CASE WHEN ja.status = 'under_review' OR ja.status = 'screening' THEN 1 END) as in_review,
+                COUNT(CASE WHEN ja.status = 'interview_scheduled' OR ja.status = 'interview' THEN 1 END) as in_interview,
+                COUNT(CASE WHEN ja.status = 'offer_extended' OR ja.status = 'offer' THEN 1 END) as offers_made,
+                MAX(ja.submitted_at) as last_application_date
+            FROM job_postings jp
+            LEFT JOIN job_applications ja ON jp.jd_id::text = ja.job_id
+            WHERE jp.status IN ('published', 'active')
+            GROUP BY jp.jd_id, jp.title
+            ORDER BY MAX(ja.submitted_at) DESC NULLS LAST
+        """
+        
+        results = execute_query(query) or []
+        
+        applicant_counts = []
+        for row in results:
+            row_dict = dict(row)
+            # Convert datetime to ISO string
+            if row_dict.get('last_application_date'):
+                row_dict['last_application_date'] = row_dict['last_application_date'].isoformat()
+            applicant_counts.append(row_dict)
+        
+        return jsonify({
+            'success': True,
+            'data': applicant_counts
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get job applicants count error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to get applicant counts'}), 500
+
+
+@app.route('/api/recruiter/recent-applicants', methods=['GET'])
+def get_recent_applicants():
+    """Get recent job applicants across all jobs (last 7 days)"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        
+        query = """
+            SELECT 
+                ja.id as application_id,
+                ja.job_id,
+                ja.candidate_id,
+                ja.status,
+                ja.submitted_at,
+                ja.cover_letter,
+                jp.title as job_title,
+                jp.company as company_name,
+                COALESCE(u.first_name || ' ' || u.last_name, uc.personal_info->>'fullName', 'Unknown Candidate') as candidate_name,
+                COALESCE(u.email, uc.personal_info->>'email', '') as candidate_email
+            FROM job_applications ja
+            LEFT JOIN job_postings jp ON jp.jd_id::text = ja.job_id
+            LEFT JOIN users u ON (
+                CASE 
+                    WHEN ja.candidate_id ~ '^[0-9]+$' THEN u.id = ja.candidate_id::integer
+                    ELSE u.id::text = ja.candidate_id
+                END
+            )
+            LEFT JOIN user_cvs uc ON uc.user_id::text = ja.candidate_id
+            WHERE ja.submitted_at >= NOW() - INTERVAL '%s days'
+            ORDER BY ja.submitted_at DESC
+            LIMIT %s
+        """
+        
+        results = execute_query(query, (days, limit)) or []
+        
+        recent_applicants = []
+        for row in results:
+            row_dict = dict(row)
+            # Convert datetime to ISO string
+            if row_dict.get('submitted_at'):
+                row_dict['submitted_at'] = row_dict['submitted_at'].isoformat()
+            recent_applicants.append(row_dict)
+        
+        return jsonify({
+            'success': True,
+            'data': recent_applicants,
+            'count': len(recent_applicants)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get recent applicants error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to get recent applicants'}), 500
+
+
+@app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
+def get_job_applicants(job_id):
+    """Get all applicants for a specific job"""
+    try:
+        status_filter = request.args.get('status', None)
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        offset = (page - 1) * per_page
+        
+        # Build query with optional status filter
+        where_clause = "WHERE ja.job_id = %s"
+        params = [job_id]
+        
+        if status_filter:
+            where_clause += " AND ja.status = %s"
+            params.append(status_filter)
+        
+        query = f"""
+            SELECT 
+                ja.id as application_id,
+                ja.job_id,
+                ja.candidate_id,
+                ja.status,
+                ja.submitted_at,
+                ja.last_updated,
+                ja.cover_letter,
+                COALESCE(u.first_name || ' ' || u.last_name, uc.personal_info->>'fullName', 'Unknown Candidate') as candidate_name,
+                COALESCE(u.email, uc.personal_info->>'email', '') as candidate_email,
+                COALESCE(u.phone, uc.personal_info->>'phone', '') as candidate_phone,
+                uc.professional_summary as candidate_summary,
+                uc.technical_skills,
+                uc.soft_skills,
+                uc.work_experience,
+                uc.education
+            FROM job_applications ja
+            LEFT JOIN users u ON (
+                CASE 
+                    WHEN ja.candidate_id ~ '^[0-9]+$' THEN u.id = ja.candidate_id::integer
+                    ELSE u.id::text = ja.candidate_id
+                END
+            )
+            LEFT JOIN user_cvs uc ON uc.user_id::text = ja.candidate_id
+            {where_clause}
+            ORDER BY ja.submitted_at DESC
+            LIMIT %s OFFSET %s
+        """
+        params.extend([per_page, offset])
+        
+        results = execute_query(query, tuple(params)) or []
+        
+        # Get total count
+        count_query = f"SELECT COUNT(*) as total FROM job_applications ja {where_clause}"
+        count_result = execute_query(count_query, tuple(params[:-2]), fetch_one=True)
+        total = count_result['total'] if count_result else 0
+        
+        applicants = []
+        for row in results:
+            row_dict = dict(row)
+            # Convert datetime to ISO string
+            if row_dict.get('submitted_at'):
+                row_dict['submitted_at'] = row_dict['submitted_at'].isoformat()
+            if row_dict.get('last_updated'):
+                row_dict['last_updated'] = row_dict['last_updated'].isoformat()
+            # Parse JSON fields
+            for field in ['technical_skills', 'soft_skills', 'work_experience', 'education']:
+                if row_dict.get(field) and isinstance(row_dict[field], str):
+                    try:
+                        row_dict[field] = json.loads(row_dict[field])
+                    except:
+                        pass
+            applicants.append(row_dict)
+        
+        return jsonify({
+            'success': True,
+            'data': applicants,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': (total + per_page - 1) // per_page
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get job applicants error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to get applicants'}), 500
+
+
 @app.route('/api/recruiter/analytics', methods=['GET', 'OPTIONS'])
 def recruiter_analytics():
     if request.method == 'OPTIONS':
