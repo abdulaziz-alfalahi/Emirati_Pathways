@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Briefcase,
   MapPin,
@@ -14,8 +15,13 @@ import {
   ExternalLink,
   Filter,
   Search,
-  TrendingUp
+  TrendingUp,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  FileText
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Job {
   id: string;
@@ -39,23 +45,29 @@ interface JobMatchesProps {
 const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'high-match' | 'recent'>('all');
   const [bookmarkedJobs, setBookmarkedJobs] = useState<Set<string>>(new Set());
+  const [cvLoaded, setCvLoaded] = useState(false);
+  const [matchMessage, setMatchMessage] = useState('');
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    loadJobMatches();
-  }, [candidateProfile]);
-
-  const loadJobMatches = async () => {
-    setLoading(true);
+  const loadJobMatches = useCallback(async (showRefreshing = false) => {
+    if (showRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
       const response = await restClient.get('/api/candidate/job-matches');
 
       if (response.data.success) {
         setJobs(response.data.jobs || []);
+        setCvLoaded(response.data.cv_loaded || false);
+        setMatchMessage(response.data.message || '');
       } else {
         console.error('Failed to load job matches:', response.data.error);
-        // throw new Error(response.data.error); // Fallback to mock data on error
       }
     } catch (error) {
       console.error('Error loading job matches:', error);
@@ -127,9 +139,20 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
           postedDate: '2024-09-08'
         }
       ]);
+      setCvLoaded(false);
+      setMatchMessage('Showing sample job matches');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadJobMatches();
+  }, [loadJobMatches, candidateProfile]);
+
+  const handleRefresh = () => {
+    loadJobMatches(true);
   };
 
   const handleBookmark = (jobId: string) => {
@@ -214,6 +237,36 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
 
   return (
     <div className="space-y-6">
+      {/* CV Status Alert */}
+      {!cvLoaded && (
+        <Alert className="border-amber-200 bg-amber-50">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 flex justify-between items-center">
+            <span>
+              <strong>Upload your CV for personalized matches!</strong> Job scores are currently based on general criteria.
+            </span>
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="ml-4 border-amber-300 hover:bg-amber-100"
+              onClick={() => navigate('/cv-builder')}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Upload CV
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {cvLoaded && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <strong>CV Loaded!</strong> {matchMessage || 'Jobs are matched based on your skills, experience, and preferences.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -223,10 +276,23 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                 <span>Job Matches</span>
               </CardTitle>
               <CardDescription>
-                Jobs matched to your profile and preferences
+                {cvLoaded 
+                  ? 'Jobs matched to your CV profile and preferences'
+                  : 'Jobs ranked by general relevance - upload CV for personalized matches'
+                }
               </CardDescription>
             </div>
             <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center space-x-1"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </Button>
               <Button
                 variant={filter === 'all' ? 'default' : 'outline'}
                 size="sm"
@@ -303,7 +369,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       <h4 className="text-sm font-medium mb-2">Requirements:</h4>
                       <div className="flex flex-wrap gap-1">
                         {job.requirements.map((req, index) => {
-                          const text = typeof req === 'string' ? req : (req.description || req.name || req.title || 'Requirement');
+                          const text = typeof req === 'string' ? req : ((req as any).description || (req as any).name || (req as any).title || 'Requirement');
                           return (
                             <Badge key={index} variant="outline" className="text-xs">
                               {text}
@@ -316,7 +382,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       <h4 className="text-sm font-medium mb-2">Benefits:</h4>
                       <div className="flex flex-wrap gap-1">
                         {job.benefits.map((benefit, index) => {
-                          const text = typeof benefit === 'string' ? benefit : (benefit.description || benefit.name || benefit.title || 'Benefit');
+                          const text = typeof benefit === 'string' ? benefit : ((benefit as any).description || (benefit as any).name || (benefit as any).title || 'Benefit');
                           return (
                             <Badge key={index} variant="secondary" className="text-xs">
                               {text}
@@ -367,4 +433,3 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
 };
 
 export default JobMatches;
-
