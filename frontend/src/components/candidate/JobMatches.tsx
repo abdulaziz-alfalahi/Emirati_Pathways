@@ -697,11 +697,17 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       <div className="mb-4">
                         <h4 className="text-sm font-medium mb-2">Requirements:</h4>
                         <div className="flex flex-wrap gap-2">
-                          {job.requirements.slice(0, 5).map((req, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {req}
-                            </Badge>
-                          ))}
+                          {job.requirements.slice(0, 5).map((req, index) => {
+                            // Handle both string and object formats
+                            const reqText = typeof req === 'string' 
+                              ? req 
+                              : (req as any)?.description || (req as any)?.category || 'Requirement';
+                            return (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {reqText}
+                              </Badge>
+                            );
+                          })}
                           {job.requirements.length > 5 && (
                             <Badge variant="outline" className="text-xs">
                               +{job.requirements.length - 5} more
