@@ -31,6 +31,7 @@ import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
 import Messages from '@/components/candidate/Messages';
 import CandidateInterviews from '@/components/candidate/Interviews';
+import CandidateOffers from '@/components/candidate/CandidateOffers';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 
@@ -83,7 +84,7 @@ const CandidateDashboard: React.FC = () => {
   useEffect(() => {
     if (location.hash) {
       const tab = location.hash.replace('#', '');
-      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages'].includes(tab)) {
+      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'offers', 'messages'].includes(tab)) {
         setActiveTab(tab);
       }
     }
@@ -175,12 +176,13 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-white/50 p-1 rounded-xl shadow-sm">
+            <TabsList className="grid w-full grid-cols-7 bg-white/50 p-1 rounded-xl shadow-sm">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="profile">Profile & CV</TabsTrigger>
               <TabsTrigger value="jobs">Job Matches</TabsTrigger>
               <TabsTrigger value="applications">Applications</TabsTrigger>
               <TabsTrigger value="interviews">Interviews</TabsTrigger>
+              <TabsTrigger value="offers">Offers</TabsTrigger>
               <TabsTrigger value="messages">Messages</TabsTrigger>
             </TabsList>
 
@@ -343,6 +345,10 @@ const CandidateDashboard: React.FC = () => {
 
             <TabsContent value="interviews" className="space-y-6 mt-6">
               <CandidateInterviews />
+            </TabsContent>
+
+            <TabsContent value="offers" className="space-y-6 mt-6">
+              <CandidateOffers />
             </TabsContent>
 
             <TabsContent value="messages" className="space-y-6 mt-6">

@@ -671,3 +671,364 @@ def get_service_status():
         'message': 'AI matching service is ready' if is_available else error_msg,
         'model': ai_matching_service.model if is_available else None
     }), 200
+
+
+# =====================================================
+# CANDIDATE OFFERS ENDPOINTS
+# =====================================================
+
+@candidate_job_bp.route('/offers', methods=['GET'])
+def get_candidate_offers():
+    """Get all offers for a candidate"""
+    try:
+        # Get candidate_id from query params or auth
+        candidate_id = request.args.get('candidate_id')
+        
+        if not candidate_id:
+            # Try to get from JWT
+            try:
+                verify_jwt_in_request(optional=True)
+                candidate_id = get_jwt_identity()
+            except:
+                pass
+        
+        if not candidate_id:
+            return jsonify({
+                'success': False,
+                'message': 'Candidate ID required'
+            }), 400
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({
+                'success': False,
+                'message': 'Database connection failed'
+            }), 500
+        
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Get offers for this candidate that have been sent
+        query = """
+            SELECT 
+                o.id,
+                o.job_posting_id,
+                o.candidate_id,
+                o.recruiter_id,
+                o.status,
+                o.offer_data,
+                o.created_at,
+                o.updated_at,
+                jd.title as job_title,
+                jd.company as company_name,
+                jd.location as job_location,
+                r.first_name as recruiter_first_name,
+                r.last_name as recruiter_last_name,
+                r.email as recruiter_email
+            FROM offers o
+            LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
+            LEFT JOIN users r ON o.recruiter_id = r.id
+            WHERE o.candidate_id = %s
+              AND o.status IN ('sent', 'accepted', 'declined', 'negotiating')
+            ORDER BY o.created_at DESC
+        """
+        
+        # Try with integer candidate_id first
+        try:
+            cur.execute(query, (int(candidate_id),))
+        except (ValueError, TypeError):
+            # If candidate_id is a UUID, try different approach
+            cur.execute(query.replace('o.candidate_id = %s', 'o.candidate_id::text = %s'), (str(candidate_id),))
+        
+        results = cur.fetchall()
+        conn.close()
+        
+        offers = []
+        for row in results:
+            offer = dict(row)
+            # Parse offer_data if it's a string
+            if offer.get('offer_data') and isinstance(offer['offer_data'], str):
+                try:
+                    offer['offer_data'] = json.loads(offer['offer_data'])
+                except:
+                    pass
+            
+            # Format the offer for frontend
+            offer_data = offer.get('offer_data') or {}
+            offers.append({
+                'id': str(offer.get('id')),
+                'job_posting_id': str(offer.get('job_posting_id')) if offer.get('job_posting_id') else None,
+                'job_title': offer.get('job_title') or offer_data.get('position_title', 'Position'),
+                'company_name': offer.get('company_name') or offer_data.get('company_name', 'Company'),
+                'job_location': offer.get('job_location') or offer_data.get('work_location', 'UAE'),
+                'status': offer.get('status'),
+                'salary_amount': offer_data.get('salary_amount', 0),
+                'salary_currency': offer_data.get('salary_currency', 'AED'),
+                'salary_period': offer_data.get('salary_period', 'monthly'),
+                'start_date': offer_data.get('start_date'),
+                'employment_type': offer_data.get('employment_type', 'full-time'),
+                'probation_period_months': offer_data.get('probation_period_months'),
+                'benefits': offer_data.get('benefits', {}),
+                'notes': offer_data.get('notes'),
+                'expiry_date': offer_data.get('expiry_date'),
+                'recruiter_name': f"{offer.get('recruiter_first_name', '')} {offer.get('recruiter_last_name', '')}".strip() or 'Recruiter',
+                'recruiter_email': offer.get('recruiter_email'),
+                'created_at': offer.get('created_at').isoformat() if offer.get('created_at') else None,
+                'updated_at': offer.get('updated_at').isoformat() if offer.get('updated_at') else None
+            })
+        
+        logger.info(f"Found {len(offers)} offers for candidate {candidate_id}")
+        
+        return jsonify({
+            'success': True,
+            'data': offers,
+            'count': len(offers)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching candidate offers: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch offers: {str(e)}'
+        }), 500
+
+
+@candidate_job_bp.route('/offers/<offer_id>', methods=['GET'])
+def get_candidate_offer_details(offer_id):
+    """Get details of a specific offer"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({
+                'success': False,
+                'message': 'Database connection failed'
+            }), 500
+        
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        query = """
+            SELECT 
+                o.id,
+                o.job_posting_id,
+                o.candidate_id,
+                o.recruiter_id,
+                o.status,
+                o.offer_data,
+                o.created_at,
+                o.updated_at,
+                jd.title as job_title,
+                jd.company as company_name,
+                jd.location as job_location,
+                jd.description as job_description,
+                r.first_name as recruiter_first_name,
+                r.last_name as recruiter_last_name,
+                r.email as recruiter_email
+            FROM offers o
+            LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
+            LEFT JOIN users r ON o.recruiter_id = r.id
+            WHERE o.id = %s::uuid
+        """
+        
+        cur.execute(query, (offer_id,))
+        result = cur.fetchone()
+        conn.close()
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'message': 'Offer not found'
+            }), 404
+        
+        offer = dict(result)
+        offer_data = offer.get('offer_data') or {}
+        if isinstance(offer_data, str):
+            try:
+                offer_data = json.loads(offer_data)
+            except:
+                offer_data = {}
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'id': str(offer.get('id')),
+                'job_posting_id': str(offer.get('job_posting_id')) if offer.get('job_posting_id') else None,
+                'job_title': offer.get('job_title') or offer_data.get('position_title', 'Position'),
+                'company_name': offer.get('company_name') or offer_data.get('company_name', 'Company'),
+                'job_location': offer.get('job_location') or offer_data.get('work_location', 'UAE'),
+                'job_description': offer.get('job_description'),
+                'status': offer.get('status'),
+                'salary_amount': offer_data.get('salary_amount', 0),
+                'salary_currency': offer_data.get('salary_currency', 'AED'),
+                'salary_period': offer_data.get('salary_period', 'monthly'),
+                'start_date': offer_data.get('start_date'),
+                'employment_type': offer_data.get('employment_type', 'full-time'),
+                'probation_period_months': offer_data.get('probation_period_months'),
+                'benefits': offer_data.get('benefits', {}),
+                'notes': offer_data.get('notes'),
+                'expiry_date': offer_data.get('expiry_date'),
+                'recruiter_name': f"{offer.get('recruiter_first_name', '')} {offer.get('recruiter_last_name', '')}".strip() or 'Recruiter',
+                'recruiter_email': offer.get('recruiter_email'),
+                'created_at': offer.get('created_at').isoformat() if offer.get('created_at') else None,
+                'updated_at': offer.get('updated_at').isoformat() if offer.get('updated_at') else None
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching offer details: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch offer: {str(e)}'
+        }), 500
+
+
+@candidate_job_bp.route('/offers/<offer_id>/respond', methods=['POST'])
+def respond_to_offer(offer_id):
+    """Accept or decline an offer"""
+    try:
+        data = request.get_json() or {}
+        action = data.get('action')  # 'accept' or 'decline'
+        message = data.get('message', '')  # Optional message to recruiter
+        
+        if action not in ['accept', 'decline']:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid action. Must be "accept" or "decline"'
+            }), 400
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({
+                'success': False,
+                'message': 'Database connection failed'
+            }), 500
+        
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # First check if the offer exists and is in 'sent' status
+        cur.execute("""
+            SELECT id, status, candidate_id, recruiter_id 
+            FROM offers 
+            WHERE id = %s::uuid
+        """, (offer_id,))
+        
+        offer = cur.fetchone()
+        
+        if not offer:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Offer not found'
+            }), 404
+        
+        if offer.get('status') not in ['sent', 'negotiating']:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': f"Cannot respond to offer. Current status is '{offer.get('status')}'"
+            }), 400
+        
+        # Update offer status
+        new_status = 'accepted' if action == 'accept' else 'declined'
+        
+        cur.execute("""
+            UPDATE offers
+            SET status = %s,
+                updated_at = NOW(),
+                offer_data = offer_data || %s::jsonb
+            WHERE id = %s::uuid
+            RETURNING id
+        """, (
+            new_status,
+            json.dumps({
+                'candidate_response': action,
+                'candidate_message': message,
+                'responded_at': datetime.now().isoformat()
+            }),
+            offer_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Candidate responded to offer {offer_id}: {action}")
+        
+        # TODO: Send notification to recruiter
+        
+        return jsonify({
+            'success': True,
+            'message': f'Offer {new_status} successfully',
+            'data': {
+                'offer_id': offer_id,
+                'status': new_status
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error responding to offer: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to respond to offer: {str(e)}'
+        }), 500
+
+
+@candidate_job_bp.route('/offers/stats', methods=['GET'])
+def get_candidate_offer_stats():
+    """Get offer statistics for a candidate"""
+    try:
+        candidate_id = request.args.get('candidate_id')
+        
+        if not candidate_id:
+            try:
+                verify_jwt_in_request(optional=True)
+                candidate_id = get_jwt_identity()
+            except:
+                pass
+        
+        if not candidate_id:
+            return jsonify({
+                'success': False,
+                'message': 'Candidate ID required'
+            }), 400
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({
+                'success': False,
+                'message': 'Database connection failed'
+            }), 500
+        
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        query = """
+            SELECT 
+                COUNT(*) FILTER (WHERE status IN ('sent', 'accepted', 'declined', 'negotiating')) as total,
+                COUNT(*) FILTER (WHERE status = 'sent') as pending,
+                COUNT(*) FILTER (WHERE status = 'accepted') as accepted,
+                COUNT(*) FILTER (WHERE status = 'declined') as declined
+            FROM offers
+            WHERE candidate_id = %s
+        """
+        
+        try:
+            cur.execute(query, (int(candidate_id),))
+        except (ValueError, TypeError):
+            cur.execute(query.replace('candidate_id = %s', 'candidate_id::text = %s'), (str(candidate_id),))
+        
+        result = cur.fetchone()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'total': result.get('total', 0) or 0,
+                'pending': result.get('pending', 0) or 0,
+                'accepted': result.get('accepted', 0) or 0,
+                'declined': result.get('declined', 0) or 0
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching offer stats: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to fetch stats: {str(e)}'
+        }), 500
