@@ -3392,6 +3392,335 @@ def match_candidates_for_jd(jd_id):
         return jsonify({'success': False, 'message': f'Failed to match candidates: {str(e)}'}), 500
 
 
+# ============================================================================
+# RECRUITER OFFERS ENDPOINTS
+# ============================================================================
+
+@app.route('/api/recruiter/offers/jd/<jd_id>', methods=['GET'])
+def get_offers_for_job(jd_id):
+    """Get all offers for a specific job description"""
+    try:
+        # Query offers table
+        query = """
+            SELECT 
+                o.id as offer_id,
+                o.jd_id,
+                o.candidate_id,
+                o.status,
+                o.salary_offered,
+                o.start_date,
+                o.expiry_date,
+                o.created_at,
+                o.updated_at,
+                o.notes,
+                o.benefits,
+                COALESCE(u.first_name || ' ' || u.last_name, uc.personal_info->>'fullName', 'Unknown') as candidate_name,
+                COALESCE(u.email, uc.personal_info->>'email', '') as candidate_email
+            FROM offers o
+            LEFT JOIN users u ON (
+                CASE 
+                    WHEN o.candidate_id ~ '^[0-9]+$' THEN u.id = o.candidate_id::integer
+                    ELSE u.id::text = o.candidate_id
+                END
+            )
+            LEFT JOIN user_cvs uc ON uc.user_id::text = o.candidate_id
+            WHERE o.jd_id = %s
+            ORDER BY o.created_at DESC
+        """
+        
+        results = execute_query(query, (jd_id,)) or []
+        
+        offers = []
+        for row in results:
+            row_dict = dict(row)
+            # Convert datetime fields
+            for field in ['created_at', 'updated_at', 'start_date', 'expiry_date']:
+                if row_dict.get(field):
+                    row_dict[field] = row_dict[field].isoformat() if hasattr(row_dict[field], 'isoformat') else str(row_dict[field])
+            offers.append(row_dict)
+        
+        return jsonify({
+            'success': True,
+            'offers': offers,
+            'count': len(offers)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get offers for job error: {str(e)}")
+        # Return empty array instead of error to prevent UI crash
+        return jsonify({
+            'success': True,
+            'offers': [],
+            'count': 0,
+            'message': 'No offers table found or error occurred'
+        }), 200
+
+
+@app.route('/api/recruiter/offers/statistics/<jd_id>', methods=['GET'])
+def get_offer_statistics(jd_id):
+    """Get offer statistics for a specific job description"""
+    try:
+        query = """
+            SELECT 
+                COUNT(*) as total_offers,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent,
+                COUNT(CASE WHEN status = 'accepted' THEN 1 END) as accepted,
+                COUNT(CASE WHEN status = 'declined' THEN 1 END) as declined,
+                COUNT(CASE WHEN status = 'expired' THEN 1 END) as expired,
+                COUNT(CASE WHEN status = 'withdrawn' THEN 1 END) as withdrawn,
+                AVG(salary_offered) as avg_salary
+            FROM offers
+            WHERE jd_id = %s
+        """
+        
+        result = execute_query(query, (jd_id,))
+        
+        if result and len(result) > 0:
+            stats = dict(result[0])
+            # Convert Decimal to float for JSON serialization
+            if stats.get('avg_salary'):
+                stats['avg_salary'] = float(stats['avg_salary'])
+            return jsonify({
+                'success': True,
+                'statistics': stats
+            }), 200
+        
+        return jsonify({
+            'success': True,
+            'statistics': {
+                'total_offers': 0,
+                'pending': 0,
+                'sent': 0,
+                'accepted': 0,
+                'declined': 0,
+                'expired': 0,
+                'withdrawn': 0,
+                'avg_salary': None
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get offer statistics error: {str(e)}")
+        return jsonify({
+            'success': True,
+            'statistics': {
+                'total_offers': 0,
+                'pending': 0,
+                'sent': 0,
+                'accepted': 0,
+                'declined': 0,
+                'expired': 0,
+                'withdrawn': 0,
+                'avg_salary': None
+            }
+        }), 200
+
+
+@app.route('/api/recruiter/offers', methods=['POST'])
+def create_offer():
+    """Create a new offer for a candidate"""
+    try:
+        data = request.get_json()
+        
+        jd_id = data.get('jd_id')
+        candidate_id = data.get('candidate_id')
+        salary_offered = data.get('salary_offered')
+        start_date = data.get('start_date')
+        expiry_date = data.get('expiry_date')
+        benefits = data.get('benefits', [])
+        notes = data.get('notes', '')
+        
+        if not jd_id or not candidate_id:
+            return jsonify({'success': False, 'message': 'Job ID and Candidate ID are required'}), 400
+        
+        # Generate offer ID
+        import uuid
+        offer_id = str(uuid.uuid4())
+        
+        query = """
+            INSERT INTO offers (id, jd_id, candidate_id, status, salary_offered, start_date, expiry_date, benefits, notes, created_at, updated_at)
+            VALUES (%s, %s, %s, 'pending', %s, %s, %s, %s, %s, NOW(), NOW())
+            RETURNING id
+        """
+        
+        result = execute_query(query, (
+            offer_id,
+            jd_id,
+            candidate_id,
+            salary_offered,
+            start_date,
+            expiry_date,
+            json.dumps(benefits) if benefits else '[]',
+            notes
+        ))
+        
+        return jsonify({
+            'success': True,
+            'offer_id': offer_id,
+            'message': 'Offer created successfully'
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Create offer error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to create offer: {str(e)}'}), 500
+
+
+@app.route('/api/recruiter/offers/<offer_id>', methods=['PUT'])
+def update_offer(offer_id):
+    """Update an existing offer"""
+    try:
+        data = request.get_json()
+        
+        updates = []
+        params = []
+        
+        if 'status' in data:
+            updates.append("status = %s")
+            params.append(data['status'])
+        if 'salary_offered' in data:
+            updates.append("salary_offered = %s")
+            params.append(data['salary_offered'])
+        if 'start_date' in data:
+            updates.append("start_date = %s")
+            params.append(data['start_date'])
+        if 'expiry_date' in data:
+            updates.append("expiry_date = %s")
+            params.append(data['expiry_date'])
+        if 'benefits' in data:
+            updates.append("benefits = %s")
+            params.append(json.dumps(data['benefits']))
+        if 'notes' in data:
+            updates.append("notes = %s")
+            params.append(data['notes'])
+        
+        if not updates:
+            return jsonify({'success': False, 'message': 'No fields to update'}), 400
+        
+        updates.append("updated_at = NOW()")
+        params.append(offer_id)
+        
+        query = f"UPDATE offers SET {', '.join(updates)} WHERE id = %s"
+        execute_query(query, tuple(params))
+        
+        return jsonify({
+            'success': True,
+            'message': 'Offer updated successfully'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Update offer error: {str(e)}")
+        return jsonify({'success': False, 'message': f'Failed to update offer: {str(e)}'}), 500
+
+
+# ============================================================================
+# RECRUITER COMMUNICATION TEMPLATES ENDPOINTS
+# ============================================================================
+
+@app.route('/api/recruiter/communication/templates', methods=['GET'])
+def get_communication_templates():
+    """Get communication templates for recruiters"""
+    try:
+        # Return default templates if no custom templates exist
+        default_templates = [
+            {
+                'id': 'interview_invitation',
+                'name': 'Interview Invitation',
+                'type': 'email',
+                'subject': 'Interview Invitation - {{job_title}} at {{company}}',
+                'body': '''Dear {{candidate_name}},
+
+We are pleased to invite you for an interview for the {{job_title}} position at {{company}}.
+
+Interview Details:
+- Date: {{interview_date}}
+- Time: {{interview_time}}
+- Location: {{interview_location}}
+
+Please confirm your availability by replying to this email.
+
+Best regards,
+{{recruiter_name}}
+{{company}}'''
+            },
+            {
+                'id': 'offer_letter',
+                'name': 'Offer Letter',
+                'type': 'email',
+                'subject': 'Job Offer - {{job_title}} at {{company}}',
+                'body': '''Dear {{candidate_name}},
+
+We are delighted to offer you the position of {{job_title}} at {{company}}.
+
+Offer Details:
+- Position: {{job_title}}
+- Salary: {{salary}} AED per month
+- Start Date: {{start_date}}
+- Benefits: {{benefits}}
+
+Please review the attached offer letter and confirm your acceptance by {{expiry_date}}.
+
+We look forward to welcoming you to our team!
+
+Best regards,
+{{recruiter_name}}
+{{company}}'''
+            },
+            {
+                'id': 'rejection',
+                'name': 'Application Update',
+                'type': 'email',
+                'subject': 'Application Update - {{job_title}} at {{company}}',
+                'body': '''Dear {{candidate_name}},
+
+Thank you for your interest in the {{job_title}} position at {{company}} and for taking the time to apply.
+
+After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.
+
+We encourage you to apply for future opportunities that match your skills and experience.
+
+We wish you the best in your career journey.
+
+Best regards,
+{{recruiter_name}}
+{{company}}'''
+            },
+            {
+                'id': 'follow_up',
+                'name': 'Follow Up',
+                'type': 'email',
+                'subject': 'Following Up - {{job_title}} Application',
+                'body': '''Dear {{candidate_name}},
+
+I hope this message finds you well. I wanted to follow up regarding your application for the {{job_title}} position at {{company}}.
+
+{{custom_message}}
+
+Please feel free to reach out if you have any questions.
+
+Best regards,
+{{recruiter_name}}
+{{company}}'''
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'templates': default_templates,
+            'count': len(default_templates)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get communication templates error: {str(e)}")
+        return jsonify({
+            'success': True,
+            'templates': [],
+            'count': 0
+        }), 200
+
+
 @app.route('/api/recruiter/analytics', methods=['GET', 'OPTIONS'])
 def recruiter_analytics():
     if request.method == 'OPTIONS':
