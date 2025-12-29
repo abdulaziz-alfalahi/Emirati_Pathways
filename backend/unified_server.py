@@ -3433,12 +3433,7 @@ def get_offers_for_job(jd_id):
                 COALESCE(u.last_name, '') as last_name,
                 COALESCE(u.email, uc.personal_info->>'email', '') as email
             FROM offers o
-            LEFT JOIN users u ON (
-                CASE 
-                    WHEN o.candidate_id ~ '^[0-9]+$' THEN u.id = o.candidate_id::integer
-                    ELSE u.id::text = o.candidate_id
-                END
-            )
+            LEFT JOIN users u ON u.id::text = o.candidate_id
             LEFT JOIN user_cvs uc ON uc.user_id::text = o.candidate_id
             WHERE o.jd_id = %s
             ORDER BY o.created_at DESC
@@ -3495,7 +3490,7 @@ def get_offer_statistics(jd_id):
                 COUNT(CASE WHEN status = 'declined' THEN 1 END) as declined,
                 COUNT(CASE WHEN status = 'expired' THEN 1 END) as expired,
                 COUNT(CASE WHEN status = 'withdrawn' THEN 1 END) as withdrawn,
-                AVG(salary_offered) as avg_salary
+                AVG(salary_amount) as avg_salary
             FROM offers
             WHERE jd_id = %s
         """
@@ -3669,8 +3664,11 @@ def update_offer(offer_id):
         if 'status' in data:
             updates.append("status = %s")
             params.append(data['status'])
-        if 'salary_offered' in data:
-            updates.append("salary_offered = %s")
+        if 'salary_amount' in data:
+            updates.append("salary_amount = %s")
+            params.append(data['salary_amount'])
+        if 'salary_offered' in data:  # Legacy support
+            updates.append("salary_amount = %s")
             params.append(data['salary_offered'])
         if 'start_date' in data:
             updates.append("start_date = %s")
