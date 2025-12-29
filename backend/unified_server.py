@@ -3489,26 +3489,49 @@ def get_offers_for_job(jd_id):
             
             offers.append(row_dict)
         
-        # Also check recruiter_offers table (fallback)
+        # Also check job_offers table (fallback for legacy data)
         if len(offers) == 0:
             try:
-                fallback_query = """
-                    SELECT *
-                    FROM recruiter_offers
-                    WHERE jd_id = %s
-                    ORDER BY created_at DESC
-                """
-                fallback_results = execute_query(fallback_query, (jd_id,)) or []
-                for row in fallback_results:
-                    row_dict = dict(row)
-                    if 'id' in row_dict and 'offer_id' not in row_dict:
-                        row_dict['offer_id'] = row_dict['id']
-                    for field in ['created_at', 'updated_at', 'start_date', 'expiry_date']:
-                        if row_dict.get(field):
-                            row_dict[field] = row_dict[field].isoformat() if hasattr(row_dict[field], 'isoformat') else str(row_dict[field])
-                    offers.append(row_dict)
+                # Try to convert jd_id to integer for job_offers table
+                job_id_int = None
+                try:
+                    job_id_int = int(jd_id)
+                except (ValueError, TypeError):
+                    pass
+                
+                if job_id_int:
+                    fallback_query = """
+                        SELECT 
+                            o.id as offer_id,
+                            o.job_id,
+                            o.candidate_id,
+                            o.recruiter_id,
+                            o.position_title,
+                            o.salary_offered as salary_amount,
+                            o.currency as salary_currency,
+                            o.start_date,
+                            o.offer_expiry as expiry_date,
+                            o.benefits,
+                            o.status,
+                            o.notes,
+                            o.created_at,
+                            o.updated_at
+                        FROM job_offers o
+                        WHERE o.job_id = %s
+                        ORDER BY o.created_at DESC
+                    """
+                    fallback_results = execute_query(fallback_query, (job_id_int,)) or []
+                    for row in fallback_results:
+                        row_dict = dict(row)
+                        row_dict['jd_id'] = str(jd_id)
+                        row_dict['salary_period'] = 'monthly'
+                        row_dict['employment_type'] = 'full-time'
+                        for field in ['created_at', 'updated_at', 'start_date', 'expiry_date']:
+                            if row_dict.get(field):
+                                row_dict[field] = row_dict[field].isoformat() if hasattr(row_dict[field], 'isoformat') else str(row_dict[field])
+                        offers.append(row_dict)
             except Exception as fallback_err:
-                logger.warning(f"Fallback query failed: {fallback_err}")
+                logger.warning(f"Fallback job_offers query failed: {fallback_err}")
         
         logger.info(f"Found {len(offers)} offers for job {jd_id}")
         

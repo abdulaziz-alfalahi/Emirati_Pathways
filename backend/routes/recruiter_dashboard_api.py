@@ -677,67 +677,150 @@ def create_offer_legacy():
     
     Body:
         candidate_id: ID of the candidate
-        job_id: ID of the job (optional)
+        jd_id: ID of the job description (UUID)
         position_title: Title of the position
-        salary_offered: Salary amount
-        currency: Currency code (default: AED)
+        salary_amount: Salary amount
+        salary_currency: Currency code (default: AED)
         start_date: Proposed start date
-        offer_expiry: Offer expiration date
-        benefits: Benefits description
+        expiry_date: Offer expiration date
+        benefits: Benefits (dict or string)
         notes: Additional notes
     """
     try:
         data = request.get_json()
+        logger.info(f"Create offer request data: {data}")
         
+        # Get candidate_id - handle both string and int formats
         candidate_id = data.get('candidate_id')
-        job_id = data.get('job_id')
+        if candidate_id:
+            # Try to convert to integer if it's a numeric string
+            try:
+                candidate_id = int(candidate_id)
+            except (ValueError, TypeError):
+                # If it's a UUID or non-numeric string, we need to look up the user
+                logger.warning(f"Non-integer candidate_id: {candidate_id}")
+                candidate_id = None
+        
+        # Get jd_id (job description ID) - this is a UUID
+        jd_id = data.get('jd_id') or data.get('job_id')
+        
+        # Get other fields with fallbacks for different naming conventions
         position_title = data.get('position_title', data.get('positionTitle', ''))
-        salary_offered = data.get('salary_offered', data.get('salaryOffered'))
-        currency = data.get('currency', 'AED')
+        salary_amount = data.get('salary_amount', data.get('salary_offered', data.get('salaryOffered')))
+        currency = data.get('salary_currency', data.get('currency', 'AED'))
         start_date = data.get('start_date', data.get('startDate'))
-        offer_expiry = data.get('offer_expiry', data.get('offerExpiry'))
-        benefits = data.get('benefits', '')
+        expiry_date = data.get('expiry_date', data.get('offer_expiry', data.get('offerExpiry')))
+        benefits = data.get('benefits', {})
         notes = data.get('notes', '')
-        recruiter_id = data.get('recruiter_id', 1)
+        
+        # Get recruiter_id - default to 21 (mock recruiter)
+        recruiter_id = data.get('recruiter_id', 21)
+        if isinstance(recruiter_id, str):
+            try:
+                recruiter_id = int(recruiter_id)
+            except (ValueError, TypeError):
+                recruiter_id = 21  # Default mock recruiter
         
         if not candidate_id:
             return jsonify({
                 'success': False,
-                'message': 'Candidate ID required'
+                'message': 'Valid candidate ID required'
             }), 400
         
-        query = """
-            INSERT INTO job_offers 
-            (job_id, candidate_id, recruiter_id, position_title, salary_offered, 
-             currency, start_date, offer_expiry, benefits, notes, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending')
-            RETURNING id
-        """
+        # Convert benefits to JSON string if it's a dict
+        if isinstance(benefits, dict):
+            benefits_str = json.dumps(benefits)
+        else:
+            benefits_str = str(benefits) if benefits else ''
         
-        offer_id = execute_query(
-            query,
-            (job_id, candidate_id, recruiter_id, position_title, salary_offered,
-             currency, start_date, offer_expiry, benefits, notes),
-            return_id=True
-        )
+        # Build offer_data for the main offers table
+        offer_data = {
+            'position_title': position_title,
+            'salary_amount': salary_amount,
+            'salary_currency': currency,
+            'salary_period': data.get('salary_period', 'monthly'),
+            'benefits': benefits,
+            'start_date': start_date,
+            'employment_type': data.get('employment_type', 'full-time'),
+            'probation_period_months': data.get('probation_period_months', 3),
+            'work_location': data.get('work_location', ''),
+            'notes': notes,
+            'shortlist_id': data.get('shortlist_id')
+        }
         
-        # Log activity
-        log_activity(recruiter_id, 'create_offer', 'offer', str(offer_id), {
-            'candidate_id': candidate_id,
-            'position': position_title
-        })
+        # Try to insert into the main offers table first (existing schema)
+        offer_id = None
+        try:
+            query = """
+                INSERT INTO offers 
+                (id, job_posting_id, candidate_id, recruiter_id, offer_data, status, expires_at, created_at, updated_at)
+                VALUES (uuid_generate_v4(), %s::uuid, %s, %s, %s::jsonb, 'draft', %s::timestamptz, NOW(), NOW())
+                RETURNING id
+            """
+            
+            result = execute_query(
+                query,
+                (jd_id, candidate_id, recruiter_id, json.dumps(offer_data), expiry_date),
+                fetch_one=True
+            )
+            
+            if result:
+                offer_id = str(result.get('id'))
+                logger.info(f"Offer created in main offers table with ID: {offer_id}")
+        except Exception as main_err:
+            logger.warning(f"Main offers table insert failed: {main_err}")
         
-        return jsonify({
-            'success': True,
-            'data': {'id': offer_id},
-            'message': 'Offer created successfully'
-        }), 201
+        # Also insert into job_offers table as backup
+        try:
+            query = """
+                INSERT INTO job_offers 
+                (job_id, candidate_id, recruiter_id, position_title, salary_offered, 
+                 currency, start_date, offer_expiry, benefits, notes, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending')
+                RETURNING id
+            """
+            
+            # job_id might be UUID, try to handle it
+            job_id_int = None
+            if jd_id:
+                try:
+                    job_id_int = int(jd_id)
+                except (ValueError, TypeError):
+                    job_id_int = None
+            
+            backup_id = execute_query(
+                query,
+                (job_id_int, candidate_id, recruiter_id, position_title, salary_amount,
+                 currency, start_date, expiry_date, benefits_str, notes),
+                return_id=True
+            )
+            
+            if backup_id and not offer_id:
+                offer_id = str(backup_id)
+                logger.info(f"Offer created in job_offers table with ID: {offer_id}")
+        except Exception as backup_err:
+            logger.warning(f"Backup job_offers table insert failed: {backup_err}")
+        
+        if offer_id:
+            return jsonify({
+                'success': True,
+                'data': {'id': offer_id, 'offer_id': offer_id},
+                'offer_id': offer_id,
+                'message': 'Offer created successfully'
+            }), 201
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to create offer in database'
+            }), 500
         
     except Exception as e:
         logger.error(f"Failed to create offer: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
-            'message': 'Failed to create offer'
+            'message': f'Failed to create offer: {str(e)}'
         }), 500
 
 
