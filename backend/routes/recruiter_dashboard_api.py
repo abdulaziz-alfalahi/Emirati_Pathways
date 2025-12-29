@@ -119,8 +119,39 @@ def ensure_tables_exist():
                 )
             """)
             
+            # Create offer_approval_requests table for HR Manager approval workflow
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS offer_approval_requests (
+                    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                    offer_id UUID NOT NULL,
+                    jd_id UUID,
+                    candidate_id INTEGER NOT NULL,
+                    recruiter_id INTEGER NOT NULL,
+                    position_title VARCHAR(255),
+                    salary_amount DECIMAL(12,2),
+                    salary_currency VARCHAR(10) DEFAULT 'AED',
+                    status VARCHAR(50) DEFAULT 'pending',
+                    approver_id INTEGER,
+                    approved_by INTEGER,
+                    approved_at TIMESTAMP,
+                    rejection_reason TEXT,
+                    comments TEXT,
+                    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Create index for faster lookups
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_offer_approval_status ON offer_approval_requests(status)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_offer_approval_recruiter ON offer_approval_requests(recruiter_id)
+            """)
+            
             conn.commit()
-            logger.info("Recruiter tables ensured")
+            logger.info("Recruiter tables ensured (including offer_approval_requests)")
     except Exception as e:
         logger.error(f"Failed to create tables: {e}")
         conn.rollback()
@@ -759,25 +790,51 @@ def create_offer_legacy():
             'shortlist_id': data.get('shortlist_id')
         }
         
+        # Check if approval is required (default: yes)
+        requires_approval = data.get('requires_approval', True)
+        initial_status = 'pending_approval' if requires_approval else 'draft'
+        
         # Try to insert into the main offers table first (existing schema)
         offer_id = None
         try:
             query = """
                 INSERT INTO offers 
                 (id, job_posting_id, candidate_id, recruiter_id, offer_data, status, expires_at, created_at, updated_at)
-                VALUES (uuid_generate_v4(), %s::uuid, %s, %s, %s::jsonb, 'draft', %s::timestamptz, NOW(), NOW())
+                VALUES (uuid_generate_v4(), %s::uuid, %s, %s, %s::jsonb, %s, %s::timestamptz, NOW(), NOW())
                 RETURNING id
             """
             
             result = execute_query(
                 query,
-                (jd_id, candidate_id, recruiter_id, json.dumps(offer_data), expiry_date),
+                (jd_id, candidate_id, recruiter_id, json.dumps(offer_data), initial_status, expiry_date),
                 fetch_one=True
             )
             
             if result:
                 offer_id = str(result.get('id'))
-                logger.info(f"Offer created in main offers table with ID: {offer_id}")
+                logger.info(f"Offer created in main offers table with ID: {offer_id}, status: {initial_status}")
+                
+                # Create approval request if approval is required
+                if requires_approval:
+                    try:
+                        # Create an approval request entry
+                        approval_query = """
+                            INSERT INTO offer_approval_requests 
+                            (id, offer_id, jd_id, candidate_id, recruiter_id, position_title, salary_amount, 
+                             salary_currency, status, requested_at, created_at)
+                            VALUES (uuid_generate_v4(), %s::uuid, %s::uuid, %s, %s, %s, %s, %s, 'pending', NOW(), NOW())
+                            RETURNING id
+                        """
+                        approval_result = execute_query(
+                            approval_query,
+                            (offer_id, jd_id, candidate_id, recruiter_id, position_title, salary_amount, currency),
+                            fetch_one=True
+                        )
+                        if approval_result:
+                            logger.info(f"Approval request created with ID: {approval_result.get('id')}")
+                    except Exception as approval_err:
+                        logger.warning(f"Failed to create approval request: {approval_err}")
+                        # Continue anyway - offer is created, approval can be added later
         except Exception as main_err:
             logger.warning(f"Main offers table insert failed: {main_err}")
         
@@ -949,6 +1006,372 @@ def get_active_vacancies():
         return jsonify({
             'success': True,
             'data': []
+        })
+
+
+# =====================================================
+# OFFER APPROVAL WORKFLOW ENDPOINTS
+# =====================================================
+
+@recruiter_dashboard_bp.route('/offers/approvals/pending', methods=['GET'])
+@optional_auth
+def get_pending_offer_approvals():
+    """Get all pending offer approval requests for HR Manager review"""
+    try:
+        query = """
+            SELECT 
+                oar.id as approval_id,
+                oar.offer_id,
+                oar.jd_id,
+                oar.candidate_id,
+                oar.recruiter_id,
+                oar.position_title,
+                oar.salary_amount,
+                oar.salary_currency,
+                oar.status,
+                oar.requested_at,
+                oar.created_at,
+                u.first_name as candidate_first_name,
+                u.last_name as candidate_last_name,
+                u.email as candidate_email,
+                r.first_name as recruiter_first_name,
+                r.last_name as recruiter_last_name,
+                jd.title as job_title,
+                jd.company as company_name,
+                o.offer_data
+            FROM offer_approval_requests oar
+            LEFT JOIN users u ON oar.candidate_id = u.id
+            LEFT JOIN users r ON oar.recruiter_id = r.id
+            LEFT JOIN job_descriptions jd ON oar.jd_id::text = jd.id::text
+            LEFT JOIN offers o ON oar.offer_id = o.id
+            WHERE oar.status = 'pending'
+            ORDER BY oar.requested_at DESC
+        """
+        
+        results = execute_query(query) or []
+        
+        # Format the results
+        approvals = []
+        for row in results:
+            approval = dict(row)
+            # Parse offer_data if present
+            if approval.get('offer_data'):
+                if isinstance(approval['offer_data'], str):
+                    try:
+                        approval['offer_data'] = json.loads(approval['offer_data'])
+                    except:
+                        pass
+            # Format datetime fields
+            for field in ['requested_at', 'created_at']:
+                if approval.get(field):
+                    approval[field] = approval[field].isoformat() if hasattr(approval[field], 'isoformat') else str(approval[field])
+            approvals.append(approval)
+        
+        return jsonify({
+            'success': True,
+            'data': approvals,
+            'count': len(approvals)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get pending approvals: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': True,
+            'data': [],
+            'count': 0
+        })
+
+
+@recruiter_dashboard_bp.route('/offers/approvals/all', methods=['GET'])
+@optional_auth
+def get_all_offer_approvals():
+    """Get all offer approval requests with optional status filter"""
+    try:
+        status = request.args.get('status')  # pending, approved, rejected
+        recruiter_id = request.args.get('recruiter_id')
+        
+        query = """
+            SELECT 
+                oar.id as approval_id,
+                oar.offer_id,
+                oar.jd_id,
+                oar.candidate_id,
+                oar.recruiter_id,
+                oar.position_title,
+                oar.salary_amount,
+                oar.salary_currency,
+                oar.status,
+                oar.approved_by,
+                oar.approved_at,
+                oar.rejection_reason,
+                oar.comments,
+                oar.requested_at,
+                oar.created_at,
+                u.first_name as candidate_first_name,
+                u.last_name as candidate_last_name,
+                r.first_name as recruiter_first_name,
+                r.last_name as recruiter_last_name,
+                jd.title as job_title
+            FROM offer_approval_requests oar
+            LEFT JOIN users u ON oar.candidate_id = u.id
+            LEFT JOIN users r ON oar.recruiter_id = r.id
+            LEFT JOIN job_descriptions jd ON oar.jd_id::text = jd.id::text
+            WHERE 1=1
+        """
+        params = []
+        
+        if status:
+            query += " AND oar.status = %s"
+            params.append(status)
+        
+        if recruiter_id:
+            query += " AND oar.recruiter_id = %s"
+            params.append(int(recruiter_id))
+        
+        query += " ORDER BY oar.created_at DESC"
+        
+        results = execute_query(query, tuple(params) if params else None) or []
+        
+        # Format the results
+        approvals = []
+        for row in results:
+            approval = dict(row)
+            for field in ['requested_at', 'created_at', 'approved_at']:
+                if approval.get(field):
+                    approval[field] = approval[field].isoformat() if hasattr(approval[field], 'isoformat') else str(approval[field])
+            approvals.append(approval)
+        
+        return jsonify({
+            'success': True,
+            'data': approvals,
+            'count': len(approvals)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get all approvals: {e}")
+        return jsonify({
+            'success': True,
+            'data': [],
+            'count': 0
+        })
+
+
+@recruiter_dashboard_bp.route('/offers/approvals/<approval_id>/approve', methods=['POST'])
+@optional_auth
+def approve_offer(approval_id):
+    """Approve an offer - HR Manager action"""
+    try:
+        data = request.get_json() or {}
+        approver_id = data.get('approver_id', 1)  # HR Manager ID
+        comments = data.get('comments', '')
+        
+        # Convert approver_id to int if string
+        if isinstance(approver_id, str):
+            try:
+                approver_id = int(approver_id)
+            except:
+                approver_id = 1
+        
+        # Update the approval request
+        update_query = """
+            UPDATE offer_approval_requests
+            SET status = 'approved',
+                approved_by = %s,
+                approved_at = NOW(),
+                comments = %s,
+                updated_at = NOW()
+            WHERE id = %s::uuid
+            RETURNING offer_id
+        """
+        
+        result = execute_query(update_query, (approver_id, comments, approval_id), fetch_one=True)
+        
+        if result:
+            offer_id = result.get('offer_id')
+            
+            # Update the offer status to 'approved' (ready to send to candidate)
+            offer_update_query = """
+                UPDATE offers
+                SET status = 'approved',
+                    updated_at = NOW()
+                WHERE id = %s::uuid
+            """
+            execute_query(offer_update_query, (str(offer_id),), fetch_all=False)
+            
+            logger.info(f"Offer {offer_id} approved by HR Manager {approver_id}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Offer approved successfully',
+                'offer_id': str(offer_id)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Approval request not found'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Failed to approve offer: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Failed to approve offer: {str(e)}'
+        }), 500
+
+
+@recruiter_dashboard_bp.route('/offers/approvals/<approval_id>/reject', methods=['POST'])
+@optional_auth
+def reject_offer(approval_id):
+    """Reject an offer - HR Manager action"""
+    try:
+        data = request.get_json() or {}
+        approver_id = data.get('approver_id', 1)  # HR Manager ID
+        rejection_reason = data.get('rejection_reason', data.get('reason', ''))
+        comments = data.get('comments', '')
+        
+        # Convert approver_id to int if string
+        if isinstance(approver_id, str):
+            try:
+                approver_id = int(approver_id)
+            except:
+                approver_id = 1
+        
+        # Update the approval request
+        update_query = """
+            UPDATE offer_approval_requests
+            SET status = 'rejected',
+                approved_by = %s,
+                approved_at = NOW(),
+                rejection_reason = %s,
+                comments = %s,
+                updated_at = NOW()
+            WHERE id = %s::uuid
+            RETURNING offer_id
+        """
+        
+        result = execute_query(update_query, (approver_id, rejection_reason, comments, approval_id), fetch_one=True)
+        
+        if result:
+            offer_id = result.get('offer_id')
+            
+            # Update the offer status to 'rejected'
+            offer_update_query = """
+                UPDATE offers
+                SET status = 'rejected',
+                    updated_at = NOW()
+                WHERE id = %s::uuid
+            """
+            execute_query(offer_update_query, (str(offer_id),), fetch_all=False)
+            
+            logger.info(f"Offer {offer_id} rejected by HR Manager {approver_id}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Offer rejected',
+                'offer_id': str(offer_id)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Approval request not found'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Failed to reject offer: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Failed to reject offer: {str(e)}'
+        }), 500
+
+
+@recruiter_dashboard_bp.route('/offers/<offer_id>/send-to-candidate', methods=['POST'])
+@optional_auth
+def send_offer_to_candidate(offer_id):
+    """Send an approved offer to the candidate"""
+    try:
+        # First check if the offer is approved
+        check_query = """
+            SELECT status FROM offers WHERE id = %s::uuid
+        """
+        result = execute_query(check_query, (offer_id,), fetch_one=True)
+        
+        if not result:
+            return jsonify({
+                'success': False,
+                'message': 'Offer not found'
+            }), 404
+        
+        if result.get('status') != 'approved':
+            return jsonify({
+                'success': False,
+                'message': f"Cannot send offer. Current status is '{result.get('status')}'. Offer must be approved first."
+            }), 400
+        
+        # Update offer status to 'sent'
+        update_query = """
+            UPDATE offers
+            SET status = 'sent',
+                updated_at = NOW()
+            WHERE id = %s::uuid
+            RETURNING id, candidate_id
+        """
+        
+        update_result = execute_query(update_query, (offer_id,), fetch_one=True)
+        
+        if update_result:
+            # TODO: Send notification to candidate (email, in-app notification, etc.)
+            logger.info(f"Offer {offer_id} sent to candidate {update_result.get('candidate_id')}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Offer sent to candidate successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to update offer status'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Failed to send offer to candidate: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to send offer: {str(e)}'
+        }), 500
+
+
+@recruiter_dashboard_bp.route('/offers/approval-stats', methods=['GET'])
+@optional_auth
+def get_offer_approval_stats():
+    """Get statistics about offer approvals"""
+    try:
+        query = """
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
+            FROM offer_approval_requests
+        """
+        
+        result = execute_query(query, fetch_one=True)
+        
+        return jsonify({
+            'success': True,
+            'data': result or {'total': 0, 'pending': 0, 'approved': 0, 'rejected': 0}
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get approval stats: {e}")
+        return jsonify({
+            'success': True,
+            'data': {'total': 0, 'pending': 0, 'approved': 0, 'rejected': 0}
         })
 
 

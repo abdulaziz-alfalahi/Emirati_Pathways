@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { restClient } from '@/utils/api';
+import { OfferApprovalPanel } from './OfferApprovalPanel';
 import {
   CheckCircle,
   XCircle,
@@ -63,7 +64,7 @@ interface ApprovalWorkflowProps {
 }
 
 export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, hrManagerId }) => {
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('offers');
   const [approvalItems, setApprovalItems] = useState<ApprovalItem[]>([]);
   const [delegationSettings, setDelegationSettings] = useState<DelegationSetting[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -327,9 +328,13 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          <TabsTrigger value="offers" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Offer Approvals
+          </TabsTrigger>
           <TabsTrigger value="pending" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Pending Approvals
+            Other Approvals
             {pendingItems.length > 0 && (
               <Badge variant="secondary" className="ml-1">{pendingItems.length}</Badge>
             )}
@@ -344,7 +349,12 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
           </TabsTrigger>
         </TabsList>
 
-        {/* Pending Approvals Tab */}
+        {/* Offer Approvals Tab */}
+        <TabsContent value="offers" className="space-y-4">
+          <OfferApprovalPanel />
+        </TabsContent>
+
+        {/* Other Pending Approvals Tab */}
         <TabsContent value="pending" className="space-y-4">
           {pendingItems.length === 0 ? (
             <Card>

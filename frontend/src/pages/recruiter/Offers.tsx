@@ -3,8 +3,16 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Send, Link as LinkIcon } from 'lucide-react';
+import { Eye, Send, Link as LinkIcon, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+interface ApprovalStats {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+}
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<any[]>([]);
@@ -16,6 +24,8 @@ export default function OffersPage() {
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<'created' | 'job' | 'candidate' | 'status'>('created');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [approvalStats, setApprovalStats] = useState<ApprovalStats>({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [activeTab, setActiveTab] = useState('all');
 
   const loadOffers = async () => {
     try {
@@ -31,13 +41,45 @@ export default function OffersPage() {
     }
   };
 
+  const loadApprovalStats = async () => {
+    try {
+      const res = await restClient.get('/api/recruiter/offers/approval-stats');
+      if (res.data?.success) {
+        setApprovalStats(res.data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load approval stats:', e);
+    }
+  };
+
   useEffect(() => {
     loadOffers();
+    loadApprovalStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sendOffer = async (offerId: string) => {
     try {
+      // First check if offer is approved
+      const offer = offers.find(o => o.id === offerId);
+      if (offer?.status === 'pending_approval') {
+        toast({ 
+          title: 'Cannot send offer', 
+          description: 'This offer is pending HR Manager approval. Please wait for approval before sending.',
+          variant: 'destructive' 
+        });
+        return;
+      }
+      
+      if (offer?.status !== 'approved' && offer?.status !== 'draft') {
+        toast({ 
+          title: 'Cannot send offer', 
+          description: `Offer status is "${offer?.status}". Only approved offers can be sent to candidates.`,
+          variant: 'destructive' 
+        });
+        return;
+      }
+
       const res = await restClient.post(`/api/hr/offers/${offerId}/send`, { expires_in_days: 7 });
       const json = res.data;
       const signUrl = json?.data?.sign_url;
@@ -61,7 +103,6 @@ export default function OffersPage() {
         toast({ title: 'No signature token', description: 'Send the offer first.', variant: 'destructive' });
         return;
       }
-      // Note: Sign URL might need full path if not relative to app
       const signUrl = `${window.location.origin}/api/offers/${o.id}/accept?token=${o.signature_token}`;
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(signUrl);
@@ -75,13 +116,33 @@ export default function OffersPage() {
   };
 
   const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-800 border-gray-200',
-      sent: 'bg-blue-100 text-blue-800 border-blue-200',
-      accepted: 'bg-green-100 text-green-800 border-green-200',
-      declined: 'bg-red-100 text-red-800 border-red-200',
+    const map: Record<string, { className: string; icon?: React.ReactNode }> = {
+      draft: { className: 'bg-gray-100 text-gray-800 border-gray-200' },
+      pending_approval: { 
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: <Clock className="h-3 w-3 mr-1" />
+      },
+      approved: { 
+        className: 'bg-green-100 text-green-800 border-green-200',
+        icon: <CheckCircle className="h-3 w-3 mr-1" />
+      },
+      rejected: { 
+        className: 'bg-red-100 text-red-800 border-red-200',
+        icon: <XCircle className="h-3 w-3 mr-1" />
+      },
+      sent: { className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      accepted: { className: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+      declined: { className: 'bg-red-100 text-red-800 border-red-200' },
     };
-    return <Badge variant="outline" className={map[status] || 'bg-slate-100 text-slate-800 border-slate-200'}>{status}</Badge>;
+    const config = map[status] || { className: 'bg-slate-100 text-slate-800 border-slate-200' };
+    const displayStatus = status === 'pending_approval' ? 'Pending Approval' : status;
+    
+    return (
+      <Badge variant="outline" className={`${config.className} flex items-center`}>
+        {config.icon}
+        {displayStatus}
+      </Badge>
+    );
   };
 
   const sortedOffers = [...offers].sort((a, b) => {
@@ -105,6 +166,15 @@ export default function OffersPage() {
     return 0;
   });
 
+  // Filter offers based on active tab
+  const filteredOffers = sortedOffers.filter(o => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'pending') return o.status === 'pending_approval';
+    if (activeTab === 'approved') return o.status === 'approved';
+    if (activeTab === 'rejected') return o.status === 'rejected';
+    return true;
+  });
+
   const SortHeader: React.FC<{ label: string; field: 'created'|'job'|'candidate'|'status' }>=({label, field}) => (
     <th className="p-3 sticky top-0 bg-white z-10">
       <button className="w-full text-left flex items-center gap-1" onClick={() => {
@@ -118,79 +188,196 @@ export default function OffersPage() {
   );
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      {/* Approval Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-white shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{approvalStats.total}</p>
+                <p className="text-sm text-gray-500">Total Offers</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white shadow-sm border-l-4 border-l-yellow-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-yellow-600">{approvalStats.pending}</p>
+                <p className="text-sm text-gray-500">Pending Approval</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white shadow-sm border-l-4 border-l-green-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-green-600">{approvalStats.approved}</p>
+                <p className="text-sm text-gray-500">Approved</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white shadow-sm border-l-4 border-l-red-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <XCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-red-600">{approvalStats.rejected}</p>
+                <p className="text-sm text-gray-500">Rejected</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Info Banner for Pending Approvals */}
+      {approvalStats.pending > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3">
+          <Clock className="h-5 w-5 text-yellow-600" />
+          <div>
+            <p className="font-medium text-yellow-800">
+              {approvalStats.pending} offer{approvalStats.pending > 1 ? 's' : ''} pending HR Manager approval
+            </p>
+            <p className="text-sm text-yellow-700">
+              Offers must be approved by an HR Manager before they can be sent to candidates.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Offers</CardTitle>
-          <CardDescription>Manage offers sent to candidates</CardDescription>
+          <CardDescription>Manage offers sent to candidates. New offers require HR Manager approval before sending.</CardDescription>
         </CardHeader>
         <CardContent>
-      {loading && <div className="text-sm text-slate-500">Loading...</div>}
-      {error && <div className="text-red-600">{error}</div>}
-      <div className="overflow-x-auto rounded border">
-      <table className="min-w-full bg-white">
-        <thead>
-          <tr className="text-left border-b">
-            <th className="p-3 sticky top-0 bg-white z-10">ID</th>
-            <SortHeader label="Job" field="job" />
-            <SortHeader label="Candidate" field="candidate" />
-            <SortHeader label="Status" field="status" />
-            <SortHeader label="Created" field="created" />
-            <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {offers.length === 0 && (
-            <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No offers yet</td></tr>
-          )}
-          {sortedOffers.map((o) => (
-            <tr key={o.id} className="border-b hover:bg-slate-50">
-              <td className="p-3 text-xs">{o.id}</td>
-              <td className="p-3">{o.job_title}</td>
-              <td className="p-3">{o.candidate_first_name} {o.candidate_last_name}</td>
-              <td className="p-3">{statusBadge(o.status)}</td>
-              <td className="p-3">{o.created_at || '-'}</td>
-              <td className="p-3 space-x-2 whitespace-nowrap">
-                <Button size="sm" variant="outline" onClick={async() => {
-                  const res = await restClient.get(`/api/hr/offers/${o.id}`);
-                  const txt = JSON.stringify(res.data, null, 2);
-                  toast({ title: 'Offer details', description: txt.substring(0, 200) + (txt.length>200?'...':'') });
-                }}>
-                  <Eye className="h-4 w-4 mr-1" /> View
-                </Button>
-                {o.status !== 'accepted' && o.status !== 'declined' && (
-                  <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
-                    <Send className="h-4 w-4 mr-1" /> Send
-                  </Button>
-                )}
-                {o.signature_token && (
-                  <Button size="sm" variant="outline" onClick={() => copySignUrl(o)}>
-                    <LinkIcon className="h-4 w-4 mr-1" /> Copy Link
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
+          {/* Filter Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+            <TabsList>
+              <TabsTrigger value="all">All Offers</TabsTrigger>
+              <TabsTrigger value="pending" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Pending ({approvalStats.pending})
+              </TabsTrigger>
+              <TabsTrigger value="approved" className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                Approved ({approvalStats.approved})
+              </TabsTrigger>
+              <TabsTrigger value="rejected" className="flex items-center gap-1">
+                <XCircle className="h-3 w-3" />
+                Rejected ({approvalStats.rejected})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-2 text-sm">
-          <span>Rows:</span>
-          <select className="p-1 border rounded" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); loadOffers(); }}>
-            <option>10</option>
-            <option>20</option>
-            <option>50</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => { if (page > 1) { setPage(page - 1); loadOffers(); } }} disabled={page === 1}>Prev</Button>
-          <div className="text-sm">Page {page} / {Math.max(1, Math.ceil(total / pageSize))}</div>
-          <Button variant="outline" onClick={() => { if (page * pageSize < total) { setPage(page + 1); loadOffers(); } }} disabled={page * pageSize >= total}>Next</Button>
-        </div>
-      </div>
-      </CardContent>
+          {loading && <div className="text-sm text-slate-500">Loading...</div>}
+          {error && <div className="text-red-600">{error}</div>}
+          
+          <div className="overflow-x-auto rounded border">
+            <table className="min-w-full bg-white">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="p-3 sticky top-0 bg-white z-10">ID</th>
+                  <SortHeader label="Job" field="job" />
+                  <SortHeader label="Candidate" field="candidate" />
+                  <SortHeader label="Status" field="status" />
+                  <SortHeader label="Created" field="created" />
+                  <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOffers.length === 0 && (
+                  <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={6}>No offers found</td></tr>
+                )}
+                {filteredOffers.map((o) => (
+                  <tr key={o.id} className="border-b hover:bg-slate-50">
+                    <td className="p-3 text-xs font-mono">{String(o.id).substring(0, 8)}...</td>
+                    <td className="p-3">{o.job_title || o.position_title || '-'}</td>
+                    <td className="p-3">{o.candidate_first_name} {o.candidate_last_name}</td>
+                    <td className="p-3">{statusBadge(o.status)}</td>
+                    <td className="p-3">{o.created_at ? new Date(o.created_at).toLocaleDateString() : '-'}</td>
+                    <td className="p-3 space-x-2 whitespace-nowrap">
+                      <Button size="sm" variant="outline" onClick={async() => {
+                        const res = await restClient.get(`/api/hr/offers/${o.id}`);
+                        const txt = JSON.stringify(res.data, null, 2);
+                        toast({ title: 'Offer details', description: txt.substring(0, 200) + (txt.length>200?'...':'') });
+                      }}>
+                        <Eye className="h-4 w-4 mr-1" /> View
+                      </Button>
+                      
+                      {/* Show different actions based on status */}
+                      {o.status === 'pending_approval' && (
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Awaiting HR Approval
+                        </Badge>
+                      )}
+                      
+                      {o.status === 'approved' && (
+                        <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
+                          <Send className="h-4 w-4 mr-1" /> Send to Candidate
+                        </Button>
+                      )}
+                      
+                      {o.status === 'rejected' && (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Rejected by HR
+                        </Badge>
+                      )}
+                      
+                      {(o.status === 'sent' || o.status === 'draft') && o.status !== 'accepted' && o.status !== 'declined' && (
+                        <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
+                          <Send className="h-4 w-4 mr-1" /> Send
+                        </Button>
+                      )}
+                      
+                      {o.signature_token && (
+                        <Button size="sm" variant="outline" onClick={() => copySignUrl(o)}>
+                          <LinkIcon className="h-4 w-4 mr-1" /> Copy Link
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span>Rows:</span>
+              <select className="p-1 border rounded" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); loadOffers(); }}>
+                <option>10</option>
+                <option>20</option>
+                <option>50</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => { if (page > 1) { setPage(page - 1); loadOffers(); } }} disabled={page === 1}>Prev</Button>
+              <div className="text-sm">Page {page} / {Math.max(1, Math.ceil(total / pageSize))}</div>
+              <Button variant="outline" onClick={() => { if (page * pageSize < total) { setPage(page + 1); loadOffers(); } }} disabled={page * pageSize >= total}>Next</Button>
+            </div>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
