@@ -3400,22 +3400,38 @@ def match_candidates_for_jd(jd_id):
 def get_offers_for_job(jd_id):
     """Get all offers for a specific job description"""
     try:
-        # Query offers table
+        # Query offers table with full structure
         query = """
             SELECT 
                 o.id as offer_id,
                 o.jd_id,
                 o.candidate_id,
-                o.status,
-                o.salary_offered,
+                o.shortlist_id,
+                o.recruiter_id,
+                o.position_title,
+                o.salary_amount,
+                o.salary_currency,
+                o.salary_period,
+                o.benefits,
                 o.start_date,
                 o.expiry_date,
+                o.employment_type,
+                o.contract_type,
+                o.probation_period_months,
+                o.work_location,
+                o.status,
+                o.sent_at,
+                o.response_deadline,
+                o.candidate_response,
+                o.candidate_response_at,
+                o.approved_by,
+                o.approved_at,
+                o.notes,
                 o.created_at,
                 o.updated_at,
-                o.notes,
-                o.benefits,
-                COALESCE(u.first_name || ' ' || u.last_name, uc.personal_info->>'fullName', 'Unknown') as candidate_name,
-                COALESCE(u.email, uc.personal_info->>'email', '') as candidate_email
+                COALESCE(u.first_name, '') as first_name,
+                COALESCE(u.last_name, '') as last_name,
+                COALESCE(u.email, uc.personal_info->>'email', '') as email
             FROM offers o
             LEFT JOIN users u ON (
                 CASE 
@@ -3434,10 +3450,18 @@ def get_offers_for_job(jd_id):
         for row in results:
             row_dict = dict(row)
             # Convert datetime fields
-            for field in ['created_at', 'updated_at', 'start_date', 'expiry_date']:
+            for field in ['created_at', 'updated_at', 'start_date', 'expiry_date', 'sent_at', 'response_deadline', 'candidate_response_at', 'approved_at']:
                 if row_dict.get(field):
                     row_dict[field] = row_dict[field].isoformat() if hasattr(row_dict[field], 'isoformat') else str(row_dict[field])
+            # Parse benefits JSON if it's a string
+            if row_dict.get('benefits') and isinstance(row_dict['benefits'], str):
+                try:
+                    row_dict['benefits'] = json.loads(row_dict['benefits'])
+                except:
+                    pass
             offers.append(row_dict)
+        
+        logger.info(f"Found {len(offers)} offers for job {jd_id}")
         
         return jsonify({
             'success': True,
@@ -3447,12 +3471,14 @@ def get_offers_for_job(jd_id):
         
     except Exception as e:
         logger.error(f"Get offers for job error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         # Return empty array instead of error to prevent UI crash
         return jsonify({
             'success': True,
             'offers': [],
             'count': 0,
-            'message': 'No offers table found or error occurred'
+            'message': f'Error: {str(e)}'
         }), 200
 
 
@@ -3518,29 +3544,82 @@ def get_offer_statistics(jd_id):
 
 
 @app.route('/api/recruiter/offers', methods=['POST'])
+@app.route('/api/recruiter/offers/create', methods=['POST'])
 def create_offer():
     """Create a new offer for a candidate"""
     try:
         data = request.get_json()
+        logger.info(f"Create offer request data: {data}")
         
         jd_id = data.get('jd_id')
         candidate_id = data.get('candidate_id')
-        salary_offered = data.get('salary_offered')
+        shortlist_id = data.get('shortlist_id')
+        recruiter_id = data.get('recruiter_id')
+        position_title = data.get('position_title', '')
+        salary_amount = data.get('salary_amount')
+        salary_currency = data.get('salary_currency', 'AED')
+        salary_period = data.get('salary_period', 'annual')
+        benefits = data.get('benefits', {})
         start_date = data.get('start_date')
+        employment_type = data.get('employment_type', 'full-time')
+        probation_period_months = data.get('probation_period_months', 3)
+        work_location = data.get('work_location', '')
         expiry_date = data.get('expiry_date')
-        benefits = data.get('benefits', [])
         notes = data.get('notes', '')
         
         if not jd_id or not candidate_id:
-            return jsonify({'success': False, 'message': 'Job ID and Candidate ID are required'}), 400
+            return jsonify({'success': False, 'error': 'Job ID and Candidate ID are required'}), 400
         
         # Generate offer ID
         import uuid
         offer_id = str(uuid.uuid4())
         
+        # First, try to create the offers table if it doesn't exist
+        create_table_query = """
+            CREATE TABLE IF NOT EXISTS offers (
+                id VARCHAR(36) PRIMARY KEY,
+                jd_id VARCHAR(100) NOT NULL,
+                candidate_id VARCHAR(100) NOT NULL,
+                shortlist_id VARCHAR(100),
+                recruiter_id VARCHAR(100),
+                position_title VARCHAR(255),
+                salary_amount DECIMAL(12,2),
+                salary_currency VARCHAR(10) DEFAULT 'AED',
+                salary_period VARCHAR(50) DEFAULT 'annual',
+                benefits JSONB DEFAULT '{}',
+                start_date DATE,
+                expiry_date DATE,
+                employment_type VARCHAR(50) DEFAULT 'full-time',
+                contract_type VARCHAR(50),
+                probation_period_months INTEGER DEFAULT 3,
+                work_location VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'draft',
+                sent_at TIMESTAMP,
+                response_deadline TIMESTAMP,
+                candidate_response VARCHAR(50),
+                candidate_response_at TIMESTAMP,
+                approved_by VARCHAR(100),
+                approved_at TIMESTAMP,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """
+        try:
+            execute_query(create_table_query)
+            logger.info("Offers table created or already exists")
+        except Exception as table_err:
+            logger.warning(f"Table creation warning: {table_err}")
+        
+        # Insert the offer
         query = """
-            INSERT INTO offers (id, jd_id, candidate_id, status, salary_offered, start_date, expiry_date, benefits, notes, created_at, updated_at)
-            VALUES (%s, %s, %s, 'pending', %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO offers (
+                id, jd_id, candidate_id, shortlist_id, recruiter_id, position_title,
+                salary_amount, salary_currency, salary_period, benefits, start_date,
+                expiry_date, employment_type, probation_period_months, work_location,
+                status, notes, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft', %s, NOW(), NOW())
             RETURNING id
         """
         
@@ -3548,12 +3627,22 @@ def create_offer():
             offer_id,
             jd_id,
             candidate_id,
-            salary_offered,
-            start_date,
-            expiry_date,
-            json.dumps(benefits) if benefits else '[]',
+            shortlist_id,
+            recruiter_id,
+            position_title,
+            salary_amount,
+            salary_currency,
+            salary_period,
+            json.dumps(benefits) if benefits else '{}',
+            start_date if start_date else None,
+            expiry_date if expiry_date else None,
+            employment_type,
+            probation_period_months,
+            work_location,
             notes
         ))
+        
+        logger.info(f"Offer created successfully with ID: {offer_id}")
         
         return jsonify({
             'success': True,
@@ -3565,7 +3654,7 @@ def create_offer():
         logger.error(f"Create offer error: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'message': f'Failed to create offer: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f'Failed to create offer: {str(e)}'}), 500
 
 
 @app.route('/api/recruiter/offers/<offer_id>', methods=['PUT'])
