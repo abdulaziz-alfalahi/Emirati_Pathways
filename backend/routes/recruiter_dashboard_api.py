@@ -1361,6 +1361,7 @@ def reject_offer(approval_id):
 
 
 @recruiter_dashboard_bp.route('/offers/<offer_id>/send-to-candidate', methods=['POST'])
+@recruiter_dashboard_bp.route('/offers/<offer_id>/send', methods=['POST'])
 @optional_auth
 def send_offer_to_candidate(offer_id):
     """Send an approved offer to the candidate"""
