@@ -67,6 +67,21 @@ interface ApplicantCount {
   last_application_date: string | null;
 }
 
+// Interface for shortlist counts
+interface ShortlistCount {
+  job_id: string;
+  job_title: string;
+  total_shortlisted: number;
+  shortlisted: number;
+  contacted: number;
+  interview_scheduled: number;
+  interviewed: number;
+  offer_sent: number;
+  hired: number;
+  rejected: number;
+  last_shortlist_date: string | null;
+}
+
 const JobDescriptionsList = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -80,6 +95,7 @@ const JobDescriptionsList = () => {
   const [jobText, setJobText] = useState('');
   const [selectedJob, setSelectedJob] = useState<JobDescription | null>(null);
   const [selectedJobForApplicants, setSelectedJobForApplicants] = useState<any | null>(null);
+  const [selectedJobForShortlist, setSelectedJobForShortlist] = useState<any | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<JobDescription | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -118,6 +134,24 @@ const JobDescriptionsList = () => {
     refetchInterval: 30000,
   });
 
+  // Fetch shortlist counts for all jobs
+  const { data: shortlistCounts } = useQuery({
+    queryKey: ['shortlistCounts'],
+    queryFn: async () => {
+      try {
+        const response = await restClient.get('/api/recruiter/job-shortlist-count');
+        if (response.data?.success) {
+          return response.data.data as ShortlistCount[];
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to fetch shortlist counts:', error);
+        return [];
+      }
+    },
+    refetchInterval: 30000,
+  });
+
   // Check backend health
   const { data: healthStatus } = useQuery({
     queryKey: ['health'],
@@ -138,9 +172,21 @@ const JobDescriptionsList = () => {
     );
   }
 
+  // If viewing shortlist for a specific job, navigate to shortlist page
+  if (selectedJobForShortlist) {
+    // Navigate to the shortlist page for this job
+    navigate(`/recruiter/shortlist/${selectedJobForShortlist.jd_id}`);
+    setSelectedJobForShortlist(null);
+  }
+
   // Helper to get applicant count for a job
   const getApplicantCount = (jobId: string): ApplicantCount | undefined => {
     return applicantCounts?.find(ac => ac.job_id === jobId);
+  };
+
+  // Helper to get shortlist count for a job
+  const getShortlistCount = (jobId: string): ShortlistCount | undefined => {
+    return shortlistCounts?.find(sc => sc.job_id === jobId);
   };
 
   // Handle file upload
@@ -354,6 +400,8 @@ const JobDescriptionsList = () => {
               const applicantData = getApplicantCount(jdId);
               const totalApplicants = applicantData?.total_applicants || 0;
               const newApplicants = applicantData?.new_applicants || 0;
+              const shortlistData = getShortlistCount(jdId);
+              const totalShortlisted = shortlistData?.total_shortlisted || 0;
               
               return (
                 <Card key={jdId} className="hover:shadow-md transition-shadow">
@@ -389,25 +437,41 @@ const JobDescriptionsList = () => {
                         </div>
                       </div>
 
-                      {/* Applicant Count Badge */}
-                      <div className="flex items-center gap-4">
+                      {/* Applicant & Shortlist Count Badges */}
+                      <div className="flex items-center gap-3">
                         {(job.status === 'published' || job.status === 'active') && (
-                          <div 
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
-                            onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
-                          >
-                            <Users className="h-5 w-5 text-blue-600" />
-                            <div className="text-center">
-                              <div className="text-xl font-bold text-blue-600">{totalApplicants}</div>
-                              <div className="text-xs text-blue-600">Applicants</div>
+                          <>
+                            {/* Applicants Badge */}
+                            <div 
+                              className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+                              onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
+                            >
+                              <Users className="h-5 w-5 text-blue-600" />
+                              <div className="text-center">
+                                <div className="text-xl font-bold text-blue-600">{totalApplicants}</div>
+                                <div className="text-xs text-blue-600">Applicants</div>
+                              </div>
+                              {newApplicants > 0 && (
+                                <Badge className="bg-red-500 text-white ml-2">
+                                  {newApplicants} New
+                                </Badge>
+                              )}
+                              <ChevronRight className="h-4 w-4 text-blue-400" />
                             </div>
-                            {newApplicants > 0 && (
-                              <Badge className="bg-red-500 text-white ml-2">
-                                {newApplicants} New
-                              </Badge>
-                            )}
-                            <ChevronRight className="h-4 w-4 text-blue-400" />
-                          </div>
+                            
+                            {/* Shortlisted Badge */}
+                            <div 
+                              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
+                              onClick={() => navigate(`/recruiter/shortlist/${jdId}`)}
+                            >
+                              <CheckCircle className="h-5 w-5 text-emerald-600" />
+                              <div className="text-center">
+                                <div className="text-xl font-bold text-emerald-600">{totalShortlisted}</div>
+                                <div className="text-xs text-emerald-600">Shortlisted</div>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-emerald-400" />
+                            </div>
+                          </>
                         )}
                       </div>
 
@@ -424,14 +488,24 @@ const JobDescriptionsList = () => {
                           Edit
                         </Button>
                         {(job.status === 'published' || job.status === 'active') && (
-                          <Button
-                            size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                            onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
-                          >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            View Applicants
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
+                            >
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              Applicants
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={() => navigate(`/recruiter/shortlist/${jdId}`)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Shortlist
+                            </Button>
+                          </>
                         )}
                         <Button
                           size="sm"
@@ -447,7 +521,7 @@ const JobDescriptionsList = () => {
                     {applicantData && totalApplicants > 0 && (
                       <div className="mt-4 pt-4 border-t">
                         <div className="flex items-center gap-6 text-sm">
-                          <span className="text-muted-foreground">Pipeline:</span>
+                          <span className="text-muted-foreground">Applicants:</span>
                           <div className="flex items-center gap-1">
                             <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                             <span>{applicantData.new_applicants} New</span>
@@ -466,9 +540,38 @@ const JobDescriptionsList = () => {
                           </div>
                           {applicantData.last_application_date && (
                             <span className="text-muted-foreground ml-auto">
-                              Last application: {formatRelativeTime(applicantData.last_application_date)}
+                              Last: {formatRelativeTime(applicantData.last_application_date)}
                             </span>
                           )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shortlist Pipeline Summary (if has shortlisted candidates) */}
+                    {shortlistData && totalShortlisted > 0 && (
+                      <div className="mt-2 pt-2 border-t border-dashed">
+                        <div className="flex items-center gap-6 text-sm">
+                          <span className="text-muted-foreground">Shortlist:</span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                            <span>{shortlistData.shortlisted} Shortlisted</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                            <span>{shortlistData.contacted} Contacted</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                            <span>{(shortlistData.interview_scheduled || 0) + (shortlistData.interviewed || 0)} Interviews</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-orange-400"></div>
+                            <span>{shortlistData.offer_sent} Offers</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span>{shortlistData.hired} Hired</span>
+                          </div>
                         </div>
                       </div>
                     )}

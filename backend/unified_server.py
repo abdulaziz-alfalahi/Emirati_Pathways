@@ -3019,6 +3019,50 @@ def get_recent_applicants():
         return jsonify({'success': False, 'message': 'Failed to get recent applicants'}), 500
 
 
+@app.route('/api/recruiter/job-shortlist-count', methods=['GET'])
+def get_job_shortlist_count():
+    """Get shortlist counts for all jobs"""
+    try:
+        query = """
+            SELECT 
+                s.jd_id as job_id,
+                jp.title as job_title,
+                COUNT(*) as total_shortlisted,
+                COUNT(CASE WHEN s.status = 'shortlisted' THEN 1 END) as shortlisted,
+                COUNT(CASE WHEN s.status = 'contacted' THEN 1 END) as contacted,
+                COUNT(CASE WHEN s.status = 'interview_scheduled' THEN 1 END) as interview_scheduled,
+                COUNT(CASE WHEN s.status = 'interviewed' THEN 1 END) as interviewed,
+                COUNT(CASE WHEN s.status = 'offer_sent' THEN 1 END) as offer_sent,
+                COUNT(CASE WHEN s.status = 'hired' THEN 1 END) as hired,
+                COUNT(CASE WHEN s.status = 'rejected' THEN 1 END) as rejected,
+                MAX(s.created_at) as last_shortlist_date
+            FROM shortlist s
+            LEFT JOIN job_postings jp ON jp.jd_id::text = s.jd_id
+            GROUP BY s.jd_id, jp.title
+            ORDER BY last_shortlist_date DESC
+        """
+        
+        results = execute_query(query) or []
+        
+        shortlist_counts = []
+        for row in results:
+            row_dict = dict(row)
+            if row_dict.get('last_shortlist_date'):
+                row_dict['last_shortlist_date'] = row_dict['last_shortlist_date'].isoformat()
+            shortlist_counts.append(row_dict)
+        
+        return jsonify({
+            'success': True,
+            'data': shortlist_counts
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Get job shortlist count error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to get shortlist counts'}), 500
+
+
 @app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
 def get_job_applicants(job_id):
     """Get all applicants for a specific job"""
