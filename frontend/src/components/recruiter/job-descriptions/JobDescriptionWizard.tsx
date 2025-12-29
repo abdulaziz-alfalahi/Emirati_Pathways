@@ -701,13 +701,13 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       if (field === 'description') {
         setJDData(prev => ({
           ...prev,
-          description: prev.description + (prev.description ? '\n\n' : '') + `[AI Generated] We are seeking a talented ${jdData.basic_info.title} to join our dynamic team. In this role, you will leverage your expertise to drive innovation and success.`
+          description: (prev.description || '') + (prev.description ? '\n\n' : '') + `[AI Generated] We are seeking a talented ${jdData.basic_info.title} to join our dynamic team. In this role, you will leverage your expertise to drive innovation and success.`
         }));
       } else if (field === 'responsibilities') {
         setJDData(prev => ({
           ...prev,
           responsibilities: [
-            ...prev.responsibilities,
+            ...(Array.isArray(prev.responsibilities) ? prev.responsibilities : []),
             { category: 'core', description: `[AI] Lead key initiatives for ${jdData.basic_info.title}` },
             { category: 'core', description: `[AI] Collaborate with cross-functional teams` },
             { category: 'core', description: `[AI] Ensure high-quality deliverables` }
@@ -717,7 +717,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         setJDData(prev => ({
           ...prev,
           benefits: [
-            ...prev.benefits,
+            ...(Array.isArray(prev.benefits) ? prev.benefits : []),
             { category: 'compensation', description: `[AI] Competitive compensation package` },
             { category: 'development', description: `[AI] Professional growth opportunities` },
             { category: 'perks', description: `[AI] Modern work environment` }
@@ -727,7 +727,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         setJDData(prev => ({
           ...prev,
           requirements: [
-            ...prev.requirements,
+            ...(Array.isArray(prev.requirements) ? prev.requirements : []),
             { category: 'skills', description: `[AI] Relevant degree or equivalent experience`, is_required: true },
             { category: 'skills', description: `[AI] Strong communication skills`, is_required: true }
           ]
@@ -916,7 +916,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={() => {
             setJDData({
               ...jdData,
-              requirements: [...jdData.requirements, {
+              requirements: [...(Array.isArray(jdData.requirements) ? jdData.requirements : []), {
                 category: 'skills',
                 description: '',
                 is_required: true
@@ -940,7 +940,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Button>
       </div>
 
-      {jdData.requirements.length === 0 && (
+      {(!Array.isArray(jdData.requirements) || jdData.requirements.length === 0) && (
         <Alert>
           <AlertDescription>
             No requirements added yet. Click "Add Requirement" to add job requirements.
@@ -1024,7 +1024,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={() => {
             setJDData({
               ...jdData,
-              responsibilities: [...jdData.responsibilities, {
+              responsibilities: [...(Array.isArray(jdData.responsibilities) ? jdData.responsibilities : []), {
                 description: '',
                 category: 'core'
               }]
@@ -1076,7 +1076,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Card>
       ))}
 
-      {jdData.responsibilities.length === 0 && (
+      {(!Array.isArray(jdData.responsibilities) || jdData.responsibilities.length === 0) && (
         <Alert>
           <AlertDescription>
             No responsibilities added yet. Click "Add Responsibility" to start.
@@ -1096,7 +1096,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           onClick={() => {
             setJDData({
               ...jdData,
-              benefits: [...jdData.benefits, {
+              benefits: [...(Array.isArray(jdData.benefits) ? jdData.benefits : []), {
                 category: 'compensation',
                 description: ''
               }]
@@ -1171,7 +1171,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </Card>
       ))}
 
-      {jdData.benefits.length === 0 && (
+      {(!Array.isArray(jdData.benefits) || jdData.benefits.length === 0) && (
         <Alert>
           <AlertDescription>
             No benefits added yet. Click "Add Benefit" to start.
