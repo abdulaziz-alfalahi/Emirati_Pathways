@@ -1018,6 +1018,7 @@ def get_active_vacancies():
 def get_pending_offer_approvals():
     """Get all pending offer approval requests for HR Manager review"""
     try:
+        # First try to get from offer_approval_requests table
         query = """
             SELECT 
                 oar.id as approval_id,
@@ -1049,6 +1050,41 @@ def get_pending_offer_approvals():
         """
         
         results = execute_query(query) or []
+        logger.info(f"Found {len(results)} pending approvals from offer_approval_requests table")
+        
+        # If no results from approval requests table, fallback to offers table
+        if not results:
+            logger.info("No approval requests found, falling back to offers table")
+            fallback_query = """
+                SELECT 
+                    o.id as approval_id,
+                    o.id as offer_id,
+                    o.job_posting_id as jd_id,
+                    o.candidate_id,
+                    o.recruiter_id,
+                    o.offer_data->>'position_title' as position_title,
+                    COALESCE((o.offer_data->>'salary_amount')::numeric, 0) as salary_amount,
+                    COALESCE(o.offer_data->>'salary_currency', 'AED') as salary_currency,
+                    o.status,
+                    o.created_at as requested_at,
+                    o.created_at,
+                    u.first_name as candidate_first_name,
+                    u.last_name as candidate_last_name,
+                    u.email as candidate_email,
+                    r.first_name as recruiter_first_name,
+                    r.last_name as recruiter_last_name,
+                    jd.title as job_title,
+                    jd.company as company_name,
+                    o.offer_data
+                FROM offers o
+                LEFT JOIN users u ON o.candidate_id = u.id
+                LEFT JOIN users r ON o.recruiter_id = r.id
+                LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
+                WHERE o.status = 'pending_approval'
+                ORDER BY o.created_at DESC
+            """
+            results = execute_query(fallback_query) or []
+            logger.info(f"Found {len(results)} pending approvals from offers table fallback")
         
         # Format the results
         approvals = []
@@ -1067,6 +1103,7 @@ def get_pending_offer_approvals():
                     approval[field] = approval[field].isoformat() if hasattr(approval[field], 'isoformat') else str(approval[field])
             approvals.append(approval)
         
+        logger.info(f"Returning {len(approvals)} pending approvals")
         return jsonify({
             'success': True,
             'data': approvals,
@@ -1080,7 +1117,8 @@ def get_pending_offer_approvals():
         return jsonify({
             'success': True,
             'data': [],
-            'count': 0
+            'count': 0,
+            'error': str(e)
         })
 
 
@@ -1174,7 +1212,9 @@ def approve_offer(approval_id):
             except:
                 approver_id = 1
         
-        # Update the approval request
+        offer_id = None
+        
+        # First try to update the approval request
         update_query = """
             UPDATE offer_approval_requests
             SET status = 'approved',
@@ -1190,23 +1230,36 @@ def approve_offer(approval_id):
         
         if result:
             offer_id = result.get('offer_id')
-            
+        else:
+            # Fallback: approval_id might actually be the offer_id directly
+            # This happens when using the offers table fallback
+            logger.info(f"No approval request found, treating {approval_id} as offer_id")
+            offer_id = approval_id
+        
+        if offer_id:
             # Update the offer status to 'approved' (ready to send to candidate)
             offer_update_query = """
                 UPDATE offers
                 SET status = 'approved',
                     updated_at = NOW()
                 WHERE id = %s::uuid
+                RETURNING id
             """
-            execute_query(offer_update_query, (str(offer_id),), fetch_all=False)
+            offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
             
-            logger.info(f"Offer {offer_id} approved by HR Manager {approver_id}")
-            
-            return jsonify({
-                'success': True,
-                'message': 'Offer approved successfully',
-                'offer_id': str(offer_id)
-            })
+            if offer_result:
+                logger.info(f"Offer {offer_id} approved by HR Manager {approver_id}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Offer approved successfully',
+                    'offer_id': str(offer_id)
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Offer not found'
+                }), 404
         else:
             return jsonify({
                 'success': False,
@@ -1240,7 +1293,9 @@ def reject_offer(approval_id):
             except:
                 approver_id = 1
         
-        # Update the approval request
+        offer_id = None
+        
+        # First try to update the approval request
         update_query = """
             UPDATE offer_approval_requests
             SET status = 'rejected',
@@ -1257,23 +1312,35 @@ def reject_offer(approval_id):
         
         if result:
             offer_id = result.get('offer_id')
-            
+        else:
+            # Fallback: approval_id might actually be the offer_id directly
+            logger.info(f"No approval request found, treating {approval_id} as offer_id")
+            offer_id = approval_id
+        
+        if offer_id:
             # Update the offer status to 'rejected'
             offer_update_query = """
                 UPDATE offers
                 SET status = 'rejected',
                     updated_at = NOW()
                 WHERE id = %s::uuid
+                RETURNING id
             """
-            execute_query(offer_update_query, (str(offer_id),), fetch_all=False)
+            offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
             
-            logger.info(f"Offer {offer_id} rejected by HR Manager {approver_id}")
-            
-            return jsonify({
-                'success': True,
-                'message': 'Offer rejected',
-                'offer_id': str(offer_id)
-            })
+            if offer_result:
+                logger.info(f"Offer {offer_id} rejected by HR Manager {approver_id}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Offer rejected',
+                    'offer_id': str(offer_id)
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Offer not found'
+                }), 404
         else:
             return jsonify({
                 'success': False,
@@ -1351,6 +1418,7 @@ def send_offer_to_candidate(offer_id):
 def get_offer_approval_stats():
     """Get statistics about offer approvals"""
     try:
+        # First try offer_approval_requests table
         query = """
             SELECT 
                 COUNT(*) as total,
@@ -1361,6 +1429,20 @@ def get_offer_approval_stats():
         """
         
         result = execute_query(query, fetch_one=True)
+        
+        # If no data in approval_requests table, fallback to offers table
+        if not result or (result.get('total', 0) == 0):
+            logger.info("No data in offer_approval_requests, falling back to offers table")
+            fallback_query = """
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN status = 'pending_approval' THEN 1 END) as pending,
+                    COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
+                    COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
+                FROM offers
+            """
+            result = execute_query(fallback_query, fetch_one=True)
+            logger.info(f"Fallback stats from offers table: {result}")
         
         return jsonify({
             'success': True,
