@@ -48,15 +48,26 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(query, params)
+            
+            # Check if this is a write operation (INSERT, UPDATE, DELETE)
+            is_write_operation = query.strip().upper().startswith(('INSERT', 'UPDATE', 'DELETE'))
+            
             if return_id:
                 result = cursor.fetchone()
                 conn.commit()
                 return result.get('id') if result else None
             elif fetch_one:
                 result = cursor.fetchone()
+                # Commit if this is a write operation (e.g., INSERT ... RETURNING)
+                if is_write_operation:
+                    conn.commit()
                 return dict(result) if result else None
             elif fetch_all:
-                return [dict(row) for row in cursor.fetchall()]
+                result = [dict(row) for row in cursor.fetchall()]
+                # Commit if this is a write operation
+                if is_write_operation:
+                    conn.commit()
+                return result
             else:
                 conn.commit()
                 return True
