@@ -3109,6 +3109,245 @@ def get_job_applicants(job_id):
         return jsonify({'success': False, 'message': 'Failed to get applicants'}), 500
 
 
+@app.route('/api/recruiter/jd/<jd_id>/match-candidates', methods=['POST'])
+def match_candidates_for_jd(jd_id):
+    """Find top candidates matching a job description using AI"""
+    try:
+        data = request.get_json() or {}
+        employment_status_filter = data.get('employment_status_filter')
+        top_n = data.get('top_n', 10)
+        
+        # Get the job description details
+        jd_query = """
+            SELECT jd_id, title, description, requirements, responsibilities, 
+                   department, location, employment_type, experience_level
+            FROM job_postings
+            WHERE jd_id = %s
+        """
+        jd_result = execute_query(jd_query, (jd_id,), fetch_one=True)
+        
+        if not jd_result:
+            return jsonify({'success': False, 'message': 'Job description not found'}), 404
+        
+        jd_data = dict(jd_result)
+        
+        # Get all candidates with their CV data
+        candidate_query = """
+            SELECT 
+                uc.id as cv_id,
+                uc.user_id,
+                uc.personal_info,
+                uc.professional_summary,
+                uc.technical_skills,
+                uc.soft_skills,
+                uc.work_experience,
+                uc.education,
+                uc.certifications,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.employment_status
+            FROM user_cvs uc
+            LEFT JOIN users u ON uc.user_id::text = u.id::text
+            WHERE uc.is_visible = true OR uc.is_visible IS NULL
+        """
+        
+        # Add employment status filter if specified
+        params = []
+        if employment_status_filter:
+            candidate_query += " AND (u.employment_status = %s OR u.employment_status IS NULL)"
+            params.append(employment_status_filter)
+        
+        candidates = execute_query(candidate_query, tuple(params) if params else None) or []
+        
+        if not candidates:
+            return jsonify({
+                'success': True,
+                'top_matches': [],
+                'match_count': 0,
+                'message': 'No candidates found matching the criteria'
+            }), 200
+        
+        # Extract job requirements for matching
+        job_requirements = []
+        if jd_data.get('requirements'):
+            reqs = jd_data['requirements']
+            if isinstance(reqs, str):
+                try:
+                    reqs = json.loads(reqs)
+                except:
+                    reqs = []
+            if isinstance(reqs, list):
+                for req in reqs:
+                    if isinstance(req, dict):
+                        job_requirements.append(req.get('description', '').lower())
+                    elif isinstance(req, str):
+                        job_requirements.append(req.lower())
+        
+        job_title = (jd_data.get('title') or '').lower()
+        job_description = (jd_data.get('description') or '').lower()
+        job_location = (jd_data.get('location') or '').lower()
+        
+        # Score each candidate
+        scored_candidates = []
+        for candidate in candidates:
+            candidate_dict = dict(candidate)
+            
+            # Parse JSON fields
+            for field in ['personal_info', 'technical_skills', 'soft_skills', 'work_experience', 'education', 'certifications']:
+                if candidate_dict.get(field) and isinstance(candidate_dict[field], str):
+                    try:
+                        candidate_dict[field] = json.loads(candidate_dict[field])
+                    except:
+                        candidate_dict[field] = []
+            
+            # Extract candidate skills
+            candidate_skills = set()
+            tech_skills = candidate_dict.get('technical_skills') or []
+            soft_skills = candidate_dict.get('soft_skills') or []
+            
+            if isinstance(tech_skills, list):
+                for skill in tech_skills:
+                    if isinstance(skill, str):
+                        candidate_skills.add(skill.lower())
+                    elif isinstance(skill, dict):
+                        candidate_skills.add(skill.get('name', '').lower())
+            
+            if isinstance(soft_skills, list):
+                for skill in soft_skills:
+                    if isinstance(skill, str):
+                        candidate_skills.add(skill.lower())
+                    elif isinstance(skill, dict):
+                        candidate_skills.add(skill.get('name', '').lower())
+            
+            # Calculate match score
+            score = 0
+            matched_skills = []
+            missing_skills = []
+            
+            # Skills matching (40 points)
+            for req in job_requirements:
+                req_words = set(req.split())
+                matched = False
+                for skill in candidate_skills:
+                    skill_words = set(skill.split())
+                    if skill_words & req_words or skill in req or req in skill:
+                        matched = True
+                        matched_skills.append(skill)
+                        break
+                if not matched:
+                    missing_skills.append(req)
+            
+            if job_requirements:
+                skills_score = (len(matched_skills) / len(job_requirements)) * 40
+            else:
+                skills_score = 20  # Default if no requirements specified
+            score += skills_score
+            
+            # Title/Role matching (25 points)
+            personal_info = candidate_dict.get('personal_info') or {}
+            candidate_title = ''
+            if isinstance(personal_info, dict):
+                candidate_title = (personal_info.get('currentTitle') or personal_info.get('title') or '').lower()
+            
+            if candidate_title and job_title:
+                title_words = set(job_title.split())
+                candidate_words = set(candidate_title.split())
+                common_words = title_words & candidate_words
+                if common_words:
+                    score += min(25, len(common_words) * 8)
+            
+            # Experience matching (20 points)
+            work_exp = candidate_dict.get('work_experience') or []
+            years_exp = 0
+            if isinstance(work_exp, list):
+                years_exp = len(work_exp) * 2  # Rough estimate: 2 years per position
+            
+            exp_level = (jd_data.get('experience_level') or '').lower()
+            if 'entry' in exp_level or 'junior' in exp_level or 'trainee' in exp_level:
+                if years_exp <= 2:
+                    score += 20
+                elif years_exp <= 4:
+                    score += 15
+                else:
+                    score += 10
+            elif 'mid' in exp_level:
+                if 2 <= years_exp <= 5:
+                    score += 20
+                elif years_exp > 5:
+                    score += 15
+                else:
+                    score += 10
+            elif 'senior' in exp_level:
+                if years_exp >= 5:
+                    score += 20
+                elif years_exp >= 3:
+                    score += 15
+                else:
+                    score += 5
+            else:
+                score += min(20, years_exp * 2)  # Default scoring
+            
+            # Location matching (15 points)
+            candidate_location = ''
+            if isinstance(personal_info, dict):
+                candidate_location = (personal_info.get('location') or personal_info.get('city') or '').lower()
+            
+            if candidate_location and job_location:
+                if candidate_location in job_location or job_location in candidate_location:
+                    score += 15
+                elif 'uae' in candidate_location or 'dubai' in candidate_location or 'abu dhabi' in candidate_location:
+                    score += 10  # UAE-based candidate bonus
+            else:
+                score += 10  # Default if location not specified
+            
+            # Get candidate name
+            candidate_name = ''
+            if candidate_dict.get('first_name') and candidate_dict.get('last_name'):
+                candidate_name = f"{candidate_dict['first_name']} {candidate_dict['last_name']}"
+            elif isinstance(personal_info, dict):
+                candidate_name = personal_info.get('fullName') or personal_info.get('name') or 'Unknown'
+            else:
+                candidate_name = 'Unknown Candidate'
+            
+            scored_candidates.append({
+                'candidate_id': str(candidate_dict.get('user_id') or candidate_dict.get('cv_id')),
+                'cv_id': str(candidate_dict.get('cv_id')),
+                'name': candidate_name,
+                'email': candidate_dict.get('email') or (personal_info.get('email') if isinstance(personal_info, dict) else ''),
+                'current_title': candidate_title.title() if candidate_title else 'Not specified',
+                'location': candidate_location.title() if candidate_location else 'Not specified',
+                'employment_status': candidate_dict.get('employment_status') or 'Not specified',
+                'match_score': round(score, 1),
+                'matched_skills': list(set(matched_skills))[:10],
+                'missing_skills': missing_skills[:5],
+                'years_experience': years_exp,
+                'professional_summary': candidate_dict.get('professional_summary') or '',
+                'fit_assessment': 'Excellent Fit' if score >= 75 else 'Good Fit' if score >= 60 else 'Moderate Fit' if score >= 45 else 'Below Average'
+            })
+        
+        # Sort by score and get top N
+        scored_candidates.sort(key=lambda x: x['match_score'], reverse=True)
+        top_matches = scored_candidates[:top_n]
+        
+        return jsonify({
+            'success': True,
+            'top_matches': top_matches,
+            'match_count': len(top_matches),
+            'total_candidates_evaluated': len(scored_candidates),
+            'job_title': jd_data.get('title'),
+            'filters_applied': {
+                'employment_status': employment_status_filter
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Match candidates error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to match candidates: {str(e)}'}), 500
+
+
 @app.route('/api/recruiter/analytics', methods=['GET', 'OPTIONS'])
 def recruiter_analytics():
     if request.method == 'OPTIONS':
