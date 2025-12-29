@@ -1055,6 +1055,7 @@ def get_pending_offer_approvals():
         # If no results from approval requests table, fallback to offers table
         if not results:
             logger.info("No approval requests found, falling back to offers table")
+            # Look for offers that need approval - including 'pending', 'draft', and 'pending_approval' statuses
             fallback_query = """
                 SELECT 
                     o.id as approval_id,
@@ -1065,7 +1066,7 @@ def get_pending_offer_approvals():
                     o.offer_data->>'position_title' as position_title,
                     COALESCE((o.offer_data->>'salary_amount')::numeric, 0) as salary_amount,
                     COALESCE(o.offer_data->>'salary_currency', 'AED') as salary_currency,
-                    o.status,
+                    'pending' as status,
                     o.created_at as requested_at,
                     o.created_at,
                     u.first_name as candidate_first_name,
@@ -1080,11 +1081,12 @@ def get_pending_offer_approvals():
                 LEFT JOIN users u ON o.candidate_id = u.id
                 LEFT JOIN users r ON o.recruiter_id = r.id
                 LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
-                WHERE o.status = 'pending_approval'
+                WHERE o.status IN ('pending_approval', 'pending', 'draft')
+                  AND o.status NOT IN ('approved', 'rejected', 'sent', 'accepted', 'declined', 'withdrawn')
                 ORDER BY o.created_at DESC
             """
             results = execute_query(fallback_query) or []
-            logger.info(f"Found {len(results)} pending approvals from offers table fallback")
+            logger.info(f"Found {len(results)} pending approvals from offers table fallback (status in pending_approval, pending, draft)")
         
         # Format the results
         approvals = []
@@ -1433,10 +1435,11 @@ def get_offer_approval_stats():
         # If no data in approval_requests table, fallback to offers table
         if not result or (result.get('total', 0) == 0):
             logger.info("No data in offer_approval_requests, falling back to offers table")
+            # Count pending as any offer that hasn't been approved/rejected/sent yet
             fallback_query = """
                 SELECT 
                     COUNT(*) as total,
-                    COUNT(CASE WHEN status = 'pending_approval' THEN 1 END) as pending,
+                    COUNT(CASE WHEN status IN ('pending_approval', 'pending', 'draft') THEN 1 END) as pending,
                     COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
                     COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
                 FROM offers
