@@ -1056,6 +1056,7 @@ def get_pending_offer_approvals():
         if not results:
             logger.info("No approval requests found, falling back to offers table")
             # Look for offers that need approval - including 'pending', 'draft', and 'pending_approval' statuses
+            # Use COALESCE to get recruiter name from users table OR from offer_data
             fallback_query = """
                 SELECT 
                     o.id as approval_id,
@@ -1072,14 +1073,14 @@ def get_pending_offer_approvals():
                     u.first_name as candidate_first_name,
                     u.last_name as candidate_last_name,
                     u.email as candidate_email,
-                    r.first_name as recruiter_first_name,
-                    r.last_name as recruiter_last_name,
+                    COALESCE(r.first_name, o.offer_data->>'recruiter_first_name', 'Recruiter') as recruiter_first_name,
+                    COALESCE(r.last_name, o.offer_data->>'recruiter_last_name', '') as recruiter_last_name,
                     jd.title as job_title,
                     jd.company as company_name,
                     o.offer_data
                 FROM offers o
                 LEFT JOIN users u ON o.candidate_id = u.id
-                LEFT JOIN users r ON o.recruiter_id = r.id
+                LEFT JOIN users r ON o.recruiter_id = r.id AND o.recruiter_id != o.candidate_id
                 LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
                 WHERE o.status IN ('pending_approval', 'pending', 'draft')
                   AND o.status NOT IN ('approved', 'rejected', 'sent', 'accepted', 'declined', 'withdrawn')

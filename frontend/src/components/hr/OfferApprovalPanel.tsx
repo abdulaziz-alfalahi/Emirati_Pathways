@@ -437,106 +437,190 @@ export const OfferApprovalPanel: React.FC = () => {
 
       {/* Review/Approve Dialog */}
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Review Offer</DialogTitle>
+            <DialogTitle className="text-xl">Review Offer</DialogTitle>
             <DialogDescription>
               Review the offer details before approving
             </DialogDescription>
           </DialogHeader>
           
           {selectedApproval && (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-4 p-4">
-                {/* Offer Details */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-gray-500">Position</Label>
-                    <p className="font-medium">{selectedApproval.position_title || selectedApproval.job_title}</p>
+            <ScrollArea className="max-h-[70vh] pr-4">
+              <div className="space-y-6 py-4">
+                {/* Position & Company Section */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-ehrdc-teal" />
+                    Position Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <Label className="text-gray-500 text-sm">Position</Label>
+                      <p className="font-semibold text-lg">{selectedApproval.position_title || selectedApproval.job_title || 'N/A'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-gray-500 text-sm">Company</Label>
+                      <p className="font-medium">{selectedApproval.company_name || 'N/A'}</p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-gray-500">Company</Label>
-                    <p className="font-medium">{selectedApproval.company_name || 'N/A'}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-gray-500">Candidate</Label>
-                    <p className="font-medium">
+                </div>
+
+                {/* Candidate & Recruiter Section */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <User className="h-5 w-5 text-blue-600" />
+                      Candidate
+                    </h3>
+                    <p className="font-medium text-lg">
                       {selectedApproval.candidate_first_name} {selectedApproval.candidate_last_name}
                     </p>
-                    <p className="text-sm text-gray-500">{selectedApproval.candidate_email}</p>
+                    <p className="text-sm text-gray-600">{selectedApproval.candidate_email}</p>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-gray-500">Salary Offered</Label>
-                    <p className="font-medium text-green-600 text-lg">
-                      {formatCurrency(selectedApproval.salary_amount, selectedApproval.salary_currency)}
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Send className="h-5 w-5 text-purple-600" />
+                      Requested By (Recruiter)
+                    </h3>
+                    <p className="font-medium text-lg">
+                      {selectedApproval.recruiter_first_name && selectedApproval.recruiter_last_name 
+                        ? `${selectedApproval.recruiter_first_name} ${selectedApproval.recruiter_last_name}`
+                        : selectedApproval.offer_data?.recruiter_name || 'Recruiter'}
                     </p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-gray-500">Requested By</Label>
-                    <p className="font-medium">
-                      {selectedApproval.recruiter_first_name} {selectedApproval.recruiter_last_name}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-gray-500">Request Date</Label>
-                    <p className="font-medium">
+                    <p className="text-sm text-gray-600">
                       {selectedApproval.requested_at ? new Date(selectedApproval.requested_at).toLocaleString() : '-'}
                     </p>
                   </div>
                 </div>
 
-                {/* Additional Offer Data */}
+                {/* Compensation Section */}
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    Compensation
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-gray-500 text-sm">Salary Offered</Label>
+                      <p className="font-bold text-2xl text-green-600">
+                        {formatCurrency(selectedApproval.salary_amount, selectedApproval.salary_currency)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {selectedApproval.offer_data?.salary_period || 'monthly'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Benefits Package</Label>
+                      {selectedApproval.offer_data?.benefits ? (
+                        <div className="mt-1 space-y-1">
+                          {(() => {
+                            const benefits = selectedApproval.offer_data.benefits;
+                            if (typeof benefits === 'object' && benefits !== null) {
+                              return (
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  {benefits.health_insurance && (
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <span>Health Insurance</span>
+                                    </div>
+                                  )}
+                                  {benefits.housing_allowance && (
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <span>Housing Allowance</span>
+                                    </div>
+                                  )}
+                                  {benefits.transportation_allowance && (
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <span>Transportation</span>
+                                    </div>
+                                  )}
+                                  {benefits.annual_leave_days && (
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <span>{benefits.annual_leave_days} Days Leave</span>
+                                    </div>
+                                  )}
+                                  {benefits.flight_tickets && (
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <span>{benefits.flight_tickets} Flight Tickets</span>
+                                    </div>
+                                  )}
+                                  {benefits.additional_benefits && benefits.additional_benefits.length > 0 && (
+                                    <div className="col-span-2">
+                                      <span className="text-gray-500">Additional: </span>
+                                      {benefits.additional_benefits.join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return <p className="text-sm">{String(benefits)}</p>;
+                          })()}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">No benefits specified</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employment Details Section */}
                 {selectedApproval.offer_data && (
-                  <div className="border-t pt-4 mt-4">
-                    <Label className="text-gray-500 mb-2 block">Additional Details</Label>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-orange-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-orange-600" />
+                      Employment Details
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {selectedApproval.offer_data.start_date && (
                         <div>
-                          <span className="text-gray-500">Start Date:</span>{' '}
-                          <span className="font-medium">{selectedApproval.offer_data.start_date}</span>
+                          <Label className="text-gray-500 text-sm">Start Date</Label>
+                          <p className="font-medium">{selectedApproval.offer_data.start_date}</p>
                         </div>
                       )}
                       {selectedApproval.offer_data.employment_type && (
                         <div>
-                          <span className="text-gray-500">Employment Type:</span>{' '}
-                          <span className="font-medium">{selectedApproval.offer_data.employment_type}</span>
+                          <Label className="text-gray-500 text-sm">Employment Type</Label>
+                          <p className="font-medium capitalize">{selectedApproval.offer_data.employment_type}</p>
                         </div>
                       )}
                       {selectedApproval.offer_data.probation_period_months && (
                         <div>
-                          <span className="text-gray-500">Probation Period:</span>{' '}
-                          <span className="font-medium">{selectedApproval.offer_data.probation_period_months} months</span>
+                          <Label className="text-gray-500 text-sm">Probation Period</Label>
+                          <p className="font-medium">{selectedApproval.offer_data.probation_period_months} months</p>
                         </div>
                       )}
                       {selectedApproval.offer_data.work_location && (
                         <div>
-                          <span className="text-gray-500">Work Location:</span>{' '}
-                          <span className="font-medium">{selectedApproval.offer_data.work_location}</span>
+                          <Label className="text-gray-500 text-sm">Work Location</Label>
+                          <p className="font-medium">{selectedApproval.offer_data.work_location}</p>
                         </div>
                       )}
                     </div>
-                    {selectedApproval.offer_data.benefits && (
-                      <div className="mt-2">
-                        <span className="text-gray-500">Benefits:</span>
-                        <p className="font-medium">
-                          {typeof selectedApproval.offer_data.benefits === 'object' 
-                            ? JSON.stringify(selectedApproval.offer_data.benefits)
-                            : selectedApproval.offer_data.benefits}
-                        </p>
-                      </div>
-                    )}
+                  </div>
+                )}
+
+                {/* Notes Section */}
+                {selectedApproval.offer_data?.notes && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">Additional Notes</h3>
+                    <p className="text-gray-700">{selectedApproval.offer_data.notes}</p>
                   </div>
                 )}
 
                 {/* Comments */}
-                <div className="border-t pt-4 mt-4">
-                  <Label htmlFor="comments">Comments (Optional)</Label>
+                <div className="border-t pt-4">
+                  <Label htmlFor="comments" className="font-semibold">Comments for Recruiter (Optional)</Label>
                   <Textarea
                     id="comments"
-                    placeholder="Add any comments for the recruiter..."
+                    placeholder="Add any comments or feedback for the recruiter..."
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    className="mt-2"
+                    className="mt-2 min-h-[80px]"
                   />
                 </div>
               </div>
