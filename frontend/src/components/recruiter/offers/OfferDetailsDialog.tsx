@@ -160,56 +160,8 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
     }
   };
 
-  const handleApproveOffer = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/approve`, {
-        approved_by: 'manager_001', // TODO: Get from auth context
-      });
-      setSuccess('Offer approved successfully');
-
-      // Reload offer details to show updated status
-      await reloadOfferDetails();
-
-      setTimeout(() => {
-        onOfferUpdated();
-      }, 500);
-    } catch (err: any) {
-      console.error('Error approving offer:', err);
-      setError(err.response?.data?.error || 'Failed to approve offer');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRejectOffer = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      await restClient.post(`/api/recruiter/offers/${currentOffer.offer_id}/reject`, {
-        rejected_by: 'manager_001', // TODO: Get from auth context
-        rejection_reason: 'Budget constraints',
-      });
-      setSuccess('Offer rejected');
-
-      // Reload offer details to show updated status
-      await reloadOfferDetails();
-
-      setTimeout(() => {
-        onOfferUpdated();
-      }, 500);
-    } catch (err: any) {
-      console.error('Error rejecting offer:', err);
-      setError(err.response?.data?.error || 'Failed to reject offer');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Note: Offer approval/rejection is handled by HR Managers through the HR Dashboard
+  // Recruiters can only view pending approval status and send approved offers
 
   const handleWithdrawOffer = async () => {
     if (!window.confirm('Are you sure you want to withdraw this offer?')) {
@@ -314,7 +266,6 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
   };
 
   const canSend = currentOffer.status === 'approved';
-  const canApprove = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval';
   const canEdit = currentOffer.status === 'draft' || currentOffer.status === 'pending_approval' || currentOffer.status === 'negotiating';
   const canWithdraw = currentOffer.status === 'sent' || currentOffer.status === 'negotiating';
   const canRecordResponse = currentOffer.status === 'sent';
@@ -644,30 +595,16 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                     </Button>
                   </Tooltip>
                 )}
-                {canApprove && (
-                  <Tooltip title="Approve this offer for sending">
-                    <Button
-                      variant="contained"
-                      color="success"
-                      startIcon={<CheckCircleIcon />}
-                      onClick={handleApproveOffer}
-                      disabled={loading}
-                    >
-                      Approve
-                    </Button>
-                  </Tooltip>
+                {/* Show pending approval message for recruiters - approval is done by HR Managers */}
+                {currentOffer.status === 'pending_approval' && (
+                  <Alert severity="info" sx={{ py: 0.5 }}>
+                    This offer is pending HR Manager approval. Once approved, you can send it to the candidate.
+                  </Alert>
                 )}
-                {canApprove && (
-                  <Tooltip title="Reject this offer">
-                    <Button
-                      color="error"
-                      startIcon={<CancelIcon />}
-                      onClick={handleRejectOffer}
-                      disabled={loading}
-                    >
-                      Reject
-                    </Button>
-                  </Tooltip>
+                {currentOffer.status === 'rejected' && (
+                  <Alert severity="error" sx={{ py: 0.5 }}>
+                    This offer was rejected by HR. Please review the feedback and create a new offer if needed.
+                  </Alert>
                 )}
                 {canSend && (
                   <Tooltip title="Send offer to candidate">
