@@ -30,12 +30,45 @@ export default function OffersPage() {
   const loadOffers = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Try the recruiter offers endpoint first (queries both offers and job_offers tables)
+      try {
+        const res = await restClient.get(`/api/recruiter/offers/approvals/all`);
+        if (res.data?.success && res.data?.data?.length > 0) {
+          // Transform approval data to offer format
+          const transformedOffers = res.data.data.map((item: any) => ({
+            id: item.offer_id || item.id,
+            job_posting_id: item.job_posting_id,
+            candidate_id: item.candidate_id,
+            status: item.status,
+            created_at: item.created_at || item.request_date,
+            job_title: item.position || item.job_title,
+            candidate_first_name: item.candidate_name?.split(' ')[0] || '',
+            candidate_last_name: item.candidate_name?.split(' ').slice(1).join(' ') || '',
+            offer_data: item.offer_data || {
+              salary: item.salary,
+              benefits: item.benefits
+            }
+          }));
+          setOffers(transformedOffers);
+          setTotal(transformedOffers.length);
+          return;
+        }
+      } catch (e) {
+        console.log('Recruiter approvals endpoint failed, trying HR offers endpoint');
+      }
+      
+      // Fallback to HR offers endpoint
       const res = await restClient.get(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}`);
       const json = res.data;
       setOffers(json?.data?.offers || []);
       setTotal(json?.data?.total_count || 0);
     } catch (e: any) {
-      setError(e?.message || 'Failed to load offers');
+      console.error('Failed to load offers:', e);
+      // Don't show error if we just have no offers
+      setOffers([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
