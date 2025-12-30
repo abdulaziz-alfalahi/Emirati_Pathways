@@ -1174,11 +1174,70 @@ def get_all_offer_approvals():
         query += " ORDER BY oar.created_at DESC"
         
         results = execute_query(query, tuple(params) if params else None) or []
+        logger.info(f"Found {len(results)} approvals from offer_approval_requests table")
+        
+        # If no results from approval_requests table, fallback to offers table
+        if not results:
+            logger.info("No approval requests found, falling back to offers table")
+            fallback_query = """
+                SELECT 
+                    o.id as approval_id,
+                    o.id as offer_id,
+                    o.job_posting_id as jd_id,
+                    o.candidate_id,
+                    o.recruiter_id,
+                    o.offer_data->>'position_title' as position_title,
+                    (o.offer_data->>'salary_amount')::numeric as salary_amount,
+                    COALESCE(o.offer_data->>'salary_currency', 'AED') as salary_currency,
+                    o.status,
+                    NULL as approved_by,
+                    o.updated_at as approved_at,
+                    NULL as rejection_reason,
+                    NULL as comments,
+                    o.created_at as requested_at,
+                    o.created_at,
+                    u.first_name as candidate_first_name,
+                    u.last_name as candidate_last_name,
+                    COALESCE(r.first_name, o.offer_data->>'recruiter_name', 'Recruiter') as recruiter_first_name,
+                    COALESCE(r.last_name, '') as recruiter_last_name,
+                    COALESCE(jd.title, o.offer_data->>'position_title') as job_title,
+                    o.offer_data
+                FROM offers o
+                LEFT JOIN users u ON o.candidate_id = u.id
+                LEFT JOIN users r ON o.recruiter_id = r.id AND o.recruiter_id != o.candidate_id
+                LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
+                WHERE 1=1
+            """
+            fallback_params = []
+            
+            if status:
+                # Map status for offers table
+                if status == 'pending':
+                    fallback_query += " AND o.status IN ('pending_approval', 'pending', 'draft')"
+                else:
+                    fallback_query += " AND o.status = %s"
+                    fallback_params.append(status)
+            
+            if recruiter_id:
+                fallback_query += " AND o.recruiter_id = %s"
+                fallback_params.append(int(recruiter_id))
+            
+            fallback_query += " ORDER BY o.created_at DESC"
+            
+            results = execute_query(fallback_query, tuple(fallback_params) if fallback_params else None) or []
+            logger.info(f"Found {len(results)} approvals from offers table fallback")
         
         # Format the results
         approvals = []
         for row in results:
             approval = dict(row)
+            # Parse offer_data if present
+            if approval.get('offer_data'):
+                if isinstance(approval['offer_data'], str):
+                    try:
+                        approval['offer_data'] = json.loads(approval['offer_data'])
+                    except:
+                        pass
             for field in ['requested_at', 'created_at', 'approved_at']:
                 if approval.get(field):
                     approval[field] = approval[field].isoformat() if hasattr(approval[field], 'isoformat') else str(approval[field])
