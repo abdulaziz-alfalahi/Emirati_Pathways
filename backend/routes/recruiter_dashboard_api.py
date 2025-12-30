@@ -776,6 +776,17 @@ def create_offer_legacy():
             benefits_str = str(benefits) if benefits else ''
         
         # Build offer_data for the main offers table
+        # Get recruiter name from request or lookup from database
+        recruiter_name = data.get('recruiter_name', '')
+        if not recruiter_name and recruiter_id:
+            try:
+                user_query = "SELECT first_name, last_name FROM users WHERE id = %s"
+                user_result = execute_query(user_query, (recruiter_id,), fetch_one=True)
+                if user_result:
+                    recruiter_name = f"{user_result.get('first_name', '')} {user_result.get('last_name', '')}".strip()
+            except Exception as e:
+                logger.warning(f"Failed to lookup recruiter name: {e}")
+        
         offer_data = {
             'position_title': position_title,
             'salary_amount': salary_amount,
@@ -787,7 +798,9 @@ def create_offer_legacy():
             'probation_period_months': data.get('probation_period_months', 3),
             'work_location': data.get('work_location', ''),
             'notes': notes,
-            'shortlist_id': data.get('shortlist_id')
+            'shortlist_id': data.get('shortlist_id'),
+            'recruiter_name': recruiter_name,
+            'recruiter_id': recruiter_id
         }
         
         # Check if approval is required (default: yes)

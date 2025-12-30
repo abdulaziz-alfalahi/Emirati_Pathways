@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import {
   Dialog,
   DialogTitle,
@@ -60,6 +61,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   onOfferCreated,
   preselectedCandidate,
 }) => {
+  const { user } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -181,7 +183,8 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         jd_id: jdId,
         shortlist_id: selectedCandidate.shortlist_id,
         candidate_id: selectedCandidate.candidate_id,
-        recruiter_id: 'recruiter_001', // TODO: Get from auth context
+        recruiter_id: user?.id || 21, // Get from auth context
+        recruiter_name: user?.full_name || user?.first_name ? `${user?.first_name || ''} ${user?.last_name || ''}`.trim() : 'Recruiter', // Store recruiter name for display
         position_title: positionTitle,
         salary_amount: parseFloat(salaryAmount),
         salary_currency: salaryCurrency,
