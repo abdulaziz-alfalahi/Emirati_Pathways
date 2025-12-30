@@ -357,15 +357,10 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                onBlur={(e) => setStartDate(e.target.value)}
                 required
                 InputLabelProps={{ shrink: true }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <CalendarIcon />
-                    </InputAdornment>
-                  ),
-                }}
+                helperText="Select the proposed start date"
               />
             </Grid>
             <Grid item xs={12} md={6}>

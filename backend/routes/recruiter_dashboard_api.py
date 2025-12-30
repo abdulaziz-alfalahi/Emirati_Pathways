@@ -303,16 +303,81 @@ def create_jd_enhanced():
 @recruiter_dashboard_bp.route('/jd/list', methods=['GET'])
 @optional_auth
 def get_jd_list_enhanced():
-    """Get list of job descriptions with fallback"""
+    """Get list of job descriptions from database"""
     try:
+        # Try to get from job_postings table first
+        job_descriptions = []
+        
+        try:
+            conn = get_db_connection()
+            if conn:
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                
+                # Query job_postings table (newer table with recruiter jobs)
+                cur.execute("""
+                    SELECT 
+                        jd_id as id,
+                        jd_id,
+                        title,
+                        COALESCE(company_id, 'Company') as company,
+                        location,
+                        status,
+                        COALESCE(application_count, 0) as applications,
+                        created_at as created,
+                        description,
+                        requirements,
+                        responsibilities,
+                        benefits,
+                        salary_range_min,
+                        salary_range_max,
+                        employment_type,
+                        experience_level
+                    FROM job_postings
+                    WHERE status != 'deleted'
+                    ORDER BY created_at DESC
+                    LIMIT 50
+                """)
+                
+                rows = cur.fetchall()
+                for row in rows:
+                    job_descriptions.append({
+                        'id': row['id'],
+                        'jd_id': row['jd_id'],
+                        'title': row['title'],
+                        'company': row['company'],
+                        'location': row['location'],
+                        'status': row['status'] or 'active',
+                        'applications': row['applications'],
+                        'created': row['created'].isoformat() if row['created'] else None,
+                        'basic_info': {
+                            'title': row['title'],
+                            'company': row['company'],
+                            'location': row['location'],
+                            'employment_type': row['employment_type'],
+                            'experience_level': row['experience_level']
+                        },
+                        'description': row['description'],
+                        'requirements': row['requirements'],
+                        'responsibilities': row['responsibilities'],
+                        'benefits': row['benefits'],
+                        'salary_range_min': float(row['salary_range_min']) if row['salary_range_min'] else None,
+                        'salary_range_max': float(row['salary_range_max']) if row['salary_range_max'] else None
+                    })
+                
+                cur.close()
+                conn.close()
+                
+                logger.info(f"Found {len(job_descriptions)} job postings from database")
+        except Exception as db_error:
+            logger.warning(f"Database query failed: {db_error}, using fallback")
+        
+        # Return results in the format expected by frontend
         return jsonify({
             'success': True,
-            'data': [
-                {'id': 'jd_001', 'title': 'Software Engineer', 'company': 'Emirates Tech', 'status': 'active', 'applications': 45, 'created': '2025-01-15'},
-                {'id': 'jd_002', 'title': 'Product Manager', 'company': 'Dubai Innovation', 'status': 'active', 'applications': 32, 'created': '2025-01-10'},
-                {'id': 'jd_003', 'title': 'Data Analyst', 'company': 'ADNOC', 'status': 'active', 'applications': 28, 'created': '2025-01-08'}
-            ]
+            'job_descriptions': job_descriptions,
+            'count': len(job_descriptions)
         })
+        
     except Exception as e:
         logger.error(f"Failed to get JD list: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
