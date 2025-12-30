@@ -86,9 +86,10 @@ export const AVAILABLE_ROLES = [
 // Role mapping for dashboard routing
 const ROLE_DASHBOARD_MAP: Record<string, string> = {
   job_seeker: '/candidate-dashboard',
-  hr_recruiter: '/recruiter',
-  hr_manager: '/recruiter', // Legacy support
-  recruiter: '/recruiter', // Legacy support
+  candidate: '/candidate-dashboard', // Legacy support
+  hr_recruiter: '/recruiter-dashboard',
+  hr_manager: '/hr-dashboard',
+  recruiter: '/recruiter-dashboard', // Legacy support
   educator: '/educator-dashboard',
   mentor: '/mentor-dashboard',
   assessor: '/assessor-dashboard',
