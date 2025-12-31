@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockAuthService, TEST_USERS } from '@/services/mockAuthService';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const MockLogin: React.FC = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuth();  // Get setUser from AuthContext
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('+971 ');
   const [otp, setOtp] = useState('');
@@ -51,6 +53,7 @@ const MockLogin: React.FC = () => {
       const result = await MockAuthService.verifyOTP(phoneNumber, otp);
 
       if (result.success && result.user) {
+        let finalUser = result.user;
 
         // 2. Perform REAL backend login to get valid JWT
         try {
@@ -71,7 +74,7 @@ const MockLogin: React.FC = () => {
               // Determine which user object to store - merge them if needed
               // Priority to backend user, but keep frontend props if needed
               const realUser = loginData.data.user;
-              const finalUser = { ...result.user, ...realUser, id: realUser.id }; // Ensure ID matches backend
+              finalUser = { ...result.user, ...realUser, id: realUser.id }; // Ensure ID matches backend
 
               localStorage.setItem('access_token', loginData.data.access_token);
               // localStorage.setItem('refresh_token', loginData.data.refresh_token); // If available
@@ -86,6 +89,10 @@ const MockLogin: React.FC = () => {
         } catch (backendErr) {
           console.error("Failed to connect to backend auth:", backendErr);
         }
+
+        // 3. Update AuthContext with the user data (this is the key fix!)
+        setUser(finalUser);
+        console.log("✅ AuthContext updated with user:", finalUser.email);
 
         const dashboardRoute = MockAuthService.getDashboardRoute(result.user.user_type);
         navigate(dashboardRoute);
@@ -266,4 +273,3 @@ const MockLogin: React.FC = () => {
 };
 
 export default MockLogin;
-

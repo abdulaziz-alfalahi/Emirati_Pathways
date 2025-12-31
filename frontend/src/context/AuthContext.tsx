@@ -37,6 +37,7 @@ interface AuthContextType {
   signUp: (userData: any) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUser: (user: User | null) => void;  // New method for direct user state updates
   getUserRole: () => string | null;
   hasRole: (role: string) => boolean;
 }
@@ -48,7 +49,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is authenticated
@@ -57,6 +58,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Initialize auth state on mount
   useEffect(() => {
     initializeAuth();
+  }, []);
+
+  // Listen for storage events to sync auth state across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'access_token') {
+        // Re-initialize auth when storage changes
+        initializeAuth();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const initializeAuth = async () => {
@@ -68,13 +82,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Try to get user from localStorage first
         const storedUser = authService.getUser();
         if (storedUser) {
-          setUser(storedUser);
+          setUserState(storedUser);
         } else {
           // If no stored user, try to fetch from API
           try {
             const profile = await authService.getProfile();
             if (profile.success && profile.data) {
-              setUser(profile.data);
+              setUserState(profile.data);
               localStorage.setItem('user', JSON.stringify(profile.data));
             }
           } catch (error) {
@@ -83,6 +97,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             await signOut();
           }
         }
+      } else {
+        // No valid auth, clear user state
+        setUserState(null);
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
@@ -103,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Store user data
         const userData = response.data.user;
-        setUser(userData);
+        setUserState(userData);
         localStorage.setItem('user', JSON.stringify(userData));
         
         console.log('User signed in successfully:', userData);
@@ -156,14 +173,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Clear local state
-      setUser(null);
+      setUserState(null);
       authService.clearAuth();
       
       console.log('User signed out successfully');
     } catch (error) {
       console.error('Sign out error:', error);
       // Still clear local state on error
-      setUser(null);
+      setUserState(null);
       authService.clearAuth();
     } finally {
       setIsLoading(false);
@@ -175,12 +192,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authService.isAuthenticated()) {
         const profile = await authService.getProfile();
         if (profile.success && profile.data) {
-          setUser(profile.data);
+          setUserState(profile.data);
           localStorage.setItem('user', JSON.stringify(profile.data));
         }
       }
     } catch (error) {
       console.error('Refresh user error:', error);
+    }
+  };
+
+  // Direct user state setter for MockLogin and other auth flows
+  const setUser = (newUser: User | null) => {
+    setUserState(newUser);
+    if (newUser) {
+      localStorage.setItem('user', JSON.stringify(newUser));
     }
   };
 
@@ -226,6 +251,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signOut,
     refreshUser,
+    setUser,
     getUserRole,
     hasRole,
   };
