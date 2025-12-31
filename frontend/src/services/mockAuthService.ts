@@ -286,10 +286,29 @@ export class MockAuthService {
   }
 
   static getCurrentUser(): MockUser | null {
+    // Always read from localStorage to ensure we have the latest user data
+    const saved = localStorage.getItem(this.STORAGE_KEY);
+    if (saved) {
+      try {
+        this.currentUser = JSON.parse(saved);
+      } catch (error) {
+        console.warn('Failed to parse saved mock user:', error);
+      }
+    }
     return this.currentUser;
   }
 
   static isAuthenticated(): boolean {
+    // Check localStorage for user data
+    const saved = localStorage.getItem(this.STORAGE_KEY);
+    if (saved) {
+      try {
+        this.currentUser = JSON.parse(saved);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
     return this.currentUser !== null;
   }
 
