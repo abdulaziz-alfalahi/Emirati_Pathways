@@ -533,7 +533,8 @@ def create_job_posting():
             compliance_result = UAEComplianceChecker.check_job_posting_compliance(data)
             
             # Prepare job posting data
-            job_id = str(uuid.uuid4())
+            # Generate jd_id for the job posting (required field)
+            jd_id = f"jd_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
             
             # Parse dates
             application_deadline = None
@@ -557,20 +558,27 @@ def create_job_posting():
                         'message': 'Invalid expires_at format. Use YYYY-MM-DD'
                     }), 400
             
-            # Insert job posting
+            # Insert job posting - using actual table schema
+            # Table has: id (auto-increment INTEGER), jd_id, recruiter_id, company_id, title, etc.
+            # Note: remote_option instead of remote_work_allowed
             cursor.execute("""
                 INSERT INTO job_postings (
-                    id, company_id, created_by, title, description, requirements,
+                    jd_id, recruiter_id, company_id, created_by, title, description, requirements,
                     responsibilities, benefits, salary_range_min, salary_range_max,
-                    currency, location, remote_work_allowed, employment_type,
+                    currency, location, remote_option, employment_type,
                     experience_level, status, priority_level, application_deadline,
                     expires_at, uae_compliance_checked, emiratization_target,
                     visa_sponsorship_available, tags, seo_keywords
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 ) RETURNING *
             """, (
-                job_id, company_id, current_user_id, data['title'], data['description'],
+                jd_id,
+                str(current_user_id),  # recruiter_id as varchar
+                str(company_id),  # company_id as varchar
+                current_user_id,  # created_by as integer
+                data['title'], 
+                data['description'],
                 json.dumps(data.get('requirements', {})),
                 json.dumps(data.get('responsibilities', [])),
                 json.dumps(data.get('benefits', [])),
@@ -578,7 +586,7 @@ def create_job_posting():
                 data.get('salary_range_max'),
                 data.get('currency', 'AED'),
                 data.get('location'),
-                data.get('remote_work_allowed', False),
+                data.get('remote_option', data.get('remote_work_allowed', False)),  # Support both field names
                 data.get('employment_type', 'full-time'),
                 data.get('experience_level', 'mid'),
                 data.get('status', 'draft'),
