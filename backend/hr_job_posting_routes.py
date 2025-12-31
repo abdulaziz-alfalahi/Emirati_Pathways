@@ -266,18 +266,46 @@ def get_job_postings():
             
             # Get job postings with application counts
             # Note: job_postings table uses jd_id as primary key and recruiter_id for creator
+            # Use subquery to avoid GROUP BY issues with PostgreSQL
             cursor.execute(f"""
                 SELECT 
-                    jp.*,
-                    COALESCE(jp.company_id, 'Unknown Company') as company_name,
+                    jp.jd_id,
+                    jp.title,
+                    jp.description,
+                    jp.company_id,
+                    jp.company,
+                    jp.location,
+                    jp.salary_min,
+                    jp.salary_max,
+                    jp.salary_currency,
+                    jp.employment_type,
+                    jp.experience_level,
+                    jp.status,
+                    jp.requirements,
+                    jp.responsibilities,
+                    jp.benefits,
+                    jp.tags,
+                    jp.recruiter_id,
+                    jp.created_at,
+                    jp.updated_at,
+                    jp.expires_at,
+                    jp.is_emiratization_target,
+                    jp.emiratization_percentage,
+                    COALESCE(jp.company_id, jp.company, 'Unknown Company') as company_name,
                     COALESCE(u.first_name || ' ' || u.last_name, 'Unknown') as created_by_name,
-                    COUNT(ja.id) as application_count,
-                    COUNT(CASE WHEN ja.status = 'submitted' THEN 1 END) as new_applications
+                    COALESCE(app_counts.application_count, 0) as application_count,
+                    COALESCE(app_counts.new_applications, 0) as new_applications
                 FROM job_postings jp
                 LEFT JOIN users u ON jp.recruiter_id::text = u.id::text
-                LEFT JOIN job_applications ja ON jp.jd_id::text = ja.job_id::text
+                LEFT JOIN (
+                    SELECT 
+                        job_id,
+                        COUNT(*) as application_count,
+                        COUNT(CASE WHEN status = 'submitted' THEN 1 END) as new_applications
+                    FROM job_applications
+                    GROUP BY job_id
+                ) app_counts ON jp.jd_id::text = app_counts.job_id::text
                 {where_clause}
-                GROUP BY jp.jd_id, u.first_name, u.last_name
                 ORDER BY jp.created_at DESC
                 LIMIT %s OFFSET %s
             """, params + [limit, offset])
