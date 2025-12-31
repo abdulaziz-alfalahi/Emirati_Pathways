@@ -4084,6 +4084,14 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"Failed to register interview routes: {e}")
 
+    # HR Interview Scheduling Routes
+    try:
+        from hr_interview_scheduling_routes import hr_interview_bp
+        app.register_blueprint(hr_interview_bp)
+        logger.info("✅ HR Interview Scheduling routes registered")
+    except Exception as e:
+        logger.error(f"Failed to register HR interview scheduling routes: {e}")
+
     # Video Interview Routes (AI-Powered System)
     try:
         from video_interview_routes import video_interview_bp
