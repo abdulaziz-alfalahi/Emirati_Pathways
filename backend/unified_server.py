@@ -434,6 +434,14 @@ try:
 except ImportError as e:
     logger.warning(f"⚠️ User Activity API Blueprint not available: {e}")
 
+# Register HR Profile Management Blueprint
+try:
+    from hr_profile_management_routes import hr_profile_bp
+    app.register_blueprint(hr_profile_bp)
+    logger.info("✅ HR Profile Management Blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ HR Profile Management Blueprint not available: {e}")
+
 
 # Database configuration
 DATABASE_CONFIG = {
