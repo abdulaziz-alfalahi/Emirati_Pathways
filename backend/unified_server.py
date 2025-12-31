@@ -1620,6 +1620,67 @@ def login():
             'message': 'Authentication failed due to system error'
         }), 500
 
+@app.route('/api/auth/dev-login', methods=['POST'])
+def dev_login():
+    """
+    Development Login Endpoint
+    Creates a valid JWT token for testing purposes without requiring password.
+    This endpoint should be disabled in production.
+    """
+    try:
+        data = request.get_json()
+        
+        user_id = data.get('user_id')
+        email = data.get('email')
+        role = data.get('role', 'candidate')
+        
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'user_id is required'
+            }), 400
+        
+        # Create access token with additional claims
+        from flask_jwt_extended import create_access_token, create_refresh_token
+        
+        additional_claims = {
+            'role': role,
+            'email': email or f'user_{user_id}@dev.local'
+        }
+        
+        access_token = create_access_token(
+            identity=str(user_id),
+            additional_claims=additional_claims
+        )
+        refresh_token = create_refresh_token(
+            identity=str(user_id),
+            additional_claims=additional_claims
+        )
+        
+        logger.info(f"Dev login successful for user_id={user_id}, role={role}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Development login successful',
+            'data': {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'user': {
+                    'id': user_id,
+                    'email': email,
+                    'role': role,
+                    'user_type': role
+                }
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Dev login error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Dev login failed: {str(e)}'
+        }), 500
+
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     """Register a new UAE National user"""
