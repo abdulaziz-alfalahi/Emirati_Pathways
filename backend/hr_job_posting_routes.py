@@ -236,7 +236,7 @@ def get_job_postings():
             
             if company_id:
                 # If user has a company, show company jobs and their own jobs
-                where_conditions.append("(jp.company_id = %s OR jp.recruiter_id = %s)")
+                where_conditions.append("(jp.company_id::text = %s OR jp.recruiter_id::text = %s)")
                 params.extend([company_id, current_user_id])
             elif user_role in ('hr_manager', 'admin'):
                 # HR Managers and Admins can see all job postings when no company is assigned
@@ -246,7 +246,7 @@ def get_job_postings():
                 pass
             else:
                 # Regular recruiters only see their own jobs
-                where_conditions.append("jp.recruiter_id = %s")
+                where_conditions.append("jp.recruiter_id::text = %s")
                 params.append(current_user_id)
             
             if status != 'all':
@@ -274,7 +274,7 @@ def get_job_postings():
                     COUNT(ja.id) as application_count,
                     COUNT(CASE WHEN ja.status = 'submitted' THEN 1 END) as new_applications
                 FROM job_postings jp
-                LEFT JOIN users u ON jp.recruiter_id = u.id
+                LEFT JOIN users u ON jp.recruiter_id::text = u.id::text
                 LEFT JOIN job_applications ja ON jp.jd_id::text = ja.job_id::text
                 {where_clause}
                 GROUP BY jp.jd_id, u.first_name, u.last_name
