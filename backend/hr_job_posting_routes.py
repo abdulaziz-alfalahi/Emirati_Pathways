@@ -223,7 +223,9 @@ def get_job_postings():
                 hr_profile = cursor.fetchone()
                 company_id = hr_profile['company_id'] if hr_profile else None
             except Exception as e:
-                logger.warning(f"Could not fetch hr_profile: {e}")
+                # Rollback the failed transaction and continue without company filter
+                conn.rollback()
+                logger.warning(f"Could not fetch hr_profile (table may not exist): {e}")
             
             # Get user role from JWT claims
             user_role = claims.get('role', '') if claims else ''
@@ -234,7 +236,7 @@ def get_job_postings():
             
             if company_id:
                 # If user has a company, show company jobs and their own jobs
-                where_conditions.append("(jp.company_id = %s OR jp.created_by = %s)")
+                where_conditions.append("(jp.company_id = %s OR jp.recruiter_id = %s)")
                 params.extend([company_id, current_user_id])
             elif user_role in ('hr_manager', 'admin'):
                 # HR Managers and Admins can see all job postings when no company is assigned
@@ -244,7 +246,7 @@ def get_job_postings():
                 pass
             else:
                 # Regular recruiters only see their own jobs
-                where_conditions.append("jp.created_by = %s")
+                where_conditions.append("jp.recruiter_id = %s")
                 params.append(current_user_id)
             
             if status != 'all':
@@ -263,19 +265,19 @@ def get_job_postings():
                 where_clause = ""  # No filter for HR Managers/Admins
             
             # Get job postings with application counts
+            # Note: job_postings table uses jd_id as primary key and recruiter_id for creator
             cursor.execute(f"""
                 SELECT 
                     jp.*,
-                    c.name as company_name,
-                    u.first_name || ' ' || u.last_name as created_by_name,
+                    COALESCE(jp.company_id, 'Unknown Company') as company_name,
+                    COALESCE(u.first_name || ' ' || u.last_name, 'Unknown') as created_by_name,
                     COUNT(ja.id) as application_count,
-                    COUNT(CASE WHEN ja.application_status = 'submitted' THEN 1 END) as new_applications
+                    COUNT(CASE WHEN ja.status = 'submitted' THEN 1 END) as new_applications
                 FROM job_postings jp
-                LEFT JOIN companies c ON jp.company_id::text = c.id::text
-                LEFT JOIN users u ON jp.created_by = u.id
-                LEFT JOIN job_applications ja ON jp.id::text = ja.job_id::text
+                LEFT JOIN users u ON jp.recruiter_id = u.id
+                LEFT JOIN job_applications ja ON jp.jd_id::text = ja.job_id::text
                 {where_clause}
-                GROUP BY jp.id, c.name, u.first_name, u.last_name
+                GROUP BY jp.jd_id, u.first_name, u.last_name
                 ORDER BY jp.created_at DESC
                 LIMIT %s OFFSET %s
             """, params + [limit, offset])
@@ -285,7 +287,7 @@ def get_job_postings():
             # Get total count
             count_where = where_clause if where_clause else ""
             cursor.execute(f"""
-                SELECT COUNT(DISTINCT jp.id)
+                SELECT COUNT(DISTINCT jp.jd_id)
                 FROM job_postings jp
                 {count_where}
             """, params)
