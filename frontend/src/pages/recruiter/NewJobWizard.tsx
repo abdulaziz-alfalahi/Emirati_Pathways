@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { JobPostStrengthMeter } from '@/components/recruiter/job-wizard/JobPostStrengthMeter';
 import { Sparkles, Wand2 } from 'lucide-react';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+const API = (p: string) => p;  // Use relative URLs for deployed environment
 
 // Smart Defaults Dictionary
 const SMART_DEFAULTS: Record<string, any> = {
@@ -69,7 +69,7 @@ export default function NewJobWizard() {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   // Auth header
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
+  const token = localStorage.getItem('access_token') || (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   // Load from localStorage (autosave)
