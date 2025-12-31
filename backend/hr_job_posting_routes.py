@@ -217,18 +217,33 @@ def get_job_postings():
         
         try:
             # Try to get company ID, but don't hard fail if missing
-            cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
-            hr_profile = cursor.fetchone()
-            company_id = hr_profile['company_id'] if hr_profile else None
+            company_id = None
+            try:
+                cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+                hr_profile = cursor.fetchone()
+                company_id = hr_profile['company_id'] if hr_profile else None
+            except Exception as e:
+                logger.warning(f"Could not fetch hr_profile: {e}")
+            
+            # Get user role from JWT claims
+            user_role = claims.get('role', '') if claims else ''
             
             # Build query
             where_conditions = []
             params = []
             
             if company_id:
+                # If user has a company, show company jobs and their own jobs
                 where_conditions.append("(jp.company_id = %s OR jp.created_by = %s)")
                 params.extend([company_id, current_user_id])
+            elif user_role in ('hr_manager', 'admin'):
+                # HR Managers and Admins can see all job postings when no company is assigned
+                # This allows them to have an overview of all positions
+                logger.info(f"HR Manager/Admin {current_user_id} viewing all job postings")
+                # No filter needed - show all jobs
+                pass
             else:
+                # Regular recruiters only see their own jobs
                 where_conditions.append("jp.created_by = %s")
                 params.append(current_user_id)
             
@@ -241,7 +256,11 @@ def get_job_postings():
                 search_term = f"%{search}%"
                 params.extend([search_term, search_term])
             
-            where_clause = " AND ".join(where_conditions)
+            # Build WHERE clause - handle empty conditions
+            if where_conditions:
+                where_clause = "WHERE " + " AND ".join(where_conditions)
+            else:
+                where_clause = ""  # No filter for HR Managers/Admins
             
             # Get job postings with application counts
             cursor.execute(f"""
@@ -255,7 +274,7 @@ def get_job_postings():
                 LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN users u ON jp.created_by = u.id
                 LEFT JOIN job_applications ja ON jp.id::text = ja.job_id::text
-                WHERE {where_clause}
+                {where_clause}
                 GROUP BY jp.id, c.name, u.first_name, u.last_name
                 ORDER BY jp.created_at DESC
                 LIMIT %s OFFSET %s
@@ -264,10 +283,11 @@ def get_job_postings():
             job_postings = cursor.fetchall()
             
             # Get total count
+            count_where = where_clause if where_clause else ""
             cursor.execute(f"""
                 SELECT COUNT(DISTINCT jp.id)
                 FROM job_postings jp
-                WHERE {where_clause}
+                {count_where}
             """, params)
             
             total_count = cursor.fetchone()['count']
