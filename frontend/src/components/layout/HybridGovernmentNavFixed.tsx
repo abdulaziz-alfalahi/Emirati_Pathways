@@ -17,7 +17,7 @@ interface HybridGovernmentNavProps {
 const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({ 
   showAuthButtons = true, 
   currentPage = '',
-  userRole = '',
+  userRole: propUserRole = '',
   onLanguageToggle,
   currentLanguage = 'en'
 }) => {
@@ -28,6 +28,9 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
   const isRTL = currentLanguage === 'ar';
+  
+  // Get user role from authenticated user, fallback to prop
+  const userRole = user?.role || propUserRole;
 
   const groupKeyMap = useMemo(() => ({
     education: {
@@ -47,6 +50,28 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       desc: 'nav_lifelong_engagement_desc'
     }
   }), []);
+
+  // Function to get human-readable role display names
+  const getRoleDisplayName = (role: string): string => {
+    const roleMap: Record<string, string> = {
+      'candidate': 'Job Seeker',
+      'job_seeker': 'Job Seeker',
+      'hr_recruiter': 'Recruiter',
+      'recruiter': 'Recruiter',
+      'hr_manager': 'HR Manager',
+      'parent': 'Parent',
+      'mentor': 'Mentor',
+      'assessor': 'Assessor',
+      'operator': 'Operator',
+      'admin': 'Administrator',
+      'administrator': 'Administrator',
+      'training_center': 'Training Center',
+      'educational_institution': 'Educational Institution',
+      'government_entity': 'Government Entity',
+      'private_sector': 'Private Sector',
+    };
+    return roleMap[role.toLowerCase()] || role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
 
   const itemKeyByHref: Record<string, { name: string; desc: string }> = {
     '/school-programs': { name: 'nav_item_school_programs', desc: 'nav_item_school_programs_desc' },
@@ -140,12 +165,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   {userRole && (
                     <div className="hidden sm:flex items-center space-x-2">
                       <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
-                      <span className="text-sm text-slate-600 capitalize">
-                        {userRole === 'candidate' ? 'Job Seeker' : userRole}
+                      <span className="text-sm text-slate-600">
+                        {getRoleDisplayName(userRole)}
                       </span>
                     </div>
                   )}
-                  <span className="hidden sm:block text-sm text-slate-700">{t('uae_national', 'UAE National')}</span>
                   <UserMenu />
                 </div>
               ) : showAuthButtons ? (
