@@ -14,6 +14,15 @@ from datetime import datetime
 import json
 import uuid as uuidlib
 
+# Import shared user utilities for consistent user ID handling
+try:
+    from user_utils import get_all_possible_user_uuids, convert_user_id_to_uuid
+    USER_UTILS_AVAILABLE = True
+except ImportError:
+    USER_UTILS_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("user_utils module not available, using inline implementation")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -71,32 +80,37 @@ def get_candidate_cv(user_id):
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Build list of user IDs to try (handles multiple formats)
-        user_ids_to_try = []
-        
-        # 1. Try original user_id if it's a valid UUID
-        try:
-            uuidlib.UUID(str(user_id))
-            user_ids_to_try.append(str(user_id))
-        except ValueError:
-            pass
-        
-        # 2. Convert non-UUID to UUID using uuid5 (same as get_current_user_uuid_inline in unified_server.py)
-        converted_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
-        if converted_uuid not in user_ids_to_try:
-            user_ids_to_try.append(converted_uuid)
-            logger.info(f"Converted user_id '{user_id}' to UUID: {converted_uuid}")
-        
-        # 3. Add placeholder/test UUIDs that might have been used during development
-        # These are common placeholder UUIDs used in test data
-        placeholder_uuids = [
-            '00000000-0000-0000-0000-000000000001',  # Common test user 1
-            '550e8400-e29b-41d4-a716-446655440000',  # Another common test UUID
-        ]
-        for placeholder in placeholder_uuids:
-            if placeholder not in user_ids_to_try:
-                user_ids_to_try.append(placeholder)
-        
-        logger.info(f"Trying user IDs for CV lookup: {user_ids_to_try}")
+        # Use shared user_utils if available for consistency
+        if USER_UTILS_AVAILABLE:
+            user_ids_to_try = get_all_possible_user_uuids(user_id)
+            logger.info(f"Using user_utils - trying user IDs: {user_ids_to_try}")
+        else:
+            # Fallback to inline implementation
+            user_ids_to_try = []
+            
+            # 1. Try original user_id if it's a valid UUID
+            try:
+                uuidlib.UUID(str(user_id))
+                user_ids_to_try.append(str(user_id))
+            except ValueError:
+                pass
+            
+            # 2. Convert non-UUID to UUID using uuid5 (same as get_current_user_uuid_inline in unified_server.py)
+            converted_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            if converted_uuid not in user_ids_to_try:
+                user_ids_to_try.append(converted_uuid)
+                logger.info(f"Converted user_id '{user_id}' to UUID: {converted_uuid}")
+            
+            # 3. Add placeholder/test UUIDs that might have been used during development
+            placeholder_uuids = [
+                '00000000-0000-0000-0000-000000000001',  # Common test user 1
+                '550e8400-e29b-41d4-a716-446655440000',  # Another common test UUID
+            ]
+            for placeholder in placeholder_uuids:
+                if placeholder not in user_ids_to_try:
+                    user_ids_to_try.append(placeholder)
+            
+            logger.info(f"Trying user IDs for CV lookup: {user_ids_to_try}")
         
         # First, try user_cvs table (where CV Builder saves data)
         # This is the primary table used by the modern CV Builder
