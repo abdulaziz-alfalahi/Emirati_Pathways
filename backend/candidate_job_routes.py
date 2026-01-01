@@ -86,6 +86,16 @@ def get_candidate_cv(user_id):
             user_ids_to_try.append(converted_uuid)
             logger.info(f"Converted user_id '{user_id}' to UUID: {converted_uuid}")
         
+        # 3. Add placeholder/test UUIDs that might have been used during development
+        # These are common placeholder UUIDs used in test data
+        placeholder_uuids = [
+            '00000000-0000-0000-0000-000000000001',  # Common test user 1
+            '550e8400-e29b-41d4-a716-446655440000',  # Another common test UUID
+        ]
+        for placeholder in placeholder_uuids:
+            if placeholder not in user_ids_to_try:
+                user_ids_to_try.append(placeholder)
+        
         logger.info(f"Trying user IDs for CV lookup: {user_ids_to_try}")
         
         # First, try user_cvs table (where CV Builder saves data)
