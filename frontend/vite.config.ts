@@ -19,7 +19,9 @@ export default defineConfig({
     cors: true,
     allowedHosts: [
       '2415733d5eb0.ngrok.app',
-      'archdiocesan-complimentarily-marianna.ngrok-free.dev'
+      'archdiocesan-complimentarily-marianna.ngrok-free.dev',
+      '8091-iqd1tsz81mpd1khbnl4mk-8bb5b358.sg1.manus.computer',
+      '.manus.computer'
     ],
     proxy: {
       '/api': {

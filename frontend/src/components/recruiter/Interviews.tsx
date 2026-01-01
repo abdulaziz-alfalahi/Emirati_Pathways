@@ -57,7 +57,8 @@ export default function RecruiterInterviews() {
 
   const fetchJobs = async () => {
     try {
-      const response = await restClient.get('/api/hr/jobs?limit=100&status=active');
+      // Include both 'active' and 'published' status jobs
+      const response = await restClient.get('/api/hr/jobs?limit=100');
       if (response.data.success) {
         setJobs(response.data.data.job_postings || []);
       }
