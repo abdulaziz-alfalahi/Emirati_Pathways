@@ -12,6 +12,15 @@ export default defineConfig({
     global: 'globalThis',
   },
 
+
+  // ESBuild configuration for JSX
+  esbuild: {
+    loader: 'tsx',
+    include: /src\/.*\.[tj]sx?$/,
+    exclude: [],
+  },
+
+
   // Server configuration
   server: {
     port: 8089,
