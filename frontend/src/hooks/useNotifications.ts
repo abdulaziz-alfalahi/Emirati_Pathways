@@ -25,7 +25,24 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      const notificationData = data as Notification[];
+      const notificationData = (data || []).map((n: any) => {
+        let metadata = n.metadata;
+        if (typeof metadata === 'string') {
+          try {
+            metadata = JSON.parse(metadata);
+          } catch (e) {
+            console.error('Failed to parse metadata strings', e);
+            metadata = {};
+          }
+        }
+
+        return {
+          ...n,
+          metadata,
+          link: metadata?.link || n.link || ((metadata?.type === 'bug' || metadata?.type === 'feature') ? '/admin-dashboard?tab=feedback' : undefined),
+          message: n.content || n.message
+        };
+      }) as Notification[];
       setNotifications(notificationData);
       setUnreadCount(notificationData.filter(n => !n.is_read).length);
     } catch (error) {
@@ -52,8 +69,8 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(prev => 
-        prev.map(n => 
+      setNotifications(prev =>
+        prev.map(n =>
           n.id === notificationId ? { ...n, is_read: true } : n
         )
       );
@@ -80,7 +97,7 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => ({ ...n, is_read: true }))
       );
       setUnreadCount(0);

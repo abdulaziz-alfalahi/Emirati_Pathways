@@ -231,216 +231,36 @@ CORS(app, resources={
     }
 })
 
+@app.route('/uploads/<path:filename>')
+def serve_uploads(filename):
+    """Serve uploaded files"""
+    from flask import send_from_directory
+    uploads_dir = os.path.join(os.getcwd(), 'uploads')
+    return send_from_directory(uploads_dir, filename)
+
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Register Recruiter JD Upload Blueprint
+# Initialize Notification System
 try:
-    from recruiter.jd_upload_routes import jd_upload_routes
-    app.register_blueprint(jd_upload_routes)
-    logger.info("✅ Recruiter JD Upload Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Recruiter JD Upload Blueprint not available: {e}")
-
-# Import routes
-from backend.routes.auth_routes import auth_bp
-# from backend.routes.administrator_routes import admin_bp
-# from backend.routes.cv_upload_routes import cv_upload_bp as cv_bp
-# from backend.routes.school_routes import school_bp # Module missing, commenting out
-from backend.routes.growth_routes import growth_bp
-try:
-    from backend.routes.company_team_routes import company_team_bp
-except ImportError:
-    from routes.company_team_routes import company_team_bp
-
-try:
-    from backend.hr_job_posting_routes import hr_job_posting_bp
-except ImportError:
-    from hr_job_posting_routes import hr_job_posting_bp
-
-# Register Blueprints
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-# app.register_blueprint(admin_bp) # Duplicate registration, handled below with init
-# app.register_blueprint(cv_bp) # url_prefix handled in Blueprint
-# app.register_blueprint(school_bp, url_prefix='/api/schools')
-app.register_blueprint(growth_bp) # Routes have hardcoded /api/growth paths
-app.register_blueprint(company_team_bp)
-app.register_blueprint(hr_job_posting_bp)
-app.register_blueprint(hr_offer_bp)
-app.register_blueprint(public_offer_bp)
-app.register_blueprint(candidate_job_bp)
-logger.info("✅ Candidate Job routes registered (prefix: /api/candidate)")
-app.register_blueprint(job_application_bp)
-logger.info("✅ Job Application routes registered")
-
-# Register Statistics routes
-try:
-    from recruiter.statistics_routes import statistics_bp
-    app.register_blueprint(statistics_bp, url_prefix='/api/recruiter/statistics')
-    logger.info("Registered: Statistics routes")
+    from notification_system import create_notification_system
+    notification_system, notification_helpers = create_notification_system(
+        app, 
+        redis_url=os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
+        socketio=socketio
+    )
+    app.notification_system = notification_system
+    app.notification_helpers = notification_helpers
+    logger.info("✅ Notification System initialized with shared SocketIO")
 except Exception as e:
-    logger.error(f"Failed registering Statistics routes: {e}")
+    logger.error(f"Failed to initialize Notification System: {e}")
+    # Initialize basic stubs to prevent crashes if Redis is down/missing
+    app.notification_system = None
+    app.notification_helpers = None
 
-# Register HR Candidate Search routes
-try:
-    from hr_candidate_search_routes import hr_candidate_search_bp
-    app.register_blueprint(hr_candidate_search_bp)
-    logger.info("Registered: HR candidate search routes")
-except Exception as e:
-    logger.error(f"Failed registering HR candidate search routes: {e}")
-
-# Register JD Builder v2 routes
-try:
-    from recruiter.jd_routes_v2 import jd_bp as jd_v2_bp
-    app.register_blueprint(jd_v2_bp)
-    logger.info("Registered: JD Builder v2 routes")
-except Exception as e:
-    logger.error(f"Failed registering JD Builder v2 routes: {e}")
-
-# Register Communication routes
-try:
-    from backend.routes.communication_routes import communication_bp
-    app.register_blueprint(communication_bp)
-    logger.info("Registered: Communication routes")
-except Exception as e:
-    logger.error(f"Failed registering Communication routes: {e}")
-
-# Register Interview Routes (Video)
-try:
-    from backend.routes.interview_routes import interview_bp
-    app.register_blueprint(interview_bp)
-    from backend.services.interview_service import interview_service
-    interview_service.ensure_tables_exist()
-    logger.info("Registered: Interview routes & Tables")
-except Exception as e:
-    logger.error(f"Failed registering Interview routes: {e}")
-
-
-
-# Register Administrator routes
-try:
-    from routes.administrator_routes import admin_bp, init_admin_routes
-    # Initialize admin system with DB config
-    # We need to construct db_config from env
-    admin_db_config = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'database': os.getenv('DB_NAME', 'emirati_journey'),
-        'user': os.getenv('DB_USER', 'emirati_user'),
-        'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-        'port': os.getenv('DB_PORT', 5432)
-    }
-    init_admin_routes(app, admin_db_config)
-    app.register_blueprint(admin_bp)
-    logger.info("Registered: Administrator routes")
-except Exception as e:
-    logger.error(f"Failed registering Administrator routes: {e}")
-
-
-
-# Register HR Dashboard Blueprint
-try:
-    from hr_dashboard_routes import hr_dashboard_bp
-    app.register_blueprint(hr_dashboard_bp)
-    logger.info("✅ HR Dashboard Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ HR Dashboard Blueprint not available: {e}")
-
-# Register Admin Dashboard API Blueprint (dashboard stats, alerts, activity)
-try:
-    from routes.admin_dashboard_api import admin_dashboard_bp
-    app.register_blueprint(admin_dashboard_bp)
-    logger.info("✅ Admin Dashboard API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Admin Dashboard API Blueprint not available: {e}")
-
-# Register Growth Operator API Blueprint
-try:
-    from routes.growth_operator_api import growth_operator_bp
-    app.register_blueprint(growth_operator_bp)
-    logger.info("✅ Growth Operator API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Growth Operator API Blueprint not available: {e}")
-
-# Register Communication API Blueprint
-try:
-    from routes.communication_api import communication_bp
-    app.register_blueprint(communication_bp)
-    logger.info("✅ Communication API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Communication API Blueprint not available: {e}")
-
-# Register Interview Sessions API Blueprint
-try:
-    from routes.interview_sessions_api import interview_sessions_bp
-    app.register_blueprint(interview_sessions_bp)
-    logger.info("✅ Interview Sessions API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Interview Sessions API Blueprint not available: {e}")
-
-# Register HR Dashboard API Blueprint (enhanced endpoints)
-try:
-    from routes.hr_dashboard_api import hr_dashboard_api_bp
-    app.register_blueprint(hr_dashboard_api_bp)
-    logger.info("✅ HR Dashboard API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ HR Dashboard API Blueprint not available: {e}")
-
-# Register Recruiter Dashboard API Blueprint
-try:
-    from routes.recruiter_dashboard_api import recruiter_dashboard_bp
-    app.register_blueprint(recruiter_dashboard_bp)
-    logger.info("✅ Recruiter Dashboard API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Recruiter Dashboard API Blueprint not available: {e}")
-
-# Register Jobs API Blueprint
-try:
-    from routes.jobs_api import jobs_bp, candidate_jobs_bp
-    app.register_blueprint(jobs_bp)
-    app.register_blueprint(candidate_jobs_bp)
-    logger.info("✅ Jobs API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Jobs API Blueprint not available: {e}")
-
-# Register Growth Operator Assignment API Blueprint
-try:
-    from routes.growth_operator_assignment_api import growth_operator_assignment_bp
-    app.register_blueprint(growth_operator_assignment_bp)
-    logger.info("✅ Growth Operator Assignment API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ Growth Operator Assignment API Blueprint not available: {e}")
-
-# Register JD Templates API Blueprint
-try:
-    from routes.jd_templates_api import jd_templates_bp
-    app.register_blueprint(jd_templates_bp)
-    logger.info("✅ JD Templates API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ JD Templates API Blueprint not available: {e}")
-
-# Register User Management API Blueprint
-try:
-    from routes.user_management_api import user_management_bp
-    app.register_blueprint(user_management_bp)
-    logger.info("✅ User Management API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ User Management API Blueprint not available: {e}")
-
-# Register User Activity API Blueprint
-try:
-    from routes.user_activity_api import user_activity_bp
-    app.register_blueprint(user_activity_bp)
-    logger.info("✅ User Activity API Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ User Activity API Blueprint not available: {e}")
-
-# Register HR Profile Management Blueprint
-try:
-    from hr_profile_management_routes import hr_profile_bp
-    app.register_blueprint(hr_profile_bp)
-    logger.info("✅ HR Profile Management Blueprint registered successfully")
-except ImportError as e:
-    logger.warning(f"⚠️ HR Profile Management Blueprint not available: {e}")
+# Register all blueprints via unified registry
+from blueprint_registry import register_all_blueprints
+register_all_blueprints(app)
 
 
 # Database configuration
@@ -4028,7 +3848,7 @@ if __name__ == '__main__':
     # Initialize the unified server
     initialize_unified_server()
     
-    # Prioritize UNIFIED_PORT, then hardcode 5003 to avoid .env PORT=5005 conflict
+    # Prioritize UNIFIED_PORT, then hardcode 5003 to avoid .env default
     port = int(os.getenv('UNIFIED_PORT', 5005))
     
     print("="*80)

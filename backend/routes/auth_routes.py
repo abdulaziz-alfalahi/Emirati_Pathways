@@ -279,6 +279,30 @@ def get_profile():
         # Get profile data
         profile_data = profile.to_dict()
         
+        # Inject secondary_roles by fetching from Auth Manager
+        auth_manager = AuthenticationManager()
+        user_data = auth_manager.get_user_by_id(user_id)
+        if user_data:
+            # Ensure lists are never None
+            profile_data['secondary_roles'] = user_data.get('secondary_roles') or []
+            
+            # Synchronize essential identity fields to ensure frontend has complete context
+            profile_data['id'] = user_data.get('id')
+            profile_data['user_id'] = user_data.get('id') # Support both naming conventions
+            profile_data['role'] = user_data.get('role')
+            profile_data['user_type'] = user_data.get('role')
+            profile_data['email'] = user_data.get('email')
+            profile_data['full_name'] = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip()
+            profile_data['first_name'] = user_data.get('first_name')
+            profile_data['last_name'] = user_data.get('last_name')
+            profile_data['phone'] = user_data.get('phone')
+            
+        # INFO: Ensure user_id is present in profile data to prevent frontend crashes (fallback)
+        if 'id' not in profile_data:
+             profile_data['id'] = user_id
+
+
+        
         # Add UAE working week information from environment variables
         uae_working_days = os.getenv('UAE_WORKING_DAYS', 'Monday,Tuesday,Wednesday,Thursday,Friday').split(',')
         uae_weekend_days = os.getenv('UAE_WEEKEND_DAYS', 'Saturday,Sunday').split(',')
@@ -317,10 +341,18 @@ def get_profile():
         }), 200
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         logger.error(f"Profile retrieval error: {str(e)}")
+        try:
+            with open('backend/profile_error.log', 'w') as f:
+                f.write(f"Error: {str(e)}\nTraceback:\n{error_trace}")
+        except:
+            pass
         return jsonify({
             'success': False,
-            'message': 'Profile retrieval failed'
+            'message': f'Profile retrieval failed: {str(e)}',
+            'debug_trace': error_trace
         }), 500
 
 @auth_bp.route('/profile', methods=['PUT'])
@@ -429,7 +461,8 @@ def get_user_roles():
             'email': user_data['email'],
             'role': user_data.get('role', 'candidate'),
             'user_type': user_data.get('role', 'candidate'),
-            'permissions': _get_role_permissions(user_data.get('role', 'candidate')),
+            'permissions': get_role_permissions(user_data.get('role', 'candidate')),
+            'secondary_roles': user_data.get('secondary_roles', []),
             'is_active': user_data.get('is_active', True),
             'is_verified': user_data.get('is_verified', False)
         }
@@ -446,7 +479,7 @@ def get_user_roles():
             'message': 'Failed to get user roles'
         }), 500
 
-def _get_role_permissions(role: str) -> list:
+def get_role_permissions(role: str) -> list:
     """Get permissions for a given role"""
     role_permissions = {
         'candidate': [
@@ -457,7 +490,24 @@ def _get_role_permissions(role: str) -> list:
             'edit_profile',
             'view_analytics'
         ],
+        'hr_manager': [
+            'view_dashboard',
+            'view_candidates',
+            'post_jobs',
+            'manage_applications',
+            'view_analytics',
+            'conduct_interviews',
+            'manage_team'
+        ],
         'hr_recruiter': [
+            'view_dashboard',
+            'view_candidates',
+            'post_jobs',
+            'manage_applications',
+            'view_analytics',
+            'conduct_interviews'
+        ],
+        'recruiter': [
             'view_dashboard',
             'view_candidates',
             'post_jobs',
@@ -486,12 +536,27 @@ def _get_role_permissions(role: str) -> list:
             'view_analytics',
             'certify_skills'
         ],
+        'growth_operator': [
+            'view_dashboard',
+            'roles.approve_requests',
+            'manage_growth',
+            'view_analytics'
+        ],
         'admin': [
             'view_dashboard',
             'manage_users',
             'manage_system',
             'view_all_analytics',
-            'system_configuration'
+            'system_configuration',
+            'roles.approve_requests'
+        ],
+        'administrator': [ # Alias for admin
+            'view_dashboard',
+            'manage_users',
+            'manage_system',
+            'view_all_analytics',
+            'system_configuration',
+            'roles.approve_requests'
         ]
     }
     
@@ -661,6 +726,9 @@ def dev_login():
              except Exception as seed_err:
                  logger.error(f"Seeding failed: {seed_err}")
         
+        # Fetch full user details to ensure secondary_roles are included
+        full_user_data = auth_manager.get_user_by_id(str(real_user_id))
+        
         return jsonify({
             'success': True,
             'data': {
@@ -668,11 +736,89 @@ def dev_login():
                 'user': {
                     'id': str(real_user_id),
                     'role': role,
-                    'email': email
+                    'email': email,
+                    'user_type': role,
+                    'secondary_roles': full_user_data.get('secondary_roles', []) if full_user_data else [],
+                    'full_name': f"{full_user_data.get('first_name', '')} {full_user_data.get('last_name', '')}".strip() if full_user_data else 'Dev User'
                 }
             }
         }), 200
         
     except Exception as e:
         logger.error(f"Dev login error: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@auth_bp.route('/request-otp', methods=['POST'])
+def request_otp_route():
+    """Request OTP for phone verification"""
+    try:
+        data = request.get_json()
+        phone = data.get('phone')
+        if not phone:
+            return jsonify({'success': False, 'message': 'Phone number required'}), 400
+        
+        auth_manager = AuthenticationManager()
+        # Ensure we call the new method (which we added to the class)
+        # Note: request_otp was added to AuthenticationManager in auth_manager_fixed.py
+        if not hasattr(auth_manager, 'request_otp'):
+             return jsonify({'success': False, 'message': 'OTP system not fully initialized'}), 503
+
+        success, msg, otp = auth_manager.request_otp(phone)
+        
+        if success:
+            # Include debug_otp only in dev environment if needed, but for now we follow the plan
+            response = {'success': True, 'message': msg}
+            if otp: # Magic or Test mode
+                response['debug_otp'] = otp
+            return jsonify(response), 200
+            
+        return jsonify({'success': False, 'message': msg}), 400
+    except Exception as e:
+        logger.error(f"OTP Request Validaton Error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@auth_bp.route('/login-with-otp', methods=['POST'])
+def login_with_otp_route():
+    """Login or Register with OTP"""
+    try:
+        data = request.get_json()
+        phone = data.get('phone')
+        code = data.get('code')
+        if not phone or not code:
+             return jsonify({'success': False, 'message': 'Phone and code required'}), 400
+             
+        auth_manager = AuthenticationManager()
+        
+        if not hasattr(auth_manager, 'authenticate_by_phone'):
+             return jsonify({'success': False, 'message': 'OTP auth not implemented'}), 503
+
+        success, msg, user_data = auth_manager.authenticate_by_phone(phone, code)
+        
+        if success and user_data:
+            # Create tokens
+            # Determine role/user_type
+            identity_role = user_data.get('user_type') or user_data.get('role') or 'candidate'
+            
+            # Ensure ID is string
+            user_id = str(user_data.get('id', ''))
+            
+            access_token = create_access_token(
+                identity=user_id, 
+                additional_claims={'role': identity_role}
+            )
+            refresh_token = create_refresh_token(identity=user_id)
+            
+            return jsonify({
+                'success': True,
+                'message': msg,
+                'data': {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                    'user': user_data
+                }
+            }), 200
+            
+        return jsonify({'success': False, 'message': msg}), 401
+    except Exception as e:
+        logger.error(f"OTP Login Error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500

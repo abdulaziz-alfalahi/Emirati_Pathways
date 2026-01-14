@@ -1,0 +1,18 @@
+DEBUG SQL: 
+                        SELECT i.interview_id as id, i.shortlist_id as application_id, i.recruiter_id as interviewer_id,
+                               i.candidate_id, i.interview_type, 
+                               (i.scheduled_date || ' ' || i.scheduled_time)::timestamp as scheduled_time,
+                               i.duration_minutes, i.status, i.interview_title as title,
+                               i.meeting_link as room_id,
+                               j.id as job_id, j.title as job_title,
+                               u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
+                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
+                        'recruiter_sql' as source
+                        FROM interview_schedules i
+                        LEFT JOIN job_descriptions j ON i.jd_id::text = j.id::text
+                        LEFT JOIN users u1 ON i.candidate_id::text = u1.id::text
+                        LEFT JOIN users u2 ON i.recruiter_id::text = u2.id::text
+                        WHERE status != 'cancelled'
+                     AND (i.recruiter_id = %s OR i.candidate_id = %s OR j.user_id::text = %s)
+DEBUG PARAMS: ['45', '45', '45']
+DEBUG SQL RESULTS: 45

@@ -155,4 +155,13 @@ build/
 dist/
 
 # Local development
-.local/
+
+# Temporary Debug Scripts
+debug_*.py
+fix_*.py
+check_*.py
+inspect_*.py
+
+# Uploads
+uploads/
+

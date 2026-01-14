@@ -597,7 +597,7 @@ def get_candidate_details(candidate_id):
                 SELECT 
                     u.*,
                     COUNT(DISTINCT ja.id) as total_applications,
-                    COUNT(DISTINCT CASE WHEN ja.application_status = 'submitted' THEN ja.id END) as pending_applications,
+                    COUNT(DISTINCT CASE WHEN ja.status = 'submitted' THEN ja.id END) as pending_applications,
                     MAX(ja.submitted_at) as last_application_date,
                     MAX(u.last_login) as last_activity
                 FROM users u
@@ -630,7 +630,7 @@ def get_candidate_details(candidate_id):
                     c.name as company_name
                 FROM job_applications ja
                 LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
-                LEFT JOIN companies c ON jp.company_id::uuid = c.id
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 WHERE ja.candidate_id = %s
                 ORDER BY ja.submitted_at DESC
                 LIMIT 5

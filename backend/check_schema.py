@@ -1,26 +1,40 @@
 
 import psycopg2
 import os
+from dotenv import load_dotenv
 
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password',
-    'port': 5432
-}
+load_dotenv()
 
-def check_schema():
-    conn = psycopg2.connect(**DB_CONFIG)
+# Database connection details
+DB_NAME = os.getenv("DB_NAME", "emirati_pathways_db")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
+try:
+    conn = psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT
+    )
     cursor = conn.cursor()
+
     cursor.execute("""
         SELECT column_name, data_type 
         FROM information_schema.columns 
-        WHERE table_name = 'users'
+        WHERE table_name = 'users';
     """)
-    for col in cursor.fetchall():
-        print(f"Column: {col[0]} ({col[1]})")
+    columns = cursor.fetchall()
+
+    print("Columns in 'users' table:")
+    for col in columns:
+        print(f"- {col[0]} ({col[1]})")
+
+    cursor.close()
     conn.close()
 
-if __name__ == "__main__":
-    check_schema()
+except Exception as e:
+    print(f"Error: {e}")

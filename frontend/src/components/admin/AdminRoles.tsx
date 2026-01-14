@@ -33,7 +33,7 @@ interface Role {
 
 const AVAILABLE_PERMISSIONS = {
     'Users': ['users.view', 'users.create', 'users.edit', 'users.delete'],
-    'Roles': ['roles.view', 'roles.create', 'roles.edit', 'roles.delete'],
+    'Roles': ['roles.view', 'roles.create', 'roles.edit', 'roles.delete', 'roles.approve_requests'],
     'Content': ['content.view', 'content.create', 'content.edit', 'content.delete', 'content.publish'],
     'System': ['system.view_logs', 'system.view_health', 'system.manage_settings']
 };

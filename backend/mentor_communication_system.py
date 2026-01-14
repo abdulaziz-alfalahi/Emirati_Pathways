@@ -53,6 +53,9 @@ class NotificationType(Enum):
     PROGRESS_UPDATE = "progress_update"
     SKILL_ASSESSMENT = "skill_assessment"
     MENTORSHIP_UPDATE = "mentorship_update"
+    INTERVIEW_SCHEDULED = "interview_scheduled"
+    INTERVIEW_RESCHEDULED = "interview_rescheduled"
+    INTERVIEW_CANCELLED = "interview_cancelled"
 
 class NotificationPriority(Enum):
     """Notification priority enumeration"""

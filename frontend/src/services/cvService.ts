@@ -5,7 +5,7 @@
 
 import { authService } from './authService';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003/api';
 
 export interface CVParseResponse {
   success: boolean;
@@ -197,7 +197,7 @@ class CVService {
    */
   async getUserCVs(): Promise<CVParseResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/cv/user-cvs`, {
+      const response = await fetch(`${API_BASE_URL}/cv/list`, {
         method: 'GET',
         headers: authService.getAuthHeaders(),
       });

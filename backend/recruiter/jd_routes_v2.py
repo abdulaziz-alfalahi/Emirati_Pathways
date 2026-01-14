@@ -97,6 +97,8 @@ def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
             'job_level': jd_dict.get('job_level', 'mid'),
             'emirate': jd_dict.get('emirate', ''),
             'city': jd_dict.get('city', ''),
+            'latitude': jd_dict.get('latitude'),
+            'longitude': jd_dict.get('longitude'),
             'remote_option': jd_dict.get('remote_option', False)
         }
         
@@ -161,6 +163,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 job_level VARCHAR(50),
                 emirate VARCHAR(100),
                 city VARCHAR(100),
+                latitude DOUBLE PRECISION,
+                longitude DOUBLE PRECISION,
                 remote_option BOOLEAN DEFAULT FALSE,
                 description TEXT,
                 description_arabic TEXT,
@@ -204,6 +208,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     job_level = %s,
                     emirate = %s,
                     city = %s,
+                    latitude = %s,
+                    longitude = %s,
                     remote_option = %s,
                     description = %s,
                     description_arabic = %s,
@@ -228,6 +234,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('job_level', 'mid'),
                 basic_info.get('emirate', ''),
                 basic_info.get('city', ''),
+                basic_info.get('latitude'),
+                basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
@@ -249,13 +257,13 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 INSERT INTO job_postings (
                     jd_id, recruiter_id, company_id, created_by,
                     title, title_arabic, department, job_type, job_level,
-                    emirate, city, remote_option,
+                    emirate, city, latitude, longitude, remote_option,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -270,6 +278,8 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('job_level', 'mid'),
                 basic_info.get('emirate', ''),
                 basic_info.get('city', ''),
+                basic_info.get('latitude'),
+                basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
@@ -768,13 +778,17 @@ def update_compensation(jd_id):
 def generate_description(jd_id):
     """Generate AI-powered job description"""
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         industry = data.get('industry')
         
         # Retrieve JD from database
         jd_data = _get_jd_from_db(jd_id)
         if not jd_data:
             return jsonify({'error': 'Job description not found'}), 404
+        
+        # Merge basic info from request if provided (ensure latest values used for generation)
+        if 'basic_info' in data:
+            jd_data['basic_info'].update(data['basic_info'])
         
         # Generate description
         generated_description = jd_engine.generate_description_ai(jd_data, industry)
@@ -784,6 +798,7 @@ def generate_description(jd_id):
         return jsonify({
             'success': True,
             'jd_id': jd_id,
+            'description': generated_description,
             'generated_description': generated_description
         })
         
@@ -866,6 +881,8 @@ def match_candidates(jd_id):
                 u.skills,
                 u.preferred_salary_min,
                 u.preferred_salary_max,
+                u.latitude,
+                u.longitude,
                 NULL as cv_url,
                 NULL as linkedin_url,
                 a.status as application_status,
@@ -900,6 +917,8 @@ def match_candidates(jd_id):
                 skills,
                 preferred_salary_min,
                 preferred_salary_max,
+                latitude,
+                longitude,
                 NULL as cv_url,
                 NULL as linkedin_url
             FROM users
@@ -987,6 +1006,35 @@ def match_candidates(jd_id):
                 ai_applicants.append(match)
             else:
                 ai_passive.append(match)
+
+        # Calculate Distances
+        def haversine_distance(lat1, lon1, lat2, lon2):
+            import math
+            if not lat1 or not lon1 or not lat2 or not lon2:
+                return None
+            
+            R = 6371  # Earth radius in km
+            dLat = math.radians(lat2 - lat1)
+            dLon = math.radians(lon2 - lon1)
+            a = math.sin(dLat/2) * math.sin(dLat/2) + \
+                math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
+                math.sin(dLon/2) * math.sin(dLon/2)
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            return round(R * c, 1)
+
+        jd_lat = jd_data.get('basic_info', {}).get('latitude')
+        jd_lon = jd_data.get('basic_info', {}).get('longitude')
+        
+        # Add distance to all matches
+        for match in ai_applicants + ai_passive:
+            cand = match.get('candidate', {})
+            cand_lat = cand.get('latitude')
+            cand_lon = cand.get('longitude')
+            
+            dist = haversine_distance(jd_lat, jd_lon, cand_lat, cand_lon)
+            match['distance_km'] = dist
+            cand['distance_km'] = dist # Add to candidate object too for frontend convenience
+
                 
         # 2. Check for any applicants that were missed by AI (because of limit)
         # If any applicants are missing from ai_applicants, we should ideally score them now.
@@ -1292,7 +1340,7 @@ def save_jd(jd_id):
                 INSERT INTO job_postings (
                     jd_id, recruiter_id, company_id,
                     title, title_arabic, department, job_type, job_level,
-                    emirate, city, remote_option,
+                    emirate, city, latitude, longitude, remote_option,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
@@ -1362,6 +1410,9 @@ def publish_jd(jd_id):
     except Exception as e:
         logger.error(f"Error publishing JD: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+
 
 
 

@@ -7345,3 +7345,1238 @@ JD Requirements: {"skills": ["Communication", "Teamwork"]}
 Required Skills: ['skills']
 Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
 Final Score for 22: 27.22 (AI: 27.22, Rule: 10.0)
+Match called at 2026-01-01 15:51:21.369764
+Candidates count: 6
+JD Title: Senior React Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 40.83 (AI: 40.83, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 25.56 (AI: 25.56, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 19.44, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 28.333333333333332 (AI: 16.67, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.333333333333332 (AI: 10.56, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 7.78, Rule: 23.333333333333332)
+Match called at 2026-01-01 15:55:28.029140
+Candidates count: 6
+JD Title: Senior React Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+Match called at 2026-01-01 16:05:31.269106
+Candidates count: 6
+JD Title: Software Engineer
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 28.06 (AI: 28.06, Rule: 15.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 43.33333333333333 (AI: 36.39, Rule: 43.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 56.39 (AI: 56.39, Rule: 38.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 56.666666666666664 (AI: 36.39, Rule: 56.666666666666664)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 30.56 (AI: 30.56, Rule: 10.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 41.39 (AI: 41.39, Rule: 38.33333333333333)
+Match called at 2026-01-01 18:41:05.592270
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 53.61 (AI: 53.61, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 20.0 (AI: 20.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 20.0 (AI: 20.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 10.28, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 9.44, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 22.78 (AI: 22.78, Rule: 10.0)
+Match called at 2026-01-01 18:46:29.630488
+Candidates count: 6
+JD Title: Senior React Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 48.61 (AI: 48.61, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 27.78 (AI: 27.78, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 11.11, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 28.333333333333332 (AI: 13.33, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.333333333333332 (AI: 16.67, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 9.44, Rule: 23.333333333333332)
+Match called at 2026-01-01 18:57:43.991582
+Candidates count: 6
+JD Title: Senior React Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+Match called at 2026-01-01 19:04:20.338013
+Candidates count: 6
+JD Title: Software Engineer
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 21.67 (AI: 21.67, Rule: 15.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 53.61 (AI: 53.61, Rule: 43.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 53.61 (AI: 53.61, Rule: 38.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 56.666666666666664 (AI: 21.67, Rule: 56.666666666666664)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 28.89 (AI: 28.89, Rule: 10.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 38.33333333333333 (AI: 38.06, Rule: 38.33333333333333)
+Match called at 2026-01-02 01:22:57.355413
+Candidates count: 6
+JD Title: System Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 21.67 (AI: 21.67, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 50.28 (AI: 50.28, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 58.61 (AI: 58.61, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 35.0 (AI: 35.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 28.61 (AI: 28.61, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 39.44 (AI: 39.44, Rule: 10.0)
+Match called at 2026-01-02 02:18:58.259985
+Candidates count: 6
+JD Title: System Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-02 02:21:24.922820
+Candidates count: 6
+JD Title: System Developer
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-02 10:05:12.809979
+Candidates count: 6
+JD Title: Senior Python Developer
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 16.39 (AI: 16.39, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 55.28 (AI: 55.28, Rule: 41.666666666666664)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 30.56 (AI: 30.56, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.89 (AI: 28.89, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 29.17 (AI: 29.17, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 39.17 (AI: 39.17, Rule: 23.333333333333332)
+Match called at 2026-01-02 10:06:21.927007
+Candidates count: 6
+JD Title: Senior Python Developer
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 41.666666666666664 (AI: 0.0, Rule: 41.666666666666664)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+Match called at 2026-01-02 10:06:33.093673
+Candidates count: 6
+JD Title: Senior Python Developer
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 41.666666666666664 (AI: 0.0, Rule: 41.666666666666664)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+Match called at 2026-01-02 10:07:46.747659
+Candidates count: 6
+JD Title: Senior Python Developer
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 41.666666666666664 (AI: 0.0, Rule: 41.666666666666664)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 28.333333333333332 (AI: 0.0, Rule: 28.333333333333332)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "Python", "is_required": true}, {"category": "skills", "description": "Django", "is_required": true}, {"category": "skills", "description": "React", "is_required": true}, {"category": "experience", "description": "5", "is_required": true}]
+Required Skills: ['python', 'django', 'react']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 23.333333333333332 (AI: 0.0, Rule: 23.333333333333332)
+Match called at 2026-01-03 21:33:00.691920
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 10.56, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 18.33 (AI: 18.33, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 22.78 (AI: 22.78, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 22.78 (AI: 22.78, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.33 (AI: 23.33, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 25.56 (AI: 25.56, Rule: 10.0)
+Match called at 2026-01-03 21:33:29.835429
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-03 21:33:59.497636
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-03 21:58:02.845513
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-03 22:06:59.660145
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 24.44 (AI: 24.44, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 15.56 (AI: 15.56, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 5.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 21.94 (AI: 21.94, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 14.44 (AI: 14.44, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 6.11, Rule: 10.0)
+Match called at 2026-01-03 22:08:23.109273
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: []
+Required Skills: []
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-03 22:25:35.681939
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 15.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 11.67 (AI: 11.67, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 11.67, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 21.11 (AI: 21.11, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 25.83 (AI: 25.83, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 20.28 (AI: 20.28, Rule: 10.0)
+Match called at 2026-01-03 22:31:33.660455
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-03 22:31:42.065719
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-04 09:26:35.576004
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 7.22, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 13.33 (AI: 13.33, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 30.0 (AI: 30.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 12.22, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 26.67 (AI: 26.67, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 20.56 (AI: 20.56, Rule: 10.0)
+Match called at 2026-01-04 09:27:11.887461
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 53.61 (AI: 53.61, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 23.89 (AI: 23.89, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 23.06 (AI: 23.06, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 17.5 (AI: 17.5, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 27.78 (AI: 27.78, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 68.33 (AI: 68.33, Rule: 10.0)
+Match called at 2026-01-04 09:30:39.714170
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-04 09:30:48.820204
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-04 09:38:34.884519
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 40.56 (AI: 40.56, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 16.67 (AI: 16.67, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 20.0 (AI: 20.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 24.44 (AI: 24.44, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.89 (AI: 23.89, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 7.78, Rule: 10.0)
+Match called at 2026-01-04 10:18:22.510120
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 53.61 (AI: 53.61, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 16.67 (AI: 16.67, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 20.0 (AI: 20.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 3.33, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 22.78 (AI: 22.78, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 18.89 (AI: 18.89, Rule: 10.0)
+Match called at 2026-01-04 10:46:13.195391
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 52.22 (AI: 52.22, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 23.06 (AI: 23.06, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 20.0 (AI: 20.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 24.44 (AI: 24.44, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 27.78 (AI: 27.78, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 9.17, Rule: 10.0)
+Match called at 2026-01-04 20:55:44.208736
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 53.61 (AI: 53.61, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 24.44 (AI: 24.44, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 20.0 (AI: 20.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 3.33, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 25.56 (AI: 25.56, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 25.56 (AI: 25.56, Rule: 10.0)
+Match called at 2026-01-05 17:03:34.690569
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 53.61 (AI: 53.61, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 18.89 (AI: 18.89, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 11.67 (AI: 11.67, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 3.33, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 27.22 (AI: 27.22, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 22.78 (AI: 22.78, Rule: 10.0)
+Match called at 2026-01-05 20:33:08.868092
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 5.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 3.33, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 18.89 (AI: 18.89, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 21.11 (AI: 21.11, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 23.89 (AI: 23.89, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.28 (AI: 10.28, Rule: 10.0)
+Match called at 2026-01-05 20:56:34.239059
+Candidates count: 6
+JD Title: Executive Licensing Inspector
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 7.22, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 4.44, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 20.56 (AI: 20.56, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 8.89, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 24.44 (AI: 24.44, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', '[ai] relevant degree or equivalent experience', '[ai] strong communication skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.56 (AI: 10.56, Rule: 10.0)
+Match called at 2026-01-08 10:31:44.276340
+Candidates count: 6
+JD Title: Marketing Specialist
+JD Requirements: {"skills": ["Communication", "Teamwork"]}
+Required Skills: ['skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 9.17, Rule: 15.0)
+JD Requirements: {"skills": ["Communication", "Teamwork"]}
+Required Skills: ['skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 18.89 (AI: 18.89, Rule: 15.0)
+JD Requirements: {"skills": ["Communication", "Teamwork"]}
+Required Skills: ['skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 17.78 (AI: 17.78, Rule: 10.0)
+JD Requirements: {"skills": ["Communication", "Teamwork"]}
+Required Skills: ['skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 23.33 (AI: 23.33, Rule: 15.0)
+JD Requirements: {"skills": ["Communication", "Teamwork"]}
+Required Skills: ['skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 36.11 (AI: 36.11, Rule: 10.0)
+JD Requirements: {"skills": ["Communication", "Teamwork"]}
+Required Skills: ['skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 30.0 (AI: 30.0, Rule: 10.0)
+Match called at 2026-01-09 09:23:17.167437
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 58.61 (AI: 58.61, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 19.44 (AI: 19.44, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 15.0 (AI: 15.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 14.44, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 24.44 (AI: 24.44, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 22.22 (AI: 22.22, Rule: 10.0)
+Match called at 2026-01-10 11:24:20.934275
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 49.72 (AI: 49.72, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 20.83 (AI: 20.83, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 23.06 (AI: 23.06, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.56 (AI: 15.56, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 24.44 (AI: 24.44, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 18.89 (AI: 18.89, Rule: 10.0)
+Match called at 2026-01-10 11:24:45.261452
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-10 11:24:49.519415
+Candidates count: 6
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 10.0 (AI: 0.0, Rule: 10.0)
+Match called at 2026-01-12 12:52:22.041978
+Candidates count: 9
+JD Title: HR Coordinator
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 41.94 (AI: 41.94, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 15.0 (AI: 3.33, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 26.11 (AI: 26.11, Rule: 10.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 15.0 (AI: 8.89, Rule: 15.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 50: 44.44 (AI: 44.44, Rule: 0.0)
+JD Requirements: [{"category": "skills", "description": "[AI] Relevant degree or equivalent experience", "is_required": true}, {"category": "skills", "description": "[AI] Strong communication skills", "is_required": true}, {"category": "skills", "description": "Strong Negotiation skills", "is_required": true}]
+Required Skills: ['[ai] relevant degree or equivalent experience', '[ai] strong communication skills', 'strong negotiation skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 28.89 (AI: 28.89, Rule: 10.0)
+Match called at 2026-01-14 17:00:41.805418
+Candidates count: 16
+JD Title: Software Engineer
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 3.33, Rule: 15.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 43.33333333333333 (AI: 37.5, Rule: 43.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 39.17 (AI: 39.17, Rule: 38.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 56.666666666666664 (AI: 34.17, Rule: 56.666666666666664)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 50: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 53: 74.17 (AI: 74.17, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 62: 45.83 (AI: 45.83, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 66: 52.22 (AI: 52.22, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 29.17 (AI: 29.17, Rule: 10.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 38.33333333333333 (AI: 21.11, Rule: 38.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 51: 46.67 (AI: 46.67, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 57: 75.0 (AI: 75.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 60: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 64: 65.28 (AI: 65.28, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 58: 78.33 (AI: 78.33, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 49: 16.67 (AI: 16.67, Rule: 0.0)
+Match called at 2026-01-14 17:03:57.402364
+Candidates count: 16
+JD Title: Software Engineer
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+Final Score for 21: 15.0 (AI: 0.0, Rule: 15.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+Final Score for 17: 43.33333333333333 (AI: 0.0, Rule: 43.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+Final Score for 18: 38.33333333333333 (AI: 0.0, Rule: 38.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+Final Score for 19: 56.666666666666664 (AI: 0.0, Rule: 56.666666666666664)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 50: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 53: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 62: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 66: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+Final Score for 20: 10.0 (AI: 0.0, Rule: 10.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+Final Score for 22: 38.33333333333333 (AI: 0.0, Rule: 38.33333333333333)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 51: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 57: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 60: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 64: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 58: 0.0 (AI: 0.0, Rule: 0.0)
+JD Requirements: [{"category": "education", "description": "Bachelor's degree in Computer Science or related field", "is_required": false, "requirement_id": "req_b345ea8f"}, {"category": "experience", "description": "5+ years of software development experience", "is_required": false, "requirement_id": "req_2f649632"}, {"category": "skills", "description": "Strong proficiency in Python, JavaScript, and React", "is_required": false, "requirement_id": "req_04406f46"}, {"category": "experience", "description": "Experience with cloud platforms (AWS, Azure)", "is_required": false, "requirement_id": "req_1fff689c"}, {"category": "skills", "description": "Excellent problem", "is_required": false, "requirement_id": "req_4663f36b"}, {"category": "skills", "description": "solving skills", "is_required": false, "requirement_id": "req_f4eacb30"}]
+Required Skills: ['strong proficiency in python, javascript, and react', 'excellent problem', 'solving skills']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+Final Score for 49: 0.0 (AI: 0.0, Rule: 0.0)

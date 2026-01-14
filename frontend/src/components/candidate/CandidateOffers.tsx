@@ -14,7 +14,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  DollarSign,
   Briefcase,
   Calendar,
   MapPin,
@@ -24,8 +23,10 @@ import {
   FileText,
   Send,
   AlertTriangle,
-  PartyPopper
+  PartyPopper,
+  Coins
 } from 'lucide-react';
+import { formatCurrency } from '@/utils/currency';
 
 interface Offer {
   id: string;
@@ -136,8 +137,8 @@ export const CandidateOffers: React.FC = () => {
       if (res.data?.success) {
         toast({
           title: responseAction === 'accept' ? 'Offer Accepted!' : 'Offer Declined',
-          description: responseAction === 'accept' 
-            ? 'Congratulations! The recruiter will be notified.' 
+          description: responseAction === 'accept'
+            ? 'Congratulations! The recruiter will be notified.'
             : 'The recruiter will be notified of your decision.',
         });
         setShowResponseDialog(false);
@@ -159,12 +160,7 @@ export const CandidateOffers: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'AED') => {
-    return new Intl.NumberFormat('en-AE', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  };
+
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
@@ -184,9 +180,9 @@ export const CandidateOffers: React.FC = () => {
 
   const formatBenefits = (benefits: any) => {
     if (!benefits || typeof benefits !== 'object') return null;
-    
+
     const benefitsList: string[] = [];
-    
+
     if (benefits.health_insurance) benefitsList.push('Health Insurance');
     if (benefits.housing_allowance) benefitsList.push(`Housing Allowance: ${benefits.housing_allowance} AED`);
     if (benefits.transportation_allowance) benefitsList.push(`Transportation: ${benefits.transportation_allowance} AED`);
@@ -195,7 +191,7 @@ export const CandidateOffers: React.FC = () => {
     if (benefits.additional_benefits && Array.isArray(benefits.additional_benefits)) {
       benefitsList.push(...benefits.additional_benefits);
     }
-    
+
     return benefitsList;
   };
 
@@ -319,13 +315,13 @@ export const CandidateOffers: React.FC = () => {
                   <Gift className="h-12 w-12 text-gray-300 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-600">No offers yet</h3>
                   <p className="text-gray-500 mt-1">
-                    {activeTab === 'pending' 
+                    {activeTab === 'pending'
                       ? 'You have no pending offers to review'
                       : activeTab === 'accepted'
-                      ? 'You haven\'t accepted any offers yet'
-                      : activeTab === 'declined'
-                      ? 'You haven\'t declined any offers'
-                      : 'Keep applying to jobs and offers will appear here'}
+                        ? 'You haven\'t accepted any offers yet'
+                        : activeTab === 'declined'
+                          ? 'You haven\'t declined any offers'
+                          : 'Keep applying to jobs and offers will appear here'}
                   </p>
                 </div>
               ) : (
@@ -351,7 +347,7 @@ export const CandidateOffers: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-4 text-sm">
                               <span className="flex items-center gap-1 text-green-600 font-semibold">
-                                <DollarSign className="h-4 w-4" />
+                                <Coins className="h-4 w-4" />
                                 {formatCurrency(offer.salary_amount, offer.salary_currency)}
                                 <span className="text-gray-500 font-normal">/ {offer.salary_period}</span>
                               </span>
@@ -444,7 +440,7 @@ export const CandidateOffers: React.FC = () => {
                 {/* Compensation */}
                 <div className="bg-green-50 rounded-lg p-4">
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-green-600" />
+                    <Coins className="h-5 w-5 text-green-600" />
                     Compensation Package
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -561,7 +557,7 @@ export const CandidateOffers: React.FC = () => {
               {responseAction === 'accept' ? 'Accept Offer' : 'Decline Offer'}
             </DialogTitle>
             <DialogDescription>
-              {responseAction === 'accept' 
+              {responseAction === 'accept'
                 ? 'Are you sure you want to accept this offer? The recruiter will be notified.'
                 : 'Are you sure you want to decline this offer? You can optionally provide a reason.'}
             </DialogDescription>
@@ -574,7 +570,7 @@ export const CandidateOffers: React.FC = () => {
               </Label>
               <Textarea
                 id="responseMessage"
-                placeholder={responseAction === 'accept' 
+                placeholder={responseAction === 'accept'
                   ? 'Thank you for this opportunity...'
                   : 'Thank you for the offer, but...'}
                 value={responseMessage}

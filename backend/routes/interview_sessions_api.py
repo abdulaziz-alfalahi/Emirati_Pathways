@@ -14,6 +14,7 @@ from psycopg2.extras import RealDictCursor
 import os
 import uuid
 from functools import wraps
+from services.communication_service import communication_service, MessageType, NotificationType
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,7 +78,7 @@ def ensure_tables_exist():
         with conn.cursor() as cursor:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS interview_sessions (
-                    id SERIAL PRIMARY KEY,
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     candidate_id INTEGER NOT NULL,
                     job_id INTEGER,
                     recruiter_id INTEGER,
@@ -98,11 +99,24 @@ def ensure_tables_exist():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS interview_recordings (
                     id SERIAL PRIMARY KEY,
-                    session_id INTEGER REFERENCES interview_sessions(id),
+                    session_id UUID REFERENCES interview_sessions(id),
                     chunk_number INTEGER,
                     file_path VARCHAR(500),
                     duration_seconds INTEGER,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # Create interview participants table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS interview_participants (
+                    id SERIAL PRIMARY KEY,
+                    session_id UUID REFERENCES interview_sessions(id),
+                    user_id INTEGER NOT NULL,
+                    role VARCHAR(50),
+                    status VARCHAR(50) DEFAULT 'invited', -- invited, accepted, declined
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(session_id, user_id)
                 )
             """)
             
@@ -227,6 +241,7 @@ def get_my_sessions():
                 LEFT JOIN job_descriptions j ON s.job_id = j.id
                 LEFT JOIN users r ON s.recruiter_id = r.id
                 WHERE s.candidate_id = %s
+                AND s.status != 'cancelled'
                 ORDER BY s.scheduled_at DESC
             """
         else:
@@ -248,6 +263,7 @@ def get_my_sessions():
                 LEFT JOIN users c ON s.candidate_id = c.id
                 LEFT JOIN job_descriptions j ON s.job_id = j.id
                 WHERE s.recruiter_id = %s
+                AND s.status != 'cancelled'
                 ORDER BY s.scheduled_at DESC
             """
         
@@ -356,6 +372,7 @@ def create_session():
         duration_minutes: Duration in minutes
         interview_type: Type of interview (video, phone, in-person)
         notes: Additional notes
+        attendees: List of additional user IDs to invite
     """
     try:
         data = request.get_json()
@@ -367,6 +384,7 @@ def create_session():
         duration_minutes = data.get('duration_minutes', 60)
         interview_type = data.get('interview_type', 'video')
         notes = data.get('notes', '')
+        attendees = data.get('attendees', [])
         
         if not candidate_id:
             return jsonify({
@@ -393,6 +411,42 @@ def create_session():
              interview_type, meeting_link, notes),
             return_id=True
         )
+        
+        # Add participants and send notifications
+        participants = set()
+        if candidate_id: participants.add((candidate_id, 'candidate'))
+        if recruiter_id: participants.add((recruiter_id, 'recruiter'))
+        
+        for attendee_id in attendees:
+             participants.add((attendee_id, 'attendee'))
+             
+        sender_id = recruiter_id if recruiter_id else '1' # Default to system/admin if no recruiter
+        
+        for p_id, p_role in participants:
+            try:
+                # Add to DB
+                execute_query(
+                    "INSERT INTO interview_participants (session_id, user_id, role) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                    (session_id, p_id, p_role),
+                    fetch_all=False
+                )
+                
+                # Send Notification
+                msg_content = f"You have been invited to an interview session on {scheduled_at}. Link: {meeting_link}"
+                communication_service.send_message(
+                    sender_id=str(sender_id),
+                    recipient_id=str(p_id),
+                    content=msg_content,
+                    message_type=MessageType.INTERVIEW_INVITE,
+                    metadata={
+                        'session_id': session_id, 
+                        'meeting_link': meeting_link,
+                        'scheduled_at': scheduled_at,
+                        'job_id': job_id
+                    }
+                )
+            except Exception as notify_err:
+                logger.error(f"Failed to notify participant {p_id}: {notify_err}")
         
         return jsonify({
             'success': True,

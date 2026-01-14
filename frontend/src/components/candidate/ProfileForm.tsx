@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,14 +9,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  GraduationCap, 
-  Award, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Award,
   Languages,
   Save,
   Edit,
@@ -24,6 +26,9 @@ import {
   X,
   Sparkles
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
+// Use dynamic import for LocationPicker to avoid circular dependencies if any, or just standard import
+import LocationPicker from '@/components/common/LocationPicker';
 
 // Types for profile data
 interface ProfileData {
@@ -32,22 +37,24 @@ interface ProfileData {
   email: string;
   phone: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
   nationality: string;
   visa_status: string;
   emirates_id: string;
-  
+
   // Professional Information
   summary: string;
   years_of_experience: number;
   current_position: string;
   current_company: string;
-  
+
   // Skills and Education
   skills: string[];
   languages: string[];
   education: string;
   certifications: string[];
-  
+
   // Additional Information
   job_titles: string[];
   companies: string[];
@@ -62,11 +69,11 @@ interface ProfileFormProps {
   className?: string;
 }
 
-const ProfileForm: React.FC<ProfileFormProps> = ({ 
-  initialData = {}, 
-  onSave, 
+const ProfileForm: React.FC<ProfileFormProps> = ({
+  initialData = {},
+  onSave,
   onUpdate,
-  className = "" 
+  className = ""
 }) => {
   // State management
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -107,8 +114,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         ...prev,
         ...initialData
       }));
-      setSuccess('✅ Profile automatically updated with CV data!');
-      setTimeout(() => setSuccess(null), 5000);
+      if (!isEditing && initialData.name) {
+        // If loading existing data, don't auto-show success unless it was a save
+      }
     }
   }, [initialData]);
 
@@ -138,30 +146,76 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
     }));
   };
 
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setProfileData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      location: `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    }));
+  };
+
   // Handle save
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
-    
+
     try {
       // Validate required fields
       if (!profileData.name || !profileData.email) {
         throw new Error('Name and email are required');
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess('✅ Profile saved successfully!');
-      setIsEditing(false);
-      
-      // Call callbacks
-      onSave?.(profileData);
-      onUpdate?.(profileData);
-      
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(`Failed to save profile: ${(err as Error).message}`);
+      // Structure data for API
+      const apiPayload = {
+        personal_info: {
+          first_name: profileData.name.split(' ')[0],
+          last_name: profileData.name.split(' ').slice(1).join(' '),
+          email: profileData.email,
+          phone: profileData.phone,
+          location: profileData.location,
+          latitude: profileData.latitude,
+          longitude: profileData.longitude,
+          nationality: profileData.nationality,
+          visa_status: profileData.visa_status,
+          emirates_id: profileData.emirates_id,
+          linkedin: profileData.linkedin_url,
+          portfolio: profileData.portfolio_url
+        },
+        professional_summary: profileData.summary,
+        experience_years: profileData.years_of_experience,
+        current_position: profileData.current_position,
+        current_company: profileData.current_company,
+        skills: profileData.skills,
+        languages: profileData.languages,
+        certifications: profileData.certifications,
+        education: typeof profileData.education === 'string' ? [{ degree: profileData.education }] : profileData.education,
+        // Support additional fields as needed
+        latitude: profileData.latitude,
+        longitude: profileData.longitude
+      };
+
+      // Call API
+      const response = await restClient.put('/api/auth/profile', apiPayload);
+
+      if (response.data.success) {
+        setSuccess('✅ Profile saved successfully!');
+        setIsEditing(false);
+
+        // Call callbacks
+        onSave?.(profileData);
+        onUpdate?.(profileData);
+
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        throw new Error(response.data.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      console.error('Profile save error request:', err.request);
+      console.error('Profile save error response:', err.response);
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      setError(`Failed to save profile: ${errorMessage}`);
+      console.error('Detailed Error:', errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -180,7 +234,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       profileData.languages.length > 0,
       profileData.years_of_experience > 0
     ];
-    
+
     const completed = fields.filter(Boolean).length;
     return Math.round((completed / fields.length) * 100);
   };
@@ -213,14 +267,14 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                 </Button>
               ) : (
                 <>
-                  <Button 
-                    onClick={() => setIsEditing(false)} 
+                  <Button
+                    onClick={() => setIsEditing(false)}
                     variant="outline"
                     disabled={isSaving}
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleSave}
                     disabled={isSaving}
                   >
@@ -278,7 +332,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                 placeholder="Enter your full name"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
               <Input
@@ -290,7 +344,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                 placeholder="your.email@example.com"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
               <Input
@@ -298,32 +352,64 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                 value={profileData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 disabled={!isEditing}
-                placeholder="+971501234567"
+                placeholder="+971 50 123 4567"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+
+            <div className="space-y-2 col-span-1 md:col-span-2">
+              <Label>Location (Home)</Label>
+              {isEditing ? (
+                <LocationPicker
+                  lat={profileData.latitude}
+                  lng={profileData.longitude}
+                  onLocationSelect={handleLocationSelect}
+                  height="250px"
+                />
+              ) : (
+                <>
+                  {profileData.latitude && profileData.longitude ? (
+                    <div className="h-[250px] w-full bg-slate-100 rounded-md border text-muted-foreground overflow-hidden">
+                      <LocationPicker
+                        lat={profileData.latitude}
+                        lng={profileData.longitude}
+                        height="250px"
+                        onLocationSelect={() => { }} // Read-only
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-[250px] w-full bg-slate-100 rounded-md border flex items-center justify-center text-muted-foreground">
+                      <div className="flex flex-col items-center">
+                        <MapPin className="h-8 w-8 mb-2 opacity-50" />
+                        <span>No location selected. Click Edit to add location.</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
               <Input
                 id="location"
                 value={profileData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 disabled={!isEditing}
-                placeholder="Dubai, UAE"
+                placeholder="Dubai, UAE (or select on map)"
+                className="mt-2"
               />
+              <p className="text-xs text-muted-foreground">
+                Set your home location to calculate commute times to job opportunities.
+              </p>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="nationality">Nationality/Status</Label>
+              <Label htmlFor="nationality">Nationality</Label>
               <Input
                 id="nationality"
                 value={profileData.nationality}
                 onChange={(e) => handleInputChange('nationality', e.target.value)}
                 disabled={!isEditing}
-                placeholder="UAE National / UAE Resident"
+                placeholder="e.g. Emirati"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="emirates_id">Emirates ID</Label>
               <Input
@@ -338,62 +424,62 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         </CardContent>
       </Card>
 
-      {/* Professional Information */}
+      {/* Professional Summary */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Briefcase className="h-5 w-5" />
-            Professional Information
+            Professional Summary
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="summary">Professional Summary</Label>
-            <Textarea
-              id="summary"
-              value={profileData.summary}
-              onChange={(e) => handleInputChange('summary', e.target.value)}
-              disabled={!isEditing}
-              placeholder="Brief description of your professional background and career objectives..."
-              className="min-h-[100px]"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent>
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="years_experience">Years of Experience</Label>
-              <Input
-                id="years_experience"
-                type="number"
-                value={profileData.years_of_experience}
-                onChange={(e) => handleInputChange('years_of_experience', parseInt(e.target.value) || 0)}
+              <Label htmlFor="summary">About You</Label>
+              <Textarea
+                id="summary"
+                value={profileData.summary}
+                onChange={(e) => handleInputChange('summary', e.target.value)}
                 disabled={!isEditing}
-                placeholder="5"
-                min="0"
-                max="50"
+                placeholder="Briefly describe your professional background and career goals..."
+                className="min-h-[100px]"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="current_position">Current Position</Label>
-              <Input
-                id="current_position"
-                value={profileData.current_position}
-                onChange={(e) => handleInputChange('current_position', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Senior Software Engineer"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="current_company">Current Company</Label>
-              <Input
-                id="current_company"
-                value={profileData.current_company}
-                onChange={(e) => handleInputChange('current_company', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Emirates Technology"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="current_position">Current Position</Label>
+                <Input
+                  id="current_position"
+                  value={profileData.current_position}
+                  onChange={(e) => handleInputChange('current_position', e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="e.g. Software Engineer"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="current_company">Current Company</Label>
+                <Input
+                  id="current_company"
+                  value={profileData.current_company}
+                  onChange={(e) => handleInputChange('current_company', e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="e.g. Tech Solutions Ltd"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="years_of_experience">Years of Experience</Label>
+                <Input
+                  id="years_of_experience"
+                  type="number"
+                  value={profileData.years_of_experience}
+                  onChange={(e) => handleInputChange('years_of_experience', parseInt(e.target.value))}
+                  disabled={!isEditing}
+                  placeholder="e.g. 5"
+                />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -404,110 +490,57 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            Skills & Technologies
+            Skills & Expertise
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {profileData.skills.map((skill, index) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                {skill}
-                {isEditing && (
-                  <button
-                    onClick={() => removeFromArray('skills', index)}
-                    className="ml-1 hover:text-red-500"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </Badge>
-            ))}
-            {profileData.skills.length === 0 && (
-              <span className="text-gray-500 text-sm">No skills added yet</span>
-            )}
-          </div>
-          
-          {isEditing && (
-            <div className="flex gap-2">
-              <Input
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                placeholder="Add a skill (e.g., JavaScript, React, Python)"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {profileData.skills.map((skill, index) => (
+                <Badge key={index} variant="secondary" className="pl-3 pr-1 py-1">
+                  {skill}
+                  {isEditing && (
+                    <button
+                      onClick={() => removeFromArray('skills', index)}
+                      className="ml-2 hover:bg-slate-200 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </Badge>
+              ))}
+              {profileData.skills.length === 0 && (
+                <span className="text-muted-foreground text-sm italic">No skills added yet</span>
+              )}
+            </div>
+
+            {isEditing && (
+              <div className="flex gap-2">
+                <Input
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  placeholder="Add a skill (e.g. Project Management)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addToArray('skills', newSkill);
+                      setNewSkill('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
                     addToArray('skills', newSkill);
                     setNewSkill('');
-                  }
-                }}
-              />
-              <Button
-                onClick={() => {
-                  addToArray('skills', newSkill);
-                  setNewSkill('');
-                }}
-                disabled={!newSkill.trim()}
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Languages */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Languages className="h-5 w-5" />
-            Languages
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {profileData.languages.map((language, index) => (
-              <Badge key={index} variant="outline" className="flex items-center gap-1">
-                {language}
-                {isEditing && (
-                  <button
-                    onClick={() => removeFromArray('languages', index)}
-                    className="ml-1 hover:text-red-500"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </Badge>
-            ))}
-            {profileData.languages.length === 0 && (
-              <span className="text-gray-500 text-sm">No languages added yet</span>
+                  }}
+                  variant="secondary"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
-          
-          {isEditing && (
-            <div className="flex gap-2">
-              <Input
-                value={newLanguage}
-                onChange={(e) => setNewLanguage(e.target.value)}
-                placeholder="Add a language (e.g., Arabic, English, French)"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    addToArray('languages', newLanguage);
-                    setNewLanguage('');
-                  }
-                }}
-              />
-              <Button
-                onClick={() => {
-                  addToArray('languages', newLanguage);
-                  setNewLanguage('');
-                }}
-                disabled={!newLanguage.trim()}
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -521,139 +554,73 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="education">Education Background</Label>
-            <Textarea
+            <Label htmlFor="education">Latest Education</Label>
+            <Input
               id="education"
               value={profileData.education}
               onChange={(e) => handleInputChange('education', e.target.value)}
               disabled={!isEditing}
-              placeholder="Bachelor of Computer Science | American University of Sharjah | 2018"
-              className="min-h-[80px]"
+              placeholder="e.g. BSc Computer Science, UAE University"
             />
           </div>
         </CardContent>
       </Card>
 
-      {/* Certifications */}
+      {/* Languages */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5" />
-            Certifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            {profileData.certifications.map((cert, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">{cert}</span>
-                {isEditing && (
-                  <button
-                    onClick={() => removeFromArray('certifications', index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-            {profileData.certifications.length === 0 && (
-              <span className="text-gray-500 text-sm">No certifications added yet</span>
-            )}
-          </div>
-          
-          {isEditing && (
-            <div className="flex gap-2">
-              <Input
-                value={newCertification}
-                onChange={(e) => setNewCertification(e.target.value)}
-                placeholder="Add a certification (e.g., AWS Certified Solutions Architect)"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    addToArray('certifications', newCertification);
-                    setNewCertification('');
-                  }
-                }}
-              />
-              <Button
-                onClick={() => {
-                  addToArray('certifications', newCertification);
-                  setNewCertification('');
-                }}
-                disabled={!newCertification.trim()}
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Additional Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Professional Links
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="linkedin_url">LinkedIn Profile</Label>
-              <Input
-                id="linkedin_url"
-                value={profileData.linkedin_url}
-                onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                disabled={!isEditing}
-                placeholder="https://linkedin.com/in/yourprofile"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="portfolio_url">Portfolio/Website</Label>
-              <Input
-                id="portfolio_url"
-                value={profileData.portfolio_url}
-                onChange={(e) => handleInputChange('portfolio_url', e.target.value)}
-                disabled={!isEditing}
-                placeholder="https://yourportfolio.com"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Profile Completion Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Profile Completion
+            <Languages className="h-5 w-5" />
+            Languages
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Overall Progress</span>
-              <span className="text-sm text-gray-600">{completeness}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${completeness}%` }}
-              ></div>
-            </div>
-            <div className="text-xs text-gray-500">
-              {completeness >= 80 ? (
-                "🎉 Excellent! Your profile is well-optimized for job matching."
-              ) : completeness >= 60 ? (
-                "👍 Good progress! Add more details to improve your job matches."
-              ) : (
-                "📝 Complete more sections to get better job recommendations."
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {profileData.languages.map((lang, index) => (
+                <Badge key={index} variant="outline" className="pl-3 pr-1 py-1">
+                  {lang}
+                  {isEditing && (
+                    <button
+                      onClick={() => removeFromArray('languages', index)}
+                      className="ml-2 hover:bg-slate-200 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </Badge>
+              ))}
+              {profileData.languages.length === 0 && (
+                <span className="text-muted-foreground text-sm italic">No languages added</span>
               )}
             </div>
+
+            {isEditing && (
+              <div className="flex gap-2">
+                <Input
+                  value={newLanguage}
+                  onChange={(e) => setNewLanguage(e.target.value)}
+                  placeholder="Add a language (e.g. Arabic)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addToArray('languages', newLanguage);
+                      setNewLanguage('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    addToArray('languages', newLanguage);
+                    setNewLanguage('');
+                  }}
+                  variant="secondary"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -662,3 +629,4 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 };
 
 export default ProfileForm;
+

@@ -11,7 +11,7 @@ const LoginTest: React.FC = () => {
     setResult('Testing login...');
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
       console.log('🔍 API_BASE_URL:', API_BASE_URL);
       console.log('🔍 Full URL:', `${API_BASE_URL}/api/auth/login`);
 

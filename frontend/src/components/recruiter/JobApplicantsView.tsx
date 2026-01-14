@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+// @ts-ignore
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -40,6 +42,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { restClient } from '@/utils/api';
+import { ScheduleVideoInterviewDialog } from './ScheduleVideoInterviewDialog';
 
 interface Applicant {
   application_id: string;
@@ -65,10 +68,15 @@ interface JobApplicantsViewProps {
 }
 
 export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBack }) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [expandedApplicants, setExpandedApplicants] = useState<Set<string>>(new Set());
+
+  // Interview Dialog State
+  const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
+  const [interviewCandidateId, setInterviewCandidateId] = useState<string | null>(null);
 
   const jdId = job?.jd_id || job?.id;
 
@@ -153,6 +161,37 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
     }
   };
 
+  // Handle Message Action
+  const handleMessage = async (applicant: Applicant) => {
+    try {
+      // 1. Create or find conversation
+      const response = await restClient.post('/api/communication/conversations', {
+        participants: [applicant.candidate_id]
+      });
+
+      if (response.data?.success) {
+        const conversationId = response.data.data.id;
+        // 2. Navigate to messages tab with conversation ID
+        navigate(`/recruiter-dashboard?tab=messages&conversationId=${conversationId}`);
+      } else {
+        throw new Error('Failed to start conversation');
+      }
+    } catch (error) {
+      console.error('Message error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to open conversation. Please try again.',
+      });
+    }
+  };
+
+  // Handle Schedule Interview Action
+  const handleScheduleInterview = (applicant: Applicant) => {
+    setInterviewCandidateId(applicant.candidate_id);
+    setIsInterviewDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -220,7 +259,7 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
             <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium mb-2">No applicants yet</h3>
             <p className="text-muted-foreground">
-              {statusFilter !== 'all' 
+              {statusFilter !== 'all'
                 ? 'No applicants match the selected filter. Try changing the filter.'
                 : 'When candidates apply for this job, they will appear here.'}
             </p>
@@ -231,7 +270,7 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
           {applicants.map((applicant: Applicant) => {
             const statusInfo = getStatusBadge(applicant.status);
             const isExpanded = expandedApplicants.has(applicant.application_id);
-            
+
             return (
               <Card key={applicant.application_id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
@@ -262,7 +301,7 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Application Info */}
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
                         <div className="flex items-center gap-1">
@@ -278,11 +317,19 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleMessage(applicant)}
+                      >
                         <MessageSquare className="h-4 w-4 mr-1" />
                         Message
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleScheduleInterview(applicant)}
+                      >
                         <Video className="h-4 w-4 mr-1" />
                         Schedule Interview
                       </Button>
@@ -389,7 +436,7 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                           <Button size="sm" variant="outline" onClick={() => updateStatus(applicant.application_id, 'under_review')}>
                             Move to Review
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => updateStatus(applicant.application_id, 'interview_scheduled')}>
+                          <Button size="sm" variant="outline" onClick={() => handleScheduleInterview(applicant)}>
                             Schedule Interview
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => updateStatus(applicant.application_id, 'rejected')}>
@@ -405,6 +452,14 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
           })}
         </div>
       )}
+
+      {/* Schedule Interview Dialog */}
+      <ScheduleVideoInterviewDialog
+        open={isInterviewDialogOpen}
+        onOpenChange={setIsInterviewDialogOpen}
+        initialJobId={jdId}
+        initialCandidateId={interviewCandidateId || undefined}
+      />
     </div>
   );
 };

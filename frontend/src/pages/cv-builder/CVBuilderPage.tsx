@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Upload, Download, Eye, Edit3, Sparkles, CheckCircle, AlertCircle, FileText, User, Briefcase, GraduationCap, Award, Languages, Phone, Mail, MapPin, Calendar, Plus, Trash2, Save } from 'lucide-react';
+import { Upload, Download, Eye, Edit3, Sparkles, CheckCircle, AlertCircle, FileText, User, Briefcase, GraduationCap, Award, Languages, Phone, Mail, MapPin, Calendar, Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 
 interface PersonalInfo {
   fullName: string;
@@ -184,7 +185,7 @@ const CVBuilderPage: React.FC = () => {
           <input
             type="text"
             value={personalInfo.fullName}
-            onChange={(e) => setPersonalInfo({...personalInfo, fullName: e.target.value})}
+            onChange={(e) => setPersonalInfo({ ...personalInfo, fullName: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Ahmed Al Mansouri"
           />
@@ -194,7 +195,7 @@ const CVBuilderPage: React.FC = () => {
           <input
             type="text"
             value={personalInfo.professionalTitle}
-            onChange={(e) => setPersonalInfo({...personalInfo, professionalTitle: e.target.value})}
+            onChange={(e) => setPersonalInfo({ ...personalInfo, professionalTitle: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Senior Software Engineer"
           />
@@ -204,7 +205,7 @@ const CVBuilderPage: React.FC = () => {
           <input
             type="email"
             value={personalInfo.email}
-            onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})}
+            onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="ahmed.almansouri@email.com"
           />
@@ -214,7 +215,7 @@ const CVBuilderPage: React.FC = () => {
           <input
             type="tel"
             value={personalInfo.phone}
-            onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})}
+            onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="+971 50 123 4567"
           />
@@ -223,7 +224,7 @@ const CVBuilderPage: React.FC = () => {
           <label className="block text-sm font-dubai-medium text-gray-700 mb-2">Emirate *</label>
           <select
             value={personalInfo.emirate}
-            onChange={(e) => setPersonalInfo({...personalInfo, emirate: e.target.value})}
+            onChange={(e) => setPersonalInfo({ ...personalInfo, emirate: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select Emirate</option>
@@ -237,7 +238,7 @@ const CVBuilderPage: React.FC = () => {
           <input
             type="text"
             value={personalInfo.nationality}
-            onChange={(e) => setPersonalInfo({...personalInfo, nationality: e.target.value})}
+            onChange={(e) => setPersonalInfo({ ...personalInfo, nationality: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
             readOnly
           />
@@ -247,7 +248,7 @@ const CVBuilderPage: React.FC = () => {
         <label className="block text-sm font-dubai-medium text-gray-700 mb-2">Professional Summary</label>
         <textarea
           value={personalInfo.summary}
-          onChange={(e) => setPersonalInfo({...personalInfo, summary: e.target.value})}
+          onChange={(e) => setPersonalInfo({ ...personalInfo, summary: e.target.value })}
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Write a compelling summary of your professional background and career objectives..."
@@ -268,7 +269,7 @@ const CVBuilderPage: React.FC = () => {
           Add Experience
         </button>
       </div>
-      
+
       {experiences.map((exp, index) => (
         <div key={exp.id} className="bg-gray-50 rounded-lg p-6">
           <div className="flex justify-between items-start mb-4">
@@ -280,15 +281,15 @@ const CVBuilderPage: React.FC = () => {
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <input
               type="text"
               placeholder="Position Title"
               value={exp.position}
               onChange={(e) => {
-                const updated = experiences.map(e => 
-                  e.id === exp.id ? {...e, position: e.target.value} : e
+                const updated = experiences.map(e =>
+                  e.id === exp.id ? { ...e, position: e.target.value } : e
                 );
                 setExperiences(updated);
               }}
@@ -315,7 +316,7 @@ const CVBuilderPage: React.FC = () => {
               <label className="text-sm text-gray-700">Current Position</label>
             </div>
           </div>
-          
+
           <textarea
             placeholder="Job description and key responsibilities..."
             value={exp.description}
@@ -324,7 +325,7 @@ const CVBuilderPage: React.FC = () => {
           />
         </div>
       ))}
-      
+
       {experiences.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <Briefcase className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -346,7 +347,7 @@ const CVBuilderPage: React.FC = () => {
           Add Skill
         </button>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {skills.map((skill) => (
           <div key={skill.id} className="bg-gray-50 rounded-lg p-4">
@@ -356,8 +357,8 @@ const CVBuilderPage: React.FC = () => {
                 placeholder="Skill name"
                 value={skill.name}
                 onChange={(e) => {
-                  const updated = skills.map(s => 
-                    s.id === skill.id ? {...s, name: e.target.value} : s
+                  const updated = skills.map(s =>
+                    s.id === skill.id ? { ...s, name: e.target.value } : s
                   );
                   setSkills(updated);
                 }}
@@ -370,13 +371,13 @@ const CVBuilderPage: React.FC = () => {
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-2">
               <select
                 value={skill.category}
                 onChange={(e) => {
-                  const updated = skills.map(s => 
-                    s.id === skill.id ? {...s, category: e.target.value} : s
+                  const updated = skills.map(s =>
+                    s.id === skill.id ? { ...s, category: e.target.value } : s
                   );
                   setSkills(updated);
                 }}
@@ -386,12 +387,12 @@ const CVBuilderPage: React.FC = () => {
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-              
+
               <select
                 value={skill.proficiency}
                 onChange={(e) => {
-                  const updated = skills.map(s => 
-                    s.id === skill.id ? {...s, proficiency: e.target.value as any} : s
+                  const updated = skills.map(s =>
+                    s.id === skill.id ? { ...s, proficiency: e.target.value as any } : s
                   );
                   setSkills(updated);
                 }}
@@ -403,14 +404,14 @@ const CVBuilderPage: React.FC = () => {
                 <option value="Expert">Expert</option>
               </select>
             </div>
-            
+
             <div className="flex items-center mt-2">
               <input
                 type="checkbox"
                 checked={skill.certified}
                 onChange={(e) => {
-                  const updated = skills.map(s => 
-                    s.id === skill.id ? {...s, certified: e.target.checked} : s
+                  const updated = skills.map(s =>
+                    s.id === skill.id ? { ...s, certified: e.target.checked } : s
                   );
                   setSkills(updated);
                 }}
@@ -421,7 +422,7 @@ const CVBuilderPage: React.FC = () => {
           </div>
         ))}
       </div>
-      
+
       {skills.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <Award className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -437,30 +438,29 @@ const CVBuilderPage: React.FC = () => {
         <h3 className="text-lg font-dubai-bold text-gray-900 mb-4">Choose Your CV Template</h3>
         <p className="text-gray-600 mb-6">Select a professional template that best represents your career level and industry.</p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {templates.map((template) => (
           <div
             key={template.id}
             onClick={() => setCvTemplate(template.id)}
-            className={`relative cursor-pointer rounded-lg border-2 p-6 hover:shadow-md transition-all ${
-              cvTemplate === template.id 
-                ? 'border-blue-500 bg-blue-50' 
+            className={`relative cursor-pointer rounded-lg border-2 p-6 hover:shadow-md transition-all ${cvTemplate === template.id
+                ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'
-            }`}
+              }`}
           >
             {template.popular && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                 Popular
               </span>
             )}
-            
+
             <div className="text-center">
               <div className="text-4xl mb-4">{template.preview}</div>
               <h4 className="font-dubai-bold text-gray-900 mb-2">{template.name}</h4>
               <p className="text-sm text-gray-600">{template.description}</p>
             </div>
-            
+
             {cvTemplate === template.id && (
               <div className="absolute top-2 left-2">
                 <CheckCircle className="h-5 w-5 text-blue-500" />
@@ -491,7 +491,7 @@ const CVBuilderPage: React.FC = () => {
           </button>
         </div>
       </div>
-      
+
       {/* CV Preview */}
       <div className="bg-white border rounded-lg p-8 shadow-sm">
         <div className="max-w-2xl mx-auto">
@@ -518,7 +518,7 @@ const CVBuilderPage: React.FC = () => {
               </span>
             </div>
           </div>
-          
+
           {/* Summary */}
           {personalInfo.summary && (
             <div className="mb-8">
@@ -528,7 +528,7 @@ const CVBuilderPage: React.FC = () => {
               <p className="text-gray-700 leading-relaxed">{personalInfo.summary}</p>
             </div>
           )}
-          
+
           {/* Experience */}
           {experiences.length > 0 && (
             <div className="mb-8">
@@ -549,7 +549,7 @@ const CVBuilderPage: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {/* Skills */}
           {skills.length > 0 && (
             <div className="mb-8">
@@ -560,7 +560,7 @@ const CVBuilderPage: React.FC = () => {
                 {skillCategories.map(category => {
                   const categorySkills = skills.filter(skill => skill.category === category);
                   if (categorySkills.length === 0) return null;
-                  
+
                   return (
                     <div key={category}>
                       <h4 className="font-dubai-medium text-gray-900 mb-2">{category}</h4>
@@ -580,7 +580,7 @@ const CVBuilderPage: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       {/* AI Analysis Results */}
       {analysisResults && (
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6">
@@ -588,7 +588,7 @@ const CVBuilderPage: React.FC = () => {
             <Sparkles className="h-6 w-6 text-purple-600 mr-2" />
             <h3 className="text-lg font-dubai-bold text-gray-900">AI Analysis Results</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Score */}
             <div className="text-center">
@@ -597,7 +597,7 @@ const CVBuilderPage: React.FC = () => {
               </div>
               <p className="text-sm text-gray-600">Overall CV Score</p>
             </div>
-            
+
             {/* Strengths */}
             <div>
               <h4 className="font-dubai-bold text-green-700 mb-2 flex items-center">
@@ -613,7 +613,7 @@ const CVBuilderPage: React.FC = () => {
                 ))}
               </ul>
             </div>
-            
+
             {/* Improvements */}
             <div>
               <h4 className="font-dubai-bold text-orange-700 mb-2 flex items-center">
@@ -669,11 +669,10 @@ const CVBuilderPage: React.FC = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center px-3 py-2 text-sm font-dubai-medium rounded-lg transition-colors ${
-                        activeTab === tab.id
+                      className={`w-full flex items-center px-3 py-2 text-sm font-dubai-medium rounded-lg transition-colors ${activeTab === tab.id
                           ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-600 hover:bg-gray-100'
-                      }`}
+                        }`}
                     >
                       <Icon className="h-4 w-4 mr-3" />
                       {tab.name}
@@ -681,7 +680,7 @@ const CVBuilderPage: React.FC = () => {
                   );
                 })}
               </nav>
-              
+
               <div className="mt-6 pt-6 border-t">
                 <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center font-dubai-medium">
                   <Save className="h-4 w-4 mr-2" />

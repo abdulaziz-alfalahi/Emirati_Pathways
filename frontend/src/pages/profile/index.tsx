@@ -14,7 +14,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [activeView, setActiveView] = useState('enhanced');
-  
+
   useEffect(() => {
     // If no user, redirect to login
     if (!isLoading && !user) {
@@ -33,16 +33,16 @@ const ProfilePage = () => {
 
   // Convert user data to ProfileManagement format
   const userProfile = user ? {
-    id: user.id || '1',
-    firstName: user.firstName || user.name?.split(' ')[0] || 'User',
-    lastName: user.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+    id: String(user.id || '1'),
+    firstName: user.first_name || user.full_name?.split(' ')[0] || user.user_metadata?.first_name || 'User',
+    lastName: user.last_name || user.full_name?.split(' ').slice(1).join(' ') || user.user_metadata?.last_name || '',
     email: user.email || '',
-    primaryRole: user.role || 'Job Seeker',
-    secondaryRoles: user.secondaryRoles || [],
-    profileCompletion: user.profileCompletion || 75,
-    lastUpdated: user.lastUpdated || new Date().toISOString().split('T')[0],
-    verificationStatus: user.verificationStatus || 'pending',
-    profileVisibility: user.profileVisibility || 'professional'
+    primaryRole: user.role || user.user_type || 'Job Seeker',
+    secondaryRoles: user.roles || [],
+    profileCompletion: 75, // mock or from DB if available
+    lastUpdated: new Date().toISOString().split('T')[0],
+    verificationStatus: 'pending',
+    profileVisibility: 'professional'
   } : undefined;
 
   return (

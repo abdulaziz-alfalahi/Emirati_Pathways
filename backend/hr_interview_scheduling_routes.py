@@ -137,60 +137,60 @@ class InterviewScheduler:
     
     @staticmethod
     def send_interview_notification(interview_data: Dict[str, Any], notification_type: str) -> bool:
-        """Send interview notification (placeholder for email/SMS integration)"""
+        """Send interview notification via integrated communication system"""
         
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            # Import here to avoid circular dependencies
+            from mentor_communication_system import MentorCommunicationSystem, NotificationType, NotificationPriority
             
-            # Log notification in database
-            cursor.execute("""
-                INSERT INTO interview_notifications (
-                    interview_id, notification_type, recipient_type, recipient_id,
-                    message_content, delivery_status, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (
-                interview_data['id'],
-                notification_type,
-                'candidate',
-                interview_data['candidate_id'],
-                json.dumps({
-                    'subject': f"Interview {notification_type.title()}",
-                    'message': f"Your interview for {interview_data.get('job_title', 'position')} has been {notification_type}",
-                    'interview_date': interview_data['scheduled_date'],
-                    'interview_type': interview_data.get('interview_type', 'in-person')
-                }),
-                'pending',
-                datetime.now()
-            ))
+            comm_system = MentorCommunicationSystem(DB_CONFIG)
             
-            # Also notify interviewer
-            cursor.execute("""
-                INSERT INTO interview_notifications (
-                    interview_id, notification_type, recipient_type, recipient_id,
-                    message_content, delivery_status, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (
-                interview_data['id'],
-                notification_type,
-                'interviewer',
-                interview_data['interviewer_id'],
-                json.dumps({
-                    'subject': f"Interview {notification_type.title()}",
-                    'message': f"Interview with candidate has been {notification_type}",
-                    'interview_date': interview_data['scheduled_date'],
-                    'candidate_name': interview_data.get('candidate_name', 'Candidate')
-                }),
-                'pending',
-                datetime.now()
-            ))
+            # Map notification string to Enum type
+            type_mapping = {
+                'scheduled': NotificationType.INTERVIEW_SCHEDULED.value,
+                'rescheduled': NotificationType.INTERVIEW_RESCHEDULED.value,
+                'cancelled': NotificationType.INTERVIEW_CANCELLED.value
+            }
             
-            conn.commit()
-            cursor.close()
-            conn.close()
+            # Default to scheduled if unknown
+            notif_enum_val = type_mapping.get(notification_type, NotificationType.INTERVIEW_SCHEDULED.value)
             
-            # TODO: Integrate with actual email/SMS service
-            logger.info(f"Interview notification ({notification_type}) logged for interview {interview_data['id']}")
+            # Prepare Base Data
+            job_title = interview_data.get('job_title', 'Position')
+            candidate_name = interview_data.get('candidate_name', 'Candidate')
+            date_str = str(interview_data['scheduled_date'])
+            
+            # 1. Notify Candidate
+            candidate_msg = f"Your interview for {job_title} has been {notification_type}. Date: {date_str}"
+            comm_system.create_notification({
+                'user_id': interview_data['candidate_id'],
+                'notification_type': notif_enum_val,
+                'priority': NotificationPriority.HIGH.value,
+                'title': f"Interview {notification_type.title()}",
+                'message': candidate_msg,
+                'data': {
+                    'interview_id': str(interview_data['id']),
+                    'job_title': job_title,
+                    'scheduled_date': date_str
+                }
+            })
+            
+            # 2. Notify Interviewer
+            interviewer_msg = f"Interview with {candidate_name} for {job_title} has been {notification_type}. Date: {date_str}"
+            comm_system.create_notification({
+                'user_id': interview_data['interviewer_id'],
+                'notification_type': notif_enum_val,
+                'priority': NotificationPriority.HIGH.value,
+                'title': f"Interview {notification_type.title()}",
+                'message': interviewer_msg,
+                'data': {
+                    'interview_id': str(interview_data['id']),
+                    'candidate_name': candidate_name,
+                    'scheduled_date': date_str
+                }
+            })
+            
+            logger.info(f"Interview notifications sent for {interview_data['id']} ({notification_type})")
             return True
             
         except Exception as e:
@@ -847,6 +847,16 @@ def cancel_interview(interview_id):
                 WHERE id = %s
             """, (interview['application_id'],))
             
+            # Prepare notification data
+            notification_data = dict(updated_interview)
+            notification_data.update({
+                'job_title': interview['job_title'],
+                'candidate_name': interview['candidate_name']
+            })
+            
+            # Send notifications
+            InterviewScheduler.send_interview_notification(notification_data, 'cancelled')
+
             conn.commit()
             
             # Send notifications

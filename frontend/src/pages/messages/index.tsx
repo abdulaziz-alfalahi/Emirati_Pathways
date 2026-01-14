@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,12 +26,33 @@ import {
   Star,
   Filter,
   Archive,
-  Trash2
+  Trash2,
+  ArrowLeft
 } from 'lucide-react';
 import { messagingService, Conversation, Message } from '@/services/messagingService';
 import { useToast } from '@/hooks/use-toast';
 
+import { useNotifications } from '@/components/notifications/NotificationSystem';
+import { useAuth } from '@/context/AuthContext';
+import NewConversationDialog from '@/components/messaging/NewConversationDialog';
+
+import RecruiterMessages from '@/components/recruiter/Messages';
+
 const MessagesPage: React.FC = () => {
+  const { user } = useAuth();
+
+  // Use the polished Recruiter Messages component for recruiters/HR
+  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'hr_manager' || user?.user_type === 'hr_manager') {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto">
+          <RecruiterMessages />
+        </div>
+      </div>
+    );
+  }
+
+  // --- Existing Candidate View Logic Below ---
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -41,6 +63,38 @@ const MessagesPage: React.FC = () => {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { socket } = useNotifications();
+  // const { user } = useAuth(); // Already destructured above
+  const navigate = useNavigate();
+
+  const getDashboardPath = () => {
+    // Fallback path logic
+    return '/candidate-dashboard';
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (data: any) => {
+      // Check if message belongs to current conversation
+      if (selectedConversation && data.conversation_id === selectedConversation.id) {
+        setMessages(prev => {
+          // Prevent duplicates
+          if (prev.some(m => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+      }
+
+      // Refresh conversations list to update last message and unread counts
+      loadConversations();
+    };
+
+    socket.on('new_message', handleNewMessage);
+
+    return () => {
+      socket.off('new_message', handleNewMessage);
+    };
+  }, [socket, selectedConversation]);
 
   // Mock data for demonstration
   const mockConversations: Conversation[] = [
@@ -178,13 +232,96 @@ const MessagesPage: React.FC = () => {
     ]
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const conversationIdParam = searchParams.get('conversation');
+  const userIdParam = searchParams.get('userId');
+  const userNameParam = searchParams.get('userName');
+
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, []); // Run only once on mount
 
+  // Effect to handle conversation selection from URL
+  useEffect(() => {
+    const handleUrlSelection = async () => {
+      // 1. Handle existing Conversation ID
+      if (conversationIdParam) {
+        // Try to find in existing list
+        const found = conversations.find(c => c.id === conversationIdParam);
+
+        if (found) {
+          setSelectedConversation(found);
+        } else {
+          // If not in list, fetch details directly
+          try {
+            const response = await messagingService.getConversationById(conversationIdParam);
+            if (response.success && response.data) {
+              const newConv = response.data;
+              setSelectedConversation(newConv);
+              setConversations(prev => {
+                if (!prev.some(c => c.id === newConv.id)) {
+                  return [newConv, ...prev];
+                }
+                return prev;
+              });
+            }
+          } catch (error) {
+            console.error('Failed to load conversation from URL:', error);
+          }
+        }
+      }
+      // 2. Handle User ID (Direct Message)
+      else if (userIdParam) {
+        // Check if conversation already exists with this user
+        // Note: conversations.participants includes current user too, so we check if it includes the target userId
+        const found = conversations.find(c => c.participants && c.participants.includes(userIdParam));
+
+        if (found) {
+          setSelectedConversation(found);
+        } else {
+          // Create new conversation
+          try {
+            const response = await messagingService.createConversation({
+              participants: [userIdParam],
+              title: userNameParam ? decodeURIComponent(userNameParam) : 'New Conversation'
+            });
+
+            if (response.success && response.data) {
+              const newConv = response.data;
+              setConversations(prev => [newConv, ...prev]);
+              setSelectedConversation(newConv);
+              toast({
+                title: "Conversation Started",
+                description: `New chat started with ${userNameParam || 'User'}`,
+              });
+            } else {
+              toast({
+                title: "Error",
+                description: "Could not start conversation.",
+                variant: "destructive"
+              });
+            }
+          } catch (error) {
+            console.error('Failed to create conversation via URL:', error);
+          }
+        }
+      }
+    };
+
+    if (!isLoading) {
+      handleUrlSelection();
+    }
+  }, [conversationIdParam, userIdParam, isLoading]); // Wait for initial load to check existing list correctly
+
+  // Effect to load messages when selected conversation changes
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
+
+      // Update URL without reloading if different
+      if (selectedConversation.id !== conversationIdParam) {
+        setSearchParams({ conversation: selectedConversation.id });
+      }
     }
   }, [selectedConversation]);
 
@@ -338,6 +475,14 @@ const MessagesPage: React.FC = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
+          <Button
+            variant="ghost"
+            className="text-white hover:bg-white/20 mb-4 pl-0 hover:text-white"
+            onClick={() => navigate(getDashboardPath())}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold mb-2">💬 Messages</h1>
@@ -396,8 +541,8 @@ const MessagesPage: React.FC = () => {
                           key={conversation.id}
                           onClick={() => setSelectedConversation(conversation)}
                           className={`p-4 cursor-pointer hover:bg-gray-50 border-l-4 transition-colors ${selectedConversation?.id === conversation.id
-                              ? 'bg-blue-50 border-l-blue-500'
-                              : 'border-l-transparent'
+                            ? 'bg-blue-50 border-l-blue-500'
+                            : 'border-l-transparent'
                             }`}
                         >
                           <div className="flex items-start space-x-3">
@@ -496,20 +641,32 @@ const MessagesPage: React.FC = () => {
                             title: "Redirecting",
                             description: "Opening interview scheduler...",
                           });
-                          // Navigate to the interview scheduler
-                          window.location.href = '/recruiter/interviews/schedule';
+                          // Navigate to the interview scheduler using react-router instead of full reload
+                          navigate('/recruiter/interviews/schedule');
                         }}
                       >
                         <Clock className="h-4 w-4 mr-2" />
                         Schedule Interview
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toast({ title: "Feature Coming Soon", description: "Voice calling will be available in a future update." })}
+                      >
                         <Phone className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toast({ title: "Feature Coming Soon", description: "Video calling will be available in a future update." })}
+                      >
                         <Video className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toast({ title: "Options", description: "More options will be available soon." })}
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </div>
@@ -525,23 +682,23 @@ const MessagesPage: React.FC = () => {
                       {messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex ${message.sender_id === 'current-user' || message.sender_name === 'You'
-                              ? 'justify-end'
-                              : 'justify-start'
+                          className={`flex ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id))
+                            ? 'justify-end'
+                            : 'justify-start'
                             }`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender_id === 'current-user' || message.sender_name === 'You'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-900'
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id))
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-900'
                               }`}
                           >
                             <p className="text-sm">{message.content}</p>
                             <div className="flex items-center justify-between mt-1">
-                              <span className="text-xs opacity-70">
+                              <span className={`text-xs ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id)) ? 'text-blue-100' : 'opacity-70'}`}>
                                 {formatTime(message.created_at)}
                               </span>
-                              {message.sender_id === 'current-user' || message.sender_name === 'You' ? (
+                              {message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id)) ? (
                                 <div className="flex items-center space-x-1">
                                   {message.is_read ? (
                                     <CheckCheck className="h-3 w-3 opacity-70" />
@@ -614,6 +771,17 @@ const MessagesPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <NewConversationDialog
+        open={showNewConversation}
+        onClose={() => setShowNewConversation(false)}
+        onConversationCreated={(conversation) => {
+          setConversations(prev => [conversation, ...prev]);
+          setSelectedConversation(conversation);
+          setShowNewConversation(false);
+          // Optionally fetch messages immediately if any automated one exists
+          loadMessages(conversation.id);
+        }}
+      />
     </div>
   );
 };

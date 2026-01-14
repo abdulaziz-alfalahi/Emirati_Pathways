@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Bell, 
-  CheckCheck, 
-  AlertCircle, 
-  Info, 
-  AlertTriangle, 
-  CheckCircle 
+import {
+  Bell,
+  CheckCheck,
+  AlertCircle,
+  Info,
+  AlertTriangle,
+  CheckCircle
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Notification } from '@/types/notifications';
@@ -103,28 +103,29 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onCl
           </div>
         ) : (
           <div className="divide-y">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
-                  !notification.is_read ? 'bg-muted/30' : ''
-                }`}
-              >
-                {notification.link ? (
-                  <Link
-                    to={notification.link}
-                    onClick={() => handleNotificationClick(notification)}
-                    className="block"
-                  >
-                    <NotificationContent notification={notification} />
-                  </Link>
-                ) : (
-                  <div onClick={() => handleNotificationClick(notification)}>
-                    <NotificationContent notification={notification} />
-                  </div>
-                )}
-              </div>
-            ))}
+            {notifications.map((notification) => {
+              return (
+                <div
+                  key={notification.id}
+                  className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${!notification.is_read ? 'bg-muted/30' : ''
+                    }`}
+                >
+                  {notification.link ? (
+                    <Link
+                      to={notification.link}
+                      onClick={() => handleNotificationClick(notification)}
+                      className="block"
+                    >
+                      <NotificationContent notification={notification} />
+                    </Link>
+                  ) : (
+                    <div onClick={() => handleNotificationClick(notification)}>
+                      <NotificationContent notification={notification} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </ScrollArea>

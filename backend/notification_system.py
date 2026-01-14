@@ -27,6 +27,8 @@ class NotificationType(Enum):
     EDUCATIONAL_CONTENT = "educational_content"
     SYSTEM_ANNOUNCEMENT = "system_announcement"
     MESSAGE = "message"
+    ROLE_REQUEST = "role_request"
+    ROLE_DECISION = "role_decision"
 
 class NotificationPriority(Enum):
     LOW = "low"
@@ -145,15 +147,20 @@ class NotificationManager:
         return False
 
 class RealTimeNotificationSystem:
-    def __init__(self, app: Flask, redis_url: str = "redis://localhost:6379/0"):
+    def __init__(self, app: Flask, redis_url: str = "redis://localhost:6379/0", socketio=None):
         self.app = app
-        self.socketio = SocketIO(
-            app, 
-            cors_allowed_origins="*",
-            async_mode='eventlet',
-            logger=True,
-            engineio_logger=True
-        )
+        
+        if socketio:
+            self.socketio = socketio
+            logger.info("Using provided SocketIO instance")
+        else:
+            self.socketio = SocketIO(
+                app, 
+                cors_allowed_origins="*",
+                async_mode='eventlet',
+                logger=True,
+                engineio_logger=True
+            )
         
         # Initialize Redis client
         try:
@@ -453,9 +460,9 @@ class NotificationHelpers:
                 )
 
 # Initialize notification system (to be imported by main app)
-def create_notification_system(app: Flask, redis_url: str = "redis://localhost:6379/0"):
+def create_notification_system(app: Flask, redis_url: str = "redis://localhost:6379/0", socketio=None):
     """Factory function to create notification system"""
-    notification_system = RealTimeNotificationSystem(app, redis_url)
+    notification_system = RealTimeNotificationSystem(app, redis_url, socketio=socketio)
     notification_helpers = NotificationHelpers(notification_system)
     
     return notification_system, notification_helpers

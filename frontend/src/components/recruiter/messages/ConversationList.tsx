@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ interface ConversationListProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   onSelectConversation: (conversationId: string) => void;
+  onDeleteConversation?: (conversationId: string) => void;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
@@ -21,10 +22,11 @@ const ConversationList: React.FC<ConversationListProps> = ({
   selectedConversation,
   searchQuery,
   setSearchQuery,
-  onSelectConversation
+  onSelectConversation,
+  onDeleteConversation
 }) => {
   // Filter conversations by search query
-  const filteredConversations = conversations.filter(conversation => 
+  const filteredConversations = conversations.filter(conversation =>
     conversation.participantName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -35,8 +37,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
         <CardDescription>Your recent message threads</CardDescription>
         <div className="relative my-2">
           <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search conversations..." 
+          <Input
+            placeholder="Search conversations..."
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -49,11 +51,10 @@ const ConversationList: React.FC<ConversationListProps> = ({
             filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  selectedConversation === conversation.id
-                    ? 'bg-secondary'
-                    : 'hover:bg-secondary/50'
-                }`}
+                className={`p-3 rounded-lg cursor-pointer transition-colors group ${selectedConversation === conversation.id
+                  ? 'bg-secondary'
+                  : 'hover:bg-secondary/50'
+                  }`}
                 onClick={() => onSelectConversation(conversation.id)}
               >
                 <div className="flex items-center justify-between">
@@ -76,11 +77,25 @@ const ConversationList: React.FC<ConversationListProps> = ({
                     <div className="text-xs text-muted-foreground">
                       {formatDate(conversation.lastMessageTime)}
                     </div>
-                    {conversation.unreadCount > 0 && (
-                      <Badge variant="destructive" className="p-1 h-5 min-w-5 flex items-center justify-center rounded-full">
-                        {conversation.unreadCount}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {conversation.unreadCount > 0 && (
+                        <Badge variant="destructive" className="p-1 h-5 min-w-5 flex items-center justify-center rounded-full">
+                          {conversation.unreadCount}
+                        </Badge>
+                      )}
+
+                      {/* Delete Button - Visible on Hover or always visible for accessibility */}
+                      <button
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onDeleteConversation) onDeleteConversation(conversation.id);
+                        }}
+                        title="Delete conversation"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

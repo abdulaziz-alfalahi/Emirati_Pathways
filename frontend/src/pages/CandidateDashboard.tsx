@@ -43,6 +43,7 @@ interface DashboardData {
     location?: string;
     completionPercentage: number;
     cvUploaded: boolean;
+    profile_photo_url?: string;
   };
   stats: {
     profileViews: number;
@@ -82,11 +83,20 @@ const CandidateDashboard: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Check for hash
     if (location.hash) {
       const tab = location.hash.replace('#', '');
       if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'offers', 'messages'].includes(tab)) {
         setActiveTab(tab);
+        return;
       }
+    }
+
+    // Check for query param
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'offers', 'messages'].includes(tab)) {
+      setActiveTab(tab);
     }
   }, [location]);
 
@@ -138,10 +148,59 @@ const CandidateDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center py-6">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-teal-600 rounded-full flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
-              <span className="text-white font-bold text-lg">
-                {dashboardData.profile.name ? dashboardData.profile.name.charAt(0).toUpperCase() : 'C'}
-              </span>
+            <div className="relative group w-12 h-12 rounded-full overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-200">
+              {dashboardData.profile.profile_photo_url ? (
+                <img
+                  src={dashboardData.profile.profile_photo_url || ''}
+                  alt={dashboardData.profile.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-teal-600 flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">
+                    {dashboardData.profile.name ? dashboardData.profile.name.charAt(0).toUpperCase() : 'C'}
+                  </span>
+                </div>
+              )}
+              {/* Upload Overlay */}
+              <div
+                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() => document.getElementById('dashboard-photo-upload')?.click()}
+              >
+                <Upload className="h-4 w-4 text-white" />
+              </div>
+              <input
+                type="file"
+                id="dashboard-photo-upload"
+                className="hidden"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (!file.type.startsWith('image/')) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    try {
+                      const token = localStorage.getItem('access_token');
+                      // Use the same endpoint we created earlier
+                      const res = await fetch('/api/profile/candidate/photo', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        setDashboardData(prev => ({
+                          ...prev,
+                          profile: { ...prev.profile, profile_photo_url: data.data.photo_url }
+                        }));
+                      }
+                    } catch (err) {
+                      console.error("Upload failed", err);
+                    }
+                  }
+                }}
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 animate-in fade-in slide-in-from-left-4 duration-500">
@@ -150,12 +209,7 @@ const CandidateDashboard: React.FC = () => {
               <p className="text-gray-600">Your career journey continues here</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm">
-              <Bell className="h-4 w-4 mr-2" />
-              Notifications
-            </Button>
-          </div>
+
         </div>
 
         {!dashboardData.profile.cvUploaded && (

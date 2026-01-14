@@ -29,9 +29,12 @@ import {
   Edit,
   RefreshCw,
   Download,
+  Upload,
   TrendingUp,
   BarChart3
 } from 'lucide-react';
+
+import GrowthTools from '@/components/admin/GrowthTools';
 
 interface Company {
   id: string;
@@ -54,6 +57,7 @@ const CompanyOperations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -86,7 +90,7 @@ const CompanyOperations: React.FC = () => {
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         c.industry.toLowerCase().includes(searchTerm.toLowerCase());
+      c.industry.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -174,6 +178,13 @@ const CompanyOperations: React.FC = () => {
                     <Plus className="h-4 w-4 mr-2" />
                     Onboard Company
                   </Button>
+                  <Button
+                    variant={showBulkImport ? "secondary" : "outline"}
+                    onClick={() => setShowBulkImport(!showBulkImport)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {showBulkImport ? "Back to List" : "Bulk Import"}
+                  </Button>
                   <Button variant="outline">
                     <Download className="h-4 w-4 mr-2" />
                     Export
@@ -182,98 +193,104 @@ const CompanyOperations: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
-              <div className="flex gap-4 mb-6">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search companies..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+              {showBulkImport ? (
+                <GrowthTools />
+              ) : (
+                <>
+                  {/* Filters */}
+                  <div className="flex gap-4 mb-6">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Search companies..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="onboarding">Onboarding</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="onboarding">Onboarding</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              {/* Companies Table */}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Industry</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Jobs/Hires</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredCompanies.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        No companies found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredCompanies.map((company) => (
-                      <TableRow key={company.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{company.name}</p>
-                            <p className="text-sm text-gray-500 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {company.emirate}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{company.industry}</TableCell>
-                        <TableCell>{company.size}</TableCell>
-                        <TableCell>{getStatusBadge(company.status)}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <span className="text-blue-600">{company.jobsPosted} jobs</span>
-                            <span className="mx-1">/</span>
-                            <span className="text-green-600">{company.hiresCount} hires</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="ghost">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                  {/* Companies Table */}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Industry</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Jobs/Hires</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8">
+                            <RefreshCw className="h-6 w-6 animate-spin mx-auto text-gray-400" />
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredCompanies.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                            No companies found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredCompanies.map((company) => (
+                          <TableRow key={company.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{company.name}</p>
+                                <p className="text-sm text-gray-500 flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {company.emirate}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{company.industry}</TableCell>
+                            <TableCell>{company.size}</TableCell>
+                            <TableCell>{getStatusBadge(company.status)}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <span className="text-blue-600">{company.jobsPosted} jobs</span>
+                                <span className="mx-1">/</span>
+                                <span className="text-green-600">{company.hiresCount} hires</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="ghost">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost">
+                                  <Mail className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

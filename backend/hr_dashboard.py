@@ -110,15 +110,15 @@ class HRDashboardEngine:
                     
                     # Total jobs
                     cur.execute(f"""
-                        SELECT COUNT(*) as total_jobs FROM jobs j 
+                        SELECT COUNT(*) as total_jobs FROM job_postings j 
                         WHERE 1=1 {company_filter}
                     """, params)
                     total_jobs = cur.fetchone()['total_jobs']
                     
                     # Active jobs
                     cur.execute(f"""
-                        SELECT COUNT(*) as active_jobs FROM jobs j 
-                        WHERE j.status = 'active' {company_filter}
+                        SELECT COUNT(*) as active_jobs FROM job_postings j 
+                        WHERE j.status = 'active' OR j.status = 'published' {company_filter}
                     """, params)
                     active_jobs = cur.fetchone()['active_jobs']
                     
@@ -126,7 +126,7 @@ class HRDashboardEngine:
                     cur.execute(f"""
                         SELECT COUNT(*) as total_applications 
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
+                        JOIN job_postings j ON ja.job_id = j.jd_id
                         WHERE 1=1 {company_filter}
                     """, params)
                     total_applications = cur.fetchone()['total_applications']
@@ -135,26 +135,27 @@ class HRDashboardEngine:
                     cur.execute(f"""
                         SELECT COUNT(*) as new_applications 
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
-                        WHERE ja.applied_date >= %s {company_filter}
+                        JOIN job_postings j ON ja.job_id = j.jd_id
+                        WHERE ja.submitted_at >= %s {company_filter}
                     """, [datetime.now() - timedelta(days=7)] + params)
                     new_applications = cur.fetchone()['new_applications']
                     
-                    # Interviews scheduled
-                    cur.execute(f"""
-                        SELECT COUNT(*) as interviews_scheduled 
-                        FROM job_interviews ji
-                        JOIN job_applications ja ON ji.application_id = ja.id
-                        JOIN jobs j ON ja.job_id = j.id
-                        WHERE ji.status = 'scheduled' AND ji.scheduled_date >= %s {company_filter}
-                    """, [datetime.now()] + params)
-                    interviews_scheduled = cur.fetchone()['interviews_scheduled']
+                    # Interviews scheduled (Placeholder - table job_interviews missing)
+                    interviews_scheduled = 0
+                    # cur.execute(f"""
+                    #     SELECT COUNT(*) as interviews_scheduled 
+                    #     FROM job_interviews ji
+                    #     JOIN job_applications ja ON ji.application_id = ja.id
+                    #     JOIN job_postings j ON ja.job_id = j.jd_id
+                    #     WHERE ji.status = 'scheduled' AND ji.scheduled_date >= %s {company_filter}
+                    # """, [datetime.now()] + params)
+                    # interviews_scheduled = cur.fetchone()['interviews_scheduled']
                     
                     # Offers extended
                     cur.execute(f"""
                         SELECT COUNT(*) as offers_extended 
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
+                        JOIN job_postings j ON ja.job_id = j.jd_id
                         WHERE ja.status = 'offer_received' {company_filter}
                     """, params)
                     offers_extended = cur.fetchone()['offers_extended']
@@ -163,7 +164,7 @@ class HRDashboardEngine:
                     cur.execute(f"""
                         SELECT COUNT(*) as positions_filled 
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
+                        JOIN job_postings j ON ja.job_id = j.jd_id
                         WHERE ja.status = 'accepted' {company_filter}
                     """, params)
                     positions_filled = cur.fetchone()['positions_filled']
@@ -174,8 +175,8 @@ class HRDashboardEngine:
                             COUNT(CASE WHEN u.nationality = 'UAE' THEN 1 END) as emirati_hires,
                             COUNT(*) as total_hires
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
-                        JOIN users u ON ja.user_id = u.id
+                        JOIN job_postings j ON ja.job_id = j.jd_id
+                        JOIN users u ON CAST(ja.candidate_id AS INTEGER) = u.id
                         WHERE ja.status = 'accepted' {company_filter}
                     """, params)
                     emiratization_data = cur.fetchone()
@@ -186,9 +187,9 @@ class HRDashboardEngine:
                     
                     # Average time to hire
                     cur.execute(f"""
-                        SELECT AVG(EXTRACT(EPOCH FROM (ja.last_updated - ja.applied_date))/86400) as avg_days
+                        SELECT AVG(EXTRACT(EPOCH FROM (ja.last_updated - ja.submitted_at))/86400) as avg_days
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
+                        JOIN job_postings j ON ja.job_id = j.jd_id
                         WHERE ja.status = 'accepted' {company_filter}
                     """, params)
                     avg_time_to_hire = float(cur.fetchone()['avg_days'] or 0)
@@ -199,9 +200,9 @@ class HRDashboardEngine:
                             j.id, j.title, j.department,
                             COUNT(ja.id) as applications_count,
                             COUNT(CASE WHEN ja.status = 'accepted' THEN 1 END) as hires_count
-                        FROM jobs j
-                        LEFT JOIN job_applications ja ON j.id = ja.job_id
-                        WHERE j.status = 'active' {company_filter}
+                        FROM job_postings j
+                        LEFT JOIN job_applications ja ON j.jd_id = ja.job_id
+                        WHERE (j.status = 'active' OR j.status = 'published') {company_filter}
                         GROUP BY j.id, j.title, j.department
                         ORDER BY applications_count DESC
                         LIMIT 5
@@ -211,12 +212,12 @@ class HRDashboardEngine:
                     # Application trends (last 30 days)
                     cur.execute(f"""
                         SELECT 
-                            DATE(ja.applied_date) as application_date,
+                            DATE(ja.submitted_at) as application_date,
                             COUNT(*) as applications_count
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
-                        WHERE ja.applied_date >= %s {company_filter}
-                        GROUP BY DATE(ja.applied_date)
+                        JOIN job_postings j ON ja.job_id = j.jd_id
+                        WHERE ja.submitted_at >= %s {company_filter}
+                        GROUP BY DATE(ja.submitted_at)
                         ORDER BY application_date
                     """, [datetime.now() - timedelta(days=30)] + params)
                     trends_data = cur.fetchall()
@@ -231,7 +232,7 @@ class HRDashboardEngine:
                             ja.status,
                             COUNT(*) as count
                         FROM job_applications ja
-                        JOIN jobs j ON ja.job_id = j.id
+                        JOIN job_postings j ON ja.job_id = j.jd_id
                         WHERE 1=1 {company_filter}
                         GROUP BY ja.status
                     """, params)
@@ -277,34 +278,40 @@ class HRDashboardEngine:
                     enhanced_description = self._enhance_job_description(job_data) if self.model else job_data.get('description', '')
                     
                     # Insert job posting
+                    import uuid
+                    jd_id = str(uuid.uuid4())
+                    
                     cur.execute("""
-                        INSERT INTO jobs (
-                            id, title, department, location, job_type, salary_range,
-                            status, description, requirements, benefits, 
-                            emiratization_priority, company_id, created_by,
-                            created_at, application_deadline
+                        INSERT INTO job_postings (
+                            company_id, created_by, title, department, description, 
+                            location, status, employment_type,
+                            requirements, benefits, 
+                            emiratization_priority, created_at, application_deadline,
+                            jd_id, recruiter_id
                         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id
                     """, (
-                        job_id,
-                        job_data.get('title', ''),
-                        job_data.get('department', ''),
-                        job_data.get('location', ''),
-                        job_data.get('job_type', 'full_time'),
-                        job_data.get('salary_range', ''),
-                        JobStatus.DRAFT.value,
-                        enhanced_description,
-                        job_data.get('requirements', ''),
-                        job_data.get('benefits', ''),
-                        job_data.get('emiratization_priority', False),
                         job_data.get('company_id'),
                         hr_user_id,
+                        job_data.get('title', ''),
+                        job_data.get('department', ''),
+                        enhanced_description,
+                        job_data.get('location', ''),
+                        JobStatus.DRAFT.value,
+                        job_data.get('job_type', 'full_time'),
+                        job_data.get('requirements', '{}'),
+                        job_data.get('benefits', '{}'),
+                        job_data.get('emiratization_priority', False),
                         datetime.now(),
-                        job_data.get('application_deadline')
+                        job_data.get('application_deadline'),
+                        jd_id,
+                        hr_user_id
                     ))
                     
+                    new_job_id = cur.fetchone()['id']
                     conn.commit()
-                    logger.info(f"Created job posting {job_id}")
-                    return job_id
+                    logger.info(f"Created job posting {new_job_id}")
+                    return str(new_job_id)
                     
         except Exception as e:
             logger.error(f"Error creating job posting: {e}")
@@ -351,18 +358,22 @@ class HRDashboardEngine:
         try:
             with self.get_db_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # Resolve company_id if not provided
+                    if not company_id:
+                         # Try to find company for the user
+                         # This logic assumes hr_profiles table exists and links user to company
+                         cur.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (hr_user_id,))
+                         res = cur.fetchone()
+                         if res and res['company_id']:
+                             company_id = res['company_id']
+
                     query = """
                         SELECT 
                             j.*,
                             COUNT(ja.id) as applications_count,
-                            COALESCE(jv.views_count, 0) as views_count
-                        FROM jobs j
-                        LEFT JOIN job_applications ja ON j.id = ja.job_id
-                        LEFT JOIN (
-                            SELECT job_id, COUNT(*) as views_count 
-                            FROM job_views 
-                            GROUP BY job_id
-                        ) jv ON j.id = jv.job_id
+                            0 as views_count
+                        FROM job_postings j
+                        LEFT JOIN job_applications ja ON j.jd_id = ja.job_id
                         WHERE 1=1
                     """
                     params = []
@@ -376,11 +387,11 @@ class HRDashboardEngine:
                         params.append(status_filter)
 
                     if opportunity_type:
-                        query += " AND j.job_type = %s"
+                        query += " AND j.employment_type = %s"
                         params.append(opportunity_type)
                     
                     query += """
-                        GROUP BY j.id, jv.views_count
+                        GROUP BY j.id
                         ORDER BY j.created_at DESC
                     """
                     
@@ -389,22 +400,45 @@ class HRDashboardEngine:
                     
                     job_postings = []
                     for job_data in jobs_data:
+                        # Handle jsonb requirements
+                        reqs = job_data['requirements']
+                        if isinstance(reqs, dict) or isinstance(reqs, list):
+                            reqs_str = json.dumps(reqs)
+                        else:
+                            reqs_str = str(reqs) if reqs else ''
+
+                        benefits = job_data.get('benefits', '')
+                        if isinstance(benefits, dict) or isinstance(benefits, list):
+                            benefits_str = json.dumps(benefits)
+                        else:
+                            benefits_str = str(benefits) if benefits else ''
+                        
+                        # Handle salary range from min/max
+                        salary_min = job_data.get('salary_range_min')
+                        salary_max = job_data.get('salary_range_max')
+                        salary_str = f"{salary_min}-{salary_max}" if salary_min and salary_max else (str(salary_min) if salary_min else '')
+
+                        try:
+                            status_val = JobStatus(job_data['status'])
+                        except:
+                            status_val = JobStatus.ACTIVE if job_data['status'] == 'published' else JobStatus.DRAFT
+
                         job_posting = JobPosting(
-                            id=job_data['id'],
+                            id=str(job_data['id']),
                             title=job_data['title'],
                             department=job_data['department'] or '',
                             location=job_data['location'] or '',
-                            job_type=job_data['job_type'] or 'full_time',
-                            salary_range=job_data['salary_range'] or '',
-                            status=JobStatus(job_data['status']),
+                            job_type=job_data.get('employment_type') or 'full_time',
+                            salary_range=salary_str,
+                            status=status_val,
                             created_date=job_data['created_at'],
                             application_deadline=job_data['application_deadline'],
                             description=job_data['description'] or '',
-                            requirements=job_data['requirements'] or '',
-                            benefits=job_data['benefits'] or '',
+                            requirements=reqs_str,
+                            benefits=benefits_str,
                             emiratization_priority=job_data.get('emiratization_priority', False),
-                            applications_count=job_data['applications_count'] or 0,
-                            views_count=job_data['views_count'] or 0
+                            applications_count=job_data.get('applications_count', 0),
+                            views_count=job_data.get('views_count', 0)
                         )
                         job_postings.append(job_posting)
                     
@@ -420,8 +454,8 @@ class HRDashboardEngine:
             with self.get_db_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
-                        UPDATE jobs 
-                        SET status = %s, updated_at = %s, updated_by = %s
+                        UPDATE job_postings
+                        SET status = %s, updated_at = %s, created_by = %s
                         WHERE id = %s
                     """, (new_status.value, datetime.now(), hr_user_id, job_id))
                     

@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Download, FileText, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import { RecruiterAnalyticsCharts } from '@/components/recruiter/analytics/RecruiterAnalyticsCharts';
 import { KeyInsights } from '@/components/recruiter/analytics/KeyInsights';
 import html2canvas from 'html2canvas';
@@ -10,6 +11,7 @@ import jsPDF from 'jspdf';
 const API = (p: string) => `http://127.0.0.1:5005${p}`;
 
 export default function RecruiterAnalyticsPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
@@ -74,9 +76,14 @@ export default function RecruiterAnalyticsPage() {
   return (
     <div className="p-6 min-h-screen bg-slate-50/50">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Analytics Dashboard</h1>
-          <p className="text-slate-500">Real-time insights into your recruitment pipeline</p>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8 hover:bg-slate-200">
+            <ArrowLeft className="h-5 w-5 text-slate-600" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Analytics Dashboard</h1>
+            <p className="text-slate-500">Real-time insights into your recruitment pipeline</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportCSV}>

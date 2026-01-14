@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -352,7 +352,7 @@ const JobDescriptionsList = () => {
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -402,7 +402,7 @@ const JobDescriptionsList = () => {
               const newApplicants = applicantData?.new_applicants || 0;
               const shortlistData = getShortlistCount(jdId);
               const totalShortlisted = shortlistData?.total_shortlisted || 0;
-              
+
               return (
                 <Card key={jdId} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
@@ -410,7 +410,9 @@ const JobDescriptionsList = () => {
                       {/* Job Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold truncate">{job.title || 'Untitled Job'}</h3>
+                          <Link to={`/recruiter/jobs/${jdId}`} className="hover:underline">
+                            <h3 className="text-lg font-semibold truncate text-blue-600 dark:text-blue-400">{job.title || 'Untitled Job'}</h3>
+                          </Link>
                           <Badge variant={job.status === 'published' ? 'default' : job.status === 'draft' ? 'secondary' : 'outline'}>
                             {job.status || 'draft'}
                           </Badge>
@@ -442,7 +444,7 @@ const JobDescriptionsList = () => {
                         {(job.status === 'published' || job.status === 'active') && (
                           <>
                             {/* Applicants Badge */}
-                            <div 
+                            <div
                               className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
                               onClick={() => setSelectedJobForApplicants({ ...job, jd_id: jdId })}
                             >
@@ -458,9 +460,9 @@ const JobDescriptionsList = () => {
                               )}
                               <ChevronRight className="h-4 w-4 text-blue-400" />
                             </div>
-                            
+
                             {/* Shortlisted Badge */}
-                            <div 
+                            <div
                               className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
                               onClick={() => navigate(`/recruiter/shortlist/${jdId}`)}
                             >

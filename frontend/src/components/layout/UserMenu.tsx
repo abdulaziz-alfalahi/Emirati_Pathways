@@ -78,11 +78,11 @@ const UserMenu: React.FC = () => {
 
   const getInitials = () => {
     // Try different name sources
-    const fullName = user.full_name || 
-                    user.user_metadata?.full_name || 
-                    user.user_metadata?.name ||
-                    (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null);
-    
+    const fullName = user.full_name ||
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null);
+
     if (fullName) {
       return fullName
         .split(' ')
@@ -95,11 +95,11 @@ const UserMenu: React.FC = () => {
   };
 
   const getUserDisplayName = () => {
-    return user.full_name || 
-           user.user_metadata?.full_name || 
-           user.user_metadata?.name ||
-           (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
-           'User';
+    return user.full_name ||
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
+      'User';
   };
 
   const getCurrentRole = () => {
@@ -121,6 +121,8 @@ const UserMenu: React.FC = () => {
   };
 
   const currentRole = getUserRole() || 'job_seeker';
+
+
 
   return (
     <DropdownMenu>
@@ -144,9 +146,9 @@ const UserMenu: React.FC = () => {
             </p>
           </div>
         </DropdownMenuLabel>
-        
+
         <DropdownMenuSeparator />
-        
+
         {/* Active Role Display */}
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
@@ -159,26 +161,63 @@ const UserMenu: React.FC = () => {
             </div>
           </div>
         </DropdownMenuLabel>
-        
+
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem 
+
+        {/* Role Switching Section */}
+        {(user.secondary_roles && user.secondary_roles.length > 0) && (
+          <>
+            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Switch Role</DropdownMenuLabel>
+            {[user.user_type, ...(user.secondary_roles || [])].filter(Boolean).filter((r, i, arr) => arr.indexOf(r) === i).map((role) => (
+              <DropdownMenuItem
+                key={role}
+                onClick={async () => {
+                  if (role && role !== currentRole) {
+                    await authContext.switchRole(role);
+                    navigate(getDashboardRoute(role));
+                  }
+                }}
+                className="cursor-pointer flex items-center justify-between"
+                disabled={role === currentRole}
+              >
+                <div className="flex items-center">
+                  <span className="mr-2">{getRoleIcon(role!)}</span>
+                  {roleLabels[role!.toLowerCase()] || role}
+                </div>
+                {role === currentRole && <span className="text-xs text-muted-foreground">(Current)</span>}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+          </>
+        )}
+
+        {/* Request New Role Shortcut */}
+        <DropdownMenuItem
+          onClick={() => navigate('/profile?tab=roles')}
+          className="cursor-pointer text-teal-600 focus:text-teal-700"
+        >
+          <span className="mr-2">+</span> Request New Role
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
           onClick={() => navigate('/profile')}
           className="cursor-pointer"
         >
           Profile
         </DropdownMenuItem>
-        
-        <DropdownMenuItem 
+
+        <DropdownMenuItem
           onClick={handleDashboardNavigation}
           className="cursor-pointer"
         >
           Dashboard
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem 
+
+        <DropdownMenuItem
           onClick={handleSignOut}
           className="cursor-pointer text-destructive focus:text-destructive"
           disabled={isSigningOut}

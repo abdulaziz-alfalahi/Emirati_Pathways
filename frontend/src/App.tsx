@@ -1,8 +1,9 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import * as React from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
-import { MockAuthProvider } from '@/context/MockAuthContext';
+// import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
 import { Toaster as HotToaster } from 'react-hot-toast';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
@@ -13,10 +14,15 @@ import './styles/enhanced-rtl.css';
 
 // Loading component
 import DashboardLoading from '@/components/dashboard/DashboardLoading';
+// Shadcn Toaster
+import { Toaster } from '@/components/ui/toaster';
+import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 
 // Auth Pages (not lazy loaded for faster initial access)
-import AuthPage from '@/pages/auth';
-import MockLogin from '@/pages/auth/MockLogin';
+// import AuthPage from '@/pages/auth'; 
+import AuthPage from './pages/auth';
+// import MockLogin from '@/pages/auth/MockLogin'; 
+import EnhancedAuthPage from '@/pages/auth/EnhancedAuth';
 import { VerifyJob } from '@/pages/public/VerifyJob';
 
 // Lazy loaded components for better performance
@@ -39,7 +45,7 @@ const GuestLobby = lazy(() => import('@/pages/public/GuestLobby'));
 
 const RecruiterApprovals = lazy(() => import('@/pages/recruiter/Approvals'));
 const RecruiterDistribution = lazy(() => import('@/pages/recruiter/Distribution'));
-const NewJobWizard = lazy(() => import('@/pages/recruiter/NewJobWizard'));
+
 const JobDescriptionWizardPage = lazy(() => import('@/pages/recruiter/JobDescriptionWizardPage'));
 const JobDetailsPage = lazy(() => import('@/pages/recruiter/JobDetails'));
 const InterviewSchedulerPage = lazy(() => import('@/pages/recruiter/InterviewSchedulerPage'));
@@ -74,6 +80,7 @@ const CommunitiesPage = lazy(() => import('./pages/communities/CommunitiesPage')
 const SchoolProgramsPage = lazy(() => import('./pages/SchoolProgramsPage'));
 const SchoolProgramsAdmin = lazy(() => import('./pages/admin/SchoolProgramsAdmin'));
 const SchoolProgramsAdminAPI = lazy(() => import('./pages/admin/SchoolProgramsAdminAPI'));
+const RoleRequestsPage = lazy(() => import('./pages/admin/RoleRequestsPage'));
 const UniversityProgramsPage = lazy(() => import('./pages/education/UniversityProgramsPage'));
 
 // Other key pages
@@ -100,9 +107,13 @@ import OperatorDashboard from './pages/OperatorDashboard';
 // Global Styles
 import './index.css';
 
+import { useAuth } from '@/context/AuthContext';
+import { NotificationProvider } from '@/components/notifications/NotificationSystem';
+
 // App Content Component with bilingual support
 const AppContent: React.FC = () => {
   const { i18n } = useTranslation();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Set initial language and direction
@@ -120,473 +131,512 @@ const AppContent: React.FC = () => {
     }
   }, [i18n.language]);
 
+  const token = localStorage.getItem('access_token') || '';
+
   return (
-    <Router>
-      <div className="App min-h-screen bg-gray-50">
+    <div className="App min-h-screen bg-gray-50">
+      {isAuthenticated && user && user.id && (
+        <NotificationProvider
+          userId={user.id.toString()}
+          userType={user.user_type || user.role || 'user'}
+          authToken={token}
+        >
+          <Suspense fallback={<DashboardLoading />}>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<BilingualHomePage />} />
+              <Route path="/auth" element={<EnhancedAuthPage />} />
+              <Route path="/cv/share/:id" element={<PublicCVViewer />} />
+              <Route path="/public/job/:token" element={<VerifyJob />} />
+              <Route path="/jobs/:token" element={<VerifyJob />} />
+              <Route path="/verify-job/:token" element={<VerifyJob />} />
+
+              {/* Protected Role-Based Routes */}
+              <Route
+                path="/candidate-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker']}>
+                    <CandidateDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/*"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_manager', 'hr_recruiter']}>
+                    <RecruiterDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/verify-job/:token" element={<VerifyJob />} />
+              <Route path="/guest/interview/:token" element={<GuestLobby />} />
+
+              {/* Protected Dashboard Routes */}
+              <Route
+                path="/operator-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'operator']}>
+                    <OperatorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/candidate-dashboard"
+                // ...
+                element={
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                    <CandidateDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/hr-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['hr_manager', 'hr']}>
+                    <HRDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/jobs"
+                element={
+                  <ProtectedRoute>
+                    <RecruiterJobs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/vacancies"
+                element={
+                  <ProtectedRoute>
+                    <ActiveVacancies />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/jd-builder"
+                element={
+                  <ProtectedRoute>
+                    <JobDescriptionWizardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/jobs/:id"
+                element={
+                  <ProtectedRoute>
+                    <JobDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/interviews/schedule"
+                element={
+                  <ProtectedRoute>
+                    <InterviewSchedulerPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/jd-templates"
+                element={
+                  <ProtectedRoute>
+                    <JDTemplatesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/batch-upload"
+                element={
+                  <ProtectedRoute>
+                    <BatchUploadPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/analytics"
+                element={
+                  <ProtectedRoute>
+                    <RecruiterAnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/interviews/details"
+                element={
+                  <ProtectedRoute>
+                    <InterviewDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recruiter/candidates"
+                element={
+                  <ProtectedRoute>
+                    <RecruiterCandidates />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/video-interview/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <VideoInterviewPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/interview-analytics/:interviewId"
+                element={
+                  <ProtectedRoute>
+                    <InterviewAnalyticsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/shortlist/:jdId"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                    <ShortlistPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/candidate-profile/:candidateId"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                    <CandidateProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/offers"
+                element={
+                  <ProtectedRoute>
+                    <RecruiterOffers />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/approvals"
+                element={
+                  <ProtectedRoute>
+                    <RecruiterApprovals />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter/distribution"
+                element={
+                  <ProtectedRoute>
+                    <RecruiterDistribution />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/recruiter-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                    <RecruiterDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/assessor-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['assessor']}>
+                    <AssessorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Growth Operator Dashboard Routes */}
+              <Route
+                path="/growth-operator-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
+                    <GrowthOperatorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/growth-operator-dashboard/:domain"
+                element={
+                  <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
+                    <GrowthOperatorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/admin/school-programs"
+                element={
+                  <ProtectedRoute allowedRoles={['administrator', 'admin', 'khda_staff', 'content_manager']}>
+                    <SchoolProgramsAdminAPI />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/admin/role-requests"
+                element={
+                  <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                    <RoleRequestsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/educator-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['educator']}>
+                    <EducatorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/mentor-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['mentor']}>
+                    <MentorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/admin/user-roles"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                    <Suspense fallback={<DashboardLoading />}>
+                      {React.createElement(lazy(() => import('@/components/admin/UserManager')))}
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/government-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['government']}>
+                    <GovernmentDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Resume Builder Routes */}
+              <Route
+                path="/cv-builder"
+                element={
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                    <AutoFillCVBuilder />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/resume-builder"
+                element={
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                    <ResumeBuilderPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* CV Upload Route */}
+              <Route
+                path="/cv-upload"
+                element={<CVUploadPage />}
+              />
+
+              {/* Core Pages Routes */}
+              <Route
+                path="/industry-exploration"
+                element={<IndustryExplorationPage />}
+              />
+
+              <Route
+                path="/cv-builder-new"
+                element={<CVBuilderPage />}
+              />
+
+              <Route
+                path="/analytics-dashboard"
+                element={<AnalyticsDashboard />}
+              />
+
+              <Route
+                path="/communities-new"
+                element={<CommunitiesPage />}
+              />
+
+              <Route
+                path="/school-programs"
+                element={<SchoolProgramsPage />}
+              />
+
+              <Route
+                path="/university-programs"
+                element={<UniversityProgramsPage />}
+              />
+
+              {/* Core Feature Routes */}
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    <Messages />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/job-matching"
+                element={
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                    <JobMatching />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/applications"
+                element={
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                    <Applications />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/training"
+                element={
+                  <ProtectedRoute>
+                    <Training />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/communities"
+                element={
+                  <ProtectedRoute>
+                    <Communities />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/digital-skills"
+                element={
+                  <ProtectedRoute>
+                    <DigitalSkills />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/career-planning-hub"
+                element={<CareerPlanningHub />}
+              />
+
+              <Route
+                path="/mentorship"
+                element={
+                  <ProtectedRoute>
+                    <Mentorship />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/success-stories"
+                element={
+                  <ProtectedRoute>
+                    <SuccessStories />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Login Test Route */}
+              <Route path="/login-test" element={<LoginTestPage />} />
+
+              {/* Catch all route - 404 page */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+
+          {/* Toast Notifications */}
+          <HotToaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </NotificationProvider>
+      )}
+      {!isAuthenticated && (
         <Suspense fallback={<DashboardLoading />}>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<BilingualHomePage />} />
-            <Route path="/auth" element={<MockLogin />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="/cv/share/:id" element={<PublicCVViewer />} />
             <Route path="/verify-job/:token" element={<VerifyJob />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
-            {/* Protected Dashboard Routes */}
-            <Route
-              path="/operator-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'operator']}>
-                  <OperatorDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/candidate-dashboard"
-              // ...
-              element={
-                <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                  <CandidateDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/hr-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['hr_manager', 'hr']}>
-                  <HRDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/jobs"
-              element={
-                <ProtectedRoute>
-                  <RecruiterJobs />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/vacancies"
-              element={
-                <ProtectedRoute>
-                  <ActiveVacancies />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/jobs/new"
-              element={
-                <ProtectedRoute>
-                  <NewJobWizard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/jd-builder"
-              element={
-                <ProtectedRoute>
-                  <JobDescriptionWizardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/jobs/:id"
-              element={
-                <ProtectedRoute>
-                  <JobDetailsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/interviews/schedule"
-              element={
-                <ProtectedRoute>
-                  <InterviewSchedulerPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/jd-templates"
-              element={
-                <ProtectedRoute>
-                  <JDTemplatesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/batch-upload"
-              element={
-                <ProtectedRoute>
-                  <BatchUploadPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/analytics"
-              element={
-                <ProtectedRoute>
-                  <RecruiterAnalyticsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/interviews/details"
-              element={
-                <ProtectedRoute>
-                  <InterviewDetailsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/candidates"
-              element={
-                <ProtectedRoute>
-                  <RecruiterCandidates />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/video-interview/:sessionId"
-              element={
-                <ProtectedRoute>
-                  <VideoInterviewPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/interview-analytics/:interviewId"
-              element={
-                <ProtectedRoute>
-                  <InterviewAnalyticsPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/shortlist/:jdId"
-              element={
-                <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
-                  <ShortlistPage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/candidate-profile/:candidateId"
-              element={
-                <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
-                  <CandidateProfilePage />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/offers"
-              element={
-                <ProtectedRoute>
-                  <RecruiterOffers />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/approvals"
-              element={
-                <ProtectedRoute>
-                  <RecruiterApprovals />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter/distribution"
-              element={
-                <ProtectedRoute>
-                  <RecruiterDistribution />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/recruiter-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
-                  <RecruiterDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/assessor-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['assessor']}>
-                  <AssessorDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/admin-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['administrator', 'admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Growth Operator Dashboard Routes */}
-            <Route
-              path="/growth-operator-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
-                  <GrowthOperatorDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/growth-operator-dashboard/:domain"
-              element={
-                <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
-                  <GrowthOperatorDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/admin/school-programs"
-              element={
-                <ProtectedRoute allowedRoles={['administrator', 'admin', 'khda_staff', 'content_manager']}>
-                  <SchoolProgramsAdminAPI />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/educator-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['educator']}>
-                  <EducatorDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/mentor-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['mentor']}>
-                  <MentorDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/admin/user-roles"
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-                  <Suspense fallback={<DashboardLoading />}>
-                    {/* Lazy load UserManager if possible, but importing directly for now since it's not exported lazy above. 
-                        Actually I should import it at the top or Lazy load it.
-                        For safety, I'll use a direct import at the top (checking if imported). 
-                        Wait, UserManager is NOT imported. I need to add import.
-                        But I can't add import easily with replace_file_content in the middle.
-                        I will add a Lazy definition here or just assume I can add it.
-                        Let's use React.lazy inline for now or add top level import in a separate call?
-                        No, let's just make it lazy here.
-                     */}
-                    {React.createElement(lazy(() => import('@/components/admin/UserManager')))}
-                  </Suspense>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/government-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['government']}>
-                  <GovernmentDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Resume Builder Routes */}
-            <Route
-              path="/cv-builder"
-              element={
-                <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                  <AutoFillCVBuilder />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/resume-builder"
-              element={
-                <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                  <ResumeBuilderPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* CV Upload Route */}
-            <Route
-              path="/cv-upload"
-              element={<CVUploadPage />}
-            />
-
-            {/* Core Pages Routes */}
-            <Route
-              path="/industry-exploration"
-              element={<IndustryExplorationPage />}
-            />
-
-            <Route
-              path="/cv-builder-new"
-              element={<CVBuilderPage />}
-            />
-
-            <Route
-              path="/analytics-dashboard"
-              element={<AnalyticsDashboard />}
-            />
-
-            <Route
-              path="/communities-new"
-              element={<CommunitiesPage />}
-            />
-
-            <Route
-              path="/school-programs"
-              element={<SchoolProgramsPage />}
-            />
-
-            <Route
-              path="/university-programs"
-              element={<UniversityProgramsPage />}
-            />
-
-            {/* Core Feature Routes */}
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Analytics />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/messages"
-              element={
-                <ProtectedRoute>
-                  <Messages />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/job-matching"
-              element={
-                <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                  <JobMatching />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/applications"
-              element={
-                <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                  <Applications />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/training"
-              element={
-                <ProtectedRoute>
-                  <Training />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/communities"
-              element={
-                <ProtectedRoute>
-                  <Communities />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/digital-skills"
-              element={
-                <ProtectedRoute>
-                  <DigitalSkills />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/career-planning-hub"
-              element={<CareerPlanningHub />}
-            />
-
-            <Route
-              path="/mentorship"
-              element={
-                <ProtectedRoute>
-                  <Mentorship />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/success-stories"
-              element={
-                <ProtectedRoute>
-                  <SuccessStories />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Login Test Route */}
-            <Route path="/login-test" element={<LoginTestPage />} />
-
-            {/* Catch all route - 404 page */}
-            <Route path="*" element={<NotFound />} />
+            {/* Catch all route for unauthenticated - redirect to auth or home */}
+            <Route path="*" element={<Navigate to="/auth" replace />} />
           </Routes>
         </Suspense>
-
-        {/* Toast Notifications */}
-        <HotToaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
-      </div>
-    </Router>
+      )}
+      <Toaster />
+      <FeedbackWidget />
+    </div>
   );
 };
 
@@ -600,19 +650,22 @@ const queryClient = new QueryClient({
   },
 });
 
-// Main App Component with Enhanced Language Provider and Mock Auth
-function App() {
+// Main App Component
+const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <MockAuthProvider>
-          <AuthProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AuthProvider>
+          <LanguageProvider>
             <AppContent />
-          </AuthProvider>
-        </MockAuthProvider>
-      </LanguageProvider>
+            <Toaster />
+            <HotToaster position="top-center" />
+            <FeedbackWidget />
+          </LanguageProvider>
+        </AuthProvider>
+      </Router>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

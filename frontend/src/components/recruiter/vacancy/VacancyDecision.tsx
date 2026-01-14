@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,11 +14,10 @@ import {
     Clock,
     FileSignature,
     Send,
-    UserCheck,
-    DollarSign,
-    Briefcase
+    UserCheck
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { recruiterService, Candidate } from "@/services/recruiterService";
 
 interface VacancyDecisionProps {
     job: any;
@@ -29,35 +27,38 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
     const { toast } = useToast();
     const [offerOpen, setOfferOpen] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+    const [candidates, setCandidates] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    // Mock Pipeline Data
-    const candidates = [
-        {
-            id: "1",
-            name: "Khalid Al Mazrouei",
-            role: "Senior Developer",
-            status: "approved", // recommended, approved, rejected, offer_sent, hired
-            match: 95,
-            hr_feedback: "Excellent technical skills. Approved for offer.",
-            salary_expectation: "25,000 AED"
-        },
-        {
-            id: "2",
-            name: "Sara Ahmed",
-            role: "Senior Developer",
-            status: "recommended",
-            match: 88,
-            hr_feedback: "Pending Review",
-            salary_expectation: "22,000 AED"
+    useEffect(() => {
+        const fetchCandidates = async () => {
+            if (job?.id) {
+                const data = await recruiterService.getPipelineCandidates(job.id);
+                setCandidates(data);
+            }
+        };
+        fetchCandidates();
+    }, [job?.id]);
+
+    const handleSendOffer = async () => {
+        try {
+            await recruiterService.sendOffer({
+                candidateId: selectedCandidate?.id,
+                jobId: job?.id,
+                // Add other offer details from form here
+            });
+            setOfferOpen(false);
+            toast({
+                title: "Offer Sent Successfully",
+                description: `Employment offer sent to ${selectedCandidate?.name}. Waiting for candidate acceptance.`
+            });
+        } catch (error) {
+            toast({
+                title: "Error Sending Offer",
+                description: "There was a problem sending the offer. Please try again.",
+                variant: "destructive"
+            });
         }
-    ];
-
-    const handleSendOffer = () => {
-        setOfferOpen(false);
-        toast({
-            title: "Offer Sent Successfully",
-            description: `Employment offer sent to ${selectedCandidate?.name}. Waiting for candidate acceptance.`
-        });
     };
 
     const startOffer = (candidate: any) => {
@@ -122,10 +123,10 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
                                 {/* Candidate Info */}
                                 <div className="flex items-center gap-4">
                                     <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                                        <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{candidate.name.charAt(0)}</AvatarFallback>
+                                        <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{candidate.first_name?.charAt(0) || candidate.name?.charAt(0) || '?'}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <h4 className="font-semibold text-gray-900">{candidate.name}</h4>
+                                        <h4 className="font-semibold text-gray-900">{candidate.name || `${candidate.first_name} ${candidate.last_name}`}</h4>
                                         <div className="flex items-center gap-2 text-sm text-gray-500">
                                             <Badge variant={candidate.match > 90 ? "default" : "secondary"} className="text-xs">
                                                 {candidate.match}% Match
@@ -219,3 +220,4 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
         </div>
     );
 };
+

@@ -325,18 +325,18 @@ const UserManagerEnhanced: React.FC = () => {
   // ============================================
   // STATE
   // ============================================
-  
+
   // User data
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(20);
-  
+
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -347,17 +347,17 @@ const UserManagerEnhanced: React.FC = () => {
     dateFrom: '',
     dateTo: ''
   });
-  
+
   // Sorting
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: 'created_at',
     direction: 'desc'
   });
-  
+
   // Selection
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  
+
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -366,17 +366,17 @@ const UserManagerEnhanced: React.FC = () => {
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showBulkRoleModal, setShowBulkRoleModal] = useState(false);
   const [showRoleManagementModal, setShowRoleManagementModal] = useState(false);
-  
+
   // Selected user for operations
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  
+
   // Roles
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-  
+
   // Activity logs
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [userSessions, setUserSessions] = useState<UserSession[]>([]);
-  
+
   // Form data for create/edit
   const [formData, setFormData] = useState({
     username: '',
@@ -393,32 +393,32 @@ const UserManagerEnhanced: React.FC = () => {
       location: ''
     }
   });
-  
+
   // Validation
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [emailChecking, setEmailChecking] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
-  
+
   // Password strength
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
-  
+
   // Bulk operations
   const [bulkRoles, setBulkRoles] = useState<string[]>([]);
-  
+
   // ============================================
   // EFFECTS
   // ============================================
-  
+
   // Fetch users on mount and when filters change
   useEffect(() => {
     fetchUsers();
   }, [currentPage, itemsPerPage, filters, sortConfig]);
-  
+
   // Fetch roles on mount
   useEffect(() => {
     fetchRoles();
   }, []);
-  
+
   // Update password strength when password changes
   useEffect(() => {
     if (formData.password) {
@@ -427,7 +427,7 @@ const UserManagerEnhanced: React.FC = () => {
       setPasswordStrength(null);
     }
   }, [formData.password]);
-  
+
   // Check email availability with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -437,10 +437,10 @@ const UserManagerEnhanced: React.FC = () => {
         setEmailAvailable(null);
       }
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [formData.email]);
-  
+
   // Handle select all
   useEffect(() => {
     if (selectAll) {
@@ -449,32 +449,32 @@ const UserManagerEnhanced: React.FC = () => {
       // Don't clear if user manually selected all
     }
   }, [selectAll, users]);
-  
+
   // ============================================
   // API CALLS
   // ============================================
-  
+
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const params: Record<string, any> = {
         page: currentPage,
         per_page: itemsPerPage,
         sort_by: sortConfig.field,
         sort_dir: sortConfig.direction
       };
-      
+
       if (searchTerm) params.search = searchTerm;
       if (filters.status !== 'all') params.status = filters.status;
       if (filters.role) params.role = filters.role;
       if (filters.department) params.department = filters.department;
       if (filters.dateFrom) params.date_from = filters.dateFrom;
       if (filters.dateTo) params.date_to = filters.dateTo;
-      
+
       const response = await restClient.get('/api/admin/users', { params });
-      
+
       if (response.data?.data?.users) {
         setUsers(response.data.data.users);
         setTotalPages(response.data.data.pages || 1);
@@ -496,7 +496,7 @@ const UserManagerEnhanced: React.FC = () => {
       setIsLoading(false);
     }
   };
-  
+
   const fetchRoles = async () => {
     try {
       const response = await restClient.get('/api/admin/roles');
@@ -511,7 +511,7 @@ const UserManagerEnhanced: React.FC = () => {
       setAvailableRoles(getDefaultRoles());
     }
   };
-  
+
   const checkEmailAvailability = async (email: string) => {
     try {
       setEmailChecking(true);
@@ -524,7 +524,7 @@ const UserManagerEnhanced: React.FC = () => {
       setEmailChecking(false);
     }
   };
-  
+
   const fetchUserActivity = async (userId: number) => {
     try {
       const response = await restClient.get(`/api/admin/users/${userId}/activity`);
@@ -542,36 +542,36 @@ const UserManagerEnhanced: React.FC = () => {
       setUserSessions(generateMockSessions(userId));
     }
   };
-  
+
   // ============================================
   // HANDLERS
   // ============================================
-  
+
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setCurrentPage(1);
   }, []);
-  
+
   const handleSort = (field: string) => {
     setSortConfig(prev => ({
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
-  
+
   const handleFilterChange = (key: keyof UserFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1);
   };
-  
+
   const handleSelectUser = (userId: number) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
+    setSelectedUsers(prev =>
+      prev.includes(userId)
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
   };
-  
+
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedUsers([]);
@@ -580,47 +580,47 @@ const UserManagerEnhanced: React.FC = () => {
     }
     setSelectAll(!selectAll);
   };
-  
+
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
-    
+
     if (!formData.username || formData.username.length < 3) {
       errors.username = 'Username must be at least 3 characters';
     }
-    
+
     if (!formData.email || !isValidEmail(formData.email)) {
       errors.email = 'Please enter a valid email address';
     } else if (emailAvailable === false) {
       errors.email = 'This email is already in use';
     }
-    
+
     if (!showEditModal) {
       if (!formData.password || formData.password.length < 8) {
         errors.password = 'Password must be at least 8 characters';
       } else if (passwordStrength && passwordStrength.score < 3) {
         errors.password = 'Password is too weak';
       }
-      
+
       if (formData.password !== formData.confirmPassword) {
         errors.password = 'Passwords do not match';
       }
     }
-    
+
     if (!formData.full_name || formData.full_name.length < 2) {
       errors.full_name = 'Please enter a full name';
     }
-    
+
     if (formData.roles.length === 0) {
       errors.roles = 'Please select at least one role';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
-  
+
   const handleCreateUser = async () => {
     if (!validateForm()) return;
-    
+
     try {
       await restClient.post('/api/admin/users', {
         username: formData.username,
@@ -631,21 +631,21 @@ const UserManagerEnhanced: React.FC = () => {
         is_active: formData.is_active,
         profile_data: formData.profile_data
       });
-      
+
       setShowCreateModal(false);
       resetForm();
       fetchUsers();
     } catch (err: any) {
       console.error('Failed to create user:', err);
-      setValidationErrors({ 
-        email: err.response?.data?.message || 'Failed to create user' 
+      setValidationErrors({
+        email: err.response?.data?.message || 'Failed to create user'
       });
     }
   };
-  
+
   const handleUpdateUser = async () => {
     if (!selectedUser || !validateForm()) return;
-    
+
     try {
       await restClient.put(`/api/admin/users/${selectedUser.id}`, {
         username: formData.username,
@@ -655,19 +655,19 @@ const UserManagerEnhanced: React.FC = () => {
         is_active: formData.is_active,
         profile_data: formData.profile_data
       });
-      
+
       setShowEditModal(false);
       setSelectedUser(null);
       resetForm();
       fetchUsers();
     } catch (err: any) {
       console.error('Failed to update user:', err);
-      setValidationErrors({ 
-        email: err.response?.data?.message || 'Failed to update user' 
+      setValidationErrors({
+        email: err.response?.data?.message || 'Failed to update user'
       });
     }
   };
-  
+
   const handleUpdateStatus = async (userId: number, activate: boolean) => {
     try {
       if (activate) {
@@ -681,28 +681,28 @@ const UserManagerEnhanced: React.FC = () => {
       alert('Failed to update user status');
     }
   };
-  
+
   const handleBulkAction = async (action: 'activate' | 'suspend' | 'delete') => {
     if (selectedUsers.length === 0) return;
-    
-    const confirmMessage = action === 'delete' 
+
+    const confirmMessage = action === 'delete'
       ? `Are you sure you want to delete ${selectedUsers.length} user(s)? This cannot be undone.`
       : `Are you sure you want to ${action} ${selectedUsers.length} user(s)?`;
-    
+
     if (!window.confirm(confirmMessage)) return;
-    
+
     try {
       if (action === 'delete') {
-        await Promise.all(selectedUsers.map(id => 
+        await Promise.all(selectedUsers.map(id =>
           restClient.delete(`/api/admin/users/${id}`)
         ));
       } else {
         const endpoint = action === 'activate' ? 'bulk/activate' : 'bulk/suspend';
-        await restClient.post(`/api/admin/users/${endpoint}`, { 
-          user_ids: selectedUsers 
+        await restClient.post(`/api/admin/users/${endpoint}`, {
+          user_ids: selectedUsers
         });
       }
-      
+
       setSelectedUsers([]);
       setSelectAll(false);
       fetchUsers();
@@ -711,15 +711,15 @@ const UserManagerEnhanced: React.FC = () => {
       alert(`Failed to ${action} users`);
     }
   };
-  
+
   const handleBulkRoleAssignment = async () => {
     if (selectedUsers.length === 0 || bulkRoles.length === 0) return;
-    
+
     try {
       await Promise.all(selectedUsers.map(id =>
         restClient.put(`/api/admin/users/${id}/roles`, { roles: bulkRoles })
       ));
-      
+
       setShowBulkRoleModal(false);
       setBulkRoles([]);
       setSelectedUsers([]);
@@ -730,15 +730,15 @@ const UserManagerEnhanced: React.FC = () => {
       alert('Failed to assign roles');
     }
   };
-  
+
   const handleExport = async (format: 'csv' | 'excel') => {
     try {
       const response = await restClient.get('/api/admin/users/export', {
         params: { format },
         responseType: 'blob'
       });
-      
-      const blob = new Blob([response.data], { 
+
+      const blob = new Blob([response.data], {
         type: format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
       const url = window.URL.createObjectURL(blob);
@@ -755,7 +755,7 @@ const UserManagerEnhanced: React.FC = () => {
       exportToCSV();
     }
   };
-  
+
   const exportToCSV = () => {
     const headers = ['ID', 'Username', 'Email', 'Full Name', 'Roles', 'Status', 'Department', 'Last Login', 'Created'];
     const rows = users.map(u => [
@@ -769,7 +769,7 @@ const UserManagerEnhanced: React.FC = () => {
       u.last_login || 'Never',
       u.created_at
     ]);
-    
+
     const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -780,7 +780,7 @@ const UserManagerEnhanced: React.FC = () => {
     link.click();
     link.remove();
   };
-  
+
   const handleTerminateSession = async (sessionId: string) => {
     try {
       await restClient.delete(`/api/admin/sessions/${sessionId}`);
@@ -791,7 +791,7 @@ const UserManagerEnhanced: React.FC = () => {
       console.error('Failed to terminate session:', err);
     }
   };
-  
+
   const resetForm = () => {
     setFormData({
       username: '',
@@ -812,7 +812,7 @@ const UserManagerEnhanced: React.FC = () => {
     setEmailAvailable(null);
     setPasswordStrength(null);
   };
-  
+
   const openEditModal = (user: User) => {
     setSelectedUser(user);
     setFormData({
@@ -832,23 +832,23 @@ const UserManagerEnhanced: React.FC = () => {
     });
     setShowEditModal(true);
   };
-  
+
   const openProfileModal = (user: User) => {
     setSelectedUser(user);
     fetchUserActivity(user.id);
     setShowProfileModal(true);
   };
-  
+
   const openActivityModal = (user: User) => {
     setSelectedUser(user);
     fetchUserActivity(user.id);
     setShowActivityModal(true);
   };
-  
+
   // ============================================
   // MOCK DATA GENERATORS
   // ============================================
-  
+
   const generateMockUsers = (): User[] => {
     const names = [
       'Ahmed Al Maktoum', 'Fatima Al Nahyan', 'Mohammed Al Qasimi',
@@ -856,10 +856,10 @@ const UserManagerEnhanced: React.FC = () => {
       'Omar Al Suwaidi', 'Aisha Al Ketbi', 'Rashid Al Muhairi',
       'Hessa Al Mansoori', 'Sultan Al Dhaheri', 'Mariam Al Zaabi'
     ];
-    
+
     const roles = ['candidate', 'recruiter', 'hr_manager', 'growth_operator', 'platform_administrator'];
     const departments = ['Engineering', 'HR', 'Marketing', 'Operations', 'Finance'];
-    
+
     return names.map((name, i) => ({
       id: i + 1,
       username: name.toLowerCase().replace(/\s+/g, '.'),
@@ -880,7 +880,7 @@ const UserManagerEnhanced: React.FC = () => {
       session_count: Math.floor(Math.random() * 5)
     }));
   };
-  
+
   const generateMockActivity = (userId: number): ActivityLog[] => {
     const actions = ['login', 'logout', 'profile_update', 'password_change', 'role_change', 'document_upload'];
     return Array.from({ length: 10 }, (_, i) => ({
@@ -893,7 +893,7 @@ const UserManagerEnhanced: React.FC = () => {
       created_at: new Date(Date.now() - i * 3600000).toISOString()
     }));
   };
-  
+
   const generateMockSessions = (userId: number): UserSession[] => {
     return Array.from({ length: 3 }, (_, i) => ({
       id: `session-${userId}-${i}`,
@@ -905,7 +905,7 @@ const UserManagerEnhanced: React.FC = () => {
       is_current: i === 0
     }));
   };
-  
+
   const getDefaultRoles = (): Role[] => [
     { id: 'platform_administrator', name: 'platform_administrator', display_name: 'Platform Administrator', description: 'Full system access', permissions: DEFAULT_PERMISSIONS, is_system: true, user_count: 2 },
     { id: 'hr_manager', name: 'hr_manager', display_name: 'HR Manager', description: 'Manage HR operations', permissions: ['view_dashboard', 'view_candidates', 'manage_candidates', 'view_jobs'], is_system: true, user_count: 5 },
@@ -915,14 +915,14 @@ const UserManagerEnhanced: React.FC = () => {
     { id: 'mentor', name: 'mentor', display_name: 'Mentor', description: 'Career mentor', permissions: ['view_dashboard'], is_system: true, user_count: 8 },
     { id: 'assessor', name: 'assessor', display_name: 'Assessor', description: 'Assessment evaluator', permissions: ['view_dashboard'], is_system: true, user_count: 6 }
   ];
-  
+
   // ============================================
   // FILTERED/SORTED DATA
   // ============================================
-  
+
   const filteredUsers = useMemo(() => {
     let result = [...users];
-    
+
     // Apply search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -933,14 +933,14 @@ const UserManagerEnhanced: React.FC = () => {
         u.id.toString().includes(term)
       );
     }
-    
+
     return result;
   }, [users, searchTerm]);
-  
+
   // ============================================
   // RENDER
   // ============================================
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -968,7 +968,7 @@ const UserManagerEnhanced: React.FC = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -1012,7 +1012,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Search and Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -1027,14 +1027,13 @@ const UserManagerEnhanced: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           {/* Filter toggles */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium ${
-                showFilters ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-              }`}
+              className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium ${showFilters ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
             >
               <Filter className="w-4 h-4 mr-2" />
               Filters
@@ -1044,14 +1043,14 @@ const UserManagerEnhanced: React.FC = () => {
                 </span>
               )}
             </button>
-            
+
             <button
               onClick={fetchUsers}
               className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
-            
+
             <div className="relative">
               <button
                 onClick={() => handleExport('csv')}
@@ -1063,7 +1062,7 @@ const UserManagerEnhanced: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Expanded Filters */}
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -1079,7 +1078,7 @@ const UserManagerEnhanced: React.FC = () => {
                 <option value="inactive">Inactive</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
               <select
@@ -1093,7 +1092,7 @@ const UserManagerEnhanced: React.FC = () => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
               <select
@@ -1107,7 +1106,7 @@ const UserManagerEnhanced: React.FC = () => {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
               <input
@@ -1117,7 +1116,7 @@ const UserManagerEnhanced: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
               <input
@@ -1130,7 +1129,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {/* Bulk Actions Bar */}
       {selectedUsers.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
@@ -1175,7 +1174,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Users Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {isLoading ? (
@@ -1205,7 +1204,7 @@ const UserManagerEnhanced: React.FC = () => {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th 
+                  <th
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('full_name')}
                   >
@@ -1225,7 +1224,7 @@ const UserManagerEnhanced: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Department
                   </th>
-                  <th 
+                  <th
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('last_login')}
                   >
@@ -1236,7 +1235,7 @@ const UserManagerEnhanced: React.FC = () => {
                       )}
                     </div>
                   </th>
-                  <th 
+                  <th
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('created_at')}
                   >
@@ -1266,7 +1265,7 @@ const UserManagerEnhanced: React.FC = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
-                          {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          {(user.full_name || 'User').split(' ').map(n => n[0]).join('').slice(0, 2)}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
@@ -1291,7 +1290,7 @@ const UserManagerEnhanced: React.FC = () => {
                       <div className="flex flex-wrap gap-1">
                         {user.roles.slice(0, 2).map((role, i) => (
                           <span key={i} className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getRoleColor(role)}`}>
-                            {role.replace(/_/g, ' ')}
+                            {(role || '').replace(/_/g, ' ')}
                           </span>
                         ))}
                         {user.roles.length > 2 && (
@@ -1348,7 +1347,7 @@ const UserManagerEnhanced: React.FC = () => {
             </table>
           </div>
         )}
-        
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
@@ -1377,7 +1376,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {/* Create User Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1388,7 +1387,7 @@ const UserManagerEnhanced: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4 space-y-4">
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
@@ -1407,7 +1406,7 @@ const UserManagerEnhanced: React.FC = () => {
                     <p className="mt-1 text-xs text-red-500">{validationErrors.username}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email <span className="text-red-500">*</span>
@@ -1431,7 +1430,7 @@ const UserManagerEnhanced: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name <span className="text-red-500">*</span>
@@ -1447,7 +1446,7 @@ const UserManagerEnhanced: React.FC = () => {
                   <p className="mt-1 text-xs text-red-500">{validationErrors.full_name}</p>
                 )}
               </div>
-              
+
               {/* Password */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1465,7 +1464,7 @@ const UserManagerEnhanced: React.FC = () => {
                     <div className="mt-2">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full ${passwordStrength.color} transition-all`}
                             style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
                           />
@@ -1482,7 +1481,7 @@ const UserManagerEnhanced: React.FC = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm Password <span className="text-red-500">*</span>
@@ -1499,11 +1498,11 @@ const UserManagerEnhanced: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               {validationErrors.password && (
                 <p className="text-xs text-red-500">{validationErrors.password}</p>
               )}
-              
+
               {/* Roles */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1534,7 +1533,7 @@ const UserManagerEnhanced: React.FC = () => {
                   <p className="mt-1 text-xs text-red-500">{validationErrors.roles}</p>
                 )}
               </div>
-              
+
               {/* Profile Data */}
               <div className="border-t border-gray-200 pt-4">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Profile Information</h4>
@@ -1546,8 +1545,8 @@ const UserManagerEnhanced: React.FC = () => {
                       <input
                         type="tel"
                         value={formData.profile_data.phone}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
+                        onChange={(e) => setFormData({
+                          ...formData,
                           profile_data: { ...formData.profile_data, phone: e.target.value }
                         })}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1555,15 +1554,15 @@ const UserManagerEnhanced: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Department</label>
                     <div className="relative">
                       <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <select
                         value={formData.profile_data.department}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
+                        onChange={(e) => setFormData({
+                          ...formData,
                           profile_data: { ...formData.profile_data, department: e.target.value }
                         })}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1575,7 +1574,7 @@ const UserManagerEnhanced: React.FC = () => {
                       </select>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Position</label>
                     <div className="relative">
@@ -1583,8 +1582,8 @@ const UserManagerEnhanced: React.FC = () => {
                       <input
                         type="text"
                         value={formData.profile_data.position}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
+                        onChange={(e) => setFormData({
+                          ...formData,
                           profile_data: { ...formData.profile_data, position: e.target.value }
                         })}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1592,7 +1591,7 @@ const UserManagerEnhanced: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Location</label>
                     <div className="relative">
@@ -1600,8 +1599,8 @@ const UserManagerEnhanced: React.FC = () => {
                       <input
                         type="text"
                         value={formData.profile_data.location}
-                        onChange={(e) => setFormData({ 
-                          ...formData, 
+                        onChange={(e) => setFormData({
+                          ...formData,
                           profile_data: { ...formData.profile_data, location: e.target.value }
                         })}
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1611,7 +1610,7 @@ const UserManagerEnhanced: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Active Status */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                 <div>
@@ -1627,7 +1626,7 @@ const UserManagerEnhanced: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
               <button
                 onClick={() => { setShowCreateModal(false); resetForm(); }}
@@ -1645,7 +1644,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Edit User Modal - Similar structure to Create */}
       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1656,7 +1655,7 @@ const UserManagerEnhanced: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4 space-y-4">
               {/* Same form fields as create, but without password requirement */}
               <div className="grid grid-cols-2 gap-4">
@@ -1679,7 +1678,7 @@ const UserManagerEnhanced: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input
@@ -1689,7 +1688,7 @@ const UserManagerEnhanced: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               {/* Roles */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Roles</label>
@@ -1698,12 +1697,15 @@ const UserManagerEnhanced: React.FC = () => {
                     <label key={role.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
-                        checked={formData.roles.includes(role.name)}
+                        checked={formData.roles.includes(role.name) || formData.roles.includes(role.display_name)}
                         onChange={(e) => {
                           if (e.target.checked) {
                             setFormData({ ...formData, roles: [...formData.roles, role.name] });
                           } else {
-                            setFormData({ ...formData, roles: formData.roles.filter(r => r !== role.name) });
+                            setFormData({
+                              ...formData,
+                              roles: formData.roles.filter(r => r !== role.name && r !== role.display_name)
+                            });
                           }
                         }}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -1715,7 +1717,7 @@ const UserManagerEnhanced: React.FC = () => {
                   ))}
                 </div>
               </div>
-              
+
               {/* Profile Data */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1723,8 +1725,8 @@ const UserManagerEnhanced: React.FC = () => {
                   <input
                     type="tel"
                     value={formData.profile_data.phone}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
+                    onChange={(e) => setFormData({
+                      ...formData,
                       profile_data: { ...formData.profile_data, phone: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1734,8 +1736,8 @@ const UserManagerEnhanced: React.FC = () => {
                   <label className="block text-sm text-gray-600 mb-1">Department</label>
                   <select
                     value={formData.profile_data.department}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
+                    onChange={(e) => setFormData({
+                      ...formData,
                       profile_data: { ...formData.profile_data, department: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1751,8 +1753,8 @@ const UserManagerEnhanced: React.FC = () => {
                   <input
                     type="text"
                     value={formData.profile_data.position}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
+                    onChange={(e) => setFormData({
+                      ...formData,
                       profile_data: { ...formData.profile_data, position: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1763,15 +1765,15 @@ const UserManagerEnhanced: React.FC = () => {
                   <input
                     type="text"
                     value={formData.profile_data.location}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
+                    onChange={(e) => setFormData({
+                      ...formData,
                       profile_data: { ...formData.profile_data, location: e.target.value }
                     })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
-              
+
               {/* Active Status */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
                 <div>
@@ -1787,7 +1789,7 @@ const UserManagerEnhanced: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
               <button
                 onClick={() => { setShowEditModal(false); setSelectedUser(null); resetForm(); }}
@@ -1805,7 +1807,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* User Profile Modal */}
       {showProfileModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1816,12 +1818,12 @@ const UserManagerEnhanced: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4">
               {/* Profile Header */}
               <div className="flex items-start gap-6 mb-6">
                 <div className="flex-shrink-0 h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                  {selectedUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  {(selectedUser.full_name || 'User').split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </div>
                 <div className="flex-1">
                   <h4 className="text-xl font-bold text-gray-900">{selectedUser.full_name}</h4>
@@ -1840,7 +1842,7 @@ const UserManagerEnhanced: React.FC = () => {
                     )}
                     {selectedUser.roles.map((role, i) => (
                       <span key={i} className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getRoleColor(role)}`}>
-                        {role.replace(/_/g, ' ')}
+                        {(role || '').replace(/_/g, ' ')}
                       </span>
                     ))}
                   </div>
@@ -1854,7 +1856,7 @@ const UserManagerEnhanced: React.FC = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Profile Details */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -1890,7 +1892,7 @@ const UserManagerEnhanced: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <h5 className="text-sm font-medium text-gray-700 border-b pb-2">Profile Information</h5>
                   <div className="space-y-3">
@@ -1925,7 +1927,7 @@ const UserManagerEnhanced: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Recent Activity */}
               <div className="mt-6">
                 <h5 className="text-sm font-medium text-gray-700 border-b pb-2 mb-3">Recent Activity</h5>
@@ -1946,7 +1948,7 @@ const UserManagerEnhanced: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end">
               <button
                 onClick={() => { setShowProfileModal(false); setSelectedUser(null); }}
@@ -1958,7 +1960,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Activity Modal */}
       {showActivityModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1969,7 +1971,7 @@ const UserManagerEnhanced: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4">
               {/* Active Sessions */}
               <div className="mb-6">
@@ -2005,7 +2007,7 @@ const UserManagerEnhanced: React.FC = () => {
                   )}
                 </div>
               </div>
-              
+
               {/* Activity Log */}
               <div>
                 <h5 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
@@ -2015,15 +2017,14 @@ const UserManagerEnhanced: React.FC = () => {
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {activityLogs.map(log => (
                     <div key={log.id} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        log.action === 'login' ? 'bg-green-100 text-green-600' :
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${log.action === 'login' ? 'bg-green-100 text-green-600' :
                         log.action === 'logout' ? 'bg-gray-100 text-gray-600' :
-                        log.action === 'password_change' ? 'bg-yellow-100 text-yellow-600' :
-                        'bg-blue-100 text-blue-600'
-                      }`}>
+                          log.action === 'password_change' ? 'bg-yellow-100 text-yellow-600' :
+                            'bg-blue-100 text-blue-600'
+                        }`}>
                         {log.action === 'login' ? <Unlock className="w-4 h-4" /> :
-                         log.action === 'logout' ? <Lock className="w-4 h-4" /> :
-                         <Activity className="w-4 h-4" />}
+                          log.action === 'logout' ? <Lock className="w-4 h-4" /> :
+                            <Activity className="w-4 h-4" />}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">
@@ -2042,7 +2043,7 @@ const UserManagerEnhanced: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end">
               <button
                 onClick={() => { setShowActivityModal(false); setSelectedUser(null); }}
@@ -2054,7 +2055,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Bulk Role Assignment Modal */}
       {showBulkRoleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2065,7 +2066,7 @@ const UserManagerEnhanced: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4">
               <p className="text-sm text-gray-500 mb-4">
                 Select roles to assign to all selected users. This will replace their existing roles.
@@ -2092,7 +2093,7 @@ const UserManagerEnhanced: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
               <button
                 onClick={() => { setShowBulkRoleModal(false); setBulkRoles([]); }}
@@ -2111,7 +2112,7 @@ const UserManagerEnhanced: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Role Management Modal */}
       {showRoleManagementModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2122,7 +2123,7 @@ const UserManagerEnhanced: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4">
               <div className="space-y-4">
                 {availableRoles.map(role => (
@@ -2160,7 +2161,7 @@ const UserManagerEnhanced: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end">
               <button
                 onClick={() => setShowRoleManagementModal(false)}

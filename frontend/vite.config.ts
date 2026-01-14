@@ -38,6 +38,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
+      },
+      '/uploads': {
+        target: 'http://127.0.0.1:5005',
+        changeOrigin: true,
+        secure: false,
       }
     },
   },

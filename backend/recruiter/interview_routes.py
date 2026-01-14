@@ -4,6 +4,7 @@ API endpoints for managing candidate interviews
 """
 
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 import psycopg2
 import psycopg2.extras
 import logging
@@ -71,6 +72,7 @@ def health_check():
 
 
 @interview_bp.route('/create', methods=['POST'])
+@jwt_required()
 def create_interview():
     """
     Create a new interview
@@ -96,6 +98,12 @@ def create_interview():
     try:
         data = request.get_json()
         
+        # Override recruiter_id with authenticated user
+        current_user_id = get_jwt_identity()
+        if current_user_id:
+            logger.info(f"Creating interview for authenticated user: {current_user_id}")
+            data['recruiter_id'] = current_user_id
+        
         conn = get_db_connection()
         success, result, message = interview_engine.create_interview(conn, data)
         conn.close()
@@ -107,6 +115,8 @@ def create_interview():
                 'message': message
             }), 201
         else:
+            logger.error(f"Create Interview Failed: {result}") # Added logging
+            print(f"DEBUG: Create Interview Failed: {result}", flush=True) # Added console print
             return jsonify({
                 'success': False,
                 'error': result
@@ -263,6 +273,48 @@ def cancel_interview(interview_id):
         conn.close()
         
         if success:
+            # --- Send Notification ---
+            try:
+                from services.communication_service import communication_service, NotificationType
+                
+                # Fetch interview context (New connection as previous one is closed)
+                ctx_conn = get_db_connection()
+                try:
+                    cur = ctx_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                    # Simplified query: Get candidate_id directly from interview_schedules
+                    # Use LEFT JOIN for job details to ensure we get partial data if job is missing
+                    cur.execute("""
+                        SELECT 
+                            i.interview_title,
+                            i.candidate_id,
+                            COALESCE(jp.title, 'Job Opportunity') as job_title
+                        FROM interview_schedules i
+                        LEFT JOIN job_postings jp ON i.jd_id = jp.jd_id::text
+                        WHERE i.interview_id = %s
+                    """, (interview_id,))
+                    context = cur.fetchone()
+                finally:
+                    ctx_conn.close()
+
+                if context:
+                    communication_service.create_notification(
+                        user_id=str(context['candidate_id']),
+                        notification_type=NotificationType.INTERVIEW_CANCELLED,
+                        metadata={
+                            'interview_title': context.get('interview_title', 'Interview'),
+                            'job_title': context.get('job_title', 'Job Opportunity'),
+                            'reason': reason
+                        }
+                    )
+                    logger.info(f"Cancellation notification sent for interview {interview_id}")
+                else:
+                    logger.warning(f"No context found for interview {interview_id} - cannot send notification")
+
+            except Exception as notif_err:
+                logger.error(f"Failed to send cancellation notification: {notif_err}")
+                # Don't fail the request if notification fails
+            # -------------------------
+
             return jsonify({
                 'success': True,
                 'message': message

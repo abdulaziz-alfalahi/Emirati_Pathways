@@ -11,12 +11,17 @@ import { restClient } from '@/utils/api';
 
 // Removing custom API helper and manual token logic
 
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
+
 export default function RecruiterCandidatesPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [filters, setFilters] = useState<any>({ limit: 20 });
   const [results, setResults] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [submittingId, setSubmittingId] = useState<number | null>(null);
   const [jobId, setJobId] = useState('');
   const [jobs, setJobs] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
@@ -35,7 +40,7 @@ export default function RecruiterCandidatesPage() {
     // Attempt to prefill latest job id
     (async () => {
       try {
-        const r = await restClient.get('/api/hr/jobs/?limit=20');
+        const r = await restClient.get('/api/hr/jobs?limit=20');
         if (r.status === 200) {
           const list = r.data?.data?.job_postings || [];
           setJobs(list);
@@ -57,6 +62,7 @@ export default function RecruiterCandidatesPage() {
       params.set('offset', String((page - 1) * pageSize));
       params.set('sort_by', sortBy);
       params.set('sort_order', sortOrder);
+      if (jobId) params.set('job_id', jobId);
 
       const r = await restClient.get(`/api/hr/candidates/search?${params.toString()}`);
       const j = r.data;
@@ -74,14 +80,24 @@ export default function RecruiterCandidatesPage() {
       toast({ title: 'Job ID required', description: 'Set a job ID first', variant: 'destructive' });
       return;
     }
+    setSubmittingId(candidateId);
     try {
       const r = await restClient.post(`/api/hr/jobs/${jobId}/shortlist`, {
         candidate_id: candidateId,
         notes: 'Shortlisted from search'
       });
       toast({ title: 'Shortlisted', description: `Candidate ${candidateId} added to shortlist` });
+
+      // Update local state to reflect shortlist sync
+      setResults(prev => prev.map(c =>
+        c.id === candidateId ? { ...c, is_shortlisted: true } : c
+      ));
+      setMatches(prev => prev.map(c =>
+        c.candidate_id === candidateId ? { ...c, is_shortlisted: true } : c
+      ));
     } catch (e: any) {
-      toast({ title: 'Failed to shortlist', description: e?.message || 'Error', variant: 'destructive' });
+      const errorMsg = e.response?.data?.message || e.message || 'Error shortlisting candidate';
+      toast({ title: 'Failed to shortlist', description: errorMsg, variant: 'destructive' });
     }
   };
 
@@ -108,6 +124,12 @@ export default function RecruiterCandidatesPage() {
 
   return (
     <div className="p-6">
+      <div className="mb-6">
+        <Button variant="ghost" className="gap-2 pl-0 hover:pl-2 transition-all" onClick={() => navigate('/recruiter-dashboard')}>
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </div>
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Candidate Search</CardTitle>
@@ -137,7 +159,11 @@ export default function RecruiterCandidatesPage() {
             </div>
             <div>
               <Label>Job (for match/shortlist)</Label>
-              <select className="w-full p-2 border rounded" value={jobId} onChange={e => setJobId(e.target.value)}>
+              <select className="w-full p-2 border rounded" value={jobId} onChange={e => {
+                setJobId(e.target.value);
+                // Trigger search reload when job changes to update shortlist status
+                if (results.length > 0) setTimeout(() => runSearch(), 100);
+              }}>
                 {jobs.map(j => (
                   <option key={j.id} value={j.id}>{j.title}</option>
                 ))}
@@ -200,7 +226,15 @@ export default function RecruiterCandidatesPage() {
                           ))}
                         </td>
                         <td className="p-3">
-                          <Button size="sm" onClick={() => shortlist(c.id)} disabled={!jobId}>Shortlist</Button>
+                          {c.is_shortlisted ? (
+                            <Button size="sm" variant="outline" disabled className="text-green-600 border-green-200 bg-green-50">
+                              Shortlisted
+                            </Button>
+                          ) : (
+                            <Button size="sm" onClick={() => shortlist(c.id)} disabled={!jobId || loading || submittingId === c.id}>
+                              {submittingId === c.id ? 'Saving...' : 'Shortlist'}
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -278,7 +312,15 @@ export default function RecruiterCandidatesPage() {
                           <td className="p-3">{m.match_score?.match_percentage ?? '-'}</td>
                           <td className="p-3">{m.match_score?.match_level ?? '-'}</td>
                           <td className="p-3">
-                            <Button size="sm" onClick={() => shortlist(m.candidate_id)} disabled={!jobId}>Shortlist</Button>
+                            {m.is_shortlisted ? (
+                              <Button size="sm" variant="outline" disabled className="text-green-600 border-green-200 bg-green-50">
+                                Shortlisted
+                              </Button>
+                            ) : (
+                              <Button size="sm" onClick={() => shortlist(m.candidate_id)} disabled={!jobId || loading || submittingId === m.candidate_id}>
+                                {submittingId === m.candidate_id ? 'Saving...' : 'Shortlist'}
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       ));

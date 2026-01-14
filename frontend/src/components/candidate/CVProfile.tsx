@@ -37,7 +37,8 @@ import {
   Shield,
   ArrowRight,
   Star,
-  Info
+  Info,
+  Settings
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { cvStorageService } from '@/services/cvStorageService';
@@ -58,6 +59,7 @@ import { cvStorageService } from '@/services/cvStorageService';
  * CV Data structure matching the CV Builder format
  */
 interface CVData {
+  id?: string;
   personalInfo?: {
     fullName?: string;
     firstName?: string;
@@ -210,10 +212,52 @@ const CVProfile: React.FC = () => {
   const [atsScore, setAtsScore] = useState<ATSScore | null>(null);
   const [skillRecommendations, setSkillRecommendations] = useState<SkillRecommendation[]>([]);
   const [activeRecommendationTab, setActiveRecommendationTab] = useState('all');
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     loadCVData();
+    loadProfilePhoto();
   }, []);
+
+  const loadProfilePhoto = async () => {
+    try {
+      const response = await restClient.get('/api/auth/profile');
+      if (response.data.success && response.data.data.profile_photo_url) {
+        setProfilePhotoUrl(response.data.data.profile_photo_url);
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile photo", err);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) return;
+
+    setUploadingPhoto(true);
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('/api/profile/candidate/photo', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProfilePhotoUrl(data.data.photo_url);
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   useEffect(() => {
     if (cvData) {
@@ -229,7 +273,7 @@ const CVProfile: React.FC = () => {
   const loadCVData = async () => {
     try {
       setLoading(true);
-      
+
       // Method 1: Try to load using lastCvId from localStorage (set by CV Builder)
       const lastCvId = localStorage.getItem('lastCvId');
       if (lastCvId) {
@@ -247,11 +291,16 @@ const CVProfile: React.FC = () => {
       const listResult = await cvStorageService.listCVs();
       if (listResult.success && listResult.data && listResult.data.length > 0) {
         // Sort by updated_at to get the most recent
-        const sortedCVs = [...listResult.data].sort((a, b) => 
+        const sortedCVs = [...listResult.data].sort((a, b) =>
           new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
         );
         const latestCV = sortedCVs[0];
-        
+
+        // Save the CV ID to localStorage so CVBuilder can pick it up
+        if (latestCV.id) {
+          localStorage.setItem('lastCvId', latestCV.id);
+        }
+
         // Load the full CV data
         const cvResult = await cvStorageService.getCV(latestCV.id);
         if (cvResult.success && cvResult.data) {
@@ -300,17 +349,20 @@ const CVProfile: React.FC = () => {
 
     // Combine technical and soft skills
     let allSkills: any[] = [];
+
     if (Array.isArray(skills)) {
       allSkills = skills.map((s: any) => typeof s === 'string' ? { name: s, category: 'technical' } : s);
     }
+
     if (Array.isArray(softSkills)) {
       allSkills = [...allSkills, ...softSkills.map((s: any) => typeof s === 'string' ? { name: s, category: 'soft' } : s)];
     }
 
     return {
+      id: data.id,
       personalInfo: {
-        fullName: personalInfo.fullName || personalInfo.full_name || 
-                  `${personalInfo.firstName || personalInfo.first_name || ''} ${personalInfo.lastName || personalInfo.last_name || ''}`.trim() || undefined,
+        fullName: personalInfo.fullName || personalInfo.full_name ||
+          `${personalInfo.firstName || personalInfo.first_name || ''} ${personalInfo.lastName || personalInfo.last_name || ''}`.trim() || undefined,
         firstName: personalInfo.firstName || personalInfo.first_name,
         lastName: personalInfo.lastName || personalInfo.last_name,
         email: personalInfo.email,
@@ -375,19 +427,19 @@ const CVProfile: React.FC = () => {
     const fullName = personalInfo.fullName || `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim();
     if (fullName) breakdown.personalInfo += 4;
     else recommendations.push('Add your full name to your profile');
-    
+
     if (personalInfo.email) breakdown.personalInfo += 4;
     else recommendations.push('Add your email address for recruiter contact');
-    
+
     if (personalInfo.phone) breakdown.personalInfo += 3;
     else recommendations.push('Add your phone number');
-    
+
     if (personalInfo.location) breakdown.personalInfo += 3;
     else recommendations.push('Add your location to improve local job matches');
-    
+
     if (personalInfo.summary && personalInfo.summary.length > 50) breakdown.personalInfo += 4;
     else recommendations.push('Add a professional summary (at least 50 characters) to stand out');
-    
+
     if (personalInfo.linkedIn) breakdown.personalInfo += 2;
     else recommendations.push('Add your LinkedIn profile URL');
 
@@ -395,12 +447,12 @@ const CVProfile: React.FC = () => {
     const experience = data.experience || [];
     if (experience.length > 0) {
       breakdown.experience += 10;
-      
+
       // Check for detailed descriptions
       const hasDescriptions = experience.some(exp => exp.description && exp.description.length > 100);
       if (hasDescriptions) breakdown.experience += 10;
       else recommendations.push('Add detailed descriptions to your work experience (100+ characters)');
-      
+
       // Check for achievements
       const hasAchievements = experience.some(exp => exp.achievements && exp.achievements.length > 0);
       if (hasAchievements) breakdown.experience += 10;
@@ -413,7 +465,7 @@ const CVProfile: React.FC = () => {
     const education = data.education || [];
     if (education.length > 0) {
       breakdown.education += 10;
-      
+
       const hasDetails = education.some(edu => edu.fieldOfStudy || edu.gpa);
       if (hasDetails) breakdown.education += 5;
       else recommendations.push('Add field of study and GPA to your education');
@@ -424,12 +476,12 @@ const CVProfile: React.FC = () => {
     // Skills Score (20 points max)
     const skills = data.skills || [];
     const skillCount = Array.isArray(skills) ? skills.length : 0;
-    
+
     if (skillCount >= 10) breakdown.skills = 20;
     else if (skillCount >= 5) breakdown.skills = 15;
     else if (skillCount >= 3) breakdown.skills = 10;
     else if (skillCount > 0) breakdown.skills = 5;
-    
+
     if (skillCount < 5) {
       recommendations.push('Add more skills (aim for at least 10) to match more job requirements');
     }
@@ -439,27 +491,27 @@ const CVProfile: React.FC = () => {
     const allD33Skills = Object.values(D33_SECTORS).flatMap(sector => sector.skills);
     const allTalent33Skills = Object.values(TALENT33_SKILLS).flat();
     const prioritySkills = [...new Set([...allD33Skills, ...allTalent33Skills])];
-    
-    const userSkillNames = skills.map((s: any) => 
+
+    const userSkillNames = skills.map((s: any) =>
       typeof s === 'string' ? s.toLowerCase() : (s.name || '').toLowerCase()
     );
-    
+
     prioritySkills.forEach(skill => {
       if (userSkillNames.some(us => us.includes(skill.toLowerCase()) || skill.toLowerCase().includes(us))) {
         keywordMatches++;
       }
     });
-    
+
     if (keywordMatches >= 5) breakdown.keywords = 15;
     else if (keywordMatches >= 3) breakdown.keywords = 10;
     else if (keywordMatches >= 1) breakdown.keywords = 5;
-    
+
     if (keywordMatches < 3) {
       recommendations.push('Add skills aligned with D33 priority sectors (Technology, Sustainability, Finance)');
     }
 
     const overall = breakdown.personalInfo + breakdown.experience + breakdown.education + breakdown.skills + breakdown.keywords;
-    
+
     setAtsScore({ overall, breakdown, recommendations });
   };
 
@@ -468,18 +520,18 @@ const CVProfile: React.FC = () => {
    */
   const generateSkillRecommendations = (data: CVData) => {
     const recommendations: SkillRecommendation[] = [];
-    
-    const userSkills = (data.skills || []).map((s: any) => 
+
+    const userSkills = (data.skills || []).map((s: any) =>
       typeof s === 'string' ? s.toLowerCase() : (s.name || '').toLowerCase()
     );
-    
+
     // Check each D33 sector
     Object.entries(D33_SECTORS).forEach(([key, sector]) => {
       sector.skills.forEach(skill => {
-        const hasSkill = userSkills.some(us => 
+        const hasSkill = userSkills.some(us =>
           us.includes(skill.toLowerCase()) || skill.toLowerCase().includes(us)
         );
-        
+
         if (!hasSkill) {
           recommendations.push({
             skill,
@@ -496,10 +548,10 @@ const CVProfile: React.FC = () => {
     // Check Talent33 skills
     Object.entries(TALENT33_SKILLS).forEach(([category, skills]) => {
       skills.forEach(skill => {
-        const hasSkill = userSkills.some(us => 
+        const hasSkill = userSkills.some(us =>
           us.includes(skill.toLowerCase()) || skill.toLowerCase().includes(us)
         );
-        
+
         if (!hasSkill) {
           recommendations.push({
             skill,
@@ -507,8 +559,8 @@ const CVProfile: React.FC = () => {
             relevance: category === 'digital' || category === 'future' ? 'high' : 'medium',
             description: `Part of Dubai's Talent 2033 ${category} skills initiative`,
             icon: category === 'leadership' ? <Star className="h-4 w-4" /> :
-                  category === 'digital' ? <Zap className="h-4 w-4" /> :
-                  category === 'future' ? <Lightbulb className="h-4 w-4" /> :
+              category === 'digital' ? <Zap className="h-4 w-4" /> :
+                category === 'future' ? <Lightbulb className="h-4 w-4" /> :
                   <Shield className="h-4 w-4" />
           });
         }
@@ -604,7 +656,7 @@ const CVProfile: React.FC = () => {
               Your CV is your profile. Build it once and use it everywhere - for job applications, recruiter visibility, and AI-powered job matching.
             </AlertDescription>
           </Alert>
-          <Button 
+          <Button
             onClick={() => navigate('/cv-builder')}
             className="bg-teal-600 hover:bg-teal-700"
           >
@@ -649,7 +701,7 @@ const CVProfile: React.FC = () => {
             <div className="space-y-4">
               {/* Overall Progress */}
               <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`absolute left-0 top-0 h-full ${getProgressColor(atsScore.overall)} transition-all duration-500`}
                   style={{ width: `${atsScore.overall}%` }}
                 />
@@ -673,7 +725,7 @@ const CVProfile: React.FC = () => {
                     keywords: 'D33 Keywords'
                   };
                   const percentage = Math.round((value / maxScores[key]) * 100);
-                  
+
                   return (
                     <div key={key} className="text-center p-3 bg-white rounded-lg border">
                       <div className={`text-lg font-semibold ${getScoreColor(percentage)}`}>
@@ -700,9 +752,9 @@ const CVProfile: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-3"
                     onClick={() => navigate('/cv-builder')}
                   >
@@ -721,8 +773,31 @@ const CVProfile: React.FC = () => {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center">
-                <User className="h-10 w-10 text-teal-600" />
+              <div className="relative group w-20 h-20 rounded-full overflow-hidden border-2 border-teal-100 bg-teal-100 flex items-center justify-center cursor-pointer"
+                onClick={() => document.getElementById('cv-profile-photo-upload')?.click()}>
+                {profilePhotoUrl ? (
+                  <img
+                    src={profilePhotoUrl || ''}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-10 w-10 text-teal-600" />
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploadingPhoto ? (
+                    <span className="text-white text-xs">...</span>
+                  ) : (
+                    <Edit className="h-6 w-6 text-white" />
+                  )}
+                </div>
+                <input
+                  type="file"
+                  id="cv-profile-photo-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                />
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{fullName}</h2>
@@ -737,12 +812,20 @@ const CVProfile: React.FC = () => {
                 )}
               </div>
             </div>
-            <Button 
+            <Button
               onClick={() => navigate('/cv-builder')}
               className="bg-teal-600 hover:bg-teal-700"
             >
               <Edit className="h-4 w-4 mr-2" />
-              Edit Profile / CV
+              Edit CV Content
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/profile')}
+              className="ml-2"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Profile Settings
             </Button>
           </div>
         </CardHeader>
@@ -768,7 +851,7 @@ const CVProfile: React.FC = () => {
               </div>
             )}
             {personalInfo.linkedIn && (
-              <a 
+              <a
                 href={personalInfo.linkedIn}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -884,7 +967,7 @@ const CVProfile: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {certifications.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -926,7 +1009,7 @@ const CVProfile: React.FC = () => {
               <Info className="h-4 w-4 text-blue-600" />
               <AlertTitle>Why These Skills?</AlertTitle>
               <AlertDescription>
-                <strong>D33 Economic Agenda</strong> aims to double Dubai's economy by 2033, focusing on technology, sustainability, and trade. 
+                <strong>D33 Economic Agenda</strong> aims to double Dubai's economy by 2033, focusing on technology, sustainability, and trade.
                 <strong> Talent 2033</strong> is developing future-ready workforce skills. Adding these skills can improve your job matches by up to 40%.
               </AlertDescription>
             </Alert>
@@ -974,7 +1057,7 @@ const CVProfile: React.FC = () => {
             </Tabs>
 
             <div className="mt-4 pt-4 border-t">
-              <Button 
+              <Button
                 onClick={() => navigate('/cv-builder')}
                 className="bg-blue-600 hover:bg-blue-700"
               >
@@ -1008,8 +1091,8 @@ const SkillRecommendationCard: React.FC<{ recommendation: SkillRecommendation }>
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-900">{recommendation.skill}</span>
           <Badge variant="outline" className={relevanceColors[recommendation.relevance]}>
-            {recommendation.relevance === 'high' ? 'High Impact' : 
-             recommendation.relevance === 'medium' ? 'Recommended' : 'Nice to Have'}
+            {recommendation.relevance === 'high' ? 'High Impact' :
+              recommendation.relevance === 'medium' ? 'Recommended' : 'Nice to Have'}
           </Badge>
         </div>
         <p className="text-sm text-gray-600 mt-1">{recommendation.description}</p>

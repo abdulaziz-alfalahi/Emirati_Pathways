@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MockAuthService } from '@/services/mockAuthService';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
 import AdminRoles from '@/components/admin/AdminRoles';
 import GrowthTools from '@/components/admin/GrowthTools';
 import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorManagerEnhanced';
+import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AdminInterviews from '@/components/admin/AdminInterviews';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,13 +29,33 @@ import {
   MessageSquare,
   Activity,
   Rocket,
-  Video
+  Video,
+  ClipboardCopy,
+  RefreshCw,
+  UserPlus
 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const AdminDashboard = () => {
-  // Use MockAuthService directly as it's the source of truth for soft launch
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+  const { user, signOut } = useAuth();
+
+  // Derive tab from URL or default to "overview"
+  const activeTab = searchParams.get("tab") || "overview";
+
+  // Handler for UI tab changes
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value }, { replace: true });
+  };
+
+  // Load data when tab changes based on URL
+  useEffect(() => {
+    if (activeTab === 'feedback') {
+      loadFeedbackList();
+    }
+  }, [activeTab]);
   const [dashboardData, setDashboardData] = useState({
     platform: {
       totalUsers: 0,
@@ -48,13 +69,22 @@ const AdminDashboard = () => {
       userGrowthRate: 0,
       applicationSuccessRate: 0,
       averageMatchScore: 0,
-      systemUptime: 0
+      systemUptime: 0,
+      visitorTrends: [],
+      userActivity: []
     },
     moderation: {
       pendingReviews: 0,
       reportedContent: 0,
       flaggedUsers: 0,
       systemAlerts: 0
+    },
+    feedback: {
+      total: 0,
+      open: 0,
+      bugs: 0,
+      features: 0,
+      today: 0
     },
     activity: [],
     system: {
@@ -66,37 +96,91 @@ const AdminDashboard = () => {
     }
   });
 
-  // Redirect if not authenticated (Mock Check)
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+
+  // Load dashboard data on mount
   useEffect(() => {
-    if (!MockAuthService.isAuthenticated()) {
-      navigate('/auth');
-      return;
-    }
     loadDashboardData();
-  }, [navigate]);
+  }, []);
 
   const getUserDisplayName = () => {
-    const user = MockAuthService.getCurrentUser();
-    if (!user) return 'Administrator';
-    return user.full_name || 'Administrator';
+    return user?.full_name || user?.email || 'Administrator';
   };
 
   const handleLogout = async () => {
     try {
       console.log('🚪 Admin logout process...');
-      MockAuthService.logout();
+      await signOut(); // Use real sign out from context
       console.log('✅ Admin logout completed');
-      window.location.replace('/auth');
+      navigate('/auth');
     } catch (error) {
       console.error('Admin logout error:', error);
-      window.location.href = '/auth';
+      navigate('/auth');
     }
   };
+
+
+
+  const loadFeedbackList = async () => {
+    setLoadingFeedback(true);
+    try {
+      const response = await restClient.get('/api/feedback/');
+      if (response.data && response.data.success) {
+        setFeedbackList(response.data.data);
+      }
+    } catch (error) {
+      console.error("Failed to load feedback list", error);
+      toast({
+        title: "Error",
+        description: "Failed to load feedback list.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingFeedback(false);
+    }
+  };
+
+  const updateFeedbackStatus = async (id: string, newStatus: string) => {
+    try {
+      const response = await restClient.put(`/api/feedback/${id}/status`, { status: newStatus });
+      if (response.data && response.data.success) {
+        toast({
+          title: "Success",
+          description: `Feedback marked as ${newStatus}`,
+        });
+        // Optimistic update
+        setFeedbackList((prev: any[]) => prev.map((item: any) =>
+          item.id === id ? { ...item, status: newStatus } : item
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update feedback status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'feedback') {
+      loadFeedbackList();
+    }
+  }, [activeTab]);
 
   const loadDashboardData = async () => {
     try {
       // Use restClient which handles auth token automatically
-      const response = await restClient.get('/api/admin/dashboard');
+      const [response, feedbackResponse] = await Promise.all([
+        restClient.get('/api/admin/dashboard'),
+        restClient.get('/api/feedback/stats')
+      ]);
+
+      const feedbackStats = feedbackResponse.data?.success ? feedbackResponse.data.stats : {
+        total: 0, open: 0, bugs: 0, features: 0, today: 0
+      };
 
       if (response.data && response.data.data) {
         const apiData = response.data.data;
@@ -128,6 +212,7 @@ const AdminDashboard = () => {
             flaggedUsers: 0,
             systemAlerts: apiData.notifications?.recent?.length || 0
           },
+          feedback: feedbackStats,
           activity: (apiData.notifications?.recent || []).map((n: any, i: number) => ({
             id: i,
             type: n.notification_type || 'system_alert',
@@ -168,7 +253,9 @@ const AdminDashboard = () => {
         userGrowthRate: 15.3,
         applicationSuccessRate: 68.2,
         averageMatchScore: 8.7,
-        systemUptime: 99.8
+        systemUptime: 99.8,
+        visitorTrends: [],
+        userActivity: []
       },
       moderation: {
         pendingReviews: 23,
@@ -201,7 +288,21 @@ const AdminDashboard = () => {
           timestamp: new Date(Date.now() - 86400000).toISOString(),
           severity: 'success'
         }
-      ]
+      ],
+      feedback: {
+        total: 12,
+        open: 5,
+        bugs: 2,
+        features: 3,
+        today: 1
+      },
+      system: {
+        cpu_percent: 45,
+        memory_percent: 62,
+        disk_percent: 28,
+        disk_total: 512,
+        disk_free: 368
+      }
     });
   };
 
@@ -240,7 +341,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="container mx-auto px-4 py-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
               <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="users">User Management</TabsTrigger>
@@ -256,6 +357,14 @@ const AdminDashboard = () => {
                 <TabsTrigger value="interviews" className="flex items-center gap-2">
                   <Video className="h-4 w-4" />
                   Interviews
+                </TabsTrigger>
+                <TabsTrigger value="feedback" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Feedback
+                </TabsTrigger>
+                <TabsTrigger value="requests" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Requests
                 </TabsTrigger>
                 <TabsTrigger value="system">System Health</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
@@ -414,6 +523,43 @@ const AdminDashboard = () => {
                   </Card>
                 </div>
 
+                {/* Feedback Overview (FUT) */}
+                <Card className="border-l-4 border-l-purple-500">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <MessageSquare className="h-5 w-5 mr-2" />
+                      Feedback Overview
+                    </CardTitle>
+                    <CardDescription>
+                      User reported issues and feedback from the widget
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Total Reports</span>
+                        <span className="text-2xl font-bold">{dashboardData.feedback?.total || 0}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Open Issues</span>
+                        <span className="text-2xl font-bold text-orange-600">{dashboardData.feedback?.open || 0}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Today</span>
+                        <span className="text-2xl font-bold text-blue-600">{dashboardData.feedback?.today || 0}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Bugs</span>
+                        <span className="text-2xl font-bold text-red-600">{dashboardData.feedback?.bugs || 0}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Features</span>
+                        <span className="text-2xl font-bold text-green-600">{dashboardData.feedback?.features || 0}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Recent System Activity */}
                 <Card>
                   <CardHeader>
@@ -465,6 +611,129 @@ const AdminDashboard = () => {
                 </Card>
               </TabsContent>
 
+
+              {/* Feedback Tab */}
+              <TabsContent value="feedback" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Feedback & Issues Reports</span>
+                      <Button variant="outline" size="sm" onClick={loadFeedbackList}>
+                        <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+                      </Button>
+                    </CardTitle>
+                    <CardDescription>
+                      Review feedback submitted by users via the widget. Use "Copy for Developer" to share with engineering.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 border-b">
+                          <tr className="text-left">
+                            <th className="p-3 font-medium">Type</th>
+                            <th className="p-3 font-medium">Status</th>
+                            <th className="p-3 font-medium">Message</th>
+                            <th className="p-3 font-medium">User & Page</th>
+                            <th className="p-3 font-medium">Date</th>
+                            <th className="p-3 font-medium">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loadingFeedback ? (
+                            <tr><td colSpan={5} className="p-4 text-center">Loading...</td></tr>
+                          ) : feedbackList.length === 0 ? (
+                            <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">No feedback received yet.</td></tr>
+                          ) : (
+                            feedbackList.map((item: any) => (
+                              <tr key={item.id} className="border-b hover:bg-muted/50 transition-colors">
+                                <td className="p-3">
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant={item.type === 'bug' ? 'destructive' : 'secondary'}>
+                                      {item.type.toUpperCase()}
+                                    </Badge>
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <Badge variant={item.status === 'resolved' ? 'outline' : 'default'} className={item.status === 'resolved' ? 'text-green-600 border-green-600' : 'bg-blue-600'}>
+                                    {item.status ? item.status.toUpperCase() : 'OPEN'}
+                                  </Badge>
+                                </td>
+                                <td className="p-3 max-w-md">
+                                  <p className="font-medium truncate">{item.message}</p>
+                                  <p className="text-xs text-muted-foreground truncate font-mono">
+                                    {item.console_logs && item.console_logs.length > 0 ? `${item.console_logs.length} logs captured` : 'No logs'}
+                                  </p>
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex flex-col text-xs">
+                                    <span className="font-medium">{item.role} {item.user_id ? `(#${item.user_id})` : ''}</span>
+                                    <span className="text-muted-foreground truncate max-w-[150px]" title={item.metadata?.path}>
+                                      {item.metadata?.path || 'Unknown path'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="p-3 text-xs text-muted-foreground">
+                                  {new Date(item.created_at).toLocaleString()}
+                                </td>
+                                <td className="p-3">
+                                  <div className="flex items-center space-x-2">
+                                    {item.status !== 'resolved' && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-xs border-green-200 hover:bg-green-50 text-green-700"
+                                        onClick={() => updateFeedbackStatus(item.id, 'resolved')}
+                                      >
+                                        <CheckCircle className="h-3 w-3 mr-1" /> Resolve
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                                      onClick={() => {
+                                        const text = `
+**Feedback Report**
+ID: ${item.id}
+User: ${item.role} (ID: ${item.user_id})
+Type: ${item.type}
+Page: ${item.metadata?.path || item.pageUrl || 'N/A'}
+Date: ${new Date(item.created_at).toLocaleString()}
+
+**Message:**
+${item.message}
+
+**Console Logs:**
+\`\`\`
+${Array.isArray(item.console_logs) ? item.console_logs.join('\n') : JSON.stringify(item.console_logs || [])}
+\`\`\`
+
+**Metadata:**
+${JSON.stringify(item.metadata, null, 2)}
+                                                        `.trim();
+                                        navigator.clipboard.writeText(text);
+                                        toast({
+                                          title: "Copied",
+                                          description: "Feedback report copied to clipboard",
+                                        });
+                                      }}
+                                    >
+                                      <ClipboardCopy className="h-3 w-3 mr-1" />
+                                      Copy for Dev
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
               {/* User Management Tab */}
               <TabsContent value="users" className="space-y-6">
                 <UserManagerEnhanced />
@@ -496,6 +765,11 @@ const AdminDashboard = () => {
               {/* Interviews Tab */}
               <TabsContent value="interviews" className="space-y-6">
                 <AdminInterviews />
+              </TabsContent>
+
+              {/* Role Requests Tab */}
+              <TabsContent value="requests" className="space-y-6">
+                <AdminRoleRequests />
               </TabsContent>
 
 

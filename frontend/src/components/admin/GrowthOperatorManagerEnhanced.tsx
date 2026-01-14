@@ -238,7 +238,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDomain, setFilterDomain] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  
+
   // Modal states
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
@@ -249,7 +249,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
   const [primaryDomain, setPrimaryDomain] = useState<string>('');
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Drag and drop state
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
@@ -454,11 +454,11 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
   const handleDrop = async (e: React.DragEvent, targetDomain: string) => {
     e.preventDefault();
     const operatorId = parseInt(e.dataTransfer.getData('operatorId'));
-    
+
     if (operatorId && targetDomain) {
       await assignOperatorToDomain(operatorId, targetDomain);
     }
-    
+
     setDropTarget(null);
     setDragState({
       isDragging: false,
@@ -498,11 +498,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
 
   // Filter operators
   const filteredOperators = operators.filter(op => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       op.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       op.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDomain = !filterDomain || op.domains.includes(filterDomain);
-    const matchesStatus = !filterStatus || 
+    op.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDomain = !filterDomain || filterDomain === 'ALL_DOMAINS' || op.domains.includes(filterDomain);
+    const matchesStatus = !filterStatus || filterStatus === 'ALL_STATUS' ||
       (filterStatus === 'active' && op.is_active) ||
       (filterStatus === 'inactive' && !op.is_active);
     return matchesSearch && matchesDomain && matchesStatus;
@@ -545,7 +546,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
 
   const handleSaveAssignment = async () => {
     if (!selectedOperator) return;
-    
+
     setIsSaving(true);
     try {
       await restClient.post(`/api/admin/growth-operators/${selectedOperator.id}/domains`, {
@@ -553,7 +554,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
         primary_domain: primaryDomain,
         notes: assignmentNotes
       });
-      
+
       setShowAssignModal(false);
       await loadData();
     } catch (error) {
@@ -566,16 +567,16 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
   // Bulk assignment
   const handleBulkAssign = async () => {
     if (selectedOperators.length === 0 || selectedDomains.length === 0) return;
-    
+
     setIsSaving(true);
     try {
-      await Promise.all(selectedOperators.map(opId => 
+      await Promise.all(selectedOperators.map(opId =>
         restClient.post(`/api/admin/growth-operators/${opId}/domains`, {
           domains: selectedDomains,
           primary_domain: selectedDomains[0]
         })
       ));
-      
+
       setShowBulkAssignModal(false);
       setSelectedOperators([]);
       setSelectedDomains([]);
@@ -622,7 +623,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
                 setSelectedDomains([]);
@@ -641,13 +642,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
           {Object.entries(DOMAIN_CONFIG).map(([key, config]) => {
             const stats = domainStats.find(s => s.domain === key);
             const operatorCount = getOperatorsByDomain(key).length;
-            
+
             return (
-              <Card 
+              <Card
                 key={key}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  dropTarget === key ? 'ring-2 ring-teal-500 shadow-lg' : ''
-                }`}
+                className={`cursor-pointer transition-all hover:shadow-md ${dropTarget === key ? 'ring-2 ring-teal-500 shadow-lg' : ''
+                  }`}
                 onDragOver={(e) => handleDragOver(e, key)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, key)}
@@ -667,13 +667,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       <Badge className={getWorkloadColor(stats.workload)}>
                         {stats.workload}
                       </Badge>
-                      <span className={`flex items-center ${
-                        stats.trend === 'up' ? 'text-green-600' : 
+                      <span className={`flex items-center ${stats.trend === 'up' ? 'text-green-600' :
                         stats.trend === 'down' ? 'text-red-600' : 'text-gray-600'
-                      }`}>
+                        }`}>
                         {stats.trend === 'up' ? <TrendingUp className="h-3 w-3 mr-1" /> :
-                         stats.trend === 'down' ? <TrendingDown className="h-3 w-3 mr-1" /> :
-                         <Activity className="h-3 w-3 mr-1" />}
+                          stats.trend === 'down' ? <TrendingDown className="h-3 w-3 mr-1" /> :
+                            <Activity className="h-3 w-3 mr-1" />}
                         {stats.trendValue > 0 ? '+' : ''}{stats.trendValue}%
                       </span>
                     </div>
@@ -690,7 +689,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Unassigned Operators</AlertTitle>
             <AlertDescription className="text-amber-700">
-              {unassignedOperators.length} operator(s) have no domain assignments. 
+              {unassignedOperators.length} operator(s) have no domain assignments.
               Drag them to a domain or use the assignment modal.
             </AlertDescription>
           </Alert>
@@ -737,9 +736,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                         draggable
                         onDragStart={(e) => handleDragStart(e, op.id)}
                         onDragEnd={handleDragEnd}
-                        className={`p-3 bg-white rounded-lg border shadow-sm cursor-move hover:shadow-md transition-all ${
-                          dragState.operatorId === op.id ? 'opacity-50' : ''
-                        }`}
+                        className={`p-3 bg-white rounded-lg border shadow-sm cursor-move hover:shadow-md transition-all ${dragState.operatorId === op.id ? 'opacity-50' : ''
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <GripVertical className="h-4 w-4 text-gray-400" />
@@ -769,13 +767,12 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               {/* Domain Columns */}
               {Object.entries(DOMAIN_CONFIG).map(([key, config]) => {
                 const domainOperators = getOperatorsByDomain(key);
-                
+
                 return (
                   <div key={key} className="min-w-[280px] flex-shrink-0">
-                    <Card 
-                      className={`transition-all ${
-                        dropTarget === key ? 'ring-2 ring-teal-500' : ''
-                      }`}
+                    <Card
+                      className={`transition-all ${dropTarget === key ? 'ring-2 ring-teal-500' : ''
+                        }`}
                       onDragOver={(e) => handleDragOver(e, key)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, key)}
@@ -794,9 +791,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                             draggable
                             onDragStart={(e) => handleDragStart(e, op.id)}
                             onDragEnd={handleDragEnd}
-                            className={`p-3 bg-white rounded-lg border shadow-sm cursor-move hover:shadow-md transition-all ${
-                              dragState.operatorId === op.id ? 'opacity-50' : ''
-                            } ${op.primaryDomain === key ? `border-l-4 ${config.borderColor}` : ''}`}
+                            className={`p-3 bg-white rounded-lg border shadow-sm cursor-move hover:shadow-md transition-all ${dragState.operatorId === op.id ? 'opacity-50' : ''
+                              } ${op.primaryDomain === key ? `border-l-4 ${config.borderColor}` : ''}`}
                           >
                             <div className="flex items-center gap-2">
                               <GripVertical className="h-4 w-4 text-gray-400" />
@@ -828,7 +824,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                                     View Details
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     className="text-red-600"
                                     onClick={() => removeOperatorFromDomain(op.id, key)}
                                   >
@@ -893,7 +889,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       <SelectValue placeholder="Filter by domain" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Domains</SelectItem>
+                      <SelectItem value="ALL_DOMAINS">All Domains</SelectItem>
                       {Object.entries(DOMAIN_CONFIG).map(([key, config]) => (
                         <SelectItem key={key} value={key}>{config.label}</SelectItem>
                       ))}
@@ -904,7 +900,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Status</SelectItem>
+                      <SelectItem value="ALL_STATUS">All Status</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
@@ -972,8 +968,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                               operator.domains.map(domain => {
                                 const config = DOMAIN_CONFIG[domain];
                                 return (
-                                  <Badge 
-                                    key={domain} 
+                                  <Badge
+                                    key={domain}
                                     className={`${config?.bgColor} ${config?.color} border-0`}
                                   >
                                     {config?.label.split(' ')[0] || domain}
@@ -1052,7 +1048,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               {Object.entries(DOMAIN_CONFIG).map(([key, config]) => {
                 const stats = domainStats.find(s => s.domain === key);
                 const domainOperators = getOperatorsByDomain(key);
-                
+
                 return (
                   <Card key={key}>
                     <CardHeader>
@@ -1079,8 +1075,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                           {domainOperators.map(op => (
                             <Tooltip key={op.id}>
                               <TooltipTrigger>
-                                <Badge 
-                                  variant="outline" 
+                                <Badge
+                                  variant="outline"
                                   className={op.primaryDomain === key ? 'border-yellow-400' : ''}
                                 >
                                   {op.primaryDomain === key && (
@@ -1126,8 +1122,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => {
                           setFilterDomain(key);
@@ -1206,7 +1202,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                   {Object.entries(DOMAIN_CONFIG).map(([key, config]) => {
                     const count = getOperatorsByDomain(key).length;
                     const percentage = (count / operators.length) * 100 || 0;
-                    
+
                     return (
                       <div key={key} className="space-y-1">
                         <div className="flex justify-between text-sm">
@@ -1256,11 +1252,10 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                     {Object.entries(DOMAIN_CONFIG).map(([key, config]) => (
                       <div
                         key={key}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                          selectedDomains.includes(key)
-                            ? 'border-teal-500 bg-teal-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedDomains.includes(key)
+                          ? 'border-teal-500 bg-teal-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
                         onClick={() => handleDomainToggle(key)}
                       >
                         <div className="flex items-center gap-3">
@@ -1290,7 +1285,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                         <SelectValue placeholder="Select primary domain" />
                       </SelectTrigger>
                       <SelectContent>
-                        {selectedDomains.map(domain => (
+                        {selectedDomains.filter(d => d).map(domain => (
                           <SelectItem key={domain} value={domain}>
                             <span className="capitalize">{DOMAIN_CONFIG[domain]?.label || domain}</span>
                           </SelectItem>
@@ -1320,8 +1315,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               <Button variant="outline" onClick={() => setShowAssignModal(false)}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSaveAssignment} 
+              <Button
+                onClick={handleSaveAssignment}
                 disabled={isSaving || selectedDomains.length === 0}
               >
                 {isSaving ? (
@@ -1371,11 +1366,10 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                   {Object.entries(DOMAIN_CONFIG).map(([key, config]) => (
                     <div
                       key={key}
-                      className={`p-3 border rounded cursor-pointer transition-all ${
-                        selectedDomains.includes(key)
-                          ? 'border-teal-500 bg-teal-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-3 border rounded cursor-pointer transition-all ${selectedDomains.includes(key)
+                        ? 'border-teal-500 bg-teal-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                       onClick={() => handleDomainToggle(key)}
                     >
                       <div className="flex items-center gap-2">
@@ -1393,7 +1387,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
               <Button variant="outline" onClick={() => setShowBulkAssignModal(false)}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleBulkAssign}
                 disabled={isSaving || selectedDomains.length === 0}
               >
@@ -1510,7 +1504,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
                     <div>
                       <p className="text-gray-500">Last Login</p>
                       <p className="font-medium">
-                        {selectedOperator.last_login 
+                        {selectedOperator.last_login
                           ? new Date(selectedOperator.last_login).toLocaleString()
                           : 'Never'}
                       </p>

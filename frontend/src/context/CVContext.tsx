@@ -1,5 +1,5 @@
 // src/context/CVContext.tsx
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 
 // API client (only what we use)
 import { cvBuilderApi } from '@/utils/api';
@@ -161,6 +161,14 @@ export const CVProvider: React.FC<CVProviderProps> = ({ children }) => {
     () => (currentCV ? calculateCompletionScore(currentCV) : 0),
     [currentCV]
   );
+
+  // Initialize from localStorage if available
+  useEffect(() => {
+    const lastCvId = localStorage.getItem('lastCvId');
+    if (lastCvId && !currentCV) {
+      loadCV(lastCvId);
+    }
+  }, []);
 
   // Error helper
   const handleError = (err: unknown, operation: string) => {

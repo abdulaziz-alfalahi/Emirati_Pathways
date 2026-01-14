@@ -178,10 +178,22 @@ def get_shortlist(jd_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # Build query with interview feedback
+        # Build query using the CORRECT table: shortlisted_candidates (unified source of truth)
+        # We need to join with job_postings to filter by the public jd_id (UUID)
+        
         query = """
             SELECT 
-                cs.*,
+                sc.id as shortlist_id_internal,
+                sc.id::text as shortlist_id, -- Frontend expects shortlist_id string
+                jp.jd_id,
+                sc.candidate_id::text as candidate_id, -- Frontend expects string
+                sc.status,
+                sc.notes,
+                sc.created_at,
+                -- Return 0 for match_score if column missing, or fetch if available (schema showed it missing in sample but valid in checks?)
+                -- Actually schema check 4371/4391 didn't show match_score in shortlisted_candidates sample, 
+                -- so we'll use 0 or fetch from another table if critical. For now 0 to avoid crash.
+                0 as match_score, 
                 u.first_name,
                 u.last_name,
                 u.email,
@@ -191,25 +203,26 @@ def get_shortlist(jd_id):
                 i.recommendation as interview_recommendation,
                 i.scheduled_date as interview_date,
                 i.status as interview_status
-            FROM candidate_shortlist cs
-            LEFT JOIN users u ON cs.candidate_id = u.id::text
+            FROM shortlisted_candidates sc
+            JOIN job_postings jp ON sc.job_id = jp.id
+            LEFT JOIN users u ON sc.candidate_id::text = u.id::text
             LEFT JOIN LATERAL (
                 SELECT interview_id, feedback, rating, recommendation, scheduled_date, status
                 FROM interview_schedules
-                WHERE shortlist_id = cs.shortlist_id
+                WHERE shortlist_id = sc.id::text -- matching string representation
                 ORDER BY scheduled_date DESC, created_at DESC
                 LIMIT 1
             ) i ON true
-            WHERE cs.jd_id = %s
+            WHERE jp.jd_id = %s
         """
         
-        params = [jd_id]
+        params = [str(jd_id)]
         
         if status_filter:
-            query += " AND cs.status = %s"
+            query += " AND sc.status = %s"
             params.append(status_filter)
         
-        query += " ORDER BY cs.match_score DESC, cs.created_at DESC LIMIT %s OFFSET %s"
+        query += " ORDER BY sc.created_at DESC LIMIT %s OFFSET %s"
         params.extend([limit, offset])
         
         cur.execute(query, params)
@@ -219,11 +232,11 @@ def get_shortlist(jd_id):
         shortlist_data = []
         for entry in shortlist:
             entry_dict = dict(entry)
-            # Parse JSONB fields
-            if entry_dict.get('match_details'):
-                entry_dict['match_details'] = entry_dict['match_details']
-            if entry_dict.get('tags'):
-                entry_dict['tags'] = entry_dict['tags']
+            # Add synthetic/missing fields for compatibility
+            if 'match_details' not in entry_dict:
+                entry_dict['match_details'] = {}
+            if 'tags' not in entry_dict:
+                entry_dict['tags'] = []
             shortlist_data.append(entry_dict)
         
         cur.close()

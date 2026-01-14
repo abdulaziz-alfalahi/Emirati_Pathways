@@ -27,6 +27,7 @@ import {
   CalendarToday as CalendarIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material';
+import LocationPicker from '../../common/LocationPicker'; // Adjust path if needed, assuming common is in components/common
 import { restClient } from '../../../utils/api';
 
 interface CreateOfferDialogProps {
@@ -52,7 +53,7 @@ interface ShortlistedCandidate {
   match_score: number;
 }
 
-const steps = ['Select Candidate', 'Compensation Details', 'Contract Terms', 'Benefits & Perks'];
+const steps = ['Select Candidate', 'Compensation Details', 'Contract Terms', 'Work Location', 'Benefits & Perks'];
 
 const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   open,
@@ -214,8 +215,12 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
       case 1:
         return salaryAmount !== '' && parseFloat(salaryAmount) > 0;
       case 2:
+        // Contract Terms: Start Date, Type, Schedule, Probation
         return startDate !== '' && contractType !== '';
       case 3:
+        // Work Location
+        return workLocation !== '';
+      case 4:
         return true; // Benefits are optional
       default:
         return false;
@@ -374,27 +379,49 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Work Location"
-                value={workLocation}
-                onChange={(e) => setWorkLocation(e.target.value)}
-                placeholder="e.g., Dubai, UAE"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Work Schedule"
-                value={workSchedule}
-                onChange={(e) => setWorkSchedule(e.target.value)}
-                placeholder="e.g., Monday-Friday, 9:00 AM - 6:00 PM"
-              />
+              <FormControl fullWidth>
+                <InputLabel>Work Schedule</InputLabel>
+                <Select
+                  value={workSchedule}
+                  onChange={(e) => setWorkSchedule(e.target.value)}
+                  label="Work Schedule"
+                >
+                  <MenuItem value="Standard (9AM - 6PM)">Standard (9AM - 6PM)</MenuItem>
+                  <MenuItem value="Flexible">Flexible</MenuItem>
+                  <MenuItem value="Shift Based">Shift Based</MenuItem>
+                  <MenuItem value="Remote">Remote</MenuItem>
+                  <MenuItem value="Hybrid">Hybrid</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         );
 
       case 3:
+        // New Step: Work Location
+        return (
+          <Box sx={{ height: '450px', display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Select Work Location
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              Click on the map to pin the exact office location for this role.
+            </Typography>
+            <Box sx={{ flexGrow: 1, border: '1px solid #e0e0e0', borderRadius: 1, overflow: 'hidden' }}>
+              <LocationPicker
+                lat={workLocation && workLocation.includes("Lat:") ? parseFloat(workLocation.split("Lat:")[1].split(",")[0]) : undefined}
+                lng={workLocation && workLocation.includes("Lng:") ? parseFloat(workLocation.split("Lng:")[1]) : undefined}
+                onLocationSelect={(lat, lng) => setWorkLocation(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`)}
+                height="400px"
+              />
+            </Box>
+            <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+              Selected Coordinates: {workLocation || "None"}
+            </Typography>
+          </Box>
+        );
+
+      case 4:
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>

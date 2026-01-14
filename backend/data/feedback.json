@@ -1,0 +1,609 @@
+[
+  {
+    "id": "2d3222b9-954d-48d2-acf4-0fcb302bffc6",
+    "user_id": "guest",
+    "role": "guest",
+    "message": "test",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {},
+    "status": "resolved",
+    "created_at": "2026-01-10T10:35:48.580764"
+  },
+  {
+    "id": "c03fbe39-6cec-44d5-8397-4c3ab4914152",
+    "user_id": "guest",
+    "role": "guest",
+    "message": "Final check",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {},
+    "status": "resolved",
+    "created_at": "2026-01-10T10:36:49.198005"
+  },
+  {
+    "id": "2bcd2b0a-fe3f-4979-8fc1-0d3a0e13bf08",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Testing",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to fetch notification stats {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODA0MTY5OSwianRpIjoiMzMwZWI1MWMtMzY0OS00MTFmLWEwMWItZjJiMDdjMzRkODA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MDQxNjk5LCJjc3JmIjoiMTBkZWRiZTctZjlhZS00MzI1LTk5YjMtYTkyYzQ3MmEyYWMwIiwiZXhwIjoxNzY4MDQ1Mjk5LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.gxy6QHyJIc4d5EYFS93U6V28pLAYcIhCaw9PhO5kdJA\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/recruiter/offers/approval-stats\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}",
+      "[ERROR] Failed to fetch jobs {}",
+      "[ERROR] Failed to fetch notification stats {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODA0MTY5OSwianRpIjoiMzMwZWI1MWMtMzY0OS00MTFmLWEwMWItZjJiMDdjMzRkODA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MDQxNjk5LCJjc3JmIjoiMTBkZWRiZTctZjlhZS00MzI1LTk5YjMtYTkyYzQ3MmEyYWMwIiwiZXhwIjoxNzY4MDQ1Mjk5LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.gxy6QHyJIc4d5EYFS93U6V28pLAYcIhCaw9PhO5kdJA\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/recruiter/offers/approval-stats\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}",
+      "[ERROR] Failed to fetch jobs {}",
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-10T10:41:47.428Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-10T10:41:47.469627"
+  },
+  {
+    "id": "997388b5-d57a-4379-802b-880c46085030",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Testing feedback.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to fetch jobs {}",
+      "[ERROR] Failed to fetch jobs {}",
+      "[ERROR] Failed to connect to backend auth: {}",
+      "[ERROR] Failed to load notification preferences: {\"message\":\"Request failed with status code 401\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 401\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODA0MTY5OSwianRpIjoiMzMwZWI1MWMtMzY0OS00MTFmLWEwMWItZjJiMDdjMzRkODA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MDQxNjk5LCJjc3JmIjoiMTBkZWRiZTctZjlhZS00MzI1LTk5YjMtYTkyYzQ3MmEyYWMwIiwiZXhwIjoxNzY4MDQ1Mjk5LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.gxy6QHyJIc4d5EYFS93U6V28pLAYcIhCaw9PhO5kdJA\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/communication/notifications/preferences\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":401}",
+      "[ERROR] Failed to fetch notifications: {\"message\":\"Request failed with status code 401\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 401\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODA0MTY5OSwianRpIjoiMzMwZWI1MWMtMzY0OS00MTFmLWEwMWItZjJiMDdjMzRkODA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MDQxNjk5LCJjc3JmIjoiMTBkZWRiZTctZjlhZS00MzI1LTk5YjMtYTkyYzQ3MmEyYWMwIiwiZXhwIjoxNzY4MDQ1Mjk5LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.gxy6QHyJIc4d5EYFS93U6V28pLAYcIhCaw9PhO5kdJA\"},\"baseURL\":\"\",\"withCredentials\":true,\"params\":{\"limit\":50},\"method\":\"get\",\"url\":\"/api/communication/notifications\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":401}",
+      "[ERROR] Failed to fetch notifications: {\"message\":\"Request failed with status code 401\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 401\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODA0MTY5OSwianRpIjoiMzMwZWI1MWMtMzY0OS00MTFmLWEwMWItZjJiMDdjMzRkODA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MDQxNjk5LCJjc3JmIjoiMTBkZWRiZTctZjlhZS00MzI1LTk5YjMtYTkyYzQ3MmEyYWMwIiwiZXhwIjoxNzY4MDQ1Mjk5LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.gxy6QHyJIc4d5EYFS93U6V28pLAYcIhCaw9PhO5kdJA\"},\"baseURL\":\"\",\"withCredentials\":true,\"params\":{\"limit\":50},\"method\":\"get\",\"url\":\"/api/communication/notifications\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":401}",
+      "[ERROR] [vite] failed to connect to websocket.\nyour current setup:\n  (browser) archdiocesan-complimentarily-marianna.ngrok-free.dev/ <--[HTTP]--> localhost:8089/ (server)\n  (browser) archdiocesan-complimentarily-marianna.ngrok-free.dev:/ <--[WebSocket (failing)]--> localhost:8089/ (server)\nCheck out your Vite / network configuration and https://vite.dev/config/server-options.html#server-hmr .",
+      "[ERROR] Failed to load notification preferences: {\"message\":\"Request failed with status code 401\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 401\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODA0MTY5OSwianRpIjoiMzMwZWI1MWMtMzY0OS00MTFmLWEwMWItZjJiMDdjMzRkODA5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MDQxNjk5LCJjc3JmIjoiMTBkZWRiZTctZjlhZS00MzI1LTk5YjMtYTkyYzQ3MmEyYWMwIiwiZXhwIjoxNzY4MDQ1Mjk5LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.gxy6QHyJIc4d5EYFS93U6V28pLAYcIhCaw9PhO5kdJA\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/communication/notifications/preferences\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":401}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-10T17:43:11.663Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-10T17:43:11.704836"
+  },
+  {
+    "id": "54488185-c06e-4181-992b-5fd8fc91384f",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "I see many errors in the console as I switch tabs in the dashboard.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to fetch jobs {}",
+      "[ERROR] Failed to fetch jobs {}",
+      "[ERROR] Failed to fetch recent applicants: {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODEwMTg2NywianRpIjoiZTUyYjI1ZDYtMGU5Ny00YTQxLWI0MjctMzNiZTI2ZmQ3NmM2IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ1IiwibmJmIjoxNzY4MTAxODY3LCJjc3JmIjoiYThiYzdkYTktNjViZi00ZTMxLWFmYWItYjA4MTIyM2RkYWE5IiwiZXhwIjoxNzY4MTg4MjY3LCJyb2xlIjoiaHJfcmVjcnVpdGVyIiwiZW1haWwiOiJvbWFyLmFscmFzaGlkQHJlY3J1aXRtZW50LmFlIn0.sLF7OFI0ITjEBOCGG45OBiwSKW-cjA0rHPJ904GP8lw\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/recruiter/recent-applicants?limit=5&days=30\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T03:26:18.689Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T03:26:18.733741"
+  },
+  {
+    "id": "46f206ec-8854-483c-b921-da0c97eb346b",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "I still see errors in the console.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Error loading admin dashboard data: {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODEwMTk5MiwianRpIjoiNDk5ZGI5MTktM2RkNi00ZDQ5LThjYzctNGE5NjZmOGEwZmYzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjI5IiwibmJmIjoxNzY4MTAxOTkyLCJjc3JmIjoiODZmMjdiMmYtM2NkYS00ZTRmLWEyMjktYzI4YzZhMzZkNjJiIiwiZXhwIjoxNzY4MTg4MzkyLCJyb2xlIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGVtaXJhdGlqb3VybmV5LmFlIn0._EaeZpl0fkbmLh7s_I8f33Pujmduc3A4xhgHheQw2HY\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/admin/dashboard\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}",
+      "[ERROR] Error loading admin dashboard data: {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODEwMTk5MiwianRpIjoiNDk5ZGI5MTktM2RkNi00ZDQ5LThjYzctNGE5NjZmOGEwZmYzIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjI5IiwibmJmIjoxNzY4MTAxOTkyLCJjc3JmIjoiODZmMjdiMmYtM2NkYS00ZTRmLWEyMjktYzI4YzZhMzZkNjJiIiwiZXhwIjoxNzY4MTg4MzkyLCJyb2xlIjoiYWRtaW4iLCJlbWFpbCI6ImFkbWluQGVtaXJhdGlqb3VybmV5LmFlIn0._EaeZpl0fkbmLh7s_I8f33Pujmduc3A4xhgHheQw2HY\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/admin/dashboard\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T03:36:28.680Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T03:36:28.723984"
+  },
+  {
+    "id": "e8e1b176-d791-40d9-ab1b-4d5f1a8cd41f",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "There is no \"back\" button on this page.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Warning: Cannot update a component (`%s`) while rendering a different component (`%s`). To locate the bad setState() call inside `%s`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render%s FeedbackWidget ApprovalWorkflow ApprovalWorkflow \n    at div\n    at ApprovalWorkflow (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/hr/ApprovalWorkflow.tsx:47:36)\n    at div\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-IR6Q4BOE.js?v=3f03480f:172:13\n    at Presence (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-AFH6FIAT.js?v=3f03480f:24:11)\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=3f03480f:177:13\n    at _c5 (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/ui/tabs.tsx:68:12)\n    at div\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-IR6Q4BOE.js?v=3f03480f:172:13\n    at Provider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=3f03480f:38:15)\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=3f03480f:54:7\n    at div\n    at div\n    at div\n    at HRDashboard (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/pages/HRDashboard.tsx?t=1768102381417:64:17)\n    at ProtectedRoute (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/auth/ProtectedRoute.tsx:21:3)\n    at RenderedRoute (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4088:5)\n    at Routes (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4558:5)\n    at Suspense\n    at NotificationProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/notifications/NotificationSystem.tsx:62:3)\n    at div\n    at Router (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4501:15)\n    at BrowserRouter (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:5247:5)\n    at AppContent (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/App.tsx?t=1768102381417:148:20)\n    at AuthProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/AuthContext.tsx:21:32)\n    at MockAuthProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/MockAuthContext.tsx:21:36)\n    at LanguageProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/EnhancedLanguageContext.tsx:30:36)\n    at QueryClientProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=3f03480f:3022:3)\n    at App",
+      "[ERROR] Warning: Each child in a list should have a unique \"key\" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s \n\nCheck the render method of `ApprovalWorkflow`.  \n    at div\n    at ApprovalWorkflow (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/hr/ApprovalWorkflow.tsx:47:36)\n    at div\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-IR6Q4BOE.js?v=3f03480f:172:13\n    at Presence (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-AFH6FIAT.js?v=3f03480f:24:11)\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=3f03480f:177:13\n    at _c5 (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/ui/tabs.tsx:68:12)\n    at div\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-IR6Q4BOE.js?v=3f03480f:172:13\n    at Provider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=3f03480f:38:15)\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=3f03480f:54:7\n    at div\n    at div\n    at div\n    at HRDashboard (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/pages/HRDashboard.tsx?t=1768102381417:64:17)\n    at ProtectedRoute (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/auth/ProtectedRoute.tsx:21:3)\n    at RenderedRoute (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4088:5)\n    at Routes (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4558:5)\n    at Suspense\n    at NotificationProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/notifications/NotificationSystem.tsx:62:3)\n    at div\n    at Router (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4501:15)\n    at BrowserRouter (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:5247:5)\n    at AppContent (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/App.tsx?t=1768102381417:148:20)\n    at AuthProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/AuthContext.tsx:21:32)\n    at MockAuthProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/MockAuthContext.tsx:21:36)\n    at LanguageProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/EnhancedLanguageContext.tsx:30:36)\n    at QueryClientProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=3f03480f:3022:3)\n    at App"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T03:52:49.768Z",
+      "path": "/recruiter/candidates"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T03:52:49.831633"
+  },
+  {
+    "id": "65c4ae02-d71e-4525-8a02-5d5123b22b4f",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "I don't see any positions listed in the \"positions\" tab.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T03:54:49.495Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T03:54:49.537075"
+  },
+  {
+    "id": "4f245582-29c3-475e-82fa-f4b87cbfeb01",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "There is no \"back\" button on this page.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T03:59:05.512Z",
+      "path": "/recruiter/analytics"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T03:59:05.593677"
+  },
+  {
+    "id": "a7197191-92dc-4dad-8e58-6db6f8e4b6d1",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Both buttons, \"generate reports\" and \"view templates,\" are not working.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:00:22.288Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:00:22.345948"
+  },
+  {
+    "id": "64002c13-5db4-4d6b-899b-558119b567bd",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "My photo is not showing anymore.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:05:21.551Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:05:21.615116"
+  },
+  {
+    "id": "9046d96d-b5c8-46e0-9584-390734c9a0f0",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "My profile photo is missing. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:05:44.303Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:05:44.360655"
+  },
+  {
+    "id": "dff9c4d2-0d85-4054-990a-1a33f213de37",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "Replace the $ sign with the new UAE Dirham symbol on all pages across the platform.  Capital D with two lines.",
+    "type": "feature",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:13:50.160Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:13:50.208376"
+  },
+  {
+    "id": "11da4514-ff75-4117-b61a-1f965ef0ec03",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "The gear cog on the upper right side has no functions. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:14:32.848Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:14:32.896449"
+  },
+  {
+    "id": "e1617c37-4117-4f12-8820-654a2c365bf4",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "Updating profile fails.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Error updating profile: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:20:28.233Z",
+      "path": "/profile"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:20:28.280771"
+  },
+  {
+    "id": "66d17e8c-2b95-4177-97bd-59f9fea47114",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "Profile data does not persist after updating it.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:22:33.336Z",
+      "path": "/profile"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:22:33.377534"
+  },
+  {
+    "id": "56467ff6-6378-4aa5-930e-d477d36fe044",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "The Positions tab still shows no positions.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T04:59:37.512Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T04:59:37.586896"
+  },
+  {
+    "id": "4d512f54-a1b1-48c4-8164-fdcc098f4666",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Still, no positions are listed under the \"Positions\" tab. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T05:11:07.985Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T05:11:08.045279"
+  },
+  {
+    "id": "7acc0013-e631-4430-90fc-45aa528e592c",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "The Admin clicked \"Resolved\" on a bug I reported, but I didn't receive a notification. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-11T05:39:39.688Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T05:39:39.748788"
+  },
+  {
+    "id": "3fd119a6-daf0-44bb-970d-d70f9a3af28f",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Testing feedback notifications' appearance in the Admin dashboard when submitted and appearance in the HR Manager dashboard when resolved.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1272x692",
+      "timestamp": "2026-01-11T05:46:31.331Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T05:46:29.684800"
+  },
+  {
+    "id": "58bb463d-72a8-4b4d-a72b-45c18c5279c6",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Testing the new fix, opening the feedback rather than overview at admin side.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1272x692",
+      "timestamp": "2026-01-11T05:56:08.646Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T05:56:06.974529"
+  },
+  {
+    "id": "2ab09846-14f4-4054-be28-9bec47f5a9e4",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "Testing again.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1272x692",
+      "timestamp": "2026-01-11T06:02:24.832Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T06:02:23.195574"
+  },
+  {
+    "id": "ef7e8813-86f4-42eb-9d07-57a19df96d1f",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "One more test",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1272x692",
+      "timestamp": "2026-01-11T06:33:13.212Z",
+      "path": "/hr-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T06:33:11.499638"
+  },
+  {
+    "id": "bb2650d4-56b1-4f73-8cb7-7757d4759094",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "The JD Template page lacks a back button. ",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Warning: Each child in a list should have a unique \"key\" prop.%s%s See https://reactjs.org/link/warning-keys for more information.%s \n\nCheck the render method of `ApprovalWorkflow`.  \n    at div\n    at ApprovalWorkflow (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/hr/ApprovalWorkflow.tsx:47:36)\n    at div\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-IR6Q4BOE.js?v=3f03480f:172:13\n    at Presence (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-AFH6FIAT.js?v=3f03480f:24:11)\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=3f03480f:177:13\n    at _c5 (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/ui/tabs.tsx:68:12)\n    at div\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-IR6Q4BOE.js?v=3f03480f:172:13\n    at Provider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=3f03480f:38:15)\n    at https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@radix-ui_react-tabs.js?v=3f03480f:54:7\n    at div\n    at div\n    at div\n    at HRDashboard (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/pages/HRDashboard.tsx?t=1768118316741:64:17)\n    at ProtectedRoute (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/auth/ProtectedRoute.tsx:21:3)\n    at RenderedRoute (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4088:5)\n    at Routes (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4558:5)\n    at Suspense\n    at NotificationProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/components/notifications/NotificationSystem.tsx?t=1768115821984:62:3)\n    at div\n    at Router (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:4501:15)\n    at BrowserRouter (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/react-router-dom.js?v=3f03480f:5247:5)\n    at AppContent (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/App.tsx?t=1768118316741:148:20)\n    at AuthProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/AuthContext.tsx:21:32)\n    at MockAuthProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/MockAuthContext.tsx:21:36)\n    at LanguageProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/src/context/EnhancedLanguageContext.tsx:30:36)\n    at QueryClientProvider (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=3f03480f:3022:3)\n    at App",
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1272x692",
+      "timestamp": "2026-01-11T08:00:38.165Z",
+      "path": "/recruiter/jd-templates"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T08:00:36.995897"
+  },
+  {
+    "id": "a54afa9b-a98c-4300-a440-78fb35a91433",
+    "user_id": "47",
+    "role": "hr_manager",
+    "message": "There was a toast message that said failed to load when I clicked on templates.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to load templates {\"message\":\"Request failed with status code 403\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 403\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODExODM2NiwianRpIjoiNGY4OTQ0MmEtNjhhMy00Yzg1LWFhM2QtYmQzMzkwMDQ0NzUyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MTE4MzY2LCJjc3JmIjoiNzdjNWQyNzUtOGMyZC00ODg5LTllNmUtNTkwZGZiYzc1ZmNkIiwiZXhwIjoxNzY4MjA0NzY2LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.Up3vv_47Ro2T4qzNx9zUtXyShhYIi1qgXjcskC93hU4\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/hr/jobs/templates\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":403}",
+      "[ERROR] Failed to load templates {\"message\":\"Request failed with status code 403\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 403\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODExODM2NiwianRpIjoiNGY4OTQ0MmEtNjhhMy00Yzg1LWFhM2QtYmQzMzkwMDQ0NzUyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjQ3IiwibmJmIjoxNzY4MTE4MzY2LCJjc3JmIjoiNzdjNWQyNzUtOGMyZC00ODg5LTllNmUtNTkwZGZiYzc1ZmNkIiwiZXhwIjoxNzY4MjA0NzY2LCJyb2xlIjoiaHJfbWFuYWdlciIsImVtYWlsIjoiemFyYS5zYWVlZEBjb21wYW55LmFlIn0.Up3vv_47Ro2T4qzNx9zUtXyShhYIi1qgXjcskC93hU4\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/hr/jobs/templates\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":403}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1272x692",
+      "timestamp": "2026-01-11T08:07:10.580Z",
+      "path": "/recruiter/jd-templates"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T08:07:08.846424"
+  },
+  {
+    "id": "85dde307-fcd9-437d-9888-80e1214b5020",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "When I receive an update on my reported bug stating it is resolved, I click it, but it does not take me to the original report I submitted. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2124x1053",
+      "timestamp": "2026-01-11T15:05:39.338Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-11T15:05:39.462546"
+  },
+  {
+    "id": "0edb81aa-bfa8-4676-bbee-ddd71fc25c93",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "This page does not have a back button. ",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+      "screenSize": "1280x649",
+      "timestamp": "2026-01-12T15:01:20.479Z",
+      "path": "/profile"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-12T15:01:17.886789"
+  },
+  {
+    "id": "9120d6f1-ecad-42d9-a3e4-08cf8f1f1103",
+    "user_id": "34",
+    "role": "operator",
+    "message": "There is no \"Requests\" tab to approve requests.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Logout API error: {}",
+      "[ERROR] AuthService: Logout error: {}",
+      "[ERROR] Failed to connect to backend auth: {}",
+      "[ERROR] Logout API error: {}",
+      "[ERROR] AuthService: Logout error: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+      "screenSize": "1280x649",
+      "timestamp": "2026-01-12T15:07:02.642Z",
+      "path": "/operator-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-12T15:07:00.046134"
+  },
+  {
+    "id": "6671ab99-0c6b-4ab7-8721-3225b8d8f3b5",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "I have requested the Assessor persona, which was approved by the Operator, but it still does not appear on my dashboard.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Role request failed {\"message\":\"Request failed with status code 400\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 400\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Content-Type\":\"application/json\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODIzNjc3OCwianRpIjoiNDAyMWVlZTMtNmVlNC00MGQzLTg3MzktMzFjOTA3ZWIwMWI5IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjIxIiwibmJmIjoxNzY4MjM2Nzc4LCJjc3JmIjoiMmM4MzAzMzgtY2EwNy00NTJkLWI0NzEtOGJkOTBhNDdjODQ2IiwiZXhwIjoxNzY4MzIzMTc4LCJyb2xlIjoiY2FuZGlkYXRlIiwiZW1haWwiOiJraGFsaWQuYWxtYXpyb3VlaUBlbWFpbC5hZSJ9.RAHeFiIXt2rHB5doF2HEbTME-jJx4mlza6SMPK7_IGg\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"post\",\"url\":\"/api/roles/request\",\"data\":\"{\\\"role\\\":\\\"Educator\\\",\\\"notes\\\":\\\"From SRS\\\",\\\"documents\\\":{}}\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":400}",
+      "[ERROR] Logout API error: {}",
+      "[ERROR] AuthService: Logout error: {}",
+      "[ERROR] Failed to connect to backend auth: {}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+      "screenSize": "1280x649",
+      "timestamp": "2026-01-12T16:56:44.551Z",
+      "path": "/profile"
+    },
+    "status": "open",
+    "created_at": "2026-01-12T16:56:41.905058"
+  },
+  {
+    "id": "82201f45-55bb-41ad-9332-4eb09a20cc77",
+    "user_id": "21",
+    "role": "candidate",
+    "message": "The role switcher is not available in the menu ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2124x1053",
+      "timestamp": "2026-01-12T17:39:47.960Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "open",
+    "created_at": "2026-01-12T17:39:48.001972"
+  },
+  {
+    "id": "04aec765-2fb2-4888-8a9b-af99e70975e7",
+    "user_id": "29",
+    "role": "admin",
+    "message": "When I clicked on Message, I was logged out and taken to the auth page.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2124x1053",
+      "timestamp": "2026-01-13T05:26:28.408Z",
+      "path": "/admin-dashboard"
+    },
+    "status": "resolved",
+    "created_at": "2026-01-13T05:26:28.465789"
+  },
+  {
+    "id": "0e879a35-8e61-4612-9167-2a0510cea80f",
+    "user_id": "29",
+    "role": "admin",
+    "message": "The list shows the first 20 users, but when I click next to go to the remaining users, it does not load the next page. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1513x1053",
+      "timestamp": "2026-01-13T06:33:26.249Z",
+      "path": "/admin-dashboard"
+    },
+    "status": "open",
+    "created_at": "2026-01-13T06:33:26.523094"
+  },
+  {
+    "id": "d4d06337-e9e2-456d-9337-0c63c71d2c2c",
+    "user_id": "62",
+    "role": "candidate",
+    "message": "This page does not have a back button.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1296x1053",
+      "timestamp": "2026-01-14T02:43:18.430Z",
+      "path": "/cv-builder"
+    },
+    "status": "open",
+    "created_at": "2026-01-14T02:43:18.473995"
+  },
+  {
+    "id": "526a1df6-fe47-428e-9e87-5410b40fd517",
+    "user_id": "62",
+    "role": "candidate",
+    "message": "Couldn't load my profile data.",
+    "type": "bug",
+    "console_logs": [
+      "[ERROR] Failed to fetch profile {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODM4MzMwOCwianRpIjoiODAzZDExZTktOTQyMS00NTJhLThhZjctMjVjYTAxOGY0YjkxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjYyIiwibmJmIjoxNzY4MzgzMzA4LCJjc3JmIjoiMzg0N2NmZGMtZWVjZC00NTY0LTliZTUtN2RmMDFjNDFiYzJhIiwiZXhwIjoxNzY4NDY5NzA4LCJyb2xlIjoiY2FuZGlkYXRlIn0.Yu4ITCymh5z-g1-rRiR2J_FoN_XUlLYg0jBwTAxMbh8\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/profile/candidate\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}",
+      "[ERROR] Failed to fetch profile {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODM4MzMwOCwianRpIjoiODAzZDExZTktOTQyMS00NTJhLThhZjctMjVjYTAxOGY0YjkxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjYyIiwibmJmIjoxNzY4MzgzMzA4LCJjc3JmIjoiMzg0N2NmZGMtZWVjZC00NTY0LTliZTUtN2RmMDFjNDFiYzJhIiwiZXhwIjoxNzY4NDY5NzA4LCJyb2xlIjoiY2FuZGlkYXRlIn0.Yu4ITCymh5z-g1-rRiR2J_FoN_XUlLYg0jBwTAxMbh8\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/profile/candidate\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}",
+      "[ERROR] Failed to fetch profile {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODM4MzMwOCwianRpIjoiODAzZDExZTktOTQyMS00NTJhLThhZjctMjVjYTAxOGY0YjkxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjYyIiwibmJmIjoxNzY4MzgzMzA4LCJjc3JmIjoiMzg0N2NmZGMtZWVjZC00NTY0LTliZTUtN2RmMDFjNDFiYzJhIiwiZXhwIjoxNzY4NDY5NzA4LCJyb2xlIjoiY2FuZGlkYXRlIn0.Yu4ITCymh5z-g1-rRiR2J_FoN_XUlLYg0jBwTAxMbh8\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/profile/candidate\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}",
+      "[ERROR] Failed to fetch profile {\"message\":\"Request failed with status code 404\",\"name\":\"AxiosError\",\"stack\":\"AxiosError: Request failed with status code 404\\n    at settle (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1183:12)\\n    at XMLHttpRequest.onloadend (https://archdiocesan-complimentarily-marianna.ngrok-free.dev/node_modules/.vite/deps/axios.js?v=3f03480f:1411:7)\",\"config\":{\"transitional\":{\"silentJSONParsing\":true,\"forcedJSONParsing\":true,\"clarifyTimeoutError\":false},\"adapter\":\"xhr\",\"transformRequest\":[null],\"transformResponse\":[null],\"timeout\":0,\"xsrfCookieName\":\"XSRF-TOKEN\",\"xsrfHeaderName\":\"X-XSRF-TOKEN\",\"maxContentLength\":-1,\"maxBodyLength\":-1,\"env\":{},\"headers\":{\"Accept\":\"application/json, text/plain, */*\",\"Authorization\":\"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2ODM4MzMwOCwianRpIjoiODAzZDExZTktOTQyMS00NTJhLThhZjctMjVjYTAxOGY0YjkxIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjYyIiwibmJmIjoxNzY4MzgzMzA4LCJjc3JmIjoiMzg0N2NmZGMtZWVjZC00NTY0LTliZTUtN2RmMDFjNDFiYzJhIiwiZXhwIjoxNzY4NDY5NzA4LCJyb2xlIjoiY2FuZGlkYXRlIn0.Yu4ITCymh5z-g1-rRiR2J_FoN_XUlLYg0jBwTAxMbh8\"},\"baseURL\":\"\",\"withCredentials\":true,\"method\":\"get\",\"url\":\"/api/profile/candidate\"},\"code\":\"ERR_BAD_REQUEST\",\"status\":404}"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2124x1053",
+      "timestamp": "2026-01-14T09:38:33.984Z",
+      "path": "/profile"
+    },
+    "status": "open",
+    "created_at": "2026-01-14T09:38:34.046320"
+  },
+  {
+    "id": "ccc8775e-b6a4-4464-bd54-a30b977d7e62",
+    "user_id": "68",
+    "role": "recruiter",
+    "message": "My jobs tab still does not show any jobs, while the candidate user finds many jobs when candidate-to-job matching via AI is performed. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2124x1053",
+      "timestamp": "2026-01-14T11:40:03.377Z",
+      "path": "/recruiter-dashboard"
+    },
+    "status": "open",
+    "created_at": "2026-01-14T11:40:03.421075"
+  }
+]

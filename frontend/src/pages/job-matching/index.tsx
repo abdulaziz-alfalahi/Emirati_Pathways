@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CareerPageLayout } from '@/components/career/CareerPageLayout';
-import { Search, Target, Users, TrendingUp, Briefcase, MapPin, DollarSign, Star, Clock, Building, Eye, Heart, Send, Filter, BookmarkPlus, Bell, BarChart3, User, Settings, RefreshCw } from 'lucide-react';
+import { Search, Target, Users, TrendingUp, Briefcase, MapPin, Coins, Star, Clock, Building, Eye, Heart, Send, Filter, BookmarkPlus, Bell, BarChart3, User, Settings, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +108,7 @@ const JobMatchingPage: React.FC = () => {
       {/* Search Bar */}
       <div className="flex gap-4">
         <div className="flex-1">
-          <Input 
+          <Input
             placeholder={t('search.placeholder')}
             className="h-12"
           />
@@ -197,7 +197,7 @@ const JobMatchingPage: React.FC = () => {
                     {t('locations.dubai')}
                   </div>
                   <div className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" />
+                    <Coins className="h-4 w-4" />
                     AED 18,000 - 25,000
                   </div>
                   <div className="flex items-center gap-1">
@@ -253,7 +253,7 @@ const JobMatchingPage: React.FC = () => {
                     {t('locations.dubai')}
                   </div>
                   <div className="flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" />
+                    <Coins className="h-4 w-4" />
                     AED 15,000 - 22,000
                   </div>
                   <div className="flex items-center gap-1">

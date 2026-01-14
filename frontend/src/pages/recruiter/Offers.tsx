@@ -31,7 +31,7 @@ export default function OffersPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Try the recruiter offers endpoint first (queries both offers and job_offers tables)
       try {
         const res = await restClient.get(`/api/recruiter/offers/approvals/all`);
@@ -58,7 +58,7 @@ export default function OffersPage() {
       } catch (e) {
         console.log('Recruiter approvals endpoint failed, trying HR offers endpoint');
       }
-      
+
       // Fallback to HR offers endpoint
       const res = await restClient.get(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}`);
       const json = res.data;
@@ -96,19 +96,19 @@ export default function OffersPage() {
       // First check if offer is approved
       const offer = offers.find(o => o.id === offerId);
       if (offer?.status === 'pending_approval') {
-        toast({ 
-          title: 'Cannot send offer', 
+        toast({
+          title: 'Cannot send offer',
           description: 'This offer is pending HR Manager approval. Please wait for approval before sending.',
-          variant: 'destructive' 
+          variant: 'destructive'
         });
         return;
       }
-      
+
       if (offer?.status !== 'approved' && offer?.status !== 'draft') {
-        toast({ 
-          title: 'Cannot send offer', 
+        toast({
+          title: 'Cannot send offer',
           description: `Offer status is "${offer?.status}". Only approved offers can be sent to candidates.`,
-          variant: 'destructive' 
+          variant: 'destructive'
         });
         return;
       }
@@ -116,6 +116,7 @@ export default function OffersPage() {
       const res = await restClient.post(`/api/hr/offers/${offerId}/send`, { expires_in_days: 7 });
       const json = res.data;
       const signUrl = json?.data?.sign_url;
+
       if (signUrl && navigator.clipboard) {
         await navigator.clipboard.writeText(signUrl);
         toast({ title: 'Offer sent', description: 'Sign URL copied to clipboard.' });
@@ -151,15 +152,15 @@ export default function OffersPage() {
   const statusBadge = (status: string) => {
     const map: Record<string, { className: string; icon?: React.ReactNode }> = {
       draft: { className: 'bg-gray-100 text-gray-800 border-gray-200' },
-      pending_approval: { 
+      pending_approval: {
         className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
         icon: <Clock className="h-3 w-3 mr-1" />
       },
-      approved: { 
+      approved: {
         className: 'bg-green-100 text-green-800 border-green-200',
         icon: <CheckCircle className="h-3 w-3 mr-1" />
       },
-      rejected: { 
+      rejected: {
         className: 'bg-red-100 text-red-800 border-red-200',
         icon: <XCircle className="h-3 w-3 mr-1" />
       },
@@ -169,7 +170,7 @@ export default function OffersPage() {
     };
     const config = map[status] || { className: 'bg-slate-100 text-slate-800 border-slate-200' };
     const displayStatus = status === 'pending_approval' ? 'Pending Approval' : status;
-    
+
     return (
       <Badge variant="outline" className={`${config.className} flex items-center`}>
         {config.icon}
@@ -208,7 +209,7 @@ export default function OffersPage() {
     return true;
   });
 
-  const SortHeader: React.FC<{ label: string; field: 'created'|'job'|'candidate'|'status' }>=({label, field}) => (
+  const SortHeader: React.FC<{ label: string; field: 'created' | 'job' | 'candidate' | 'status' }> = ({ label, field }) => (
     <th className="p-3 sticky top-0 bg-white z-10">
       <button className="w-full text-left flex items-center gap-1" onClick={() => {
         if (sortBy === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -237,7 +238,7 @@ export default function OffersPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-white shadow-sm border-l-4 border-l-yellow-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -323,7 +324,7 @@ export default function OffersPage() {
 
           {loading && <div className="text-sm text-slate-500">Loading...</div>}
           {error && <div className="text-red-600">{error}</div>}
-          
+
           <div className="overflow-x-auto rounded border">
             <table className="min-w-full bg-white">
               <thead>
@@ -348,14 +349,14 @@ export default function OffersPage() {
                     <td className="p-3">{statusBadge(o.status)}</td>
                     <td className="p-3">{o.created_at ? new Date(o.created_at).toLocaleDateString() : '-'}</td>
                     <td className="p-3 space-x-2 whitespace-nowrap">
-                      <Button size="sm" variant="outline" onClick={async() => {
+                      <Button size="sm" variant="outline" onClick={async () => {
                         const res = await restClient.get(`/api/hr/offers/${o.id}`);
                         const txt = JSON.stringify(res.data, null, 2);
-                        toast({ title: 'Offer details', description: txt.substring(0, 200) + (txt.length>200?'...':'') });
+                        toast({ title: 'Offer details', description: txt.substring(0, 200) + (txt.length > 200 ? '...' : '') });
                       }}>
                         <Eye className="h-4 w-4 mr-1" /> View
                       </Button>
-                      
+
                       {/* Show different actions based on status */}
                       {o.status === 'pending_approval' && (
                         <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
@@ -363,26 +364,26 @@ export default function OffersPage() {
                           Awaiting HR Approval
                         </Badge>
                       )}
-                      
+
                       {o.status === 'approved' && (
                         <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
                           <Send className="h-4 w-4 mr-1" /> Send to Candidate
                         </Button>
                       )}
-                      
+
                       {o.status === 'rejected' && (
                         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
                           <XCircle className="h-3 w-3 mr-1" />
                           Rejected by HR
                         </Badge>
                       )}
-                      
+
                       {(o.status === 'sent' || o.status === 'draft') && o.status !== 'accepted' && o.status !== 'declined' && (
                         <Button size="sm" className="bg-ehrdc-teal text-white" onClick={() => sendOffer(o.id)}>
                           <Send className="h-4 w-4 mr-1" /> Send
                         </Button>
                       )}
-                      
+
                       {o.signature_token && (
                         <Button size="sm" variant="outline" onClick={() => copySignUrl(o)}>
                           <LinkIcon className="h-4 w-4 mr-1" /> Copy Link
