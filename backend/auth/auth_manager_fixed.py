@@ -122,6 +122,7 @@ class AuthenticationManager:
                 'nationality': user['nationality'],
                 'is_verified': user['is_verified'],
                 'preferred_language': user.get('preferred_language', 'en'),
+                'secondary_roles': user.get('secondary_roles', []),
                 'mfa_enabled': False  # Default for now
             }
             
@@ -144,7 +145,8 @@ class AuthenticationManager:
             
             cursor.execute("""
                 SELECT id, email, password_hash, first_name, last_name, role, phone, 
-                       emirate, nationality, is_active, is_verified, created_at, updated_at
+                       emirate, nationality, is_active, is_verified, created_at, updated_at,
+                       secondary_roles
                 FROM users WHERE email = %s
             """, (email,))
             
@@ -159,6 +161,32 @@ class AuthenticationManager:
             
         except Exception as e:
             self.logger.error(f"Error getting user by email: {e}")
+            return None
+
+    def get_user_by_id(self, user_id: str) -> Optional[Dict]:
+        """Get user by ID"""
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            cursor.execute("""
+                SELECT id, email, first_name, last_name, role, phone, 
+                       emirate, nationality, is_active, is_verified, created_at, updated_at,
+                       secondary_roles
+                FROM users WHERE id = %s
+            """, (user_id,))
+            
+            user_row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if user_row:
+                return dict(user_row)
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error getting user by id: {e}")
             return None
     
     def _increment_failed_attempts(self, email: str):
@@ -316,10 +344,128 @@ class AuthenticationManager:
         # For now, just return success
         return True, "Email verified successfully"
     
+    def request_otp(self, phone: str) -> Tuple[bool, str, Optional[str]]:
+        """Request OTP for phone verification with Magic Bypass"""
+        try:
+            # Normalize phone
+            phone = phone.replace(' ', '').strip()
+            
+            magic_numbers = [
+                '+971500000000', # HR Manager
+                '+971502345678', # HR Manager (Zara Saeed)
+                '+971503456789', # HR Recruiter
+                '+971501234567', # Candidate
+                '+971507890123', # Admin
+                '+971509999999', # Administrator
+                '+971 50 123 4567', # Candidate (formatted)
+                '+971509998888'  # Growth Operator
+            ]
+            is_magic = phone.endswith('1234567') or phone in magic_numbers
+            
+            if is_magic:
+                self.logger.info(f"Magic OTP requested for {phone}")
+                otp_code = '123456'
+            else:
+                # Generate 6-digit secure random code
+                otp_code = str(secrets.randbelow(1000000)).zfill(6)
+            
+            expires_at = datetime.now() + timedelta(minutes=10)
+            
+            conn = self._get_db_connection()
+            cursor = conn.cursor()
+            
+            # Upsert into otp_interactions
+            cursor.execute("""
+                INSERT INTO otp_interactions (phone, otp_code, expires_at, created_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT (phone) 
+                DO UPDATE SET otp_code = EXCLUDED.otp_code, expires_at = EXCLUDED.expires_at, attempts = 0
+            """, (phone, otp_code, expires_at))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            if is_magic:
+                return True, "OTP sent successfully (Test Mode)", otp_code
+            
+            # For Real Numbers: Log it (Simulate SMS)
+            self.logger.info(f"SMS SIMULATION: OTP for {phone} is {otp_code}")
+            print(f"SMS SIMULATION: OTP for {phone} is {otp_code}") # Print to stdout for user visibility
+            
+            return True, "OTP sent successfully", None 
+            
+        except Exception as e:
+            self.logger.error(f"OTP Request failed: {e}")
+            return False, f"Failed to send OTP: {str(e)}", None
+
     def verify_phone(self, phone: str, code: str) -> Tuple[bool, str]:
-        """Verify phone number (simplified implementation)"""
-        # For now, just return success
-        return True, "Phone verified successfully"
+        """Verify phone number with Real OTP logic"""
+        try:
+            # Normalize phone
+            phone = phone.replace(' ', '').strip()
+
+            # 1. Check Magic Bypass (Hardcoded Safety Net)
+            magic_numbers = [
+                '+971500000000', # HR Manager
+                '+971502345678', # HR Manager (Zara Saeed)
+                '+971503456789', # HR Recruiter
+                '+971501234567', # Candidate
+                '+971507890123', # Admin
+                '+971509999999', # Administrator
+                '+971 50 123 4567', # Candidate (formatted)
+                '+971509998888'  # Growth Operator
+            ]
+            if code == '123456' and (phone.endswith('1234567') or phone in magic_numbers):
+                 print("DEBUG: Magic OTP match!", flush=True)
+                 return True, "Phone verified successfully (Magic)"
+            print("DEBUG: Not magic OTP, accessing DB...", flush=True)
+            conn = self._get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT otp_code, expires_at, attempts FROM otp_interactions WHERE phone = %s", (phone,))
+            result = cursor.fetchone()
+            
+            if not result:
+                cursor.close()
+                conn.close()
+                return False, "No OTP requested for this number"
+                
+            stored_otp, expires_at, attempts = result
+            
+            # Check attempts
+            if attempts >= 5:
+                cursor.close()
+                conn.close()
+                return False, "Too many attempts. Please request a new OTP."
+            
+            # Check expiry
+            if datetime.now() > expires_at:
+                cursor.close()
+                conn.close()
+                return False, "OTP expired"
+            
+            # Check Match
+            if code != stored_otp:
+                # Increment attempts
+                cursor.execute("UPDATE otp_interactions SET attempts = attempts + 1 WHERE phone = %s", (phone,))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                return False, "Invalid OTP"
+            
+            # Success! Clear OTP
+            cursor.execute("DELETE FROM otp_interactions WHERE phone = %s", (phone,))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return True, "Phone verified successfully"
+            
+        except Exception as e:
+            self.logger.error(f"OTP Verification failed: {e}")
+            return False, "Verification failed due to system error"
     
     def setup_mfa(self, user_id: str) -> Tuple[bool, str, Optional[Dict]]:
         """Setup MFA (simplified implementation)"""
@@ -348,3 +494,78 @@ class AuthenticationManager:
             self.logger.error(f"Token verification failed: {e}")
             print(f"DEBUG: Token verification exception: {e}", flush=True)
             return None
+
+    def authenticate_by_phone(self, phone: str, code: str) -> Tuple[bool, str, Optional[Dict]]:
+        """Authenticate or Register by Phone OTP. Auto-provisions user if new."""
+        # 1. Verify OTP
+        valid, msg = self.verify_phone(phone, code)
+        if not valid:
+             return False, msg, None
+
+        try:
+             # 2. Check User
+             conn = self._get_db_connection()
+             cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+             
+             # Normalize phone in DB query too (assumes DB stores it clean, or we attempt to match)
+             # Ideally DB phone is normalized.
+             clean_phone = phone.replace(' ', '').strip()
+             
+             cursor.execute("SELECT * FROM users WHERE phone = %s OR phone = %s", (clean_phone, phone))
+             user = cursor.fetchone()
+             
+             is_new_user = False
+             
+             if not user:
+                 # 3. Create Provisional User
+                 is_new_user = True
+                 self.logger.info(f"Auto-provisioning new user for phone {phone}")
+                 
+                 # Generate unique temp email/pass
+                 temp_id = secrets.token_hex(4)
+                 # Use a dummy email that won't conflict
+                 temp_email = f"u{clean_phone.replace('+','')}.{temp_id}@emirati-pathway.temp"
+                 temp_pass = secrets.token_urlsafe(16)
+                 pass_hash = bcrypt.hashpw(temp_pass.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                 
+                 # Determine column name: user_type or role
+                 # We try 'user_type' based on setup_database.py
+                 try:
+                     cursor.execute("""
+                         INSERT INTO users (email, password_hash, full_name, user_type, phone, is_verified, is_active)
+                         VALUES (%s, %s, %s, %s, %s, %s, %s)
+                         RETURNING *
+                     """, (temp_email, pass_hash, 'New Member', 'candidate', clean_phone, True, True))
+                 except psycopg2.errors.UndefinedColumn:
+                     # Fallback to 'role' if user_type doesn't exist (handled by transaction rollback?)
+                     conn.rollback()
+                     cursor.execute("""
+                         INSERT INTO users (email, password_hash, first_name, last_name, role, phone, is_verified, is_active)
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                         RETURNING *
+                     """, (temp_email, pass_hash, 'New', 'Member', 'candidate', clean_phone, True, True))
+                 
+                 user = cursor.fetchone()
+                 conn.commit()
+             
+             cursor.close()
+             conn.close()
+             
+             # 4. Return Data
+             if user:
+                user_data = dict(user)
+                user_data['is_new_user'] = is_new_user
+                
+                # Update last login
+                try:
+                    self._update_last_login(user_data['id'])
+                except:
+                    pass
+                    
+                return True, "Authenticated successfully", user_data
+             else:
+                return False, "Failed to retrieve user data", None
+             
+        except Exception as e:
+             self.logger.error(f"Phone Auth failed: {e}")
+             return False, f"Authentication failed: {str(e)}", None

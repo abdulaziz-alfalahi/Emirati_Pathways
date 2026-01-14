@@ -305,12 +305,13 @@ def get_job_postings():
                     jp.remote_option,
                     jp.applications_count,
                     jp.views_count,
-                    COALESCE(jp.company_id, 'Unknown Company') as company_name,
+                    COALESCE(c.name, jp.company_id, 'Unknown Company') as company_name,
                     COALESCE(u.first_name || ' ' || u.last_name, 'Unknown') as created_by_name,
                     COALESCE(app_counts.application_count, 0) as application_count,
                     COALESCE(app_counts.new_applications, 0) as new_applications
                 FROM job_postings jp
                 LEFT JOIN users u ON jp.recruiter_id::text = u.id::text
+                LEFT JOIN companies c ON jp.company_id::uuid = c.id
                 LEFT JOIN (
                     SELECT 
                         job_id,
@@ -376,7 +377,8 @@ def get_job_postings():
                     'total_count': total_count,
                     'current_page': offset // limit + 1,
                     'total_pages': (total_count + limit - 1) // limit
-                }
+                },
+                'jobs': jobs_data
             })
             
         finally:
@@ -447,9 +449,10 @@ def create_job_postings_batch():
                         currency, location, remote_option, employment_type,
                         experience_level, status, priority_level, application_deadline,
                         expires_at, uae_compliance_checked, emiratization_target,
-                        visa_sponsorship_available, tags, seo_keywords
+                        visa_sponsorship_available, tags, seo_keywords,
+                        latitude, longitude
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     ) RETURNING *
                     """,
                     (
@@ -477,7 +480,9 @@ def create_job_postings_batch():
                         job.get('emiratization_target', 0),
                         job.get('visa_sponsorship_available', False),
                         json.dumps(job.get('tags', [])),
-                        json.dumps(job.get('seo_keywords', []))
+                        json.dumps(job.get('seo_keywords', [])),
+                        job.get('latitude'),
+                        job.get('longitude')
                     )
                 )
                 created.append(dict(cursor.fetchone()))
@@ -568,9 +573,10 @@ def create_job_posting():
                     currency, location, remote_option, employment_type,
                     experience_level, status, priority_level, application_deadline,
                     expires_at, uae_compliance_checked, emiratization_target,
-                    visa_sponsorship_available, tags, seo_keywords
+                    visa_sponsorship_available, tags, seo_keywords,
+                    latitude, longitude
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 ) RETURNING *
             """, (
                 jd_id,
@@ -597,7 +603,9 @@ def create_job_posting():
                 data.get('emiratization_target', 0),
                 data.get('visa_sponsorship_available', False),
                 json.dumps(data.get('tags', [])),
-                json.dumps(data.get('seo_keywords', []))
+                json.dumps(data.get('seo_keywords', [])),
+                data.get('latitude'),
+                data.get('longitude')
             ))
             
             new_job = cursor.fetchone()
@@ -923,7 +931,7 @@ def update_job_posting(job_id):
                 'title', 'description', 'salary_range_min', 'salary_range_max',
                 'currency', 'location', 'remote_work_allowed', 'employment_type',
                 'experience_level', 'status', 'priority_level', 'emiratization_target',
-                'visa_sponsorship_available'
+                'visa_sponsorship_available', 'latitude', 'longitude'
             ]
             
             for field in updatable_fields:
@@ -1341,7 +1349,7 @@ def remove_from_shortlist(job_id, candidate_id):
                 return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
 
             cursor.execute(
-                "DELETE FROM job_shortlists WHERE job_posting_id = %s AND candidate_id = %s",
+                "DELETE FROM shortlisted_candidates WHERE job_id = %s AND candidate_id = %s",
                 (job_id, candidate_id),
             )
             if cursor.rowcount == 0:
@@ -1420,7 +1428,7 @@ def get_job_templates():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -1484,7 +1492,7 @@ def create_job_template():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         data = request.get_json() or {}
@@ -1559,19 +1567,19 @@ def get_my_shortlisted_candidates():
             
             query = """
                 SELECT 
-                    js.candidate_id,
-                    js.job_posting_id,
-                    js.notes,
-                    js.created_at,
+                    sc.candidate_id,
+                    sc.job_id as job_posting_id,
+                    sc.notes,
+                    sc.created_at,
                     u.first_name,
                     u.last_name,
                     u.email,
                     u.job_title as current_title,
                     jp.title as job_title,
-                    js.added_by
-                FROM job_shortlists js
-                JOIN job_postings jp ON js.job_posting_id = jp.id
-                JOIN users u ON js.candidate_id = u.id
+                    'System' as added_by
+                FROM shortlisted_candidates sc
+                JOIN job_postings jp ON sc.job_id = jp.id
+                JOIN users u ON sc.candidate_id = u.id
                 WHERE 1=1
             """
             params = []
@@ -1584,7 +1592,7 @@ def get_my_shortlisted_candidates():
                 query += " AND jp.created_by = %s"
                 params.append(current_user_id)
             
-            query += " ORDER BY js.created_at DESC LIMIT 50"
+            query += " ORDER BY sc.created_at DESC LIMIT 50"
             
             cursor.execute(query, tuple(params))
             rows = [dict(r) for r in cursor.fetchall()]

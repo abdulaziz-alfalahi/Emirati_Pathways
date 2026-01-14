@@ -13,6 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Briefcase, GraduationCap, Users, Mail, Phone, ExternalLink } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import { messagingService } from '@/services/messagingService';
+import { Loader2, MessageSquare } from 'lucide-react';
 
 interface SourceCandidatesDialogProps {
   open: boolean;
@@ -40,6 +43,8 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [searched, setSearched] = useState(false);
+  const [contactingId, setContactingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSearch = async () => {
     try {
@@ -54,7 +59,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       if (skills) params.append('skills', skills);
 
       console.log('Making search request...');
-      
+
       // Use restClient instead of manual fetch
       // Note: Endpoint might be /api/recruiter/candidates/search or /api/hr/candidates/search
       // Based on file list, hr_candidate_search_bp is registered in recruiter_server.py
@@ -70,7 +75,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       } else {
         setCandidates([]);
         if (!response.success) {
-           console.warn('Search returned failure:', response);
+          console.warn('Search returned failure:', response);
         }
       }
     } catch (error: any) {
@@ -87,10 +92,26 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
     window.open(`/candidate-profile/${candidateId}`, '_blank');
   };
 
-  const handleContactCandidate = (candidate: Candidate) => {
-    // Open email client
-    if (candidate.email) {
-      window.location.href = `mailto:${candidate.email}`;
+  const handleContactCandidate = async (candidate: Candidate) => {
+    try {
+      setContactingId(candidate.id);
+      const response = await messagingService.createConversation({
+        participants: [candidate.id],
+        title: `${candidate.first_name} ${candidate.last_name}`
+      });
+
+      onClose(); // Close dialog before navigating
+
+      if (response.success && response.data) {
+        navigate(`/messages?conversation=${response.data.id}`);
+      } else {
+        toast.error(response.error || 'Failed to start conversation');
+      }
+    } catch (error: any) {
+      console.error('Error creating conversation:', error);
+      toast.error('Failed to start conversation');
+    } finally {
+      setContactingId(null);
     }
   };
 
@@ -230,7 +251,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                         <h4 className="font-semibold text-lg">
                           {candidate.first_name} {candidate.last_name}
                         </h4>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
                           {candidate.experience_years !== undefined && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -304,9 +325,14 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                           size="sm"
                           onClick={() => handleContactCandidate(candidate)}
                           className="whitespace-nowrap"
+                          disabled={contactingId === candidate.id}
                         >
-                          <Mail className="h-4 w-4 mr-1" />
-                          Contact
+                          {contactingId === candidate.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                          )}
+                          Message
                         </Button>
                       </div>
                     </div>

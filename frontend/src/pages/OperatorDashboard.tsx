@@ -2,7 +2,8 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GrowthTools from '@/components/admin/GrowthTools';
 import { GrowthOperations } from '@/components/admin/GrowthOperations';
-import { LogOut, Rocket } from 'lucide-react';
+import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
+import { LogOut, Rocket, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -50,9 +51,13 @@ const OperatorDashboard = () => {
                 </div>
 
                 <Tabs defaultValue="ops" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                    <TabsList className="grid w-full grid-cols-3 max-w-[600px]">
                         <TabsTrigger value="ops">Campaigns (Growth Ops)</TabsTrigger>
                         <TabsTrigger value="tools">Data Import (Tools)</TabsTrigger>
+                        <TabsTrigger value="requests" className="flex gap-2">
+                            <UserPlus className="h-4 w-4" />
+                            Requests
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="ops" className="space-y-4">
@@ -61,6 +66,10 @@ const OperatorDashboard = () => {
 
                     <TabsContent value="tools" className="space-y-4">
                         <GrowthTools />
+                    </TabsContent>
+
+                    <TabsContent value="requests" className="space-y-4">
+                        <AdminRoleRequests />
                     </TabsContent>
                 </Tabs>
             </main>

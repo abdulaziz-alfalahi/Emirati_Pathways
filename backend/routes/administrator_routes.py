@@ -180,6 +180,9 @@ def get_users():
         per_page = request.args.get('per_page', 50, type=int)
         search = request.args.get('search', '')
         role_filter = request.args.get('role', '')
+        status_filter = request.args.get('status', '')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_dir = request.args.get('sort_dir', 'desc')
         
         # Validate pagination parameters
         if page < 1:
@@ -191,7 +194,10 @@ def get_users():
             page=page,
             per_page=per_page,
             search=search if search else None,
-            role_filter=role_filter if role_filter else None
+            role_filter=role_filter if role_filter else None,
+            status_filter=status_filter if status_filter else None,
+            sort_by=sort_by,
+            sort_dir=sort_dir
         )
         
         return jsonify({
@@ -313,6 +319,14 @@ def update_user(user_id: int):
             updates=data,
             admin_user_id=request.current_user['id']
         )
+        
+        # Update roles if provided
+        if 'roles' in data:
+            admin_system.update_user_roles(
+                        user_id=user_id,
+                        roles=data['roles'],
+                        admin_user_id=request.current_user['id']
+            )
         
         if not user:
             return jsonify({

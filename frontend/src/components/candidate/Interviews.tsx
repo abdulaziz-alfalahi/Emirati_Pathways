@@ -22,9 +22,13 @@ export default function CandidateInterviews() {
 
     const fetchSessions = async () => {
         try {
-            const res = await restClient.get('/api/interviews/sessions/my?role=candidate');
+            const res = await restClient.get('/api/video-interview/sessions?role=candidate');
+            // Normalize response (backend returns { success: true, sessions: [...] })
             if (res.data.success) {
-                setSessions(res.data.data);
+                setSessions(res.data.sessions || []);
+            } else if (Array.isArray(res.data)) {
+                // Fallback if backend structure differs
+                setSessions(res.data);
             }
         } catch (error) {
             console.error(error);
@@ -81,8 +85,10 @@ export default function CandidateInterviews() {
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <CardTitle className="text-lg">Interview</CardTitle>
-                                            <CardDescription>{new Date(session.scheduled_at).toLocaleString()}</CardDescription>
+                                            <CardTitle className="text-lg">{session.title || session.job_title || 'Interview'}</CardTitle>
+                                            <div className="text-sm font-medium text-slate-700 mb-1">{session.job_title}</div>
+                                            <div className="text-xs text-slate-500 mb-2">Candidate: {session.candidate_first_name} {session.candidate_last_name}</div>
+                                            <CardDescription>{new Date(session.scheduled_time || session.scheduled_at).toLocaleString()}</CardDescription>
                                         </div>
                                         <Badge variant={
                                             session.status === 'cancelled' ? 'destructive' :

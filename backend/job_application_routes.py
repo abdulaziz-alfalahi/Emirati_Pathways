@@ -48,7 +48,14 @@ def get_user_id_from_request():
         user_id = get_jwt_identity()
         logger.info(f"JWT authentication successful, user ID: {user_id}")
         if user_id:
-            return user_id
+            # Normalize to UUID if needed (to match candidate_job_routes)
+            try:
+                uuid.UUID(str(user_id))
+                return str(user_id)
+            except ValueError:
+                # Use same namespace as other routes for consistency
+                # Note: candidate_job_routes uses uuid.NAMESPACE_DNS
+                return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_id)))
     except Exception as e:
         logger.warning(f"JWT verification failed: {e}")
     

@@ -41,6 +41,70 @@ def get_user_conversations():
             'message': 'Failed to retrieve conversations'
         }), 500
 
+@communication_bp.route('/conversations/<conversation_id>', methods=['GET'])
+@jwt_required()
+def get_conversation(conversation_id):
+    """
+    Get a single conversation by ID
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        conversation = communication_service.get_conversation(conversation_id)
+        
+        if not conversation:
+             return jsonify({
+                'success': False,
+                'message': 'Conversation not found'
+            }), 404
+
+        if current_user_id not in conversation.participants:
+            return jsonify({
+                'success': False,
+                'message': 'Access denied'
+            }), 403
+        
+        return jsonify({
+            'success': True,
+            'data': conversation.to_dict()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting conversation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to retrieve conversation'
+        }), 500
+
+@communication_bp.route('/conversations/<conversation_id>', methods=['DELETE'])
+@jwt_required()
+def delete_conversation(conversation_id):
+    """
+    Delete (archive) a conversation for the current user
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        success = communication_service.archive_conversation_for_user(conversation_id, current_user_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Conversation deleted successfully'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to delete conversation or it was not found'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to delete conversation'
+        }), 500
+
 @communication_bp.route('/conversations', methods=['POST'])
 @jwt_required()
 def create_conversation():
@@ -127,6 +191,35 @@ def get_conversation_messages(conversation_id):
             'message': 'Failed to retrieve messages'
         }), 500
 
+@communication_bp.route('/conversations/<conversation_id>/read', methods=['POST'])
+@jwt_required()
+def mark_conversation_as_read(conversation_id):
+    """
+    Mark all messages in a conversation as read
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        success = communication_service.mark_conversation_as_read(conversation_id, current_user_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Conversation marked as read'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to mark conversation as read'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Error marking conversation as read: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to mark conversation as read'
+        }), 500
+
 @communication_bp.route('/messages', methods=['POST'])
 @jwt_required()
 def send_message():
@@ -150,10 +243,25 @@ def send_message():
         conversation_id = data.get('conversation_id')
         metadata = data.get('metadata', {})
         
-        if not recipient_id or not content:
+        if not content:
             return jsonify({
                 'success': False,
-                'message': 'Recipient ID and content are required'
+                'message': 'Content is required'
+            }), 400
+
+        # Create/Get conversation and determine recipient if not provided
+        if not recipient_id and conversation_id:
+             conversation = communication_service.get_conversation(conversation_id)
+             if conversation:
+                 # Find first participant that is not the sender
+                 recipients = [p for p in conversation.participants if str(p) != str(current_user_id)]
+                 if recipients:
+                     recipient_id = recipients[0]
+        
+        if not recipient_id:
+             return jsonify({
+                'success': False,
+                'message': 'Recipient ID is required (or valid Conversation ID)'
             }), 400
         
         # Convert message type string to enum
@@ -171,6 +279,52 @@ def send_message():
             metadata=metadata
         )
         
+        # Create Notification for the recipient
+        try:
+            # Get sender name (simplified, usually from user service or JWT claims if expanded)
+            # For now, generic or we fetch sender profile. 
+            # Ideally send_message returns sender name or we query it. 
+            # To avoid extra query, we can use "New Message" title or metadata.
+            notification = communication_service.create_notification(
+                user_id=recipient_id,
+                notification_type=NotificationType.NEW_MESSAGE,
+                metadata={
+                    'sender_name': message.sender_name or 'User',
+                    'content_preview': (content[:50] + '...') if len(content) > 50 else content,
+                    'conversation_id': message.conversation_id,
+                    'message_id': message.id
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to create notification for message: {e}")
+            notification = None
+
+        # Real-time WebSocket Emission
+        try:
+            socketio = current_app.extensions.get('socketio')
+            if socketio:
+                # 1. Emit NEW MESSAGE (for chat window)
+                socketio.emit('new_message', {
+                    'message': message.to_dict(),
+                    'conversation_id': message.conversation_id,
+                    'unread_count': 1 # approximate logic
+                }, room=recipient_id)
+                # Emit to sender's device (for syncing multiple tabs)
+                socketio.emit('new_message', {
+                    'message': message.to_dict(),
+                    'conversation_id': message.conversation_id
+                }, room=current_user_id)
+                
+                # 2. Emit NOTIFICATION (for bell icon)
+                if notification:
+                    socketio.emit('new_notification', {
+                        'notification': notification.to_dict(),
+                        'unread_count': 1 # Should ideally fetch actual unread count
+                    }, room=recipient_id)
+                    
+        except Exception as e:
+            logger.warning(f"Failed to emit socket event: {e}")
+
         return jsonify({
             'success': True,
             'data': message.to_dict()
@@ -561,3 +715,71 @@ def test_email_notification():
             'message': 'Failed to send test email'
         }), 500
 
+
+# =====================================================
+# NOTIFICATIONS PREFERENCES ENDPOINTS
+# =====================================================
+
+@communication_bp.route('/notifications/preferences', methods=['GET'])
+@jwt_required()
+def get_notification_preferences():
+    """Get user's notification preferences"""
+    try:
+        user_id = get_jwt_identity()
+        
+        # In a real implementation, we would fetch from DB
+        # For now, return default preferences
+        preferences = {
+            'email_notifications': True,
+            'push_notifications': True,
+            'sms_notifications': False,
+            'job_alerts': True,
+            'application_updates': True,
+            'message_notifications': True,
+            'marketing_emails': False,
+            'quiet_hours': {
+                'enabled': False,
+                'start_time': '22:00',
+                'end_time': '08:00'
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'status': 'success',
+            'data': preferences
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get notification preferences: {e}")
+        return jsonify({
+            'success': False,
+            'status': 'error',
+            'message': 'Failed to retrieve preferences'
+        }), 500
+
+
+@communication_bp.route('/notifications/preferences', methods=['POST'])
+@jwt_required()
+def update_notification_preferences():
+    """Update user's notification preferences"""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # In production, save to database
+        # For now, just acknowledge the update
+        
+        return jsonify({
+            'success': True,
+            'status': 'success',
+            'message': 'Preferences updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to update notification preferences: {e}")
+        return jsonify({
+            'success': False,
+            'status': 'error',
+            'message': 'Failed to update preferences'
+        }), 500

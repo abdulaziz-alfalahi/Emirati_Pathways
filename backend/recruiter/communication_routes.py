@@ -18,6 +18,7 @@ from .communication_engine import (
     MessageStatus,
     TemplateCategory
 )
+from services.communication_service import communication_service, MessageType as ServiceMessageType
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ def health_check():
     }), 200
 
 
-@communication_bp.route('/api/recruiter/communication/send', methods=['POST'])
+@communication_bp.route('/send', methods=['POST'])
 def send_message():
     """
     Send message to candidate(s)
@@ -79,6 +80,7 @@ def send_message():
         body = data.get('body', '')
         recruiter_id = data.get('recruiter_id')
         
+        # Validate inputs
         if not shortlist_ids or not body or not recruiter_id:
             return jsonify({
                 'error': 'Missing required fields: shortlist_ids, body, recruiter_id'
@@ -86,27 +88,6 @@ def send_message():
         
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        # Create communication_logs table if not exists
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS communication_logs (
-                id SERIAL PRIMARY KEY,
-                log_id VARCHAR(100) UNIQUE NOT NULL,
-                shortlist_id VARCHAR(100),
-                candidate_id VARCHAR(100) NOT NULL,
-                recruiter_id VARCHAR(100) NOT NULL,
-                message_type VARCHAR(20) NOT NULL,
-                subject TEXT,
-                body TEXT NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                sent_at TIMESTAMP,
-                delivered_at TIMESTAMP,
-                error_message TEXT,
-                metadata JSONB DEFAULT '{}',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
         
         results = []
         
@@ -128,88 +109,60 @@ def send_message():
                 })
                 continue
             
-            # Try to get user details (may not exist for test data)
-            cur.execute("""
-                SELECT 
-                    u.first_name,
-                    u.last_name,
-                    u.email
-                FROM users u
-                WHERE u.id::text = %s
-            """, (shortlist_entry['candidate_id'],))
+            candidate_id = shortlist_entry['candidate_id']
+            # Optional: Get candidate name for logging/results
             
-            user_data = cur.fetchone()
-            
-            # Build candidate dict with available data
-            candidate = dict(shortlist_entry)
-            if user_data:
-                candidate.update({
-                    'first_name': user_data['first_name'],
-                    'last_name': user_data['last_name'],
-                    'email': user_data['email']
-                })
-            else:
-                # Use placeholder data for test candidates
-                candidate.update({
-                    'first_name': 'Test',
-                    'last_name': 'Candidate',
-                    'email': f"{shortlist_entry['candidate_id']}@test.com"
-                })
-            
-            # Send message
+            # Combine Subject and Body for Chat
+            chat_content = body
+            if subject:
+                chat_content = f"**{subject}**\n\n{body}"
+
             try:
-                send_result = comm_engine.send_message(
-                    candidate=dict(candidate),
-                    message_type=message_type,
-                    subject=subject,
-                    body=body,
-                    recruiter_id=recruiter_id,
-                    shortlist_id=shortlist_id
+                # 1. Send Chat Message (auto-creates conversation)
+                # Note: We use ServiceMessageType.TEXT for standard chat
+                message = communication_service.send_message(
+                    sender_id=recruiter_id,
+                    recipient_id=candidate_id,
+                    content=chat_content,
+                    message_type=ServiceMessageType.TEXT,
+                    metadata={'subject': subject, 'source': 'bulk_recruiter_message'}
                 )
+                
+                # 2. Trigger Notification (Email/SMS via Notification System)
+                # create_notification handles looking up templates and sending emails
+                # For now, we simulate "New Message" notification
+                
+                # If message_type in request was 'sms' or 'both', we might want to ensure SMS is sent.
+                # The current communication_service might rely on 'NEW_MESSAGE' notification.
+                
+                from services.communication_service import NotificationType
+                
+                communication_service.create_notification(
+                    user_id=candidate_id,
+                    notification_type=NotificationType.NEW_MESSAGE,
+                    metadata={
+                        'sender_name': 'Recruiter', # Could fetch real name if needed
+                        'content_preview': body[:100] + '...',
+                        'conversation_id': message.conversation_id
+                    }
+                )
+
+                results.append({
+                    'shortlist_id': shortlist_id,
+                    'candidate_id': candidate_id,
+                    'success': True,
+                    'conversation_id': message.conversation_id,
+                    'message_id': message.id
+                })
+                
             except Exception as e:
-                logger.error(f"Error in send_message: {e}")
-                send_result = {
+                logger.error(f"Error sending message to {candidate_id}: {e}")
+                results.append({
+                    'shortlist_id': shortlist_id,
+                    'candidate_id': candidate_id,
                     'success': False,
-                    'errors': [str(e)]
-                }
-            
-            # Log communication
-            log_id = f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
-            
-            status = 'sent' if send_result and send_result.get('success') else 'failed'
-            error_msg = ', '.join(send_result.get('errors', [])) if send_result and not send_result.get('success') else None
-            
-            cur.execute("""
-                INSERT INTO communication_logs (
-                    log_id, shortlist_id, candidate_id, recruiter_id,
-                    message_type, subject, body, status, sent_at, error_message, metadata
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                log_id,
-                shortlist_id,
-                candidate['candidate_id'],
-                recruiter_id,
-                message_type_str,
-                subject,
-                body,
-                status,
-                datetime.now() if send_result['success'] else None,
-                error_msg,
-                json.dumps(send_result)
-            ))
-            
-            conn.commit()
-            
-            results.append({
-                'shortlist_id': shortlist_id,
-                'candidate_id': candidate['candidate_id'],
-                'candidate_name': f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}".strip(),
-                'success': send_result['success'],
-                'log_id': log_id,
-                'email_sent': (send_result.get('email_result') or {}).get('success', False),
-                'sms_sent': (send_result.get('sms_result') or {}).get('success', False),
-                'errors': send_result.get('errors', [])
-            })
+                    'error': str(e)
+                })
         
         cur.close()
         conn.close()

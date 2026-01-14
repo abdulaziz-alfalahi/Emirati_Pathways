@@ -1,7 +1,7 @@
 // Messaging Service for Emirati Journey Platform
 // Handles all messaging and communication API calls to the backend
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
 
 export interface Message {
   id: string;
@@ -97,6 +97,33 @@ class MessagingService {
     }
   }
 
+  async getConversationById(conversationId: string): Promise<MessagingResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/communication/conversations/${conversationId}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch conversation');
+      }
+
+      return {
+        success: true,
+        data: data.data,
+        message: data.message,
+      };
+    } catch (error) {
+      console.error('Error fetching conversation:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+
   async createConversation(conversationData: CreateConversationData): Promise<MessagingResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/communication/conversations`, {
@@ -126,8 +153,8 @@ class MessagingService {
   }
 
   async getConversationMessages(
-    conversationId: string, 
-    limit: number = 50, 
+    conversationId: string,
+    limit: number = 50,
     offset: number = 0
   ): Promise<MessagingResponse> {
     try {
@@ -167,11 +194,14 @@ class MessagingService {
   async sendMessage(conversationId: string, messageData: SendMessageData): Promise<MessagingResponse> {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/communication/conversations/${conversationId}/messages`,
+        `${API_BASE_URL}/api/communication/messages`,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
-          body: JSON.stringify(messageData),
+          body: JSON.stringify({
+            ...messageData,
+            conversation_id: conversationId
+          }),
         }
       );
 
@@ -198,7 +228,7 @@ class MessagingService {
   async markMessageAsRead(messageId: string): Promise<MessagingResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/communication/messages/${messageId}/read`, {
-        method: 'PUT',
+        method: 'POST',
         headers: this.getAuthHeaders(),
       });
 
@@ -227,7 +257,7 @@ class MessagingService {
       const response = await fetch(
         `${API_BASE_URL}/api/communication/conversations/${conversationId}/read`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: this.getAuthHeaders(),
         }
       );
@@ -284,7 +314,7 @@ class MessagingService {
       const response = await fetch(
         `${API_BASE_URL}/api/communication/notifications/${notificationId}/read`,
         {
-          method: 'PUT',
+          method: 'POST',
           headers: this.getAuthHeaders(),
         }
       );
@@ -312,7 +342,7 @@ class MessagingService {
   async searchConversations(query: string): Promise<MessagingResponse> {
     try {
       const queryParams = new URLSearchParams({ q: query });
-      
+
       const response = await fetch(
         `${API_BASE_URL}/api/communication/conversations/search?${queryParams}`,
         {

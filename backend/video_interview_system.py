@@ -4,6 +4,7 @@ WebRTC-based video conferencing with real-time AI analysis
 """
 
 import os
+
 import json
 import logging
 import asyncio
@@ -514,8 +515,8 @@ class VideoInterviewEngine:
                                u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
                                'ai_video' as source
                         FROM video_interview_sessions vis
-                        JOIN job_applications ja ON vis.application_id = ja.id
-                        JOIN jobs j ON ja.job_id = j.id
+                        JOIN job_applications ja ON vis.application_id::text = ja.id::text
+                        JOIN job_postings j ON ja.job_id::text = j.jd_id::text
                         JOIN users u1 ON vis.candidate_id = u1.id
                         JOIN users u2 ON vis.interviewer_id = u2.id
                         WHERE 1=1
@@ -523,14 +524,15 @@ class VideoInterviewEngine:
                     params_ai = []
                     
                     if role == 'interviewer':
-                        query_ai += " AND vis.interviewer_id = %s"
-                        params_ai.append(user_id)
+                        # Show if I am the interviewer OR I own the job
+                        query_ai += " AND (vis.interviewer_id::text = %s OR j.recruiter_id::text = %s)"
+                        params_ai.extend([user_id, user_id])
                     elif role == 'candidate':
-                        query_ai += " AND vis.candidate_id = %s"
+                        query_ai += " AND vis.candidate_id::text = %s"
                         params_ai.append(user_id)
                     else:  # both
-                        query_ai += " AND (vis.interviewer_id = %s OR vis.candidate_id = %s)"
-                        params_ai.extend([user_id, user_id])
+                        query_ai += " AND (vis.interviewer_id::text = %s OR vis.candidate_id::text = %s OR j.recruiter_id::text = %s)"
+                        params_ai.extend([user_id, user_id, user_id])
                     
                     cur.execute(query_ai, params_ai)
                     ai_sessions = [dict(s) for s in cur.fetchall()]
@@ -542,34 +544,40 @@ class VideoInterviewEngine:
                                (i.scheduled_date || ' ' || i.scheduled_time)::timestamp as scheduled_time,
                                i.duration_minutes, i.status, i.interview_title as title,
                                i.meeting_link as room_id,
-                               j.id as job_id, j.title as job_title,
+                               j.jd_id as job_id, j.title as job_title,
                                u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
                                u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
-                               'recruiter_sql' as source
+                        'recruiter_sql' as source
                         FROM interview_schedules i
-                        LEFT JOIN jobs j ON i.jd_id = j.id
-                        LEFT JOIN users u1 ON i.candidate_id = u1.id
-                        LEFT JOIN users u2 ON i.recruiter_id = u2.id
-                        WHERE status != 'cancelled'
+                        LEFT JOIN job_postings j ON i.jd_id::text = j.jd_id::text
+                        LEFT JOIN users u1 ON i.candidate_id::text = u1.id::text
+                        LEFT JOIN users u2 ON i.recruiter_id::text = u2.id::text
+                        WHERE i.status != 'cancelled'
                     """
                     # Note: Using LEFT JOIN because jd_id might be text/uuid mismatch or null, but we want to show it anyway
                     
                     params_sql = []
                     if role == 'interviewer':
-                        query_sql += " AND i.recruiter_id = %s"
-                        params_sql.append(str(user_id))
+                        # Show if I am the recruiter (interviewer) OR I own the job
+                        # i.recruiter_id is string, j.recruiter_id is string
+                        query_sql += " AND (i.recruiter_id::text = %s OR j.recruiter_id::text = %s)"
+                        params_sql.extend([str(user_id), str(user_id)])
                     elif role == 'candidate':
-                        query_sql += " AND i.candidate_id = %s"
+                        query_sql += " AND i.candidate_id::text = %s"
                         params_sql.append(str(user_id))
                     else:
-                        query_sql += " AND (i.recruiter_id = %s OR i.candidate_id = %s)"
-                        params_sql.extend([str(user_id), str(user_id)])
+                        query_sql += " AND (i.recruiter_id::text = %s OR i.candidate_id::text = %s OR j.recruiter_id::text = %s)"
+                        params_sql.extend([str(user_id), str(user_id), str(user_id)])
                         
+
+                    
                     try:
                         cur.execute(query_sql, params_sql)
                         sql_sessions = [dict(s) for s in cur.fetchall()]
+
                     except Exception as e:
                         logger.error(f"Error fetching SQL interviews: {e}")
+
                         sql_sessions = []
 
                     # Merge and Sort
@@ -581,6 +589,7 @@ class VideoInterviewEngine:
                     
         except Exception as e:
             logger.error(f"Error getting interview sessions: {e}")
+
             return []
 
     def get_session_recordings(self, session_id: str, user_id: str) -> Dict[str, Any]:

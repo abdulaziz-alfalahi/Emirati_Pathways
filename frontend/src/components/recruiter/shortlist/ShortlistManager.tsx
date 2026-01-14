@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageComposer } from '../communication/MessageComposer';
 import CreateInterviewDialog from '../interviews/CreateInterviewDialog';
 import OfferManager from '../offers/OfferManager';
@@ -51,7 +52,7 @@ import {
 } from '@mui/icons-material';
 // import axios from 'axios'; // Removed axios
 import { restClient } from '@/utils/api';
-import { useMockAuth } from '@/context/MockAuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface ShortlistedCandidate {
   shortlist_id: string;
@@ -124,7 +125,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClose }) => {
-  const { user } = useMockAuth();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [shortlist, setShortlist] = useState<ShortlistedCandidate[]>([]);
   const [stats, setStats] = useState<ShortlistStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,6 +155,66 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [selectedCandidateDetails, setSelectedCandidateDetails] = useState<ShortlistedCandidate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<string | null>(null);
+
+  // New state for interview management
+  const [cancelInterviewDialogOpen, setCancelInterviewDialogOpen] = useState(false);
+  const [interviewToCancel, setInterviewToCancel] = useState<any>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [interviewToReschedule, setInterviewToReschedule] = useState<any>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+
+  const handleCancelInterview = async () => {
+    if (!interviewToCancel || !cancellationReason) return;
+
+    try {
+      const response = await restClient.post(
+        `/api/recruiter/interviews/${interviewToCancel.interview_id}/cancel`,
+        { reason: cancellationReason }
+      );
+
+      if (response.data && response.data.success) {
+        setSuccess('Interview cancelled successfully');
+        setCancelInterviewDialogOpen(false);
+        setCancellationReason('');
+        setInterviewToCancel(null);
+        handleViewInterviews(); // Refresh list
+      } else {
+        setError(response.data?.error || 'Failed to cancel interview');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to cancel interview');
+    }
+  };
+
+  const handleRescheduleInterview = async () => {
+    if (!interviewToReschedule || !rescheduleDate || !rescheduleTime) return;
+
+    try {
+      const response = await restClient.put(
+        `/api/recruiter/interviews/${interviewToReschedule.interview_id}`,
+        {
+          scheduled_date: rescheduleDate,
+          scheduled_time: rescheduleTime
+        }
+      );
+
+      if (response.data && response.data.success) {
+        setSuccess('Interview rescheduled successfully');
+        setRescheduleDialogOpen(false);
+        setInterviewToReschedule(null);
+        // handleViewInterviews(); // Refresh list - wait, handleViewInterviews depends on state? It just calls API and sets state.
+        // But handleViewInterviews uses `jdId` from props, which is available in closure.
+        handleViewInterviews();
+      } else {
+        setError(response.data?.error || 'Failed to reschedule interview');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to reschedule interview');
+    }
+  };
 
   // API_BASE_URL is handled by restClient
 
@@ -478,7 +540,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   Avg Match Score
                 </Typography>
                 <Typography variant="h4">
-                  {stats.avg_match_score ? parseFloat(stats.avg_match_score).toFixed(1) : '0'}%
+                  {stats.avg_match_score ? Number(stats.avg_match_score).toFixed(1) : '0'}%
                 </Typography>
               </CardContent>
             </Card>
@@ -640,6 +702,36 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                       onClick={() => handleViewDetails(candidate)}
                     >
                       <InfoIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Message Candidate">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={async () => {
+                        if (user) {
+                          try {
+                            const response = await restClient.post('/api/communication/conversations', {
+                              participants: [String(user.id), candidate.candidate_id],
+                              title: 'Recruiter Chat'
+                            });
+                            if (response.data && response.data.success) {
+                              const conversationId = response.data.data.id || response.data.data.conversation?.id;
+                              if (conversationId) {
+                                // Use window.location or navigate if available. 
+                                // Since this component might be used where navigate isn't directly passed or available easily, 
+                                // we should try to use a hook if possible. ShortlistManager doesn't utilize `useNavigate` yet.
+                                // We need to add `useNavigate` hook first.
+                                navigate(`/messages?conversationId=${conversationId}`);
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Failed to start conversation:', error);
+                          }
+                        }
+                      }}
+                    >
+                      <SendIcon />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Remove from Shortlist">
@@ -951,7 +1043,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                         <Chip
                           label={interview.status}
                           size="small"
-                          color={interview.status === 'completed' ? 'success' : 'default'}
+                          color={interview.status === 'completed' ? 'success' : interview.status === 'cancelled' ? 'error' : 'default'}
                         />
                       </TableCell>
                       <TableCell>
@@ -1005,6 +1097,30 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                           >
                             Join
                           </Button>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            disabled={interview.status === 'completed' || interview.status === 'cancelled'}
+                            onClick={() => {
+                              setInterviewToReschedule(interview);
+                              setRescheduleDate(interview.scheduled_date);
+                              setRescheduleTime(interview.scheduled_time);
+                              setRescheduleDialogOpen(true);
+                            }}
+                          >
+                            <EventIcon />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            disabled={interview.status === 'completed' || interview.status === 'cancelled'}
+                            onClick={() => {
+                              setInterviewToCancel(interview);
+                              setCancelInterviewDialogOpen(true);
+                            }}
+                          >
+                            <CancelIcon />
+                          </IconButton>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -1022,6 +1138,65 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setViewInterviewsDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Interview Dialog */}
+      <Dialog open={cancelInterviewDialogOpen} onClose={() => setCancelInterviewDialogOpen(false)}>
+        <DialogTitle>Cancel Interview</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to cancel the interview with {interviewToCancel?.candidate_first_name} {interviewToCancel?.candidate_last_name}?
+          </Typography>
+          <TextField
+            fullWidth
+            label="Reason for Cancellation"
+            value={cancellationReason}
+            onChange={(e) => setCancellationReason(e.target.value)}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelInterviewDialogOpen(false)}>Back</Button>
+          <Button
+            onClick={handleCancelInterview}
+            color="error"
+            variant="contained"
+            disabled={!cancellationReason.trim()}
+          >
+            Confirm Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reschedule Interview Dialog */}
+      <Dialog open={rescheduleDialogOpen} onClose={() => setRescheduleDialogOpen(false)}>
+        <DialogTitle>Reschedule Interview</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="New Date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={rescheduleDate}
+              onChange={(e) => setRescheduleDate(e.target.value)}
+            />
+            <TextField
+              label="New Time"
+              type="time"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={rescheduleTime}
+              onChange={(e) => setRescheduleTime(e.target.value)}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRescheduleDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleRescheduleInterview} color="primary" variant="contained">
+            Reschedule
+          </Button>
         </DialogActions>
       </Dialog>
 

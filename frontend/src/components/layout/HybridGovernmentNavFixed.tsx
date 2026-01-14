@@ -5,6 +5,7 @@ import { navigationGroups } from '@/components/navigation/navigationConfig';
 import UserMenu from '@/components/layout/UserMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { NotificationBell } from '@/components/notifications/NotificationSystem';
 
 interface HybridGovernmentNavProps {
   showAuthButtons?: boolean;
@@ -14,8 +15,8 @@ interface HybridGovernmentNavProps {
   currentLanguage?: 'en' | 'ar';
 }
 
-const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({ 
-  showAuthButtons = true, 
+const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
+  showAuthButtons = true,
   currentPage = '',
   userRole: propUserRole = '',
   onLanguageToggle,
@@ -23,12 +24,12 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  
+
   // Get authentication state
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
   const isRTL = currentLanguage === 'ar';
-  
+
   // Get user role from authenticated user, fallback to prop
   const userRole = user?.role || propUserRole;
 
@@ -113,15 +114,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
             {/* Government Logos Section */}
             <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
               <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
-                <img 
-                  src="/dubai-gov-logo.jpg" 
-                  alt="Government of Dubai" 
+                <img
+                  src="/dubai-gov-logo.jpg"
+                  alt="Government of Dubai"
                   className="h-14 w-auto"
                 />
                 <div className="w-px h-12 bg-slate-300"></div>
-                <img 
-                  src="/ehrdc-logo.png" 
-                  alt="EHRDC Logo" 
+                <img
+                  src="/ehrdc-logo.png"
+                  alt="EHRDC Logo"
                   className="h-12 w-auto"
                 />
               </div>
@@ -132,7 +133,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 </Link>
               </div>
             </div>
-            
+
             {/* Navigation Actions */}
             <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
               {/* Language Toggle */}
@@ -157,7 +158,12 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
 
-
+              {/* Notification Bell - Added as per request (Global visibility) */}
+              {isAuthenticated && user && (
+                <div className="flex items-center">
+                  <NotificationBell />
+                </div>
+              )}
 
               {/* Authentication Section */}
               {isAuthenticated && user ? (
@@ -174,14 +180,14 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 </div>
               ) : showAuthButtons ? (
                 <>
-                  <Link 
-                    to="/auth" 
+                  <Link
+                    to="/auth"
                     className="hidden sm:block text-slate-600 hover:text-slate-900 font-medium transition-colors"
                   >
                     {t('sign_in', 'Sign In')}
                   </Link>
-                  <Link 
-                    to="/auth" 
+                  <Link
+                    to="/auth"
                     className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
                   >
                     {t('get_started', 'Get Started')}
@@ -209,7 +215,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
-                
+
                 {activeDropdown === group.id && (
                   <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50`}>
                     <div className="p-4">
@@ -270,7 +276,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     <span className={`w-3 h-3 bg-teal-600 rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
                     {t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}
                   </h3>
-                  <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}> 
+                  <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
                     {group.items.slice(0, 4).map((item) => (
                       <Link
                         key={item.name}

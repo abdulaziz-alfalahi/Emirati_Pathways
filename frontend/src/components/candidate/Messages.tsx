@@ -6,11 +6,11 @@ import MessageThread from './messages/MessageThread';
 import EmptyConversation from './messages/EmptyConversation';
 import { Conversation, Message } from './messages/types';
 import { restClient } from '@/utils/api';
-import { useMockAuth } from '@/context/MockAuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 const Messages: React.FC = () => {
     const { toast } = useToast();
-    const { user } = useMockAuth();
+    const { user } = useAuth();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);

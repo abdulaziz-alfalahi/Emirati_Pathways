@@ -27,7 +27,8 @@ import {
   GraduationCap,
   Award,
   Target,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import TemplatePreview from '@/components/cv-templates/TemplatePreview';
@@ -1234,7 +1235,6 @@ const AutoFillCVBuilder: React.FC = () => {
           {useLanguage().t('cvBuilder.reviewCustomize', 'CV Builder - Auto-filled with Your Data')}
         </h2>
         <p className="text-xl text-gray-600">
-          // Replaced by t() via multi-replace or manual edit if too complex
           {t('cvBuilder.reviewCustomize', 'Review and customize the auto-filled information from your CV')}
         </p>
         <div className="mt-4">
@@ -1822,7 +1822,14 @@ const AutoFillCVBuilder: React.FC = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+          <div className="text-center relative">
+            <button
+              onClick={() => navigate(-1)}
+              className="absolute left-0 top-0 text-white hover:text-blue-100 transition-colors flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>{t('common.back', 'Back')}</span>
+            </button>
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                 <FileText className="w-10 h-10 text-white" />

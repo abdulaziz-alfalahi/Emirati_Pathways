@@ -32,6 +32,8 @@ class NotificationType(Enum):
     APPLICATION_SUBMITTED = "application_submitted"
     APPLICATION_REVIEWED = "application_reviewed"
     INTERVIEW_SCHEDULED = "interview_scheduled"
+    INTERVIEW_RESCHEDULED = "interview_rescheduled"
+    INTERVIEW_CANCELLED = "interview_cancelled"
     INTERVIEW_REMINDER = "interview_reminder"
     OFFER_MADE = "offer_made"
     OFFER_ACCEPTED = "offer_accepted"
@@ -39,6 +41,8 @@ class NotificationType(Enum):
     APPLICATION_REJECTED = "application_rejected"
     NEW_JOB_MATCH = "new_job_match"
     PROFILE_VIEWED = "profile_viewed"
+    NEW_MESSAGE = "new_message"
+    SYSTEM_ANNOUNCEMENT = "system_announcement"
 
 class MessageStatus(Enum):
     SENT = "sent"
@@ -105,7 +109,9 @@ class Notification:
             'metadata': self.metadata,
             'created_at': self.created_at.isoformat(),
             'read_at': self.read_at.isoformat() if self.read_at else None,
-            'sent_at': self.sent_at.isoformat() if self.sent_at else None
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
+            'read': bool(self.read_at),
+            'priority': self.metadata.get('priority', 'medium') if self.metadata else 'medium'
         }
 
 @dataclass
@@ -167,8 +173,124 @@ class CommunicationService:
                 'content': 'Your application for {job_title} is now being reviewed by {company_name}.',
                 'channels': [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
             },
-            # ... (Other templates same as before) ...
+            NotificationType.NEW_MESSAGE: {
+                'title': 'New Message from {sender_name}',
+                'content': '{content_preview}',
+                'channels': [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+            },
+            NotificationType.INTERVIEW_SCHEDULED: {
+                'title': 'Interview Scheduled: {interview_title}',
+                'content': 'You have been invited to an interview for {job_title}. Check your schedule for details.',
+                'channels': [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+            },
+            NotificationType.INTERVIEW_RESCHEDULED: {
+                'title': 'Interview Rescheduled: {interview_title}',
+                'content': 'Your interview for {job_title} has been rescheduled to {new_date} at {new_time}.',
+                'channels': [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+            },
+            NotificationType.INTERVIEW_CANCELLED: {
+                'title': 'Interview Cancelled: {interview_title}',
+                'content': 'Your interview for {job_title} has been cancelled. Reason: {reason}',
+                'channels': [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+            },
+            NotificationType.SYSTEM_ANNOUNCEMENT: {
+                'title': '{title}',
+                'content': '{message}',
+                'channels': [NotificationChannel.IN_APP, NotificationChannel.EMAIL]
+            }
         }
+
+        # Initialize tables
+        self.ensure_tables_exist()
+
+    def ensure_tables_exist(self):
+        """Ensure all communication tables exist"""
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                # Drop tables to ensure schema update (Development only behavior - for schema fix)
+                # In production, use migrations.
+                # Drop tables removed for persistence
+                # cur.execute("DROP TABLE IF EXISTS messages CASCADE;")
+                # cur.execute("DROP TABLE IF EXISTS conversation_participants CASCADE;")
+                # cur.execute("DROP TABLE IF EXISTS conversations CASCADE;")
+                # cur.execute("DROP TABLE IF EXISTS notifications CASCADE;")
+
+                # Conversations Table
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS conversations (
+                        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                        application_id VARCHAR(255),
+                        job_id VARCHAR(255),
+                        title VARCHAR(255),
+                        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                        last_message_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                        is_active BOOLEAN DEFAULT TRUE
+                    )
+                """)
+
+                # Conversation Participants Table
+                # user_id is VARCHAR to support both UUID and Integer IDs
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS conversation_participants (
+                        conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+                        user_id VARCHAR(255) NOT NULL,
+                        joined_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                        last_read_at TIMESTAMPTZ,
+                        is_archived BOOLEAN DEFAULT FALSE,
+                        PRIMARY KEY (conversation_id, user_id)
+                    )
+                """)
+
+                # Check and add is_archived column if missing (Migration for existing tables)
+                cur.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='conversation_participants' AND column_name='is_archived';
+                """)
+                if not cur.fetchone():
+                    self.logger.info("Adding is_archived column to conversation_participants")
+                    cur.execute("ALTER TABLE conversation_participants ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;")
+
+                # Messages Table
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS messages (
+                        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                        conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+                        sender_id VARCHAR(255) NOT NULL,
+                        recipient_id VARCHAR(255),
+                        content TEXT NOT NULL,
+                        message_type VARCHAR(50) DEFAULT 'text',
+                        metadata JSONB DEFAULT '{}',
+                        status VARCHAR(20) DEFAULT 'sent',
+                        is_read BOOLEAN DEFAULT FALSE,
+                        read_at TIMESTAMPTZ,
+                        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
+                # Notifications Table
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                        user_id VARCHAR(255) NOT NULL,
+                        type VARCHAR(50) NOT NULL,
+                        title VARCHAR(255) NOT NULL,
+                        content TEXT NOT NULL,
+                        metadata JSONB DEFAULT '{}',
+                        is_read BOOLEAN DEFAULT FALSE,
+                        read_at TIMESTAMPTZ,
+                        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                conn.commit()
+                self.logger.info("✅ Communication tables ensured (Schema Verified)")
+        except Exception as e:
+            conn.rollback()
+            self.logger.error(f"Error ensuring communication tables: {e}")
+        finally:
+            conn.close()
 
     def _get_db_connection(self):
         try:
@@ -186,12 +308,16 @@ class CommunicationService:
     def create_conversation(self, participants: List[str], application_id: Optional[str] = None, 
                           job_id: Optional[str] = None, title: str = "Conversation") -> Conversation:
         """Create a new conversation between participants"""
+        # Ensure all participants are strings to avoid SQL type mismatch with VARCHAR column
+        participants = [str(p) for p in participants]
+        
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Check for existing conversation with exact same participants
                 # For MVP simplicity, we might just check if a conversation exists between these 2 users
                 if len(participants) == 2:
+                    self.logger.info(f"Checking for existing conversation between {participants}")
                     cur.execute("""
                         SELECT c.id 
                         FROM conversation_participants cp1
@@ -202,6 +328,15 @@ class CommunicationService:
                     """, (participants[0], participants[1]))
                     existing = cur.fetchone()
                     if existing:
+                        self.logger.info(f"Found existing conversation: {existing['id']}")
+                        # Ensure it's active/unarchived for both if it exists
+                        # If I am creating it, I should see it even if I hid it before.
+                        cur.execute("""
+                            UPDATE conversation_participants 
+                            SET is_archived = FALSE 
+                            WHERE conversation_id = %s AND user_id IN %s
+                        """, (existing['id'], tuple(participants)))
+                        conn.commit() # Commit un-archive
                         self.logger.info(f"Returning existing conversation {existing['id']}")
                         return self._get_conversation_by_id(cur, existing['id'])
 
@@ -217,15 +352,16 @@ class CommunicationService:
                 # Add participants
                 for p_id in participants:
                     cur.execute("""
-                        INSERT INTO conversation_participants (conversation_id, user_id)
-                        VALUES (%s, %s)
+                        INSERT INTO conversation_participants (conversation_id, user_id, is_archived)
+                        VALUES (%s, %s, FALSE)
                     """, (conv_id, p_id))
                 
                 conn.commit()
                 return self._get_conversation_by_id(cur, conv_id)
         except Exception as e:
             conn.rollback()
-            self.logger.error(f"Error creating conversation: {str(e)}")
+            self.logger.error(f"Error creating conversation: {str(e)}", exc_info=True)
+            print(f"CRITICAL ERROR in create_conversation: {str(e)}") # Print to stdout for CLI visibility
             raise
         finally:
             conn.close()
@@ -247,10 +383,12 @@ class CommunicationService:
             return None
             
         # Get participants and names
+        # Get participants and names
+        # Cast cp.user_id to integer for join with users.id
         cur.execute("""
             SELECT cp.user_id, u.first_name, u.last_name
             FROM conversation_participants cp
-            JOIN users u ON cp.user_id = u.id
+            JOIN users u ON cp.user_id = u.id::varchar
             WHERE cp.conversation_id = %s
         """, (conversation_id,))
         part_rows = cur.fetchall()
@@ -299,6 +437,18 @@ class CommunicationService:
                     # Simplified: Call create_conversation if ID not provided
                     conv = self.create_conversation([sender_id, recipient_id])
                     conversation_id = conv.id
+                
+                # Un-archive for ALL participants (Sender + Recipient)
+                # Logic: If I send a message, it should be active for me and the recipient.
+                participants_to_active = [sender_id, recipient_id]
+                self.logger.info(f"Attempting to un-archive conversation {conversation_id} for participants {participants_to_active}")
+                
+                cur.execute("""
+                    UPDATE conversation_participants 
+                    SET is_archived = FALSE 
+                    WHERE conversation_id = %s AND user_id IN %s
+                """, (conversation_id, tuple(participants_to_active)))
+                self.logger.info(f"Un-archive result (rows updated): {cur.rowcount}")
 
                 # Insert Message
                 cur.execute("""
@@ -343,7 +493,7 @@ class CommunicationService:
                 cur.execute("""
                     SELECT m.*, u.first_name, u.last_name
                     FROM messages m
-                    JOIN users u ON m.sender_id = u.id
+                    JOIN users u ON m.sender_id = u.id::varchar
                     WHERE m.conversation_id = %s
                     ORDER BY m.created_at DESC
                     LIMIT %s OFFSET %s
@@ -385,7 +535,8 @@ class CommunicationService:
                 # Find all conversation IDs for user
                 self.logger.info(f"DEBUG: get_user_conversations querying for user_id={user_id} (type={type(user_id)})")
                 cur.execute("""
-                    SELECT conversation_id FROM conversation_participants WHERE user_id = %s
+                    SELECT conversation_id FROM conversation_participants 
+                    WHERE user_id = %s AND (is_archived IS FALSE OR is_archived IS NULL)
                 """, (user_id,))
                 rows = cur.fetchall()
                 conv_ids = [r['conversation_id'] for r in rows]
@@ -404,6 +555,27 @@ class CommunicationService:
         except Exception as e:
             logger.error(f"Error getting conversations: {e}")
             return []
+        finally:
+            conn.close()
+
+            conn.close()
+            
+    def archive_conversation_for_user(self, conversation_id: str, user_id: str) -> bool:
+        """Archive (soft delete) a conversation for a specific user"""
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE conversation_participants
+                    SET is_archived = TRUE
+                    WHERE conversation_id = %s AND user_id = %s
+                """, (conversation_id, user_id))
+                conn.commit()
+                return cur.rowcount > 0
+        except Exception as e:
+            conn.rollback()
+            self.logger.error(f"Error archiving conversation: {e}")
+            return False
         finally:
             conn.close()
 
@@ -513,5 +685,35 @@ class CommunicationService:
         
     def send_application_status_update(self, **kwargs):
         pass # Stub that would use create_notification
+
+    def mark_conversation_as_read(self, conversation_id: str, user_id: str) -> bool:
+        """Mark all messages in a conversation as read for a user"""
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                # Update participant last_read_at
+                cur.execute("""
+                    UPDATE conversation_participants
+                    SET last_read_at = NOW()
+                    WHERE conversation_id = %s AND user_id = %s
+                """, (conversation_id, user_id))
+                
+                # Update messages status (incoming messages only)
+                cur.execute("""
+                    UPDATE messages
+                    SET is_read = TRUE, read_at = NOW(), status = 'read'
+                    WHERE conversation_id = %s 
+                    AND sender_id != %s 
+                    AND is_read = FALSE
+                """, (conversation_id, user_id))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            conn.rollback()
+            self.logger.error(f"Error marking conversation as read: {e}")
+            return False
+        finally:
+            conn.close()
 
 communication_service = CommunicationService()

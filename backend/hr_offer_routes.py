@@ -38,8 +38,8 @@ def _verify_job_ownership(cursor, user_id: int, job_posting_id: str) -> bool:
         """
         SELECT 1
         FROM job_postings jp
-        INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-        WHERE jp.id = %s AND hp.user_id = %s
+        INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id::text
+        WHERE jp.jd_id = %s AND hp.user_id = %s
         """,
         (job_posting_id, user_id),
     )
@@ -127,7 +127,7 @@ def list_offers():
                 SELECT o.*, u.first_name AS candidate_first_name, u.last_name AS candidate_last_name,
                        jp.title AS job_title
                 FROM offers o
-                INNER JOIN job_postings jp ON o.job_posting_id::text = jp.id::text
+                INNER JOIN job_postings jp ON o.job_posting_id::text = jp.jd_id::text
                 LEFT JOIN users u ON o.candidate_id::text = u.id::text
                 WHERE {where_clause}
                 ORDER BY {order_sql}
@@ -142,7 +142,7 @@ def list_offers():
                 f"""
                 SELECT COUNT(1)
                 FROM offers o
-                INNER JOIN job_postings jp ON o.job_posting_id::text = jp.id::text
+                INNER JOIN job_postings jp ON o.job_posting_id::text = jp.jd_id::text
                 WHERE {where_clause}
                 """,
                 params,
@@ -301,7 +301,7 @@ def get_offer(offer_id):
                 """
                 SELECT o.*, jp.company_id, jp.title AS job_title, u.first_name AS candidate_first_name, u.last_name AS candidate_last_name
                 FROM offers o
-                INNER JOIN job_postings jp ON o.job_posting_id = jp.id
+                INNER JOIN job_postings jp ON o.job_posting_id::text = jp.jd_id::text
                 LEFT JOIN users u ON o.candidate_id::text = u.id::text
                 WHERE o.id = %s
                 """,
@@ -312,7 +312,7 @@ def get_offer(offer_id):
                 return jsonify({"success": False, "message": "Offer not found"}), 404
 
             # Recruiter must belong to same company
-            cursor.execute("SELECT 1 FROM hr_profiles WHERE user_id=%s AND company_id=%s", (current_user_id, offer["company_id"]))
+            cursor.execute("SELECT 1 FROM hr_profiles WHERE user_id=%s AND company_id::text=%s", (current_user_id, offer["company_id"]))
             if not cursor.fetchone():
                 return jsonify({"success": False, "message": "Access denied"}), 403
 
@@ -366,7 +366,7 @@ def send_offer(offer_id):
                 """
                 SELECT o.*, jp.company_id
                 FROM offers o
-                INNER JOIN job_postings jp ON o.job_posting_id = jp.id
+                INNER JOIN job_postings jp ON o.job_posting_id::text = jp.jd_id::text
                 WHERE o.id = %s
                 """,
                 (offer_id,),
@@ -375,7 +375,7 @@ def send_offer(offer_id):
             if not offer:
                 return jsonify({"success": False, "message": "Offer not found"}), 404
 
-            cursor.execute("SELECT 1 FROM hr_profiles WHERE user_id=%s AND company_id=%s", (current_user_id, offer["company_id"]))
+            cursor.execute("SELECT 1 FROM hr_profiles WHERE user_id=%s AND company_id::text=%s", (current_user_id, offer["company_id"]))
             if not cursor.fetchone():
                 return jsonify({"success": False, "message": "Access denied"}), 403
 

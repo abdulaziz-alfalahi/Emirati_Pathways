@@ -710,9 +710,107 @@ def get_recruiter_dashboard():
         })
 
 
+@recruiter_dashboard_bp.route('/recent-applicants', methods=['GET'])
+@optional_auth
+def get_recent_applicants():
+    """
+    Get recent applicants across all jobs
+    
+    Query Params:
+        limit: Number of records to return (default 5)
+        days: Filter by last N days (default 30)
+    """
+    try:
+        limit = request.args.get('limit', 5, type=int)
+        days = request.args.get('days', 30, type=int)
+        
+        query = """
+            SELECT 
+                ja.id as application_id,
+                ja.job_id,
+                ja.candidate_id,
+                ja.status,
+                ja.created_at as submitted_at,
+                ja.cover_letter,
+                jd.title as job_title,
+                COALESCE(jd.company, 'Unknown Company') as company_name,
+                u.full_name as candidate_name,
+                u.email as candidate_email
+            FROM job_applications ja
+            LEFT JOIN job_descriptions jd ON ja.job_id = jd.id
+            LEFT JOIN users u ON ja.candidate_id = u.id
+            WHERE ja.created_at >= NOW() - INTERVAL '%s days'
+            ORDER BY ja.created_at DESC
+            LIMIT %s
+        """
+        
+        applicants = execute_query(query, (days, limit))
+        
+        # Format dates for JSON
+        if applicants:
+            for app in applicants:
+                if app.get('submitted_at'):
+                    app['submitted_at'] = app['submitted_at'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': applicants or [],
+            'count': len(applicants) if applicants else 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch recent applicants: {e}")
+        return jsonify({
+            'success': False, 
+            'message': str(e),
+            'data': [],
+            'count': 0
+        }), 500
+
+
 # =====================================================
 # OFFERS MANAGEMENT ENDPOINTS
 # =====================================================
+
+@recruiter_dashboard_bp.route('/offers/approval-stats', methods=['GET'])
+@optional_auth
+def get_approval_stats():
+    """Get statistics for pending approvals"""
+    try:
+        # Check if table exists first to avoid errors during dev
+        conn = get_db_connection()
+        table_exists = False
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT to_regclass('public.offer_approval_requests')")
+                if cur.fetchone()[0]:
+                    table_exists = True
+            conn.close()
+            
+        pending_count = 0
+        if table_exists:
+            query = """
+                SELECT COUNT(*) as pending
+                FROM offer_approval_requests
+                WHERE status = 'pending'
+            """
+            result = execute_query(query, fetch_one=True)
+            pending_count = result.get('pending', 0) if result else 0
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'pending': pending_count
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to get approval stats: {e}")
+        # Return 0 instead of 500 to keep dashboard working
+        return jsonify({
+            'success': True, 
+            'data': {'pending': 0}
+        })
+
 
 @recruiter_dashboard_bp.route('/offers', methods=['GET'])
 @optional_auth

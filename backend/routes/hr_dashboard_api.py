@@ -274,6 +274,62 @@ def delegate_approval():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@hr_dashboard_api_bp.route('/approvals', methods=['GET'])
+@optional_auth
+def get_all_approvals():
+    """Get all approvals (pending, history) for the workflow tab"""
+    try:
+        # Fetch from offer_approval_requests
+        query = """
+            SELECT 
+                oar.id,
+                oar.offer_id,
+                oar.recruiter_id,
+                oar.status,
+                oar.submitted_at,
+                o.position_title,
+                o.salary_amount,
+                u.full_name as recruiter_name,
+                c.full_name as candidate_name
+            FROM offer_approval_requests oar
+            LEFT JOIN offers o ON oar.offer_id = o.id
+            LEFT JOIN users u ON oar.recruiter_id = u.id
+            LEFT JOIN users c ON o.candidate_id = c.id
+            ORDER BY oar.submitted_at DESC
+        """
+        approvals = execute_query(query)
+        
+        # Transform for frontend
+        data = []
+        if approvals:
+            for apr in approvals:
+                data.append({
+                    'id': apr.get('id'),
+                    'type': 'offer_approval',
+                    'candidate': apr.get('candidate_name', 'Unknown Candidate'),
+                    'position': apr.get('position_title', 'Unknown Position'),
+                    'salary': apr.get('salary_amount'),
+                    'status': apr.get('status', 'pending'),
+                    'img': 'https://i.pravatar.cc/150?u=' + str(apr.get('id')), # Mock image
+                    'submitted': apr.get('submitted_at').strftime('%Y-%m-%d') if apr.get('submitted_at') else datetime.now().strftime('%Y-%m-%d'),
+                    'submitted_by': apr.get('recruiter_name', 'Unknown Recruiter')
+                })
+        else:
+            # Fallback/Mock for demo if table is empty, so UI isn't broken
+            data = [
+                {'id': 'mock_1', 'type': 'offer_approval', 'candidate': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'salary': 35000, 'status': 'pending', 'submitted': '2025-01-20', 'submitted_by': 'Sarah Recruiter'},
+                {'id': 'mock_2', 'type': 'salary_exception', 'candidate': 'Fatima Al Nahyan', 'position': 'Product Manager', 'salary': 42000, 'status': 'approved', 'submitted': '2025-01-18', 'submitted_by': 'John Recruiter'}
+            ]
+
+        return jsonify({
+            'success': True,
+            'data': data
+        })
+    except Exception as e:
+        logger.error(f"Failed to get all approvals: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @hr_dashboard_api_bp.route('/approvals/pending', methods=['GET'])
 @optional_auth
 def get_pending_approvals():
@@ -289,6 +345,44 @@ def get_pending_approvals():
         })
     except Exception as e:
         logger.error(f"Failed to get pending approvals: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@hr_dashboard_api_bp.route('/delegations', methods=['GET'])
+@optional_auth
+def get_delegations():
+    """Get active delegations for HR Manager"""
+    try:
+        hr_manager_id = request.args.get('hr_manager_id')
+        
+        # Mock data for delegations
+        delegations = [
+            {
+                'id': 'del_001',
+                'delegatee_id': 'user_123',
+                'delegatee_name': 'Sarah Recruiter',
+                'approval_types': ['offer_approval', 'interview_schedule'],
+                'start_date': '2025-01-20',
+                'end_date': '2025-01-27',
+                'status': 'active'
+            },
+             {
+                'id': 'del_002',
+                'delegatee_id': 'user_456',
+                'delegatee_name': 'John HR',
+                'approval_types': ['salary_exception'],
+                'start_date': '2025-02-01',
+                'end_date': '2025-02-05',
+                'status': 'scheduled'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'data': delegations
+        })
+    except Exception as e:
+        logger.error(f"Failed to get delegations: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -682,6 +776,8 @@ def search_candidates():
         
         offset = (page - 1) * per_page
         
+        job_id = data.get('job_id')
+        
         # Build search query
         query = """
             SELECT DISTINCT
@@ -693,13 +789,25 @@ def search_candidates():
                 cv.id as cv_id,
                 cv.title as cv_title,
                 cv.parsed_data,
-                cv.skills
+                cv.skills,
+                CASE WHEN js.candidate_id IS NOT NULL THEN true ELSE false END as is_shortlisted
             FROM users u
             LEFT JOIN cv_data cv ON u.id = cv.user_id AND cv.is_visible = true
+        """
+        
+        # Join with job_shortlists if job_id is provided
+        # Use job_shortlists table as created by hr_job_posting_routes.py
+        params = []
+        if job_id:
+            query += " LEFT JOIN shortlisted_candidates js ON u.id = js.candidate_id AND js.job_id = %s "
+            params.append(str(job_id))
+        else:
+            query += " LEFT JOIN (SELECT NULL as candidate_id) js ON 1=0 "
+
+        query += """
             WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
         """
-        params = []
         
         # Text search
         if search_query:

@@ -70,7 +70,7 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Dialog states
   const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
@@ -127,8 +127,8 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
         comment: approvalComment,
         approved_by: hrManagerId
       });
-      
-      setApprovalItems(prev => prev.map(i => 
+
+      setApprovalItems(prev => prev.map(i =>
         i.id === item.id ? { ...i, status: 'approved' } : i
       ));
       setShowApprovalDialog(false);
@@ -145,8 +145,8 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
         comment: approvalComment,
         rejected_by: hrManagerId
       });
-      
-      setApprovalItems(prev => prev.map(i => 
+
+      setApprovalItems(prev => prev.map(i =>
         i.id === item.id ? { ...i, status: 'rejected' } : i
       ));
       setShowApprovalDialog(false);
@@ -167,15 +167,15 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
       });
 
       const recruiter = teamMembers.find(m => m.id === recruiterId);
-      
-      setDelegationSettings(prev => prev.map(d => 
-        d.type === type 
-          ? { 
-              ...d, 
-              delegatedTo: recruiterId, 
-              delegatedToName: recruiter?.name || null,
-              isActive: recruiterId !== null 
-            } 
+
+      setDelegationSettings(prev => prev.map(d =>
+        d.type === type
+          ? {
+            ...d,
+            delegatedTo: recruiterId,
+            delegatedToName: recruiter?.name || null,
+            isActive: recruiterId !== null
+          }
           : d
       ));
     } catch (err) {
@@ -261,7 +261,7 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -383,8 +383,8 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingItems.map((item) => (
-                      <TableRow key={item.id}>
+                    {pendingItems.map((item, index) => (
+                      <TableRow key={`${item.id}-${index}`}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getTypeIcon(item.type)}
@@ -443,8 +443,8 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {processedItems.map((item) => (
-                      <TableRow key={item.id}>
+                    {processedItems.map((item, index) => (
+                      <TableRow key={`${item.id}-${index}`}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getTypeIcon(item.type)}
@@ -476,8 +476,8 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {delegationSettings.map((setting) => (
-                  <div key={setting.type} className="flex items-center justify-between p-4 border rounded-lg">
+                {delegationSettings.map((setting, index) => (
+                  <div key={`${setting.type}-${index}`} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       {getTypeIcon(setting.type)}
                       <div>
@@ -499,8 +499,8 @@ export const ApprovalWorkflow: React.FC<ApprovalWorkflowProps> = ({ companyId, h
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No delegation</SelectItem>
-                          {teamMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
+                          {teamMembers.map((member, mIndex) => (
+                            <SelectItem key={`${member.id}-${mIndex}`} value={member.id}>
                               {member.name}
                             </SelectItem>
                           ))}

@@ -42,17 +42,17 @@ const EmployerDashboard = () => {
   // Get user display name
   const getUserDisplayName = () => {
     if (!user) return 'Recruiter';
-    
+
     if (user.user_metadata?.full_name) return user.user_metadata.full_name;
     if (user.user_metadata?.name) return user.user_metadata.name;
     if (user.full_name) return user.full_name;
     if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    
+
     if (user.email) {
       const emailName = user.email.split('@')[0];
       return emailName.charAt(0).toUpperCase() + emailName.slice(1);
     }
-    
+
     return 'Recruiter';
   };
 
@@ -62,10 +62,10 @@ const EmployerDashboard = () => {
       console.log('🚪 Employer logout process...');
       await signOut();
       console.log('✅ Employer logout completed');
-      window.location.replace('/auth');
+      navigate('/auth');
     } catch (error) {
       console.error('Employer logout error:', error);
-      window.location.href = '/auth';
+      navigate('/auth');
     }
   };
 
@@ -80,7 +80,7 @@ const EmployerDashboard = () => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
@@ -190,7 +190,7 @@ const EmployerDashboard = () => {
                 Recruiter
               </span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
@@ -306,7 +306,7 @@ const EmployerDashboard = () => {
                       </div>
                       <span className="text-2xl font-bold text-blue-600">{dashboardData.candidates.newApplications}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">Interviews Scheduled</p>
@@ -314,7 +314,7 @@ const EmployerDashboard = () => {
                       </div>
                       <span className="text-2xl font-bold text-purple-600">{dashboardData.recruitment.interviewsScheduled}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">Pending Offers</p>
@@ -322,7 +322,7 @@ const EmployerDashboard = () => {
                       </div>
                       <span className="text-2xl font-bold text-orange-600">{dashboardData.recruitment.pendingOffers}</span>
                     </div>
-                    
+
                     <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-900">Emirati Candidates</p>
@@ -347,9 +347,8 @@ const EmployerDashboard = () => {
                       <button
                         key={index}
                         onClick={action.action}
-                        className={`w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 ${
-                          action.title === 'Logout' ? 'bg-red-50 hover:bg-red-100 hover:border-red-300' : ''
-                        }`}
+                        className={`w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 ${action.title === 'Logout' ? 'bg-red-50 hover:bg-red-100 hover:border-red-300' : ''
+                          }`}
                       >
                         <div className="flex items-center">
                           <div className={`p-2 rounded-lg ${action.color} text-white`}>
@@ -379,21 +378,21 @@ const EmployerDashboard = () => {
                         {dashboardData.analytics.applicationRate} per day
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Response Rate</span>
                       <span className="text-sm font-medium text-green-600">
                         {dashboardData.analytics.responseRate}%
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Hire Rate</span>
                       <span className="text-sm font-medium text-purple-600">
                         {dashboardData.analytics.hireRate}%
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Time to Hire</span>
                       <span className="text-sm font-medium text-orange-600">
@@ -421,12 +420,11 @@ const EmployerDashboard = () => {
                   {dashboardData.activity.map((activity, index) => (
                     <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
                       <div className="flex-shrink-0">
-                        <div className={`w-3 h-3 rounded-full ${
-                          activity.type === 'application' ? 'bg-blue-500' :
-                          activity.type === 'interview' ? 'bg-purple-500' :
-                          activity.type === 'hire' ? 'bg-green-500' :
-                          'bg-orange-500'
-                        }`}></div>
+                        <div className={`w-3 h-3 rounded-full ${activity.type === 'application' ? 'bg-blue-500' :
+                            activity.type === 'interview' ? 'bg-purple-500' :
+                              activity.type === 'hire' ? 'bg-green-500' :
+                                'bg-orange-500'
+                          }`}></div>
                       </div>
                       <div className="ml-4 flex-1">
                         <p className="text-sm font-medium text-gray-900">{activity.message}</p>

@@ -37,10 +37,20 @@ def get_user_id_from_token():
     """Extract user ID from JWT token (simplified)"""
     # In production, this would properly decode and validate JWT
     auth_header = request.headers.get('Authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        # For demo purposes, return a mock user ID
-        return 'user_123'
-    return None
+    # Validates JWT and returns identity
+    try:
+        if not auth_header:
+            return None
+        # Basic check, in real app let decorator handle or verify token
+        # For now, we rely on the route decorators or manual check if needed
+        # But for this specific helper, we should try to extract properly
+        from flask_jwt_extended import decode_token
+        token = auth_header.split(" ")[1]
+        decoded = decode_token(token)
+        return decoded['sub']
+    except Exception as e:
+        logger.error(f"Token validation error: {e}")
+        return None
 
 @enhanced_cv_bp.route('/upload', methods=['POST'])
 def upload_cv():

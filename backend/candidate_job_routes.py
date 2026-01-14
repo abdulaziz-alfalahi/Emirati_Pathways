@@ -306,121 +306,91 @@ def get_fallback_jobs():
     return jobs
 
 
+
+# ... imports
+from services.commute_calculator import haversine, estimate_commute_time
+
 @candidate_job_bp.route('/job-matches', methods=['GET'])
 def get_job_matches():
-    """Get job matches for the candidate based on their CV data using AI matching
-    
-    Returns error if AI service is unavailable - no fallback to basic matching.
-    """
-    conn = None
+    """Get job matches for the candidate with AI scoring"""
     try:
-        # Check if AI matching service is available
-        if not AI_MATCHING_AVAILABLE:
-            return jsonify({
-                'success': False,
-                'error': 'AI matching service is not available. Please try again later.',
-                'service_unavailable': True,
-                'retry_after': 60
-            }), 503
-        
-        # Check if the AI service can connect
-        is_available, error_msg = ai_matching_service.check_service_available()
-        if not is_available:
-            return jsonify({
-                'success': False,
-                'error': f'AI matching service is not available: {error_msg}. Please try again later.',
-                'service_unavailable': True,
-                'retry_after': 60
-            }), 503
-        
-        # Try to get user ID from JWT or mock token
+        # 1. Authentication & User Identification
         user_id = None
-        original_user_id = None  # Keep track of original ID for application lookup
         auth_header = request.headers.get('Authorization', '')
         
-        # Handle mock authentication (for development/testing)
+        # Handle mock authentication
         if 'mock_token' in auth_header:
             user_id = '00000000-0000-0000-0000-000000000001'
-            original_user_id = user_id
-            logger.info(f"Using mock user ID: {user_id}")
         else:
             try:
                 verify_jwt_in_request(optional=True)
-                jwt_user_id = get_jwt_identity()
-                if jwt_user_id:
-                    original_user_id = str(jwt_user_id)  # Keep original for application lookup
-                    # Ensure user_id is a valid UUID string
+                user_id = get_jwt_identity()
+                if user_id:
+                    # Normalize UUID
                     try:
-                        uuidlib.UUID(str(jwt_user_id))
-                        user_id = str(jwt_user_id)
+                        uuidlib.UUID(str(user_id))
                     except ValueError:
-                        # Convert non-UUID to UUID for CV lookup
-                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(jwt_user_id)))
-            except Exception as e:
-                logger.warning(f"JWT verification failed: {e}")
-        
-        logger.info(f"User ID for job matching: {user_id}, original JWT ID: {original_user_id}")
-        
-        # Get candidate's CV data
+                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            except Exception:
+                pass
+
+        # 2. Get Query Parameters
+        filter_by_level = request.args.get('filter_by_level', 'true').lower() == 'true'
+        sort_by = request.args.get('sort_by', 'relevance') # relevance, distance, date
+        user_lat = request.args.get('lat', type=float)
+        user_long = request.args.get('long', type=float)
+        use_ai = request.args.get('use_ai', 'true').lower() == 'true'
+
+        # 3. Fetch Candidate CV (for AI matching and location)
         cv_data = None
+        candidate_level = 'unknown'
         if user_id:
             cv_data = get_candidate_cv(user_id)
-            logger.info(f"Loaded CV data for user {user_id}: {bool(cv_data)}")
-            if cv_data:
-                logger.info(f"CV source: {cv_data.get('_source', 'unknown')}, CV ID: {cv_data.get('_cv_id', 'N/A')}")
-        else:
-            logger.warning("No user ID available for CV lookup")
-        
-        # CV is required for AI matching
-        if not cv_data:
-            logger.warning(f"No CV found for user {user_id}")
-            return jsonify({
-                'success': False,
-                'error': 'Please upload your CV first to get personalized job matches.',
-                'cv_required': True,
-                'user_id': user_id  # Include for debugging
-            }), 400
-        
-        # Get filter parameters
-        filter_by_level = request.args.get('filter_by_level', 'true').lower() == 'true'
-        
-        # Get jobs from database or fallback
+            if cv_data and AI_MATCHING_AVAILABLE:
+                try:
+                    cv_profile = ai_matching_service.extract_cv_profile(cv_data)
+                    candidate_level = cv_profile.get('experience_level', 'unknown')
+                except Exception as e:
+                    logger.warning(f"Error extracting profile: {e}")
+
+        # 4. Fetch Jobs from Database
         conn = get_db_connection()
-        applied_job_ids = set()  # Track which jobs user has already applied to
-        
+        applied_job_ids = set()
+        matched_jobs = [] # Will be populated
+        jobs = [] # Raw jobs
+
         if conn:
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
-            # First, get list of jobs the user has already applied to
-            # Check both original JWT ID and converted UUID to handle legacy applications
-            if user_id or original_user_id:
+            # Fetch applied jobs to mark them
+            if user_id:
                 try:
-                    # Build list of IDs to check
-                    ids_to_check = []
-                    if original_user_id:
-                        ids_to_check.append(original_user_id)
-                    if user_id and user_id != original_user_id:
-                        ids_to_check.append(user_id)
-                    
-                    if ids_to_check:
-                        placeholders = ','.join(['%s'] * len(ids_to_check))
-                        cur.execute(f"""
-                            SELECT job_id FROM job_applications 
-                            WHERE candidate_id IN ({placeholders})
-                        """, tuple(ids_to_check))
-                        applied_jobs = cur.fetchall()
-                        applied_job_ids = {row['job_id'] for row in applied_jobs}
-                        logger.info(f"User {original_user_id}/{user_id} has applied to {len(applied_job_ids)} jobs (checked IDs: {ids_to_check})")
+                    cur.execute("SELECT job_id FROM job_applications WHERE candidate_id = %s", (user_id,))
+                    applied_rows = cur.fetchall()
+                    applied_job_ids = {row['job_id'] for row in applied_rows}
                 except Exception as e:
-                    logger.warning(f"Could not fetch applied jobs: {e}")
-            
-            # Fetch all published jobs
+                    logger.warning(f"Could not fetch applications: {e}")
+
+            # Check for profile location if not provided
+            if (user_lat is None or user_long is None) and user_id:
+                 try:
+                     cur.execute("SELECT latitude, longitude FROM user_cvs WHERE user_id = %s::uuid LIMIT 1", (user_id,))
+                     loc_result = cur.fetchone()
+                     if loc_result and loc_result.get('latitude'):
+                         user_lat = loc_result['latitude']
+                         user_long = loc_result['longitude']
+                 except Exception as e:
+                     logger.warning(f"Could not fetch user location: {e}")
+
+            # Fetch published jobs
             query = """
                 SELECT 
                     j.jd_id as id,
                     j.title,
                     COALESCE(c.company_name, 'Confidential Company') as company,
                     j.location,
+                    j.latitude,
+                    j.longitude,
                     j.employment_type as type,
                     CONCAT(j.salary_range_min, ' - ', j.salary_range_max, ' ', j.currency) as salary,
                     j.description,
@@ -434,91 +404,98 @@ def get_job_matches():
                 LIMIT 50
             """
             
-            cur.execute(query)
-            db_jobs = cur.fetchall()
-            
-            # Transform database results to job format
-            jobs = []
-            for job in db_jobs:
-                reqs = job['requirements'] if isinstance(job['requirements'], list) else []
-                benefits = job['benefits'] if isinstance(job['benefits'], list) else []
-                job_id = job['id']
+            try:
+                cur.execute(query)
+                db_jobs = cur.fetchall()
                 
-                jobs.append({
-                    'id': job_id,
-                    'title': job['title'],
-                    'company': job['company'] or 'Unknown Company',
-                    'location': job['location'] or 'UAE',
-                    'type': job['type'] or 'full-time',
-                    'salary': job['salary'] if job['salary'] and 'None' not in job['salary'] else 'Competitive Salary',
-                    'description': job['description'] or '',
-                    'requirements': reqs,
-                    'benefits': benefits,
-                    'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat(),
-                    'hasApplied': job_id in applied_job_ids  # Add application status
-                })
-            
-            # If no jobs in database, use fallback
-            if not jobs:
-                jobs = get_fallback_jobs()
-                # Add hasApplied field to fallback jobs
-                for job in jobs:
-                    job['hasApplied'] = job.get('id') in applied_job_ids
-        else:
-            # Database unavailable, use fallback jobs
-            jobs = get_fallback_jobs()
-            # Add hasApplied field to fallback jobs
-            for job in jobs:
-                job['hasApplied'] = False
-        
-        # Apply AI matching - this will raise AIServiceUnavailableError if it fails
-        try:
-            matched_jobs = ai_matching_service.match_cv_to_jobs(cv_data, jobs, use_ai=True)
-            
-            # Extract candidate level for response
-            cv_profile = ai_matching_service.extract_cv_profile(cv_data)
-            candidate_level = cv_profile.get('experience_level', 'trainee')
-            
-            # Optionally filter by experience level
-            if filter_by_level:
-                matched_jobs = ai_matching_service.filter_jobs_by_experience_level(matched_jobs, candidate_level)
-            
-            return jsonify({
-                'success': True, 
-                'jobs': matched_jobs,
-                'count': len(matched_jobs),
-                'cv_loaded': True,
-                'ai_matching': True,
-                'candidate_level': candidate_level,
-                'message': f'Jobs matched for {candidate_level}-level candidate using AI analysis'
-            }), 200
-            
-        except AIServiceUnavailableError as e:
-            logger.error(f"AI service unavailable: {e.message}")
-            return jsonify({
-                'success': False,
-                'error': e.message,
-                'service_unavailable': True,
-                'retry_after': e.retry_after
-            }), 503
+                for job in db_jobs:
+                    # Safe requirement handling
+                    reqs = job['requirements'] if isinstance(job['requirements'], list) else []
+                    if isinstance(job['requirements'], str):
+                         # Try parsing if string
+                         try: reqs = json.loads(job['requirements'])
+                         except: reqs = [job['requirements']]
 
-    except AIServiceUnavailableError as e:
-        logger.error(f"AI service unavailable: {e.message}")
-        return jsonify({
-            'success': False,
-            'error': e.message,
-            'service_unavailable': True,
-            'retry_after': getattr(e, 'retry_after', 30)
-        }), 503
-    except Exception as e:
-        logger.error(f"Error fetching job matches: {e}")
-        return jsonify({
-            'success': False, 
-            'error': str(e)
-        }), 500
-    finally:
-        if conn:
+                    benefits = job['benefits'] if isinstance(job['benefits'], list) else []
+                    job_id = job['id']
+                    
+                    # Commute
+                    commute_info = {}
+                    if user_lat and user_long and job.get('latitude') and job.get('longitude'):
+                        dist_km = haversine(user_lat, user_long, job['latitude'], job['longitude'])
+                        time_min = estimate_commute_time(dist_km)
+                        commute_info = {
+                            'distance_km': round(dist_km, 1) if dist_km else None,
+                            'time_mins': time_min
+                        }
+
+                    jobs.append({
+                        'id': job_id,
+                        'title': job['title'],
+                        'company': job['company'] or 'Unknown Company',
+                        'location': job['location'] or 'UAE',
+                        'latitude': job.get('latitude'),
+                        'longitude': job.get('longitude'),
+                        'commute': commute_info,
+                        'type': job['type'] or 'full-time',
+                        'salary': job['salary'] if job['salary'] and 'None' not in job['salary'] else 'Competitive Salary',
+                        'description': job['description'] or '',
+                        'requirements': reqs,
+                        'benefits': benefits,
+                        'postedDate': job['postedDate'].isoformat() if job['postedDate'] else datetime.now().isoformat(),
+                        'hasApplied': job_id in applied_job_ids
+                    })
+            except Exception as e:
+                logger.error(f"Error querying jobs: {e}")
+                jobs = get_fallback_jobs()
+            
             conn.close()
+        else:
+             jobs = get_fallback_jobs()
+
+        if not jobs:
+            jobs = get_fallback_jobs()
+
+        # 5. AI Matching Logic
+        matched_jobs = jobs # Default to raw jobs
+        
+        if AI_MATCHING_AVAILABLE and cv_data and use_ai:
+            try:
+                # Use AI Service to match
+                matched_jobs = ai_matching_service.match_cv_to_jobs(cv_data, jobs)
+                
+                # Filter by level if requested
+                if filter_by_level:
+                    matched_jobs = ai_matching_service.filter_jobs_by_experience_level(matched_jobs, candidate_level)
+                    
+            except Exception as e:
+                logger.error(f"AI matching failed: {e}")
+                # Fallback to basic sorting/filtering
+                pass
+        
+        # 6. Sorting (if not AI matched or simplified sort requested)
+        if not (AI_MATCHING_AVAILABLE and cv_data and use_ai):
+             if sort_by == 'distance' and user_lat:
+                matched_jobs.sort(key=lambda x: x['commute'].get('distance_km', 99999) or 99999)
+        
+        # Ensure count matches
+        return jsonify({
+            'success': True, 
+            'jobs': matched_jobs,
+            'count': len(matched_jobs),
+            'cv_loaded': bool(cv_data),
+            'ai_matching': AI_MATCHING_AVAILABLE and bool(cv_data),
+            'candidate_level': candidate_level,
+            'user_location': {'lat': user_lat, 'long': user_long} if user_lat else None 
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Unexpected error in get_job_matches: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    # ... error handlers
+
 
 
 @candidate_job_bp.route('/dashboard/stats', methods=['GET'])
@@ -538,11 +515,12 @@ def get_dashboard_stats():
             try:
                 verify_jwt_in_request(optional=True)
                 user_id = get_jwt_identity()
-                if user_id:
-                    try:
-                        uuidlib.UUID(str(user_id))
-                    except ValueError:
-                        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                # if user_id:
+                #    try:
+                #        uuidlib.UUID(str(user_id))
+                #    except ValueError:
+                #        user_id = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                pass
             except Exception:
                 pass
         
@@ -590,6 +568,48 @@ def get_dashboard_stats():
                 cv_profile = ai_matching_service.extract_cv_profile(cv_data)
                 candidate_level = cv_profile.get('experience_level', 'trainee')
         
+        # Get profile data
+        profile_name = 'Candidate'
+        profile_photo_url = None
+        
+        if user_id:
+            # Get Name from Users table first
+            try:
+                 cur.execute("SELECT first_name, last_name FROM users WHERE id::text = %s", (str(user_id),))
+                 u_row = cur.fetchone()
+                 if u_row and u_row['first_name']:
+                     profile_name = f"{u_row['first_name']} {u_row['last_name'] or ''}".strip()
+            except Exception as e:
+                logger.error(f"User name lookup failed: {e}")
+
+            # Get Photo from Candidate Profiles
+            # Get Photo from Candidate Profiles
+            try:
+                # Try multiple user_id formats for robust lookup
+                user_ids_to_try = [str(user_id)]
+                
+                # Try UUID conversion if not already UUID
+                try:
+                    uuidlib.UUID(str(user_id))
+                except ValueError:
+                    converted_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                    user_ids_to_try.append(converted_uuid)
+
+                # Query with ANY of the potential IDs
+                cur.execute("""
+                    SELECT profile_photo_url 
+                    FROM candidate_profiles 
+                    WHERE user_id::text = ANY(%s)
+                """, (user_ids_to_try,))
+                
+                p_row = cur.fetchone()
+                
+                if p_row and p_row.get('profile_photo_url'):
+                    profile_photo_url = p_row.get('profile_photo_url')
+                    logger.info(f"Dashboard Stats: Found photo for user {user_id}: {profile_photo_url}")
+            except Exception as e:
+               logger.error(f"Profile photo lookup failed with IDs {user_ids_to_try}: {e}")
+
         return jsonify({
             'success': True,
             'data': {
@@ -600,10 +620,11 @@ def get_dashboard_stats():
                     'interviews': 0
                 },
                 'profile': {
-                    'name': 'Candidate',
+                    'name': profile_name,
                     'completionPercentage': 85 if cv_uploaded else 30,
                     'cvUploaded': cv_uploaded,
-                    'experienceLevel': candidate_level
+                    'experienceLevel': candidate_level,
+                    'profile_photo_url': profile_photo_url
                 }
             }
         }), 200

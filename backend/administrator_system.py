@@ -104,7 +104,8 @@ class AdministratorSystem:
     # User Management Methods
     
     def get_all_users(self, page: int = 1, per_page: int = 50, 
-                     search: str = None, role_filter: str = None) -> Dict[str, Any]:
+                     search: str = None, role_filter: str = None, status_filter: str = None,
+                     sort_by: str = 'created_at', sort_dir: str = 'desc') -> Dict[str, Any]:
         """Get paginated list of all users with optional filtering"""
         try:
             offset = (page - 1) * per_page
@@ -113,7 +114,8 @@ class AdministratorSystem:
             base_query = """
                 SELECT u.id, u.username, u.email, u.full_name, u.is_active, 
                        u.created_at, u.last_login, u.company, u.job_title, u.location, u.phone,
-                       ARRAY_AGG(DISTINCT r.name) as roles
+                       u.role as primary_role, u.secondary_roles,
+                       ARRAY_AGG(DISTINCT r.name) as assigned_roles
                 FROM users u
                 LEFT JOIN admin_user_roles ur ON u.id = ur.user_id
                 LEFT JOIN admin_roles r ON ur.role_id = r.id
@@ -130,19 +132,85 @@ class AdministratorSystem:
             if role_filter:
                 conditions.append("r.name = %s")
                 params.append(role_filter)
+
+            if status_filter and status_filter != 'all':
+                conditions.append("u.is_active = %s")
+                params.append(status_filter.lower() == 'active')
             
             if conditions:
                 base_query += " WHERE " + " AND ".join(conditions)
             
-            base_query += " GROUP BY u.id, u.username, u.email, u.full_name, u.is_active, u.created_at, u.last_login, u.company, u.job_title, u.location, u.phone"
-            base_query += " ORDER BY u.created_at DESC LIMIT %s OFFSET %s"
+            base_query += " GROUP BY u.id, u.username, u.email, u.full_name, u.is_active, u.created_at, u.last_login, u.company, u.job_title, u.location, u.phone, u.role, u.secondary_roles"
+            
+            # Dynamic deterministic sorting
+            sort_mapping = {
+                'created_at': 'u.created_at',
+                'full_name': 'u.full_name',
+                'last_login': 'u.last_login',
+                'email': 'u.email',
+                'username': 'u.username'
+            }
+            sort_col = sort_mapping.get(sort_by, 'u.created_at')
+            direction = 'ASC' if sort_dir and sort_dir.lower() == 'asc' else 'DESC'
+            
+            base_query += f" ORDER BY {sort_col} {direction}, u.id DESC LIMIT %s OFFSET %s"
             params.extend([per_page, offset])
             
             users = self._execute_query(base_query, tuple(params))
 
-            # Transform users to include profile_data
+            users = self._execute_query(base_query, tuple(params))
+
+            # Fetch system roles for normalization
+            role_query = "SELECT name, display_name FROM admin_roles"
+            system_roles = self._execute_query(role_query)
+            
+            # Build Normalization Maps
+            # 1. Display Name -> Slug (e.g., "HR Manager" -> "hr_manager")
+            # 2. Known Legacy Overrides
+            norm_map = {r['display_name']: r['name'] for r in system_roles}
+            norm_map.update({
+                'HR/Recruiter': 'recruiter',
+                'HR Manager': 'hr_manager',
+                'Job Seeker': 'candidate'
+            })
+            
+            system_slugs = {r['name'] for r in system_roles}
+
+            # Transform users to include profile_data and merge roles
             if users:
                 for user in users:
+                    # Merge all role sources with deduplication
+                    final_roles = set()
+                    
+                    # 1. Assigned roles (Permission system) - These are trusted slugs
+                    if user.get('assigned_roles') and user['assigned_roles'] != [None]:
+                         final_roles.update([r for r in user['assigned_roles'] if r])
+                    
+                    # 2. Keycloak/Auth secondary roles & Primary Role - Normalize these
+                    raw_roles = (user.get('secondary_roles') or []) + ([user.get('primary_role')] if user.get('primary_role') else [])
+                    
+                    for raw_role in raw_roles:
+                        if not raw_role: continue
+                        
+                        # Check normalization map
+                        if raw_role in norm_map:
+                            norm_role = norm_map[raw_role]
+                        # Check if it matches a system slug directly
+                        elif raw_role in system_slugs:
+                            norm_role = raw_role
+                        # Fallback: simple slugification (lower, replace space/slash with underscore) if needed, 
+                        # or just keep raw if no match found
+                        else:
+                            norm_role = raw_role
+                            
+                        final_roles.add(norm_role)
+                    
+                    # Store as list
+                    user['roles'] = list(final_roles)
+                    
+                    # Helper for frontend display if needed
+                    # user['display_role'] = user['primary_role'] or (user['roles'][0] if user['roles'] else 'User')
+
                     user['profile_data'] = {
                         'department': user.get('company'),
                         'position': user.get('job_title'),
@@ -449,6 +517,14 @@ class AdministratorSystem:
                             VALUES (%s, %s, %s)
                         """
                         self._execute_query(assignment_query, (user_id, role_id, admin_user_id), fetch=False)
+            
+            # Sync with secondary_roles column
+            update_secondary_query = """
+                UPDATE users 
+                SET secondary_roles = %s
+                WHERE id = %s
+            """
+            self._execute_query(update_secondary_query, (roles, user_id), fetch=False)
             
             self._log_admin_action(
                 admin_user_id, 'update_user_roles', 'user', str(user_id),

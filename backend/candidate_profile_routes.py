@@ -12,6 +12,7 @@ from datetime import datetime
 import uuid
 import os
 import json
+from werkzeug.utils import secure_filename
 from typing import Dict, List, Any, Optional
 
 # Configure logging
@@ -78,6 +79,50 @@ def create_candidate_profile():
             skills = data.get('skills', [])
             languages = data.get('languages', [])
             certifications = data.get('certifications', [])
+            
+            # Extract location coordinates
+            latitude = data.get('latitude') or personal_info.get('latitude')
+            longitude = data.get('longitude') or personal_info.get('longitude')
+            
+            # Update generic location string if not present but coordinates are
+            if (not personal_info.get('location')) and latitude and longitude:
+                 personal_info['location'] = f"{latitude}, {longitude}"
+
+            # Update user_cvs with location for matching service
+            if latitude is not None and longitude is not None:
+                try:
+                    cursor.execute("SAVEPOINT loc_update")
+                    
+                    # Check if user_cv exists
+                    cursor.execute("SELECT id FROM user_cvs WHERE user_id = %s", (current_user_id,))
+                    cv_exists = cursor.fetchone()
+                    
+                    if cv_exists:
+                        cursor.execute("""
+                            UPDATE user_cvs 
+                            SET latitude = %s, longitude = %s, updated_at = CURRENT_TIMESTAMP
+                            WHERE user_id = %s
+                        """, (latitude, longitude, current_user_id))
+                    else:
+                        # Create empty CV entry with just location/user_id if it doesn't exist
+                        # This ensures the matching service has a record to look up
+                        cursor.execute("""
+                            INSERT INTO user_cvs (
+                                id, user_id, latitude, longitude, 
+                                title, status, is_visible, created_at, updated_at
+                            )
+                            VALUES (
+                                %s, %s, %s, %s, 
+                                'Profile Location Placeholder', 'draft', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                            )
+                        """, (str(uuid.uuid4()), current_user_id, latitude, longitude))
+                    
+                    cursor.execute("RELEASE SAVEPOINT loc_update")
+                    logger.info(f"Updated location for user {current_user_id}: {latitude}, {longitude}")
+                except Exception as loc_error:
+                    cursor.execute("ROLLBACK TO SAVEPOINT loc_update")
+                    logger.error(f"Failed to update location in user_cvs: {loc_error}")
+                    # Don't fail the whole request, but log error
             
             if existing_profile:
                 # Update existing profile
@@ -147,7 +192,23 @@ def create_candidate_profile():
                 
                 profile_id = cursor.fetchone()['id']
                 action = "created"
+
+            # Sync basic info to users table
+            # Extract names from personal_info which ProfileForm sends split or as whole
+            # ProfileForm logic sends first_name/last_name inside personal_info structure
+            u_first_name = personal_info.get('first_name')
+            u_last_name = personal_info.get('last_name')
+            u_phone = personal_info.get('phone')
             
+            if u_first_name or u_last_name:
+                cursor.execute("""
+                    UPDATE users 
+                    SET first_name = COALESCE(%s, first_name),
+                        last_name = COALESCE(%s, last_name),
+                        phone = COALESCE(%s, phone),
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                """, (u_first_name, u_last_name, u_phone, current_user_id))            
             conn.commit()
             
             return jsonify({
@@ -165,9 +226,10 @@ def create_candidate_profile():
             
     except Exception as e:
         logger.error(f"Error creating/updating candidate profile: {str(e)}")
+        # Include the error message in the response for debugging purposes
         return jsonify({
             'success': False,
-            'message': 'Failed to create/update candidate profile'
+            'message': f'Failed to create/update candidate profile: {str(e)}'
         }), 500
 
 @candidate_profile_bp.route('/candidate', methods=['GET'])
@@ -222,6 +284,14 @@ def get_candidate_profile():
                 profile_data['created_at'] = profile_data['created_at'].isoformat()
             if profile_data.get('updated_at'):
                 profile_data['updated_at'] = profile_data['updated_at'].isoformat()
+
+            # Ensure profile photo URL is absolute
+            if profile_data.get('profile_photo_url'):
+                photo_url = profile_data['profile_photo_url']
+                if photo_url.startswith('/'):
+                    # Prepend host URL to make it absolute (bypassing frontend proxy requirement)
+                    base_url = request.url_root.rstrip('/')
+                    profile_data['profile_photo_url'] = f"{base_url}{photo_url}"
             
             return jsonify({
                 'success': True,
@@ -576,4 +646,89 @@ def update_job_preferences():
         return jsonify({
             'success': False,
             'message': 'Failed to update job preferences'
+        }), 500
+
+@candidate_profile_bp.route('/candidate/photo', methods=['POST'])
+@jwt_required()
+def upload_photo():
+    """Upload candidate profile photo"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        if 'photo' not in request.files:
+            return jsonify({
+                'success': False,
+                'message': 'No photo file provided'
+            }), 400
+            
+        file = request.files['photo']
+        if file.filename == '':
+            return jsonify({
+                'success': False,
+                'message': 'No file selected'
+            }), 400
+            
+        # Secure filename and save
+        filename = secure_filename(file.filename)
+        # Create unique filename
+        filename = f"profile_{current_user_id}_{uuid.uuid4().hex[:8]}_{filename}"
+        
+        # Ensure upload directory exists
+        upload_dir = os.path.join(os.getcwd(), 'uploads', 'profile_photos')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_path = os.path.join(upload_dir, filename)
+        file.save(file_path)
+        
+        # Generate URL (Assuming static file serving is set up for /uploads)
+        # For now, we'll store the relative path or full URL depending on setup
+        # Let's assume a simplified static serve for now: /static/uploads/profile_photos/filename
+        # Or better yet, we return the relative path that the frontend can prefix
+        photo_url = f"/uploads/profile_photos/{filename}"
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        try:
+            cursor.execute("""
+                UPDATE candidate_profiles 
+                SET profile_photo_url = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s
+                RETURNING profile_photo_url
+            """, (photo_url, current_user_id))
+            
+            result = cursor.fetchone()
+            if not result:
+                # If no profile exists, create one? Or fail? 
+                # Better to fail and say "Create profile first"
+                return jsonify({
+                    'success': False,
+                    'message': 'Candidate profile not found'
+                }), 404
+            
+            conn.commit()
+            
+            conn.commit()
+            
+            # Construct absolute URL for response
+            base_url = request.url_root.rstrip('/')
+            full_photo_url = f"{base_url}{photo_url}"
+
+            return jsonify({
+                'success': True,
+                'message': 'Photo uploaded successfully',
+                'data': {
+                    'photo_url': full_photo_url
+                }
+            })
+            
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        logger.error(f"Error uploading photo: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to upload photo'
         }), 500

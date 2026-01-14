@@ -29,7 +29,16 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   currentUserId,
 }) => {
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
-  if (!selectedConversationData) return null;
+  if (!selectedConversationData) {
+    return (
+      <div key="empty-state" className="flex flex-col h-full overflow-hidden items-center justify-center text-muted-foreground">
+        <div className="text-center">
+          <h3 className="text-lg font-medium">No conversation selected</h3>
+          <p>Select a conversation to start messaging</p>
+        </div>
+      </div>
+    );
+  }
 
   // Auto-scroll to bottom
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -41,7 +50,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   }, [messages]);
 
   return (
-    <>
+    <div key="content-state" className="flex flex-col h-full overflow-hidden">
       <CardHeader className="px-6 py-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -65,6 +74,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         <div ref={scrollRef} className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-6">
             {messages.map((message, index) => {
+              const uniqueKey = `${message.id}-${index}`;
               const isCurrentUser = message.senderId === currentUserId;
               const isFirstInGroup = index === 0 || messages[index - 1].senderId !== message.senderId;
               const showTimestamp = index === 0 ||
@@ -72,7 +82,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                 new Date(messages[index - 1].timestamp).toDateString();
 
               return (
-                <div key={message.id}>
+                <div key={uniqueKey}>
                   {showTimestamp && (
                     <div className="flex justify-center my-4">
                       <Badge variant="outline" className="bg-background">
@@ -130,7 +140,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
           </div>
         </div>
       </CardContent>
-    </>
+    </div>
   );
 };
 

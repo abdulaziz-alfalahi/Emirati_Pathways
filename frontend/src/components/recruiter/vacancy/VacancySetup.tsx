@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,12 @@ import {
     FileUp,
     Users,
     Info,
-    Download
+    Download,
+    MapPin
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { jobApi } from '@/utils/api';
+import LocationPicker from '@/components/common/LocationPicker';
 
 interface VacancySetupProps {
     jdId: string;
@@ -28,8 +31,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
     const [isUploading, setIsUploading] = useState(false);
     const [activeUploadType, setActiveUploadType] = useState<'jd' | 'batch' | null>(null);
 
-    // Mock Data (Replace with real data fetch via jdId)
-    // Use real data from initialData, falling back to safe defaults
     const [vacancyData, setVacancyData] = useState({
         title: initialData?.title || initialData?.job_title || "Untitled Vacancy",
         completeness: initialData?.completeness || 0,
@@ -39,6 +40,33 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
         lastUpdated: initialData?.created_at ? new Date(initialData.created_at).toLocaleDateString() : "Just now"
     });
 
+    const [locationData, setLocationData] = useState<{ lat?: number, lng?: number }>({
+        lat: initialData?.latitude,
+        lng: initialData?.longitude
+    });
+
+    const handleLocationUpdate = async (lat: number, lng: number) => {
+        setLocationData({ lat, lng });
+
+        try {
+            await jobApi.update(jdId, {
+                latitude: lat,
+                longitude: lng
+            } as any);
+
+            toast({
+                title: "Location Updated",
+                description: "Job location pinned on map."
+            });
+        } catch (e) {
+            toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "Could not save location."
+            });
+        }
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'jd' | 'batch') => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -46,7 +74,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
         setIsUploading(true);
         setActiveUploadType(type);
 
-        // Simulate upload delay (Replace with actual API call later)
         setTimeout(() => {
             setIsUploading(false);
             setActiveUploadType(null);
@@ -71,10 +98,26 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* LEFT COLUMN: Actions */}
             <div className="lg:col-span-2 space-y-6">
 
-                {/* 1. Job Description File */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5 text-red-500" />
+                            Job Location
+                        </CardTitle>
+                        <CardDescription>Pin the exact work location to calculate commute times for candidates.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <LocationPicker
+                            lat={locationData.lat}
+                            lng={locationData.lng}
+                            onLocationSelect={handleLocationUpdate}
+                            height="300px"
+                        />
+                    </CardContent>
+                </Card>
+
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-center">
@@ -112,7 +155,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                             </div>
                         </div>
 
-                        {/* Parsed Content Preview (Collapsed by default?) */}
                         <div className="mt-4">
                             <h4 className="text-sm font-medium mb-2">Parsed Skills Detected:</h4>
                             <div className="flex flex-wrap gap-2">
@@ -127,7 +169,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                     </CardContent>
                 </Card>
 
-                {/* 2. Batch Candidate Upload */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -146,7 +187,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                                 e.preventDefault();
                                 e.stopPropagation();
                                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                                    // Create a synthetic event to reuse handleFileUpload logic
                                     const syntheticEvent = { target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
                                     handleFileUpload(syntheticEvent, 'batch');
                                 }
@@ -172,19 +212,10 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                                 </div>
                             </div>
                         </div>
-
-                        <Alert className="mt-4 bg-blue-50 border-blue-100">
-                            <Info className="h-4 w-4 text-blue-600" />
-                            <AlertTitle className="text-blue-800">Pro Tip</AlertTitle>
-                            <AlertDescription className="text-blue-700">
-                                The AI will automatically rank these candidates against the JD criteria in the "Sourcing" tab.
-                            </AlertDescription>
-                        </Alert>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* RIGHT COLUMN: AI Analysis */}
             <div className="space-y-6">
                 <Card className="bg-slate-50 border-slate-200">
                     <CardHeader>
@@ -194,7 +225,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                     </CardHeader>
                     <CardContent className="space-y-6">
 
-                        {/* Completeness Score */}
                         <div className="text-center p-4 bg-white rounded-xl shadow-sm border">
                             <div className="relative inline-flex items-center justify-center">
                                 <svg className="w-24 h-24">
@@ -210,7 +240,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                             <p className="mt-2 text-sm font-medium text-gray-600">Completeness Score</p>
                         </div>
 
-                        {/* Missing Fields */}
                         <div>
                             <h4 className="flex items-center gap-2 font-medium mb-3 text-amber-700">
                                 <AlertTriangle className="h-4 w-4" />
@@ -229,7 +258,6 @@ export const VacancySetup: React.FC<VacancySetupProps> = ({ jdId, initialData })
                             </Button>
                         </div>
 
-                        {/* Market Insights (Enhancement) */}
                         <div className="border-t pt-4">
                             <h4 className="font-medium mb-3 text-gray-700">Market Pulse</h4>
                             <div className="space-y-3">

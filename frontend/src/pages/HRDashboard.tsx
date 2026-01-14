@@ -100,7 +100,25 @@ const HRDashboard: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
   const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // Mock/Auth derived
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await restClient.get('/api/recruiter/offers/approval-stats');
+        if (response.data?.success) {
+          setPendingApprovalsCount(response.data.data.pending || 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch notification stats", error);
+      }
+    };
+    fetchNotifications();
+    // Poll every minute
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
@@ -122,7 +140,7 @@ const HRDashboard: React.FC = () => {
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
         const response = await restClient.get(`/api/hr/jobs?limit=5`);
         if (response.data.success) {
-          setActiveJobs(response.data.data.job_postings);
+          setActiveJobs(response.data.jobs || []);
         }
       } catch (error) {
         console.error("Failed to fetch jobs", error);
@@ -350,6 +368,14 @@ const HRDashboard: React.FC = () => {
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </Button>
+                <Button variant="ghost" size="icon" className="relative" onClick={() => setActiveTab('approvals')}>
+                  <Bell className="h-5 w-5 text-slate-600" />
+                  {pendingApprovalsCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white rounded-full">
+                      {pendingApprovalsCount}
+                    </Badge>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
@@ -359,7 +385,7 @@ const HRDashboard: React.FC = () => {
             <div className="flex flex-wrap gap-4">
               <Button
                 className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
-                onClick={() => navigate('/recruiter/jobs/new')}
+                onClick={() => navigate('/recruiter/jd-builder')}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Post New Job
@@ -393,7 +419,6 @@ const HRDashboard: React.FC = () => {
               <TabsTrigger value="interviews" className="font-dubai-medium">Interviews</TabsTrigger>
               <TabsTrigger value="positions" className="font-dubai-medium">Positions</TabsTrigger>
               <TabsTrigger value="analytics" className="font-dubai-medium">Analytics</TabsTrigger>
-              <TabsTrigger value="reports" className="font-dubai-medium">Reports</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -534,9 +559,9 @@ const HRDashboard: React.FC = () => {
 
             {/* Approvals Tab */}
             <TabsContent value="approvals" className="space-y-6">
-              <ApprovalWorkflow 
-                companyId={COMPANY_ID} 
-                hrManagerId="hr-manager-id" 
+              <ApprovalWorkflow
+                companyId={COMPANY_ID}
+                hrManagerId="hr-manager-id"
               />
             </TabsContent>
 
@@ -802,13 +827,15 @@ const HRDashboard: React.FC = () => {
                       <h2 className="text-xl font-dubai-bold mb-1">Position Management</h2>
                       <p className="text-slate-500 font-dubai-medium">Manage job positions and requirements</p>
                     </div>
-                    <Button
-                      className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium shadow-sm transition-all hover:shadow-md"
-                      onClick={() => navigate('/recruiter/jd-builder')}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Position
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        className="bg-ehrdc-teal hover:bg-ehrdc-dark-teal text-white flex items-center gap-2"
+                        onClick={() => navigate('/recruiter/jd-builder')}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Create New Position
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3 mb-8">
@@ -917,7 +944,24 @@ const HRDashboard: React.FC = () => {
                       </div>
                       {activeJobs.length >= 5 && (
                         <div className="mt-4 text-center">
-                          <Button variant="link" onClick={() => navigate('/recruiter/jobs')}>View All Positions</Button>
+                          <Button
+                            variant="link"
+                            onClick={async () => {
+                              try {
+                                const token = localStorage.getItem('access_token');
+                                const headers = { Authorization: `Bearer ${token}` };
+                                const response = await restClient.get(`/api/hr/jobs?limit=50`, { headers });
+                                if (response.data.success) {
+                                  setActiveJobs(response.data.jobs || []);
+                                  // Hide button by strictly checking if we have more active jobs (optional logic, but for now simple)
+                                }
+                              } catch (e) {
+                                console.error(e);
+                              }
+                            }}
+                          >
+                            View All Positions ({dashboardData.positions.open} active)
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -956,38 +1000,10 @@ const HRDashboard: React.FC = () => {
               <TeamManagementTab />
             </TabsContent>
 
-            {/* Reports Tab */}
-            <TabsContent value="reports" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Reports & Exports</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Generate and download recruitment reports
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <FileText className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Report Generation</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Generate detailed recruitment reports</p>
-                    <div className="flex justify-center space-x-4">
-                      <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                        <Download className="h-4 w-4 mr-2" />
-                        Generate Report
-                      </Button>
-                      <Button variant="outline" className="font-dubai-medium">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Templates
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

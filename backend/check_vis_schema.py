@@ -1,41 +1,31 @@
 
-import os
 import psycopg2
-from dotenv import load_dotenv
+import os
 
-load_dotenv(os.path.join("backend", ".env"))
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'emirati_journey'),
+    'user': os.getenv('DB_USER', 'emirati_user'),
+    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+    'port': int(os.getenv('DB_PORT', 5432))
+}
 
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "emirati_journey")
-DB_USER = os.getenv("DB_USER", "emirati_user")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "emirati_secure_password")
-DB_PORT = os.getenv("DB_PORT", "5432")
-
-def check_vis_schema():
+def check_schema():
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
     try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port=DB_PORT
-        )
-        cur = conn.cursor()
-        
-        print("Checking video_interview_sessions columns...")
         cur.execute("""
             SELECT column_name, data_type 
             FROM information_schema.columns 
-            WHERE table_name = 'video_interview_sessions'
+            WHERE table_name = 'video_interview_sessions';
         """)
-        rows = cur.fetchall()
-        for row in rows:
-            print(f"{row[0]}: {row[1]}")
+        print("\n--- video_interview_sessions columns ---")
+        for row in cur.fetchall():
+            print(row)
             
-        conn.close()
-        
     except Exception as e:
-        print(f"Error: {e}")
+        print(e)
+    conn.close()
 
 if __name__ == "__main__":
-    check_vis_schema()
+    check_schema()

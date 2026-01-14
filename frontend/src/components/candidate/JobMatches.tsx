@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,6 @@ import {
   Briefcase,
   MapPin,
   Clock,
-  DollarSign,
   Star,
   Heart,
   ExternalLink,
@@ -26,7 +26,8 @@ import {
   Target,
   Award,
   XCircle,
-  WifiOff
+  WifiOff,
+  Coins
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -63,7 +64,11 @@ interface Job {
   candidateLevel?: string;
   jobLevel?: string;
   fitAssessment?: string;
-  hasApplied?: boolean;  // Track if user has already applied
+  hasApplied?: boolean;
+  commute?: {
+    distance_km?: number;
+    time_mins?: number;
+  };
 }
 
 interface JobMatchesProps {
@@ -84,20 +89,22 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'high-match' | 'recent'>('all');
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'relevance' | 'distance' | 'date'>('relevance');
   const [bookmarkedJobs, setBookmarkedJobs] = useState<Set<string>>(new Set());
   const [cvLoaded, setCvLoaded] = useState(false);
   const [aiMatching, setAiMatching] = useState(false);
   const [candidateLevel, setCandidateLevel] = useState<string>('');
   const [matchMessage, setMatchMessage] = useState('');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
-  
+  const [userLocation, setUserLocation] = useState<{ lat?: number, long?: number }>({});
+
   // Error states
   const [error, setError] = useState<string | null>(null);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [retryAfter, setRetryAfter] = useState<number>(30);
   const [cvRequired, setCvRequired] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
-  
+
   const navigate = useNavigate();
 
   // Countdown timer for retry
@@ -114,24 +121,35 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     }
   }, [retryCountdown]);
 
+  // Request user location on mount
+  // useEffect removed as per user request (will use profile location from DB)
+
   const loadJobMatches = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) {
       setRefreshing(true);
     } else {
       setLoading(true);
     }
-    
+
     // Reset error states
     setError(null);
     setServiceUnavailable(false);
     setCvRequired(false);
-    
+
     try {
+      const params: any = {
+        use_ai: 'true',
+        filter_by_level: experienceFilter === 'all' ? 'false' : 'true',
+        sort_by: sortBy
+      };
+
+      if (userLocation.lat && userLocation.long) {
+        params.lat = userLocation.lat;
+        params.long = userLocation.long;
+      }
+
       const response = await restClient.get('/api/candidate/job-matches', {
-        params: {
-          use_ai: 'true',
-          filter_by_level: experienceFilter === 'all' ? 'false' : 'true'
-        }
+        params
       });
 
       if (response.data.success) {
@@ -140,6 +158,15 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
         setAiMatching(response.data.ai_matching || false);
         setCandidateLevel(response.data.candidate_level || '');
         setMatchMessage(response.data.message || '');
+
+        // Update user location from response if available and not set locally
+        if (response.data.user_location && !userLocation.lat) {
+          setUserLocation({
+            lat: response.data.user_location.lat,
+            long: response.data.user_location.long
+          });
+        }
+
       } else {
         // Handle specific error types
         if (response.data.service_unavailable) {
@@ -155,7 +182,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       }
     } catch (err: any) {
       console.error('Error loading job matches:', err);
-      
+
       // Check if it's a 503 Service Unavailable error
       if (err.response?.status === 503) {
         setServiceUnavailable(true);
@@ -171,7 +198,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [experienceFilter]);
+  }, [experienceFilter, sortBy, userLocation]);
 
   useEffect(() => {
     loadJobMatches();
@@ -179,6 +206,10 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
 
   const handleRefresh = () => {
     loadJobMatches(true);
+  };
+
+  const handleSortChange = (type: 'relevance' | 'distance' | 'date') => {
+    setSortBy(type);
   };
 
   const handleRetryWithCountdown = () => {
@@ -206,8 +237,8 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
 
       if (response.data.success) {
         // Update local state to show "Already Applied" immediately
-        setJobs(prevJobs => 
-          prevJobs.map(job => 
+        setJobs(prevJobs =>
+          prevJobs.map(job =>
             job.id === jobId ? { ...job, hasApplied: true } : job
           )
         );
@@ -220,8 +251,8 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       // Check if it's a "already applied" error
       if (error.response?.data?.message?.includes('already applied')) {
         // Update local state to reflect the already applied status
-        setJobs(prevJobs => 
-          prevJobs.map(job => 
+        setJobs(prevJobs =>
+          prevJobs.map(job =>
             job.id === jobId ? { ...job, hasApplied: true } : job
           )
         );
@@ -274,7 +305,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       'senior': { color: 'bg-orange-100 text-orange-800', label: 'Senior' },
       'executive': { color: 'bg-red-100 text-red-800', label: 'Executive' }
     };
-    
+
     const config = levelConfig[level || ''] || { color: 'bg-gray-100 text-gray-800', label: level || 'Unknown' };
     return <Badge className={config.color}>{config.label}</Badge>;
   };
@@ -293,15 +324,15 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
         passesScoreFilter = jobDate >= threeDaysAgo;
         break;
     }
-    
+
     // Apply experience level filter
     let passesLevelFilter = true;
     if (experienceFilter !== 'all') {
       passesLevelFilter = job.jobLevel === experienceFilter;
     }
-    
+
     return passesScoreFilter && passesLevelFilter;
-  }).sort((a, b) => b.matchScore - a.matchScore);
+  });
 
   // Loading state
   if (loading) {
@@ -341,7 +372,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <AlertDescription className="text-red-700">
               <p className="mt-2">{error}</p>
               <p className="mt-2 text-sm">
-                The AI-powered job matching service is temporarily unavailable. 
+                The AI-powered job matching service is temporarily unavailable.
                 This could be due to high demand or maintenance.
               </p>
               <div className="mt-4 flex items-center gap-4">
@@ -352,7 +383,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                   </div>
                 ) : (
                   <>
-                    <Button 
+                    <Button
                       onClick={handleRefresh}
                       disabled={refreshing}
                       className="bg-red-600 hover:bg-red-700"
@@ -360,7 +391,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                       Try Again Now
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={handleRetryWithCountdown}
                       className="border-red-300 text-red-700 hover:bg-red-100"
@@ -395,11 +426,11 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <AlertDescription className="text-amber-700">
               <p className="mt-2">{error}</p>
               <p className="mt-2 text-sm">
-                To get accurate, AI-powered job matches based on your skills and experience, 
+                To get accurate, AI-powered job matches based on your skills and experience,
                 please upload your CV first.
               </p>
               <div className="mt-4">
-                <Button 
+                <Button
                   onClick={() => navigate('/cv-builder')}
                   className="bg-amber-600 hover:bg-amber-700"
                 >
@@ -431,7 +462,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <AlertDescription className="text-red-700">
               <p className="mt-2">{error}</p>
               <div className="mt-4">
-                <Button 
+                <Button
                   onClick={handleRefresh}
                   disabled={refreshing}
                   variant="outline"
@@ -450,7 +481,6 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
 
   return (
     <div className="space-y-6">
-      {/* CV Status Alert */}
       {!cvLoaded && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertCircle className="h-4 w-4 text-amber-600" />
@@ -458,8 +488,8 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             <span>
               <strong>Upload your CV for personalized matches!</strong> Job scores are currently generic.
             </span>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               className="ml-4 border-amber-300 hover:bg-amber-100"
               onClick={() => navigate('/cv-builder')}
@@ -470,7 +500,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
           </AlertDescription>
         </Alert>
       )}
-      
+
       {cvLoaded && (
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -490,6 +520,12 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                   AI-Powered (Gemini)
                 </Badge>
               )}
+              {userLocation.lat && (
+                <Badge variant="outline" className="ml-2 flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Location Set
+                </Badge>
+              )}
             </div>
           </AlertDescription>
         </Alert>
@@ -506,7 +542,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                   {aiMatching && <Sparkles className="h-4 w-4 text-purple-500" />}
                 </CardTitle>
                 <CardDescription>
-                  {cvLoaded 
+                  {cvLoaded
                     ? `Showing ${filteredJobs.length} jobs matched to your profile`
                     : 'Upload CV for personalized AI-powered matching'
                   }
@@ -523,10 +559,9 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                 <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
               </Button>
             </div>
-            
+
             {/* Filters */}
             <div className="flex flex-wrap gap-4">
-              {/* Experience Level Filter */}
               <div className="flex items-center space-x-2">
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Level:</span>
@@ -544,30 +579,29 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                   ))}
                 </div>
               </div>
-              
-              {/* Match Score Filter */}
+
               <div className="flex items-center space-x-2">
-                <Target className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filter:</span>
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Sort:</span>
                 <div className="flex space-x-1">
                   <Button
-                    variant={filter === 'all' ? 'default' : 'outline'}
+                    variant={sortBy === 'relevance' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setFilter('all')}
+                    onClick={() => handleSortChange('relevance')}
                   >
-                    All
+                    Relevance
                   </Button>
                   <Button
-                    variant={filter === 'high-match' ? 'default' : 'outline'}
+                    variant={sortBy === 'distance' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setFilter('high-match')}
+                    onClick={() => handleSortChange('distance')}
                   >
-                    High Match (70%+)
+                    Distance
                   </Button>
                   <Button
-                    variant={filter === 'recent' ? 'default' : 'outline'}
+                    variant={sortBy === 'date' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setFilter('recent')}
+                    onClick={() => handleSortChange('date')}
                   >
                     Recent
                   </Button>
@@ -606,9 +640,15 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           <div className="flex items-center space-x-1">
                             <MapPin className="h-4 w-4" />
                             <span>{job.location}</span>
+                            {job.commute?.distance_km && (
+                              <Badge variant="secondary" className="ml-2 text-xs flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {job.commute.distance_km} km (~{job.commute.time_mins} mins)
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center space-x-1">
-                            <DollarSign className="h-4 w-4" />
+                            <Coins className="h-4 w-4" />
                             <span>{job.salary}</span>
                           </div>
                           <div className="flex items-center space-x-1">
@@ -643,7 +683,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                         >
                           {expandedJob === job.id ? '▼ Hide' : '▶ Show'} Match Analysis
                         </Button>
-                        
+
                         {expandedJob === job.id && (
                           <div className="mt-3 p-4 bg-gray-50 rounded-lg space-y-3">
                             <h4 className="font-medium flex items-center gap-2">
@@ -656,7 +696,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                                 </Badge>
                               )}
                             </h4>
-                            
+
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                               <div className="text-center p-2 bg-white rounded">
                                 <div className="text-lg font-bold text-blue-600">{job.matchBreakdown.skills_match || 0}/40</div>
@@ -679,7 +719,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                                 <div className="text-xs text-muted-foreground">D33</div>
                               </div>
                             </div>
-                            
+
                             {job.matchBreakdown.details && (
                               <div className="space-y-2 mt-3">
                                 {job.matchBreakdown.details.matching_skills && job.matchBreakdown.details.matching_skills.length > 0 && (
@@ -710,15 +750,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       </div>
                     )}
 
-                    {/* Requirements */}
                     {job.requirements && job.requirements.length > 0 && (
                       <div className="mb-4">
                         <h4 className="text-sm font-medium mb-2">Requirements:</h4>
                         <div className="flex flex-wrap gap-2">
                           {job.requirements.slice(0, 5).map((req, index) => {
-                            // Handle both string and object formats
-                            const reqText = typeof req === 'string' 
-                              ? req 
+                            const reqText = typeof req === 'string'
+                              ? req
                               : (req as any)?.description || (req as any)?.category || 'Requirement';
                             return (
                               <Badge key={index} variant="outline" className="text-xs">
@@ -735,7 +773,6 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       </div>
                     )}
 
-                    {/* Actions */}
                     <div className="flex justify-end space-x-2 pt-4 border-t">
                       <Button variant="outline" size="sm">
                         <ExternalLink className="h-4 w-4 mr-2" />

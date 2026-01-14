@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\recruiter\interview_routes.py", line 108, in create_interview
+    success, result, message = interview_engine.create_interview(conn, data)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\recruiter\interview_engine.py", line 341, in create_interview
+    candidate_id,
+    ^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'candidate_id' where it is not associated with a value

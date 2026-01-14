@@ -19,6 +19,7 @@ export interface SavedCV {
 }
 
 export interface CVData {
+  id?: string;
   personalInfo: {
     firstName: string;
     lastName: string;
@@ -44,6 +45,16 @@ export interface CVData {
     graduationYear: string;
     field: string;
   }>;
+  languages?: Array<{
+    language: string;
+    proficiency: string;
+  }> | string[];
+  certifications?: Array<{
+    name: string;
+    issuer: string;
+    year: string;
+  }> | string[];
+  skills?: any[];
 }
 
 export interface SaveCVRequest {

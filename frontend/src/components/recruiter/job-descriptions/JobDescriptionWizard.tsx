@@ -37,6 +37,7 @@ import {
   Filter,
   TrendingUp
 } from 'lucide-react';
+import LocationPicker from '@/components/common/LocationPicker';
 import {
   Dialog,
   DialogContent,
@@ -175,6 +176,8 @@ interface JDData {
     job_level: string;
     emirate: string;
     city: string;
+    latitude?: number | null;
+    longitude?: number | null;
     remote_option: boolean;
   };
   description: string;
@@ -276,7 +279,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           job_type: 'full_time',
           job_level: 'mid',
           emirate: '',
+
           city: '',
+          latitude: null,
+          longitude: null,
           remote_option: false
         },
         description: initialData.description || '',
@@ -296,7 +302,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         job_type: 'full_time',
         job_level: 'mid',
         emirate: '',
+
         city: '',
+        latitude: null,
+        longitude: null,
         remote_option: false
       },
       description: '',
@@ -372,7 +381,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                   job_type: 'full_time',
                   job_level: 'mid',
                   emirate: '',
+
                   city: '',
+                  latitude: null,
+                  longitude: null,
                   remote_option: false
                 },
                 description: fetchedData.description || '',
@@ -792,7 +804,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1000]">
               {JOB_TYPES.map(type => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -814,7 +826,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1000]">
               {JOB_LEVELS.map(level => (
                 <SelectItem key={level.value} value={level.value}>
                   {level.label}
@@ -838,7 +850,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             <SelectTrigger>
               <SelectValue placeholder="Select emirate" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[1000]">
               {UAE_EMIRATES.map(emirate => (
                 <SelectItem key={emirate} value={emirate}>
                   {emirate}
@@ -862,6 +874,24 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         </div>
       </div>
 
+
+      <div className="space-y-2">
+        <LocationPicker
+          lat={jdData.basic_info.latitude || undefined}
+          lng={jdData.basic_info.longitude || undefined}
+          onLocationSelect={(lat, lng) => setJDData({
+            ...jdData,
+            basic_info: {
+              ...jdData.basic_info,
+              latitude: lat,
+              longitude: lng
+            }
+          })}
+          label="Pin exact location on map"
+          height="250px"
+        />
+      </div>
+
       <div className="flex items-center space-x-2">
         <Checkbox
           id="remote_option"
@@ -873,7 +903,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         />
         <Label htmlFor="remote_option">Remote work option available</Label>
       </div>
-    </div>
+    </div >
   );
 
   const renderDescription = () => (
@@ -963,7 +993,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[1000]">
                   {REQUIREMENT_CATEGORIES.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
@@ -1134,7 +1164,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[1000]">
                   {BENEFIT_CATEGORIES.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
@@ -1274,7 +1304,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[1000]">
                 <SelectItem value="all">All Candidates</SelectItem>
                 <SelectItem value="job_seeker">Job Seekers Only</SelectItem>
                 <SelectItem value="employed">Currently Employed</SelectItem>
@@ -1454,6 +1484,13 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                       {match.match_score.toFixed(0)}% Match
                     </Badge>
                   </div>
+
+                  {match.candidate.distance_km != null && (
+                    <div className="flex items-center mt-2 text-sm text-blue-600 font-medium bg-blue-50 w-fit px-2 py-1 rounded">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      Candidate's residence is {match.candidate.distance_km} km away
+                    </div>
+                  )}
 
                   <div className="mt-4 space-y-2">
                     {match.strengths.length > 0 && (

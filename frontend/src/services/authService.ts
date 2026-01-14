@@ -97,7 +97,7 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
 };
 
 class AuthService {
-  private readonly API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ? `${(import.meta as any).env.VITE_API_BASE_URL}/api` : 'http://127.0.0.1:5005/api';
+  private readonly API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ? `${(import.meta as any).env.VITE_API_BASE_URL}/api` : '/api';
 
   async login(credentials: LoginData): Promise<AuthResponse> {
     try {
@@ -202,6 +202,43 @@ class AuthService {
     } catch (error) {
       console.error('AuthService: Refresh token error:', error);
       throw error;
+    }
+  }
+
+  async requestOtp(phone: string): Promise<{ success: boolean; message: string; debug_otp?: string }> {
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/auth/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('AuthService: Request OTP error:', error);
+      return { success: false, message: 'Failed to request OTP' };
+    }
+  }
+
+  async loginWithOtp(phone: string, code: string): Promise<AuthResponse> {
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/auth/login-with-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code }),
+      });
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        localStorage.setItem('access_token', data.data.access_token);
+        localStorage.setItem('refresh_token', data.data.refresh_token);
+        const userObj = data.data.user || data.data;
+        localStorage.setItem('user', JSON.stringify(userObj));
+      }
+
+      return data;
+    } catch (error) {
+      console.error('AuthService: Login with OTP error:', error);
+      return { success: false, message: 'Failed to login with OTP' } as AuthResponse;
     }
   }
 
@@ -340,6 +377,11 @@ class AuthService {
         // Check for roles array first
         if (userData.roles && userData.roles.length > 0) {
           return userData.roles[0]; // Return primary role
+        }
+
+        // Check for specific role field first
+        if (userData.role) {
+          return userData.role;
         }
 
         // Fallback to user_type field

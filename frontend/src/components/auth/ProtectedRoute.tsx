@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { MockAuthService } from '@/services/mockAuthService';
+import { useAuth } from '@/context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,34 +15,44 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo = '/auth'
 }) => {
   const location = useLocation();
+  const { isAuthenticated, user, isLoading } = useAuth(); // Use real AuthContext
 
-  // Check if user is authenticated (mock)
-  if (!MockAuthService.isAuthenticated()) {
-    console.log('🎭 Mock Auth: Not authenticated, redirecting to auth');
-    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      </div>
+    );
   }
 
-  // Get current mock user
-  const currentUser = MockAuthService.getCurrentUser();
-  if (!currentUser) {
-    console.log('🎭 Mock Auth: No user data found, redirecting to auth');
+  // Check if user is authenticated
+  if (!isAuthenticated || !user) {
+    console.log('🛡️ Protected Route: Not authenticated, redirecting to auth');
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
   // Check role-based access if roles are specified
   if (allowedRoles.length > 0) {
-    const userRole = currentUser.user_type;
-    
-    if (!allowedRoles.includes(userRole)) {
-      console.log(`🎭 Mock Auth: Access denied. User role: ${userRole}, Required: ${allowedRoles.join(', ')}`);
-      
-      // Redirect to appropriate dashboard based on user's role
-      const dashboardRoute = MockAuthService.getDashboardRoute(userRole);
-      return <Navigate to={dashboardRoute} replace />;
+    // Get user role from context (which handles fallbacks correctly)
+    const { getUserRole } = useAuth();
+    const userRole = getUserRole();
+
+    // Check if user has any of the allowed roles
+    // We check both the primary role and if the user data has a roles array
+    const hasPermission =
+      (userRole && allowedRoles.includes(userRole)) ||
+      (user.roles && user.roles.some(r => allowedRoles.includes(r)));
+
+    if (!hasPermission) {
+      console.log(`🛡️ Protected Route: Access denied. User role: ${userRole}, Required: ${allowedRoles.join(', ')}`);
+
+      // In a real app we might redirect to unauthorized, or dashboard
+      // For now, redirect to their dashboard if possible
+      return <Navigate to="/" replace />; // Fallback to home or specific error page
     }
   }
 
-  console.log(`🎭 Mock Auth: Access granted to ${currentUser.full_name} (${currentUser.user_type})`);
+  console.log(`🛡️ Protected Route: Access granted to ${user.email} (${user.user_type || user.role})`);
   return <>{children}</>;
 };
 

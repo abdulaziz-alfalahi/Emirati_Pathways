@@ -4,9 +4,27 @@
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:5001';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'dummy-key';
 
-console.log('Using mock Supabase client - URL:', supabaseUrl );
+console.log('Using mock Supabase client - URL:', supabaseUrl);
 
 // Create a mock Supabase client that doesn't actually connect
+// Create a chainable builder mock
+const createBuilder = (table) => {
+  const builder = {
+    select: () => builder,
+    insert: () => Promise.resolve({ data: [], error: null }),
+    update: () => Promise.resolve({ data: [], error: null }),
+    delete: () => Promise.resolve({ data: [], error: null }),
+    eq: () => builder,
+    single: () => Promise.resolve({ data: {}, error: null }),
+    order: () => Promise.resolve({ data: [], error: null }),
+    or: () => builder,
+    in: () => Promise.resolve({ data: [], error: null }), // Fixes .in() usage which returns promise
+    // Make builder promise-like for final await
+    then: (resolve) => Promise.resolve({ data: [], error: null }).then(resolve)
+  };
+  return builder;
+};
+
 export const supabase = {
   auth: {
     mfa: {
@@ -17,12 +35,12 @@ export const supabase = {
       verify: () => Promise.resolve({ data: null, error: null })
     }
   },
-  from: (table) => ({
-    select: () => Promise.resolve({ data: [], error: null }),
-    insert: () => Promise.resolve({ data: [], error: null }),
-    update: () => Promise.resolve({ data: [], error: null }),
-    delete: () => Promise.resolve({ data: [], error: null })
+  from: (table) => createBuilder(table),
+  channel: (name) => ({
+    on: () => ({ subscribe: () => { } }),
+    subscribe: () => { }
   }),
+  removeChannel: () => { },
   storage: {
     from: () => ({
       upload: () => Promise.resolve({ error: null }),

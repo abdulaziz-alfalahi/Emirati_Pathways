@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mail, Phone, Loader2, AlertCircle, MapPin, Briefcase, GraduationCap, DollarSign, Calendar, Activity } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Loader2, AlertCircle, MapPin, Briefcase, GraduationCap, DollarSign, Calendar, Activity, MessageSquare, Camera } from 'lucide-react';
+import { messagingService } from '@/services/messagingService';
+import { toast } from 'sonner';
 
 interface CandidateData {
   id: number;
@@ -25,6 +27,7 @@ interface CandidateData {
   total_applications: number;
   last_application_date: string;
   activity_status: string;
+  profile_photo_url?: string;
 }
 
 interface Application {
@@ -45,12 +48,77 @@ const CandidateProfilePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<CandidateData | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [creatingConversation, setCreatingConversation] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (candidateId) {
       fetchCandidateProfile();
     }
   }, [candidateId]);
+
+  // ... (keeping existing fetchCandidateProfile)
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
+
+      const response = await fetch('/api/profile/candidate/photo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success('Profile photo updated successfully');
+        // Update local state with new photo URL
+        if (candidate) {
+          setCandidate({
+            ...candidate,
+            profile_photo_url: data.data.photo_url
+          });
+        }
+      } else {
+        throw new Error(data.message || 'Failed to upload photo');
+      }
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      toast.error(error.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const fetchCandidateProfile = async () => {
     try {
@@ -65,7 +133,7 @@ const CandidateProfilePage: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`http://127.0.0.1:5005/api/hr/candidates/${candidateId}`, {
+      const response = await fetch(`/api/hr/candidates/${candidateId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -97,9 +165,29 @@ const CandidateProfilePage: React.FC = () => {
     navigate(-1);
   };
 
-  const handleContact = () => {
-    if (candidate?.email) {
-      window.location.href = `mailto:${candidate.email}`;
+  const handleMessage = async () => {
+    if (!candidate) return;
+
+    try {
+      setCreatingConversation(true);
+      // Create conversation with candidate
+      const conversationResponse = await messagingService.createConversation({
+        participants: [candidate.id.toString()],
+        title: `${candidate.first_name} ${candidate.last_name}`
+      });
+
+      if (conversationResponse.success && conversationResponse.data) {
+        // Navigate to messages page with the new conversation selected
+        navigate(`/messages?conversation=${conversationResponse.data.id}`);
+      } else {
+        toast.error('Failed to start conversation');
+      }
+    } catch (err: any) {
+      console.error('Error creating conversation:', err);
+      // If error is just navigation or something minor, still try to go to messages
+      navigate('/messages');
+    } finally {
+      setCreatingConversation(false);
     }
   };
 
@@ -168,11 +256,47 @@ const CandidateProfilePage: React.FC = () => {
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <Button onClick={handleBack} variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
+
+              <div className="relative group">
+                <div className="h-20 w-20 rounded-full overflow-hidden border-2 border-gray-100 bg-gray-100 flex items-center justify-center">
+                  {candidate?.profile_photo_url ? (
+                    <img
+                      src={candidate.profile_photo_url}
+                      alt={`${candidate.first_name} ${candidate.last_name}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-semibold text-gray-400">
+                      {candidate?.first_name?.charAt(0)}{candidate?.last_name?.charAt(0)}
+                    </span>
+                  )}
+
+                  {/* Upload Overlay */}
+                  <div
+                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
+                    onClick={handlePhotoClick}
+                  >
+                    {uploadingPhoto ? (
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-6 w-6 text-white" />
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
                   {candidate.first_name} {candidate.last_name}
@@ -191,9 +315,13 @@ const CandidateProfilePage: React.FC = () => {
               </div>
             </div>
 
-            <Button onClick={handleContact}>
-              <Mail className="h-4 w-4 mr-2" />
-              Contact Candidate
+            <Button onClick={handleMessage} disabled={loading || creatingConversation}>
+              {creatingConversation ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <MessageSquare className="h-4 w-4 mr-2" />
+              )}
+              Message Candidate
             </Button>
           </div>
         </div>

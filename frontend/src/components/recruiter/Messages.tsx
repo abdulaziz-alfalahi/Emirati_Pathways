@@ -4,15 +4,13 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import ConversationList from './messages/ConversationList';
 import MessageThread from './messages/MessageThread';
-import EmptyConversation from './messages/EmptyConversation';
 import { Conversation, Message } from './messages/types';
 import { restClient } from '@/utils/api';
-// import { useAuth } from '@/context/AuthContext';
-import { useMockAuth } from '@/context/MockAuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 const Messages: React.FC = () => {
   const { toast } = useToast();
-  const { user } = useMockAuth();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -50,6 +48,8 @@ const Messages: React.FC = () => {
           const otherName = (c.participant_names[otherId] && c.participant_names[otherId] !== 'None None')
             ? c.participant_names[otherId]
             : 'Unknown User/Candidate';
+
+          console.log(`[Messages] Mapping Conv ${c.id}: User=${currentUserId}, Other=${otherId}, Name=${otherName}`);
 
           return {
             id: c.id,
@@ -166,13 +166,38 @@ const Messages: React.FC = () => {
     }
   };
 
+  // Handle Delete Conversation
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      // Optimistic update
+      const previousConversations = [...conversations];
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+
+      if (selectedConversation === conversationId) {
+        setSelectedConversation(null);
+        setMessages([]);
+      }
+
+      await restClient.delete(`/api/communication/conversations/${conversationId}`);
+
+      toast({
+        title: "Conversation Deleted",
+        description: "The conversation has been removed from your list.",
+      });
+    } catch (error) {
+      console.error("Failed to delete conversation", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation. Please try again.",
+        variant: "destructive"
+      });
+      // Re-fetch to restore state if failed
+      fetchConversations();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Messages</h2>
-        <p className="text-muted-foreground">Communicate with candidates and team members</p>
-      </div>
-
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">Messages</h2>
@@ -189,31 +214,28 @@ const Messages: React.FC = () => {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onSelectConversation={handleSelectConversation}
+            onDeleteConversation={handleDeleteConversation}
           />
         </div>
 
         {/* Message thread */}
         <div className="w-full md:w-2/3 flex flex-col">
-          {selectedConversation ? (
-            <MessageThread
-              messages={messages}
-              newMessage={newMessage}
-              setNewMessage={setNewMessage}
-              handleSendMessage={handleSendMessage}
-              selectedConversation={selectedConversation}
-              conversations={conversations}
-              currentUserId={String(user?.id || '')}
-              onScheduleInterview={() => {
-                toast({
-                  title: "Redirecting to Scheduler",
-                  description: "Opening interview scheduler for this candidate...",
-                });
-                // Navigation logic here
-              }}
-            />
-          ) : (
-            <EmptyConversation />
-          )}
+          <MessageThread
+            messages={messages}
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            handleSendMessage={handleSendMessage}
+            selectedConversation={selectedConversation}
+            conversations={conversations}
+            currentUserId={String(user?.id || '')}
+            onScheduleInterview={() => {
+              toast({
+                title: "Redirecting to Scheduler",
+                description: "Opening interview scheduler for this candidate...",
+              });
+              // Navigation logic here
+            }}
+          />
         </div>
       </Card>
     </div>

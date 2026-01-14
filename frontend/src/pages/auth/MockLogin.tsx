@@ -3,7 +3,7 @@
  * Simulates Phone + OTP flow for Soft Launch
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MockAuthService, TEST_USERS } from '@/services/mockAuthService';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +22,7 @@ const MockLogin: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +58,7 @@ const MockLogin: React.FC = () => {
 
         // 2. Perform REAL backend login to get valid JWT
         try {
-          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
           const devLoginRes = await fetch(`${baseUrl}/api/auth/dev-login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -164,6 +165,7 @@ const MockLogin: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="otp">Verification Code</Label>
                   <Input
+                    ref={otpInputRef}
                     id="otp"
                     type="text"
                     placeholder="123456"
@@ -173,7 +175,14 @@ const MockLogin: React.FC = () => {
                     maxLength={6}
                     autoFocus
                   />
-                  <p className="text-xs text-center text-muted-foreground">
+                  <p
+                    className="text-xs text-center text-muted-foreground mt-2 hover:text-teal-600 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setOtp('123456');
+                      otpInputRef.current?.focus();
+                    }}
+                    title="Click to auto-fill"
+                  >
                     Use code <strong>123456</strong> for testing
                   </p>
                 </div>

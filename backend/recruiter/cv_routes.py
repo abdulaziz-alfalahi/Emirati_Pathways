@@ -37,10 +37,8 @@ def get_current_user_id():
     """
     # 1. Check for mock token first (for testing/development)
     auth_header = request.headers.get('Authorization', '')
-    if auth_header and auth_header.startswith('Bearer mock_token_'):
-        # Return the standard mock user UUID
-        return "00000000-0000-0000-0000-000000000001"
-
+    # REMOVED: Insecure Mock Token Bypass
+    
     # 2. Try to get user from JWT
     try:
         # Verify JWT exists and is valid (optional=True allows manual handling)
@@ -63,9 +61,8 @@ def get_current_user_id():
         print(f"Error getting user ID from JWT: {str(e)}")
 
     # 3. Fallback for unauthenticated or failed auth
-    # For now, return the mock UUID to prevent crashes, but log warning
-    print("Warning: Authentication failed in cv_routes, using fallback mock UUID")
-    return "00000000-0000-0000-0000-000000000001"
+    print("Warning: Authentication failed in cv_routes")
+    return None
 
 @cv_bp.route('/upload', methods=['POST'])
 def upload_cv():

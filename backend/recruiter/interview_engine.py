@@ -5,6 +5,7 @@ Core business logic for managing candidate interviews
 
 from enum import Enum
 from datetime import datetime, timedelta, time as dt_time
+from services.communication_service import communication_service, NotificationType
 from typing import List, Dict, Optional, Tuple
 import uuid
 import logging
@@ -269,18 +270,41 @@ class InterviewSchedulingEngine:
         if has_conflict:
             return False, conflict_msg, None
         
-        # Get candidate_id from shortlist
+        # Get candidate_id from shortlist (Updated to use shortlisted_candidates)
+        # We also need jd_id (UUID) which is in job_postings
         cur.execute("""
-            SELECT candidate_id, jd_id FROM candidate_shortlist
-            WHERE shortlist_id = %s
+            SELECT sc.candidate_id, jp.jd_id, jp.title 
+            FROM shortlisted_candidates sc
+            JOIN job_postings jp ON sc.job_id = jp.id
+            WHERE sc.id::text = %s
         """, (data['shortlist_id'],))
         
         shortlist_entry = cur.fetchone()
         if not shortlist_entry:
-            return False, "Shortlist entry not found", None
+            # Fallback: check legacy table just in case
+            cur.execute("""
+                 SELECT candidate_id, jd_id FROM candidate_shortlist
+                 WHERE shortlist_id = %s
+            """, (data['shortlist_id'],))
+            shortlist_entry = cur.fetchone()
+            job_title = "Unknown Role"  # Default
+            
+            if not shortlist_entry:
+                # Fallback: check legacy table just in case with job join
+                cur.execute("""
+                     SELECT cs.candidate_id, cs.jd_id, j.title
+                     FROM candidate_shortlist cs
+                     LEFT JOIN job_postings j ON cs.jd_id::text = j.jd_id::text
+                     WHERE shortlist_id = %s
+                """, (data['shortlist_id'],))
+                shortlist_entry = cur.fetchone()
+                
+            if not shortlist_entry:
+                return False, "Shortlist entry not found", None
         
         candidate_id = shortlist_entry[0]
         jd_id = data.get('jd_id') or shortlist_entry[1]
+        job_title = shortlist_entry[2] if len(shortlist_entry) > 2 else "Unknown Role"
         
         # Prepare JSONB fields
         import json as json_module
@@ -342,6 +366,39 @@ class InterviewSchedulingEngine:
         """, (data['shortlist_id'],))
         
         conn.commit()
+
+        # Send Notification to Candidate
+        try:
+            communication_service.create_notification(
+                user_id=candidate_id,
+                notification_type=NotificationType.INTERVIEW_SCHEDULED,
+                metadata={
+                    'interview_title': data.get('interview_title', 'Video Interview'),
+                    'job_title': job_title,
+                    'interview_id': interview_id,
+                    'scheduled_at': f"{data['scheduled_date']} {data['scheduled_time']}",
+                    'role': 'candidate'
+                }
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to send interview notification to candidate: {e}")
+
+        # Send Notification to Recruiter
+        try:
+            communication_service.create_notification(
+                user_id=data['recruiter_id'],
+                notification_type=NotificationType.INTERVIEW_SCHEDULED,
+                metadata={
+                    'interview_title': data.get('interview_title', 'Video Interview'),
+                    'job_title': job_title,
+                    'interview_id': interview_id,
+                    'scheduled_at': f"{data['scheduled_date']} {data['scheduled_time']}",
+                    'candidate_name': "Candidate", # We could fetch name if we want, but keeping it simple for now
+                    'role': 'recruiter'
+                }
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to send interview notification to recruiter: {e}")
         
         self.logger.info(f"Interview created: {interview_id}")
         return True, interview_id, "Interview scheduled successfully"
@@ -569,13 +626,14 @@ class InterviewSchedulingEngine:
             new_status = status_map.get(feedback_data['recommendation'])
             
             if new_status:
+                # Update status in the CORRECT table: shortlisted_candidates
                 cur.execute("""
-                    UPDATE candidate_shortlist cs
+                    UPDATE shortlisted_candidates sc
                     SET status = %s,
                         updated_at = CURRENT_TIMESTAMP
                     FROM interview_schedules i
                     WHERE i.interview_id = %s
-                    AND cs.shortlist_id = i.shortlist_id
+                    AND sc.id::text = i.shortlist_id
                 """, (new_status, interview_id))
         
         conn.commit()

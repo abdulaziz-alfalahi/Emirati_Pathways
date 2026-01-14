@@ -47,8 +47,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { jobApi, shortlistApi, restClient, type JobDescription } from '@/utils/api';
-// import { useAuth } from '@/context/AuthContext';
-import { useMockAuth } from '@/context/MockAuthContext';
+import { useAuth } from '@/context/AuthContext';
+// import { useMockAuth } from '@/context/MockAuthContext';
 import TrainingRecommendationsDialog from './TrainingRecommendationsDialog';
 import MentorRecommendationsDialog from './MentorRecommendationsDialog';
 import { ShortlistManager } from './shortlist/ShortlistManager';
@@ -137,7 +137,7 @@ interface AnalyticsData {
 
 const CandidateMatching = () => {
   const navigate = useNavigate();
-  const { user } = useMockAuth(); // Use MockAuth to align with ProtectedRoute
+  const { user } = useAuth(); // Use AuthContext instead of MockAuth
   const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState<JobDescription | null>(null);
   const [matchThreshold, setMatchThreshold] = useState(20);
@@ -436,7 +436,7 @@ const CandidateMatching = () => {
                 title: 'Conversation Started',
                 description: 'Redirecting to messages...',
               });
-              navigate(`/recruiter-dashboard?tab=messages&conversationId=${conversationId}`);
+              navigate(`/messages?conversationId=${conversationId}`);
             } else {
               throw new Error('Failed to create conversation');
             }
@@ -952,6 +952,12 @@ const CandidateMatching = () => {
                             <MapPin className="h-4 w-4 text-slate-400" />
                             <span className="text-slate-600">{candidate.candidate_data.personalInfo.location}</span>
                           </div>
+                          {candidate.match_details.location.distance != null && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-blue-500" />
+                              <span className="text-blue-600 font-medium">Residence is {candidate.match_details.location.distance} km away</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 

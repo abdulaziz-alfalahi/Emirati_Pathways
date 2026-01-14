@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useContext, createContext, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,16 +12,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Bell, 
-  BellRing, 
-  Check, 
-  CheckCheck, 
-  X, 
-  Settings, 
-  Briefcase, 
-  Users, 
-  GraduationCap, 
+import {
+  Bell,
+  BellRing,
+  Check,
+  CheckCheck,
+  X,
+  Settings,
+  RefreshCw,
+  Briefcase,
+  Users,
+  GraduationCap,
   AlertCircle,
   Calendar,
   MessageSquare,
@@ -29,16 +32,16 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import { restClient } from '@/utils/api';
 
 // Types
 interface Notification {
   id: string;
-  type: string;
+  notification_type: string;
   title: string;
-  message: string;
-  data?: any;
+  content: string;
+  metadata?: any;
   priority: 'low' | 'medium' | 'high' | 'critical';
   created_at: string;
   read: boolean;
@@ -71,6 +74,7 @@ interface NotificationContextType {
   deleteNotification: (notificationId: string) => void;
   updatePreferences: (preferences: NotificationPreferences) => void;
   refreshNotifications: () => void;
+  socket: Socket | null;
 }
 
 // Context
@@ -100,6 +104,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   authToken
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
@@ -119,143 +124,251 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     }
   });
 
+  // Refs for accessing latest state in closures (polling/socket callbacks)
+  const preferencesRef = React.useRef(preferences);
+  const lastNotificationTimeRef = React.useRef<string | null>(null);
+  const shouldPollRef = React.useRef(true); // Control polling
+
+  React.useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
+
   // Initialize WebSocket connection
   useEffect(() => {
-    const newSocket = io(process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:5000', {
+    // START ANTI-GRAVITY FIX: Use relative path to support Proxy/Ngrok/Production
+    const socketUrl = import.meta.env.VITE_WEBSOCKET_URL || undefined; // Undefined = window.location
+    const newSocket = io(socketUrl, {
+      path: '/socket.io', // Make sure this matches vite.config.ts proxy
       auth: {
         token: authToken
       },
       transports: ['websocket', 'polling']
     });
+    // END ANTI-GRAVITY FIX
 
     newSocket.on('connect', () => {
       console.log('Connected to notification server');
       setIsConnected(true);
+      shouldPollRef.current = true; // Re-enable polling on valid connection (optional, but good if we recover)
+      // Join user specific room
+      newSocket.emit('join', { room: userId });
     });
-
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from notification server');
-      setIsConnected(false);
-    });
-
-    newSocket.on('connection_established', (data) => {
-      console.log('Connection established:', data);
-      setNotifications(data.recent_notifications || []);
-      setUnreadCount(data.unread_count || 0);
-    });
-
-    newSocket.on('new_notification', (data) => {
-      console.log('New notification received:', data);
-      
-      const newNotification = data.notification;
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(data.unread_count);
-
-      // Show toast notification
-      showToastNotification(newNotification);
-    });
-
-    newSocket.on('notifications_updated', (data) => {
-      console.log('Notifications updated:', data);
-      
-      if (data.action === 'mark_read') {
-        setNotifications(prev => 
-          prev.map(n => 
-            n.id === data.notification_id 
-              ? { ...n, read: true, read_at: new Date().toISOString() }
-              : n
-          )
-        );
-      } else if (data.action === 'mark_all_read') {
-        setNotifications(prev => 
-          prev.map(n => ({ ...n, read: true, read_at: new Date().toISOString() }))
-        );
-      } else if (data.action === 'delete') {
-        setNotifications(prev => prev.filter(n => n.id !== data.notification_id));
-      }
-      
-      setUnreadCount(data.unread_count);
-    });
-
-    newSocket.on('broadcast_notification', (data) => {
-      console.log('Broadcast notification received:', data);
-      showToastNotification(data);
-    });
-
-    newSocket.on('error', (error) => {
-      console.error('WebSocket error:', error);
-      toast.error('Notification system error: ' + error.message);
-    });
-
+    // ... existing socket setup ...
     setSocket(newSocket);
 
     return () => {
       newSocket.close();
     };
-  }, [authToken]);
+  }, [authToken]); // userId is cleaner dependency but authToken changes on login/logout
 
-  // Load preferences on mount
+  // Load preferences and Initial Fetch on mount
   useEffect(() => {
     loadPreferences();
-  }, []);
+    fetchNotifications();
+
+    // Polling fallback: Run ALWAYS since WebSockets are unreliable in this environment
+    const pollInterval = setInterval(() => {
+      if (!shouldPollRef.current) return; // Skip if disabled
+      // console.log('Polling for notifications...'); // Reduce log spam
+      fetchNotifications();
+    }, 15000); // Poll every 15 seconds
+
+    return () => clearInterval(pollInterval);
+  }, []); // Run once on mount
+
+  const fetchNotifications = async () => {
+    if (!shouldPollRef.current) return;
+
+    try {
+      const response = await restClient.get('/api/communication/notifications', {
+        headers: { Authorization: `Bearer ${authToken}` },
+        params: { limit: 50 }
+      });
+      // ... existing success logic ...
+      if (response.data.success && response.data.data) {
+        // Adjust based on API structure: data.data.notifications
+        const fetchedNotifications: Notification[] = response.data.data.notifications || [];
+
+        setNotifications(fetchedNotifications);
+
+        // Calculate unread count from fetched data
+        const unread = fetchedNotifications.filter((n: Notification) => !n.read).length;
+        setUnreadCount(unread);
+
+        // Polling Toast Logic: Detect new notifications
+        if (fetchedNotifications.length > 0) {
+          const newestTime = fetchedNotifications[0].created_at;
+
+          if (lastNotificationTimeRef.current) {
+            // Find all notifications newer than last check
+            const newItems = fetchedNotifications.filter(n => n.created_at > lastNotificationTimeRef.current!);
+
+            // Trigger toasts for strictly new items (limit to 3 to avoid spam loop)
+            newItems.slice(0, 3).forEach(n => {
+              showToastNotification(n);
+            });
+          }
+
+          // Update ref to the newest time seen
+          // Only update if newer (or if we trust the API to return sorted desc)
+          if (!lastNotificationTimeRef.current || newestTime > lastNotificationTimeRef.current) {
+            lastNotificationTimeRef.current = newestTime;
+          }
+        }
+      }
+    } catch (error: any) {
+      // console.error('Failed to fetch notifications:', error); // Reduce spam
+      if (error.response && error.response.status === 401) {
+        if (shouldPollRef.current) {
+          console.warn('Authentication failed for notifications, stopping polling');
+          shouldPollRef.current = false;
+        }
+      }
+    }
+  };
 
   const showToastNotification = (notification: any) => {
-    const { title, message, priority, type } = notification;
-    
+    const { title, content, priority, notification_type } = notification;
+
     // Check if notifications are enabled and not in quiet hours
-    if (!preferences.push_notifications) return;
-    
+    const currentPrefs = preferencesRef.current;
+    if (!currentPrefs.push_notifications) return;
+
     // Check quiet hours
-    if (preferences.quiet_hours.enabled) {
+    if (currentPrefs.quiet_hours.enabled) {
       const now = new Date();
-      const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
-                         now.getMinutes().toString().padStart(2, '0');
-      
-      if (currentTime >= preferences.quiet_hours.start_time || 
-          currentTime <= preferences.quiet_hours.end_time) {
+      const currentTime = now.getHours().toString().padStart(2, '0') + ':' +
+        now.getMinutes().toString().padStart(2, '0');
+
+      if (currentTime >= currentPrefs.quiet_hours.start_time ||
+        currentTime <= currentPrefs.quiet_hours.end_time) {
         return; // Skip notification during quiet hours
       }
     }
 
     const toastOptions = {
-      description: message,
       duration: priority === 'critical' ? 10000 : 5000,
     };
 
+    const isRecruiter = userType === 'recruiter' || userType === 'hr_recruiter';
+    const isCandidate = userType === 'candidate' || userType === 'job_seeker';
+
+    const handleToastClick = () => {
+      if (notification_type === 'new_message' && notification.metadata?.conversation_id) {
+        if (isCandidate) {
+          navigate(`/candidate-dashboard?tab=messages&conversation=${notification.metadata.conversation_id}`);
+        } else {
+          navigate(`/messages?conversation=${notification.metadata.conversation_id}`);
+        }
+      } else if (notification_type === 'application_update') {
+        if (isRecruiter) {
+          navigate('/recruiter/jobs');
+        } else if (isCandidate) {
+          navigate('/candidate-dashboard?tab=applications');
+        } else {
+          navigate('/dashboard#applications');
+        }
+      }
+      // Add other types if needed
+      else if (notification_type === 'interview_scheduled') {
+        if (isRecruiter) {
+          navigate('/recruiter/interviews/details');
+        } else if (isCandidate) {
+          navigate('/candidate-dashboard?tab=interviews');
+        }
+      }
+    };
+
+    // Combine title and message for toast
+    const ToastContent = ({ t }: { t: any }) => (
+      <div
+        onClick={() => {
+          handleToastClick();
+          toast.dismiss(t.id);
+        }}
+        className="cursor-pointer hover:opacity-80 transition-opacity"
+      >
+        <p className="font-bold">{title}</p>
+        <p className="text-sm">{content}</p>
+      </div>
+    );
+
     switch (priority) {
       case 'critical':
-        toast.error(title, toastOptions);
+        toast.error((t) => <ToastContent t={t} />, toastOptions);
         break;
       case 'high':
-        toast.warning(title, toastOptions);
+        toast((t) => <ToastContent t={t} />, { ...toastOptions, icon: '⚠️' });
         break;
       default:
-        toast.info(title, toastOptions);
+        toast((t) => <ToastContent t={t} />, { ...toastOptions, icon: '🔔' });
     }
   };
 
   const loadPreferences = async () => {
     try {
-      const response = await restClient.get('/api/notifications/preferences', {
+      const response = await restClient.get('/api/communication/notifications/preferences', {
         headers: { Authorization: `Bearer ${authToken}` }
       });
-      setPreferences(response.data.preferences);
+      if (response.data.success && response.data.data) {
+        setPreferences(prev => ({ ...prev, ...response.data.data }));
+      }
     } catch (error) {
       console.error('Failed to load notification preferences:', error);
     }
   };
 
-  const markAsRead = useCallback((notificationId: string) => {
-    if (socket) {
-      socket.emit('mark_read', { user_id: userId, notification_id: notificationId });
-    }
-  }, [socket, userId]);
+  const markAsRead = useCallback(async (notificationId: string) => {
+    // Optimistic UI Update
+    setNotifications(prev =>
+      prev.map(n =>
+        n.id === notificationId
+          ? { ...n, read: true, read_at: new Date().toISOString() }
+          : n
+      )
+    );
+    // Decrease unread count safely
+    setUnreadCount(prev => {
+      const notif = notifications.find(n => n.id === notificationId);
+      if (notif && !notif.read && prev > 0) return prev - 1;
+      return prev;
+    });
 
-  const markAllAsRead = useCallback(() => {
-    if (socket) {
-      socket.emit('mark_read', { user_id: userId, notification_id: 'all' });
+    try {
+      // Call REST API
+      await restClient.post(`/api/communication/notifications/${notificationId}/read`, {}, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      // Also emit via socket if available for cross-device sync
+      if (socket && isConnected) {
+        socket.emit('mark_read', { user_id: userId, notification_id: notificationId });
+      }
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      // We don't revert optimistic update to avoid UI flickering, next fetch will correct it if failed
     }
-  }, [socket, userId]);
+  }, [socket, userId, authToken, isConnected, notifications]);
+
+  const markAllAsRead = useCallback(async () => {
+    // Optimistic UI Update
+    setNotifications(prev =>
+      prev.map(n => ({ ...n, read: true, read_at: new Date().toISOString() }))
+    );
+    setUnreadCount(0);
+
+    try {
+      await restClient.post('/api/communication/notifications/mark-all-read', {}, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+
+      if (socket && isConnected) {
+        socket.emit('mark_read', { user_id: userId, notification_id: 'all' });
+      }
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  }, [socket, userId, authToken, isConnected]);
 
   const deleteNotification = useCallback((notificationId: string) => {
     if (socket) {
@@ -265,7 +378,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   const updatePreferences = useCallback(async (newPreferences: NotificationPreferences) => {
     try {
-      await restClient.post('/api/notifications/preferences', newPreferences, {
+      await restClient.post('/api/communication/notifications/preferences', newPreferences, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       setPreferences(newPreferences);
@@ -291,7 +404,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     markAllAsRead,
     deleteNotification,
     updatePreferences,
-    refreshNotifications
+    refreshNotifications,
+    socket
   };
 
   return (
@@ -316,8 +430,8 @@ export const NotificationBell: React.FC = () => {
             <Bell className="h-5 w-5 text-gray-400" />
           )}
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -338,21 +452,108 @@ interface NotificationPanelProps {
 }
 
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    markAllAsRead, 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
     deleteNotification,
-    refreshNotifications 
+    refreshNotifications
   } = useNotifications();
-  
+  const navigate = useNavigate();
+  const { user } = useAuth(); // Get current user for role-based navigation
+
+  const handleNotificationClick = (notification: any) => {
+    // Mark as read if unread
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+
+    const type = notification.notification_type;
+    const metadata = notification.metadata || {};
+
+    // Priority 1: Explicit Link in Metadata (Deep Linking Feature)
+    if (metadata.link) {
+      navigate(metadata.link);
+      if (onClose) onClose();
+      return;
+    }
+
+    // Fallback: Check for generic link property if not in metadata
+    if (notification.link) {
+      navigate(notification.link);
+      if (onClose) onClose();
+      return;
+    }
+
+    // Navigation Logic
+    const isRecruiter = user?.role === 'recruiter' || user?.role === 'hr_recruiter' || user?.user_type === 'recruiter' || user?.user_type === 'hr_recruiter';
+    // Default to isCandidate if not recruiter to ensure candidates always get routed correctly
+    const isCandidate = !isRecruiter;
+
+    // Helper to detect intent from text if type is ambiguous
+    const text = (notification.title + ' ' + notification.content).toLowerCase();
+    const isInterviewContext = text.includes('interview') || type === 'interview_scheduled';
+    const isMessageContext = text.includes('message') || type === 'new_message';
+
+    if (isMessageContext && !text.includes('status update')) { // Avoid capturing "Application Message" if that exists
+      const conversationId = metadata.conversation_id || metadata.conversationId;
+      if (conversationId) {
+        if (isCandidate) {
+          navigate(`/candidate-dashboard?tab=messages&conversation=${conversationId}`);
+        } else {
+          navigate(`/messages?conversation=${conversationId}`);
+        }
+      } else {
+        if (isCandidate) {
+          navigate('/candidate-dashboard?tab=messages');
+        } else {
+          navigate('/messages');
+        }
+      }
+    }
+    else if (isInterviewContext) {
+      if (isRecruiter) {
+        if (metadata.interview_id) {
+          navigate(`/recruiter/interview-analytics/${metadata.interview_id}`);
+        } else {
+          navigate('/recruiter/interviews/details');
+        }
+      } else {
+        navigate('/candidate-dashboard?tab=interviews');
+      }
+    }
+    else if (type === 'application_update' || type === 'application_submitted' || type === 'application_reviewed') {
+      if (isRecruiter) {
+        navigate('/recruiter/jobs');
+      } else {
+        navigate('/candidate-dashboard?tab=applications');
+      }
+    }
+    else if (type === 'job_alert') {
+      if (metadata.job_id) {
+        navigate(`/jobs/${metadata.job_id}`);
+      } else {
+        navigate('/jobs');
+      }
+    }
+    // Fallback for System Announcements without explicit link (e.g. legacy feedback)
+    else if (type === 'system_announcement') {
+      const isFeedback = (metadata.type === 'bug' || metadata.type === 'feature' || metadata.title?.toLowerCase().includes('feedback'));
+      if (isFeedback && (user?.role === 'admin' || user?.role === 'administrator')) {
+        navigate('/admin-dashboard?tab=feedback');
+      }
+    }
+
+    if (onClose) onClose();
+  };
+
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'unread' && notification.read) return false;
-    if (typeFilter !== 'all' && notification.type !== typeFilter) return false;
+    if (typeFilter !== 'all' && notification.notification_type !== typeFilter) return false;
     return true;
   });
 
@@ -363,6 +564,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       case 'application_update':
         return <CheckCheck className="h-4 w-4" />;
       case 'interview_scheduled':
+      case 'interview_rescheduled':
+      case 'interview_cancelled':
         return <Calendar className="h-4 w-4" />;
       case 'mentoring_session':
         return <Users className="h-4 w-4" />;
@@ -405,7 +608,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-white">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-2">
@@ -422,7 +625,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
             onClick={refreshNotifications}
             className="h-8 w-8 p-0"
           >
-            <Settings className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4" />
           </Button>
           {onClose && (
             <Button
@@ -481,15 +684,15 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-3 hover:bg-gray-50 transition-colors ${
-                  !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                }`}
+                className={`p-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  }`}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex items-start space-x-3">
                   <div className={`p-1 rounded-full ${getPriorityColor(notification.priority)}`}>
-                    {getNotificationIcon(notification.type)}
+                    {getNotificationIcon(notification.notification_type)}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -497,19 +700,22 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                           {notification.title}
                         </p>
                         <p className="text-xs text-gray-600 mt-1">
-                          {notification.message}
+                          {notification.content}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
                           {formatTime(notification.created_at)}
                         </p>
                       </div>
-                      
+
                       <div className="flex items-center space-x-1 ml-2">
                         {!notification.read && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notification.id);
+                            }}
                             className="h-6 w-6 p-0"
                           >
                             <Check className="h-3 w-3" />
@@ -518,7 +724,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteNotification(notification.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
                           className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -571,13 +780,13 @@ const NotificationSettings: React.FC = () => {
             Customize how you receive notifications
           </DialogDescription>
         </DialogHeader>
-        
+
         <Tabs defaultValue="types" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="types">Types</TabsTrigger>
             <TabsTrigger value="delivery">Delivery</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="types" className="space-y-4">
             <div className="space-y-3">
               {[
@@ -604,7 +813,7 @@ const NotificationSettings: React.FC = () => {
               ))}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="delivery" className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -620,7 +829,7 @@ const NotificationSettings: React.FC = () => {
                   }
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <MessageSquare className="h-4 w-4 text-gray-500" />
@@ -634,9 +843,9 @@ const NotificationSettings: React.FC = () => {
                   }
                 />
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -645,17 +854,20 @@ const NotificationSettings: React.FC = () => {
                   </div>
                   <Switch
                     id="quiet_hours"
-                    checked={localPreferences.quiet_hours.enabled}
+                    checked={localPreferences.quiet_hours?.enabled || false}
                     onCheckedChange={(checked) =>
                       setLocalPreferences(prev => ({
                         ...prev,
-                        quiet_hours: { ...prev.quiet_hours, enabled: checked }
+                        quiet_hours: {
+                          ...(prev.quiet_hours || { start_time: '22:00', end_time: '08:00' }),
+                          enabled: checked
+                        }
                       }))
                     }
                   />
                 </div>
-                
-                {localPreferences.quiet_hours.enabled && (
+
+                {localPreferences.quiet_hours && localPreferences.quiet_hours.enabled && (
                   <div className="grid grid-cols-2 gap-2 ml-6">
                     <div>
                       <Label htmlFor="start_time" className="text-xs text-gray-500">From</Label>
@@ -693,7 +905,7 @@ const NotificationSettings: React.FC = () => {
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
@@ -707,4 +919,5 @@ const NotificationSettings: React.FC = () => {
   );
 };
 
-export default NotificationSystem;
+// NotificationSystem export removed as it was undefined
+
