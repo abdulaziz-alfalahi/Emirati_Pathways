@@ -449,13 +449,13 @@ const EnhancedAuthPage: React.FC = () => {
                         <CardHeader className="text-center pb-6">
                           <CardTitle className="text-2xl">Welcome Back</CardTitle>
                           <CardDescription>
-                            Sign in with your mobile number
+                            Sign in with your WhatsApp number
                           </CardDescription>
                         </CardHeader>
 
                         <form onSubmit={otpSent ? handleVerifyOtp : handleRequestOtp} className="space-y-4">
                           <div>
-                            <Label htmlFor="login-phone">Mobile Number</Label>
+                            <Label htmlFor="login-phone">WhatsApp Number</Label>
                             <Input
                               id="login-phone"
                               type="tel"
@@ -498,7 +498,7 @@ const EnhancedAuthPage: React.FC = () => {
                               </>
                             ) : (
                               <>
-                                {otpSent ? 'Verify & Login' : 'Send Verification Code'}
+                                {otpSent ? 'Verify & Login' : 'Send WhatsApp Code'}
                               </>
                             )}
                           </Button>

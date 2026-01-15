@@ -42,7 +42,7 @@ export const flaskClient: AxiosInstance = axios.create({
 })
 
 /** Normalizes axios responses to { success, data, url, error } */
-const wrap = async <T>(p: Promise<any>): Promise<ApiResponse<T>> => {
+const wrap = async <T,>(p: Promise<any>): Promise<ApiResponse<T>> => {
   try {
     const res = await p
     const raw = res?.data ?? res

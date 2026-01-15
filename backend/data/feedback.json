@@ -605,5 +605,37 @@
     },
     "status": "open",
     "created_at": "2026-01-14T11:40:03.421075"
+  },
+  {
+    "id": "45dbcbc0-06c1-4f0d-a176-577421f47481",
+    "user_id": "74",
+    "role": "candidate",
+    "message": "I just joined the sandbox on Twilio and tried signing in to the platform. When I clicked the \"Job matches\" tab, a list of jobs appeared, even though I hadn't uploaded my CV yet.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2549x1264",
+      "timestamp": "2026-01-15T11:34:14.390Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "open",
+    "created_at": "2026-01-15T11:34:14.398823"
+  },
+  {
+    "id": "de0615cd-364f-46b3-bd02-3b66cb18667c",
+    "user_id": "74",
+    "role": "candidate",
+    "message": "I just joined the Twilio sandbox and signed in to the platform.  The platform assumed I am a job seeker, as I can see in the header, and at the same time, there is a welcome message that says \"Welcome back, Candidate!\"  I think the first time I sign in, I should be treated as a Candidate, and then I can request a role in the profile edit.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2549x1264",
+      "timestamp": "2026-01-15T11:38:20.455Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "open",
+    "created_at": "2026-01-15T11:38:20.464701"
   }
 ]

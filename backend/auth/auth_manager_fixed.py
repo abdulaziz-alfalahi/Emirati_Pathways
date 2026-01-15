@@ -14,6 +14,8 @@ from typing import Dict, Any, Tuple, Optional, List
 import psycopg2
 import psycopg2.extras
 from flask_jwt_extended import create_access_token, create_refresh_token
+from twilio.rest import Client
+from twilio.base.exceptions import TwilioRestException
 
 class AuthenticationManager:
     """Fixed authentication manager matching actual database schema"""
@@ -348,7 +350,13 @@ class AuthenticationManager:
         """Request OTP for phone verification with Magic Bypass"""
         try:
             # Normalize phone
-            phone = phone.replace(' ', '').strip()
+            phone = phone.replace(' ', '').replace('-', '').strip()
+            
+            # UAE Format Normalization (E.164)
+            if phone.startswith('05'):
+                phone = '+971' + phone[1:]
+            elif phone.startswith('5') and len(phone) == 9:
+                phone = '+971' + phone
             
             magic_numbers = [
                 '+971500000000', # HR Manager
@@ -389,11 +397,49 @@ class AuthenticationManager:
             if is_magic:
                 return True, "OTP sent successfully (Test Mode)", otp_code
             
+            # --- Twilio WhatsApp Integration ---
+            twilio_sid = os.getenv('TWILIO_ACCOUNT_SID')
+            twilio_token = os.getenv('TWILIO_AUTH_TOKEN')
+            twilio_from = os.getenv('TWILIO_FROM_NUMBER') # e.g. whatsapp:+14155238886
+
+            if twilio_sid and twilio_token and twilio_from:
+                try:
+                    client = Client(twilio_sid, twilio_token)
+                    
+                    # Ensure numbers have whatsapp: prefix if not present
+                    if not twilio_from.startswith('whatsapp:'):
+                        twilio_from = f"whatsapp:{twilio_from}"
+                    if not phone.startswith('whatsapp:'):
+                        to_number = f"whatsapp:{phone}"
+                    else:
+                        to_number = phone
+
+                    message = client.messages.create(
+                        body=f"Your Emirati Pathways Verification Code is: {otp_code}",
+                        from_=twilio_from,
+                        to=to_number
+                    )
+                    self.logger.info(f"Twilio WhatsApp sent to {phone}: {message.sid}")
+                    return True, "OTP sent successfully via WhatsApp", None
+                    
+                except TwilioRestException as e:
+                    self.logger.error(f"Twilio API Error: {e}")
+                    # Fallback to simulation/logging so dev flow isn't completely broken
+                    self.logger.warning("Falling back to OTP simulation due to Twilio error")
+                except Exception as e:
+                     self.logger.error(f"Twilio Generic Error: {e}")
+                     self.logger.warning("Falling back to OTP simulation due to generic error")
+
+            # Fallback / Simulation
             # For Real Numbers: Log it (Simulate SMS)
             self.logger.info(f"SMS SIMULATION: OTP for {phone} is {otp_code}")
             print(f"SMS SIMULATION: OTP for {phone} is {otp_code}") # Print to stdout for user visibility
             
-            return True, "OTP sent successfully", None 
+            # If we had credentials but failed, we warn the user in the message
+            if twilio_sid and twilio_token:
+                 return True, "OTP sent (Fallback Mode - Check Logs/Console)", None
+            
+            return True, "OTP sent successfully (Simulation Mode)", None 
             
         except Exception as e:
             self.logger.error(f"OTP Request failed: {e}")
@@ -403,7 +449,13 @@ class AuthenticationManager:
         """Verify phone number with Real OTP logic"""
         try:
             # Normalize phone
-            phone = phone.replace(' ', '').strip()
+            phone = phone.replace(' ', '').replace('-', '').strip()
+
+            # UAE Format Normalization (E.164)
+            if phone.startswith('05'):
+                phone = '+971' + phone[1:]
+            elif phone.startswith('5') and len(phone) == 9:
+                phone = '+971' + phone
 
             # 1. Check Magic Bypass (Hardcoded Safety Net)
             magic_numbers = [
@@ -509,7 +561,16 @@ class AuthenticationManager:
              
              # Normalize phone in DB query too (assumes DB stores it clean, or we attempt to match)
              # Ideally DB phone is normalized.
-             clean_phone = phone.replace(' ', '').strip()
+             clean_phone = phone.replace(' ', '').replace('-', '').strip()
+             
+             # UAE Format Normalization (E.164)
+             if clean_phone.startswith('05'):
+                clean_phone = '+971' + clean_phone[1:]
+             elif clean_phone.startswith('5') and len(clean_phone) == 9:
+                clean_phone = '+971' + clean_phone
+             
+             # Update phone variable to use normalized version for consistency
+             phone = clean_phone
              
              cursor.execute("SELECT * FROM users WHERE phone = %s OR phone = %s", (clean_phone, phone))
              user = cursor.fetchone()
