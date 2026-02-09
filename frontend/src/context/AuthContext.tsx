@@ -288,7 +288,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const targetRoleNormalized = normalizeRole(newRole) as string;
 
     // Verify user has this role (normalize everything for comparison)
-    const allRoles = [currentUser.user_type, currentUser.role, ...(currentUser.secondary_roles || [])]
+    const allRoles = [
+      ...(currentUser.roles || []),
+      currentUser.user_type,
+      currentUser.role,
+      ...(currentUser.secondary_roles || [])
+    ]
       .filter(Boolean)
       .map(r => normalizeRole(r as string));
 
@@ -299,9 +304,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (hasTargetRole) {
       // Reorder roles array to put the new active role first (so getUserRole picks it up)
-      const currentRoles = currentUser.roles || [];
-      const otherRoles = currentRoles
-        .map(r => normalizeRole(r))
+      // Reorder roles array to put the new active role first (so getUserRole picks it up)
+      // Consolidate all available roles from different sources to ensure none are lost
+      const rawRoles = [
+        ...(currentUser.roles || []),
+        currentUser.user_type,
+        currentUser.role,
+        ...(currentUser.secondary_roles || [])
+      ].filter(Boolean);
+
+      // Normalize and deduplicate
+      const uniqueRolesSet = new Set(rawRoles.map(r => normalizeRole(r as string)));
+
+      const otherRoles = Array.from(uniqueRolesSet)
         .filter(r => r !== targetRoleNormalized);
 
       // Ensure the new role is at the front

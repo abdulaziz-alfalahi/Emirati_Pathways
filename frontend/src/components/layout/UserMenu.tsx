@@ -14,18 +14,9 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from 'react-router-dom';
-import { getDashboardRoute, UserRole, normalizeRole } from '@/types/auth';
+import { getDashboardRoute, UserRole, normalizeRole, ROLE_DISPLAY_NAMES } from '@/types/auth';
 
-// Updated role labels for the 4 main roles
-const roleLabels: Record<string, string> = {
-  'job_seeker': 'Job Seeker',
-  'candidate': 'Candidate',
-  'hr_manager': 'HR Manager',
-  'hr': 'HR Manager',
-  'recruiter': 'Recruiter',
-  'administrator': 'Administrator',
-  'admin': 'Administrator'
-};
+const roleLabels: Record<string, string> = ROLE_DISPLAY_NAMES;
 
 const UserMenu: React.FC = () => {
   // Add error handling wrapper around useAuth
@@ -163,32 +154,52 @@ const UserMenu: React.FC = () => {
         <DropdownMenuSeparator />
 
         {/* Role Switching Section */}
-        {(user.secondary_roles && user.secondary_roles.length > 0) && (
-          <>
-            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Switch Role</DropdownMenuLabel>
-            {[user.user_type, ...(user.secondary_roles || [])].filter(Boolean).filter((r, i, arr) => arr.indexOf(r) === i).map((role) => (
-              <DropdownMenuItem
-                key={role}
-                onClick={async () => {
-                  const normalized = normalizeRole(role!);
-                  if (normalized && normalized !== currentRole) {
-                    await authContext.switchRole(normalized as string);
-                    navigate(getDashboardRoute(normalized as string));
-                  }
-                }}
-                className="cursor-pointer flex items-center justify-between"
-                disabled={normalizeRole(role!) === currentRole}
-              >
-                <div className="flex items-center">
-                  <span className="mr-2">{getRoleIcon(role!)}</span>
-                  {roleLabels[role!.toLowerCase()] || role}
-                </div>
-                {normalizeRole(role!) === currentRole && <span className="text-xs text-muted-foreground">(Current)</span>}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-          </>
-        )}
+        {(() => {
+          // Consolidate roles from all sources
+          const rawRoles = [
+            ...(user.roles || []),
+            user.user_type,
+            ...(user.secondary_roles || [])
+          ].filter(Boolean);
+
+          // Normalize and deduplicate
+          const uniqueRoles = Array.from(new Set(
+            rawRoles.map(r => normalizeRole(r as string))
+          )).filter(Boolean);
+
+          // Only show switch role section if there's more than one role
+          // OR if the user has secondary_roles property (legacy compatibility)
+          if (uniqueRoles.length <= 1 && (!user.secondary_roles || user.secondary_roles.length === 0)) {
+            return null;
+          }
+
+          return (
+            <>
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Switch Role</DropdownMenuLabel>
+              {uniqueRoles.map((role) => (
+                <DropdownMenuItem
+                  key={role}
+                  onClick={async () => {
+                    const normalized = role as string; // Already normalized
+                    if (normalized && normalized !== currentRole) {
+                      await authContext.switchRole(normalized);
+                      navigate(getDashboardRoute(normalized));
+                    }
+                  }}
+                  className="cursor-pointer flex items-center justify-between"
+                  disabled={role === currentRole}
+                >
+                  <div className="flex items-center">
+                    <span className="mr-2">{getRoleIcon(role as string)}</span>
+                    {roleLabels[(role as string).toLowerCase()] || role}
+                  </div>
+                  {role === currentRole && <span className="text-xs text-muted-foreground">(Current)</span>}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+            </>
+          );
+        })()}
 
         {/* Request New Role Shortcut */}
         <DropdownMenuItem
@@ -230,7 +241,7 @@ const UserMenu: React.FC = () => {
           {isSigningOut ? 'Signing out...' : 'Sign out'}
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+    </DropdownMenu >
   );
 };
 
