@@ -648,6 +648,63 @@ class EducatorSystem:
             "confidence_score": 65
         }
 
+    def create_scholarship(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new scholarship (Educator/Admin)"""
+        try:
+            # Use raw SQL for now as we don't have ORM models for scholarships yet
+            import psycopg2
+            import json
+            
+            DB_CONFIG = {
+                'host': 'localhost',
+                'port': 5432,
+                'database': 'emirati_journey',
+                'user': 'emirati_user',
+                'password': 'emirati_secure_password'
+            }
+            
+            conn = psycopg2.connect(**DB_CONFIG)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO scholarships (
+                    title, provider_name, description, amount, 
+                    coverage_type, deadline, min_gpa, 
+                    academic_level, eligible_majors, application_link
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s
+                ) RETURNING id
+            """, (
+                data.get('title'),
+                data.get('provider'),
+                data.get('description'),
+                data.get('amount'),
+                data.get('coverage_type'),
+                data.get('deadline'),
+                data.get('min_gpa'),
+                data.get('academic_level'),
+                json.dumps(data.get('eligible_majors', [])),
+                data.get('application_link')
+            ))
+            
+            scholarship_id = cursor.fetchone()[0]
+            conn.commit()
+            conn.close()
+            
+            return {
+                "success": True,
+                "scholarship_id": scholarship_id,
+                "message": "Scholarship created successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating scholarship: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "Failed to create scholarship"
+            }
+
 # Initialize the educator system
 educator_system = EducatorSystem()
 logger.info("✅ Educator System initialized successfully")

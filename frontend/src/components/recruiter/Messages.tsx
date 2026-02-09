@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ConversationList from './messages/ConversationList';
 import MessageThread from './messages/MessageThread';
@@ -10,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const Messages: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -33,7 +35,9 @@ const Messages: React.FC = () => {
     if (!user) return;
     try {
       console.log('Fetching conversations for user:', user?.id);
-      const response = await restClient.get('/api/communication/conversations');
+      const response = await restClient.get('/api/communication/conversations', {
+        params: { role: 'recruiter' }
+      });
       if (response.data.success && response.data.data) {
         const backendConvs = response.data.data.conversations || [];
 
@@ -45,16 +49,25 @@ const Messages: React.FC = () => {
 
           // Find "other" participant
           const otherId = participants.find((p: string) => p !== currentUserId) || participants[0];
-          const otherName = (c.participant_names[otherId] && c.participant_names[otherId] !== 'None None')
-            ? c.participant_names[otherId]
+
+          const pNames = c.participant_names || {};
+          const pRoles = c.participant_roles || {};
+
+          const otherName = (pNames[otherId] && pNames[otherId] !== 'None None')
+            ? pNames[otherId]
             : 'Unknown User/Candidate';
 
-          console.log(`[Messages] Mapping Conv ${c.id}: User=${currentUserId}, Other=${otherId}, Name=${otherName}`);
+          const otherRole = (pRoles[otherId])
+            ? pRoles[otherId]
+            : 'candidate'; // Default to candidate
+
+          console.log(`[Messages] Mapping Conv ${c.id}: User=${currentUserId}, Other=${otherId}, Name=${otherName}, Role=${otherRole}`);
 
           return {
             id: c.id,
             participantId: otherId,
             participantName: otherName,
+            participantRole: otherRole,
             lastMessage: c.last_message_content || 'No messages yet',
             lastMessageTime: c.last_message_at || c.created_at,
             unreadCount: c.unread_count || 0
@@ -95,9 +108,13 @@ const Messages: React.FC = () => {
           senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : 'User',
           recipientId: m.recipient_id,
           recipientName: '', // Not used by UI
-          content: m.content,
+          content: m.content || '',
           timestamp: m.created_at,
-          read: m.status === 'read'
+          read: m.status === 'read',
+          messageType: m.message_type || 'text',
+          metadata: (typeof m.metadata === 'string')
+            ? (function () { try { return JSON.parse(m.metadata); } catch (e) { return {}; } })()
+            : (m.metadata || {})
         }));
         // Sort oldest to newest for chat UI (Backend already returns oldest first)
         setMessages(mappedMsgs);
@@ -143,7 +160,8 @@ const Messages: React.FC = () => {
         recipient_id: conversation.participantId,
         content: newMessage,
         conversation_id: selectedConversation,
-        message_type: 'text'
+        message_type: 'text',
+        sender_role: 'recruiter'
       };
 
       const response = await restClient.post('/api/communication/messages', payload);
@@ -207,7 +225,7 @@ const Messages: React.FC = () => {
 
       <Card className="flex flex-col md:flex-row h-[600px]">
         {/* Conversations list */}
-        <div className="w-full md:w-1/3 border-r">
+        <div className="w-full md:w-1/3 lg:w-1/4 border-r">
           <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
@@ -219,7 +237,7 @@ const Messages: React.FC = () => {
         </div>
 
         {/* Message thread */}
-        <div className="w-full md:w-2/3 flex flex-col">
+        <div className="w-full md:w-2/3 lg:w-1/2 flex flex-col">
           <MessageThread
             messages={messages}
             newMessage={newMessage}
@@ -229,14 +247,66 @@ const Messages: React.FC = () => {
             conversations={conversations}
             currentUserId={String(user?.id || '')}
             onScheduleInterview={() => {
-              toast({
-                title: "Redirecting to Scheduler",
-                description: "Opening interview scheduler for this candidate...",
-              });
-              // Navigation logic here
+              if (selectedConversation) {
+                const conv = conversations.find(c => c.id === selectedConversation);
+                if (conv) {
+                  // Navigate to interviews tab with candidateId param
+                  // Check role to determine which dashboard to go to
+                  const dashboardPath = user?.role === 'recruiter' ? '/recruiter' : '/hr-dashboard';
+                  navigate(`${dashboardPath}?tab=interviews&candidateId=${conv.participantId}`);
+                }
+              }
             }}
           />
         </div>
+
+        {/* Profile Sidebar */}
+        {selectedConversation && (
+          <div className="hidden lg:block w-1/4 border-l p-4 bg-slate-50">
+            {(() => {
+              const conv = conversations.find(c => c.id === selectedConversation);
+              if (!conv) return null;
+              return (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Candidate Profile</h3>
+                  <div className="bg-white p-4 rounded-lg border shadow-sm text-center">
+                    <div className="w-20 h-20 bg-slate-200 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-slate-500">
+                      {conv.participantName.charAt(0)}
+                    </div>
+                    <h4 className="font-bold text-lg">{conv.participantName}</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {conv.participantRole === 'recruiter' || conv.participantRole === 'admin'
+                        ? 'Team Member'
+                        : 'Candidate'}
+                    </p>
+
+                    {/* ONLY show profile buttons if it is a candidate */}
+                    {(conv.participantRole !== 'recruiter' && conv.participantRole !== 'admin') && (
+                      <div className="grid gap-2">
+                        <Button className="w-full" variant="outline" onClick={() => navigate(`/candidate-profile/${conv.participantId}`)}>
+                          View Full Profile
+                        </Button>
+                        <Button className="w-full" variant="ghost" onClick={() => navigate(`/candidate-profile/${conv.participantId}`)}>
+                          View Application
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Notes / Context Placeholder */}
+                  <div className="bg-white p-4 rounded-lg border shadow-sm">
+                    <h4 className="font-semibold text-sm mb-2">About</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {(conv.participantRole === 'recruiter' || conv.participantRole === 'admin')
+                        ? "Internal team member. View team settings for more details."
+                        : "Profile details are loading..."}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </Card>
     </div>
   );

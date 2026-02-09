@@ -10,6 +10,8 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { formatDate, formatTime } from './messageUtils';
 import { Conversation, Message } from './types';
 import EmptyConversation from './EmptyConversation';
+import { useNavigate } from 'react-router-dom';
+import { Users, Briefcase } from 'lucide-react';
 
 interface MessageThreadProps {
   messages: Message[];
@@ -32,6 +34,17 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   onScheduleInterview,
   currentUserId,
 }) => {
+  const navigate = useNavigate();
+
+  // Auto-scroll to bottom
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   // Determine if we have valid conversation data
   const conversationData = conversations.find(c => c.id === selectedConversation);
 
@@ -43,20 +56,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({
     );
   }
 
+  // Use a stable wrapper always
+
   // Create safe defaults if not found, to preserve component structure
   const participantName = conversationData ? conversationData.participantName : 'Unknown Participant';
   const participantInitial = participantName.charAt(0);
 
-  // Auto-scroll to bottom
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Use a stable wrapper always
   return (
     <div key="content-state" className="flex flex-col h-full overflow-hidden">
       <CardHeader className="px-6 py-4 border-b flex-shrink-0">
@@ -116,29 +121,61 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                         </Badge>
                       </div>
                     )}
-                    <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2 max-w-[80%]`}>
-                        {isFirstInGroup && !isCurrentUser && (
-                          <Avatar className="mt-1">
-                            <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div>
-                          {isFirstInGroup && !isCurrentUser && (
-                            <div className="text-sm font-medium mb-1">{message.senderName}</div>
-                          )}
-                          <div className={`rounded-2xl px-4 py-2 text-sm shadow-sm ${isCurrentUser
-                            ? 'bg-blue-600 text-white rounded-br-none'
-                            : 'bg-white border rounded-bl-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                            }`}>
-                            {message.content}
+
+                    {/* System Message Rendering */}
+                    {message.messageType === 'system' ? (
+                      <div className="flex justify-center my-4 w-full">
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 max-w-md w-full text-center shadow-sm">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <span className="p-2 bg-blue-100 text-blue-600 rounded-full">
+                              <Users className="h-4 w-4" />
+                            </span>
+                            <h4 className="font-semibold text-sm">Candidate Discussion Started</h4>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1 text-right">
-                            {formatTime(message.timestamp)}
+                          <p className="text-sm text-muted-foreground mb-3">{message.content}</p>
+
+                          {(() => {
+                            const safeMetadata = (message.metadata && typeof message.metadata === 'object') ? message.metadata : {};
+                            return safeMetadata.candidate_id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full bg-white hover:bg-slate-50"
+                                onClick={() => navigate(`/candidate-profile/${safeMetadata.candidate_id}`)}
+                              >
+                                <Briefcase className="h-3 w-3 mr-2" />
+                                View Candidate Profile
+                              </Button>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Standard User Message Rendering */
+                      <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} gap-2 max-w-[80%]`}>
+                          {isFirstInGroup && !isCurrentUser && (
+                            <Avatar className="mt-1">
+                              <AvatarFallback>{message.senderName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div>
+                            {isFirstInGroup && !isCurrentUser && (
+                              <div className="text-sm font-medium mb-1">{message.senderName}</div>
+                            )}
+                            <div className={`rounded-2xl px-4 py-2 text-sm shadow-sm ${isCurrentUser
+                              ? 'bg-blue-600 text-white rounded-br-none'
+                              : 'bg-white border rounded-bl-none text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                              }`}>
+                              {message.content}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 text-right">
+                              {formatTime(message.timestamp)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}

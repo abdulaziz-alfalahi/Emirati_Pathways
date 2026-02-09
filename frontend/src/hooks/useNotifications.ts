@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Notification } from '@/types/notifications';
 import { useToast } from '@/hooks/use-toast';
+import { restClient } from '@/utils/api';
 
 export const useNotifications = () => {
   const { user } = useAuth();
@@ -12,76 +13,69 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = async () => {
+  // Use Backend API instead of Supabase Direct to resolve ID mismatch (Int vs UUID)
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Don't set loading on polling updates (silent refresh)
+      // Only initial load needs loading state
+      const response = await restClient.get('/api/communication/notifications?limit=20');
 
-      if (error) throw error;
+      if (response.data.success) {
+        const fetchedNotes = response.data.data.notifications;
 
-      const notificationData = (data || []).map((n: any) => {
-        let metadata = n.metadata;
-        if (typeof metadata === 'string') {
-          try {
-            metadata = JSON.parse(metadata);
-          } catch (e) {
-            console.error('Failed to parse metadata strings', e);
-            metadata = {};
+        // Transform backend response to frontend types if needed
+        // Backend returns generic objects, we need Notification interface
+        const formattedNotes: Notification[] = fetchedNotes.map((n: any) => {
+          // Parse metadata if string
+          let meta = n.metadata;
+          if (typeof meta === 'string') {
+            try { meta = JSON.parse(meta); } catch (e) { }
           }
-        }
 
-        return {
-          ...n,
-          metadata,
-          link: metadata?.link || n.link || ((metadata?.type === 'bug' || metadata?.type === 'feature') ? '/admin-dashboard?tab=feedback' : undefined),
-          message: n.content || n.message
-        };
-      }) as Notification[];
-      setNotifications(notificationData);
-      setUnreadCount(notificationData.filter(n => !n.is_read).length);
+          return {
+            id: n.id,
+            user_id: n.user_id,
+            type: n.notification_type || n.type, // Handle naming diffs
+            title: n.title,
+            message: n.content || n.message,
+            link: meta?.link, // or derive from type
+            is_read: !!n.read_at,
+            created_at: n.created_at,
+            read_at: n.read_at,
+            metadata: meta || {}
+          };
+        });
+
+        setNotifications(formattedNotes);
+        setUnreadCount(response.data.data.unread_count || formattedNotes.filter(n => !n.is_read).length); // Backend returns unread_count
+      }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch notifications.",
-        variant: "destructive"
-      });
+      // Silent fail on polling usually better than toast spam
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]); // user dependency critical
 
   const markAsRead = async (notificationId: string) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
+      // Optimistic Update
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId ? { ...n, is_read: true } : n
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
+
+      await restClient.post(`/api/communication/notifications/${notificationId}/read`);
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark notification as read.",
-        variant: "destructive"
-      });
+      // Revert if critical, but for read status usually acceptable to drift slightly until next poll
+      fetchNotifications();
     }
   };
 
@@ -89,54 +83,33 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
-
-      if (error) throw error;
-
+      // Optimistic Update
       setNotifications(prev =>
         prev.map(n => ({ ...n, is_read: true }))
       );
       setUnreadCount(0);
+
+      await restClient.post(`/api/communication/notifications/mark-all-read`);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      toast({
-        title: "Error",
-        description: "Failed to mark all notifications as read.",
-        variant: "destructive"
-      });
+      fetchNotifications();
     }
   };
 
   useEffect(() => {
-    fetchNotifications();
-
-    // Set up real-time subscription
     if (user) {
-      const channel = supabase
-        .channel('notifications-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            fetchNotifications();
-          }
-        )
-        .subscribe();
+      // Initial Fetch
+      fetchNotifications();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      // Polling Strategy (30 seconds)
+      // Replacing Socket for reliability given architecture mismatch
+      const intervalId = setInterval(() => {
+        fetchNotifications();
+      }, 30000);
+
+      return () => clearInterval(intervalId);
     }
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   return {
     notifications,

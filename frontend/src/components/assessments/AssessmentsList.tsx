@@ -40,7 +40,8 @@ const getAssessmentTypeIcon = (type: AssessmentType) => {
 };
 
 export const AssessmentsList = () => {
-  const { user, roles } = useAuth();
+  const { user } = useAuth();
+  const userRoles = user?.roles || [];
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<AssessmentType | 'all'>('all');
@@ -50,15 +51,15 @@ export const AssessmentsList = () => {
     queryFn: fetchAssessments,
   });
 
-  const isAssessmentCenter = roles.includes('assessment_center') || roles.includes('training_center');
+  const isAssessmentCenter = userRoles.includes('assessment_center') || userRoles.includes('training_center');
 
   const handleCreateSuccess = () => {
     refetch();
     setIsCreateDialogOpen(false);
   };
 
-  const filteredAssessments = activeFilter === 'all' 
-    ? assessments 
+  const filteredAssessments = activeFilter === 'all'
+    ? assessments
     : assessments.filter(assessment => assessment.assessment_type === activeFilter);
 
   return (
@@ -87,36 +88,36 @@ export const AssessmentsList = () => {
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-4 bg-white border shadow-sm">
-          <TabsTrigger 
-            value="all" 
+          <TabsTrigger
+            value="all"
             onClick={() => setActiveFilter('all')}
             className="data-[state=active]:bg-[rgb(var(--pg-primary))] data-[state=active]:text-white"
           >
             All Types
           </TabsTrigger>
-          <TabsTrigger 
-            value="skills" 
+          <TabsTrigger
+            value="skills"
             onClick={() => setActiveFilter('skills')}
             className="data-[state=active]:bg-[rgb(var(--pg-primary))] data-[state=active]:text-white"
           >
             Skills
           </TabsTrigger>
-          <TabsTrigger 
-            value="behaviors" 
+          <TabsTrigger
+            value="behaviors"
             onClick={() => setActiveFilter('behaviors')}
             className="data-[state=active]:bg-[rgb(var(--pg-secondary))] data-[state=active]:text-white"
           >
             Behaviors
           </TabsTrigger>
-          <TabsTrigger 
-            value="capabilities" 
+          <TabsTrigger
+            value="capabilities"
             onClick={() => setActiveFilter('capabilities')}
             className="data-[state=active]:bg-[rgb(var(--pg-accent))] data-[state=active]:text-white"
           >
             Capabilities
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value={activeFilter}>
           {isLoading ? (
             <div className="flex justify-center p-8">
@@ -126,7 +127,7 @@ export const AssessmentsList = () => {
             <div className="text-center p-8 border rounded-lg bg-muted/40">
               <h3 className="text-lg font-medium">No assessments found</h3>
               <p className="text-muted-foreground mt-1">
-                {activeFilter !== 'all' 
+                {activeFilter !== 'all'
                   ? `No ${activeFilter} assessments are currently available.`
                   : 'There are no assessments currently available.'}
               </p>
@@ -182,9 +183,9 @@ export const AssessmentsList = () => {
                               <Badge className="bg-[rgb(var(--pg-secondary))] text-white">Free</Badge>
                             )}
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-[rgb(var(--pg-primary))] hover:bg-[rgb(var(--pg-primary))/10]"
                             onClick={() => setSelectedAssessmentId(assessment.id)}
                           >

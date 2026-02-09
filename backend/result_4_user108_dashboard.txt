@@ -1,0 +1,6 @@
+Applications User 108 Should See: 1
+
+Candidate: 18c2f394-3c7e-519c-9232-7a4470c7868f
+Job: Chief Financial Officer (ID: 756)
+Status: pending
+

@@ -44,7 +44,9 @@ import {
 import { restClient } from '@/utils/api';
 import { ScheduleVideoInterviewDialog } from './ScheduleVideoInterviewDialog';
 
-interface Applicant {
+import RecruiterCandidateView from './RecruiterCandidateView';
+
+export interface Applicant {
   application_id: string;
   job_id: string;
   candidate_id: string;
@@ -60,6 +62,9 @@ interface Applicant {
   soft_skills: string[] | null;
   work_experience: any[] | null;
   education: any[] | null;
+  location?: string;
+  match_score?: number;
+  job_title?: string;
 }
 
 interface JobApplicantsViewProps {
@@ -78,27 +83,30 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [interviewCandidateId, setInterviewCandidateId] = useState<string | null>(null);
 
-  const jdId = job?.jd_id || job?.id;
+  // Prioritize the numeric ID (job.id) for the API call if available
+  // The API expects the numeric job_id (e.g., 756), NOT the string jd_id (e.g. JD108...)
+  const jobId = job?.id || job?.jd_id;
+  const jdId = job?.jd_id || job?.id; // Keep strict jd_id for dialogs if they depend on it
 
   // Fetch applicants for this job
   const { data: applicantsData, isLoading, refetch } = useQuery({
-    queryKey: ['jobApplicants', jdId, statusFilter],
+    queryKey: ['jobApplicants', jobId, statusFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (statusFilter && statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
-      const response = await restClient.get(`/api/recruiter/jobs/${jdId}/applicants?${params.toString()}`);
+      const response = await restClient.get(`/api/recruiter/jobs/${jobId}/applicants?${params.toString()}`);
       if (response.data?.success) {
         return response.data;
       }
       throw new Error('Failed to fetch applicants');
     },
-    enabled: !!jdId,
+    enabled: !!jobId,
   });
 
-  const applicants = applicantsData?.data || [];
-  const pagination = applicantsData?.pagination || { total: 0 };
+  const applicants = applicantsData?.candidates || [];
+  const pagination = { total: applicantsData?.count || applicants.length || 0 };
 
   // Toggle expanded state for an applicant
   const toggleExpanded = (applicationId: string) => {
@@ -166,13 +174,17 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
     try {
       // 1. Create or find conversation
       const response = await restClient.post('/api/communication/conversations', {
-        participants: [applicant.candidate_id]
+        participants: [applicant.candidate_id],
+        sender_role: 'recruiter',
+        job_id: jobId,
+        application_id: applicant.application_id,
+        title: job?.title || 'Job Application'
       });
 
       if (response.data?.success) {
         const conversationId = response.data.data.id;
         // 2. Navigate to messages tab with conversation ID
-        navigate(`/recruiter-dashboard?tab=messages&conversationId=${conversationId}`);
+        navigate(`/recruiter?tab=messages&conversationId=${conversationId}`);
       } else {
         throw new Error('Failed to start conversation');
       }
@@ -191,6 +203,21 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
     setInterviewCandidateId(applicant.candidate_id);
     setIsInterviewDialogOpen(true);
   };
+
+  // No closing brace here!
+
+  // If viewing a specific candidate detailed profile
+  if (selectedApplicant) {
+    return (
+      <RecruiterCandidateView
+        applicant={selectedApplicant}
+        onBack={() => setSelectedApplicant(null)}
+        onMessage={handleMessage}
+        onScheduleInterview={handleScheduleInterview}
+        onUpdateStatus={updateStatus}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -284,7 +311,29 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                           </span>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-lg">{applicant.candidate_name || 'Unknown Candidate'}</h3>
+                          <div className="flex items-center gap-3">
+                            <h3
+                              className="font-semibold text-lg cursor-pointer hover:text-blue-600 hover:underline"
+                              onClick={() => setSelectedApplicant({
+                                ...applicant,
+                                job_id: applicant.job_id || jobId, // Ensure job_id is present
+                                job_title: job?.title, // Pass job title for modal context
+                              })}
+                            >
+                              {applicant.candidate_name || 'Unknown Candidate'}
+                            </h3>
+                            {applicant.match_score !== undefined && (
+                              <Badge
+                                variant={applicant.match_score >= 80 ? 'default' : applicant.match_score >= 60 ? 'secondary' : 'outline'}
+                                className={`font-bold ${applicant.match_score >= 80 ? 'bg-emerald-500 hover:bg-emerald-600' :
+                                  applicant.match_score >= 60 ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''
+                                  }`}
+                              >
+                                {applicant.match_score}% Match
+                              </Badge>
+                            )}
+                          </div>
+
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             {applicant.candidate_email && (
                               <div className="flex items-center gap-1">
@@ -315,24 +364,8 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                       </div>
                     </div>
 
-                    {/* Actions */}
+                    {/* Expand/Collapse Toggle */}
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleMessage(applicant)}
-                      >
-                        <MessageSquare className="h-4 w-4 mr-1" />
-                        Message
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleScheduleInterview(applicant)}
-                      >
-                        <Video className="h-4 w-4 mr-1" />
-                        Schedule Interview
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -428,22 +461,6 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
                           </div>
                         </div>
                       )}
-
-                      {/* Status Update */}
-                      <div className="flex items-center gap-4 pt-2">
-                        <span className="text-sm font-medium">Update Status:</span>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => updateStatus(applicant.application_id, 'under_review')}>
-                            Move to Review
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleScheduleInterview(applicant)}>
-                            Schedule Interview
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => updateStatus(applicant.application_id, 'rejected')}>
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -463,5 +480,6 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
     </div>
   );
 };
+
 
 export default JobApplicantsView;

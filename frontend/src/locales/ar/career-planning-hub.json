@@ -5,19 +5,19 @@
   "stats": {
     "careerPaths": {
       "value": "150+",
-      "label": "مسار مهني"
+      "label": "مسارات مهنية"
     },
     "jobOpportunities": {
       "value": "5,000+",
-      "label": "فرصة وظيفية"
+      "label": "فرص وظيفية"
     },
     "industryPartners": {
       "value": "200+",
-      "label": "شريك صناعي"
+      "label": "شركاء صناعيين"
     },
     "successStories": {
       "value": "3,500+",
-      "label": "قصة نجاح"
+      "label": "قصص نجاح"
     }
   },
   "tabs": {
@@ -221,4 +221,3 @@
     "name": "درهم إماراتي"
   }
 }
-

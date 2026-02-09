@@ -128,7 +128,7 @@ def create_candidate_profile():
                 # Update existing profile
                 cursor.execute("""
                     UPDATE candidate_profiles SET
-                        professional_summary = %s,
+                        bio = COALESCE(NULLIF(%s, ''), bio),
                         experience_years = %s,
                         current_position = %s,
                         current_company = %s,
@@ -137,10 +137,6 @@ def create_candidate_profile():
                         preferred_locations = %s,
                         remote_work_preference = %s,
                         personal_info = %s,
-                        education = %s,
-                        skills = %s,
-                        languages = %s,
-                        certifications = %s,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE user_id = %s
                     RETURNING id
@@ -154,24 +150,20 @@ def create_candidate_profile():
                     json.dumps(data.get('preferred_locations', [])),
                     data.get('remote_work_preference', False),
                     json.dumps(personal_info),
-                    json.dumps(education),
-                    json.dumps(skills),
-                    json.dumps(languages),
-                    json.dumps(certifications),
                     current_user_id
                 ))
                 
                 profile_id = cursor.fetchone()['id']
                 action = "updated"
             else:
-                # Create new profile - let database generate UUID
+                # Create new profile
                 cursor.execute("""
                     INSERT INTO candidate_profiles (
-                        user_id, professional_summary, experience_years,
+                        user_id, bio, experience_years,
                         current_position, current_company, salary_expectation,
                         notice_period, preferred_locations, remote_work_preference,
-                        personal_info, education, skills, languages, certifications
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        personal_info
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     current_user_id,
@@ -183,15 +175,61 @@ def create_candidate_profile():
                     data.get('notice_period', ''),
                     json.dumps(data.get('preferred_locations', [])),
                     data.get('remote_work_preference', False),
-                    json.dumps(personal_info),
-                    json.dumps(education),
-                    json.dumps(skills),
-                    json.dumps(languages),
-                    json.dumps(certifications)
+                    json.dumps(personal_info)
                 ))
                 
                 profile_id = cursor.fetchone()['id']
                 action = "created"
+            
+            # Update user_cvs with skills/education/etc (Main Table)
+            cursor.execute("SELECT id FROM user_cvs WHERE user_id = %s", (current_user_id,))
+            existing_cv = cursor.fetchone()
+            
+            # Map fields to user_cvs columns
+            tech_skills = data.get('skills', [])
+            work_exp = [] # Form typically relies on parsed CV for this, but could be passed
+            if data.get('experience'):
+                work_exp = data.get('experience')
+            
+            edu_json = json.dumps(education) if education else '[]'
+            skills_json = json.dumps(tech_skills) if tech_skills else '[]'
+            langs_json = json.dumps(languages) if languages else '[]'
+            certs_json = json.dumps(certifications) if certifications else '[]'
+            
+            if existing_cv:
+                cursor.execute("""
+                    UPDATE user_cvs SET
+                        technical_skills = CASE WHEN %s::jsonb != '[]'::jsonb THEN %s::jsonb ELSE technical_skills END,
+                        education = CASE WHEN %s::jsonb != '[]'::jsonb THEN %s::jsonb ELSE education END,
+                        languages_spoken = CASE WHEN %s::jsonb != '[]'::jsonb THEN %s::jsonb ELSE languages_spoken END,
+                        certifications = CASE WHEN %s::jsonb != '[]'::jsonb THEN %s::jsonb ELSE certifications END,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                """, (
+                    skills_json, skills_json,
+                    edu_json, edu_json,
+                    langs_json, langs_json,
+                    certs_json, certs_json,
+                    existing_cv['id']
+                ))
+            else:
+                 # Create user_cv if not exists (e.g. manual profile creation without CV upload)
+                 cursor.execute("""
+                    INSERT INTO user_cvs (
+                        id, user_id, 
+                        technical_skills, education, languages_spoken, certifications,
+                        status, is_visible, created_at, updated_at,
+                        title
+                    ) VALUES (
+                        %s, %s, 
+                        %s, %s, %s, %s,
+                        'active', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+                        'Candidate Profile'
+                    )
+                 """, (
+                     str(uuid.uuid4()), current_user_id,
+                     skills_json, edu_json, langs_json, certs_json
+                 ))
 
             # Sync basic info to users table
             # Extract names from personal_info which ProfileForm sends split or as whole
@@ -500,14 +538,35 @@ def upload_cv():
                 cv_data = parsed_data.get('data', {})
                 
                 # Update candidate profile with parsed CV data
-                conn = get_db_connection()
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                # Also store in centralized CV Storage (for Dashboard/Stats visibility)
+                try:
+                    from cv_storage_manager import cv_storage_manager
+                    
+                    # Prepare data for storage manager
+                    storage_data = {
+                        'data': cv_data,
+                        'analysis': parsed_data.get('analysis', {}),
+                        'file_info': {
+                            'original_filename': cv_file.filename,
+                            'file_size': os.path.getsize(temp_file_path),
+                            'file_type': cv_file.content_type or 'application/pdf',
+                            'mime_type': cv_file.content_type or 'application/pdf',
+                            'upload_timestamp': datetime.utcnow().isoformat()
+                        }
+                    }
+                    
+                    # Store and log
+                    cv_storage_manager.store_cv(storage_data, str(current_user_id))
+                    logger.info(f"✅ CV stored in centralized system for user {current_user_id}")
+                    
+                except Exception as e:
+                    logger.error(f"⚠️ Failed to store CV in centralized system: {str(e)}")
+                    # Continue - do not block the main update
                 
                 try:
-                    # Check if profile exists
-                    cursor.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (current_user_id,))
-                    existing_profile = cursor.fetchone()
-                    
+                    conn = get_db_connection()
+                    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
                     # Extract relevant data from CV
                     professional_summary = cv_data.get('summary', '')
                     skills = cv_data.get('skills', [])
@@ -515,44 +574,80 @@ def upload_cv():
                     education = cv_data.get('education', [])
                     languages = cv_data.get('languages', [])
                     
+                    # 1. Update candidate_profiles (Basic Info)
+                    # Map summary to bio since professional_summary column is missing
+                    # Use headline from CV if available, or generate from summary
+                    headline = cv_data.get('title') or (professional_summary[:100] + '...' if len(professional_summary) > 100 else professional_summary)
+                    
+                    # Check if profile exists
+                    cursor.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (current_user_id,))
+                    existing_profile = cursor.fetchone()
+
                     if existing_profile:
-                        # Update existing profile with CV data
                         cursor.execute("""
                             UPDATE candidate_profiles SET
-                                professional_summary = COALESCE(NULLIF(%s, ''), professional_summary),
-                                experience_years = GREATEST(%s, experience_years),
-                                skills = %s,
-                                education = %s,
-                                languages = %s,
-                                cv_parsed_data = %s,
+                                bio = COALESCE(NULLIF(%s, ''), bio),
+                                headline = COALESCE(NULLIF(%s, ''), headline),
                                 updated_at = CURRENT_TIMESTAMP
                             WHERE user_id = %s
+                        """, (professional_summary, headline, current_user_id))
+                    else:
+                        cursor.execute("""
+                            INSERT INTO candidate_profiles (user_id, bio, headline)
+                            VALUES (%s, %s, %s)
+                        """, (current_user_id, professional_summary, headline))
+
+                    # 2. Update user_cvs (Detailed CV Data - The "Main Table")
+                    # Check if user_cv entry exists
+                    cursor.execute("SELECT id FROM user_cvs WHERE user_id = %s", (current_user_id,))
+                    existing_cv = cursor.fetchone()
+                    
+                    cv_id = existing_cv['id'] if existing_cv else str(uuid.uuid4())
+                    
+                    if existing_cv:
+                        cursor.execute("""
+                            UPDATE user_cvs SET
+                                professional_summary = %s,
+                                technical_skills = %s,
+                                work_experience = %s,
+                                education = %s,
+                                languages_spoken = %s,
+                                status = 'active',
+                                is_visible = true,
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE id = %s
                         """, (
                             professional_summary,
-                            experience_years,
                             json.dumps(skills),
+                            json.dumps(cv_data.get('experience', [])),
                             json.dumps(education),
                             json.dumps(languages),
-                            json.dumps(cv_data),
-                            current_user_id
+                            cv_id
                         ))
                     else:
-                        # Create new profile with CV data
                         cursor.execute("""
-                            INSERT INTO candidate_profiles (
-                                user_id, professional_summary, experience_years,
-                                skills, education, languages, cv_parsed_data
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            INSERT INTO user_cvs (
+                                id, user_id, 
+                                professional_summary, technical_skills, work_experience, 
+                                education, languages_spoken,
+                                status, is_visible, 
+                                created_at, updated_at
+                            ) VALUES (
+                                %s, %s, 
+                                %s, %s, %s, 
+                                %s, %s, 
+                                'active', true, 
+                                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                            )
                         """, (
-                            current_user_id,
+                            cv_id, current_user_id,
                             professional_summary,
-                            experience_years,
                             json.dumps(skills),
+                            json.dumps(cv_data.get('experience', [])),
                             json.dumps(education),
-                            json.dumps(languages),
-                            json.dumps(cv_data)
+                            json.dumps(languages)
                         ))
-                    
+
                     conn.commit()
                     
                     return jsonify({
@@ -565,8 +660,8 @@ def upload_cv():
                     })
                     
                 finally:
-                    cursor.close()
-                    conn.close()
+                    if 'cursor' in locals(): cursor.close()
+                    if 'conn' in locals(): conn.close()
             else:
                 return jsonify({
                     'success': False,
@@ -653,7 +748,7 @@ def update_job_preferences():
 def upload_photo():
     """Upload candidate profile photo"""
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = str(get_jwt_identity())
         
         if 'photo' not in request.files:
             return jsonify({
@@ -673,8 +768,9 @@ def upload_photo():
         # Create unique filename
         filename = f"profile_{current_user_id}_{uuid.uuid4().hex[:8]}_{filename}"
         
-        # Ensure upload directory exists
-        upload_dir = os.path.join(os.getcwd(), 'uploads', 'profile_photos')
+        # Ensure upload directory exists - Use absolute path relative to this file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        upload_dir = os.path.join(current_dir, 'uploads', 'profile_photos')
         os.makedirs(upload_dir, exist_ok=True)
         
         file_path = os.path.join(upload_dir, filename)
@@ -699,12 +795,13 @@ def upload_photo():
             
             result = cursor.fetchone()
             if not result:
-                # If no profile exists, create one? Or fail? 
-                # Better to fail and say "Create profile first"
-                return jsonify({
-                    'success': False,
-                    'message': 'Candidate profile not found'
-                }), 404
+                # Auto-create profile if missing to allow photo upload
+                cursor.execute("""
+                    INSERT INTO candidate_profiles (user_id, profile_photo_url, created_at, updated_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    RETURNING profile_photo_url
+                """, (current_user_id, photo_url))
+                result = cursor.fetchone()
             
             conn.commit()
             

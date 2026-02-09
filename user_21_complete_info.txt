@@ -1,0 +1,276 @@
+====================================================================================================
+COMPLETE INFORMATION FOR USER ID 21
+====================================================================================================
+
+=== BASIC USER INFORMATION ===
+id............................ 21
+email......................... khalid.almazrouei@email.ae
+password_hash................. $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYzpLHJ5jLu
+full_name..................... Khalid Al Mazrouei
+user_type..................... candidate
+phone......................... +971501234567
+location...................... Dubai
+emirate....................... Dubai
+company....................... Previous HR Company
+job_title..................... HR Coordinator
+is_active..................... True
+is_verified................... True
+created_at.................... 2025-11-07 06:45:34.558271
+updated_at.................... 2026-01-13 13:23:33.145054
+last_login.................... None
+profile_data.................. {}
+preferences................... {}
+first_name.................... Khalid
+last_name..................... Al Mazrouei
+role.......................... candidate
+nationality................... UAE
+education_level............... Bachelor's Degree
+preferred_salary_min.......... None
+preferred_salary_max.......... None
+preferred_location............ None
+is_uae_national............... True
+skills........................ ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+experience_years.............. 5
+username...................... khalid.almazrouei@email.ae
+latitude...................... 25.206995338016622
+longitude..................... 55.365054891837445
+secondary_roles............... ['candidate', 'job_seeker', 'assessor']
+
+=== JOB APPLICATIONS ===
+Total Applications: 10
+
+  Application ID: APP-A22ED326
+  Job ID: jd_20260102_065919_d621fdcc
+  Status: withdrawn
+  Submitted: 2026-01-02 07:54:49.589010+04:00
+
+  Application ID: APP-B716D119
+  Job ID: jd_20251231_111000_25a81e0e
+  Status: withdrawn
+  Submitted: 2026-01-02 01:19:06.719217+04:00
+
+  Application ID: APP-13A1BD1E
+  Job ID: jd_20251230_205111_5f1e84b4
+  Status: withdrawn
+  Submitted: 2026-01-01 12:18:10.455252+04:00
+
+  Application ID: APP-92543587
+  Job ID: a7af2185-a484-4b83-b094-9475ea15d9d5
+  Status: withdrawn
+  Submitted: 2025-12-29 13:27:37.438126+04:00
+
+  Application ID: APP-EDE5805C
+  Job ID: jd_20251124_184251_c863c1f4
+  Status: withdrawn
+  Submitted: 2025-12-28 21:10:02.854515+04:00
+
+  Application ID: APP-24957C16
+  Job ID: jd_20251128_004855_84b6e6da
+  Status: withdrawn
+  Submitted: 2025-12-28 11:44:36.519345+04:00
+
+  Application ID: APP-ACDE6329
+  Job ID: jd_20251212_101707_596dbdbc
+  Status: withdrawn
+  Submitted: 2025-12-28 11:44:32.237163+04:00
+
+  Application ID: APP-A908AB3B
+  Job ID: jd_20251212_094932_8c365f17
+  Status: withdrawn
+  Submitted: 2025-12-28 11:44:26.681417+04:00
+
+  Application ID: 2881b30a-3b51-45eb-8809-dc105038c5bf
+  Job ID: 1
+  Status: submitted
+  Submitted: 2025-12-24 11:56:11.627676+04:00
+
+  Application ID: APP-7F4592BE
+  Job ID: e8209c95-3c10-416a-afc9-15a38c374d33
+  Status: withdrawn
+  Submitted: 2025-12-23 21:45:35.882944+04:00
+
+=== CV RECORDS ===
+Total CVs: 0
+
+=== CONVERSATIONS ===
+Total Conversations: 6
+
+  Conversation ID: a591590f-a6d2-47d3-b9e3-3ecb50c2b2e8
+  Title: Recruiter Chat
+  Created: 2026-01-04 20:57:13.998125+04:00
+
+  Conversation ID: c830bf67-dc06-45f7-83e1-c9d73532e965
+  Title: Conversation
+  Created: 2026-01-07 19:05:39.307876+04:00
+
+  Conversation ID: e34ac1b0-b6c3-4880-914f-5a861fb903ad
+  Title: Recruiter Chat
+  Created: 2026-01-10 11:25:12.111622+04:00
+
+  Conversation ID: 99cb3caf-937d-4240-9ee2-a5d5a3cb49c9
+  Title: Recruiter Chat
+  Created: 2026-01-04 10:46:40.078054+04:00
+
+  Conversation ID: 04da3425-86a0-4282-9c58-70019bb0510c
+  Title: Khalid Al Mazrouei
+  Created: 2026-01-04 10:37:03.122842+04:00
+
+  Conversation ID: 24849546-c46f-4e5f-97cd-54d593775da3
+  Title: Khalid Al Mazrouei
+  Created: 2026-01-13 09:35:30.034483+04:00
+
+=== MESSAGES ===
+Total Recent Messages: 7
+
+  Message ID: 68c81bed-efff-44cd-b0f1-ba7b017d4104
+  Content: Test message after deleting from recruiter side.
+  Created: 2026-01-09 09:02:07.125583+04:00
+
+  Message ID: 86856067-ffa8-42bb-aede-3910169146a1
+  Content: Test message after deleting from recruiter side.
+  Created: 2026-01-09 08:32:35.368859+04:00
+
+  Message ID: 48b65b1c-67bd-4a20-ba8b-2f603d774981
+  Content: Test 9
+  Created: 2026-01-07 14:40:08.231258+04:00
+
+  Message ID: e8d0d8e7-d9a6-489e-822d-2400ed0aa30c
+  Content: Test 1
+  Created: 2026-01-07 14:39:58.719654+04:00
+
+  Message ID: d3ace847-61e6-4291-aef0-399c0851fcaf
+  Content: Test 22
+  Created: 2026-01-07 14:39:17.219471+04:00
+
+  Message ID: 86d1eb82-37bd-4334-a992-7a48fa5e51de
+  Content: Reply to recruiter
+  Created: 2026-01-04 14:53:43.472700+04:00
+
+  Message ID: 266b922f-76d8-47f3-a3f2-52869335df3e
+  Content: Test 19
+  Created: 2026-01-04 10:54:06.859713+04:00
+
+=== NOTIFICATIONS ===
+Total Recent Notifications: 20
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-12 has been resolved.
+  Read: No
+  Created: 2026-01-19 10:49:49.015021+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-12 has been resolved.
+  Read: No
+  Created: 2026-01-19 10:49:44.090120+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-12 has been resolved.
+  Read: No
+  Created: 2026-01-13 09:53:40.297091+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Perfect
+  Read: No
+  Created: 2026-01-13 09:35:46.770403+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-12 14:11:18.161497+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-12 14:05:38.767712+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-12 14:05:35.663343+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-11 18:47:08.941885+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-11 15:42:06.186989+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-11 15:25:36.446675+04:00
+
+  Type: system_announcement
+  Title: Feedback Resolved
+  Content: Great news! Your feedback reported on 2026-01-11 has been resolved.
+  Read: Yes
+  Created: 2026-01-11 15:25:22.978118+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Test3
+  Read: Yes
+  Created: 2026-01-10 11:26:59.358128+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Test2
+  Read: Yes
+  Created: 2026-01-10 11:26:14.053619+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Test 1
+  Read: Yes
+  Created: 2026-01-10 11:25:32.182303+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Test message after deleting from recruiter side.
+  Read: Yes
+  Created: 2026-01-09 09:02:07.156367+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Test message after deleting from recruiter side.
+  Read: Yes
+  Created: 2026-01-09 08:32:35.404875+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: test4
+  Read: Yes
+  Created: 2026-01-08 22:58:54.782931+04:00
+
+  Type: new_message
+  Title: New Message from User
+  Content: Test3
+  Read: Yes
+  Created: 2026-01-08 22:57:31.700896+04:00
+
+  Type: interview_scheduled
+  Title: Interview Scheduled: Testing Inviting an applicant
+  Content: You have been invited to an interview for HR Coordinator. Check your schedule for details.
+  Read: Yes
+  Created: 2026-01-08 20:27:40.923854+04:00
+
+  Type: interview_scheduled
+  Title: Interview Scheduled: Test with the team
+  Content: You have been invited to an interview for HR Coordinator. Check your schedule for details.
+  Read: Yes
+  Created: 2026-01-08 10:25:57.076936+04:00
+
+====================================================================================================

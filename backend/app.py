@@ -21,15 +21,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ... (Previous imports)
-from hr_job_posting_routes import hr_job_posting_bp
-from hr_offer_routes import hr_offer_bp, public_offer_bp
-from candidate_job_routes import candidate_job_bp
-from job_application_routes import job_application_bp
-try:
-    from recruiter.cv_routes import cv_bp
-except ImportError:
-    # Fallback if path is different, but based on recruiter_server it is recruiter.cv_routes
-    from recruiter.cv_routes import cv_bp
+from backend.hr_job_posting_routes import hr_job_posting_bp
+from backend.hr_offer_routes import hr_offer_bp, public_offer_bp
+from backend.candidate_job_routes import candidate_job_bp
+from backend.job_application_routes import job_application_bp
+
 
 # ... (Initialize Flask app like before)
 # Duplicate app init removed. Blueprints will be registered in the main block below.
@@ -179,6 +175,7 @@ def safe_json_load(value, default=None):
 
 # Initialize Flask app
 app = Flask(__name__)
+socketio.init_app(app)
 
 # JWT Configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
@@ -242,12 +239,315 @@ def serve_uploads(filename):
     return send_from_directory(uploads_dir, filename)
 
 # Add current directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))) # Disabled to prevent module duplication
 
 # Register all blueprints via unified registry
 # Register all blueprints via unified registry
-from blueprint_registry import register_all_blueprints
+from backend.blueprint_registry import register_all_blueprints
 register_all_blueprints(app)
+
+# Register Enhanced CV Routes (Explicitly)
+
+# =====================================================
+# RECRUITER BLUEPRINTS & ROUTES (Moved from Main Block)
+# =====================================================
+
+# 1. Recruiter Shortlist
+try:
+    from backend.recruiter.shortlist_routes import shortlist_bp
+    app.register_blueprint(shortlist_bp, url_prefix='/api/recruiter/shortlist')
+    logger.info("✅ Recruiter Shortlist routes registered")
+except Exception as e:
+    logger.error(f"Failed to register shortlist routes: {e}")
+
+# 2. Recruiter Interview Routes
+try:
+    from backend.recruiter.interview_routes import interview_bp
+    app.register_blueprint(interview_bp, url_prefix='/api/recruiter/interviews')
+    logger.info("✅ Recruiter Interview routes registered")
+except Exception as e:
+    logger.error(f"Failed to register interview routes: {e}")
+
+# 3. HR Interview Scheduling
+try:
+    from backend.hr_interview_scheduling_routes import hr_interview_bp
+    app.register_blueprint(hr_interview_bp)
+    logger.info("✅ HR Interview Scheduling routes registered")
+except Exception as e:
+    logger.error(f"Failed to register HR interview scheduling routes: {e}")
+
+# 4. Video Interview
+try:
+    from backend.video_interview_routes import video_interview_bp
+    app.register_blueprint(video_interview_bp, url_prefix='/api/video-interview')
+    logger.info("✅ Video Interview routes registered")
+except Exception as e:
+    logger.error(f"Failed to register video interview routes: {e}")
+
+# 5. HR Job Posting (Source of Truth)
+# 5. HR Job Posting (Source of Truth)
+# Handled by register_all_blueprints in backend/blueprint_registry.py
+# try:
+#     from backend.hr_job_posting_routes import hr_job_posting_bp
+#     app.register_blueprint(hr_job_posting_bp, url_prefix='/api/hr/jobs')
+#     logger.info("✅ HR Job Posting routes registered")
+# except Exception as e:
+#     logger.error(f"Failed to register HR Job Posting routes: {e}")
+
+# 6. Recruiter JD Routes V2 (Standard Dashboard) - CRITICAL FIX
+try:
+    from backend.recruiter.jd_routes_v2 import jd_bp
+    app.register_blueprint(jd_bp)
+    logger.info("✅ Recruiter JD Routes V2 registered")
+except Exception as e:
+    logger.error(f"Failed to register Recruiter JD Routes V2: {e}")
+
+# =====================================================
+# LEGACY / DIRECT ENDPOINTS (Ported from unified_server)
+# =====================================================
+
+@app.route('/api/recruiter/vacancies', methods=['GET'])
+def list_vacancies():
+    """List recruiter-uploaded vacancies (Using job_postings source of truth)."""
+    try:
+        print("DEBUG: list_vacancies called")
+        # Query job_postings instead of legacy recruiter_vacancies
+        # Schema adaptation: company -> company_id
+        rows = execute_query("SELECT id, title, company_id as employer, location, description, requirements, status, created_at, applications_count FROM job_postings ORDER BY created_at DESC")
+        print(f"DEBUG: list_vacancies found {len(rows) if rows else 0} rows")
+        
+        result = []
+        for r in rows or []:
+            d = dict(r)
+            # ensure json serializable
+            if isinstance(d.get('created_at'), datetime):
+                d['created_at'] = d['created_at'].isoformat()
+            
+            # Add legacy fields for compatibility
+            d['tags'] = [] 
+            result.append(d)
+        
+        print(f"DEBUG: Returning {len(result)} vacancies")
+        return jsonify({'success': True, 'data': result}), 200
+    except Exception as e:
+        logger.error(f"List vacancies error: {str(e)}")
+        # Fallback to empty list rather than error if migration issue
+        return jsonify({'success': True, 'data': []}), 200
+
+@app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
+def get_job_applicants(job_id):
+    """Get applicants for a specific job (Robust ID handling)"""
+    try:
+        print(f"DEBUG: get_job_applicants CALLED for job_id={job_id}")
+        # Use args for GET request
+        employment_status_filter = request.args.get('employment_status_filter')
+        
+        # Get the job description details (Verify job exists)
+        # We need to map numeric ID 756 -> UUID JD_ID
+        jd_id_param = job_id
+        
+        # Dual-lookup for job_id (Support both Numeric ID and JD_ID string)
+        # This fixes the issue where Frontend sends '756' but DB apps are linked to 'JD...'
+        # Duplicate query definition removed
+
+        # Note: Previous query in unified_server joined job_applications implicitly via WHERE ja.job_id.
+        # But here I need to JOIN it explicitly to filter bye job_id.
+        # Wait, unified_server query structure in Step 2382 was:
+        # FROM user_cvs uc ... WHERE ...
+        # AND ja.job_id = ...
+        # It missed the JOIN table `job_applications` in the FROM clause!
+        # Step 2382 Line 3100 shows `FROM user_cvs uc`.
+        # Line 3130 shows `candidate_query += " AND ja.job_id..."`.
+        # Unless `unified_server` had `FROM job_applications ja ...` higher up?
+        # Step 2382 view started at `candidate_query = """ SELECT ... FROM user_cvs uc ...`
+        # It did NOT have `FROM job_applications`.
+        # This means the original `unified_server` query WAS BROKEN (Missing Table Reference).
+        # My clean-up here MUST fix it.
+        # Logic: We want Applicants. So start from `job_applications`.
+        
+
+        candidate_query = """
+            SELECT DISTINCT ON (ja.id)
+                ja.id as application_id,
+                ja.candidate_id,
+                ja.submitted_at,
+                ja.status as application_status,
+                uc.id as cv_id,
+                uc.user_id,
+                uc.personal_info,
+                uc.professional_summary,
+                uc.technical_skills,
+                uc.soft_skills,
+                uc.work_experience,
+                uc.education,
+                uc.certifications,
+                u.first_name,
+                u.last_name,
+                CONCAT(u.first_name, ' ', u.last_name) as candidate_name,
+                u.email
+            FROM job_applications ja
+            LEFT JOIN users u ON ja.candidate_id = u.id
+            LEFT JOIN user_cvs uc ON u.id = uc.user_id
+            WHERE 1=1
+        """
+        
+        params = []
+        
+        # robust job_id filtering
+        # Since DB clean up, job_applications.job_id is STRICTLY INTEGER.
+        # We no longer look for jd_id (UUID string) in the applications table.
+        candidate_query += " AND ja.job_id = %s"
+        params.append(job_id)
+
+        # if employment_status_filter:
+        #     candidate_query += " AND (u.employment_status = %s OR u.employment_status IS NULL)"
+        #     params.append(employment_status_filter)
+            
+        # DISTINCT ON requires the first ORDER BY columns to match the DISTINCT columns
+        # We want unique applications (ja.id), picking the latest CV (uc.created_at DESC)
+        candidate_query += " ORDER BY ja.id, uc.created_at DESC"
+        
+        print(f"DEBUG: Executing Query. Params: {params}")
+        candidates = execute_query(candidate_query, tuple(params)) or []
+        print(f"DEBUG: Query returned {len(candidates)} unique candidates.")
+
+        # Fetch job requirements to calculate match scores
+        job_query = """
+            SELECT title, required_skills, preferred_skills, experience_level, education_requirements
+            FROM job_postings WHERE id = %s
+        """
+        job_data = execute_query(job_query, (job_id,), fetch_one=True)
+        
+        # Calculate match scores for each candidate
+        def calculate_match_score(candidate, job):
+            if not job:
+                return 50.0  # Default score if job data unavailable
+            
+            score = 0.0
+            max_score = 0.0
+            
+            # Parse job required skills (handle JSON or comma-separated)
+            required_skills = job.get('required_skills') or []
+            if isinstance(required_skills, str):
+                try:
+                    import json
+                    required_skills = json.loads(required_skills)
+                except:
+                    required_skills = [s.strip().lower() for s in required_skills.split(',') if s.strip()]
+            if isinstance(required_skills, list):
+                required_skills = [s.lower() if isinstance(s, str) else str(s).lower() for s in required_skills]
+            
+            # Get candidate skills
+            candidate_tech_skills = candidate.get('technical_skills') or []
+            candidate_soft_skills = candidate.get('soft_skills') or []
+            if isinstance(candidate_tech_skills, str):
+                try:
+                    import json
+                    candidate_tech_skills = json.loads(candidate_tech_skills)
+                except:
+                    candidate_tech_skills = [s.strip().lower() for s in candidate_tech_skills.split(',') if s.strip()]
+            if isinstance(candidate_soft_skills, str):
+                try:
+                    import json
+                    candidate_soft_skills = json.loads(candidate_soft_skills)
+                except:
+                    candidate_soft_skills = [s.strip().lower() for s in candidate_soft_skills.split(',') if s.strip()]
+            
+            all_candidate_skills = set()
+            for s in (candidate_tech_skills or []):
+                if isinstance(s, str):
+                    all_candidate_skills.add(s.lower())
+                elif isinstance(s, dict):
+                    all_candidate_skills.add(str(s.get('name', s.get('skill', ''))).lower())
+            for s in (candidate_soft_skills or []):
+                if isinstance(s, str):
+                    all_candidate_skills.add(s.lower())
+                elif isinstance(s, dict):
+                    all_candidate_skills.add(str(s.get('name', s.get('skill', ''))).lower())
+            
+            # Calculate skill match (60% of total score)
+            if required_skills:
+                max_score += 60
+                matched_skills = 0
+                for req_skill in required_skills:
+                    req_lower = req_skill.lower() if isinstance(req_skill, str) else str(req_skill).lower()
+                    # Check if any candidate skill contains or matches the required skill
+                    for cand_skill in all_candidate_skills:
+                        if req_lower in cand_skill or cand_skill in req_lower:
+                            matched_skills += 1
+                            break
+                if len(required_skills) > 0:
+                    score += (matched_skills / len(required_skills)) * 60
+            else:
+                # No required skills specified, give baseline score
+                score += 40
+                max_score += 60
+            
+            # Experience bonus (20% of total score)
+            max_score += 20
+            work_experience = candidate.get('work_experience') or []
+            if work_experience:
+                # More experience = higher score (max 5 positions)
+                exp_count = len(work_experience) if isinstance(work_experience, list) else 0
+                score += min(exp_count / 5, 1.0) * 20
+            
+            # Education bonus (20% of total score)
+            max_score += 20
+            education = candidate.get('education') or []
+            if education:
+                # Having education = bonus
+                score += 15
+                # Check for advanced degrees
+                for edu in (education if isinstance(education, list) else []):
+                    degree = str(edu.get('degree', '')).lower() if isinstance(edu, dict) else ''
+                    if 'master' in degree or 'phd' in degree or 'mba' in degree:
+                        score += 5
+                        break
+            
+            # Normalize to percentage
+            if max_score > 0:
+                final_score = min((score / max_score) * 100, 100)
+            else:
+                final_score = 50.0
+            
+            return round(final_score, 1)
+        
+        # Add match scores and sort by score DESC
+        for candidate in candidates:
+            candidate['match_score'] = calculate_match_score(candidate, job_data)
+        
+        # Sort by match score (highest first), then by submitted_at
+        candidates.sort(key=lambda x: (x.get('match_score', 0), x.get('submitted_at') or ''), reverse=True)
+        
+        # Mark 'new' applicants as viewed (clears the "New" badge)
+        # Update status from 'pending'/'submitted' to 'under_review' when recruiter views them
+        try:
+            update_query = """
+                UPDATE job_applications 
+                SET status = 'under_review'
+                WHERE job_id = %s 
+                AND status IN ('pending', 'submitted')
+            """
+            execute_query(update_query, (job_id,), fetch_all=False)
+            print(f"DEBUG: Updated new applicants to 'under_review' for job_id={job_id}")
+        except Exception as update_err:
+            logger.warning(f"Failed to update applicant status to viewed: {update_err}")
+            print(f"DEBUG: Status update FAILED: {update_err}")
+            # Don't fail the request if status update fails
+        
+        return jsonify({
+            'success': True,
+            'top_matches': [dict(c) for c in candidates],
+            'candidates': [dict(c) for c in candidates], 
+            'count': len(candidates)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Get job applicants error: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to get applicants'}), 500
+
+
 
 
 # Database configuration
@@ -258,6 +558,14 @@ DATABASE_CONFIG = {
     'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
     'port': int(os.getenv('DB_PORT', 5432))
 }
+
+# SQLAlchemy Configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DATABASE_CONFIG['user']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize Extensions
+from backend.extensions import db
+db.init_app(app)
 
 # CV Upload Configuration
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
@@ -1544,40 +1852,42 @@ def register():
             'message': 'Registration failed due to system error'
         }), 500
 
-@app.route('/api/auth/profile', methods=['GET'])
-@jwt_required()
-def get_profile():
-    """Get user profile information"""
-    try:
-        user_id = get_jwt_identity()
-        
-        # Import user profile
-        from models.user_profile import UserProfile
-        profile = UserProfile(user_id)
-        profile_data = profile.to_dict()
-        
-        # Add UAE-specific configuration
-        profile_data.update({
-            'working_days': os.getenv('UAE_WORKING_DAYS', 'Monday,Tuesday,Wednesday,Thursday,Friday').split(','),
-            'weekend_days': os.getenv('UAE_WEEKEND_DAYS', 'Saturday,Sunday').split(','),
-            'timezone': os.getenv('TIMEZONE', 'Asia/Dubai'),
-            'locale': os.getenv('LOCALE', 'en_AE'),
-            'currency': os.getenv('CURRENCY', 'AED'),
-            'nationality': 'UAE'
-        })
-        
-        return jsonify({
-            'success': True,
-            'message': 'Profile retrieved successfully',
-            'data': profile_data
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Profile retrieval error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': 'Profile retrieval failed'
-        }), 500
+# @app.route('/api/auth/profile', methods=['GET'])
+# @jwt_required()
+# def get_profile():
+#     """Get user profile information (DEPRECATED - Moved to auth_routes.py)"""
+#     return jsonify({'message': 'Please use auth_routes implementation'}), 404
+    
+    # try:
+    #     user_id = get_jwt_identity()
+    #     
+    #     # Import user profile
+    #     from models.user_profile import UserProfile
+    #     profile = UserProfile(user_id)
+    #     profile_data = profile.to_dict()
+    #     
+    #     # Add UAE-specific configuration
+    #     profile_data.update({
+    #         'working_days': os.getenv('UAE_WORKING_DAYS', 'Monday,Tuesday,Wednesday,Thursday,Friday').split(','),
+    #         'weekend_days': os.getenv('UAE_WEEKEND_DAYS', 'Saturday,Sunday').split(','),
+    #         'timezone': os.getenv('TIMEZONE', 'Asia/Dubai'),
+    #         'locale': os.getenv('LOCALE', 'en_AE'),
+    #         'currency': os.getenv('CURRENCY', 'AED'),
+    #         'nationality': 'UAE'
+    #     })
+    #     
+    #     return jsonify({
+    #         'success': True,
+    #         'message': 'Profile retrieved successfully',
+    #         'data': profile_data
+    #     }), 200
+    #     
+    # except Exception as e:
+    #     logger.error(f"Profile retrieval error: {str(e)}")
+    #     return jsonify({
+    #         'success': False,
+    #         'message': 'Profile retrieval failed'
+    #     }), 500
 
 # =====================================================
 # DASHBOARD ROUTES
@@ -1709,9 +2019,9 @@ def get_candidate_dashboard_stats():
 # CV UPLOAD ROUTES
 # =====================================================
 
-@app.route('/api/cv/upload', methods=['POST', 'OPTIONS'])
-@app.route('/api/candidate/cv/upload', methods=['POST', 'OPTIONS'])
-def upload_cv():
+# @app.route('/api/cv/upload', methods=['POST', 'OPTIONS'])
+# @app.route('/api/candidate/cv/upload', methods=['POST', 'OPTIONS'])
+def upload_cv_deprecated():
     """Upload and process CV file"""
     try:
         # CORS preflight support
@@ -1971,8 +2281,8 @@ def list_cvs_mock():
 
 
 
-@app.route('/api/cv/list', methods=['GET'])
-def list_cvs_fixed():
+# @app.route('/api/cv/list', methods=['GET'])
+def list_cvs_fixed_deprecated():
     """List user's saved CVs (Fixed Implementation)"""
     try:
         # Auth check
@@ -2016,8 +2326,8 @@ def list_cvs_fixed():
         logger.error(f"List CVs error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/cv/save', methods=['POST'])
-def save_cv_fixed():
+# @app.route('/api/cv/save', methods=['POST'])
+def save_cv_fixed_deprecated():
     """Save/Create CV (Fixed Implementation)"""
     try:
         # Auth check
@@ -2111,8 +2421,8 @@ def get_current_user_uuid_inline():
     except Exception:
         return '00000000-0000-0000-0000-000000000001'
 
-@app.route('/api/cv/<cv_id>', methods=['GET'])
-def get_cv_fixed(cv_id):
+# @app.route('/api/cv/<cv_id>', methods=['GET'])
+def get_cv_fixed_deprecated(cv_id):
     try:
         user_uuid = get_current_user_uuid_inline()
         
@@ -2151,8 +2461,8 @@ def get_cv_fixed(cv_id):
         logger.error(f"Get CV error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/cv/<cv_id>', methods=['PUT'])
-def update_cv_fixed(cv_id):
+# @app.route('/api/cv/<cv_id>', methods=['PUT'])
+def update_cv_fixed_deprecated(cv_id):
     try:
         user_uuid = get_current_user_uuid_inline()
         data = request.get_json()
@@ -2375,22 +2685,7 @@ def get_public_cv(cv_id):
 
 
 
-@app.route('/api/recruiter/vacancies', methods=['GET'])
-def list_vacancies():
-    """List recruiter-uploaded vacancies (basic fields)."""
-    try:
-        rows = execute_query("SELECT id, title, employer, location, description, requirements, tags, created_at FROM recruiter_vacancies ORDER BY created_at DESC")
-        result = []
-        for r in rows or []:
-            d = dict(r)
-            # ensure json serializable
-            if isinstance(d.get('created_at'), datetime):
-                d['created_at'] = d['created_at'].isoformat()
-            result.append(d)
-        return jsonify({'success': True, 'data': result}), 200
-    except Exception as e:
-        logger.error(f"List vacancies error: {str(e)}")
-        return jsonify({'success': False, 'message': 'Failed to list vacancies'}), 500
+# Legacy list_vacancies removed (replaced by newer version at end of file)
 
 @app.route('/api/matching/cv/<cv_id>/top-vacancies', methods=['GET'])
 def match_cv_top_vacancies(cv_id: str):
@@ -2795,48 +3090,17 @@ def initialize_unified_server():
 
     logger.info("🚀 Unified server initialization complete")
 
-@app.route('/api/recruiter/job-applicants-count', methods=['GET'])
-def get_job_applicants_count():
-    """Get applicant counts for all jobs posted by the recruiter"""
-    try:
-        # Get all jobs with their applicant counts
-        query = """
-            SELECT 
-                jp.jd_id as job_id,
-                jp.title as job_title,
-                COUNT(ja.id) as total_applicants,
-                COUNT(CASE WHEN ja.status = 'pending' OR ja.status = 'submitted' THEN 1 END) as new_applicants,
-                COUNT(CASE WHEN ja.status = 'under_review' OR ja.status = 'screening' THEN 1 END) as in_review,
-                COUNT(CASE WHEN ja.status = 'interview_scheduled' OR ja.status = 'interview' THEN 1 END) as in_interview,
-                COUNT(CASE WHEN ja.status = 'offer_extended' OR ja.status = 'offer' THEN 1 END) as offers_made,
-                MAX(ja.submitted_at) as last_application_date
-            FROM job_postings jp
-            LEFT JOIN job_applications ja ON jp.jd_id::text = ja.job_id
-            WHERE jp.status IN ('published', 'active')
-            GROUP BY jp.jd_id, jp.title
-            ORDER BY MAX(ja.submitted_at) DESC NULLS LAST
-        """
-        
-        results = execute_query(query) or []
-        
-        applicant_counts = []
-        for row in results:
-            row_dict = dict(row)
-            # Convert datetime to ISO string
-            if row_dict.get('last_application_date'):
-                row_dict['last_application_date'] = row_dict['last_application_date'].isoformat()
-            applicant_counts.append(row_dict)
-        
-        return jsonify({
-            'success': True,
-            'data': applicant_counts
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Get job applicants count error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': 'Failed to get applicant counts'}), 500
+# NOTE: This duplicate route has been REMOVED. The correct implementation
+# is in routes/recruiter_dashboard_api.py which includes:
+# - JWT authentication
+# - Proper recruiter filtering
+# - Correct JOIN conditions for job_applications
+# - Support for both job_postings and job_descriptions tables
+# 
+# The route was moved to the blueprint to:
+# 1. Follow proper Flask architecture
+# 2. Enable proper authentication
+# 3. Avoid route conflicts
 
 
 @app.route('/api/recruiter/recent-applicants', methods=['GET'])
@@ -2940,93 +3204,7 @@ def get_job_shortlist_count():
 
 
 @app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
-def get_job_applicants(job_id):
-    """Get all applicants for a specific job"""
-    try:
-        status_filter = request.args.get('status', None)
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        offset = (page - 1) * per_page
-        
-        # Build query with optional status filter
-        where_clause = "WHERE ja.job_id = %s"
-        params = [job_id]
-        
-        if status_filter:
-            where_clause += " AND ja.status = %s"
-            params.append(status_filter)
-        
-        query = f"""
-            SELECT 
-                ja.id as application_id,
-                ja.job_id,
-                ja.candidate_id,
-                ja.status,
-                ja.submitted_at,
-                ja.last_updated,
-                ja.cover_letter,
-                COALESCE(u.first_name || ' ' || u.last_name, uc.personal_info->>'fullName', 'Unknown Candidate') as candidate_name,
-                COALESCE(u.email, uc.personal_info->>'email', '') as candidate_email,
-                COALESCE(u.phone, uc.personal_info->>'phone', '') as candidate_phone,
-                uc.professional_summary as candidate_summary,
-                uc.technical_skills,
-                uc.soft_skills,
-                uc.work_experience,
-                uc.education
-            FROM job_applications ja
-            LEFT JOIN users u ON (
-                CASE 
-                    WHEN ja.candidate_id ~ '^[0-9]+$' THEN u.id = ja.candidate_id::integer
-                    ELSE u.id::text = ja.candidate_id
-                END
-            )
-            LEFT JOIN user_cvs uc ON uc.user_id::text = ja.candidate_id
-            {where_clause}
-            ORDER BY ja.submitted_at DESC
-            LIMIT %s OFFSET %s
-        """
-        params.extend([per_page, offset])
-        
-        results = execute_query(query, tuple(params)) or []
-        
-        # Get total count
-        count_query = f"SELECT COUNT(*) as total FROM job_applications ja {where_clause}"
-        count_result = execute_query(count_query, tuple(params[:-2]), fetch_one=True)
-        total = count_result['total'] if count_result else 0
-        
-        applicants = []
-        for row in results:
-            row_dict = dict(row)
-            # Convert datetime to ISO string
-            if row_dict.get('submitted_at'):
-                row_dict['submitted_at'] = row_dict['submitted_at'].isoformat()
-            if row_dict.get('last_updated'):
-                row_dict['last_updated'] = row_dict['last_updated'].isoformat()
-            # Parse JSON fields
-            for field in ['technical_skills', 'soft_skills', 'work_experience', 'education']:
-                if row_dict.get(field) and isinstance(row_dict[field], str):
-                    try:
-                        row_dict[field] = json.loads(row_dict[field])
-                    except:
-                        pass
-            applicants.append(row_dict)
-        
-        return jsonify({
-            'success': True,
-            'data': applicants,
-            'pagination': {
-                'page': page,
-                'per_page': per_page,
-                'total': total,
-                'total_pages': (total + per_page - 1) // per_page
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Get job applicants error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': 'Failed to get applicants'}), 500
+# Legacy get_job_applicants removed (replaced by newer version at end of file)
 
 
 @app.route('/api/recruiter/jd/<jd_id>/match-candidates', methods=['POST'])
@@ -3875,37 +4053,7 @@ if __name__ == '__main__':
     
 
 
-    # Recruiter Shortlist Routes
-    try:
-        from recruiter.shortlist_routes import shortlist_bp
-        app.register_blueprint(shortlist_bp, url_prefix='/api/recruiter/shortlist')
-        logger.info("✅ Recruiter Shortlist routes registered")
-    except Exception as e:
-        logger.error(f"Failed to register shortlist routes: {e}")
-
-    # Recruiter Interview Routes
-    try:
-        from recruiter.interview_routes import interview_bp
-        app.register_blueprint(interview_bp, url_prefix='/api/recruiter/interviews')
-        logger.info("✅ Recruiter Interview routes registered")
-    except Exception as e:
-        logger.error(f"Failed to register interview routes: {e}")
-
-    # HR Interview Scheduling Routes
-    try:
-        from hr_interview_scheduling_routes import hr_interview_bp
-        app.register_blueprint(hr_interview_bp)
-        logger.info("✅ HR Interview Scheduling routes registered")
-    except Exception as e:
-        logger.error(f"Failed to register HR interview scheduling routes: {e}")
-
-    # Video Interview Routes (AI-Powered System)
-    try:
-        from video_interview_routes import video_interview_bp
-        app.register_blueprint(video_interview_bp, url_prefix='/api/video-interview')
-        logger.info("✅ Video Interview routes registered")
-    except Exception as e:
-        logger.error(f"Failed to register video interview routes: {e}")
+    # Blueprints Moved to Module Scope
 
     # Initialize SocketIO with App
     socketio.init_app(app)

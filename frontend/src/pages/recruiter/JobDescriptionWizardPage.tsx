@@ -67,12 +67,12 @@ const JobDescriptionWizardPage: React.FC = () => {
   const handleComplete = (jdId: string) => {
     console.log('JD created successfully:', jdId);
     // Navigate back to recruiter dashboard
-    navigate('/recruiter-dashboard');
+    navigate('/recruiter?tab=jobs');
   };
 
   const handleCancel = () => {
     // Navigate back to recruiter dashboard
-    navigate('/recruiter-dashboard');
+    navigate('/recruiter?tab=jobs');
   };
 
   return (

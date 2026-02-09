@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,10 +24,8 @@ import {
   Briefcase,
   Building,
   Star,
-  Filter,
-  Archive,
-  Trash2,
-  ArrowLeft
+  ArrowLeft,
+  Trash2
 } from 'lucide-react';
 import { messagingService, Conversation, Message } from '@/services/messagingService';
 import { useToast } from '@/hooks/use-toast';
@@ -36,20 +34,12 @@ import { useNotifications } from '@/components/notifications/NotificationSystem'
 import { useAuth } from '@/context/AuthContext';
 import NewConversationDialog from '@/components/messaging/NewConversationDialog';
 
-import RecruiterMessages from '@/components/recruiter/Messages';
-
 const MessagesPage: React.FC = () => {
   const { user } = useAuth();
 
-  // Use the polished Recruiter Messages component for recruiters/HR
-  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'hr_manager' || user?.user_type === 'hr_manager') {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-7xl mx-auto">
-          <RecruiterMessages />
-        </div>
-      </div>
-    );
+  // Redirect Recruiters to their Dashboard
+  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'hr_manager' || user?.user_type === 'hr_manager' || user?.role === 'hr_recruiter' || user?.user_type === 'hr_recruiter') {
+    return <Navigate to="/recruiter?tab=messages" replace />;
   }
 
   // --- Existing Candidate View Logic Below ---
@@ -64,11 +54,9 @@ const MessagesPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { socket } = useNotifications();
-  // const { user } = useAuth(); // Already destructured above
   const navigate = useNavigate();
 
   const getDashboardPath = () => {
-    // Fallback path logic
     return '/candidate-dashboard';
   };
 
@@ -76,32 +64,39 @@ const MessagesPage: React.FC = () => {
     if (!socket) return;
 
     const handleNewMessage = (data: any) => {
-      // Check if message belongs to current conversation
       if (selectedConversation && data.conversation_id === selectedConversation.id) {
         setMessages(prev => {
-          // Prevent duplicates
           if (prev.some(m => m.id === data.message.id)) return prev;
           return [...prev, data.message];
         });
       }
-
-      // Refresh conversations list to update last message and unread counts
       loadConversations();
     };
 
     socket.on('new_message', handleNewMessage);
-
     return () => {
       socket.off('new_message', handleNewMessage);
     };
   }, [socket, selectedConversation]);
 
-  // Mock data for demonstration
+  const getParticipantName = (conversation: Conversation) => {
+    if (Array.isArray(conversation.participant_names)) {
+      return conversation.participant_names[1] || 'Unknown';
+    }
+    if (conversation.participant_names && user?.id) {
+      const currentUserId = String(user.id);
+      const participants = (conversation.participants || []).map(String);
+      const otherId = participants.find(p => p !== currentUserId) || participants[0];
+      return conversation.participant_names[otherId] || 'Unknown User';
+    }
+    return 'Unknown';
+  };
+
   const mockConversations: Conversation[] = [
     {
       id: '1',
       participants: ['user-1', 'recruiter-1'],
-      participant_names: ['Ahmed Al Mansouri', 'Sarah Johnson'],
+      participant_names: { 'user-1': 'Ahmed Al Mansouri', 'recruiter-1': 'Sarah Johnson' } as any,
       participant_roles: ['candidate', 'recruiter'],
       application_id: 'app-1',
       job_id: 'job-1',
@@ -124,56 +119,6 @@ const MessagesPage: React.FC = () => {
       is_active: true,
       job_title: 'Senior AI Engineer - D33 and Talent33',
       company_name: 'Dubai Future Foundation'
-    },
-    {
-      id: '2',
-      participants: ['user-1', 'recruiter-2'],
-      participant_names: ['Ahmed Al Mansouri', 'Mohammed Al Rashid'],
-      participant_roles: ['candidate', 'recruiter'],
-      application_id: 'app-2',
-      job_id: 'job-2',
-      title: 'Digital Marketing Manager',
-      last_message: {
-        id: 'msg-2',
-        conversation_id: '2',
-        sender_id: 'user-1',
-        sender_name: 'Ahmed Al Mansouri',
-        sender_role: 'candidate',
-        content: 'I am very interested in this opportunity and would love to discuss further.',
-        message_type: 'text',
-        created_at: '2024-09-14T16:45:00Z',
-        read_by: ['user-1', 'recruiter-2'],
-        is_read: true
-      },
-      unread_count: 0,
-      created_at: '2024-09-12T14:30:00Z',
-      updated_at: '2024-09-14T16:45:00Z',
-      is_active: true,
-      job_title: 'Digital Marketing Manager',
-      company_name: 'Emirates Airlines'
-    },
-    {
-      id: '3',
-      participants: ['user-1', 'mentor-1'],
-      participant_names: ['Ahmed Al Mansouri', 'Dr. Fatima Al Zahra'],
-      participant_roles: ['candidate', 'mentor'],
-      title: 'Career Guidance Session',
-      last_message: {
-        id: 'msg-3',
-        conversation_id: '3',
-        sender_id: 'mentor-1',
-        sender_name: 'Dr. Fatima Al Zahra',
-        sender_role: 'mentor',
-        content: 'Great progress on your career development! Keep focusing on AI and machine learning skills.',
-        message_type: 'text',
-        created_at: '2024-09-11T11:20:00Z',
-        read_by: ['user-1', 'mentor-1'],
-        is_read: true
-      },
-      unread_count: 0,
-      created_at: '2024-09-10T09:00:00Z',
-      updated_at: '2024-09-11T11:20:00Z',
-      is_active: true
     }
   ];
 
@@ -185,48 +130,10 @@ const MessagesPage: React.FC = () => {
         sender_id: 'user-1',
         sender_name: 'Ahmed Al Mansouri',
         sender_role: 'candidate',
-        content: 'Hello, I submitted my application for the Senior AI Engineer position. I am very excited about this opportunity to contribute to D33 and Talent33.',
+        content: 'Hello, I submitted my application.',
         message_type: 'text',
         created_at: '2024-09-13T10:15:00Z',
         read_by: ['user-1', 'recruiter-1'],
-        is_read: true
-      },
-      {
-        id: 'msg-1-2',
-        conversation_id: '1',
-        sender_id: 'recruiter-1',
-        sender_name: 'Sarah Johnson',
-        sender_role: 'recruiter',
-        content: 'Hello Ahmed! Thank you for your application. Your background in AI and machine learning is impressive. We would like to schedule an interview with you.',
-        message_type: 'text',
-        created_at: '2024-09-15T14:30:00Z',
-        read_by: ['recruiter-1'],
-        is_read: false
-      }
-    ],
-    '2': [
-      {
-        id: 'msg-2-1',
-        conversation_id: '2',
-        sender_id: 'recruiter-2',
-        sender_name: 'Mohammed Al Rashid',
-        sender_role: 'recruiter',
-        content: 'Hi Ahmed, we received your application for the Digital Marketing Manager position. Could you tell us more about your experience with UAE market?',
-        message_type: 'text',
-        created_at: '2024-09-12T15:00:00Z',
-        read_by: ['user-1', 'recruiter-2'],
-        is_read: true
-      },
-      {
-        id: 'msg-2-2',
-        conversation_id: '2',
-        sender_id: 'user-1',
-        sender_name: 'Ahmed Al Mansouri',
-        sender_role: 'candidate',
-        content: 'I am very interested in this opportunity and would love to discuss further. I have 3 years of experience in digital marketing in the UAE, specifically with tourism and hospitality sectors.',
-        message_type: 'text',
-        created_at: '2024-09-14T16:45:00Z',
-        read_by: ['user-1', 'recruiter-2'],
         is_read: true
       }
     ]
@@ -239,20 +146,15 @@ const MessagesPage: React.FC = () => {
 
   useEffect(() => {
     loadConversations();
-  }, []); // Run only once on mount
+  }, []);
 
-  // Effect to handle conversation selection from URL
   useEffect(() => {
     const handleUrlSelection = async () => {
-      // 1. Handle existing Conversation ID
       if (conversationIdParam) {
-        // Try to find in existing list
         const found = conversations.find(c => c.id === conversationIdParam);
-
         if (found) {
           setSelectedConversation(found);
         } else {
-          // If not in list, fetch details directly
           try {
             const response = await messagingService.getConversationById(conversationIdParam);
             if (response.success && response.data) {
@@ -269,37 +171,21 @@ const MessagesPage: React.FC = () => {
             console.error('Failed to load conversation from URL:', error);
           }
         }
-      }
-      // 2. Handle User ID (Direct Message)
-      else if (userIdParam) {
-        // Check if conversation already exists with this user
-        // Note: conversations.participants includes current user too, so we check if it includes the target userId
+      } else if (userIdParam) {
         const found = conversations.find(c => c.participants && c.participants.includes(userIdParam));
-
         if (found) {
           setSelectedConversation(found);
         } else {
-          // Create new conversation
           try {
             const response = await messagingService.createConversation({
               participants: [userIdParam],
               title: userNameParam ? decodeURIComponent(userNameParam) : 'New Conversation'
             });
-
             if (response.success && response.data) {
               const newConv = response.data;
               setConversations(prev => [newConv, ...prev]);
               setSelectedConversation(newConv);
-              toast({
-                title: "Conversation Started",
-                description: `New chat started with ${userNameParam || 'User'}`,
-              });
-            } else {
-              toast({
-                title: "Error",
-                description: "Could not start conversation.",
-                variant: "destructive"
-              });
+              toast({ title: "Conversation Started", description: `New chat started with ${userNameParam || 'User'}` });
             }
           } catch (error) {
             console.error('Failed to create conversation via URL:', error);
@@ -307,18 +193,14 @@ const MessagesPage: React.FC = () => {
         }
       }
     };
-
     if (!isLoading) {
       handleUrlSelection();
     }
-  }, [conversationIdParam, userIdParam, isLoading]); // Wait for initial load to check existing list correctly
+  }, [conversationIdParam, userIdParam, isLoading]);
 
-  // Effect to load messages when selected conversation changes
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
-
-      // Update URL without reloading if different
       if (selectedConversation.id !== conversationIdParam) {
         setSearchParams({ conversation: selectedConversation.id });
       }
@@ -332,57 +214,66 @@ const MessagesPage: React.FC = () => {
   const loadConversations = async () => {
     setIsLoading(true);
     try {
-      const response = await messagingService.getConversations();
-
+      const response = await messagingService.getConversations('candidate');
       if (response.success) {
         setConversations(response.data || []);
       } else {
-        // Use mock data if API fails
         setConversations(mockConversations);
-        console.log('Using mock data for conversations');
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
-      // Use mock data as fallback
       setConversations(mockConversations);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDeleteConversation = async (e: React.MouseEvent, conversationId: string) => {
+    e.stopPropagation(); // Prevent selection
+    if (!window.confirm('Are you sure you want to delete this conversation?')) return;
+
+    try {
+      const response = await messagingService.deleteConversation(conversationId);
+      if (response.success) {
+        setConversations(prev => prev.filter(c => c.id !== conversationId));
+        if (selectedConversation?.id === conversationId) {
+          setSelectedConversation(null);
+          setMessages([]);
+        }
+        toast({ title: "Deleted", description: "Conversation deleted successfully" });
+      } else {
+        toast({ title: "Error", description: "Failed to delete conversation", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
+    }
+  };
+
   const loadMessages = async (conversationId: string) => {
     try {
       const response = await messagingService.getConversationMessages(conversationId);
-
       if (response.success) {
         setMessages(response.data || []);
       } else {
-        // Use mock data if API fails
         setMessages(mockMessages[conversationId] || []);
-        console.log('Using mock data for messages');
       }
-
-      // Mark conversation as read
       await messagingService.markConversationAsRead(conversationId);
     } catch (error) {
-      console.error('Error loading messages:', error);
-      // Use mock data as fallback
       setMessages(mockMessages[conversationId] || []);
     }
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || isSending) return;
-
     setIsSending(true);
     try {
       const response = await messagingService.sendMessage(selectedConversation.id, {
         content: newMessage.trim(),
-        message_type: 'text'
+        message_type: 'text',
+        sender_role: 'candidate'
       });
-
       if (response.success) {
-        // Add message to local state immediately for better UX
+        // Optimistic
         const tempMessage: Message = {
           id: `temp-${Date.now()}`,
           conversation_id: selectedConversation.id,
@@ -395,28 +286,14 @@ const MessagesPage: React.FC = () => {
           read_by: ['current-user'],
           is_read: true
         };
-
         setMessages(prev => [...prev, tempMessage]);
         setNewMessage('');
-
-        toast({
-          title: "Message Sent",
-          description: "Your message has been sent successfully.",
-        });
+        toast({ title: "Message Sent", description: "Your message has been sent successfully." });
       } else {
-        toast({
-          title: "Error",
-          description: response.error || "Failed to send message",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: response.error || "Failed to send message", variant: "destructive" });
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
     } finally {
       setIsSending(false);
     }
@@ -431,14 +308,9 @@ const MessagesPage: React.FC = () => {
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) {
-      return date.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString('en-AE', { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString('en-AE', { month: 'short', day: 'numeric' });
-    }
+    if (diffDays === 1) return date.toLocaleTimeString('en-AE', { hour: '2-digit', minute: '2-digit' });
+    if (diffDays < 7) return date.toLocaleDateString('en-AE', { weekday: 'short' });
+    return date.toLocaleDateString('en-AE', { month: 'short', day: 'numeric' });
   };
 
   const getInitials = (name: string) => {
@@ -472,29 +344,18 @@ const MessagesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <Button
-            variant="ghost"
-            className="text-white hover:bg-white/20 mb-4 pl-0 hover:text-white"
-            onClick={() => navigate(getDashboardPath())}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+          <Button variant="ghost" className="text-white hover:bg-white/20 mb-4 pl-0 hover:text-white" onClick={() => navigate(getDashboardPath())}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
           </Button>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold mb-2">💬 Messages</h1>
               <p className="text-xl opacity-90">Connect with recruiters, mentors, and career advisors</p>
             </div>
-            <Button
-              onClick={() => setShowNewConversation(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              size="lg"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              New Message
+            <Button onClick={() => setShowNewConversation(true)} className="bg-purple-600 hover:bg-purple-700 text-white" size="lg">
+              <Plus className="h-5 w-5 mr-2" /> New Message
             </Button>
           </div>
         </div>
@@ -502,24 +363,16 @@ const MessagesPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-          {/* Conversations List */}
           <div className="lg:col-span-1">
             <Card className="h-full flex flex-col">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Conversations</CardTitle>
-                  <Badge variant="secondary">
-                    {conversations.filter(c => c.unread_count > 0).length} unread
-                  </Badge>
+                  <Badge variant="secondary">{conversations.filter(c => c.unread_count > 0).length} unread</Badge>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+                  <Input placeholder="Search conversations..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0">
@@ -536,66 +389,49 @@ const MessagesPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      {filteredConversations.map((conversation) => (
-                        <div
-                          key={conversation.id}
-                          onClick={() => setSelectedConversation(conversation)}
-                          className={`p-4 cursor-pointer hover:bg-gray-50 border-l-4 transition-colors ${selectedConversation?.id === conversation.id
-                            ? 'bg-blue-50 border-l-blue-500'
-                            : 'border-l-transparent'
-                            }`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src="" />
-                              <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {getInitials(conversation.participant_names?.[1] || 'Unknown')}
-                              </AvatarFallback>
-                            </Avatar>
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  <p className="text-sm font-medium truncate">
-                                    {conversation.participant_names?.[1] || 'Unknown'}
-                                  </p>
-                                  {conversation.participant_roles?.[1] && (
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-xs ${getRoleColor(conversation.participant_roles[1])}`}
-                                    >
-                                      <div className="flex items-center space-x-1">
-                                        {getRoleIcon(conversation.participant_roles[1])}
-                                        <span>{conversation.participant_roles[1]}</span>
-                                      </div>
-                                    </Badge>
-                                  )}
+                      {filteredConversations.map((conversation) => {
+                        const displayName = getParticipantName(conversation);
+                        return (
+                          <div
+                            key={conversation.id}
+                            onClick={() => setSelectedConversation(conversation)}
+                            className={`p-4 cursor-pointer hover:bg-gray-50 border-l-4 transition-colors ${selectedConversation?.id === conversation.id ? 'bg-blue-50 border-l-blue-500' : 'border-l-transparent'}`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage src="" />
+                                <AvatarFallback className="bg-blue-100 text-blue-600">{getInitials(displayName)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <p className="text-sm font-medium truncate">{displayName}</p>
+                                    {conversation.participant_roles?.[1] && (
+                                      <Badge variant="outline" className={`text-xs ${getRoleColor(conversation.participant_roles[1])}`}>
+                                        <div className="flex items-center space-x-1">
+                                          {getRoleIcon(conversation.participant_roles[1])}
+                                          <span>{conversation.participant_roles[1]}</span>
+                                        </div>
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-red-600" onClick={(e) => handleDeleteConversation(e, conversation.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                    {conversation.unread_count > 0 && <Badge className="bg-red-500 text-white text-xs">{conversation.unread_count}</Badge>}
+                                    <span className="text-xs text-gray-500">{formatTime(conversation.updated_at)}</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center space-x-1">
-                                  {conversation.unread_count > 0 && (
-                                    <Badge className="bg-red-500 text-white text-xs">
-                                      {conversation.unread_count}
-                                    </Badge>
-                                  )}
-                                  <span className="text-xs text-gray-500">
-                                    {formatTime(conversation.updated_at)}
-                                  </span>
-                                </div>
+                                <p className="text-sm text-gray-600 truncate mt-1">{conversation.job_title || conversation.title}</p>
+                                {conversation.last_message && (
+                                  <p className="text-xs text-gray-500 truncate mt-1">{conversation.last_message.sender_name}: {conversation.last_message.content}</p>
+                                )}
                               </div>
-
-                              <p className="text-sm text-gray-600 truncate mt-1">
-                                {conversation.job_title || conversation.title}
-                              </p>
-
-                              {conversation.last_message && (
-                                <p className="text-xs text-gray-500 truncate mt-1">
-                                  {conversation.last_message.sender_name}: {conversation.last_message.content}
-                                </p>
-                              )}
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </ScrollArea>
@@ -603,110 +439,35 @@ const MessagesPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Messages View */}
           <div className="lg:col-span-2">
             {selectedConversation ? (
               <Card className="h-full flex flex-col">
-                {/* Conversation Header */}
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src="" />
-                        <AvatarFallback className="bg-blue-100 text-blue-600">
-                          {getInitials(selectedConversation.participant_names?.[1] || 'Unknown')}
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-blue-100 text-blue-600">{getInitials(getParticipantName(selectedConversation))}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-semibold">
-                          {selectedConversation.participant_names?.[1] || 'Unknown'}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {selectedConversation.job_title || selectedConversation.title}
-                        </p>
-                        {selectedConversation.company_name && (
-                          <p className="text-xs text-gray-500">
-                            {selectedConversation.company_name}
-                          </p>
-                        )}
+                        <h3 className="font-semibold">{getParticipantName(selectedConversation)}</h3>
+                        <p className="text-sm text-gray-600">{selectedConversation.job_title || selectedConversation.title}</p>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-teal-600 hover:bg-teal-700"
-                        onClick={() => {
-                          toast({
-                            title: "Redirecting",
-                            description: "Opening interview scheduler...",
-                          });
-                          // Navigate to the interview scheduler using react-router instead of full reload
-                          navigate('/recruiter/interviews/schedule');
-                        }}
-                      >
-                        <Clock className="h-4 w-4 mr-2" />
-                        Schedule Interview
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toast({ title: "Feature Coming Soon", description: "Voice calling will be available in a future update." })}
-                      >
-                        <Phone className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toast({ title: "Feature Coming Soon", description: "Video calling will be available in a future update." })}
-                      >
-                        <Video className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toast({ title: "Options", description: "More options will be available soon." })}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 </CardHeader>
-
                 <Separator />
-
-                {/* Messages */}
                 <CardContent className="flex-1 p-0">
                   <ScrollArea className="h-full p-4">
                     <div className="space-y-4">
                       {messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id))
-                            ? 'justify-end'
-                            : 'justify-start'
-                            }`}
-                        >
-                          <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id))
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-900'
-                              }`}
-                          >
+                        <div key={message.id} className={`flex ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id)) ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id)) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
                             <p className="text-sm">{message.content}</p>
                             <div className="flex items-center justify-between mt-1">
                               <span className={`text-xs ${message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id)) ? 'text-blue-100' : 'opacity-70'}`}>
                                 {formatTime(message.created_at)}
                               </span>
-                              {message.sender_id === 'current-user' || message.sender_name === 'You' || (user && String(message.sender_id) === String(user.id)) ? (
-                                <div className="flex items-center space-x-1">
-                                  {message.is_read ? (
-                                    <CheckCheck className="h-3 w-3 opacity-70" />
-                                  ) : (
-                                    <Check className="h-3 w-3 opacity-70" />
-                                  )}
-                                </div>
-                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -715,40 +476,15 @@ const MessagesPage: React.FC = () => {
                     </div>
                   </ScrollArea>
                 </CardContent>
-
                 <Separator />
-
-                {/* Message Input */}
                 <div className="p-4">
                   <div className="flex items-end space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
+                    <Button variant="outline" size="sm"><Paperclip className="h-4 w-4" /></Button>
                     <div className="flex-1">
-                      <Textarea
-                        placeholder="Type your message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            sendMessage();
-                          }
-                        }}
-                        rows={1}
-                        className="resize-none"
-                      />
+                      <Textarea placeholder="Type your message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} rows={1} className="resize-none" />
                     </div>
-                    <Button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() || isSending}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {isSending ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
+                    <Button onClick={sendMessage} disabled={!newMessage.trim() || isSending} className="bg-blue-600 hover:bg-blue-700">
+                      {isSending ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
@@ -758,33 +494,17 @@ const MessagesPage: React.FC = () => {
                 <div className="text-center">
                   <MessageSquare className="h-16 w-16 mx-auto text-gray-400 mb-4" />
                   <h3 className="text-xl font-semibold mb-2">Select a conversation</h3>
-                  <p className="text-gray-600 mb-6">
-                    Choose a conversation from the list to start messaging
-                  </p>
-                  <Button onClick={() => setShowNewConversation(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Start New Conversation
-                  </Button>
+                  <p className="text-gray-600 mb-6">Choose a conversation from the list to start messaging</p>
+                  <Button onClick={() => setShowNewConversation(true)}><Plus className="h-4 w-4 mr-2" /> Start New Conversation</Button>
                 </div>
               </Card>
             )}
           </div>
         </div>
       </div>
-      <NewConversationDialog
-        open={showNewConversation}
-        onClose={() => setShowNewConversation(false)}
-        onConversationCreated={(conversation) => {
-          setConversations(prev => [conversation, ...prev]);
-          setSelectedConversation(conversation);
-          setShowNewConversation(false);
-          // Optionally fetch messages immediately if any automated one exists
-          loadMessages(conversation.id);
-        }}
-      />
+      <NewConversationDialog open={showNewConversation} onClose={() => setShowNewConversation(false)} onConversationCreated={(conversation) => { setConversations(prev => [conversation, ...prev]); setSelectedConversation(conversation); setShowNewConversation(false); loadMessages(conversation.id); }} />
     </div>
   );
 };
 
 export default MessagesPage;
-

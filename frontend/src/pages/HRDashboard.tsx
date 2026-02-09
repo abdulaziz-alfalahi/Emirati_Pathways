@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { restClient } from '@/utils/api';
 import { TeamManagementTab } from '@/components/hr/TeamManagementTab';
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import Messages from '@/components/recruiter/Messages'; // Reuse recruiter messages component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
@@ -87,6 +88,7 @@ interface DashboardData {
 const HRDashboard: React.FC = () => {
   const { t } = useTranslation('hr-dashboard');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [shortlistedCandidates, setShortlistedCandidates] = useState<any[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
@@ -96,12 +98,31 @@ const HRDashboard: React.FC = () => {
   const [interviewTitle, setInterviewTitle] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
 
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
+
   // Team Member Selection for Interviews
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
-  const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // Mock/Auth derived
+
+  // Get user data from localStorage for proper data isolation
+  const getUserData = () => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const userData = getUserData();
+  const COMPANY_ID = userData.company_id || userData.profile_data?.companyId || '';
+  const HR_MANAGER_ID = userData.id ? String(userData.id) : '';
+  const HR_MANAGER_NAME = userData.full_name || userData.first_name || 'HR Manager';
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -354,7 +375,7 @@ const HRDashboard: React.FC = () => {
                   HR Management Dashboard
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  Welcome back, Sara Saeed - Manage UAE National talent acquisition
+                  Welcome back, {HR_MANAGER_NAME} - Manage UAE National talent acquisition
                 </p>
               </div>
               <div className="flex items-center space-x-3">
@@ -418,6 +439,7 @@ const HRDashboard: React.FC = () => {
               <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
               <TabsTrigger value="interviews" className="font-dubai-medium">Interviews</TabsTrigger>
               <TabsTrigger value="positions" className="font-dubai-medium">Positions</TabsTrigger>
+              <TabsTrigger value="messages" className="font-dubai-medium">Messages</TabsTrigger>
               <TabsTrigger value="analytics" className="font-dubai-medium">Analytics</TabsTrigger>
             </TabsList>
 
@@ -561,8 +583,13 @@ const HRDashboard: React.FC = () => {
             <TabsContent value="approvals" className="space-y-6">
               <ApprovalWorkflow
                 companyId={COMPANY_ID}
-                hrManagerId="hr-manager-id"
+                hrManagerId={HR_MANAGER_ID}
               />
+            </TabsContent>
+
+            {/* Messages Tab */}
+            <TabsContent value="messages" className="space-y-6">
+              <Messages />
             </TabsContent>
 
             {/* Candidates Tab */}

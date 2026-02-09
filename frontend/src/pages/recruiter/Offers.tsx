@@ -27,14 +27,39 @@ export default function OffersPage() {
   const [approvalStats, setApprovalStats] = useState<ApprovalStats>({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [activeTab, setActiveTab] = useState('all');
 
+  // Get user data from localStorage for data isolation
+  const getUserData = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : {};
+    } catch {
+      return {};
+    }
+  };
+  const userData = getUserData();
+  const recruiterId = userData.id || '';
+  const companyId = userData.company_id || '';
+
   const loadOffers = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // CRITICAL: Block data loading when company_id is missing to prevent data leakage
+      if (!companyId) {
+        console.warn('No company_id found - skipping offers fetch to prevent data leakage');
+        setOffers([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
+
+      // Build company_id parameter for data isolation
+      const companyParam = `?company_id=${companyId}`;
+
       // Try the recruiter offers endpoint first (queries both offers and job_offers tables)
       try {
-        const res = await restClient.get(`/api/recruiter/offers/approvals/all`);
+        const res = await restClient.get(`/api/recruiter/offers/approvals/all${companyParam}`);
         if (res.data?.success && res.data?.data?.length > 0) {
           // Transform approval data to offer format
           const transformedOffers = res.data.data.map((item: any) => ({
@@ -59,8 +84,8 @@ export default function OffersPage() {
         console.log('Recruiter approvals endpoint failed, trying HR offers endpoint');
       }
 
-      // Fallback to HR offers endpoint
-      const res = await restClient.get(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}`);
+      // Fallback to HR offers endpoint (also needs company filter)
+      const res = await restClient.get(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}&company_id=${companyId}`);
       const json = res.data;
       setOffers(json?.data?.offers || []);
       setTotal(json?.data?.total_count || 0);
@@ -210,7 +235,7 @@ export default function OffersPage() {
   });
 
   const SortHeader: React.FC<{ label: string; field: 'created' | 'job' | 'candidate' | 'status' }> = ({ label, field }) => (
-    <th className="p-3 sticky top-0 bg-white z-10">
+    <th className="p-3 sticky top-0 bg-card z-10">
       <button className="w-full text-left flex items-center gap-1" onClick={() => {
         if (sortBy === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
         else { setSortBy(field); setSortOrder('desc'); }
@@ -225,7 +250,7 @@ export default function OffersPage() {
     <div className="p-6 space-y-6">
       {/* Approval Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white shadow-sm">
+        <Card className="bg-card shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-100 rounded-lg">
@@ -239,7 +264,7 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm border-l-4 border-l-yellow-500">
+        <Card className="bg-card shadow-sm border-l-4 border-l-yellow-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -253,7 +278,7 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm border-l-4 border-l-green-500">
+        <Card className="bg-card shadow-sm border-l-4 border-l-green-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -267,7 +292,7 @@ export default function OffersPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white shadow-sm border-l-4 border-l-red-500">
+        <Card className="bg-card shadow-sm border-l-4 border-l-red-500">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -326,15 +351,15 @@ export default function OffersPage() {
           {error && <div className="text-red-600">{error}</div>}
 
           <div className="overflow-x-auto rounded border">
-            <table className="min-w-full bg-white">
+            <table className="min-w-full bg-card">
               <thead>
                 <tr className="text-left border-b">
-                  <th className="p-3 sticky top-0 bg-white z-10">ID</th>
+                  <th className="p-3 sticky top-0 bg-card z-10">ID</th>
                   <SortHeader label="Job" field="job" />
                   <SortHeader label="Candidate" field="candidate" />
                   <SortHeader label="Status" field="status" />
                   <SortHeader label="Created" field="created" />
-                  <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
+                  <th className="p-3 sticky top-0 bg-card z-10">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -342,7 +367,7 @@ export default function OffersPage() {
                   <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={6}>No offers found</td></tr>
                 )}
                 {filteredOffers.map((o) => (
-                  <tr key={o.id} className="border-b hover:bg-slate-50">
+                  <tr key={o.id} className="border-b hover:bg-muted/50">
                     <td className="p-3 text-xs font-mono">{String(o.id).substring(0, 8)}...</td>
                     <td className="p-3">{o.job_title || o.position_title || '-'}</td>
                     <td className="p-3">{o.candidate_first_name} {o.candidate_last_name}</td>

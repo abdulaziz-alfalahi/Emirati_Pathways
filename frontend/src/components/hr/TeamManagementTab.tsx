@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,9 +35,10 @@ export const TeamManagementTab: React.FC = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Get company_id (mock or from auth context)
-    // For now we'll fetch for a placeholder company ID or infer from backend session
-    const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // Real UUID from DB inspection
+    const { user } = useAuth();
+
+    // Get company_id from auth context
+    const COMPANY_ID = user?.company_id || user?.user_metadata?.company_id;
 
     const fetchMembers = async () => {
         try {
@@ -58,8 +60,10 @@ export const TeamManagementTab: React.FC = () => {
     };
 
     useEffect(() => {
-        fetchMembers();
-    }, []);
+        if (COMPANY_ID) {
+            fetchMembers();
+        }
+    }, [COMPANY_ID]);
 
     const handleInvite = async () => {
         setError('');

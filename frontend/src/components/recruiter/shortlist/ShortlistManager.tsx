@@ -713,7 +713,9 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                           try {
                             const response = await restClient.post('/api/communication/conversations', {
                               participants: [String(user.id), candidate.candidate_id],
-                              title: 'Recruiter Chat'
+                              title: 'Recruiter Chat',
+                              job_id: jdId,
+                              sender_role: 'recruiter'
                             });
                             if (response.data && response.data.success) {
                               const conversationId = response.data.data.id || response.data.data.conversation?.id;

@@ -70,6 +70,18 @@ export const OfferApprovalPanel: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
+  // Get user data from localStorage for proper data isolation
+  const getUserData = () => {
+    try {
+      const userData = localStorage.getItem('user');
+      return userData ? JSON.parse(userData) : {};
+    } catch {
+      return {};
+    }
+  };
+  const userData = getUserData();
+  const approverId = userData.id ? String(userData.id) : null;
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -79,9 +91,13 @@ export const OfferApprovalPanel: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      // Get company_id for filtering
+      const companyId = userData.company_id || '';
+      const companyParam = companyId ? `?company_id=${companyId}` : '';
+
       const [pendingRes, allRes, statsRes] = await Promise.allSettled([
-        restClient.get('/api/recruiter/offers/approvals/pending'),
-        restClient.get('/api/recruiter/offers/approvals/all'),
+        restClient.get(`/api/recruiter/offers/approvals/pending${companyParam}`),
+        restClient.get(`/api/recruiter/offers/approvals/all${companyParam}`),
         restClient.get('/api/recruiter/offers/approval-stats')
       ]);
 
@@ -106,11 +122,11 @@ export const OfferApprovalPanel: React.FC = () => {
 
   const handleApprove = async () => {
     if (!selectedApproval) return;
-    
+
     try {
       setProcessing(true);
       const res = await restClient.post(`/api/recruiter/offers/approvals/${selectedApproval.approval_id}/approve`, {
-        approver_id: 1, // TODO: Get from auth context
+        approver_id: approverId,
         comments
       });
 
@@ -139,7 +155,7 @@ export const OfferApprovalPanel: React.FC = () => {
 
   const handleReject = async () => {
     if (!selectedApproval) return;
-    
+
     if (!rejectionReason.trim()) {
       toast({
         title: 'Rejection reason required',
@@ -152,7 +168,7 @@ export const OfferApprovalPanel: React.FC = () => {
     try {
       setProcessing(true);
       const res = await restClient.post(`/api/recruiter/offers/approvals/${selectedApproval.approval_id}/reject`, {
-        approver_id: 1, // TODO: Get from auth context
+        approver_id: approverId,
         rejection_reason: rejectionReason,
         comments
       });
@@ -444,7 +460,7 @@ export const OfferApprovalPanel: React.FC = () => {
               Review the offer details before approving
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedApproval && (
             <ScrollArea className="max-h-[70vh] pr-4">
               <div className="space-y-6 py-4">
@@ -484,7 +500,7 @@ export const OfferApprovalPanel: React.FC = () => {
                       Requested By (Recruiter)
                     </h3>
                     <p className="font-medium text-lg">
-                      {selectedApproval.recruiter_first_name && selectedApproval.recruiter_last_name 
+                      {selectedApproval.recruiter_first_name && selectedApproval.recruiter_last_name
                         ? `${selectedApproval.recruiter_first_name} ${selectedApproval.recruiter_last_name}`
                         : selectedApproval.offer_data?.recruiter_name || 'Recruiter'}
                     </p>
@@ -666,7 +682,7 @@ export const OfferApprovalPanel: React.FC = () => {
               Please provide a reason for rejecting this offer
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="rejectionReason">Rejection Reason *</Label>

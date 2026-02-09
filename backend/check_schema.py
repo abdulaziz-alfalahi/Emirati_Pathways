@@ -1,40 +1,26 @@
-
 import psycopg2
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+DB_CONFIG = {
+    'dbname': os.getenv('DB_NAME', 'emirati_journey'),
+    'user': os.getenv('DB_USER', 'emirati_user'),
+    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', 5432)
+}
 
-# Database connection details
-DB_NAME = os.getenv("DB_NAME", "emirati_pathways_db")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
+conn = psycopg2.connect(**DB_CONFIG)
+cur = conn.cursor()
+cur.execute("SELECT data_type FROM information_schema.columns WHERE table_name = 'job_applications' AND column_name = 'job_id'")
+result = cur.fetchone()
+print(f"job_applications.job_id type: {result[0] if result else 'UNKNOWN'}")
 
-try:
-    conn = psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT
-    )
-    cursor = conn.cursor()
+cur.execute("SELECT data_type FROM information_schema.columns WHERE table_name = 'job_postings' AND column_name = 'id'")
+result = cur.fetchone()
+print(f"job_postings.id type: {result[0] if result else 'UNKNOWN'}")
 
-    cursor.execute("""
-        SELECT column_name, data_type 
-        FROM information_schema.columns 
-        WHERE table_name = 'users';
-    """)
-    columns = cursor.fetchall()
+cur.execute("SELECT data_type FROM information_schema.columns WHERE table_name = 'job_postings' AND column_name = 'jd_id'")
+result = cur.fetchone()
+print(f"job_postings.jd_id type: {result[0] if result else 'UNKNOWN'}")
 
-    print("Columns in 'users' table:")
-    for col in columns:
-        print(f"- {col[0]} ({col[1]})")
-
-    cursor.close()
-    conn.close()
-
-except Exception as e:
-    print(f"Error: {e}")
+conn.close()

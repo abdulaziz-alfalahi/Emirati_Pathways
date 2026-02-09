@@ -65,6 +65,7 @@ interface Job {
   jobLevel?: string;
   fitAssessment?: string;
   hasApplied?: boolean;
+  applicationStatus?: string;  // 'submitted', 'under_review', 'withdrawn', 'rejected', etc.
   commute?: {
     distance_km?: number;
     time_mins?: number;
@@ -232,6 +233,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     try {
       const response = await restClient.post('/api/jobs/apply', {
         job_id: jobId,
+        user_id: candidateProfile?.id,
         cover_letter: 'Application from Candidate Dashboard'
       });
 
@@ -783,6 +785,26 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Already Applied
                         </Badge>
+                      ) : job.applicationStatus === 'withdrawn' ? (
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-amber-100 text-amber-800 px-3 py-2 flex items-center">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Withdrawn
+                          </Badge>
+                          <Button size="sm" onClick={() => handleApply(job.id)}>
+                            Re-Apply
+                          </Button>
+                        </div>
+                      ) : job.applicationStatus === 'rejected' ? (
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-red-100 text-red-800 px-3 py-2 flex items-center">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Not Selected
+                          </Badge>
+                          <Button size="sm" variant="outline" onClick={() => handleApply(job.id)}>
+                            Re-Apply
+                          </Button>
+                        </div>
                       ) : (
                         <Button size="sm" onClick={() => handleApply(job.id)}>
                           Apply Now

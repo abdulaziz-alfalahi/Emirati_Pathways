@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useSearchParams } from 'react-router-dom';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +12,8 @@ import { CoachingRecommendations } from '@/components/assessments/CoachingRecomm
 import { useAuth } from '@/context/AuthContext';
 import { AssessmentUpload } from '@/components/assessments/AssessmentUpload';
 import { Button } from '@/components/ui/button';
-import { 
-  ClipboardCheck, Search, Award, Target, Brain, 
+import {
+  ClipboardCheck, Search, Award, Target, Brain,
   FileText, TrendingUp, BookOpen, Users, BarChart3
 } from 'lucide-react';
 
@@ -21,16 +22,19 @@ const queryClient = new QueryClient();
 
 const AssessmentsPage = () => {
   console.log('AssessmentsPage component rendering');
-  
+
   const { t } = useTranslation('assessments');
-  const { user, roles, hasRole } = useAuth();
+  const { user, hasRole } = useAuth();
   const [searchParams] = useSearchParams();
   const context = searchParams.get('context');
-  const isAssessmentOrTrainingCenter = roles.includes('assessment_center') || roles.includes('training_center');
+
+  // Safely get roles from user object
+  const userRoles = user?.roles || [];
+  const isAssessmentOrTrainingCenter = userRoles.includes('assessment_center') || userRoles.includes('training_center');
 
   console.log('User:', user);
   console.log('Context from URL:', context);
-  console.log('Roles:', roles);
+  console.log('Roles:', userRoles);
 
   // Assessment Center Controls Component
   const AssessmentCenterControls = () => (
@@ -78,7 +82,7 @@ const AssessmentsPage = () => {
     return (
       <div className="min-h-screen bg-[rgb(var(--pg-background))]">
         <div className="flex items-center justify-center min-h-screen">
-          <AuthenticationRequired 
+          <AuthenticationRequired
             message={t('authentication.required')}
             icon={<ClipboardCheck className="h-12 w-12 text-muted-foreground mb-4" />}
           />
@@ -273,5 +277,10 @@ const AssessmentsPage = () => {
   );
 };
 
-export default AssessmentsPage;
+const WrappedAssessmentsPage = () => (
+  <ErrorBoundary>
+    <AssessmentsPage />
+  </ErrorBoundary>
+);
+export default WrappedAssessmentsPage;
 

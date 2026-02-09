@@ -13,6 +13,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from functools import wraps
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Create Blueprint
 admin_dashboard_bp = Blueprint('admin_dashboard_api', __name__, url_prefix='/api/admin')
+feedback_bp = Blueprint('feedback_api', __name__, url_prefix='/api/feedback')
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -80,6 +82,7 @@ def optional_auth(f):
 # DASHBOARD STATS ENDPOINT
 # =====================================================
 
+@admin_dashboard_bp.route('/dashboard', methods=['GET'])
 @admin_dashboard_bp.route('/dashboard/stats', methods=['GET'])
 @optional_auth
 def get_dashboard_stats():
@@ -493,8 +496,435 @@ def get_all_interview_sessions():
         })
 
 
+# =====================================================
+# FEEDBACK ENDPOINT (STUB)
+# =====================================================
+
+# Mock Feedback Store (In-memory for development) with Sample Data
+
+# =====================================================
+# FEEDBACK TABLE INITIALIZATION
+# =====================================================
+
+def ensure_feedback_table_exist():
+    """Create feedback table and seed with initial data."""
+    try:
+        # Create table
+        execute_query(
+            """
+            CREATE TABLE IF NOT EXISTS feedback (
+                id TEXT PRIMARY KEY,
+                user_id TEXT,
+                role TEXT,
+                type TEXT,
+                status TEXT DEFAULT 'open',
+                message TEXT,
+                metadata JSONB,
+                console_logs JSONB,
+                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            fetch_all=False
+        )
+        
+        execute_query(
+            """
+            CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback (created_at DESC);
+            """,
+            fetch_all=False
+        )
+        
+        # Check if table is empty to seed
+        count_res = execute_query("SELECT COUNT(*) AS cnt FROM feedback", fetch_one=True)
+        # Handle dict or tuple return depending on cursor
+        if count_res:
+             count = count_res.get('cnt', 0) if isinstance(count_res, dict) else count_res[0]
+        else:
+             count = 0
+
+        if int(count) == 0:
+            logger.info("Seeding feedback table with initial data...")
+            
+        # Check for missing columns (Schema Migration)
+        conn = get_db_connection()
+        if conn:
+            with conn.cursor() as cursor:
+                # Check resolution_notes
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='feedback' AND column_name='resolution_notes'
+                """)
+                if not cursor.fetchone():
+                    logger.info("Adding missing column 'resolution_notes' to feedback table")
+                    cursor.execute("ALTER TABLE feedback ADD COLUMN resolution_notes TEXT;")
+                    conn.commit()
+            conn.close()
+
+        if int(count) == 0:
+            logger.info("Seeding feedback table with initial data...")
+            
+            # Seed data
+            seed_items = [
+                {
+                    'id': '101',
+                    'user_id': 'student_01',
+                    'role': 'student',
+                    'type': 'bug',
+                    'status': 'open',
+                    'message': 'Cannot upload PDF resume in CV builder. It says "Invalid format" even for .pdf files.',
+                    'metadata': {'path': '/cv-builder', 'browser': 'Chrome'},
+                    'console_logs': ['Error: File type validation failed'],
+                    'time_offset': timedelta(hours=2)
+                },
+                {
+                    'id': '102',
+                    'user_id': 'mentor_05',
+                    'role': 'mentor',
+                    'type': 'feature',
+                    'status': 'reviewed',
+                    'message': 'It would be great to have a calendar view for upcoming sessions.',
+                    'metadata': {'path': '/sessions', 'browser': 'Firefox'},
+                    'console_logs': [],
+                    'time_offset': timedelta(days=1)
+                },
+                {
+                    'id': '103',
+                    'user_id': 'student_22',
+                    'role': 'student',
+                    'type': 'general',
+                    'status': 'resolved',
+                    'message': 'The new dashboard layout is much cleaner and easier to use. Thanks!',
+                    'metadata': {'path': '/dashboard', 'browser': 'Safari'},
+                    'console_logs': [],
+                    'time_offset': timedelta(days=2)
+                },
+                {
+                    'id': '104',
+                    'user_id': 'guest_01',
+                    'role': 'guest',
+                    'type': 'bug',
+                    'status': 'open',
+                    'message': 'The landing page images load very slowly on mobile data.',
+                    'metadata': {'path': '/', 'device': 'iPhone 13'},
+                    'console_logs': [],
+                    'time_offset': timedelta(hours=5)
+                },
+                {
+                    'id': '105',
+                    'user_id': 'admin_02',
+                    'role': 'admin',
+                    'type': 'feature',
+                    'status': 'in_progress',
+                    'message': 'Need an export button for the user analytics report.',
+                    'metadata': {'path': '/admin/analytics'},
+                    'console_logs': [],
+                    'time_offset': timedelta(days=3)
+                },
+                {
+                    'id': '106',
+                    'user_id': 'student_88',
+                    'role': 'student',
+                    'type': 'general',
+                    'status': 'open',
+                    'message': 'Found a typo in the Arabic translation of the "Career Path" section.',
+                    'metadata': {'path': '/career-path', 'language': 'ar'},
+                    'console_logs': [],
+                    'time_offset': timedelta(minutes=45)
+                },
+                {
+                    'id': '107',
+                    'user_id': 'u971545515515.359acd61@emirati-pathway.temp',
+                    'role': 'student',
+                    'type': 'bug',
+                    'status': 'open',
+                    'message': 'Unable to save profile changes when internet connection is unstable.',
+                    'metadata': {'path': '/profile/edit', 'connection': '4g'},
+                    'console_logs': [],
+                    'time_offset': timedelta(hours=3)
+                },
+                {
+                    'id': '108',
+                    'user_id': 'u971545515515.359acd61@emirati-pathway.temp',
+                    'role': 'student',
+                    'type': 'feature',
+                    'status': 'pending',
+                    'message': 'Requesting dark mode support for the mobile view.',
+                    'metadata': {'path': '/settings'},
+                    'console_logs': [],
+                    'time_offset': timedelta(hours=3, minutes=15)
+                }
+            ]
+            
+            for item in seed_items:
+                created_at = datetime.utcnow() - item['time_offset']
+                execute_query(
+                    """
+                    INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s)
+                    """,
+                    (
+                        item['id'], item['user_id'], item['role'], item['type'], item['status'],
+                        item['message'], json.dumps(item.get('metadata', {})), 
+                        json.dumps(item.get('console_logs', [])), created_at
+                    ),
+                    fetch_all=False
+                )
+            logger.info(f"✅ Feedback table seeded with {len(seed_items)} items")
+        else:
+            logger.info("✅ Feedback table exists and is not empty")
+            
+    except Exception as e:
+        logger.error(f"Error ensuring feedback table: {e}")
+
+
+@feedback_bp.route('/', methods=['GET'])
+@optional_auth
+def get_all_feedback():
+    """Get all feedback submissions"""
+    try:
+        feedback_list = execute_query(
+            "SELECT * FROM feedback ORDER BY created_at DESC"
+        )
+        
+        # Convert datetime objects to ISO strings for JSON
+        if feedback_list:
+            for item in feedback_list:
+                if isinstance(item.get('created_at'), datetime):
+                    item['created_at'] = item['created_at'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': feedback_list or []
+        })
+    except Exception as e:
+        logger.error(f"Error fetching feedback: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@feedback_bp.route('/my-feedback', methods=['GET'])
+@jwt_required(optional=True)
+def get_my_feedback():
+    """Get feedback submitted by current user"""
+    try:
+        # Get user ID from JWT if available
+        user_id = get_jwt_identity()
+        
+        if not user_id:
+             return jsonify({'success': True, 'data': []})
+
+        feedback_list = execute_query(
+            "SELECT * FROM feedback WHERE user_id = %s ORDER BY created_at DESC",
+            (user_id,)
+        )
+        
+        # Serialize datetime
+        if feedback_list:
+            for item in feedback_list:
+                if isinstance(item.get('created_at'), datetime):
+                    item['created_at'] = item['created_at'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'data': feedback_list or []
+        })
+    except Exception as e:
+        logger.error(f"Error fetching my feedback: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@feedback_bp.route('/stats', methods=['GET'])
+@optional_auth
+def get_feedback_stats():
+    """Get feedback statistics"""
+    try:
+        # Get basic counts
+        stats = execute_query(
+            """
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status != 'resolved' THEN 1 ELSE 0 END) as open,
+                SUM(CASE WHEN type = 'bug' THEN 1 ELSE 0 END) as bugs,
+                SUM(CASE WHEN type = 'feature' THEN 1 ELSE 0 END) as features,
+                SUM(CASE WHEN created_at::date = CURRENT_DATE THEN 1 ELSE 0 END) as today
+            FROM feedback
+            """,
+            fetch_one=True
+        )
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total': int(stats.get('total', 0)),
+                'open': int(stats.get('open', 0)),
+                'bugs': int(stats.get('bugs', 0)),
+                'features': int(stats.get('features', 0)),
+                'today': int(stats.get('today', 0))
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting feedback stats: {e}")
+        return jsonify({
+            'success': False,
+            'stats': {'total': 0, 'open': 0, 'bugs': 0, 'features': 0, 'today': 0}
+        })
+
+@feedback_bp.route('/submit', methods=['POST'])
+@jwt_required(optional=True)
+def submit_feedback():
+    """Submit feedback"""
+    try:
+        data = request.json
+        import time
+        import uuid
+        
+        feedback_id = f"fb_{int(time.time())}_{str(uuid.uuid4())[:8]}"
+        
+        # Priority: JWT Identity > Body userId > None
+        user_id = get_jwt_identity()
+        if not user_id:
+            user_id = data.get('userId')
+            
+        role = data.get('role', 'user')
+        
+        # If still no user_id, it is truly anonymous or issue with auth
+        # We proceed but user_id might be NULL in DB
+        
+        execute_query(
+            """
+            INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP)
+            """,
+            (
+                feedback_id,
+                user_id,
+                role,
+                data.get('type', 'general'),
+                'open',
+                data.get('message'),
+                json.dumps(data.get('metadata', {})),
+                json.dumps(data.get('consoleLogs', []))
+            ),
+            fetch_all=False
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Feedback submitted successfully',
+            'id': feedback_id
+        })
+    except Exception as e:
+        logger.error(f"Failed to submit feedback: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Failed to submit feedback'}), 500
+
+@feedback_bp.route('/<feedback_id>/status', methods=['PUT'])
+@optional_auth
+def update_feedback_status(feedback_id):
+    """Update feedback status"""
+    try:
+        data = request.json
+        new_status = data.get('status')
+        resolution_notes = data.get('resolution_notes')
+        
+        if not new_status:
+            return jsonify({'success': False, 'message': 'Status is required'}), 400
+            
+        # 1. Fetch Feedback Details (for notification)
+        # We need user_id and message.
+        # execute_query wrapper might not imply how to fetchone easily if not designed well, 
+        # so using get_db_connection directly for this specific logic to be safe and robust.
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute("SELECT user_id, message, role FROM feedback WHERE id = %s", (feedback_id,))
+        feedback_item = cursor.fetchone()
+        
+        # 2. Update Status
+        cursor.execute(
+            "UPDATE feedback SET status = %s, resolution_notes = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (new_status, resolution_notes, feedback_id)
+        )
+        conn.commit()
+        
+        # 3. Send Notification
+        notification_status = 'skipped'
+        notification_error = None
+        target_user_id = feedback_item.get('user_id') if feedback_item else None
+        
+        logger.info(f"Checking notification trigger: status='{new_status}', user_id='{target_user_id}'")
+        
+        if new_status and new_status.lower() == 'resolved' and feedback_item and target_user_id:
+            try:
+                # Skip guest
+                if str(target_user_id).lower() != 'guest':
+                    from backend.services.communication_service import communication_service, NotificationType
+                    
+                    original_msg = feedback_item['message'] or ''
+                    msg_preview = (original_msg[:50] + '...') if len(original_msg) > 50 else original_msg
+                    
+                    logger.info(f"Sending resolution notification to user {target_user_id}")
+                    
+                    # Determine role-based link
+                    user_role = feedback_item.get('role', 'candidate')
+                    base_url = '/candidate-dashboard'
+                    if user_role in ['recruiter', 'hr_recruiter', 'employer']:
+                        base_url = '/recruiter-dashboard'
+                    elif user_role in ['admin', 'administrator']:
+                        base_url = '/admin-dashboard'
+                        
+                    target_link = f"{base_url}?action=feedback_history"
+                    
+                    communication_service.create_notification(
+                        user_id=str(target_user_id),
+                        notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
+                        metadata={
+                            'title': 'Issue Resolved',
+                            'message': f"We have resolved your reported issue: '{msg_preview}'. Thank you for your feedback!",
+                            'feedback_id': feedback_id,
+                            'priority': 'high',
+                            'link': target_link,
+                            'type': 'feedback_resolution' 
+                        }
+                    )
+                    logger.info("Notification sent successfully")
+                    notification_status = 'sent'
+                else:
+                    logger.info("Skipping notification for guest user")
+                    notification_status = 'skipped_guest'
+            except Exception as notif_err:
+                logger.error(f"Failed to send resolution notification: {notif_err}")
+                import traceback
+                traceback.print_exc()
+                notification_status = 'failed'
+                notification_error = str(notif_err)
+
+        cursor.close()
+        conn.close()
+                
+        return jsonify({
+            'success': True, 
+            'message': f'Feedback status updated to {new_status}',
+            'debug_info': {
+                'notification_status': notification_status,
+                'notification_error': notification_error,
+                'target_user_id': target_user_id
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to update feedback status: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update feedback status'}), 500
+
 # Register the blueprint function
 def register_admin_dashboard_routes(app):
     """Register admin dashboard routes with the Flask app"""
     app.register_blueprint(admin_dashboard_bp)
-    logger.info("✅ Admin Dashboard API routes registered")
+    app.register_blueprint(feedback_bp)
+    
+    # Ensure feedback table exists and has correct schema
+    ensure_feedback_table_exist()
+    
+    logger.info("✅ Admin Dashboard & Feedback API routes registered")

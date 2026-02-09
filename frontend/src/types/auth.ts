@@ -1,10 +1,13 @@
 // User Role Types
-export type UserRole = 
+export type UserRole =
   | 'job_seeker'
-  | 'candidate' 
+  | 'candidate'
+  | 'student'
   | 'hr_manager'
   | 'hr'
   | 'recruiter'
+  | 'hr_recruiter' // Specific HR Recruiter Role
+  | 'educator'
   | 'administrator'
   | 'admin'
   // Growth Operator Roles (Domain-Specific)
@@ -17,7 +20,7 @@ export type UserRole =
   | 'growth_operator_community';
 
 // Growth Operator Domain Types
-export type GrowthOperatorDomain = 
+export type GrowthOperatorDomain =
   | 'candidate'
   | 'company'
   | 'education'
@@ -26,14 +29,14 @@ export type GrowthOperatorDomain =
   | 'community';
 
 // User Status Types
-export type UserStatus = 
+export type UserStatus =
   | 'active'
   | 'inactive'
   | 'pending'
   | 'suspended';
 
 // Permission Types
-export type Permission = 
+export type Permission =
   | 'view_jobs'
   | 'apply_jobs'
   | 'manage_profile'
@@ -133,9 +136,12 @@ export interface RegisterResponse {
 export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'job_seeker': '/candidate-dashboard',
   'candidate': '/candidate-dashboard',
+  'student': '/student-dashboard',
   'hr_manager': '/hr-dashboard',
   'hr': '/hr-dashboard',
-  'recruiter': '/recruiter-dashboard',
+  'recruiter': '/recruiter',
+  'hr_recruiter': '/recruiter', // Alias for hr/recruiter role
+  'educator': '/educator-dashboard',
   'administrator': '/admin-dashboard',
   'admin': '/admin-dashboard',
   // Growth Operator Routes
@@ -152,9 +158,12 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'job_seeker': 'Job Seeker',
   'candidate': 'Candidate',
+  'student': 'Student',
   'hr_manager': 'HR Manager',
   'hr': 'HR Manager',
   'recruiter': 'Recruiter',
+  'hr_recruiter': 'HR / Recruiter',
+  'educator': 'Educator',
   'administrator': 'Administrator',
   'admin': 'Administrator',
   // Growth Operator Display Names
@@ -216,9 +225,12 @@ export const GROWTH_OPERATOR_DOMAINS: Record<GrowthOperatorDomain, {
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'job_seeker': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'],
   'candidate': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'],
+  'student': ['view_jobs', 'apply_jobs', 'manage_profile'],
   'hr_manager': ['manage_candidates', 'view_analytics', 'manage_positions', 'generate_reports'],
   'hr': ['manage_candidates', 'view_analytics', 'manage_positions', 'generate_reports'],
   'recruiter': ['manage_candidates', 'post_jobs', 'screen_candidates'],
+  'hr_recruiter': ['manage_candidates', 'post_jobs', 'screen_candidates'],
+  'educator': ['manage_profile'],
   'administrator': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'],
   'admin': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'],
   // Growth Operator Permissions
@@ -231,15 +243,35 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'growth_operator_community': ['moderate_communities', 'manage_community_events', 'view_analytics'],
 };
 
-// Helper Functions
+export const normalizeRole = (role: string): UserRole | string => {
+  if (!role) return '';
+  // Handle specific edge cases first
+  const lowerRole = role.toLowerCase().trim();
+  if (lowerRole === 'hr') return 'hr_manager';
+
+  // General normalization: replace spaces with underscores
+  // e.g. "HR Manager" -> "hr_manager", "Job Seeker" -> "job_seeker"
+  return lowerRole.replace(/\s+/g, '_');
+};
+
 export const getDashboardRoute = (role: UserRole | string): string => {
-  const normalizedRole = role.toLowerCase() as UserRole;
+  const normalizedRole = normalizeRole(role) as UserRole;
   return ROLE_DASHBOARD_MAP[normalizedRole] || '/candidate-dashboard';
 };
 
 export const getRoleDisplayName = (role: UserRole | string): string => {
-  const normalizedRole = role.toLowerCase() as UserRole;
-  return ROLE_DISPLAY_NAMES[normalizedRole] || 'User';
+  // Try direct lookup first
+  const normalizedRole = normalizeRole(role) as UserRole;
+  if (ROLE_DISPLAY_NAMES[normalizedRole]) {
+    return ROLE_DISPLAY_NAMES[normalizedRole];
+  }
+
+  // Fallback to title casing the snake_case or spaced string
+  return role
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 export const hasPermission = (userRole: UserRole | string, permission: Permission): boolean => {

@@ -1,6 +1,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +76,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   onUpdate,
   className = ""
 }) => {
+  const navigate = useNavigate();
   // State management
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
@@ -358,44 +360,16 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
             <div className="space-y-2 col-span-1 md:col-span-2">
               <Label>Location (Home)</Label>
-              {isEditing ? (
-                <LocationPicker
-                  lat={profileData.latitude}
-                  lng={profileData.longitude}
-                  onLocationSelect={handleLocationSelect}
-                  height="250px"
-                />
-              ) : (
-                <>
-                  {profileData.latitude && profileData.longitude ? (
-                    <div className="h-[250px] w-full bg-slate-100 rounded-md border text-muted-foreground overflow-hidden">
-                      <LocationPicker
-                        lat={profileData.latitude}
-                        lng={profileData.longitude}
-                        height="250px"
-                        onLocationSelect={() => { }} // Read-only
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-[250px] w-full bg-slate-100 rounded-md border flex items-center justify-center text-muted-foreground">
-                      <div className="flex flex-col items-center">
-                        <MapPin className="h-8 w-8 mb-2 opacity-50" />
-                        <span>No location selected. Click Edit to add location.</span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
               <Input
                 id="location"
                 value={profileData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
                 disabled={!isEditing}
-                placeholder="Dubai, UAE (or select on map)"
+                placeholder="Dubai, UAE"
                 className="mt-2"
               />
               <p className="text-xs text-muted-foreground">
-                Set your home location to calculate commute times to job opportunities.
+                Set your home location.
               </p>
             </div>
 
@@ -427,10 +401,21 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       {/* Professional Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5" />
-            Professional Summary
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Professional Summary
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/cv-builder')}
+              className="text-xs"
+            >
+              <Sparkles className="h-3 w-3 mr-1 text-teal-600" />
+              Auto-fill from CV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -624,7 +609,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           </div>
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
 };
 

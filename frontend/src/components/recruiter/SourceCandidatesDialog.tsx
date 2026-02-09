@@ -95,8 +95,10 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
   const handleContactCandidate = async (candidate: Candidate) => {
     try {
       setContactingId(candidate.id);
+      // Note: Backend automatically adds current user (recruiter) to participants
+      // So we only need to specify the candidate
       const response = await messagingService.createConversation({
-        participants: [candidate.id],
+        participants: [candidate.id],  // Candidate will be added as participant
         title: `${candidate.first_name} ${candidate.last_name}`
       });
 

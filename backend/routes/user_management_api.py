@@ -42,7 +42,8 @@ VALID_ROLES = [
     'mentor', 'educator', 'student', 'guardian', 'assessor',
     'growth_operator', 'growth_operator_candidate', 'growth_operator_company',
     'growth_operator_education', 'growth_operator_assessment',
-    'growth_operator_mentorship', 'growth_operator_community'
+    'growth_operator_mentorship', 'growth_operator_community',
+    'growth_operator_monitoring'
 ]
 
 def get_db_connection():
@@ -157,6 +158,37 @@ def log_user_activity(user_id, action, performed_by=None, details=None, ip_addre
 # =====================================================
 # USER LISTING AND SEARCH
 # =====================================================
+
+@user_management_bp.route('/users/check-email', methods=['GET'])
+@optional_auth
+def check_email_availability():
+    """Check if an email is available"""
+    try:
+        email = request.args.get('email', '')
+        if not email:
+            return jsonify({
+                'success': False,
+                'message': 'Email is required',
+                'available': False
+            }), 400
+            
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'available': True}) # Fail open
+            
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+            exists = cursor.fetchone() is not None
+            
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'available': not exists
+        })
+    except Exception as e:
+        logger.error(f"Failed to check email: {e}")
+        return jsonify({'success': True, 'available': True}) # Fail open
 
 @user_management_bp.route('/users', methods=['GET'])
 @optional_auth
@@ -731,24 +763,30 @@ def list_roles():
     """Get list of available roles"""
     try:
         roles = [
-            {'name': 'super_admin', 'label': 'Super Administrator', 'description': 'Full system access'},
-            {'name': 'administrator', 'label': 'Administrator', 'description': 'Administrative access'},
-            {'name': 'content_admin', 'label': 'Content Administrator', 'description': 'Manage content'},
-            {'name': 'user_admin', 'label': 'User Administrator', 'description': 'Manage users'},
-            {'name': 'job_seeker', 'label': 'Job Seeker', 'description': 'Search and apply for jobs'},
-            {'name': 'candidate', 'label': 'Candidate', 'description': 'Job candidate'},
-            {'name': 'recruiter', 'label': 'Recruiter', 'description': 'Post jobs and screen candidates'},
-            {'name': 'hr_manager', 'label': 'HR Manager', 'description': 'Manage HR operations'},
-            {'name': 'mentor', 'label': 'Mentor', 'description': 'Provide mentorship'},
-            {'name': 'educator', 'label': 'Educator', 'description': 'Educational institution representative'},
-            {'name': 'assessor', 'label': 'Assessor', 'description': 'Conduct assessments'},
-            {'name': 'growth_operator', 'label': 'Growth Operator', 'description': 'Platform growth operations'},
-            {'name': 'growth_operator_candidate', 'label': 'Candidate Growth Operator', 'description': 'Candidate acquisition'},
-            {'name': 'growth_operator_company', 'label': 'Company Growth Operator', 'description': 'Company onboarding'},
-            {'name': 'growth_operator_education', 'label': 'Education Growth Operator', 'description': 'Education partnerships'},
-            {'name': 'growth_operator_assessment', 'label': 'Assessment Growth Operator', 'description': 'Assessment centers'},
-            {'name': 'growth_operator_mentorship', 'label': 'Mentorship Growth Operator', 'description': 'Mentorship programs'},
-            {'name': 'growth_operator_community', 'label': 'Community Growth Operator', 'description': 'Community management'}
+            {'id': 'super_admin', 'name': 'super_admin', 'display_name': 'Super Administrator', 'description': 'Full system access', 'permissions': [], 'is_system': True},
+            {'id': 'administrator', 'name': 'administrator', 'display_name': 'Administrator', 'description': 'Administrative access', 'permissions': [], 'is_system': True},
+            {'id': 'admin', 'name': 'admin', 'display_name': 'Admin (Legacy)', 'description': 'Legacy administrative access', 'permissions': [], 'is_system': True},
+            {'id': 'content_admin', 'name': 'content_admin', 'display_name': 'Content Administrator', 'description': 'Manage content', 'permissions': [], 'is_system': True},
+            {'id': 'user_admin', 'name': 'user_admin', 'display_name': 'User Administrator', 'description': 'Manage users', 'permissions': [], 'is_system': True},
+            {'id': 'content_editor', 'name': 'content_editor', 'display_name': 'Content Editor', 'description': 'Edit content', 'permissions': [], 'is_system': True},
+            {'id': 'content_reviewer', 'name': 'content_reviewer', 'display_name': 'Content Reviewer', 'description': 'Review content', 'permissions': [], 'is_system': True},
+            {'id': 'job_seeker', 'name': 'job_seeker', 'display_name': 'Job Seeker', 'description': 'Search and apply for jobs', 'permissions': [], 'is_system': True},
+            {'id': 'candidate', 'name': 'candidate', 'display_name': 'Candidate', 'description': 'Job candidate', 'permissions': [], 'is_system': True},
+            {'id': 'recruiter', 'name': 'recruiter', 'display_name': 'Recruiter', 'description': 'Post jobs and screen candidates', 'permissions': [], 'is_system': True},
+            {'id': 'hr_manager', 'name': 'hr_manager', 'display_name': 'HR Manager', 'description': 'Manage HR operations', 'permissions': [], 'is_system': True},
+            {'id': 'mentor', 'name': 'mentor', 'display_name': 'Mentor', 'description': 'Provide mentorship', 'permissions': [], 'is_system': True},
+            {'id': 'educator', 'name': 'educator', 'display_name': 'Educator', 'description': 'Educational institution representative', 'permissions': [], 'is_system': True},
+            {'id': 'student', 'name': 'student', 'display_name': 'Student', 'description': 'Student', 'permissions': [], 'is_system': True},
+            {'id': 'guardian', 'name': 'guardian', 'display_name': 'Guardian', 'description': 'Guardian', 'permissions': [], 'is_system': True},
+            {'id': 'assessor', 'name': 'assessor', 'display_name': 'Assessor', 'description': 'Conduct assessments', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator', 'name': 'growth_operator', 'display_name': 'Growth Operator', 'description': 'Platform growth operations', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_candidate', 'name': 'growth_operator_candidate', 'display_name': 'Candidate Onboarding Operator', 'description': 'Candidate operations and onboarding', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_company', 'name': 'growth_operator_company', 'display_name': 'Company Onboarding Operator', 'description': 'Private sector company onboarding', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_monitoring', 'name': 'growth_operator_monitoring', 'display_name': 'Monitoring Center Operator', 'description': 'Monitoring and status tracking', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_education', 'name': 'growth_operator_education', 'display_name': 'Education Growth Operator', 'description': 'Education partnerships', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_assessment', 'name': 'growth_operator_assessment', 'display_name': 'Assessment Growth Operator', 'description': 'Assessment centers', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_mentorship', 'name': 'growth_operator_mentorship', 'display_name': 'Mentorship Growth Operator', 'description': 'Mentorship programs', 'permissions': [], 'is_system': True},
+            {'id': 'growth_operator_community', 'name': 'growth_operator_community', 'display_name': 'Community Growth Operator', 'description': 'Community management', 'permissions': [], 'is_system': True}
         ]
         
         return jsonify({

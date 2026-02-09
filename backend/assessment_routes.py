@@ -432,6 +432,23 @@ def complete_assessment_session(current_user, session_id):
         # Complete assessment session
         results = assessment_engine.complete_assessment_session(session_id)
         
+        # --- PROFILE INTIGRATION ---
+        # Sync verified skills to the candidate profile
+        try:
+            from services.profile_v2_service import ProfileV2Service
+            # Get candidate_id from session (assuming it maps to user_id or we can retrieve it)
+            session = assessment_engine.assessment_sessions.get(session_id)
+            if session:
+                user_id = session.candidate_id # Assuming candidate_id is the user_id in this system context
+                success = ProfileV2Service.update_skills_from_assessment(user_id, results)
+                if success:
+                    logger.info(f"✅ Synced assessment results to profile for user {user_id}")
+                else:
+                    logger.warning(f"⚠️ Failed to sync assessment results to profile for user {user_id}")
+        except Exception as sync_err:
+            logger.error(f"❌ Error syncing assessment to profile: {sync_err}")
+        # ---------------------------
+        
         return jsonify({
             'message': 'Assessment completed successfully',
             'results': results

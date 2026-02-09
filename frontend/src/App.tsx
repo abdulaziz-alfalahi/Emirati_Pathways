@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
 // import { MockAuthProvider } from '@/context/MockAuthContext';
 import { LanguageProvider } from './context/EnhancedLanguageContext';
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster as HotToaster } from 'react-hot-toast';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import './i18n/config';
@@ -20,13 +21,14 @@ import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 
 // Auth Pages (not lazy loaded for faster initial access)
 // import AuthPage from '@/pages/auth'; 
-import AuthPage from './pages/auth';
+// import AuthPage from './pages/auth';
 // import MockLogin from '@/pages/auth/MockLogin'; 
 import EnhancedAuthPage from '@/pages/auth/EnhancedAuth';
 import { VerifyJob } from '@/pages/public/VerifyJob';
 
 // Lazy loaded components for better performance
 const CandidateDashboard = lazy(() => import('@/pages/CandidateDashboard'));
+const StudentDashboard = lazy(() => import('@/pages/StudentDashboard'));
 const HRDashboard = lazy(() => import('@/pages/HRDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const GrowthOperatorDashboard = lazy(() => import('@/pages/GrowthOperatorDashboard'));
@@ -37,6 +39,11 @@ const RecruiterDashboard = lazy(() => import('@/pages/RecruiterDashboard'));
 const RecruiterJobs = lazy(() => import('@/pages/recruiter/Jobs'));
 const ActiveVacancies = lazy(() => import('@/pages/recruiter/ActiveVacancies'));
 const RecruiterCandidates = lazy(() => import('@/pages/recruiter/Candidates'));
+
+// Auth Components
+// const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
+// const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'));
+const WelcomePage = lazy(() => import('@/pages/onboarding/WelcomePage'));
 const VideoInterviewPage = lazy(() => import('@/pages/recruiter/VideoInterviewPage'));
 const InterviewAnalyticsPage = lazy(() => import('@/pages/recruiter/InterviewAnalyticsPage'));
 const RecruiterOffers = lazy(() => import('@/pages/recruiter/Offers'));
@@ -57,6 +64,7 @@ const ShortlistPage = lazy(() => import('@/pages/recruiter/ShortlistPage'));
 const CandidateProfilePage = lazy(() => import('@/pages/CandidateProfilePage'));
 const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
+const ProfileStudioPage = lazy(() => import('@/pages/candidate/profile-studio/ProfileStudioPage').then(module => ({ default: module.ProfileStudioPage })));
 
 // Resume Builder
 const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
@@ -99,6 +107,7 @@ const NotFound = lazy(() => import('@/pages/not-found'));
 
 // Protected Route Component
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+const AssessmentsPage = lazy(() => import('@/pages/assessments'));
 
 // Role-based Dashboard Components
 // Removed old RecruiterDashboard import - now using the new one from pages
@@ -134,7 +143,7 @@ const AppContent: React.FC = () => {
   const token = localStorage.getItem('access_token') || '';
 
   return (
-    <div className="App min-h-screen bg-gray-50">
+    <div className="App min-h-screen bg-background">
       {isAuthenticated && user && user.id && (
         <NotificationProvider
           userId={user.id.toString()}
@@ -146,6 +155,11 @@ const AppContent: React.FC = () => {
               {/* Public Routes */}
               <Route path="/" element={<BilingualHomePage />} />
               <Route path="/auth" element={<EnhancedAuthPage />} />
+              <Route path="/welcome" element={
+                <ProtectedRoute>
+                  <WelcomePage />
+                </ProtectedRoute>
+              } />
               <Route path="/cv/share/:id" element={<PublicCVViewer />} />
               <Route path="/public/job/:token" element={<VerifyJob />} />
               <Route path="/jobs/:token" element={<VerifyJob />} />
@@ -157,6 +171,31 @@ const AppContent: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['candidate', 'job_seeker']}>
                     <CandidateDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/assessments"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'student']}>
+                    <AssessmentsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/candidate/profile/*"
+                element={
+                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'recruiter', 'hr_manager', 'hr_recruiter', 'hr']}>
+                    <ProfileStudioPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <StudentDashboard />
                   </ProtectedRoute>
                 }
               />
@@ -181,15 +220,7 @@ const AppContent: React.FC = () => {
                 }
               />
 
-              <Route
-                path="/candidate-dashboard"
-                // ...
-                element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                    <CandidateDashboard />
-                  </ProtectedRoute>
-                }
-              />
+
 
               <Route
                 path="/hr-dashboard"
@@ -348,7 +379,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/recruiter-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr', 'hr_manager']}>
                     <RecruiterDashboard />
                   </ProtectedRoute>
                 }
@@ -624,8 +655,14 @@ const AppContent: React.FC = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<BilingualHomePage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/cv/share/:id" element={<PublicCVViewer />} />
+            {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
+            {/* <Route path="/reset-password" element={<ResetPassword />} /> */}
+            <Route path="/welcome" element={
+              <ProtectedRoute>
+                <WelcomePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/auth" element={<EnhancedAuthPage />} />
             <Route path="/verify-job/:token" element={<VerifyJob />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
@@ -657,10 +694,12 @@ const App: React.FC = () => {
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <LanguageProvider>
-            <AppContent />
-            <Toaster />
-            <HotToaster position="top-center" />
-            <FeedbackWidget />
+            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+              <AppContent />
+              <Toaster />
+              <HotToaster position="top-center" />
+              <FeedbackWidget />
+            </ThemeProvider>
           </LanguageProvider>
         </AuthProvider>
       </Router>

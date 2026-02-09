@@ -22,20 +22,26 @@ import {
   Bell,
   RefreshCw,
   BookOpen,
-  ArrowLeft
+  ArrowLeft,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { restClient } from '@/utils/api';
+import { normalizeRole } from '@/types/auth'; // Import normalization helper
 import { RoleRequestDialog } from '@/components/profile/RoleRequestDialog';
+import { useAuth } from '@/context/AuthContext';
 
 // Import persona-specific components
 import ProfileForm from '@/components/candidate/ProfileForm';
 import HRProfileForm from '@/components/recruiter/HRProfileForm';
 import CompanyProfileSetup from '@/components/recruiter/CompanyProfileSetup';
 import EducatorProfileForm from '@/components/educator/EducatorProfileForm';
+import { StudentProfileForm } from '@/components/student/StudentProfileForm';
 import InstitutionProfileSetup from '@/components/educator/InstitutionProfileSetup';
 import AssessorProfileForm from '@/components/assessor/AssessorProfileForm';
 import CertificationTracking from '@/components/assessor/CertificationTracking';
+
+import { RecruiterPreferences } from '@/components/recruiter/RecruiterPreferences';
 
 interface UserProfile {
   id: string;
@@ -59,6 +65,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: '1',
     firstName: 'Ahmed',
@@ -81,12 +88,21 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   // Dialog state for role requests
   const [requestDialog, setRequestDialog] = useState({ isOpen: false, role: '' });
 
+  // Track all roles the user actually possesses, separate from the 'active' view role
+  const [possessedRoles, setPossessedRoles] = useState<string[]>([
+    userProfile?.primaryRole || 'Job Seeker',
+    ...(userProfile?.secondaryRoles || [])
+  ]);
+
   // Fetch generic user roles (account data) on mount
   useEffect(() => {
     const fetchUserRoles = async () => {
       try {
         const { data } = await restClient.get('/api/auth/roles');
         if (data.success) {
+          const allRoles = [data.data.role, ...(data.data.secondary_roles || [])].filter(Boolean);
+          setPossessedRoles(allRoles);
+
           setCurrentUser(prev => ({
             ...prev,
             secondaryRoles: data.data.secondary_roles || [],
@@ -100,75 +116,66 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
     fetchUserRoles();
   }, []);
 
-  // Fetch candidate profile when role is Job Seeker
+  // Fetch profile for ALL roles
   const fetchProfile = useCallback(async () => {
+    try {
+      const { data } = await restClient.get('/api/auth/profile');
 
-    // Normalize role check (handle 'job_seeker', 'Job Seeker', 'candidate', etc.)
-    const isJobSeeker = ['job_seeker', 'job seeker', 'candidate'].includes(currentUser.primaryRole.toLowerCase());
+      if (data.success && data.data) {
+        const apiData = data.data;
+        const personalInfo = apiData.personal_info || {};
 
-    if (isJobSeeker) {
-      try {
-        const { data } = await restClient.get('/api/auth/profile');
+        // Basic Mapping (Shared)
+        const baseData = {
+          name: `${apiData.first_name || ''} ${apiData.last_name || ''}`.trim() || 'User',
+          email: apiData.email || '',
+          phone: personalInfo.phone || apiData.phone || '',
+          location: personalInfo.location || apiData.location || '',
+          latitude: apiData.latitude || personalInfo.latitude,
+          longitude: apiData.longitude || personalInfo.longitude,
 
-        if (data.success && data.data) {
-          const apiData = data.data;
-          const personalInfo = apiData.personal_info || {};
+          // HR / Professional Fields
+          jobTitle: apiData.job_title || apiData.position || apiData.current_position || '',
+          companyName: apiData.company || apiData.company_name || apiData.current_company || '',
+          industry: apiData.industry || '',
+          companySize: apiData.company_size || '',
+          companyLocation: apiData.company_location || '',
 
-          const mappedData = {
-            name: `${apiData.first_name || ''} ${apiData.last_name || ''}`.trim() || 'User',
-            email: apiData.email || '',
-            phone: personalInfo.phone || apiData.phone || '',
-            location: personalInfo.location || '',
-            latitude: apiData.latitude || personalInfo.latitude,
-            longitude: apiData.longitude || personalInfo.longitude,
-            nationality: personalInfo.nationality || apiData.nationality || '',
-            visa_status: personalInfo.visa_status || '',
-            emirates_id: personalInfo.emirates_id || '',
+          // Candidate Fields
+          summary: apiData.professional_summary || '',
+          years_of_experience: apiData.experience_years || 0,
 
-            // Map professional fields
-            summary: apiData.professional_summary || '',
-            years_of_experience: apiData.experience_years || 0,
-            current_position: apiData.current_position || '',
-            current_company: apiData.current_company || '',
+          // Arrays (safe fallbacks)
+          skills: Array.isArray(apiData.skills) ? apiData.skills : [],
+          languages: Array.isArray(apiData.languages) ? apiData.languages : [],
+          certifications: Array.isArray(apiData.certifications) ? apiData.certifications : [],
 
-            // Map arrays
-            skills: Array.isArray(apiData.skills) ? apiData.skills : [],
-            languages: Array.isArray(apiData.languages) ? apiData.languages : [],
-            certifications: Array.isArray(apiData.certifications) ? apiData.certifications : [],
+          // Pass through everything else for specific forms
+          ...apiData
+        };
 
-            // Map education - handle array vs string mismatch
-            education: Array.isArray(apiData.education) && apiData.education.length > 0
-              ? (typeof apiData.education[0] === 'string' ? apiData.education[0] : apiData.education[0].degree || apiData.education[0].institution || '')
-              : '',
+        setCandidateData(baseData);
 
-            // Map URLs
-            linkedin_url: personalInfo.linkedin || '',
-            portfolio_url: personalInfo.portfolio || '',
-
-            // Keep original photo url
-            profile_photo_url: apiData.profile_photo_url
-          };
-
-          setCandidateData(mappedData);
-
-          // Update current user state with photo and basic info if available
-          setCurrentUser(prev => ({
-            ...prev,
-            firstName: apiData.first_name || prev.firstName,
-            lastName: apiData.last_name || prev.lastName,
-            profilePhotoUrl: apiData.profile_photo_url || prev.profilePhotoUrl
-          }));
-        }
-        return true;
-      } catch (error) {
-        console.error("Failed to fetch profile", error);
-        toast({
-          title: "Error loading profile",
-          description: "Could not load your profile data. Please try logging in again.",
-          variant: "destructive"
-        });
-        // throw error; // Don't throw, just handle UI
+        // Update current user state with photo and basic info
+        setCurrentUser(prev => ({
+          ...prev,
+          firstName: apiData.first_name || prev.firstName,
+          lastName: apiData.last_name || prev.lastName,
+          email: apiData.email || prev.email,
+          profilePhotoUrl: apiData.profile_photo_url || prev.profilePhotoUrl,
+          // Sync role if backend returns it
+          primaryRole: apiData.role ? normalizeRole(apiData.role) : prev.primaryRole,
+          // Calculate completion if needed or use backend
+          profileCompletion: apiData.profile_completion || prev.profileCompletion
+        }));
       }
+    } catch (error) {
+      console.error("Failed to fetch profile", error);
+      toast({
+        title: "Error loading profile",
+        description: "Could not load your profile data.",
+        variant: "destructive"
+      });
     }
   }, [currentUser.primaryRole, toast]);
 
@@ -176,107 +183,77 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
     fetchProfile();
   }, [fetchProfile]);
 
-  const roleConfigs = {
-    'Job Seeker': {
-      icon: User,
-      color: 'bg-blue-500',
-      tabs: ['overview', 'personal', 'career', 'skills'],
-      components: {
-        personal: () => (
-          <ProfileForm
-            initialData={candidateData}
-            onSave={(data) => {
-              console.log("Profile saved", data);
-              setCandidateData((prev: any) => ({ ...prev, ...data }));
-            }}
-          />
-        ),
-        career: () => <div>Career Preferences (Already implemented)</div>,
-        skills: () => <div>Skills & Experience (Already implemented)</div>
-      }
-    },
-    'HR/Recruiter': {
-      icon: Users,
-      color: 'bg-green-500',
-      tabs: ['overview', 'personal', 'company', 'preferences'],
-      components: {
-        personal: HRProfileForm,
-        company: CompanyProfileSetup,
-        preferences: () => <div>Hiring Preferences Component</div>
-      }
-    },
-    'Educator': {
-      icon: GraduationCap,
-      color: 'bg-purple-500',
-      tabs: ['overview', 'personal', 'institution', 'curriculum'],
-      components: {
-        personal: EducatorProfileForm,
-        institution: InstitutionProfileSetup,
-        curriculum: () => <div>Curriculum Management Component</div>
-      }
-    },
-    'Mentor': {
-      icon: Star,
-      color: 'bg-orange-500',
-      tabs: ['overview', 'personal', 'expertise', 'mentoring'],
-      components: {
-        personal: () => <div>Mentor Personal Profile (Already implemented)</div>,
-        expertise: () => <div>Expertise Areas (Already implemented)</div>,
-        mentoring: () => <div>Mentoring Preferences (Already implemented)</div>
-      }
-    },
-    'Assessor': {
-      icon: ClipboardCheck,
-      color: 'bg-red-500',
-      tabs: ['overview', 'personal', 'certifications', 'methodology'],
-      components: {
-        personal: AssessorProfileForm,
-        certifications: CertificationTracking,
-        methodology: () => <div>Assessment Methodology Component</div>
-      }
-    },
-    // System Slugs Mappings
+  // Pointer Component for Job Seekers to Redirect to Profile Studio
+  const CandidateStudioPointer = ({ section }: { section: string }) => (
+    <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl">
+      <div className="bg-white p-4 rounded-full shadow-sm mb-4">
+        <User className="h-8 w-8 text-teal-600" />
+      </div>
+      <h3 className="text-xl font-semibold text-slate-900 mb-2">
+        Manage your Job Seeker Profile in the Studio
+      </h3>
+      <p className="text-slate-600 max-w-md mb-6">
+        We've created a dedicated experience for you to build your CV, manage your skills, and verify your identity.
+      </p>
+      <Button
+        onClick={() => navigate(`/candidate/profile/${section}`)}
+        className="bg-teal-600 hover:bg-teal-700"
+      >
+        Go to Profile Studio
+        <ExternalLink className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  );
+
+  // Consolidated Role Configurations
+  const roleConfigs: Record<string, any> = {
     'job_seeker': {
+      label: 'Job Seeker',
       icon: User,
       color: 'bg-blue-500',
       tabs: ['overview', 'personal', 'career', 'skills'],
       components: {
-        personal: () => <ProfileForm initialData={candidateData} onSave={setCandidateData} />,
-        career: () => <div>Career Preferences</div>,
-        skills: () => <div>Skills & Experience</div>
+        personal: () => <CandidateStudioPointer section="identity" />,
+        career: () => <CandidateStudioPointer section="compass" />,
+        skills: () => <CandidateStudioPointer section="skills" />
       }
     },
-    'candidate': {
-      icon: User,
-      color: 'bg-blue-500',
-      tabs: ['overview', 'personal', 'career', 'skills'],
+    'student': {
+      label: 'Student',
+      icon: GraduationCap,
+      color: 'bg-teal-500',
+      tabs: ['overview', 'personal', 'academic', 'interests'],
       components: {
-        personal: () => <ProfileForm initialData={candidateData} onSave={setCandidateData} />,
-        career: () => <div>Career Preferences</div>,
-        skills: () => <div>Skills & Experience</div>
+        personal: StudentProfileForm, // Pass reference, don't wrap in closure
+        academic: () => <div>Academic Records & Transcripts</div>,
+        interests: () => <div>Extracurricular Interests</div>
       }
     },
     'recruiter': {
+      label: 'HR Recruiter',
       icon: Users,
       color: 'bg-green-500',
       tabs: ['overview', 'personal', 'company', 'preferences'],
       components: {
         personal: HRProfileForm,
         company: CompanyProfileSetup,
-        preferences: () => <div>Hiring Preferences</div>
+        preferences: RecruiterPreferences
       }
     },
     'hr_manager': {
+      label: 'HR Manager',
       icon: Users,
-      color: 'bg-green-500',
-      tabs: ['overview', 'personal', 'company', 'preferences'],
+      color: 'bg-green-600',
+      tabs: ['overview', 'personal', 'company', 'preferences', 'team'],
       components: {
-        personal: HRProfileForm,
+        personal: HRProfileForm, // Reuse HR form for now
         company: CompanyProfileSetup,
-        preferences: () => <div>Hiring Preferences</div>
+        preferences: () => <div>Hiring Preferences</div>,
+        team: () => <div>Team Management</div>
       }
     },
     'educator': {
+      label: 'Educator',
       icon: GraduationCap,
       color: 'bg-purple-500',
       tabs: ['overview', 'personal', 'institution', 'curriculum'],
@@ -286,7 +263,19 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         curriculum: () => <div>Curriculum Management</div>
       }
     },
+    'mentor': {
+      label: 'Mentor',
+      icon: Star,
+      color: 'bg-orange-500',
+      tabs: ['overview', 'personal', 'expertise', 'mentoring'],
+      components: {
+        personal: () => <div>Mentor Personal Profile</div>,
+        expertise: () => <div>Expertise Areas</div>,
+        mentoring: () => <div>Mentoring Preferences</div>
+      }
+    },
     'assessor': {
+      label: 'Assessor',
       icon: ClipboardCheck,
       color: 'bg-red-500',
       tabs: ['overview', 'personal', 'certifications', 'methodology'],
@@ -296,20 +285,30 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         methodology: () => <div>Assessment Methodology</div>
       }
     },
-    'mentor': {
-      icon: Star,
-      color: 'bg-orange-500',
-      tabs: ['overview', 'personal', 'expertise', 'mentoring'],
+    'guardian': {
+      label: 'Guardian',
+      icon: Shield,
+      color: 'bg-slate-500',
+      tabs: ['overview', 'personal', 'dependents'],
       components: {
-        personal: () => <div>Mentor Personal Profile</div>,
-        expertise: () => <div>Expertise Areas</div>,
-        mentoring: () => <div>Mentoring Preferences</div>
+        personal: () => <div>Guardian Personal Profile</div>,
+        dependents: () => <div>Dependents Management</div>
       }
     }
   };
 
+  // Helper to normalize role keys for config lookup 
+  const getRoleConfigKey = (role: string) => {
+    const normalized = normalizeRole(role) as string;
+    if (normalized === 'candidate') return 'job_seeker';
+    // Map variations to the config key 'recruiter'
+    if (normalized === 'hr/recruiter' || normalized === 'hr_recruiter') return 'recruiter';
+    return normalized;
+  };
+
   const getCurrentRoleConfig = () => {
-    return roleConfigs[currentUser.primaryRole as keyof typeof roleConfigs] || roleConfigs['Job Seeker'];
+    const configKey = getRoleConfigKey(currentUser.primaryRole);
+    return roleConfigs[configKey] || roleConfigs['job_seeker'];
   };
 
   const handleRoleSwitch = (newRole: string) => {
@@ -327,6 +326,9 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
     try {
       // Real API call to refresh profile
       await fetchProfile();
+
+      // Update global auth context to reflect changes (like name updates) in the header
+      await refreshUser();
 
       setCurrentUser(prev => ({
         ...prev,
@@ -362,6 +364,10 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const roleConfig = getCurrentRoleConfig();
   const RoleIcon = roleConfig.icon;
 
+  // Check if "New Member"
+  const isNewMember = currentUser.firstName === 'New' && currentUser.lastName === 'Member';
+  const displayRole = isNewMember ? 'New Member' : (roleConfig.label || currentUser.primaryRole);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50" >
       <HybridGovernmentNav showAuthButtons={false} currentPage="profile" userRole={currentUser.primaryRole} />
@@ -392,7 +398,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                     {currentUser.firstName} {currentUser.lastName}
                   </CardTitle>
                   <CardDescription className="text-lg">
-                    {currentUser.primaryRole} • {currentUser.email}
+                    {displayRole} • {currentUser.email}
                   </CardDescription>
                 </div>
               </div>
@@ -429,22 +435,28 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
               <div>
                 <span className="text-sm font-medium mb-2 block">Switch Persona</span>
                 <div className="flex flex-wrap gap-1">
-                  {Object.keys(roleConfigs).map(role => {
-                    const config = roleConfigs[role as keyof typeof roleConfigs];
+                  {Object.keys(roleConfigs).map(roleKey => {
+                    const config = roleConfigs[roleKey];
                     const Icon = config.icon;
-                    const hasRole = currentUser.primaryRole === role || currentUser.secondaryRoles.includes(role);
-                    const isCurrent = currentUser.primaryRole === role;
+                    const label = config.label;
+
+                    const normalizedPrimary = getRoleConfigKey(currentUser.primaryRole);
+                    // Use possessedRoles to check ownership instead of mutating currentUser state
+                    const normalizedPossessed = possessedRoles.map(getRoleConfigKey);
+
+                    const hasRole = normalizedPossessed.includes(roleKey);
+                    const isCurrent = normalizedPrimary === roleKey;
 
                     if (isCurrent) {
                       return (
                         <Button
-                          key={role}
+                          key={roleKey}
                           size="sm"
                           variant="default"
                           className="text-xs cursor-default"
                         >
                           <Icon className="h-3 w-3 mr-1" />
-                          {role}
+                          {label}
                         </Button>
                       );
                     }
@@ -452,14 +464,14 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                     if (hasRole) {
                       return (
                         <Button
-                          key={role}
+                          key={roleKey}
                           size="sm"
                           variant="outline"
-                          onClick={() => handleRoleSwitch(role)}
+                          onClick={() => handleRoleSwitch(roleKey)}
                           className="text-xs"
                         >
                           <Icon className="h-3 w-3 mr-1" />
-                          {role}
+                          {label}
                         </Button>
                       );
                     }
@@ -467,14 +479,14 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                     // Don't have role -> Show Request option
                     return (
                       <Button
-                        key={role}
+                        key={roleKey}
                         size="sm"
                         variant="ghost"
-                        onClick={() => setRequestDialog({ isOpen: true, role })}
+                        onClick={() => setRequestDialog({ isOpen: true, role: label })}
                         className="text-xs text-gray-400 hover:text-gray-600 border border-dashed border-gray-300"
                       >
                         <Icon className="h-3 w-3 mr-1" />
-                        Request {role}
+                        Request {label}
                       </Button>
                     );
                   })}
@@ -675,17 +687,36 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                   <div className="space-y-6">
                     {/* Explicitly render ProfileForm for Job Seeker to avoid re-mounting issues */}
                     {currentUser.primaryRole === 'Job Seeker' && tab === 'personal' ? (
-                      <ProfileForm
+                      <CandidateStudioPointer section="identity" />
+                    ) : currentUser.primaryRole === 'student' && tab === 'personal' ? (
+                      <StudentProfileForm
                         initialData={candidateData}
-                        onSave={(data) => {
-                          console.log("Profile saved", data);
-                          setCandidateData((prev: any) => ({ ...prev, ...data }));
+                        onSave={async (data) => {
+                          try {
+                            // Save to backend using the generic profile endpoint which now supports student fields
+                            await restClient.put('/api/auth/profile', data);
+
+                            // Refresh profile data
+                            await handleProfileUpdate();
+
+                            toast({
+                              title: "Success",
+                              description: "Student profile updated successfully",
+                            });
+                          } catch (error) {
+                            console.error("Error saving student profile:", error);
+                            toast({
+                              title: "Error",
+                              description: "Failed to save profile changes",
+                              variant: "destructive"
+                            });
+                          }
                         }}
-                        onUpdate={handleProfileUpdate}
                       />
                     ) : roleConfig.components[tab as keyof typeof roleConfig.components] ? (
                       React.createElement(roleConfig.components[tab as keyof typeof roleConfig.components], {
-                        onProfileUpdate: handleProfileUpdate
+                        onProfileUpdate: handleProfileUpdate,
+                        initialData: candidateData // Provide loaded data to component
                       })
                     ) : (
                       <Card>
@@ -725,8 +756,9 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
             <CardContent>
               <div className="space-y-4">
                 {currentUser.secondaryRoles.map(role => {
-                  const config = roleConfigs[role as keyof typeof roleConfigs] || roleConfigs['Job Seeker'];
-                  const Icon = config.icon || User;
+                  const configKey = getRoleConfigKey(role);
+                  const config = roleConfigs[configKey] || roleConfigs['job_seeker'];
+                  const Icon = config?.icon || User;
                   const displayName = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
                   return (

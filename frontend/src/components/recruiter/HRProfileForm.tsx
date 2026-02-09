@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,13 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Building2, 
-  Users, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Globe, 
+import {
+  Building2,
+  Users,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
   Calendar,
   Clock,
   Target,
@@ -37,7 +38,7 @@ interface HRProfileData {
   email: string;
   phone: string;
   linkedIn: string;
-  
+
   // Company Information
   companyName: string;
   companySize: string;
@@ -46,7 +47,7 @@ interface HRProfileData {
   companyDescription: string;
   companyLocation: string;
   companyLogo?: string;
-  
+
   // Hiring Preferences
   hiringVolume: string;
   preferredCandidateLevel: string[];
@@ -57,7 +58,7 @@ interface HRProfileData {
     mid: { min: number; max: number };
     senior: { min: number; max: number };
   };
-  
+
   // Workflow Settings
   interviewProcess: string[];
   assessmentTools: string[];
@@ -68,7 +69,7 @@ interface HRProfileData {
     end: string;
     days: string[];
   };
-  
+
   // Notification Settings
   notifications: {
     newApplications: boolean;
@@ -77,7 +78,7 @@ interface HRProfileData {
     teamUpdates: boolean;
     weeklyReports: boolean;
   };
-  
+
   // Privacy Settings
   profileVisibility: string;
   contactVisibility: string;
@@ -89,9 +90,9 @@ interface HRProfileFormProps {
   initialData?: Partial<HRProfileData>;
 }
 
-const HRProfileForm: React.FC<HRProfileFormProps> = ({ 
+const HRProfileForm: React.FC<HRProfileFormProps> = ({
   onProfileUpdate,
-  initialData 
+  initialData
 }) => {
   const [profileData, setProfileData] = useState<HRProfileData>({
     firstName: '',
@@ -136,6 +137,15 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
     companyInfoPublic: true,
     ...initialData
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setProfileData(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -228,7 +238,7 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
     setProfileData(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof HRProfileData],
+        ...(prev[parent as keyof HRProfileData] as any),
         [field]: value
       }
     }));
@@ -240,7 +250,7 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
       const newArray = currentArray.includes(value)
         ? currentArray.filter(item => item !== value)
         : [...currentArray, value];
-      
+
       return {
         ...prev,
         [field]: newArray
@@ -270,14 +280,18 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
     setSaveStatus('idle');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Here you would make the actual API call
-      console.log('Saving HR profile data:', profileData);
-      
-      setSaveStatus('success');
-      onProfileUpdate?.();
+      // Connect to real API
+      const response = await restClient.put('/api/auth/profile', {
+        ...profileData,
+        role: 'recruiter' // Explicitly context hint if needed
+      });
+
+      if (response.data.success) {
+        setSaveStatus('success');
+        onProfileUpdate?.();
+      } else {
+        throw new Error(response.data.message || 'Save failed');
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
       setSaveStatus('error');
@@ -291,11 +305,11 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
       'firstName', 'lastName', 'jobTitle', 'email', 'phone',
       'companyName', 'companySize', 'industry', 'companyLocation'
     ];
-    
-    const completedFields = requiredFields.filter(field => 
+
+    const completedFields = requiredFields.filter(field =>
       profileData[field as keyof HRProfileData]
     ).length;
-    
+
     return Math.round((completedFields / requiredFields.length) * 100);
   };
 
@@ -320,7 +334,7 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
                 <span>{calculateProfileCompletion()}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${calculateProfileCompletion()}%` }}
                 />
@@ -342,8 +356,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
             <AlertCircle className="h-4 w-4 text-red-500" />
           )}
           <AlertDescription>
-            {saveStatus === 'success' 
-              ? 'Profile saved successfully!' 
+            {saveStatus === 'success'
+              ? 'Profile saved successfully!'
               : 'Failed to save profile. Please try again.'
             }
           </AlertDescription>
@@ -464,8 +478,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="companySize">Company Size *</Label>
-                  <Select 
-                    value={profileData.companySize} 
+                  <Select
+                    value={profileData.companySize}
                     onValueChange={(value) => handleInputChange('companySize', value)}
                   >
                     <SelectTrigger>
@@ -480,8 +494,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
                 </div>
                 <div>
                   <Label htmlFor="industry">Industry *</Label>
-                  <Select 
-                    value={profileData.industry} 
+                  <Select
+                    value={profileData.industry}
                     onValueChange={(value) => handleInputChange('industry', value)}
                   >
                     <SelectTrigger>
@@ -548,8 +562,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="hiringVolume">Typical Hiring Volume</Label>
-                  <Select 
-                    value={profileData.hiringVolume} 
+                  <Select
+                    value={profileData.hiringVolume}
                     onValueChange={(value) => handleInputChange('hiringVolume', value)}
                   >
                     <SelectTrigger>
@@ -626,8 +640,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
                   {profileData.preferredSkills.map(skill => (
                     <Badge key={skill} variant="secondary" className="flex items-center gap-1">
                       {skill}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
+                      <X
+                        className="h-3 w-3 cursor-pointer"
                         onClick={() => removeSkill(skill)}
                       />
                     </Badge>
@@ -758,8 +772,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="timeZone">Time Zone</Label>
-                  <Select 
-                    value={profileData.timeZone} 
+                  <Select
+                    value={profileData.timeZone}
                     onValueChange={(value) => handleInputChange('timeZone', value)}
                   >
                     <SelectTrigger>
@@ -853,7 +867,7 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
                     </div>
                     <Switch
                       checked={value}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleNestedChange('notifications', key, checked)
                       }
                     />
@@ -876,8 +890,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="profileVisibility">Profile Visibility</Label>
-                  <Select 
-                    value={profileData.profileVisibility} 
+                  <Select
+                    value={profileData.profileVisibility}
                     onValueChange={(value) => handleInputChange('profileVisibility', value)}
                   >
                     <SelectTrigger>
@@ -893,8 +907,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
 
                 <div>
                   <Label htmlFor="contactVisibility">Contact Information Visibility</Label>
-                  <Select 
-                    value={profileData.contactVisibility} 
+                  <Select
+                    value={profileData.contactVisibility}
                     onValueChange={(value) => handleInputChange('contactVisibility', value)}
                   >
                     <SelectTrigger>
@@ -918,7 +932,7 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
                   </div>
                   <Switch
                     checked={profileData.companyInfoPublic}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       handleInputChange('companyInfoPublic', checked)
                     }
                   />
@@ -931,8 +945,8 @@ const HRProfileForm: React.FC<HRProfileFormProps> = ({
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={isSaving}
           className="min-w-[120px]"
         >

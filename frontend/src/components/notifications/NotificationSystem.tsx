@@ -135,99 +135,80 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
   // Initialize WebSocket connection
   useEffect(() => {
+    if (!authToken) return;
+
     // START ANTI-GRAVITY FIX: Use relative path to support Proxy/Ngrok/Production
     const socketUrl = import.meta.env.VITE_WEBSOCKET_URL || undefined; // Undefined = window.location
-    const newSocket = io(socketUrl, {
-      path: '/socket.io', // Make sure this matches vite.config.ts proxy
-      auth: {
-        token: authToken
-      },
-      transports: ['websocket', 'polling']
-    });
-    // END ANTI-GRAVITY FIX
 
-    newSocket.on('connect', () => {
-      console.log('Connected to notification server');
-      setIsConnected(true);
-      shouldPollRef.current = true; // Re-enable polling on valid connection (optional, but good if we recover)
-      // Join user specific room
-      newSocket.emit('join', { room: userId });
-    });
-    // ... existing socket setup ...
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.close();
-    };
-  }, [authToken]); // userId is cleaner dependency but authToken changes on login/logout
-
-  // Load preferences and Initial Fetch on mount
-  useEffect(() => {
-    loadPreferences();
-    fetchNotifications();
-
-    // Polling fallback: Run ALWAYS since WebSockets are unreliable in this environment
-    const pollInterval = setInterval(() => {
-      if (!shouldPollRef.current) return; // Skip if disabled
-      // console.log('Polling for notifications...'); // Reduce log spam
-      fetchNotifications();
-    }, 15000); // Poll every 15 seconds
-
-    return () => clearInterval(pollInterval);
-  }, []); // Run once on mount
-
-  const fetchNotifications = async () => {
-    if (!shouldPollRef.current) return;
+    console.log('🔌 Initializing WebSocket connection...');
+    let newSocket: Socket | null = null;
 
     try {
-      const response = await restClient.get('/api/communication/notifications', {
-        headers: { Authorization: `Bearer ${authToken}` },
-        params: { limit: 50 }
+      newSocket = io(socketUrl, {
+        path: '/socket.io', // Make sure this matches vite.config.ts proxy
+        auth: {
+          token: authToken
+        },
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000,
+        autoConnect: true
       });
-      // ... existing success logic ...
-      if (response.data.success && response.data.data) {
-        // Adjust based on API structure: data.data.notifications
-        const fetchedNotifications: Notification[] = response.data.data.notifications || [];
 
-        setNotifications(fetchedNotifications);
+      newSocket.on('connect', () => {
+        console.log('✅ Connected to notification server:', newSocket?.id);
+        setIsConnected(true);
+        shouldPollRef.current = true; // Re-enable polling on valid connection
 
-        // Calculate unread count from fetched data
-        const unread = fetchedNotifications.filter((n: Notification) => !n.read).length;
-        setUnreadCount(unread);
+        if (newSocket) {
+          // Join user specific room
+          newSocket.emit('join', { room: userId });
 
-        // Polling Toast Logic: Detect new notifications
-        if (fetchedNotifications.length > 0) {
-          const newestTime = fetchedNotifications[0].created_at;
-
-          if (lastNotificationTimeRef.current) {
-            // Find all notifications newer than last check
-            const newItems = fetchedNotifications.filter(n => n.created_at > lastNotificationTimeRef.current!);
-
-            // Trigger toasts for strictly new items (limit to 3 to avoid spam loop)
-            newItems.slice(0, 3).forEach(n => {
-              showToastNotification(n);
-            });
-          }
-
-          // Update ref to the newest time seen
-          // Only update if newer (or if we trust the API to return sorted desc)
-          if (!lastNotificationTimeRef.current || newestTime > lastNotificationTimeRef.current) {
-            lastNotificationTimeRef.current = newestTime;
+          // Also join a generic "global" or role-based room if needed
+          if (userType) {
+            newSocket.emit('join', { room: `role_${userType}` });
           }
         }
-      }
-    } catch (error: any) {
-      // console.error('Failed to fetch notifications:', error); // Reduce spam
-      if (error.response && error.response.status === 401) {
-        if (shouldPollRef.current) {
-          console.warn('Authentication failed for notifications, stopping polling');
-          shouldPollRef.current = false;
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('❌ Disconnected from notification server:', reason);
+        setIsConnected(false);
+        if (reason === 'io server disconnect') {
+          // the disconnection was initiated by the server, you need to reconnect manually
+          newSocket?.connect();
         }
-      }
+      });
+
+      newSocket.on('connect_error', (err) => {
+        console.warn('⚠️ Socket connection error:', err.message);
+        // Don't disable polling here; polling is the fallback!
+      });
+
+      newSocket.on('reconnect_attempt', (attempt) => {
+        console.log(`🔄 Reconnection attempt ${attempt}...`);
+      });
+
+      setSocket(newSocket);
+    } catch (error) {
+      console.error('🔥 Critical WebSocket Initialization Error:', error);
     }
-  };
 
-  const showToastNotification = (notification: any) => {
+    return () => {
+      console.log('🔌 Cleaning up WebSocket connection...');
+      if (newSocket) {
+        newSocket.off('connect');
+        newSocket.off('disconnect');
+        newSocket.off('connect_error');
+        newSocket.off('reconnect_attempt');
+        newSocket.close();
+      }
+    };
+  }, [authToken, userId, userType]); // Added userId/userType dependencies so we rejoin rooms if they change
+
+  // Load preferences and Initial Fetch on mount
+  const showToastNotification = useCallback((notification: any) => {
     const { title, content, priority, notification_type } = notification;
 
     // Check if notifications are enabled and not in quiet hours
@@ -269,7 +250,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           navigate('/dashboard#applications');
         }
       }
-      // Add other types if needed
       else if (notification_type === 'interview_scheduled') {
         if (isRecruiter) {
           navigate('/recruiter/interviews/details');
@@ -279,7 +259,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       }
     };
 
-    // Combine title and message for toast
     const ToastContent = ({ t }: { t: any }) => (
       <div
         onClick={() => {
@@ -303,9 +282,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       default:
         toast((t) => <ToastContent t={t} />, { ...toastOptions, icon: '🔔' });
     }
-  };
+  }, [userType, navigate]);
 
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     try {
       const response = await restClient.get('/api/communication/notifications/preferences', {
         headers: { Authorization: `Bearer ${authToken}` }
@@ -316,7 +295,67 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     } catch (error) {
       console.error('Failed to load notification preferences:', error);
     }
-  };
+  }, [authToken]);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!shouldPollRef.current) return;
+
+    try {
+      const response = await restClient.get('/api/communication/notifications', {
+        headers: { Authorization: `Bearer ${authToken}` },
+        params: { limit: 50 }
+      });
+      if (response.data.success && response.data.data) {
+        const fetchedNotifications: Notification[] = response.data.data.notifications || [];
+
+        setNotifications(fetchedNotifications);
+
+        const unread = fetchedNotifications.filter((n: Notification) => !n.read).length;
+        setUnreadCount(unread);
+
+        if (fetchedNotifications.length > 0) {
+          const newestTime = fetchedNotifications[0].created_at;
+
+          if (lastNotificationTimeRef.current) {
+            const newItems = fetchedNotifications.filter(n => n.created_at > lastNotificationTimeRef.current!);
+
+            newItems.slice(0, 3).forEach(n => {
+              showToastNotification(n);
+            });
+          }
+
+          if (!lastNotificationTimeRef.current || newestTime > lastNotificationTimeRef.current) {
+            lastNotificationTimeRef.current = newestTime;
+          }
+        }
+      }
+    } catch (error: any) {
+      // console.error('Failed to fetch notifications:', error); // Reduce spam
+      if (error.response && error.response.status === 401) {
+        if (shouldPollRef.current) {
+          console.warn('Authentication failed for notifications, stopping polling');
+          shouldPollRef.current = false;
+        }
+      }
+    }
+  }, [authToken, showToastNotification]);
+
+  // Load preferences and Initial Fetch on mount
+  useEffect(() => {
+    loadPreferences();
+
+    // Initial fetch
+    fetchNotifications();
+
+    // Polling fallback: Run ALWAYS since WebSockets are unreliable in this environment
+    const pollInterval = setInterval(() => {
+      if (!shouldPollRef.current) return; // Skip if disabled
+      // console.log('Polling for notifications...'); // Reduce log spam
+      fetchNotifications();
+    }, 15000); // Poll every 15 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [loadPreferences, fetchNotifications]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     // Optimistic UI Update
@@ -539,9 +578,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     }
     // Fallback for System Announcements without explicit link (e.g. legacy feedback)
     else if (type === 'system_announcement') {
-      const isFeedback = (metadata.type === 'bug' || metadata.type === 'feature' || metadata.title?.toLowerCase().includes('feedback'));
-      if (isFeedback && (user?.role === 'admin' || user?.role === 'administrator')) {
-        navigate('/admin-dashboard?tab=feedback');
+      const isFeedback = (metadata.type === 'bug' || metadata.type === 'feature' || metadata.title?.toLowerCase().includes('feedback') || metadata.title?.toLowerCase().includes('issue resolved'));
+
+      if (isFeedback) {
+        if (user?.role === 'admin' || user?.role === 'administrator') {
+          navigate('/admin-dashboard?tab=feedback');
+        } else {
+          // New logic: Trigger Feedback Widget via Deep Link
+          const basePath = isRecruiter ? '/recruiter-dashboard' : '/candidate-dashboard';
+          navigate(`${basePath}?action=feedback_history`);
+        }
       }
     }
 
@@ -572,7 +618,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       case 'educational_content':
         return <GraduationCap className="h-4 w-4" />;
       case 'system_announcement':
-        return <AlertCircle className="h-4 w-4" />;
+        return <CheckCheck className="h-4 w-4 text-green-600" />;
       default:
         return <MessageSquare className="h-4 w-4" />;
     }

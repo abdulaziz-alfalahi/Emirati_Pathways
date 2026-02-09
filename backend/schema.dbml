@@ -1,0 +1,2154 @@
+// Database Schema for Emirati Journey
+// Generated automatically
+
+Table admin_audit_log {
+  id int [pk, not null, increment]
+  user_id int
+  action varchar [not null]
+  resource_type varchar [not null]
+  resource_id varchar
+  old_values json
+  new_values json
+  details json
+  ip_address inet
+  user_agent varchar
+  session_id varchar
+  created_at timestamp
+}
+
+Table admin_notifications {
+  id int [pk, not null, increment]
+  notification_type varchar [not null]
+  title varchar [not null]
+  message varchar [not null]
+  severity varchar
+  is_read boolean
+  is_dismissed boolean
+  target_user_id int
+  action_url varchar
+  expires_at timestamp
+  created_at timestamp
+}
+
+Table admin_roles {
+  id int [pk, not null, increment]
+  name varchar [not null]
+  display_name varchar [not null]
+  description varchar
+  permissions json [not null]
+  is_system_role boolean
+  created_by int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table admin_settings {
+  id int [pk, not null, increment]
+  setting_key varchar [not null]
+  setting_value json [not null]
+  setting_type varchar [not null]
+  category varchar [not null]
+  description varchar
+  is_public boolean
+  validation_rules json
+  updated_by int
+  updated_at timestamp
+  created_at timestamp
+}
+
+Table admin_system_metrics {
+  id int [pk, not null, increment]
+  metric_name varchar [not null]
+  metric_value decimal [not null]
+  metric_unit varchar
+  metric_category varchar [not null]
+  tags json
+  recorded_at timestamp
+}
+
+Table admin_user_roles {
+  id int [pk, not null, increment]
+  user_id int
+  role_id int
+  assigned_by int
+  assigned_at timestamp
+  expires_at timestamp
+}
+
+Table admin_user_sessions {
+  id int [pk, not null, increment]
+  user_id int
+  session_token varchar [not null]
+  ip_address inet
+  user_agent varchar
+  is_active boolean
+  last_activity timestamp
+  expires_at timestamp [not null]
+  created_at timestamp
+}
+
+Table analytics_events {
+  id int [pk, not null, increment]
+  user_id int
+  event_type varchar [not null]
+  category varchar
+  action varchar
+  data json
+  session_id varchar
+  ip_address inet
+  user_agent varchar
+  created_at timestamp
+}
+
+Table application_analytics {
+  id uuid [pk, not null, increment]
+  application_id uuid [not null]
+  metric_name varchar [not null]
+  metric_value decimal
+  metric_text varchar
+  recorded_at timestamp
+}
+
+Table application_documents {
+  id uuid [pk, not null, increment]
+  application_id uuid [not null]
+  document_type varchar [not null]
+  file_name varchar [not null]
+  original_filename varchar [not null]
+  file_path varchar [not null]
+  file_size int
+  mime_type varchar
+  is_required boolean
+  uploaded_at timestamp
+  uploaded_by int [not null]
+}
+
+Table application_feedback {
+  id uuid [pk, not null, increment]
+  application_id uuid [not null]
+  feedback_type varchar [not null]
+  feedback_text varchar [not null]
+  rating int
+  strengths varchar
+  areas_for_improvement varchar
+  recommendations varchar
+  provided_by int [not null]
+  provided_at timestamp
+  is_shared_with_candidate boolean
+}
+
+Table application_interviews {
+  id uuid [pk, not null, increment]
+  application_id uuid [not null]
+  interview_type varchar [not null]
+  scheduled_date timestamp [not null]
+  duration_minutes int
+  location varchar
+  meeting_link varchar
+  interviewer_name varchar
+  interviewer_email varchar
+  interviewer_phone varchar
+  preparation_notes varchar
+  interview_status varchar
+  feedback varchar
+  score int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table application_notifications {
+  id uuid [pk, not null, increment]
+  application_id uuid [not null]
+  user_id int [not null]
+  notification_type varchar [not null]
+  title varchar [not null]
+  message varchar [not null]
+  is_read boolean
+  sent_via_email boolean
+  sent_via_sms boolean
+  sent_via_push boolean
+  created_at timestamp
+  read_at timestamp
+}
+
+Table application_status_history {
+  id uuid [pk, not null, increment]
+  application_id uuid [not null]
+  previous_status varchar
+  new_status varchar [not null]
+  status_reason varchar
+  notes varchar
+  changed_by int
+  changed_at timestamp
+  notification_sent boolean
+}
+
+Table approval_requests {
+  id uuid [pk, not null, increment]
+  company_id uuid [not null]
+  resource_type varchar [not null]
+  resource_id uuid [not null]
+  requested_by int [not null]
+  approver_id int [not null]
+  status varchar [not null]
+  comment varchar
+  created_at timestamp
+  decided_at timestamp
+}
+
+Table attendance {
+  id uuid [pk, not null, increment]
+  student_id uuid [not null]
+  class_id uuid [not null]
+  attendance_date date [not null]
+  status varchar [not null]
+  arrival_time time
+  marked_by int
+  created_at timestamp
+}
+
+Table candidate_assessments {
+  id int [pk, not null, increment]
+  profile_id int [not null]
+  assessment_type varchar
+  title varchar
+  score double
+  max_score double
+  status varchar
+  completed_at timestamp
+  d33_sector varchar
+}
+
+Table candidate_certifications {
+  id int [pk, not null, increment]
+  profile_id int [not null]
+  name varchar [not null]
+  issuing_organization varchar [not null]
+  issue_date timestamp
+  expiry_date timestamp
+  credential_id varchar
+  credential_url varchar
+}
+
+Table candidate_education_entries {
+  id int [pk, not null, increment]
+  profile_id int [not null]
+  institution varchar [not null]
+  degree varchar [not null]
+  field_of_study varchar
+  start_date timestamp
+  end_date timestamp
+  grade varchar
+  is_verified boolean
+  verification_source varchar
+  verification_id varchar
+}
+
+Table candidate_experience_entries {
+  id int [pk, not null, increment]
+  profile_id int [not null]
+  job_title varchar [not null]
+  company varchar [not null]
+  location varchar
+  start_date timestamp
+  end_date timestamp
+  is_current boolean
+  description varchar
+  skills_used json
+}
+
+Table candidate_profiles {
+  id int [pk, not null, increment]
+  user_id varchar [not null]
+  headline varchar
+  bio varchar
+  phone varchar
+  location varchar
+  nationality varchar
+  dob timestamp
+  avatar_url varchar
+  video_intro_url varchar
+  target_roles json
+  willing_to_relocate boolean
+  expected_salary_range varchar
+  notice_period varchar
+  created_at timestamp
+  updated_at timestamp
+  full_name varchar
+  ats_score int
+  profile_photo_url varchar
+  latitude double
+  longitude double
+}
+
+Table candidate_shortlist {
+  id int [pk, not null, increment]
+  shortlist_id varchar [not null]
+  jd_id varchar [not null]
+  candidate_id varchar [not null]
+  recruiter_id varchar [not null]
+  match_score decimal
+  match_details json
+  status varchar
+  notes varchar
+  tags json
+  contacted_at timestamp
+  interview_scheduled_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table candidate_skills {
+  id int [pk, not null, increment]
+  profile_id int [not null]
+  name varchar [not null]
+  category varchar
+  level varchar
+  is_verified boolean
+  assessment_score int
+}
+
+Table career_development_plans {
+  id uuid [pk, not null, increment]
+  mentee_user_id int [not null]
+  mentor_id uuid [not null]
+  plan_title varchar [not null]
+  current_position varchar
+  target_position varchar
+  target_industry varchar
+  timeline_months int
+  skills_to_develop json
+  experience_to_gain json
+  education_requirements json
+  networking_goals json
+  action_steps json
+  progress_milestones json
+  current_progress decimal
+  plan_status varchar
+  review_frequency varchar
+  last_review_date date
+  next_review_date date
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table classes {
+  id uuid [pk, not null, increment]
+  class_name varchar [not null]
+  grade_level varchar
+  section varchar
+  subject varchar
+  academic_year varchar [not null]
+  educator_id int [not null]
+  institution_id uuid
+  classroom varchar
+  max_capacity int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cms_categories {
+  id int [pk, not null, increment]
+  name varchar [not null]
+  slug varchar [not null]
+  description varchar
+  parent_id int
+  sort_order int
+  is_active boolean
+  created_at timestamp
+}
+
+Table cms_content {
+  id int [pk, not null, increment]
+  uuid uuid [not null, increment]
+  title varchar [not null]
+  slug varchar [not null]
+  content_type varchar [not null]
+  status varchar
+  language varchar
+  content_data json [not null]
+  meta_data json
+  featured_image_id int
+  excerpt varchar
+  tags array
+  category varchar
+  publish_date timestamp
+  expire_date timestamp
+  view_count int
+  created_by int
+  updated_by int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cms_content_media {
+  id int [pk, not null, increment]
+  content_id int
+  media_id int
+  relationship_type varchar [not null]
+  sort_order int
+  created_at timestamp
+}
+
+Table cms_content_versions {
+  id int [pk, not null, increment]
+  content_id int
+  version_number int [not null]
+  title varchar [not null]
+  content_data json [not null]
+  meta_data json
+  change_summary varchar
+  created_by int
+  created_at timestamp
+}
+
+Table cms_content_workflows {
+  id int [pk, not null, increment]
+  content_id int
+  workflow_id int
+  current_step int [not null]
+  status varchar
+  assigned_to int
+  comments varchar
+  started_at timestamp
+  completed_at timestamp
+}
+
+Table cms_media {
+  id int [pk, not null, increment]
+  uuid uuid [not null, increment]
+  filename varchar [not null]
+  original_name varchar [not null]
+  mime_type varchar [not null]
+  file_size int [not null]
+  storage_path varchar [not null]
+  cdn_url varchar
+  alt_text varchar
+  caption varchar
+  description varchar
+  tags array
+  dimensions json
+  is_public boolean
+  uploaded_by int
+  uploaded_at timestamp
+}
+
+Table cms_workflows {
+  id int [pk, not null, increment]
+  name varchar [not null]
+  description varchar
+  workflow_steps json [not null]
+  is_active boolean
+  created_by int
+  created_at timestamp
+}
+
+Table communication_logs {
+  id int [pk, not null, increment]
+  log_id varchar [not null]
+  shortlist_id varchar
+  candidate_id varchar [not null]
+  recruiter_id varchar [not null]
+  message_type varchar [not null]
+  subject varchar
+  body varchar [not null]
+  status varchar
+  sent_at timestamp
+  delivered_at timestamp
+  error_message varchar
+  metadata json
+  created_at timestamp
+}
+
+Table companies {
+  id uuid [pk, not null, increment]
+  name varchar [not null]
+  company_name varchar
+  contact_email varchar
+  is_verified boolean
+  description varchar
+  industry varchar
+  trade_license_no varchar
+  phone varchar
+  emirate varchar
+  city varchar
+  business_type varchar
+  website varchar
+}
+
+Table company_settings {
+  id uuid [pk, not null, increment]
+  company_id uuid [not null]
+  setting_category varchar [not null]
+  setting_key varchar [not null]
+  setting_value json
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table company_team_members {
+  id uuid [pk, not null, increment]
+  company_id uuid [not null]
+  user_id int [not null]
+  role varchar [not null]
+  permissions json
+  invited_by int
+  invitation_status varchar
+  joined_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table conversation_participants {
+  conversation_id uuid [not null]
+  user_id varchar [not null]
+  joined_at timestamp
+  last_read_at timestamp
+  is_archived boolean
+}
+
+Table conversations {
+  id uuid [pk, not null]
+  application_id varchar
+  job_id varchar
+  title varchar
+  created_at timestamp
+  last_message_at timestamp
+  is_active boolean
+}
+
+Table course_assessments {
+  id uuid [pk, not null, increment]
+  course_id uuid [not null]
+  module_id uuid
+  assessment_name varchar [not null]
+  assessment_type varchar [not null]
+  description varchar
+  instructions varchar
+  total_marks int [not null]
+  passing_marks int [not null]
+  duration_minutes int
+  attempt_limit int
+  due_date timestamp
+  is_published boolean
+  weight_percentage decimal
+  rubric json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table course_certificates {
+  id uuid [pk, not null, increment]
+  enrollment_id uuid [not null]
+  certificate_number varchar [not null]
+  certificate_type varchar
+  issue_date timestamp
+  expiry_date timestamp
+  verification_code varchar
+  certificate_url varchar
+  digital_signature varchar
+  is_verified boolean
+  verification_status varchar
+  created_at timestamp
+}
+
+Table course_enrollments {
+  id uuid [pk, not null, increment]
+  course_id uuid [not null]
+  student_user_id int [not null]
+  enrollment_date timestamp
+  enrollment_status varchar
+  payment_status varchar
+  payment_amount decimal
+  payment_date timestamp
+  completion_date timestamp
+  final_grade varchar
+  grade_points decimal
+  attendance_percentage decimal
+  feedback_rating int
+  feedback_comments varchar
+  certificate_issued boolean
+  certificate_date timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table course_modules {
+  id uuid [pk, not null, increment]
+  course_id uuid [not null]
+  module_number int [not null]
+  module_name varchar [not null]
+  module_description varchar
+  learning_objectives json
+  content_outline varchar
+  duration_hours int
+  resources json
+  assignments json
+  is_mandatory boolean
+  order_sequence int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table courses {
+  id uuid [pk, not null, increment]
+  institution_id uuid [not null]
+  educator_id uuid
+  course_code varchar [not null]
+  course_name varchar [not null]
+  course_description varchar
+  course_level varchar
+  course_type varchar
+  subject_area varchar
+  duration_weeks int
+  credit_hours int
+  prerequisites json
+  learning_outcomes json
+  course_materials json
+  assessment_methods json
+  grading_criteria json
+  max_students int
+  current_enrollment int
+  course_fee decimal
+  currency varchar
+  start_date date
+  end_date date
+  schedule json
+  delivery_mode varchar
+  language varchar
+  is_active boolean
+  is_published boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table curriculum_standards {
+  id uuid [pk, not null, increment]
+  standard_code varchar [not null]
+  standard_name varchar [not null]
+  subject_area varchar [not null]
+  grade_level varchar
+  description varchar
+  learning_objectives json
+  assessment_criteria json
+  moe_reference varchar
+  effective_date date
+  revision_date date
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cv_analytics {
+  id uuid [pk, not null, increment]
+  cv_id uuid [not null]
+  views_count int
+  downloads_count int
+  shares_count int
+  avg_time_spent int
+  bounce_rate decimal
+  applications_sent int
+  interviews_received int
+  job_offers_received int
+  updated_at timestamp
+}
+
+Table cv_profiles {
+  id int [pk, not null, increment]
+  user_id int
+  cv_data json [not null]
+  parsed_data json
+  skills json
+  experience_years int
+  education_level varchar
+  languages json
+  location varchar
+  emirate varchar
+  is_active boolean
+  quality_score double
+  completeness_score double
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cv_templates {
+  id uuid [pk, not null, increment]
+  name varchar [not null]
+  display_name varchar [not null]
+  description varchar
+  category varchar
+  template_data json
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cv_usage_logs {
+  id varchar [pk, not null]
+  cv_id uuid
+  user_id varchar
+  event_type varchar
+  event_data json
+  timestamp timestamp
+}
+
+Table cv_versions {
+  id uuid [pk, not null, increment]
+  cv_id uuid [not null]
+  version_number int [not null]
+  cv_data json [not null]
+  change_summary varchar
+  created_by uuid
+  created_at timestamp
+}
+
+Table educational_institutions {
+  id uuid [pk, not null, increment]
+  name varchar [not null]
+  institution_type varchar [not null]
+  accreditation_level varchar
+  license_number varchar
+  establishment_year int
+  description varchar
+  website varchar
+  email varchar
+  phone varchar
+  address varchar
+  city varchar
+  emirate varchar
+  country varchar
+  postal_code varchar
+  logo varchar
+  accreditation_documents json
+  facilities json
+  programs_offered json
+  student_capacity int
+  current_enrollment int
+  faculty_count int
+  is_active boolean
+  is_verified boolean
+  verification_status varchar
+  social_media_links json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table educational_programs {
+  id int [pk, not null, increment]
+  title varchar [not null]
+  organizer_name varchar [not null]
+  description varchar
+  program_type varchar
+  start_date date
+  end_date date
+  location varchar
+  age_group varchar
+  application_deadline date
+  cost varchar
+  application_link varchar
+  is_active boolean
+  created_at timestamp
+}
+
+Table educator_analytics {
+  id uuid [pk, not null, increment]
+  educator_id uuid [not null]
+  metric_name varchar [not null]
+  metric_value decimal
+  metric_date date
+  course_id uuid
+  additional_data json
+  created_at timestamp
+}
+
+Table educator_profiles {
+  id uuid [pk, not null, increment]
+  user_id int [not null]
+  institution_id uuid
+  position_title varchar [not null]
+  department varchar
+  years_of_experience int
+  education_level varchar
+  teaching_subjects json
+  certifications json
+  specializations json
+  languages_taught json
+  teaching_methodology varchar
+  professional_summary varchar
+  research_interests varchar
+  publications json
+  awards_recognition json
+  professional_memberships json
+  contact_preferences json
+  availability_schedule json
+  is_active boolean
+  is_verified boolean
+  verification_documents json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table educator_qualifications {
+  id uuid [pk, not null, increment]
+  educator_id uuid [not null]
+  qualification_type varchar [not null]
+  qualification_name varchar [not null]
+  issuing_institution varchar
+  issue_date date
+  expiry_date date
+  verification_status varchar
+  document_url varchar
+  grade_gpa varchar
+  is_verified boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table enhanced_analytics_events {
+  id int [pk, not null, increment]
+  event_id uuid [not null]
+  event_type varchar [not null]
+  category varchar [not null]
+  timestamp timestamp [not null]
+  user_id uuid
+  session_id uuid
+  user_role varchar
+  user_emirate varchar
+  user_sector varchar
+  device_type varchar
+  browser varchar
+  response_time decimal
+  cpu_usage decimal
+  memory_usage decimal
+  conversion_value decimal
+  engagement_score decimal
+  satisfaction_score decimal
+  uae_metrics json
+  cultural_context json
+  data json
+  metadata json
+  tags array
+  created_at timestamp
+}
+
+Table enrollments {
+  id uuid [pk, not null, increment]
+  student_id uuid [not null]
+  class_id uuid [not null]
+  enrollment_date date
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table external_job_distribution {
+  id uuid [pk, not null, increment]
+  job_posting_id uuid [not null]
+  target varchar [not null]
+  payload json
+  status varchar [not null]
+  external_id varchar
+  response json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table feedback {
+  id varchar [pk, not null]
+  user_id varchar
+  role varchar
+  type varchar
+  status varchar
+  message varchar
+  metadata json
+  console_logs json
+  created_at timestamp
+  updated_at timestamp
+  resolution_notes varchar
+}
+
+Table growth_operator_activity_log {
+  id int [pk, not null, increment]
+  user_id int [not null]
+  domain varchar
+  action varchar
+  details json
+  created_at timestamp
+}
+
+Table growth_operator_assignments {
+  id int [pk, not null, increment]
+  user_id int [not null]
+  domain varchar [not null]
+  assigned_by int
+  is_primary boolean
+  is_active boolean
+  notes varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table hr_profiles {
+  id uuid [pk, not null, increment]
+  user_id int [not null]
+  company_id uuid [not null]
+  position_title varchar
+  department varchar
+}
+
+Table institution_partnerships {
+  id uuid [pk, not null, increment]
+  institution_id uuid [not null]
+  partner_type varchar [not null]
+  partner_name varchar [not null]
+  partnership_type varchar
+  description varchar
+  start_date date
+  end_date date
+  contact_person varchar
+  contact_email varchar
+  benefits json
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table interview_participants {
+  id int [pk, not null, increment]
+  session_id uuid
+  user_id int [not null]
+  role varchar
+  status varchar
+  created_at timestamp
+}
+
+Table interview_recordings {
+  id uuid [pk, not null]
+  session_id uuid
+  user_id int
+  file_path varchar
+  created_at timestamp
+}
+
+Table interview_reports {
+  id uuid [pk, not null, increment]
+  session_id varchar [not null]
+  report_data json [not null]
+  generated_at timestamp [not null]
+}
+
+Table interview_schedules {
+  id int [pk, not null, increment]
+  interview_id varchar [not null]
+  shortlist_id varchar [not null]
+  candidate_id varchar [not null]
+  recruiter_id varchar [not null]
+  jd_id varchar
+  interview_type varchar [not null]
+  interview_round int
+  interview_title varchar
+  scheduled_date date [not null]
+  scheduled_time time [not null]
+  duration_minutes int
+  timezone varchar
+  location varchar
+  meeting_link varchar
+  meeting_platform varchar
+  status varchar
+  confirmation_status varchar
+  interviewers json
+  reminder_sent boolean
+  reminder_sent_at timestamp
+  feedback varchar
+  rating int
+  recommendation varchar
+  notes varchar
+  internal_notes varchar
+  metadata json
+  created_at timestamp
+  updated_at timestamp
+  cancelled_at timestamp
+  cancellation_reason varchar
+}
+
+Table interview_sessions {
+  id uuid [pk, not null]
+  application_id varchar
+  recruiter_id int
+  candidate_id varchar
+  scheduled_at timestamp
+  status varchar
+  ai_analysis json
+  created_at timestamp
+  guest_token varchar
+  title varchar
+  cancellation_reason varchar
+  attendees json
+}
+
+Table jd_analytics {
+  id int [pk, not null, increment]
+  job_description_id int
+  analysis_type varchar [not null]
+  analysis_data json [not null]
+  quality_metrics json
+  compliance_metrics json
+  uae_metrics json
+  performance_metrics json
+  created_at timestamp
+}
+
+Table job_applications {
+  id varchar [pk, not null]
+  job_id varchar [not null]
+  candidate_id varchar [not null]
+  cover_letter varchar
+  additional_documents json
+  expected_salary varchar
+  availability_date varchar
+  status varchar
+  submitted_at timestamp
+  last_updated timestamp
+  notes varchar
+  interview_date timestamp
+  interview_type varchar
+}
+
+Table job_benefits {
+  id uuid [pk, not null]
+  job_posting_id uuid [not null]
+  benefit_category varchar
+  benefit_name varchar
+  benefit_description varchar
+  benefit_value varchar
+  is_highlighted boolean
+  created_at timestamp
+}
+
+Table job_descriptions {
+  id int [pk, not null, increment]
+  user_id int
+  title varchar [not null]
+  company varchar
+  location varchar
+  emirate varchar
+  jd_data json [not null]
+  parsed_data json
+  required_skills json
+  experience_level int
+  employment_type varchar
+  salary_range varchar
+  is_active boolean
+  quality_score double
+  compliance_score double
+  emiratization_friendly boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table job_documents {
+  id uuid [pk, not null, increment]
+  job_posting_id uuid [not null]
+  uploaded_by int [not null]
+  document_type varchar
+  original_filename varchar [not null]
+  stored_filename varchar [not null]
+  content_type varchar
+  size_bytes int
+  storage_path varchar [not null]
+  created_at timestamp
+}
+
+Table job_matches {
+  id int [pk, not null, increment]
+  cv_profile_id int
+  job_description_id int
+  overall_score double [not null]
+  skills_score double
+  experience_score double
+  education_score double
+  location_score double
+  language_score double
+  cultural_score double
+  confidence double
+  match_data json
+  recommendations json
+  is_favorite boolean
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table job_offers {
+  offer_id varchar [not null]
+  jd_id varchar [not null]
+  shortlist_id varchar [not null]
+  candidate_id varchar [not null]
+  recruiter_id varchar [not null]
+  position_title varchar [not null]
+  department varchar
+  employment_type varchar [not null]
+  start_date date
+  salary_amount decimal [not null]
+  salary_currency varchar
+  salary_period varchar
+  bonus_amount decimal
+  equity_percentage decimal
+  benefits json
+  status varchar
+  offer_date timestamp
+  expiry_date date
+  response_deadline date
+  candidate_response varchar
+  response_date timestamp
+  response_notes varchar
+  negotiation_status varchar
+  negotiation_rounds int
+  negotiation_notes varchar
+  contract_duration_months int
+  probation_period_months int
+  notice_period_days int
+  work_location varchar
+  remote_work_policy varchar
+  offer_letter_url varchar
+  contract_url varchar
+  additional_documents json
+  approval_status varchar
+  approved_by varchar
+  approval_date timestamp
+  approval_notes varchar
+  created_at timestamp
+  updated_at timestamp
+  created_by varchar
+  notes varchar
+  rejected_by varchar
+  rejection_date timestamp
+  rejection_reason varchar
+}
+
+Table job_postings {
+  id int [pk, not null, increment]
+  jd_id varchar [not null]
+  recruiter_id varchar [not null]
+  company_id varchar [not null]
+  title varchar [not null]
+  title_arabic varchar
+  department varchar
+  job_type varchar
+  job_level varchar
+  emirate varchar
+  city varchar
+  remote_option boolean
+  description varchar
+  description_arabic varchar
+  requirements json
+  responsibilities json
+  benefits json
+  compensation json
+  application_process json
+  metadata json
+  status varchar
+  views_count int
+  applications_count int
+  created_at timestamp
+  updated_at timestamp
+  published_at timestamp
+  closed_at timestamp
+  nafis_job_id varchar
+  education_level varchar
+  gender_preference varchar
+  number_of_vacancies int
+  created_by int
+  contact_email varchar
+  posted_date timestamp
+  employment_type varchar
+  experience_level varchar
+  salary_range_min int
+  salary_range_max int
+  currency varchar
+  location varchar
+  priority_level varchar
+  application_deadline date
+  expires_at date
+  uae_compliance_checked boolean
+  emiratization_target int
+  visa_sponsorship_available boolean
+  tags json
+  seo_keywords json
+  latitude double
+  longitude double
+}
+
+Table job_requirements {
+  id uuid [pk, not null]
+  job_posting_id uuid [not null]
+  requirement_type varchar
+  requirement_name varchar
+  requirement_level varchar
+  proficiency_level varchar
+  years_required int
+  description varchar
+  weight decimal
+  created_at timestamp
+}
+
+Table job_shortlists {
+  job_posting_id int [not null]
+  candidate_id int [not null]
+  added_by int
+  notes varchar
+  created_at timestamp
+}
+
+Table job_templates {
+  id uuid [pk, not null, increment]
+  company_id uuid [not null]
+  created_by int [not null]
+  template_name varchar [not null]
+  template_category varchar
+  title_template varchar
+  description_template varchar
+  requirements_template json
+  responsibilities_template json
+  benefits_template json
+  is_public boolean
+  usage_count int
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table job_verification_tokens {
+  id uuid [pk, not null, increment]
+  job_id int [not null]
+  token varchar [not null]
+  email varchar [not null]
+  company_name_snapshot varchar
+  is_used boolean
+  expires_at timestamp [not null]
+  created_at timestamp
+}
+
+Table learning_resources {
+  id uuid [pk, not null, increment]
+  course_id uuid
+  module_id uuid
+  resource_name varchar [not null]
+  resource_type varchar [not null]
+  resource_url varchar
+  file_size_mb decimal
+  description varchar
+  access_level varchar
+  download_allowed boolean
+  view_count int
+  rating decimal
+  tags json
+  created_by uuid
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentor_profiles {
+  id uuid [pk, not null, increment]
+  user_id int [not null]
+  professional_title varchar [not null]
+  current_company varchar
+  industry varchar
+  years_of_experience int
+  expertise_areas json
+  mentoring_specializations json
+  languages_spoken json
+  professional_summary varchar
+  mentoring_philosophy varchar
+  achievements json
+  certifications json
+  education_background json
+  professional_memberships json
+  linkedin_profile varchar
+  portfolio_url varchar
+  hourly_rate decimal
+  currency varchar
+  availability_hours json
+  time_zone varchar
+  preferred_communication json
+  max_mentees int
+  current_mentees int
+  mentoring_approach varchar
+  session_duration_preference int
+  is_available boolean
+  is_verified boolean
+  verification_documents json
+  rating decimal
+  total_reviews int
+  total_sessions int
+  success_rate decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentor_specializations {
+  id uuid [pk, not null, increment]
+  mentor_id uuid [not null]
+  specialization_name varchar [not null]
+  specialization_category varchar
+  proficiency_level varchar
+  years_of_experience int
+  description varchar
+  certifications json
+  success_stories varchar
+  is_primary boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentorship_analytics {
+  id uuid [pk, not null, increment]
+  mentor_id uuid
+  mentee_user_id int
+  program_id uuid
+  metric_name varchar [not null]
+  metric_value decimal
+  metric_date date
+  additional_data json
+  created_at timestamp
+}
+
+Table mentorship_feedback {
+  id uuid [pk, not null, increment]
+  session_id uuid [not null]
+  feedback_type varchar [not null]
+  rating int
+  feedback_text varchar
+  areas_of_improvement varchar
+  strengths_highlighted varchar
+  recommendations varchar
+  would_recommend boolean
+  is_anonymous boolean
+  created_at timestamp
+}
+
+Table mentorship_goals {
+  id uuid [pk, not null, increment]
+  mentee_user_id int [not null]
+  mentor_id uuid [not null]
+  program_id uuid
+  goal_title varchar [not null]
+  goal_description varchar
+  goal_category varchar
+  priority_level varchar
+  target_date date
+  current_status varchar
+  progress_percentage decimal
+  milestones json
+  success_criteria varchar
+  resources_needed json
+  challenges_faced varchar
+  mentor_notes varchar
+  is_achieved boolean
+  achievement_date timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentorship_matching {
+  id uuid [pk, not null, increment]
+  mentee_user_id int [not null]
+  mentor_id uuid [not null]
+  match_score decimal
+  match_criteria json
+  match_status varchar
+  match_date timestamp
+  start_date timestamp
+  end_date timestamp
+  mentorship_type varchar
+  goals_alignment json
+  communication_preferences json
+  success_metrics json
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentorship_outcomes {
+  id uuid [pk, not null, increment]
+  mentorship_matching_id uuid [not null]
+  outcome_type varchar [not null]
+  outcome_description varchar
+  achievement_date date
+  quantifiable_result varchar
+  impact_level varchar
+  success_metrics json
+  mentor_contribution varchar
+  mentee_effort_level varchar
+  external_factors varchar
+  lessons_learned varchar
+  is_verified boolean
+  verification_source varchar
+  created_at timestamp
+}
+
+Table mentorship_programs {
+  id uuid [pk, not null, increment]
+  program_name varchar [not null]
+  program_description varchar
+  program_type varchar [not null]
+  target_audience varchar
+  duration_weeks int
+  session_frequency varchar
+  max_participants int
+  current_participants int
+  program_fee decimal
+  currency varchar
+  start_date date
+  end_date date
+  application_deadline date
+  eligibility_criteria json
+  learning_outcomes json
+  program_structure json
+  resources_provided json
+  mentor_id uuid [not null]
+  is_active boolean
+  is_published boolean
+  application_status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentorship_resources {
+  id uuid [pk, not null, increment]
+  resource_title varchar [not null]
+  resource_description varchar
+  resource_type varchar [not null]
+  resource_url varchar
+  resource_category varchar
+  target_audience varchar
+  difficulty_level varchar
+  estimated_time_minutes int
+  tags json
+  created_by uuid
+  view_count int
+  rating decimal
+  is_featured boolean
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentorship_schedules {
+  id uuid [pk, not null, increment]
+  mentor_id uuid [not null]
+  day_of_week int [not null]
+  start_time time [not null]
+  end_time time [not null]
+  is_available boolean
+  max_sessions_per_slot int
+  session_duration_minutes int
+  buffer_time_minutes int
+  time_zone varchar
+  effective_date date
+  expiry_date date
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table mentorship_sessions {
+  id uuid [pk, not null, increment]
+  mentor_id uuid [not null]
+  mentee_user_id int [not null]
+  program_id uuid
+  session_title varchar
+  session_description varchar
+  session_type varchar
+  scheduled_date timestamp [not null]
+  duration_minutes int
+  session_status varchar
+  meeting_link varchar
+  meeting_platform varchar
+  agenda json
+  notes varchar
+  action_items json
+  resources_shared json
+  mentor_feedback varchar
+  mentee_feedback varchar
+  session_rating int
+  follow_up_required boolean
+  follow_up_date date
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table messages {
+  id uuid [pk, not null]
+  conversation_id uuid
+  sender_id varchar [not null]
+  recipient_id varchar
+  content varchar [not null]
+  message_type varchar
+  metadata json
+  status varchar
+  is_read boolean
+  read_at timestamp
+  created_at timestamp
+}
+
+Table notifications {
+  id uuid [pk, not null]
+  user_id varchar [not null]
+  type varchar [not null]
+  title varchar [not null]
+  content varchar [not null]
+  metadata json
+  is_read boolean
+  read_at timestamp
+  created_at timestamp
+}
+
+Table offer_approval_requests {
+  id uuid [pk, not null, increment]
+  offer_id uuid [not null]
+  jd_id uuid
+  candidate_id int [not null]
+  recruiter_id int [not null]
+  position_title varchar
+  salary_amount decimal
+  salary_currency varchar
+  status varchar
+  approver_id int
+  approved_by int
+  approved_at timestamp
+  rejection_reason varchar
+  comments varchar
+  requested_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table offers {
+  id uuid [pk, not null, increment]
+  job_posting_id uuid [not null]
+  application_id uuid
+  candidate_id int [not null]
+  recruiter_id int [not null]
+  offer_data json [not null]
+  status varchar [not null]
+  signature_token varchar
+  signed_at timestamp
+  accepted_at timestamp
+  declined_at timestamp
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table otp_interactions {
+  phone varchar [not null]
+  otp_code varchar [not null]
+  expires_at timestamp [not null]
+  attempts int
+  created_at timestamp
+}
+
+Table parent_communications {
+  id uuid [pk, not null, increment]
+  student_id uuid [not null]
+  educator_id int [not null]
+  content varchar [not null]
+  communication_date timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table predictive_models {
+  id int [pk, not null, increment]
+  model_name varchar [not null]
+  model_type varchar [not null]
+  model_version varchar [not null]
+  training_data_size int
+  accuracy_score decimal
+  model_parameters json
+  feature_importance json
+  last_trained timestamp
+  is_active boolean
+  created_at timestamp
+}
+
+Table program_categories {
+  id uuid [pk, not null, increment]
+  name_en varchar [not null]
+  name_ar varchar [not null]
+  description_en varchar
+  description_ar varchar
+  icon_name varchar
+  color_code varchar
+  sort_order int
+  is_active boolean [not null]
+  created_at timestamp
+}
+
+Table program_enrollments {
+  id uuid [pk, not null, increment]
+  program_id uuid [not null]
+  student_id int [not null]
+  parent_id int
+  enrollment_status varchar [not null]
+  created_at timestamp
+}
+
+Table program_notifications {
+  id uuid [pk, not null, increment]
+  program_id uuid [not null]
+  recipient_id int [not null]
+  title varchar [not null]
+  message varchar [not null]
+  is_read boolean [not null]
+  created_at timestamp
+}
+
+Table program_reviews {
+  id uuid [pk, not null, increment]
+  program_id uuid [not null]
+  reviewer_id int [not null]
+  review_type varchar [not null]
+  status varchar [not null]
+  feedback varchar
+  created_at timestamp
+}
+
+Table program_success_metrics {
+  id uuid [pk, not null, increment]
+  program_id uuid [not null]
+  graduation_rate decimal
+  satisfaction_score decimal
+  created_at timestamp
+}
+
+Table program_tags {
+  id uuid [pk, not null, increment]
+  program_id uuid [not null]
+  tag_name varchar [not null]
+  created_at timestamp
+  tag_type varchar
+}
+
+Table program_workflow_history {
+  id uuid [pk, not null, increment]
+  program_id uuid [not null]
+  stage_from varchar [not null]
+  stage_to varchar [not null]
+  actor_id int [not null]
+  actor_role varchar [not null]
+  comments varchar
+  created_at timestamp
+}
+
+Table real_time_metrics {
+  id int [pk, not null, increment]
+  metric_name varchar [not null]
+  metric_category varchar [not null]
+  metric_value decimal [not null]
+  aggregation_type varchar [not null]
+  time_window varchar [not null]
+  timestamp timestamp [not null]
+  dimensions json
+  created_at timestamp
+}
+
+Table recruiter_activity_log {
+  id int [pk, not null, increment]
+  recruiter_id int
+  action varchar
+  resource_type varchar
+  resource_id varchar
+  details json
+  created_at timestamp
+}
+
+Table recruiter_vacancies {
+  id uuid [pk, not null]
+  title varchar [not null]
+  employer varchar
+  location varchar
+  description varchar
+  requirements json
+  tags json
+  posted_by uuid
+  created_at timestamp
+  latitude double
+  longitude double
+}
+
+Table role_requests {
+  id uuid [pk, not null]
+  user_id int
+  requested_role varchar [not null]
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+  documents json
+  admin_notes varchar
+  reviewer_id int
+}
+
+Table saved_jobs {
+  id int [pk, not null, increment]
+  user_id int [not null]
+  job_id int [not null]
+  created_at timestamp
+}
+
+Table scholarships {
+  id int [pk, not null, increment]
+  title varchar [not null]
+  provider_name varchar [not null]
+  description varchar
+  amount varchar
+  coverage_type varchar
+  deadline date
+  min_gpa decimal
+  academic_level varchar
+  eligible_majors json
+  application_link varchar
+  is_active boolean
+  created_at timestamp
+  institution_id uuid
+}
+
+Table school_programs {
+  id uuid [pk, not null, increment]
+  school_id uuid [not null]
+  title_en varchar [not null]
+  title_ar varchar [not null]
+  description_en varchar [not null]
+  description_ar varchar [not null]
+  category varchar [not null]
+  target_age_min int [not null]
+  target_age_max int [not null]
+  capacity_total int [not null]
+  fees_amount decimal [not null]
+  status varchar [not null]
+  created_at timestamp
+  capacity_available int
+  fees_currency varchar
+  updated_at timestamp
+}
+
+Table schools {
+  id uuid [pk, not null, increment]
+  name_en varchar [not null]
+  name_ar varchar [not null]
+  code varchar [not null]
+  location varchar [not null]
+  district varchar [not null]
+  coordinates int
+  contact_email varchar
+  contact_phone varchar
+  website_url varchar
+  khda_rating varchar
+  curriculum_type array
+  student_capacity int
+  current_enrollment int
+  established_year int
+  principal_name varchar
+  is_active boolean [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table shortlisted_candidates {
+  id int [pk, not null, increment]
+  job_id int [not null]
+  candidate_id int [not null]
+  hr_user_id int [not null]
+  notes varchar
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table skills {
+  id uuid [pk, not null, increment]
+  name varchar [not null]
+  category varchar
+  description varchar
+  is_active boolean
+  created_at timestamp
+}
+
+Table student_achievements {
+  id uuid [pk, not null, increment]
+  student_id uuid [not null]
+  title varchar [not null]
+  achievement_date date [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table student_behavior {
+  id uuid [pk, not null, increment]
+  student_id uuid [not null]
+  class_id uuid
+  incident_date date [not null]
+  incident_type varchar
+  description varchar
+  reported_by int [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table student_guardians {
+  id uuid [pk, not null, increment]
+  student_id uuid [not null]
+  guardian_type varchar
+  first_name varchar [not null]
+  last_name varchar [not null]
+  arabic_name varchar
+  email varchar
+  phone varchar
+  is_primary_contact boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table student_progress {
+  id uuid [pk, not null, increment]
+  enrollment_id uuid [not null]
+  module_id uuid
+  progress_percentage decimal
+  time_spent_minutes int
+  last_accessed timestamp
+  completion_status varchar
+  notes varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table students {
+  id uuid [pk, not null, increment]
+  user_id int
+  student_id varchar [not null]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  arabic_name varchar
+  date_of_birth date [not null]
+  gender varchar
+  nationality varchar
+  emirate varchar
+  email varchar
+  phone varchar
+  emergency_contact_name varchar
+  emergency_contact_phone varchar
+  emergency_contact_relationship varchar
+  medical_conditions varchar
+  special_needs varchar
+  enrollment_date date
+  graduation_date date
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table system_settings {
+  id uuid [pk, not null, increment]
+  setting_key varchar [not null]
+  setting_value varchar
+  setting_type varchar
+  description varchar
+  is_public boolean
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table team_members {
+  id int [pk, not null, increment]
+  company_id int
+  user_id int [not null]
+  role varchar
+  department varchar
+  is_active boolean
+  created_at timestamp
+}
+
+Table uae_analytics_metrics {
+  id int [pk, not null, increment]
+  metric_category varchar [not null]
+  emirate varchar
+  sector varchar
+  metric_name varchar [not null]
+  metric_value decimal [not null]
+  benchmark_value decimal
+  performance_indicator varchar
+  timestamp timestamp [not null]
+  metadata json
+  created_at timestamp
+}
+
+Table user_activity_log {
+  id int [pk, not null, increment]
+  user_id int [not null]
+  action varchar
+  performed_by int
+  details json
+  ip_address varchar
+  created_at timestamp
+}
+
+Table user_cvs {
+  id uuid [pk, not null, increment]
+  user_id varchar [not null]
+  title varchar [not null]
+  template_id uuid
+  language varchar
+  personal_info json [not null]
+  professional_summary varchar
+  technical_skills json
+  soft_skills json
+  languages_spoken json
+  work_experience json
+  education json
+  certifications json
+  projects json
+  cv_score int
+  ats_score int
+  last_analyzed_at timestamp
+  status varchar
+  is_public boolean
+  sharing_token varchar
+  created_at timestamp
+  updated_at timestamp
+  last_accessed_at timestamp
+  template_name varchar
+  is_visible boolean
+  latitude double
+  longitude double
+  filename varchar
+  file_size int
+  file_type varchar
+  mime_type varchar
+  parsed_data json
+  analysis_results json
+  access_count int
+  upload_timestamp timestamp
+}
+
+Table user_journey_analytics {
+  id int [pk, not null, increment]
+  user_id uuid [not null]
+  journey_stage varchar [not null]
+  entry_timestamp timestamp [not null]
+  exit_timestamp timestamp
+  duration_seconds int
+  actions_count int
+  conversion_achieved boolean
+  drop_off_point varchar
+  journey_data json
+  created_at timestamp
+}
+
+Table user_roles {
+  id int [pk, not null, increment]
+  user_id int [not null]
+  role varchar [not null]
+  assigned_by int
+  created_at timestamp
+}
+
+Table user_sessions {
+  id int [pk, not null, increment]
+  user_id int
+  session_token varchar [not null]
+  refresh_token varchar
+  expires_at timestamp [not null]
+  is_active boolean
+  ip_address inet
+  user_agent varchar
+  created_at timestamp
+}
+
+Table users {
+  id int [pk, not null, increment]
+  email varchar [not null]
+  password_hash varchar [not null]
+  full_name varchar
+  user_type varchar [not null]
+  phone varchar
+  location varchar
+  emirate varchar
+  company varchar
+  job_title varchar
+  is_active boolean
+  is_verified boolean
+  created_at timestamp
+  updated_at timestamp
+  last_login timestamp
+  profile_data json
+  preferences json
+  first_name varchar
+  last_name varchar
+  role varchar
+  nationality varchar
+  education_level varchar
+  preferred_salary_min int
+  preferred_salary_max int
+  preferred_location varchar
+  is_uae_national boolean
+  skills array
+  experience_years int
+  username varchar
+  latitude double
+  longitude double
+  secondary_roles array
+}
+
+Table video_interview_sessions {
+  id varchar [pk, not null]
+  application_id uuid [not null]
+  interviewer_id int [not null]
+  candidate_id int [not null]
+  interview_type varchar [not null]
+  scheduled_time timestamp [not null]
+  duration_minutes int
+  status varchar [not null]
+  room_id varchar [not null]
+  recording_id varchar
+  ai_analysis_id varchar
+  created_at timestamp
+  started_at timestamp
+  ended_at timestamp
+}
+
+// Relationships
+Ref: admin_audit_log.user_id > users.id
+Ref: admin_notifications.target_user_id > users.id
+Ref: admin_roles.created_by > users.id
+Ref: admin_settings.updated_by > users.id
+Ref: admin_user_roles.user_id > users.id
+Ref: admin_user_roles.role_id > admin_roles.id
+Ref: admin_user_roles.assigned_by > users.id
+Ref: admin_user_sessions.user_id > users.id
+Ref: analytics_events.user_id > users.id
+Ref: application_documents.uploaded_by > users.id
+Ref: application_feedback.provided_by > users.id
+Ref: application_notifications.user_id > users.id
+Ref: application_status_history.changed_by > users.id
+Ref: approval_requests.company_id > companies.id
+Ref: approval_requests.requested_by > users.id
+Ref: approval_requests.approver_id > users.id
+Ref: attendance.student_id > students.id
+Ref: attendance.class_id > classes.id
+Ref: attendance.marked_by > users.id
+Ref: candidate_assessments.profile_id > candidate_profiles.id
+Ref: candidate_certifications.profile_id > candidate_profiles.id
+Ref: candidate_education_entries.profile_id > candidate_profiles.id
+Ref: candidate_experience_entries.profile_id > candidate_profiles.id
+Ref: candidate_skills.profile_id > candidate_profiles.id
+Ref: career_development_plans.mentee_user_id > users.id
+Ref: career_development_plans.mentor_id > mentor_profiles.id
+Ref: classes.educator_id > users.id
+Ref: classes.institution_id > educational_institutions.id
+Ref: cms_categories.parent_id > cms_categories.id
+Ref: cms_content.created_by > users.id
+Ref: cms_content.updated_by > users.id
+Ref: cms_content_media.content_id > cms_content.id
+Ref: cms_content_media.media_id > cms_media.id
+Ref: cms_content_versions.content_id > cms_content.id
+Ref: cms_content_versions.created_by > users.id
+Ref: cms_content_workflows.content_id > cms_content.id
+Ref: cms_content_workflows.workflow_id > cms_workflows.id
+Ref: cms_content_workflows.assigned_to > users.id
+Ref: cms_media.uploaded_by > users.id
+Ref: cms_workflows.created_by > users.id
+Ref: company_settings.company_id > companies.id
+Ref: company_team_members.company_id > companies.id
+Ref: company_team_members.user_id > users.id
+Ref: company_team_members.invited_by > users.id
+Ref: conversation_participants.conversation_id > conversations.id
+Ref: course_assessments.course_id > courses.id
+Ref: course_assessments.module_id > course_modules.id
+Ref: course_certificates.enrollment_id > course_enrollments.id
+Ref: course_enrollments.course_id > courses.id
+Ref: course_enrollments.student_user_id > users.id
+Ref: course_modules.course_id > courses.id
+Ref: courses.institution_id > educational_institutions.id
+Ref: courses.educator_id > educator_profiles.id
+Ref: cv_analytics.cv_id > user_cvs.id
+Ref: cv_profiles.user_id > users.id
+Ref: cv_versions.cv_id > user_cvs.id
+Ref: educator_analytics.educator_id > educator_profiles.id
+Ref: educator_analytics.course_id > courses.id
+Ref: educator_profiles.user_id > users.id
+Ref: educator_profiles.institution_id > educational_institutions.id
+Ref: educator_qualifications.educator_id > educator_profiles.id
+Ref: enrollments.student_id > students.id
+Ref: enrollments.class_id > classes.id
+Ref: hr_profiles.user_id > users.id
+Ref: hr_profiles.company_id > companies.id
+Ref: institution_partnerships.institution_id > educational_institutions.id
+Ref: interview_participants.session_id > interview_sessions.id
+Ref: interview_recordings.session_id > interview_sessions.id
+Ref: interview_reports.session_id > video_interview_sessions.id
+Ref: jd_analytics.job_description_id > job_descriptions.id
+Ref: job_descriptions.user_id > users.id
+Ref: job_documents.uploaded_by > users.id
+Ref: job_matches.cv_profile_id > cv_profiles.id
+Ref: job_matches.job_description_id > job_descriptions.id
+Ref: job_postings.created_by > users.id
+Ref: job_shortlists.job_posting_id > job_postings.id
+Ref: job_shortlists.candidate_id > users.id
+Ref: job_shortlists.added_by > users.id
+Ref: job_templates.company_id > companies.id
+Ref: job_templates.created_by > users.id
+Ref: job_verification_tokens.job_id > job_postings.id
+Ref: learning_resources.course_id > courses.id
+Ref: learning_resources.module_id > course_modules.id
+Ref: learning_resources.created_by > educator_profiles.id
+Ref: mentor_profiles.user_id > users.id
+Ref: mentor_specializations.mentor_id > mentor_profiles.id
+Ref: mentorship_analytics.mentor_id > mentor_profiles.id
+Ref: mentorship_analytics.mentee_user_id > users.id
+Ref: mentorship_analytics.program_id > mentorship_programs.id
+Ref: mentorship_feedback.session_id > mentorship_sessions.id
+Ref: mentorship_goals.mentee_user_id > users.id
+Ref: mentorship_goals.mentor_id > mentor_profiles.id
+Ref: mentorship_goals.program_id > mentorship_programs.id
+Ref: mentorship_matching.mentee_user_id > users.id
+Ref: mentorship_matching.mentor_id > mentor_profiles.id
+Ref: mentorship_outcomes.mentorship_matching_id > mentorship_matching.id
+Ref: mentorship_programs.mentor_id > mentor_profiles.id
+Ref: mentorship_resources.created_by > mentor_profiles.id
+Ref: mentorship_schedules.mentor_id > mentor_profiles.id
+Ref: mentorship_sessions.mentor_id > mentor_profiles.id
+Ref: mentorship_sessions.mentee_user_id > users.id
+Ref: mentorship_sessions.program_id > mentorship_programs.id
+Ref: messages.conversation_id > conversations.id
+Ref: offers.candidate_id > users.id
+Ref: offers.recruiter_id > users.id
+Ref: parent_communications.student_id > students.id
+Ref: parent_communications.educator_id > users.id
+Ref: program_enrollments.program_id > school_programs.id
+Ref: program_enrollments.student_id > users.id
+Ref: program_enrollments.parent_id > users.id
+Ref: program_notifications.program_id > school_programs.id
+Ref: program_notifications.recipient_id > users.id
+Ref: program_reviews.program_id > school_programs.id
+Ref: program_reviews.reviewer_id > users.id
+Ref: program_success_metrics.program_id > school_programs.id
+Ref: program_tags.program_id > school_programs.id
+Ref: program_workflow_history.program_id > school_programs.id
+Ref: program_workflow_history.actor_id > users.id
+Ref: role_requests.user_id > users.id
+Ref: role_requests.reviewer_id > users.id
+Ref: scholarships.institution_id > educational_institutions.id
+Ref: school_programs.school_id > schools.id
+Ref: student_achievements.student_id > students.id
+Ref: student_behavior.class_id > classes.id
+Ref: student_behavior.reported_by > users.id
+Ref: student_behavior.student_id > students.id
+Ref: student_guardians.student_id > students.id
+Ref: student_progress.enrollment_id > course_enrollments.id
+Ref: student_progress.module_id > course_modules.id
+Ref: students.user_id > users.id
+Ref: user_cvs.template_id > cv_templates.id
+Ref: user_sessions.user_id > users.id
+Ref: video_interview_sessions.interviewer_id > users.id
+Ref: video_interview_sessions.candidate_id > users.id

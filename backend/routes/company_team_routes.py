@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
-from company_team_system import CompanyTeamSystem
+from backend.company_team_system import CompanyTeamSystem
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +26,13 @@ def get_team_members():
         if not company_id:
              return jsonify({'success': False, 'error': 'Company ID is required'}), 400
 
-        members = team_system.get_team_members(company_id)
+        # Exclude current user from the list
+        try:
+            exclude_id = int(current_user_id)
+        except (ValueError, TypeError):
+            exclude_id = None
+            
+        members = team_system.get_team_members(company_id, exclude_user_id=exclude_id)
         return jsonify({'success': True, 'members': members}), 200
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

@@ -150,71 +150,106 @@ def list_jobs():
         
         query = """
             SELECT 
-                j.id,
-                j.title,
-                j.company,
-                j.location,
-                j.department,
-                j.job_type,
-                j.description,
-                j.requirements,
-                j.benefits,
-                j.salary_range,
-                j.status,
-                j.created_at,
-                j.application_deadline,
-                COUNT(DISTINCT a.id) as application_count
-            FROM job_descriptions j
-            LEFT JOIN job_applications a ON j.id = a.job_id
-            WHERE j.status IN ('active', 'published')
+                jp.id,
+                jp.title,
+                c.name as company,
+                jp.location,
+                jp.department,
+                jp.employment_type as job_type,
+                jp.description,
+                jp.requirements,
+                jp.benefits,
+                jp.salary_range_min,
+                jp.salary_range_max,
+                jp.currency,
+                jp.status,
+                jp.created_at,
+                jp.application_deadline,
+                (SELECT COUNT(*) FROM job_applications WHERE job_id = jp.id::text) as application_count
+            FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id::text = c.id::text
+            WHERE jp.status IN ('active', 'published')
         """
         params = []
         
         if search_query:
             query += """
                 AND (
-                    j.title ILIKE %s 
-                    OR j.company ILIKE %s 
-                    OR j.description ILIKE %s
+                    jp.title ILIKE %s 
+                    OR c.name ILIKE %s 
+                    OR jp.description ILIKE %s
                 )
             """
-            search_param = f"%{search_query}%"
-            params.extend([search_param] * 3)
-        
+            search_term = f"%{search_query}%"
+            params.extend([search_term, search_term, search_term])
+            
         if location:
-            query += " AND j.location ILIKE %s"
+            query += " AND jp.location ILIKE %s"
             params.append(f"%{location}%")
-        
+            
         if job_type:
-            query += " AND j.job_type = %s"
-            params.append(job_type)
-        
+            query += " AND jp.employment_type ILIKE %s"
+            params.append(f"%{job_type}%")
+            
         if company:
-            query += " AND j.company ILIKE %s"
+            query += " AND c.name ILIKE %s"
             params.append(f"%{company}%")
-        
-        query += """
-            GROUP BY j.id
-            ORDER BY j.created_at DESC
-            LIMIT %s OFFSET %s
-        """
+            
+        # Add sorting and pagination
+        query += " ORDER BY jp.created_at DESC LIMIT %s OFFSET %s"
         params.extend([per_page, offset])
         
         jobs = execute_query(query, tuple(params))
         
-        # Get total count
+        # Format results (salary range, skills)
+        formatted_jobs = []
+        for job in (jobs or []):
+            # Format salary
+            salary = "Not specified"
+            if job.get('salary_range_min'):
+                curr = job.get('currency', 'AED')
+                salary = f"{curr} {job['salary_range_min']}"
+                if job.get('salary_range_max'):
+                    salary += f" - {job['salary_range_max']}"
+            
+            job['salary_range'] = salary
+            formatted_jobs.append(job)
+
+        # Get total count for pagination
         count_query = """
-            SELECT COUNT(*) as total
-            FROM job_descriptions
-            WHERE status IN ('active', 'published')
+            SELECT COUNT(jp.id) as total
+            FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id::text = c.id::text
+            WHERE jp.status IN ('active', 'published')
         """
-        total_result = execute_query(count_query, fetch_one=True)
+        count_params = []
+        if search_query:
+            count_query += """
+                AND (
+                    jp.title ILIKE %s 
+                    OR c.name ILIKE %s 
+                    OR jp.description ILIKE %s
+                )
+            """
+            search_term = f"%{search_query}%"
+            count_params.extend([search_term, search_term, search_term])
+        if location:
+            count_query += " AND jp.location ILIKE %s"
+            count_params.append(f"%{location}%")
+        if job_type:
+            count_query += " AND jp.employment_type ILIKE %s"
+            count_params.append(f"%{job_type}%")
+        if company:
+            count_query += " AND c.name ILIKE %s"
+            count_params.append(f"%{company}%")
+
+        total_result = execute_query(count_query, tuple(count_params), fetch_one=True)
         total = total_result.get('total', 0) if total_result else 0
         
         return jsonify({
             'success': True,
             'data': {
-                'jobs': jobs or [],
+                'jobs': formatted_jobs,
                 'total': total,
                 'page': page,
                 'per_page': per_page,
@@ -265,14 +300,18 @@ def search_jobs():
 def get_job(job_id):
     """Get details of a specific job"""
     try:
+        # NOTE: Using job_postings for candidate-facing job details
+        # See JOB_TABLES_CONVENTIONS.md for table usage guidelines
         query = """
             SELECT 
                 j.*,
+                COALESCE(c.company_name, c.name, 'Unknown') as company,
                 COUNT(DISTINCT a.id) as application_count
-            FROM job_descriptions j
+            FROM job_postings j
+            LEFT JOIN companies c ON j.company_id = c.id::text
             LEFT JOIN job_applications a ON j.id = a.job_id
             WHERE j.id = %s
-            GROUP BY j.id
+            GROUP BY j.id, c.company_name, c.name
         """
         
         job = execute_query(query, (job_id,), fetch_one=True)
@@ -313,20 +352,23 @@ def get_saved_jobs():
                 'data': []
             })
         
+        # NOTE: Using job_postings for saved jobs (candidate-facing)
+        # See JOB_TABLES_CONVENTIONS.md for table usage guidelines
         query = """
             SELECT 
                 j.id,
                 j.title,
-                j.company,
+                COALESCE(c.company_name, c.name, 'Unknown') as company,
                 j.location,
-                j.job_type,
-                j.salary_range,
+                j.employment_type as job_type,
+                CONCAT(j.salary_range_min, ' - ', j.salary_range_max, ' ', j.currency) as salary_range,
                 j.status,
                 j.created_at,
                 j.application_deadline,
                 s.created_at as saved_at
             FROM saved_jobs s
-            JOIN job_descriptions j ON s.job_id = j.id
+            JOIN job_postings j ON s.job_id = j.id
+            LEFT JOIN companies c ON j.company_id = c.id::text
             WHERE s.user_id = %s
             ORDER BY s.created_at DESC
         """
@@ -443,6 +485,8 @@ def get_applications():
                 'data': []
             })
         
+        # NOTE: Using job_postings for applications (candidates apply to published jobs)
+        # See JOB_TABLES_CONVENTIONS.md for table usage guidelines
         query = """
             SELECT 
                 a.id,
@@ -452,11 +496,12 @@ def get_applications():
                 a.updated_at,
                 a.notes,
                 j.title as job_title,
-                j.company,
+                COALESCE(c.company_name, c.name, 'Unknown') as company,
                 j.location,
-                j.job_type
+                j.employment_type as job_type
             FROM job_applications a
-            JOIN job_descriptions j ON a.job_id = j.id
+            JOIN job_postings j ON a.job_id = j.id
+            LEFT JOIN companies c ON j.company_id = c.id::text
             WHERE a.candidate_id = %s
         """
         params = [user_id]
@@ -482,6 +527,8 @@ def get_applications():
         })
 
 
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+
 @jobs_bp.route('/apply', methods=['POST'])
 @optional_auth
 def apply_to_job():
@@ -495,25 +542,61 @@ def apply_to_job():
         cover_letter: Cover letter text (optional)
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
+        
+        logger.info(f"========== JOB APPLICATION REQUEST ==========")
+        logger.info(f"Request data: {data}")
+        logger.info(f"Headers: Authorization present: {bool(request.headers.get('Authorization'))}")
         
         job_id = data.get('job_id')
-        user_id = data.get('user_id', data.get('candidate_id'))
         cv_id = data.get('cv_id')
         cover_letter = data.get('cover_letter', '')
         
+        # SECURITY: Always get user_id from JWT, never trust client
+        user_id = None
+        jwt_error = None
+        try:
+            verify_jwt_in_request(optional=True)
+            user_id = get_jwt_identity()
+            if user_id:
+                logger.info(f"✅ Successfully extracted user_id from JWT: {user_id}")
+            else:
+                logger.warning(f"⚠️ JWT valid but get_jwt_identity() returned None")
+        except Exception as e:
+            jwt_error = str(e)
+            logger.warning(f"❌ JWT extraction failed: {e}")
+        
+        # Fallback to request body only if JWT extraction failed
+        # (for backwards compatibility with legacy clients)
+        request_body_user_id = data.get('user_id', data.get('candidate_id'))
+        if not user_id:
+            if request_body_user_id:
+                user_id = request_body_user_id
+                logger.warning(f"⚠️ Using user_id from request body (no JWT): {user_id}")
+            else:
+                logger.error(f"❌ No user_id from JWT or request body!")
+        else:
+            if request_body_user_id and request_body_user_id != user_id:
+                logger.warning(f"⚠️ Request body had different user_id ({request_body_user_id}) but using JWT: {user_id}")
+        
+        logger.info(f"Final user_id to be used: {user_id}")
+        logger.info(f"=============================================")
+        
         if not job_id or not user_id:
+            logger.warning(f"❌ Apply 400 Error: Missing Params. job_id={job_id}, user_id={user_id}")
             return jsonify({
                 'success': False,
                 'message': 'Job ID and User ID required'
             }), 400
+            
+        logger.info(f"Creating application: job_id={job_id}, candidate_id={user_id}")
         
-        # Check if already applied
+        # Check if already applied (handling text IDs)
         check_query = """
             SELECT id FROM job_applications 
             WHERE job_id = %s AND candidate_id = %s
         """
-        existing = execute_query(check_query, (job_id, user_id), fetch_one=True)
+        existing = execute_query(check_query, (str(job_id), str(user_id)), fetch_one=True)
         
         if existing:
             return jsonify({
@@ -522,28 +605,40 @@ def apply_to_job():
             }), 400
         
         # Create application
+        # NOTE: 'cv_id' column does not exist in job_applications table based on diagnose_app check
         insert_query = """
-            INSERT INTO job_applications (job_id, candidate_id, cv_id, cover_letter, status)
-            VALUES (%s, %s, %s, %s, 'submitted')
+            INSERT INTO job_applications (job_id, candidate_id, cover_letter, status)
+            VALUES (%s, %s, %s, 'submitted')
             RETURNING id
         """
-        application_id = execute_query(
+        
+        # Execute with allowed params
+        # Use str() for IDs just to be safe if schema expects INT (postgres casts) or VARCHAR
+        new_app_id = execute_query(
             insert_query, 
-            (job_id, user_id, cv_id, cover_letter),
+            (str(job_id), str(user_id), cover_letter),
+            fetch_all=False, # Commit transaction
             return_id=True
         )
         
         return jsonify({
             'success': True,
-            'data': {'id': application_id},
+            'data': {'id': new_app_id},
             'message': 'Application submitted successfully'
         }), 201
         
     except Exception as e:
+        import traceback
+        trace = traceback.format_exc()
         logger.error(f"Failed to submit application: {e}")
+        try:
+             with open('apply_error.log', 'w') as f:
+                 f.write(f"Error: {str(e)}\nParams: job_id={job_id}, user_id={user_id}\nTraceback:\n{trace}")
+        except: pass
+        
         return jsonify({
             'success': False,
-            'message': 'Failed to submit application'
+            'message': f'Failed to submit application: {str(e)}'
         }), 500
 
 
@@ -571,15 +666,18 @@ def apply_to_specific_job(job_id):
 def get_application(application_id):
     """Get details of a specific application"""
     try:
+        # NOTE: Using job_postings for application details (candidates apply to published jobs)
+        # See JOB_TABLES_CONVENTIONS.md for table usage guidelines
         query = """
             SELECT 
                 a.*,
                 j.title as job_title,
-                j.company,
+                COALESCE(c.company_name, c.name, 'Unknown') as company,
                 j.location,
                 j.description as job_description
             FROM job_applications a
-            JOIN job_descriptions j ON a.job_id = j.id
+            JOIN job_postings j ON a.job_id = j.id
+            LEFT JOIN companies c ON j.company_id = c.id::text
             WHERE a.id = %s
         """
         
@@ -645,7 +743,7 @@ def get_job_matches():
     """
     try:
         user_id = request.args.get('user_id', type=int)
-        cv_id = request.args.get('cv_id', type=int)
+        cv_id = request.args.get('cv_id') # user_cvs.id is UUID string
         
         if not user_id:
             return jsonify({
@@ -656,63 +754,108 @@ def get_job_matches():
         # Get candidate's skills from CV
         skills = []
         if cv_id:
-            cv_query = "SELECT skills, parsed_data FROM cv_data WHERE id = %s"
-            cv = execute_query(cv_query, (cv_id,), fetch_one=True)
-            if cv:
-                skills_data = cv.get('skills')
-                if isinstance(skills_data, str):
-                    try:
-                        skills = json.loads(skills_data)
-                    except:
-                        skills = []
-                elif isinstance(skills_data, list):
-                    skills = skills_data
+            # Query user_cvs table
+            cv_query = "SELECT parsed_data FROM user_cvs WHERE id = %s"
+            cv = execute_query(cv_query, (str(cv_id),), fetch_one=True)
+            if cv and cv.get('parsed_data'):
+                parsed = cv['parsed_data']
+                # Try to extract skills from various common locations in parsed structure
+                if isinstance(parsed, dict):
+                    skills_data = parsed.get('skills')
+                    if not skills_data:
+                        # Fallback for some parsers that put it in data.skills
+                        skills_data = parsed.get('data', {}).get('skills')
+                        
+                    if isinstance(skills_data, list):
+                        skills = skills_data
+                    elif isinstance(skills_data, str):
+                        skills = [s.strip() for s in skills_data.split(',')]
         
-        # Get matching jobs
+        # Get matching jobs from job_postings
+        # Join with companies to get company name
+        # Cast IDs to text for comparison to handle type mismatches in schema
         query = """
             SELECT 
-                j.id,
-                j.title,
-                j.company,
-                j.location,
-                j.job_type,
-                j.description,
-                j.requirements,
-                j.salary_range,
-                j.status,
-                j.created_at,
-                j.application_deadline
-            FROM job_descriptions j
-            WHERE j.status IN ('active', 'published')
-            AND j.id NOT IN (
+                jp.id,
+                jp.title,
+                c.name as company,
+                jp.location,
+                jp.employment_type as job_type,
+                jp.description,
+                jp.requirements,
+                jp.salary_range_min,
+                jp.salary_range_max,
+                jp.currency,
+                jp.status,
+                jp.created_at,
+                jp.application_deadline
+            FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id::text = c.id::text
+            WHERE jp.status IN ('active', 'published')
+            AND jp.id::text NOT IN (
                 SELECT job_id FROM job_applications WHERE candidate_id = %s
             )
-            ORDER BY j.created_at DESC
+            ORDER BY jp.created_at DESC
             LIMIT 20
         """
         
-        jobs = execute_query(query, (user_id,))
+        jobs = execute_query(query, (str(user_id),))
         
-        # Calculate match scores (simplified)
+        # Calculate match scores
         matches = []
         for job in (jobs or []):
             match_score = 70  # Base score
             
+            # Construct requirements text from JSONB or String
+            req_text = ""
+            raw_reqs = job.get('requirements')
+            if isinstance(raw_reqs, list):
+                # entries like [{'description': '...', 'category': '...'}]
+                terms = []
+                for item in raw_reqs:
+                    if isinstance(item, dict):
+                        terms.append(item.get('description', ''))
+                        terms.append(item.get('category', ''))
+                    elif isinstance(item, str):
+                        terms.append(item)
+                req_text = " ".join(terms).lower()
+            elif isinstance(raw_reqs, str):
+                req_text = raw_reqs.lower()
+                
             # Check skill overlap
-            job_requirements = job.get('requirements', '')
-            if isinstance(job_requirements, str):
+            if skills:
                 for skill in skills:
+                    skill_name = ""
                     if isinstance(skill, dict):
                         skill_name = skill.get('name', skill.get('skill', ''))
                     else:
                         skill_name = str(skill)
-                    if skill_name.lower() in job_requirements.lower():
+                    
+                    if skill_name and skill_name.lower() in req_text:
                         match_score += 5
             
-            match_score = min(match_score, 98)  # Cap at 98%
+            match_score = min(match_score, 98)  # Cap score
+            
+            # Format salary range from min/max
+            salary_str = "Not specified"
+            if job.get('salary_range_min'):
+                curr = job.get('currency', 'AED')
+                salary_str = f"{curr} {job['salary_range_min']}"
+                if job.get('salary_range_max'):
+                    salary_str += f" - {job['salary_range_max']}"
             
             matches.append({
-                **job,
+                'id': job['id'],
+                'title': job['title'],
+                'company': job['company'] or 'Unknown Company',
+                'location': job['location'],
+                'job_type': job['job_type'],
+                'description': job['description'],
+                'requirements': raw_reqs, # Return original structure
+                'salary_range': salary_str,
+                'status': job['status'],
+                'created_at': job['created_at'],
+                'application_deadline': job['application_deadline'],
                 'match_score': match_score,
                 'match_reasons': ['Skills match', 'Location preference'] if match_score > 75 else ['General match']
             })

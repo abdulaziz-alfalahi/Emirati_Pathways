@@ -421,7 +421,9 @@ const CandidateMatching = () => {
           try {
             const response = await restClient.post('/api/communication/conversations', {
               participants: [String(user.id), candidateId],
-              title: 'Recruiter Chat'
+              title: selectedJob?.title || 'Recruiter Chat',
+              job_id: selectedJob?.jd_id || selectedJob?.id,
+              sender_role: 'recruiter'
             });
             if (response.data && response.data.success) {
               console.log('Conversation created response:', response.data);

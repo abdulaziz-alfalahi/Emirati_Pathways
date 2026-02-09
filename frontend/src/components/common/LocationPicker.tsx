@@ -20,13 +20,16 @@ interface LocationPickerProps {
     onLocationSelect: (lat: number, lng: number) => void;
     label?: string;
     height?: string;
+    readOnly?: boolean;
 }
 
-const LocationMarker = ({ onLocationSelect, position }: { onLocationSelect: (lat: number, lng: number) => void, position: { lat: number, lng: number } | null }) => {
+const LocationMarker = ({ onLocationSelect, position, readOnly }: { onLocationSelect: (lat: number, lng: number) => void, position: { lat: number, lng: number } | null, readOnly?: boolean }) => {
 
     useMapEvents({
         click(e) {
-            onLocationSelect(e.latlng.lat, e.latlng.lng);
+            if (!readOnly) {
+                onLocationSelect(e.latlng.lat, e.latlng.lng);
+            }
         },
     });
 
@@ -35,7 +38,7 @@ const LocationMarker = ({ onLocationSelect, position }: { onLocationSelect: (lat
     );
 }
 
-const LocationPicker: React.FC<LocationPickerProps> = ({ lat, lng, onLocationSelect, label = "Select Location", height = "300px" }) => {
+const LocationPicker: React.FC<LocationPickerProps> = ({ lat, lng, onLocationSelect, label = "Select Location", height = "300px", readOnly = false }) => {
     // Default to Dubai center if no location provided
     const defaultCenter: [number, number] = [25.2048, 55.2708];
     const [position, setPosition] = useState<{ lat: number, lng: number } | null>(
@@ -66,7 +69,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ lat, lng, onLocationSel
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <LocationMarker onLocationSelect={handleSelect} position={position} />
+                    <LocationMarker onLocationSelect={handleSelect} position={position} readOnly={readOnly} />
                 </MapContainer>
             </div>
             {position && (

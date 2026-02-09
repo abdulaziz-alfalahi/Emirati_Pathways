@@ -23,13 +23,18 @@ class CVJobMatchingIntegration:
     def __init__(self):
         """Initialize the integration system"""
         self.api_key = os.getenv('GEMINI_API_KEY')
-        if not self.api_key:
-            logger.error("GEMINI_API_KEY not found in environment variables")
-            raise ValueError("GEMINI_API_KEY is required")
+        self.model = None
         
-        # Configure Gemini
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        if not self.api_key:
+            logger.warning("⚠️ GEMINI_API_KEY not found. Job matching AI features will be disabled.")
+        else:
+            try:
+                # Configure Gemini
+                genai.configure(api_key=self.api_key)
+                self.model = genai.GenerativeModel('gemini-1.5-pro')
+                logger.info("✅ CV-Job Matching Integration initialized with Gemini 1.5 Pro")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Gemini for matching: {e}")
         
         logger.info("✅ CV-Job Matching Integration initialized")
     

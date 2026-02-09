@@ -3,14 +3,16 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
+import PersonalizationSettings from '@/components/personalization/PersonalizationSettings';
 import { User } from '@supabase/supabase-js';
 import { UserRole } from '@/types/auth';
 import MobileNotifications from './MobileNotifications';
 import MobileOfflineIndicator from './MobileOfflineIndicator';
-import { 
-  Briefcase, 
-  FileText, 
-  GraduationCap, 
+import {
+  Briefcase,
+  FileText,
+  GraduationCap,
   Award,
   TrendingUp,
   Bell,
@@ -24,9 +26,9 @@ interface MobileTouchOptimizedDashboardProps {
   roles: UserRole[];
 }
 
-const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps> = ({ 
-  user, 
-  roles 
+const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps> = ({
+  user,
+  roles
 }) => {
   const [activeSection, setActiveSection] = useState<string>('overview');
 
@@ -94,9 +96,17 @@ const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps
                 Continue your journey to success
               </p>
             </div>
-            <Button size="sm" variant="ghost">
-              <Settings className="h-4 w-4" />
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon" className="bg-white/80 hover:bg-white shadow-sm border-gray-200">
+                  <Settings className="h-5 w-5 text-gray-700" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto w-[90vw] max-w-lg p-4">
+                <DialogTitle className="sr-only">Settings</DialogTitle>
+                <PersonalizationSettings />
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -174,7 +184,7 @@ const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps
               </div>
               <Badge variant="outline" className="text-xs">New</Badge>
             </div>
-            
+
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                 <Award className="h-4 w-4 text-white" />
@@ -185,7 +195,7 @@ const MobileTouchOptimizedDashboard: React.FC<MobileTouchOptimizedDashboardProps
               </div>
               <Badge variant="secondary" className="text-xs">Completed</Badge>
             </div>
-            
+
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                 <FileText className="h-4 w-4 text-white" />

@@ -17,7 +17,10 @@ from psycopg2.extras import RealDictCursor
 import bcrypt
 import jwt
 from functools import wraps
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +56,31 @@ class AdministratorSystem:
         self.db_config = db_config
         self.connection = None
         self._connect_to_database()
+        self.ensure_admin_tables_exist()
+    
+    def ensure_admin_tables_exist(self):
+        """Checks and creates necessary admin tables if they don't exist"""
+        try:
+            # Get the path to the SQL schema file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            schema_path = os.path.join(current_dir, 'create_administrator_cms_schema.sql')
+            
+            if not os.path.exists(schema_path):
+                logger.error(f"Admin schema file not found at: {schema_path}")
+                return
+
+            with open(schema_path, 'r', encoding='utf-8') as f:
+                schema_sql = f.read()
+
+            with self.connection.cursor() as cursor:
+                cursor.execute(schema_sql)
+                self.connection.commit()
+                
+            logger.info("Admin tables verified/created successfully")
+            
+        except Exception as e:
+            self.connection.rollback()
+            logger.error(f"Failed to ensure admin tables exist: {str(e)}")
     
     def _connect_to_database(self):
         """Establish database connection"""

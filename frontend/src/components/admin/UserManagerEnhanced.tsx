@@ -296,7 +296,10 @@ const getRoleColor = (role: string): string => {
     'user_admin': 'bg-blue-100 text-blue-800 border-blue-200',
     'hr_manager': 'bg-indigo-100 text-indigo-800 border-indigo-200',
     'recruiter': 'bg-pink-100 text-pink-800 border-pink-200',
-    'growth_operator': 'bg-green-100 text-green-800 border-green-200',
+    'growth_operator': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'growth_operator_company': 'bg-green-100 text-green-800 border-green-200',
+    'growth_operator_candidate': 'bg-teal-100 text-teal-800 border-teal-200',
+    'growth_operator_monitoring': 'bg-blue-100 text-blue-800 border-blue-200',
     'candidate': 'bg-cyan-100 text-cyan-800 border-cyan-200',
     'job_seeker': 'bg-cyan-100 text-cyan-800 border-cyan-200',
     'mentor': 'bg-orange-100 text-orange-800 border-orange-200',
@@ -2073,7 +2076,7 @@ const UserManagerEnhanced: React.FC = () => {
               </p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {availableRoles.map(role => (
-                  <label key={role.id} className="flex items-center space-x-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                  <label key={role.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={bulkRoles.includes(role.name)}

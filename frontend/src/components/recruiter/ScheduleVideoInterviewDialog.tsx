@@ -43,7 +43,7 @@ export function ScheduleVideoInterviewDialog({
         attendees: [] as string[]
     });
 
-    const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // Mock ID as used in Interviews.tsx
+    // const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // REMOVED hardcoded ID
 
     const fetchJobs = async () => {
         try {
@@ -58,8 +58,14 @@ export function ScheduleVideoInterviewDialog({
     };
 
     const fetchTeamMembers = async () => {
+        const companyId = user?.company_id;
+        if (!companyId) {
+            console.warn("No company ID found for user, cannot fetch team members");
+            return;
+        }
+
         try {
-            const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`);
+            const response = await restClient.get(`/api/company/team/members?company_id=${companyId}`);
             if (response.data.success) {
                 setTeamMembers(response.data.members);
             }
@@ -159,21 +165,70 @@ export function ScheduleVideoInterviewDialog({
         initializeDialog();
     }, [open, initialJobId, initialCandidateId]);
 
-    // Update name when manually selecting from dropdown
+    // Update name when manually selecting from dropdown OR when shortlist loads and we have an initialCandidateId
     useEffect(() => {
-        if (candidates.length > 0 && formData.candidateId) {
-            const c = candidates.find(c => c.shortlist_id === formData.candidateId);
-            if (c) {
-                setFormData(prev => ({ ...prev, candidateName: `${c.first_name} ${c.last_name}` }));
+        if (candidates.length > 0) {
+            // Case 1: User manually selected an ID
+            if (formData.candidateId) {
+                const c = candidates.find(c => c.shortlist_id === formData.candidateId);
+                if (c) {
+                    setFormData(prev => ({ ...prev, candidateName: `${c.first_name} ${c.last_name}` }));
+                }
+            }
+            // Case 2: We have an initialCandidateId passed from parent, and we just loaded the shortlist
+            else if (initialCandidateId) {
+                const match = candidates.find((c: any) => c.candidate_id === initialCandidateId || c.shortlist_id === initialCandidateId);
+                if (match) {
+                    setFormData(prev => ({
+                        ...prev,
+                        candidateId: match.shortlist_id,
+                        candidateName: `${match.first_name} ${match.last_name}`
+                    }));
+                    toast.success(`Candidate ${match.first_name} ${match.last_name} selected`);
+                }
             }
         }
-    }, [formData.candidateId, candidates]);
+    }, [formData.candidateId, candidates, initialCandidateId]);
 
 
-    const handleJobChange = (value: string) => {
+    const handleJobChange = async (value: string) => {
         setSelectedJobId(value);
-        fetchShortlist(value);
-        setFormData({ ...formData, candidateId: "", candidateName: "" });
+        const list = await fetchShortlist(value); // fetchShortlist returns the list
+
+        // If we came from Chat (initialCandidateId exists), try to find or add the candidate
+        if (initialCandidateId) {
+            // Check by candidate_id (from props) or shortlist_id
+            const match = list.find((c: any) => c.candidate_id == initialCandidateId || c.candidate_id === String(initialCandidateId));
+
+            if (match) {
+                setFormData(prev => ({
+                    ...prev,
+                    candidateId: match.shortlist_id,
+                    candidateName: `${match.first_name} ${match.last_name}`
+                }));
+            } else {
+                // Not in shortlist? Add them!
+                toast.info("Adding candidate to job shortlist...");
+                const newShortlistId = await addToShortlist(value, initialCandidateId);
+
+                if (newShortlistId) {
+                    // Refresh list to see the new person
+                    const updatedList = await fetchShortlist(value);
+                    const newMatch = updatedList.find((c: any) => c.shortlist_id === newShortlistId);
+
+                    if (newMatch) {
+                        setFormData(prev => ({
+                            ...prev,
+                            candidateId: newShortlistId,
+                            candidateName: `${newMatch.first_name} ${newMatch.last_name}`
+                        }));
+                        toast.success("Candidate added and selected");
+                    }
+                }
+            }
+        } else {
+            setFormData(prev => ({ ...prev, candidateId: "", candidateName: "" }));
+        }
     };
 
     const handleSchedule = async () => {

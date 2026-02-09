@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { restClient } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Building2, 
-  Upload, 
-  MapPin, 
-  Globe, 
-  Users, 
+import {
+  Building2,
+  Upload,
+  MapPin,
+  Globe,
+  Users,
   Award,
   Plus,
   X,
@@ -32,32 +33,32 @@ interface CompanyProfile {
   companySize: string;
   industry: string;
   subIndustry: string;
-  
+
   // Contact & Location
   headquarters: string;
   offices: string[];
   website: string;
   email: string;
   phone: string;
-  
+
   // Description & Culture
   description: string;
   mission: string;
   vision: string;
   values: string[];
   culture: string;
-  
+
   // Benefits & Perks
   benefits: string[];
   perks: string[];
   workEnvironment: string[];
-  
+
   // Media & Branding
   logo?: File;
   coverImage?: File;
   companyPhotos: File[];
   companyVideo?: string;
-  
+
   // Certifications & Awards
   certifications: Array<{
     name: string;
@@ -71,7 +72,7 @@ interface CompanyProfile {
     year: string;
     description: string;
   }>;
-  
+
   // Social Media
   socialMedia: {
     linkedin: string;
@@ -122,6 +123,15 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
     },
     ...initialData
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setProfile(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [newValue, setNewValue] = useState('');
@@ -228,17 +238,18 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
     setProfile(prev => ({
       ...prev,
       [parent]: {
-        ...prev[parent as keyof CompanyProfile],
+        ...(prev[parent as keyof CompanyProfile] as any),
         [field]: value
       }
     }));
   };
 
   const addToArray = (field: string, value: string) => {
-    if (value.trim() && !profile[field as keyof CompanyProfile]?.includes(value.trim())) {
+    const list = profile[field as keyof CompanyProfile];
+    if (value.trim() && Array.isArray(list) && !list.includes(value.trim())) {
       setProfile(prev => ({
         ...prev,
-        [field]: [...(prev[field as keyof CompanyProfile] as string[]), value.trim()]
+        [field]: [...(prev[field as keyof CompanyProfile] as any[]), value.trim()]
       }));
     }
   };
@@ -265,7 +276,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
   const updateCertification = (index: number, field: string, value: string) => {
     setProfile(prev => ({
       ...prev,
-      certifications: prev.certifications.map((cert, i) => 
+      certifications: prev.certifications.map((cert, i) =>
         i === index ? { ...cert, [field]: value } : cert
       )
     }));
@@ -293,7 +304,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
   const updateAward = (index: number, field: string, value: string) => {
     setProfile(prev => ({
       ...prev,
-      awards: prev.awards.map((award, i) => 
+      awards: prev.awards.map((award, i) =>
         i === index ? { ...award, [field]: value } : award
       )
     }));
@@ -308,10 +319,10 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
 
   const calculateCompletion = () => {
     const requiredFields = [
-      'companyName', 'industry', 'companySize', 'headquarters', 
+      'companyName', 'industry', 'companySize', 'headquarters',
       'description', 'website', 'email'
     ];
-    const completed = requiredFields.filter(field => 
+    const completed = requiredFields.filter(field =>
       profile[field as keyof CompanyProfile]
     ).length;
     return Math.round((completed / requiredFields.length) * 100);
@@ -325,8 +336,25 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const handleComplete = () => {
-    onComplete?.(profile);
+  const handleComplete = async () => {
+    try {
+      // Persist Company Data
+      const response = await restClient.put('/api/auth/profile', {
+        ...profile,
+        role: 'recruiter',
+        update_type: 'company'
+      });
+
+      if (response.data.success) {
+        onComplete?.(profile);
+      } else {
+        console.error('Save failed:', response.data.message);
+        alert('Failed to save company profile. Please try again.');
+      }
+    } catch (e) {
+      console.error("Failed to save company profile", e);
+      alert('An error occurred while saving.');
+    }
   };
 
   return (
@@ -348,7 +376,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                 <span>{calculateCompletion()}% Complete</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(currentStep / 4) * 100}%` }}
                 />
@@ -411,8 +439,8 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
               </div>
               <div>
                 <Label htmlFor="companySize">Company Size *</Label>
-                <Select 
-                  value={profile.companySize} 
+                <Select
+                  value={profile.companySize}
                   onValueChange={(value) => handleInputChange('companySize', value)}
                 >
                   <SelectTrigger>
@@ -430,8 +458,8 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="industry">Industry *</Label>
-                <Select 
-                  value={profile.industry} 
+                <Select
+                  value={profile.industry}
                   onValueChange={(value) => handleInputChange('industry', value)}
                 >
                   <SelectTrigger>
@@ -527,7 +555,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                       }
                     }}
                   />
-                  <Button 
+                  <Button
                     onClick={() => {
                       addToArray('offices', newOffice);
                       setNewOffice('');
@@ -541,8 +569,8 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                   {profile.offices.map(office => (
                     <Badge key={office} variant="secondary" className="flex items-center gap-1">
                       {office}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
+                      <X
+                        className="h-3 w-3 cursor-pointer"
                         onClick={() => removeFromArray('offices', office)}
                       />
                     </Badge>
@@ -608,7 +636,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                       }
                     }}
                   />
-                  <Button 
+                  <Button
                     onClick={() => {
                       addToArray('values', newValue);
                       setNewValue('');
@@ -622,8 +650,8 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                   {profile.values.map(value => (
                     <Badge key={value} variant="secondary" className="flex items-center gap-1">
                       {value}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
+                      <X
+                        className="h-3 w-3 cursor-pointer"
                         onClick={() => removeFromArray('values', value)}
                       />
                     </Badge>
@@ -702,7 +730,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                   </div>
                 ))}
               </div>
-              
+
               <div className="flex gap-2 mt-4">
                 <Input
                   value={newBenefit}
@@ -715,7 +743,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                     }
                   }}
                 />
-                <Button 
+                <Button
                   onClick={() => {
                     addToArray('benefits', newBenefit);
                     setNewBenefit('');
@@ -776,7 +804,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                     Add Certification
                   </Button>
                 </div>
-                
+
                 {profile.certifications.map((cert, index) => (
                   <Card key={index} className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -805,7 +833,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                         />
                       </div>
                       <div className="flex items-end">
-                        <Button 
+                        <Button
                           onClick={() => removeCertification(index)}
                           variant="destructive"
                           size="sm"
@@ -835,7 +863,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                     Add Award
                   </Button>
                 </div>
-                
+
                 {profile.awards.map((award, index) => (
                   <Card key={index} className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -864,7 +892,7 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
                         />
                       </div>
                       <div className="flex items-end">
-                        <Button 
+                        <Button
                           onClick={() => removeAward(index)}
                           variant="destructive"
                           size="sm"
@@ -944,14 +972,14 @@ const CompanyProfileSetup: React.FC<CompanyProfileSetupProps> = ({
 
       {/* Navigation Buttons */}
       <div className="flex justify-between">
-        <Button 
-          onClick={prevStep} 
+        <Button
+          onClick={prevStep}
           disabled={currentStep === 1}
           variant="outline"
         >
           Previous
         </Button>
-        
+
         {currentStep < 4 ? (
           <Button onClick={nextStep}>
             Next

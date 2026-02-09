@@ -8,11 +8,21 @@ import psycopg2
 import psycopg2.extras
 import uuid
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
+from dataclasses import fields
 
-from auth.auth_manager_fixed import AuthenticationManager
-from models.user_profile import UserProfile
+from backend.auth.auth_manager_fixed import AuthenticationManager
+from backend.models.user_profile import UserProfile, PersonalInfo, ProfessionalInfo, ContactInfo, Skill, EducationRecord, VisaStatus, ExperienceLevel, EmploymentStatus
+
 import logging
 import os
+import json
+
+# Helper for safe dataclass instantiation
+def _safe_init(dataclass_type, **kwargs):
+    """Safely instantiate a dataclass by filtering out unknown arguments."""
+    valid_fields = {f.name for f in fields(dataclass_type)}
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_fields}
+    return dataclass_type(**filtered_kwargs)
 
 # Create blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -274,21 +284,93 @@ def get_profile():
         
         # Initialize user profile
         profile = UserProfile(user_id)
-        # In a real implementation, you would load the profile from database
         
         # Get profile data
+        auth_manager = AuthenticationManager()
+        user_data = auth_manager.get_user_by_id(user_id) or {}
+        
+        # Populate UserProfile from DB data
+        
+        # 1. Personal Info
+        if not profile.personal_info:
+             # Construct PersonalInfo using safe init
+             personal_info_kwargs = {}
+             # prioritize user_data but check db_profile_data? Usually user_data has basics
+             personal_info_kwargs.update(user_data)
+             personal_info_kwargs.update({
+                 'first_name': user_data.get('first_name') or '',
+                 'last_name': user_data.get('last_name') or '',
+                 'nationality': user_data.get('nationality'),
+                 'emirate': user_data.get('emirate'),
+                 'city': user_data.get('location'), 
+                 'gender': user_data.get('gender'), 
+                 'date_of_birth': user_data.get('date_of_birth')
+             })
+             profile.personal_info = _safe_init(PersonalInfo, **personal_info_kwargs)
+
+        # 2. Contact Info
+        contact_kwargs = {
+            'email': user_data.get('email') or '',
+            'phone': user_data.get('phone') or ''
+        }
+        profile.contact_info = _safe_init(ContactInfo, **contact_kwargs)
+
+        # 3. Professional Info & Skills & JSON Data
+        db_profile_data = user_data.get('profile_data') or {}
+        if isinstance(db_profile_data, str):
+            try:
+                db_profile_data = json.loads(db_profile_data)
+            except:
+                db_profile_data = {}
+        
+        # Skills (Array of strings in DB -> List[Skill] in Obj)
+        db_skills = user_data.get('skills') or db_profile_data.get('skills') or []
+        for s_name in db_skills:
+             if isinstance(s_name, str):
+                 profile.skills.append(_safe_init(Skill, name=s_name, level='Intermediate'))
+
+        # Professional Info
+        prof_kwargs = db_profile_data.copy()
+        prof_kwargs.update({
+            'years_of_experience': user_data.get('experience_years') or db_profile_data.get('years_of_experience'),
+            'current_job_title': db_profile_data.get('current_position'),
+            'current_company': db_profile_data.get('current_company')
+        })
+        profile.professional_info = _safe_init(ProfessionalInfo, **prof_kwargs)
+
         profile_data = profile.to_dict()
         
-        # Inject secondary_roles by fetching from Auth Manager
-        auth_manager = AuthenticationManager()
-        user_data = auth_manager.get_user_by_id(user_id)
-        if user_data:
-            # Ensure lists are never None
-            profile_data['secondary_roles'] = user_data.get('secondary_roles') or []
+        # Inject raw data for fields not in UserProfile strict schema but needed by frontend
+        profile_data['professional_summary'] = db_profile_data.get('professional_summary')
+        profile_data['education'] = db_profile_data.get('education') or [] 
+        profile_data['languages'] = db_profile_data.get('languages') or []
+        profile_data['certifications'] = db_profile_data.get('certifications') or []
+        profile_data['skills'] = db_skills # Return simple list too if frontend prefers
+        profile_data['current_position'] = db_profile_data.get('current_position')
+        profile_data['current_company'] = db_profile_data.get('current_company')
+        profile_data['experience_years'] = user_data.get('experience_years') or db_profile_data.get('experience_years')
+        
+        # Inject Student Info fields to top level for frontend compatibility
+        student_info = db_profile_data.get('student_info') or {}
+        if student_info:
+            profile_data.update(student_info)
+            profile_data['student_info'] = student_info # Keep nested copy just in case
             
-            # Synchronize essential identity fields to ensure frontend has complete context
+        # Inject Location Data from columns if available
+        if 'latitude' in user_data:
+             profile_data['latitude'] = user_data['latitude']
+        if 'longitude' in user_data:
+             profile_data['longitude'] = user_data['longitude']
+             
+        # Inject Emirates ID from JSONB
+        if 'emirates_id' in db_profile_data:
+             profile_data['emirates_id'] = db_profile_data['emirates_id']
+        
+        # Synchronize essential identity fields
+        if user_data:
+            profile_data['secondary_roles'] = user_data.get('secondary_roles') or []
             profile_data['id'] = user_data.get('id')
-            profile_data['user_id'] = user_data.get('id') # Support both naming conventions
+            profile_data['user_id'] = user_data.get('id')
             profile_data['role'] = user_data.get('role')
             profile_data['user_type'] = user_data.get('role')
             profile_data['email'] = user_data.get('email')
@@ -297,10 +379,14 @@ def get_profile():
             profile_data['last_name'] = user_data.get('last_name')
             profile_data['phone'] = user_data.get('phone')
             
+            # Map location if missing
+            if not profile_data.get('personal_info'): profile_data['personal_info'] = {}
+            if not profile_data['personal_info'].get('city'):
+                profile_data['personal_info']['city'] = user_data.get('location')
+            
         # INFO: Ensure user_id is present in profile data to prevent frontend crashes (fallback)
         if 'id' not in profile_data:
              profile_data['id'] = user_id
-
 
         
         # Add UAE working week information from environment variables
@@ -334,6 +420,44 @@ def get_profile():
             }
         })
         
+        # Fetch profile photo from candidate_profiles
+        try:
+             conn_photo = psycopg2.connect(
+                host=os.getenv('DB_HOST', 'localhost'),
+                port=os.getenv('DB_PORT', '5432'),
+                database=os.getenv('DB_NAME', 'emirati_journey'),
+                user=os.getenv('DB_USER', 'emirati_user'),
+                password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
+            )
+             cur_photo = conn_photo.cursor()
+             cur_photo.execute("SELECT profile_photo_url FROM candidate_profiles WHERE user_id = %s", (str(user_id),))
+             photo_row = cur_photo.fetchone()
+             if photo_row and photo_row[0]:
+                 profile_data['profile_photo_url'] = photo_row[0]
+             conn_photo.close()
+             conn_photo.close()
+        except Exception as e:
+             logger.warning(f"Failed to fetch profile photo: {e}")
+
+        # [CRITICAL FIX] Merge all dynamic profile_data fields (Recruiter, Helper, etc.) 
+        # into the top-level response so Frontend receives "hiringVolume", "companyName" etc.
+        if isinstance(db_profile_data, dict):
+             # Protect core identity fields from being overwritten by JSON garbage
+             readonly_keys = {'id', 'user_id', 'email', 'role', 'user_type', 'is_verified'}
+             for k, v in db_profile_data.items():
+                 # Only add if not already present or if it helps enrich data
+                 if k not in profile_data and k not in readonly_keys:
+                     profile_data[k] = v
+                 # Special case: Ensure companyName overrides if missing in standard profile
+                 elif k == 'companyName' and not profile_data.get('companyName'):
+                     profile_data[k] = v
+        
+        # [CRITICAL FIX] Ensure company_id and company_name from user_data are included
+        if 'company_id' in user_data:
+            profile_data['company_id'] = user_data['company_id']
+        if 'company_name' in user_data:
+            profile_data['company_name'] = user_data['company_name']
+
         return jsonify({
             'success': True,
             'message': 'Profile retrieved successfully',
@@ -355,6 +479,15 @@ def get_profile():
             'debug_trace': error_trace
         }), 500
 
+    except Exception as e:
+        logger.error(f"Profile update error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'Profile update failed: {str(e)}'
+        }), 500
+
 @auth_bp.route('/profile', methods=['PUT'])
 @jwt_required()
 def update_profile():
@@ -364,36 +497,32 @@ def update_profile():
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
+        print(f"DEBUG: update_profile called for user_id={user_id}")
+        print(f"DEBUG: Payload: {json.dumps(data, indent=2)}")
         
-        # Initialize user profile
-        profile = UserProfile(user_id)
+        # Update using centralized AuthManager
+        auth_manager = AuthenticationManager()
+        success, message, result_data = auth_manager.update_user_profile(user_id, data)
         
-        # Update different sections based on the data provided
-        if 'personal_info' in data:
-            profile.update_personal_info(data['personal_info'])
-        
-        if 'contact_info' in data:
-            profile.update_contact_info(data['contact_info'])
-        
-        if 'professional_info' in data:
-            profile.update_professional_info(data['professional_info'])
-        
-        # In a real implementation, you would save the profile to database
-        
-        return jsonify({
-            'success': True,
-            'message': 'Profile updated successfully',
-            'data': {
-                'profile_completion': profile.profile_completion,
-                'updated_at': profile.updated_at.isoformat()
-            }
-        }), 200
+        if success:
+            return jsonify({
+                'success': True,
+                'message': message,
+                'data': result_data or {}
+            }), 200
+        else:
+             return jsonify({
+                'success': False,
+                'message': message
+            }), 400
         
     except Exception as e:
         logger.error(f"Profile update error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
-            'message': 'Profile update failed'
+            'message': f'Profile update failed: {str(e)}'
         }), 500
 
 @auth_bp.route('/working-schedule', methods=['GET'])
@@ -477,6 +606,51 @@ def get_user_roles():
         return jsonify({
             'success': False,
             'message': 'Failed to get user roles'
+        }), 500
+
+@auth_bp.route('/update-roles', methods=['PUT'])
+@jwt_required()
+def update_user_roles():
+    """
+    Update user's primary role and metadata
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        primary_role = data.get('primary_role')
+        # secondary_roles = data.get('secondary_roles', [])
+        metadata = data.get('metadata', {})
+        
+        if not primary_role:
+             return jsonify({'success': False, 'message': 'primary_role is required'}), 400
+             
+        auth_manager = AuthenticationManager()
+        
+        # Check if update_user_role exists
+        if not hasattr(auth_manager, 'update_user_role'):
+             return jsonify({'success': False, 'message': 'Role update not supported completely'}), 501
+             
+        success, msg, updated_user = auth_manager.update_user_role(user_id, primary_role, metadata)
+        
+        if success and updated_user:
+            # Refresh token claims if necessary (usually requires re-login, but front-end can handle it)
+            return jsonify({
+                'success': True,
+                'message': msg,
+                'data': {'user': updated_user}
+            }), 200
+            
+        return jsonify({
+            'success': False,
+            'message': msg
+        }), 400
+        
+    except Exception as e:
+        logger.error(f"Update roles error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f"Failed to update roles: {str(e)}"
         }), 500
 
 def get_role_permissions(role: str) -> list:
@@ -748,9 +922,18 @@ def dev_login():
         logger.error(f"Dev login error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@auth_bp.route('/request-otp', methods=['POST'])
+@auth_bp.route('/request-otp', methods=['POST', 'OPTIONS'])
 def request_otp_route():
     """Request OTP for phone verification"""
+    if request.method == 'OPTIONS':
+        # Manual CORS Preflight Response
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:8089')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept')
+        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+
     try:
         data = request.get_json()
         phone = data.get('phone')
@@ -821,4 +1004,12 @@ def login_with_otp_route():
         return jsonify({'success': False, 'message': msg}), 401
     except Exception as e:
         logger.error(f"OTP Login Error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+
+
+
+
+
+
+

@@ -9,6 +9,8 @@ import json
 import bcrypt
 import secrets
 import logging
+import uuid
+from datetime import datetime, timedelta
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, Optional, List
 import psycopg2
@@ -64,6 +66,7 @@ class AuthenticationManager:
         """Get database connection"""
         try:
             conn = psycopg2.connect(**self.db_config)
+            conn.autocommit = True
             return conn
         except Exception as e:
             self.logger.error(f"Database connection error: {e}")
@@ -148,7 +151,7 @@ class AuthenticationManager:
             cursor.execute("""
                 SELECT id, email, password_hash, first_name, last_name, role, phone, 
                        emirate, nationality, is_active, is_verified, created_at, updated_at,
-                       secondary_roles
+                       secondary_roles, skills, experience_years
                 FROM users WHERE email = %s
             """, (email,))
             
@@ -166,19 +169,39 @@ class AuthenticationManager:
             return None
 
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
-        """Get user by ID"""
+        """Get user by ID with role-specific enrichments"""
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
             cursor.execute("""
-                SELECT id, email, first_name, last_name, role, phone, 
+                SELECT id, email, first_name, last_name, role, user_type, phone, 
                        emirate, nationality, is_active, is_verified, created_at, updated_at,
-                       secondary_roles
+                       secondary_roles, profile_data, location, latitude, longitude,
+                       skills, experience_years
                 FROM users WHERE id = %s
             """, (user_id,))
             
             user_row = cursor.fetchone()
+            
+            # Enrich with Company ID if Recruiter
+            if user_row:
+                role = user_row.get('role') or user_row.get('user_type')
+                if role in ('hr_manager', 'hr_recruiter', 'recruiter', 'employer'):
+                    try:
+                        cursor.execute("""
+                            SELECT hp.company_id, COALESCE(c.name, c.company_name) as company_name
+                            FROM hr_profiles hp
+                            LEFT JOIN companies c ON hp.company_id::text = c.id::text
+                            WHERE hp.user_id = %s
+                        """, (user_id,))
+                        hr_info = cursor.fetchone()
+                        if hr_info:
+                            user_row['company_id'] = str(hr_info['company_id']) if hr_info['company_id'] else None
+                            user_row['company_name'] = hr_info.get('company_name')
+                    except Exception as e:
+                        self.logger.warning(f"Failed to fetch company info for user {user_id}: {e}")
+
             cursor.close()
             conn.close()
             
@@ -206,8 +229,8 @@ class AuthenticationManager:
             cursor = conn.cursor()
             
             cursor.execute("""
-                UPDATE users SET updated_at = %s WHERE id = %s
-            """, (datetime.utcnow(), user_id))
+                UPDATE users SET last_login = %s, updated_at = %s WHERE id = %s
+            """, (datetime.utcnow(), datetime.utcnow(), user_id))
             
             conn.commit()
             cursor.close()
@@ -366,7 +389,13 @@ class AuthenticationManager:
                 '+971507890123', # Admin
                 '+971509999999', # Administrator
                 '+971 50 123 4567', # Candidate (formatted)
-                '+971509998888'  # Growth Operator
+                '+971509998888',  # Growth Operator
+                '+971550000010',  # Test Student
+                '+971550000010',  # Test Student
+                '+971550000011',  # Test Educator
+                '+971500001001',  # Test Team Chat - HR Manager 1
+                '+971500001002',  # Test Team Chat - Recruiter 1
+                '+971500001003'   # Test Team Chat - Recruiter 2
             ]
             is_magic = phone.endswith('1234567') or phone in magic_numbers
             
@@ -406,12 +435,14 @@ class AuthenticationManager:
                 try:
                     client = Client(twilio_sid, twilio_token)
                     
-                    # Ensure numbers have whatsapp: prefix if not present
-                    if not twilio_from.startswith('whatsapp:'):
-                        twilio_from = f"whatsapp:{twilio_from}"
-                    if not phone.startswith('whatsapp:'):
-                        to_number = f"whatsapp:{phone}"
+                    # Smartly handle WhatsApp vs SMS based on sender format
+                    if twilio_from.startswith('whatsapp:'):
+                        if not phone.startswith('whatsapp:'):
+                            to_number = f"whatsapp:{phone}"
+                        else:
+                            to_number = phone
                     else:
+                        # Plain SMS
                         to_number = phone
 
                     message = client.messages.create(
@@ -419,8 +450,10 @@ class AuthenticationManager:
                         from_=twilio_from,
                         to=to_number
                     )
-                    self.logger.info(f"Twilio WhatsApp sent to {phone}: {message.sid}")
-                    return True, "OTP sent successfully via WhatsApp", None
+                    
+                    channel = "WhatsApp" if twilio_from.startswith('whatsapp:') else "SMS"
+                    self.logger.info(f"Twilio {channel} sent to {phone}: {message.sid}")
+                    return True, f"OTP sent successfully via {channel}", None
                     
                 except TwilioRestException as e:
                     self.logger.error(f"Twilio API Error: {e}")
@@ -466,7 +499,13 @@ class AuthenticationManager:
                 '+971507890123', # Admin
                 '+971509999999', # Administrator
                 '+971 50 123 4567', # Candidate (formatted)
-                '+971509998888'  # Growth Operator
+                '+971509998888',  # Growth Operator
+                '+971550000010',  # Test Student
+                '+971550000010',  # Test Student
+                '+971550000011',  # Test Educator
+                '+971500001001',  # Test Team Chat - HR Manager 1
+                '+971500001002',  # Test Team Chat - Recruiter 1
+                '+971500001003'   # Test Team Chat - Recruiter 2
             ]
             if code == '123456' and (phone.endswith('1234567') or phone in magic_numbers):
                  print("DEBUG: Magic OTP match!", flush=True)
@@ -617,11 +656,42 @@ class AuthenticationManager:
                 user_data = dict(user)
                 user_data['is_new_user'] = is_new_user
                 
+                # Ensure consistent name fields - prevent 'None None' display
+                if not user_data.get('first_name'):
+                    full_name = user_data.get('full_name', 'New Member') or 'New Member'
+                    parts = full_name.split(' ', 1) if full_name else ['New', 'Member']
+                    user_data['first_name'] = parts[0] if parts else 'New'
+                    user_data['last_name'] = parts[1] if len(parts) > 1 else 'Member'
+                if not user_data.get('full_name'):
+                    user_data['full_name'] = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip() or 'New Member'
+                
                 # Update last login
                 try:
                     self._update_last_login(user_data['id'])
                 except:
                     pass
+                
+                # Fetch company_id from hr_profiles for HR users
+                user_role = user_data.get('role') or user_data.get('user_type') or ''
+                if user_role in ('hr_manager', 'hr_recruiter', 'recruiter', 'employer'):
+                    try:
+                        conn_hr = self._get_db_connection()
+                        cursor_hr = conn_hr.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                        cursor_hr.execute("""
+                            SELECT hp.company_id, COALESCE(c.name, c.company_name) as company_name
+                            FROM hr_profiles hp
+                            LEFT JOIN companies c ON hp.company_id::text = c.id::text
+                            WHERE hp.user_id = %s
+                            LIMIT 1
+                        """, (str(user_data['id']),))
+                        hr_profile = cursor_hr.fetchone()
+                        if hr_profile:
+                            user_data['company_id'] = str(hr_profile['company_id']) if hr_profile['company_id'] else None
+                            user_data['company_name'] = hr_profile.get('company_name')
+                        cursor_hr.close()
+                        conn_hr.close()
+                    except Exception as hr_err:
+                        self.logger.warning(f"Failed to fetch company_id for HR user: {hr_err}")
                     
                 return True, "Authenticated successfully", user_data
              else:
@@ -630,3 +700,252 @@ class AuthenticationManager:
         except Exception as e:
              self.logger.error(f"Phone Auth failed: {e}")
              return False, f"Authentication failed: {str(e)}", None
+
+    def update_user_role(self, user_id: str, role: str, additional_data: Optional[Dict] = None) -> Tuple[bool, str, Optional[Dict]]:
+        """
+        Update user role and associated metadata
+        Handles creating/updating profile tables for specific roles (Recruiter, Educator, Student)
+        """
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            # 1. Update User Role
+            # Also update user_type if column exists (it's an alias usually)
+            try:
+                cursor.execute("""
+                    UPDATE users 
+                    SET role = %s, user_type = %s, updated_at = NOW()
+                    WHERE id = %s
+                    RETURNING *
+                """, (role, role, user_id))
+            except psycopg2.errors.UndefinedColumn:
+                conn.rollback() 
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cursor.execute("""
+                    UPDATE users 
+                    SET role = %s, updated_at = NOW()
+                    WHERE id = %s
+                    RETURNING *
+                """, (role, user_id))
+                
+            user = cursor.fetchone()
+            
+            if not user:
+                conn.rollback()
+                conn.close()
+                return False, "User not found", None
+                
+            # 2. Handle Role-Specific Data
+            if additional_data:
+                try:
+                    # --- Recruiter / HR ---
+                    if role in ['recruiter', 'hr_recruiter', 'hr_manager']:
+                        company_name = additional_data.get('company_name')
+                        if company_name:
+                            # Check if company exists
+                            cursor.execute("SELECT id FROM companies WHERE company_name ILIKE %s", (company_name,))
+                            company = cursor.fetchone()
+                            
+                            company_id = None
+                            if company:
+                                company_id = company['id']
+                            else:
+                                # Create new company
+                                company_id = str(uuid.uuid4())
+                                cursor.execute("""
+                                    INSERT INTO companies (id, company_name, is_verified)
+                                    VALUES (%s, %s, false)
+                                    RETURNING id
+                                """, (company_id, company_name))
+                                company_id = cursor.fetchone()['id']
+                            
+                            # Upsert HR Profile
+                            cursor.execute("""
+                                INSERT INTO hr_profiles (user_id, company_id, position_title)
+                                VALUES (%s, %s, 'Recruiter')
+                                ON CONFLICT (user_id) 
+                                DO UPDATE SET company_id = EXCLUDED.company_id, updated_at = NOW()
+                            """, (user_id, company_id))
+
+                    # --- Educator ---
+                    elif role == 'educator':
+                        institution_name = additional_data.get('institution_name')
+                        if institution_name:
+                            # Check if institution exists
+                            cursor.execute("SELECT id FROM educational_institutions WHERE name ILIKE %s", (institution_name,))
+                            inst = cursor.fetchone()
+                            
+                            inst_id = None
+                            if inst:
+                                inst_id = inst['id']
+                            else:
+                                # Create new institution
+                                inst_id = str(uuid.uuid4())
+                                cursor.execute("""
+                                    INSERT INTO educational_institutions (id, name, institution_type, is_verified)
+                                    VALUES (%s, %s, 'Other', false)
+                                    RETURNING id
+                                """, (inst_id, institution_name))
+                                inst_id = cursor.fetchone()['id']
+                                
+                            # Upsert Educator Profile
+                            cursor.execute("""
+                                INSERT INTO educator_profiles (user_id, institution_id, position_title)
+                                VALUES (%s, %s, 'Educator')
+                                ON CONFLICT (user_id)
+                                DO UPDATE SET institution_id = EXCLUDED.institution_id, updated_at = NOW()
+                            """, (user_id, inst_id))
+
+                    # --- Student / Candidate ---
+                    elif role in ['student', 'candidate', 'job_seeker']:
+                        university_name = additional_data.get('university_name')
+                        if university_name:
+                            # Create education object
+                            education_entry = {
+                                "institution": university_name,
+                                "level": "Bachelor", # Default assumption
+                                "current": True,
+                                "start_date": datetime.now().isoformat()
+                            }
+                            
+                            # Upsert Candidate Profile
+                            # Append to education array if exists, or create new
+                            cursor.execute("""
+                                INSERT INTO candidate_profiles (user_id, education)
+                                VALUES (%s, %s::jsonb)
+                                ON CONFLICT (user_id)
+                                DO UPDATE SET 
+                                    education = CASE 
+                                        WHEN candidate_profiles.education IS NULL OR jsonb_array_length(candidate_profiles.education) = 0 
+                                        THEN %s::jsonb 
+                                        ELSE candidate_profiles.education || %s::jsonb 
+                                    END,
+                                    updated_at = NOW()
+                            """, (user_id, json.dumps([education_entry]), json.dumps([education_entry]), json.dumps([education_entry])))
+
+                except Exception as meta_e:
+                    self.logger.error(f"Error saving metadata: {meta_e}")
+                    # We don't rollback main role update if metadata fails, just log it?
+                    # Or maybe we serves warning? For now, proceed.
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return True, "Role updated successfully", dict(user)
+            
+        except Exception as e:
+            self.logger.error(f"Update role failed: {e}")
+            return False, f"Update failed: {str(e)}", None
+
+    def update_user_profile(self, user_id: str, data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict]]:
+        """
+        Update user profile data - Centralized logic
+        Handles mapped columns and JSONB profile_data
+        """
+        try:
+            conn = self._get_db_connection()
+            # self._get_db_connection returns autocommit=True
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            # Prepare fields to update
+            update_fields = []
+            update_values = []
+            
+            # 1. Personal Info (Columns)
+            if 'personal_info' in data:
+                pi = data['personal_info']
+                column_map = {
+                    'first_name': 'first_name',
+                    'last_name': 'last_name',
+                    'phone': 'phone',
+                    'location': 'location',
+                    'latitude': 'latitude',
+                    'longitude': 'longitude',
+                    'nationality': 'nationality',
+                    'emirate': 'emirate'
+                }
+                
+                for key, col in column_map.items():
+                    if key in pi:
+                        update_fields.append(f"{col} = %s")
+                        update_values.append(pi[key])
+
+            # 2. Professional/Skills info (Columns)
+            if 'experience_years' in data:
+                update_fields.append("experience_years = %s")
+                update_values.append(data['experience_years'])
+                
+            if 'skills' in data:
+                update_fields.append("skills = %s")
+                # Ensure it's a list for Postgres Array
+                skills_list = data['skills'] if isinstance(data['skills'], list) else []
+                update_values.append(skills_list)
+
+            # 3. JSONB profile_data
+            # Fetch existing to merge
+            cursor.execute("SELECT profile_data FROM users WHERE id = %s", (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return False, "User not found", None
+                
+            current_profile_data = row['profile_data'] if row and row['profile_data'] else {}
+            
+            # Merge known direct keys (Standard Profile)
+            direct_keys = ['professional_summary', 'current_position', 'current_company', 
+                           'education', 'languages', 'certifications']
+            for key in direct_keys:
+                if key in data:
+                    current_profile_data[key] = data[key]
+
+            # Merge Recruiter/Company/Preferences fields (Allow-list approach)
+            extra_keys = [
+                # Recruiter / HR
+                'companyName', 'companySize', 'companyLocation', 'companyWebsite', 'companyDescription',
+                'hiringVolume', 'preferredCandidateLevel', 'preferredSkills', 'workArrangements', 
+                'salaryRanges', 'interviewProcess', 'assessmentTools', 'communicationPreferences',
+                'workingHours', 'notifications', 'profileVisibility', 'contactVisibility', 'companyInfoPublic',
+                'industry', 'jobTitle', 'socialMedia', 'offices', 'headquarters', 'mission', 'vision', 
+                'values', 'culture', 'benefits', 'perks', 'awards', 'certifications',
+                # Student
+                'schoolName', 'gradeLevel', 'gpa', 'majorInterests', 'extracurriculars', 'achievements'
+            ]
+            
+            for key in extra_keys:
+                if key in data:
+                    # Update or add
+                    current_profile_data[key] = data[key]
+
+            # Special handling for personal_info nested in JSON
+            if 'personal_info' in data:
+                 current_profile_data['personal_info_extra'] = data['personal_info']
+                 if 'emirates_id' in data['personal_info']:
+                      current_profile_data['emirates_id'] = data['personal_info']['emirates_id']
+
+            # Student backward compat
+            if 'schoolName' in data:
+                 current_profile_data['education'] = [{'institution': data['schoolName'], 'degree': data.get('gradeLevel', 'Student')}]
+
+            # Add to update
+            update_fields.append("profile_data = %s")
+            update_values.append(json.dumps(current_profile_data))
+            
+            update_fields.append("updated_at = NOW()")
+            update_values.append(user_id)
+
+            if update_fields:
+                query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s"
+                cursor.execute(query, tuple(update_values))
+                # No commit needed as autocommit=True in _get_db_connection
+                
+            cursor.close()
+            conn.close()
+            
+            return True, "Profile updated successfully", {}
+            
+        except Exception as e:
+            self.logger.error(f"Update profile failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False, f"Update failed: {str(e)}", None

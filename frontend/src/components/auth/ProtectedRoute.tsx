@@ -39,9 +39,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // Check if user has any of the allowed roles
     // We check both the primary role and if the user data has a roles array
-    const hasPermission =
-      (userRole && allowedRoles.includes(userRole)) ||
-      (user.roles && user.roles.some(r => allowedRoles.includes(r)));
+    // Normalize role for comparison (handle "Job Seeker" vs "job_seeker" vs "candidate")
+    const normalizeRole = (r: string) => {
+      const lower = r.toLowerCase();
+      if (lower === 'job seeker' || lower === 'job_seeker') return 'candidate';
+      if (lower === 'hr/recruiter' || lower === 'hr recruiter') return 'recruiter';
+      if (lower === 'hr manager' || lower === 'hr_manager') return 'hr_manager';
+      return lower;
+    };
+
+    const userRoleNormalized = normalizeRole(userRole || '');
+
+    // Check match
+    const hasPermission = allowedRoles.some(allowed => {
+      const allowedNorm = normalizeRole(allowed);
+      return allowedNorm === userRoleNormalized ||
+        (user.roles && user.roles.some(r => normalizeRole(r) === allowedNorm));
+    });
 
     if (!hasPermission) {
       console.log(`🛡️ Protected Route: Access denied. User role: ${userRole}, Required: ${allowedRoles.join(', ')}`);

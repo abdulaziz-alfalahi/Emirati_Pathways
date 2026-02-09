@@ -69,9 +69,12 @@ class PersonalInfo:
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         if self.date_of_birth:
-            data['date_of_birth'] = self.date_of_birth.isoformat()
+            if hasattr(self.date_of_birth, 'isoformat'):
+                data['date_of_birth'] = self.date_of_birth.isoformat()
+            else:
+                 data['date_of_birth'] = str(self.date_of_birth)
         if self.visa_status:
-            data['visa_status'] = self.visa_status.value
+            data['visa_status'] = self.visa_status.value if hasattr(self.visa_status, 'value') else self.visa_status
         return data
 
 @dataclass
@@ -107,9 +110,9 @@ class ProfessionalInfo:
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         if self.experience_level:
-            data['experience_level'] = self.experience_level.value
+            data['experience_level'] = self.experience_level.value if hasattr(self.experience_level, 'value') else self.experience_level
         if self.employment_status:
-            data['employment_status'] = self.employment_status.value
+            data['employment_status'] = self.employment_status.value if hasattr(self.employment_status, 'value') else self.employment_status
         return data
 
 @dataclass
@@ -128,10 +131,17 @@ class EducationRecord:
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         if self.start_date:
-            data['start_date'] = self.start_date.isoformat()
+            if hasattr(self.start_date, 'isoformat'):
+                data['start_date'] = self.start_date.isoformat()
+            else:
+                data['start_date'] = str(self.start_date)
         if self.end_date:
-            data['end_date'] = self.end_date.isoformat()
-        data['level'] = self.level.value
+            if hasattr(self.end_date, 'isoformat'):
+                data['end_date'] = self.end_date.isoformat()
+            else:
+                data['end_date'] = str(self.end_date)
+        if self.level:
+            data['level'] = self.level.value if hasattr(self.level, 'value') else self.level
         return data
 
 @dataclass

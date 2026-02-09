@@ -216,13 +216,18 @@ const EnhancedAuthPage: React.FC = () => {
 
         setSuccess('Login successful!');
 
-        // Redirect
-        const dashboardRoute = await authService.getDashboardRoute();
-        // If new user, maybe redirect to profile? But dashboard handles empty profile usually.
-        // Or we check is_new_user
-        setTimeout(() => {
-          navigate(dashboardRoute, { replace: true });
-        }, 1000);
+        // Redirect logic
+        if (response.data.user.is_new_user) {
+          console.log('New user detected, redirecting to welcome page...');
+          setTimeout(() => {
+            navigate('/welcome', { replace: true });
+          }, 1000);
+        } else {
+          const dashboardRoute = await authService.getDashboardRoute();
+          setTimeout(() => {
+            navigate(dashboardRoute, { replace: true });
+          }, 1000);
+        }
       } else {
         setError(response.message || 'Invalid OTP');
       }

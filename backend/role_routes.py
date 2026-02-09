@@ -6,7 +6,7 @@ import os
 import uuid
 import json
 import logging
-from notification_system import NotificationType, NotificationPriority
+from backend.notification_system import NotificationType, NotificationPriority
 
 # Define Blueprint
 role_bp = Blueprint('role_management', __name__, url_prefix='/api/roles')
@@ -38,7 +38,7 @@ def submit_role_request():
             return jsonify({'success': False, 'message': 'Role is required'}), 400
             
         # Allowed roles to request
-        allowed_roles = ['HR/Recruiter', 'Educator', 'Mentor', 'Assessor']
+        allowed_roles = ['HR/Recruiter', 'HR Recruiter', 'Recruiter', 'HR Manager', 'Educator', 'Mentor', 'Assessor', 'Job Seeker', 'Student', 'Growth Operator']
         if requested_role not in allowed_roles:
              return jsonify({'success': False, 'message': 'Invalid role requested'}), 400
 
@@ -175,7 +175,7 @@ def get_all_requests():
             return jsonify({'success': False, 'message': 'User not found'}), 404
             
         # Helper import here to avoid circular dependency if possible, or move helper to common
-        from routes.auth_routes import get_role_permissions
+        from backend.routes.auth_routes import get_role_permissions
         perms = get_role_permissions(user['role'])
         
         if 'roles.approve_requests' not in perms and 'admin' not in perms and 'administrator' not in perms:
@@ -226,7 +226,7 @@ def action_request(request_id):
              return jsonify({'success': False, 'message': 'User not found'}), 404
 
         # Helper import here to avoid circular dependency
-        from routes.auth_routes import get_role_permissions
+        from backend.routes.auth_routes import get_role_permissions
         perms = get_role_permissions(user_row['role'])
         
         if 'roles.approve_requests' not in perms and 'admin' not in perms and 'administrator' not in perms:

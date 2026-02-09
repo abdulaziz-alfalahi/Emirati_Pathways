@@ -1,13 +1,19 @@
 
 import React, { ReactNode } from 'react';
-import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
+// Removed: import Layout from '@/components/layout/Layout';
+// Added: HybridGovernmentNavFixed to match Home Page
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import DubaiGovStickyBar from '@/components/layout/DubaiGovStickyBar';
+import { UnifiedFooter } from '@/components/layout/UnifiedFooter'; // New Shared Footer
+
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LucideIcon } from 'lucide-react';
 import { getStatColor } from '@/lib/colors';
-import { 
-  ProfessionalGrowthBreadcrumbs, 
-  RelatedPagesSection, 
+import {
+  ProfessionalGrowthBreadcrumbs,
+  RelatedPagesSection,
   QuickAccessNavigation,
   ProfessionalGrowthProgress,
   ProfessionalGrowthCTA
@@ -64,9 +70,24 @@ export const ProfessionalGrowthLayout: React.FC<ProfessionalGrowthLayoutProps> =
   ctaActionHref,
   showQuickAccess = true
 }) => {
+  const { i18n } = useTranslation();
+  const currentLanguage = (i18n.language === 'ar' ? 'ar' : 'en') as 'en' | 'ar';
+
+  const toggleLanguage = () => {
+    const next = currentLanguage === 'en' ? 'ar' : 'en';
+    i18n.changeLanguage(next);
+  };
+
   return (
-    <Layout>
-      <div className="min-h-screen bg-[rgb(var(--pg-background))]">
+    <div className="min-h-screen flex flex-col bg-[rgb(var(--pg-background))]">
+      {/* Use HybridGovernmentNavFixed to match Home Page style */}
+      <HybridGovernmentNavFixed
+        showAuthButtons={true} // Or make this dynamic based on auth context handled inside nav
+        onLanguageToggle={toggleLanguage}
+        currentLanguage={currentLanguage}
+      />
+
+      <main className="flex-1">
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-[rgb(var(--pg-gradient-from))] to-[rgb(var(--pg-gradient-to))] text-white">
           <div className="container mx-auto px-4 py-12">
@@ -115,7 +136,7 @@ export const ProfessionalGrowthLayout: React.FC<ProfessionalGrowthLayoutProps> =
 
           {/* Progress Indicator */}
           {showProgress && (
-            <ProfessionalGrowthProgress 
+            <ProfessionalGrowthProgress
               currentStep={progressStep}
               totalSteps={totalSteps}
               stepLabel={stepLabel}
@@ -156,10 +177,18 @@ export const ProfessionalGrowthLayout: React.FC<ProfessionalGrowthLayoutProps> =
           {/* Related Pages */}
           <RelatedPagesSection />
         </div>
-
-        {/* Quick Access Navigation */}
+        {/* Quick Access Navigation - REMOVED per user feedback
         {showQuickAccess && <QuickAccessNavigation />}
-      </div>
-    </Layout>
+        */}
+      </main>
+
+      {/* Unified Footer */}
+      <UnifiedFooter />
+
+      {/* Dubai Government Sticky Bar - REMOVED per user feedback */}
+      {/* <DubaiGovStickyBar /> */}
+    </div>
   );
 };
+
+export default ProfessionalGrowthLayout;

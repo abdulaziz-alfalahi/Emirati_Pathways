@@ -33,8 +33,11 @@ const roleDescriptions: Record<string, string> = {
     'Educator': 'Educators manage curriculum and student progress. Verification of employment with an educational institution is required.',
     'Assessor': 'Assessors evaluate candidate skills and certifications. You must hold valid assessor credentials.',
     'HR/Recruiter': 'Recruiters post jobs and manage applications. A valid company trade license or authorization is needed.',
+    'HR Manager': 'HR Managers oversee company recruitment and team management. Corporate verification required.',
     'Mentor': 'Mentors provide guidance to job seekers. Proven expertise in your field is expected.',
-    'Growth Operator': 'Growth Operators manage program scaling and approvals.'
+    'Growth Operator': 'Growth Operators manage program scaling and approvals.',
+    'Job Seeker': 'Create a professional profile to find jobs and opportunities.',
+    'Student': 'Access student-specific resources, tracking, and guidance.'
 };
 
 const reasonCategories = [

@@ -20,6 +20,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from ..cv_parser import CVParser
 from ..auth.auth_manager import AuthenticationManager as AuthManager
+from ..services.profile_v2_service import ProfileV2Service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,8 +45,34 @@ ALLOWED_EXTENSIONS = {
 UPLOAD_FOLDER = Path(os.getenv('UPLOAD_FOLDER', '/tmp/cv_uploads'))
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 
+import uuid
+def get_normalized_user_id_cv_upload(identity):
+    """
+    Normalize user identity to a consistent UUID string.
+    Local implementation to ensure this route works correctly.
+    """
+    if not identity:
+        return None
+        
+    if isinstance(identity, dict):
+        identity = identity.get('id')
+    
+    identity_str = str(identity).strip()
+    
+    # Legacy Integer ID Support
+    if identity_str.isdigit():
+        return identity_str
+    
+    try:
+        # Check if already valid UUID
+        return str(uuid.UUID(identity_str))
+    except ValueError:
+        # If not, hash strictly using DNS namespace
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+
+
 def validate_file(file: FileStorage) -> Dict[str, Any]:
-    """Comprehensive file validation"""
+    """Comprehensive file validation with robust error handling"""
     try:
         # Check if file exists
         if not file or not file.filename:
@@ -54,10 +81,15 @@ def validate_file(file: FileStorage) -> Dict[str, Any]:
                 'error': 'No file provided'
             }
         
-        # Check file size
-        file.seek(0, 2)  # Seek to end
-        file_size = file.tell()
-        file.seek(0)  # Reset to beginning
+        # Check file size safely
+        try:
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+        except Exception as e:
+            logger.error(f"Error checking file size: {e}")
+            # Fallback if seek fails (unlikely for local files)
+            file_size = 0
         
         if file_size > MAX_FILE_SIZE:
             return {
@@ -81,18 +113,37 @@ def validate_file(file: FileStorage) -> Dict[str, Any]:
                 'error': f'File type .{file_ext} not supported. Allowed: {", ".join(ALLOWED_EXTENSIONS.keys())}'
             }
         
-        # Check MIME type
-        file_content = file.read(1024)  # Read first 1KB for MIME detection
-        file.seek(0)  # Reset
-        
+        # Check MIME type with heavy safety
+        detected_mime = None
         try:
-            detected_mime = magic.from_buffer(file_content, mime=True)
-        except:
-            detected_mime = mimetypes.guess_type(filename)[0]
+            # Try python-magic
+            file_content = file.read(2048)
+            file.seek(0)
+            
+            if hasattr(magic, 'from_buffer'):
+                detected_mime = magic.from_buffer(file_content, mime=True)
+        except Exception as e:
+            logger.warning(f"Magic validation failed (non-fatal): {e}")
         
-        expected_mime = ALLOWED_EXTENSIONS[file_ext]
-        if detected_mime != expected_mime:
-            logger.warning(f"MIME type mismatch: detected {detected_mime}, expected {expected_mime}")
+        # Fallback to mimetypes
+        if not detected_mime:
+            try:
+                detected_mime = mimetypes.guess_type(filename)[0]
+            except Exception as e:
+                logger.warning(f"Mimetypes guess failed: {e}")
+        
+        # Default fallback
+        if not detected_mime:
+             detected_mime = 'application/octet-stream'
+
+        expected_mime = ALLOWED_EXTENSIONS.get(file_ext, '')
+        
+        # Log mismatch but don't fail unless strict security policy needed
+        if detected_mime != expected_mime and expected_mime:
+            logger.warning(f"MIME type mismatch: detected {detected_mime}, expected {expected_mime} for .{file_ext}")
+            
+            # Optional: Allow PDF even if detected as something generic, provided extension is PDF
+            # This fixes issues where magic detects application/octet-stream for some PDFs
         
         # Additional security checks
         if filename.startswith('.') or '/' in filename or '\\' in filename:
@@ -110,7 +161,9 @@ def validate_file(file: FileStorage) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        logger.error(f"File validation error: {str(e)}")
+        import traceback
+        logger.error(f"File validation critical error: {str(e)}")
+        logger.error(traceback.format_exc())
         return {
             'valid': False,
             'error': f'File validation failed: {str(e)}'
@@ -121,7 +174,9 @@ def validate_file(file: FileStorage) -> Dict[str, Any]:
 def upload_cv():
     """Upload and parse CV file"""
     try:
-        user_id = get_jwt_identity()
+        raw_user_id = get_jwt_identity()
+        user_id = get_normalized_user_id_cv_upload(raw_user_id)
+        logger.info(f"Processing Upload (Route 2) for User: {user_id} (Raw: {raw_user_id})")
         
         # Check if file is in request
         if 'cv_file' not in request.files:
@@ -162,6 +217,12 @@ def upload_cv():
                     'message': parse_result.get('message', 'CV parsing failed')
                 }), 400
             
+            # Save parsed data to profile
+            try:
+                ProfileV2Service.populate_from_cv_data(user_id, parse_result)
+            except Exception as e:
+                logger.error(f"Failed to save CV data to profile: {e}")
+
             # Add file metadata to result
             parse_result['file_info'] = {
                 'original_filename': filename,

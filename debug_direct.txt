@@ -8580,3 +8580,116 @@ Required Skills: ['strong proficiency in python, javascript, and react', 'excell
 Candidate Skills: None
 EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
 Final Score for 49: 0.0 (AI: 0.0, Rule: 0.0)
+Match called at 2026-02-03 01:31:07.503820
+Candidates count: 29
+JD Title: Talent acquisition
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Python', 'React', 'AWS', 'Docker', 'PostgreSQL', 'Kubernetes']
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Java', 'Spring Boot', 'Kubernetes', 'MySQL', 'Microservices']
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Python', 'SQL', 'Tableau', 'Statistics', 'Excel', 'Power BI']
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Recruitment', 'Talent Acquisition', 'Employee Relations', 'Labor Law', 'HRIS', 'Onboarding', 'Performance Management', 'Microsoft Office']
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Product Management', 'Agile', 'UX Design', 'Analytics', 'Jira']
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Python', 'Flask', 'PostgreSQL']
+EXCEPTION in _score_with_rules: 'NoneType' object has no attribute 'lower'
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: []
+EXCEPTION in _score_with_rules: 'NoneType' object has no attribute 'lower'
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: []
+EXCEPTION in _score_with_rules: 'NoneType' object has no attribute 'lower'
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: None
+EXCEPTION in _score_with_rules: 'NoneType' object is not iterable
+JD Requirements: [{"category": "skills", "description": "HR", "is_required": true}, {"category": "skills", "description": "Assessment", "is_required": true}]
+Required Skills: ['hr', 'assessment']
+Candidate Skills: ['Digital Transformation', 'Strategic Management', 'Commercial Project Management', 'Human Resources Optimization', 'Data Analytics', 'Telecommunications', 'Technology Leadership', 'Budget Management', 'Team Leadership', 'Governance Oversight', 'Emiratization Programs']
+EXCEPTION in _score_with_rules: 'NoneType' object has no attribute 'lower'

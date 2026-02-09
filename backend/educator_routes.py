@@ -487,6 +487,38 @@ def get_performance_analytics():
             "message": "Failed to retrieve performance analytics"
         }), 500
 
+@educator_bp.route('/scholarships', methods=['POST'])
+@require_educator_auth
+def create_scholarship_route():
+    """Create new scholarship"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['title', 'provider', 'amount', 'deadline']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    "success": False,
+                    "error": f"Missing required field: {field}",
+                    "message": "Please provide all required scholarship information"
+                }), 400
+                
+        result = educator_system.create_scholarship(data)
+        
+        if result["success"]:
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"Error creating scholarship: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "message": "Failed to create scholarship"
+        }), 500
+
 @educator_bp.route('/alerts', methods=['GET'])
 @require_educator_auth
 def get_student_alerts():

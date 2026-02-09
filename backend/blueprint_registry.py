@@ -19,7 +19,15 @@ def register_all_blueprints(app: Flask):
         logger.warning(f"⚠️ Auth routes not available: {e}")
 
     try:
-        from routes.administrator_routes import admin_bp, init_admin_routes
+        from backend.routes.company_team_routes import company_team_bp
+        app.register_blueprint(company_team_bp, url_prefix='/api/company/team')
+        logger.info("✅ Company Team routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Company Team routes not available: {e}")
+
+
+    try:
+        from backend.routes.administrator_routes import admin_bp, init_admin_routes
         import os
         
         # Configure DB for admin routes
@@ -36,67 +44,137 @@ def register_all_blueprints(app: Flask):
         app.register_blueprint(admin_bp)
         logger.info("✅ Administrator routes registered")
     except Exception as e:
-        logger.warning(f"⚠️ Administrator routes not available: {e}")
+        logger.error(f"⚠️ Administrator routes not available: {e}", exc_info=True)
 
     try:
-        from role_routes import role_bp
+        from backend.role_routes import role_bp
         app.register_blueprint(role_bp)
         logger.info("✅ Role Management routes registered")
     except Exception as e:
         logger.warning(f"⚠️ Role Management routes not available: {e}")
 
-    # 2. Recruiter Modules
-    _register_safe(app, 'recruiter.jd_upload_routes', 'jd_upload_routes', 'Recruiter JD Upload')
-    _register_safe(app, 'recruiter.statistics_routes', 'statistics_bp', 'Recruiter Statistics', url_prefix='/api/recruiter/statistics')
-    _register_safe(app, 'recruiter.jd_routes_v2', 'jd_bp', 'Recruiter JD V2')
-    _register_safe(app, 'recruiter.analytics_routes', 'analytics_bp', 'Recruiter Analytics', url_prefix='/api/recruiter')
-    _register_safe(app, 'recruiter.shortlist_routes', 'shortlist_bp', 'Recruiter Shortlist', url_prefix='/api/recruiter/shortlist')
-    _register_safe(app, 'recruiter.interview_routes', 'interview_bp', 'Recruiter Interview', url_prefix='/api/recruiter/interviews')
-    _register_safe(app, 'recruiter.offer_routes', 'offer_bp', 'Recruiter Offer', url_prefix='/api/recruiter/offers')
+    # ... (skipping unchanged lines) ...
 
-    # 3. HR Modules
-    _register_safe(app, 'hr_job_posting_routes', 'hr_job_posting_bp', 'HR Job Posting')
-    _register_safe(app, 'hr_offer_routes', 'hr_offer_bp', 'HR Offer')
-    _register_safe(app, 'hr_offer_routes', 'public_offer_bp', 'Public Offer')
-    _register_safe(app, 'hr_candidate_search_routes', 'hr_candidate_search_bp', 'HR Candidate Search')
-    _register_safe(app, 'hr_dashboard_routes', 'hr_dashboard_bp', 'HR Dashboard')
-    _register_safe(app, 'hr_profile_management_routes', 'hr_profile_bp', 'HR Profile')
-
-    # 4. Job & Application
-    _register_safe(app, 'candidate_job_routes', 'candidate_job_bp', 'Candidate Job')
-    _register_safe(app, 'job_application_routes', 'job_application_bp', 'Job Application')
-    _register_safe(app, 'candidate_profile_routes', 'candidate_profile_bp', 'Candidate Profile')
-    
-    # 5. Growth & Community
-    try:
-        from backend.routes.growth_routes import growth_bp
-        app.register_blueprint(growth_bp) # Path typically embedded
-        logger.info("✅ Growth routes registered")
-    except ImportError:
-        logger.warning("⚠️ Growth routes not found")
-
-    _register_safe(app, 'backend.routes.company_team_routes', 'company_team_bp', 'Company Team')
-    
-    # 6. Communication & Interview
-    _register_safe(app, 'backend.routes.communication_routes', 'communication_bp', 'Communication')
-    _register_safe(app, 'backend.routes.interview_routes', 'interview_bp', 'Interview (Video)')
-
-    # 7. Enhanced APIs (Dashboard APIs)
-    _register_safe(app, 'routes.admin_dashboard_api', 'admin_dashboard_bp', 'Admin Dashboard API')
-    _register_safe(app, 'routes.growth_operator_api', 'growth_operator_bp', 'Growth Operator API')
-    # _register_safe(app, 'routes.communication_api', 'communication_bp', 'Communication API')
-    _register_safe(app, 'routes.interview_sessions_api', 'interview_sessions_bp', 'Interview Sessions API')
-    _register_safe(app, 'routes.hr_dashboard_api', 'hr_dashboard_api_bp', 'HR Dashboard API')
-    _register_safe(app, 'routes.recruiter_dashboard_api', 'recruiter_dashboard_bp', 'Recruiter Dashboard API')
-    _register_safe(app, 'routes.jobs_api', 'jobs_bp', 'Jobs API')
-    _register_safe(app, 'routes.jobs_api', 'candidate_jobs_bp', 'Candidate Jobs API')
-    _register_safe(app, 'routes.growth_operator_assignment_api', 'growth_operator_assignment_bp', 'Growth Operator Assignment API')
-    _register_safe(app, 'routes.jd_templates_api', 'jd_templates_bp', 'JD Templates API')
-    _register_safe(app, 'routes.user_management_api', 'user_management_bp', 'User Management API')
-    _register_safe(app, 'routes.user_activity_api', 'user_activity_bp', 'User Activity API')
-    
     # 8. Feedback & Utilities
-    _register_safe(app, 'feedback_routes', 'feedback_bp', 'Feedback Routes', url_prefix='/api/feedback')
+    try:
+        from backend.routes.admin_dashboard_api import feedback_bp as sql_feedback_bp, ensure_feedback_table_exist
+        app.register_blueprint(sql_feedback_bp)
+        # Ensure DB table exists
+        ensure_feedback_table_exist()
+        logger.info("✅ Feedback Routes (SQL) registered successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to register SQL Feedback Routes: {e}")
+        # Fallback to old JSON file routes if SQL fails (unlikely)
+        _register_safe(app, 'feedback_routes', 'feedback_bp', 'Feedback Routes (JSON Fallback)', url_prefix='/api/feedback')
+    
+    # 9. Student Modules
+    _register_safe(app, 'backend.routes.student_routes', 'student_bp', 'Student Dashboard', url_prefix='/api/student')
+    _register_safe(app, 'backend.educator_routes', 'educator_bp', 'Educator Dashboard', url_prefix='/api/educator')
+    
+    # 10. Missing Core Blueprints (Explicit Registration)
+    try:
+        from backend.routes.profile.profile_routes_v2 import profile_v2_bp
+        app.register_blueprint(profile_v2_bp)
+        logger.info("✅ Profile V2 routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Profile V2 routes not available: {e}")
+
+    try:
+        from backend.candidate_profile_routes import candidate_profile_bp
+        app.register_blueprint(candidate_profile_bp, url_prefix='/api/profile')
+        logger.info("✅ Candidate Profile routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Candidate Profile routes not available: {e}")
+
+    try:
+        from backend.routes.enhanced_cv_routes import enhanced_cv_bp
+        app.register_blueprint(enhanced_cv_bp)
+        logger.info("✅ Enhanced CV routes registered (via registry)")
+    except ImportError as e:
+        logger.warning(f"⚠️ Enhanced CV routes not available: {e}")
+        # FALLBACK: Use standard CV Upload Routes (Patched)
+        try:
+            from backend.routes.cv_upload_routes import cv_upload_bp
+            app.register_blueprint(cv_upload_bp)
+            logger.info("✅ Standard CV upload routes registered (Fallback)")
+        except ImportError as e2:
+            logger.warning(f"⚠️ Standard CV upload routes not available: {e2}")
+
+    try:
+        from backend.candidate_job_routes import candidate_job_bp
+        app.register_blueprint(candidate_job_bp)
+        logger.info("✅ Candidate Job routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Candidate Job routes not available: {e}")
+
+    try:
+        from backend.routes.communication_routes import communication_bp
+        app.register_blueprint(communication_bp)
+        logger.info("✅ Communication routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Communication routes not available: {e}")
+
+    # 11. Recruiter & HR Modules (CRITICAL FIX)
+    try:
+        from backend.routes.recruiter_dashboard_api import recruiter_dashboard_bp
+        app.register_blueprint(recruiter_dashboard_bp)
+        logger.info("✅ Recruiter Dashboard routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Recruiter Dashboard routes not available: {e}")
+
+    try:
+        from backend.hr_offer_routes import hr_offer_bp, public_offer_bp
+        app.register_blueprint(hr_offer_bp)
+        app.register_blueprint(public_offer_bp)
+        logger.info("✅ HR Offer routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ HR Offer routes not available: {e}")
+
+    try:
+        from backend.routes.interview_sessions_api import interview_sessions_bp
+        # The internal file uses '/api/video-interview' (fixed)
+        app.register_blueprint(interview_sessions_bp)
+        logger.info("✅ Video Interview routes registered (as /api/video-interview)")
+    except ImportError as e:
+        logger.warning(f"⚠️ Video Interview routes not available: {e}")
+
+    try:
+        from backend.routes.interview_routes import interview_bp
+        app.register_blueprint(interview_bp)
+        logger.info("✅ Interview routes registered (as /api/interviews)")
+    except ImportError as e:
+        logger.warning(f"⚠️ Interview routes not available: {e}")
+
+    try:
+        from backend.hr_job_posting_routes import hr_job_posting_bp, ensure_job_postings_table_exists
+        app.register_blueprint(hr_job_posting_bp)
+        ensure_job_postings_table_exists() # Initialize tables
+        logger.info("✅ HR Job Posting routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ HR Job Posting routes not available: {e}")
+
+    try:
+        from backend.job_application_routes import job_application_bp
+        app.register_blueprint(job_application_bp)
+        logger.info("✅ Job Application routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Job Application routes not available: {e}")
+
+    try:
+        from backend.hr_candidate_routes import hr_candidate_bp
+        app.register_blueprint(hr_candidate_bp)
+        logger.info("✅ HR Candidate routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ HR Candidate routes not available: {e}")
+
+    # 12. Jobs API Routes (Candidate job matching, applications, withdrawal)
+    try:
+        from backend.routes.jobs_api import register_jobs_routes
+        register_jobs_routes(app)
+        logger.info("✅ Jobs API routes registered (includes application withdrawal)")
+    except ImportError as e:
+        logger.warning(f"⚠️ Jobs API routes not available: {e}")
+
 
 
 def _register_safe(app, module_path, bp_name, display_name, url_prefix=None):

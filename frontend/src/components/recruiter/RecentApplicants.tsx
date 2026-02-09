@@ -66,7 +66,7 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({ onViewAll, l
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffMinutes < 1) return 'Just now';
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -122,12 +122,12 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({ onViewAll, l
           <div className="space-y-3">
             {recentApplicants.map((applicant: RecentApplicant) => {
               const statusInfo = getStatusBadge(applicant.status);
-              
+
               return (
                 <div
                   key={applicant.application_id}
                   className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/recruiter-dashboard?tab=jobs`)}
+                  onClick={() => navigate(`/recruiter?tab=jobs`)}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
@@ -160,13 +160,13 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({ onViewAll, l
                 </div>
               );
             })}
-            
+
             {/* View All Button */}
             {totalCount > limit && (
               <Button
                 variant="outline"
                 className="w-full mt-2"
-                onClick={() => onViewAll ? onViewAll() : navigate('/recruiter-dashboard?tab=jobs')}
+                onClick={() => onViewAll ? onViewAll() : navigate('/recruiter?tab=jobs')}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 View All Applicants

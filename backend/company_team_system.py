@@ -24,19 +24,12 @@ class CompanyTeamSystem:
     def get_db_connection(self):
         return psycopg2.connect(**self.db_config)
 
-    def get_team_members(self, company_id: str) -> List[Dict[str, Any]]:
-        """Get all team members for a company"""
+    def get_team_members(self, company_id: str, exclude_user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get all team members for a company, optionally excluding a specific user"""
         try:
             with self.get_db_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    # Join with users table to get names/emails
-                    # Note: We join on user_id (UUID in users table, but schema said Integer? 
-                    # Wait, setup_database.py lines 111 say ID SERIAL PRIMARY KEY (Integer).
-                    # But create_hr_recruiter_tables_fixed.sql uses UUID.
-                    # apply_team_schema.py used INTEGER for user_id. 
-                    # So we treat user_id as Integer.
-                    
-                    cur.execute("""
+                    query = """
                         SELECT 
                             ctm.id,
                             ctm.user_id,
@@ -50,8 +43,16 @@ class CompanyTeamSystem:
                         FROM company_team_members ctm
                         JOIN users u ON ctm.user_id = u.id
                         WHERE ctm.company_id = %s
-                        ORDER BY ctm.created_at DESC
-                    """, (company_id,))
+                    """
+                    params = [company_id]
+
+                    if exclude_user_id is not None:
+                        query += " AND ctm.user_id != %s"
+                        params.append(exclude_user_id)
+
+                    query += " ORDER BY ctm.created_at DESC"
+                    
+                    cur.execute(query, tuple(params))
                     
                     return [dict(row) for row in cur.fetchall()]
         except Exception as e:

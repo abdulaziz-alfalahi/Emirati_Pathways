@@ -7,11 +7,11 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
-import { 
-  GraduationCap, 
-  Users, 
-  BookOpen, 
-  TrendingUp, 
+import {
+  GraduationCap,
+  Users,
+  BookOpen,
+  TrendingUp,
   Calendar,
   Search,
   Filter,
@@ -38,6 +38,7 @@ import {
   Globe,
   Briefcase
 } from 'lucide-react';
+import ScholarshipManagement from '@/components/educator/ScholarshipManagement';
 
 interface EducatorData {
   students: {
@@ -178,9 +179,9 @@ const EducatorDashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
       {/* Navigation */}
       <HybridGovernmentNavFixed showAuthButtons={true} />
-      
 
-      
+
+
       {/* Main Content */}
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -234,12 +235,13 @@ const EducatorDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
+            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
               <TabsTrigger value="students" className="font-dubai-medium">Students</TabsTrigger>
               <TabsTrigger value="programs" className="font-dubai-medium">Programs</TabsTrigger>
               <TabsTrigger value="research" className="font-dubai-medium">Research</TabsTrigger>
               <TabsTrigger value="outcomes" className="font-dubai-medium">Outcomes</TabsTrigger>
+              <TabsTrigger value="scholarships" className="font-dubai-medium">Scholarships</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -415,7 +417,7 @@ const EducatorDashboard: React.FC = () => {
                                 {activity.title}
                               </p>
                               {activity.priority && (
-                                <Badge 
+                                <Badge
                                   variant={activity.priority === 'high' ? 'destructive' : 'secondary'}
                                   className="text-xs"
                                 >
@@ -527,6 +529,11 @@ const EducatorDashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Scholarships Tab */}
+            <TabsContent value="scholarships" className="space-y-6">
+              <ScholarshipManagement />
             </TabsContent>
           </Tabs>
         </div>

@@ -5,7 +5,7 @@ Messaging, notifications, and communication workflow endpoints
 
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from services.communication_service import communication_service, MessageType, NotificationType
+from backend.services.communication_service import communication_service, MessageType, NotificationType
 import logging
 from datetime import datetime
 
@@ -23,8 +23,11 @@ def get_user_conversations():
     """
     try:
         current_user_id = get_jwt_identity()
+        # FIX: Read role param from request
+        role = request.args.get('role')
         
-        conversations = communication_service.get_user_conversations(current_user_id)
+        # FIX: Pass role to service for strict filtering
+        conversations = communication_service.get_user_conversations(current_user_id, role=role)
         
         return jsonify({
             'success': True,
@@ -129,11 +132,26 @@ def create_conversation():
         job_id = data.get('job_id')
         title = data.get('title', 'Conversation')
         
+        # FIX: Extract roles for strict separation
+        participant_roles = {}
+        sender_role = data.get('sender_role')
+        if sender_role:
+             participant_roles[current_user_id] = sender_role
+             # Infer other participant's role
+             if len(participants) == 2:
+                  # Note: participants list includes current_user_id (added above)
+                  other_ids = [p for p in participants if str(p) != str(current_user_id)]
+                  if other_ids:
+                      other_id = other_ids[0]
+                      if sender_role == 'recruiter': participant_roles[other_id] = 'candidate'
+                      elif sender_role == 'candidate': participant_roles[other_id] = 'recruiter'
+
         conversation = communication_service.create_conversation(
             participants=participants,
             application_id=application_id,
             job_id=job_id,
-            title=title
+            title=title,
+            participant_roles=participant_roles
         )
         
         return jsonify({
@@ -242,6 +260,10 @@ def send_message():
         message_type_str = data.get('message_type', 'text')
         conversation_id = data.get('conversation_id')
         metadata = data.get('metadata', {})
+        
+        # FIX: Map top-level sender_role to metadata for service inference
+        if 'sender_role' in data:
+            metadata['sender_role'] = data['sender_role']
         
         if not content:
             return jsonify({
@@ -782,4 +804,100 @@ def update_notification_preferences():
             'success': False,
             'status': 'error',
             'message': 'Failed to update preferences'
+        }), 500
+
+
+# =====================================================
+# CANDIDATE DISCUSSION THREAD ENDPOINTS
+# =====================================================
+
+@communication_bp.route('/candidate-discussion', methods=['POST'])
+@jwt_required()
+def create_candidate_discussion():
+    """
+    Create or get existing discussion thread for a candidate.
+    This allows recruiters to share and discuss candidates with team members.
+    Body: {
+        "candidate_id": "123",
+        "job_id": "456",
+        "participant_ids": ["1", "2", "3"],
+        "candidate_name": "John Doe",
+        "job_title": "Software Engineer"
+    }
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        candidate_id = data.get('candidate_id')
+        job_id = data.get('job_id')
+        participant_ids = data.get('participant_ids', [])
+        candidate_name = data.get('candidate_name', 'Candidate')
+        job_title = data.get('job_title', 'Position')
+        
+        if not candidate_id or not job_id:
+            return jsonify({
+                'success': False,
+                'error': 'candidate_id and job_id are required'
+            }), 400
+        
+        from services.communication_service import CommunicationService
+        comm_service = CommunicationService()
+        
+        result = comm_service.create_candidate_discussion(
+            creator_id=current_user_id,
+            candidate_id=candidate_id,
+            job_id=job_id,
+            participant_ids=participant_ids,
+            candidate_name=candidate_name,
+            job_title=job_title
+        )
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error creating candidate discussion: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@communication_bp.route('/candidate-discussion/<conversation_id>/participants', methods=['POST'])
+@jwt_required()
+def add_discussion_participant(conversation_id):
+    """
+    Add a participant to an existing candidate discussion.
+    Body: {
+        "user_id": "123"
+    }
+    """
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'user_id is required'
+            }), 400
+        
+        from services.communication_service import CommunicationService
+        comm_service = CommunicationService()
+        
+        result = comm_service.add_participant_to_discussion(conversation_id, user_id)
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error adding participant to discussion: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500

@@ -92,7 +92,8 @@ class CVStorageService {
       const response = await restClient.post('/api/cv/save', data);
       return {
         success: true,
-        cv_id: response.data.data?.cv_id,
+        // Backend returns cv_id at top level
+        cv_id: response.data.cv_id || response.data.data?.cv_id,
         message: response.data.message || 'CV saved successfully'
       };
     } catch (error: any) {
@@ -110,9 +111,19 @@ class CVStorageService {
   async listCVs(): Promise<{ success: boolean; data?: SavedCV[]; message: string }> {
     try {
       const response = await restClient.get('/api/cv/list');
+      // Backend returns { success: true, cvs: [...] } or { data: [...] }
+      // Based on cv_storage_manager routes, it usually returns { cvs: [...] }
+      // But let's check both
+      const rawList = response.data.cvs || response.data.data || [];
+      // Map backend cv_id to frontend id requirement
+      const mappedList = rawList.map((cv: any) => ({
+        ...cv,
+        id: cv.cv_id || cv.id
+      }));
+
       return {
         success: true,
-        data: response.data.data || [],
+        data: mappedList,
         message: response.data.message || 'CVs loaded successfully'
       };
     } catch (error: any) {
@@ -130,9 +141,11 @@ class CVStorageService {
   async getCV(cvId: string): Promise<{ success: boolean; data?: any; message: string }> {
     try {
       const response = await restClient.get(`/api/cv/${cvId}`);
+      // Backend returns directly the object or wrapped?
+      // cv_storage_manager returns the object with success: true.
       return {
         success: true,
-        data: response.data.data,
+        data: response.data,
         message: response.data.message || 'CV loaded successfully'
       };
     } catch (error: any) {
@@ -140,6 +153,31 @@ class CVStorageService {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to load CV'
+      };
+    }
+  }
+
+  /**
+   * Get the user's latest CV
+   */
+  async getLatestCV(): Promise<{ success: boolean; data?: any; message: string }> {
+    try {
+      const response = await restClient.get('/api/cv/data');
+      // Backend returns the full CV object structure directly in response.data
+      return {
+        success: true,
+        data: response.data,
+        message: 'Latest CV loaded successfully'
+      };
+    } catch (error: any) {
+      // 404 is expected if no CV exists
+      if (error.response?.status === 404) {
+        return { success: false, message: 'No CV found' };
+      }
+      console.error('Get latest CV error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to load latest CV'
       };
     }
   }
@@ -182,7 +220,11 @@ class CVStorageService {
   async duplicateCV(cvId: string): Promise<{ success: boolean; cv_id?: string; message: string }> {
     try {
       const response = await restClient.post(`/api/cv/${cvId}/duplicate`);
-      return { success: true, cv_id: response.data.data?.cv_id, message: response.data.message || 'CV duplicated successfully' };
+      return {
+        success: true,
+        cv_id: response.data.cv_id || response.data.data?.cv_id,
+        message: response.data.message || 'CV duplicated successfully'
+      };
     } catch (error: any) {
       console.error('Duplicate CV error:', error);
       return { success: false, message: error.response?.data?.message || error.message || 'Failed to duplicate CV' };

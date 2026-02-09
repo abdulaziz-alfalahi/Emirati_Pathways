@@ -50,13 +50,13 @@ export default function JDTemplatesPage() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-slate-50">
+    <div className="p-6 min-h-screen bg-background">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/hr-dashboard')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">JD Templates Management</h1>
+          <h1 className="text-2xl font-bold text-foreground">JD Templates Management</h1>
         </div>
 
         <Card className="shadow-sm">
@@ -95,9 +95,9 @@ export default function JDTemplatesPage() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto rounded border">
-              <table className="min-w-full bg-white text-sm">
+              <table className="min-w-full bg-card text-sm">
                 <thead>
-                  <tr className="text-left border-b bg-slate-50">
+                  <tr className="text-left border-b bg-muted/50">
                     <th className="p-3 font-medium text-slate-600">Title</th>
                     <th className="p-3 font-medium text-slate-600">Source</th>
                     <th className="p-3 font-medium text-slate-600">Created At</th>
@@ -105,7 +105,7 @@ export default function JDTemplatesPage() {
                 </thead>
                 <tbody>
                   {list.length > 0 ? list.map(t => (
-                    <tr key={t.id} className="border-b hover:bg-slate-50">
+                    <tr key={t.id} className="border-b hover:bg-muted/50">
                       <td className="p-3 font-medium">{t.title}</td>
                       <td className="p-3 text-slate-500">{t.template_source}</td>
                       <td className="p-3 text-slate-500">{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>

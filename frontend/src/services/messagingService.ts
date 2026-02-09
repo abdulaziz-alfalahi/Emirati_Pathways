@@ -70,9 +70,13 @@ class MessagingService {
     };
   }
 
-  async getConversations(): Promise<MessagingResponse> {
+  async getConversations(role?: string): Promise<MessagingResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/communication/conversations`, {
+      const url = new URL(`${API_BASE_URL}/api/communication/conversations`);
+      if (role) {
+        url.searchParams.append('role', role);
+      }
+      const response = await fetch(url.toString(), {
         method: 'GET',
         headers: this.getAuthHeaders(),
       });
@@ -85,7 +89,7 @@ class MessagingService {
 
       return {
         success: true,
-        data: data.data?.conversations || [],
+        data: data.data?.conversations || data.data || [], // Handle potential data structure difference
         message: data.message,
       };
     } catch (error) {
@@ -152,6 +156,33 @@ class MessagingService {
     }
   }
 
+  async deleteConversation(conversationId: string): Promise<MessagingResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/communication/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete conversation');
+      }
+
+      return {
+        success: true,
+        data: data.data,
+        message: data.message || 'Conversation deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+
   async getConversationMessages(
     conversationId: string,
     limit: number = 50,
@@ -191,17 +222,24 @@ class MessagingService {
     }
   }
 
-  async sendMessage(conversationId: string, messageData: SendMessageData): Promise<MessagingResponse> {
+  async sendMessage(conversationId: string, messageData: SendMessageData & { sender_role?: string }): Promise<MessagingResponse> {
     try {
+      const body: any = {
+        ...messageData,
+        conversation_id: conversationId
+      };
+
+      if (messageData.sender_role) {
+        body['sender_role'] = messageData.sender_role;
+        // Clean up form messageData if needed, but it's safe to send extra fields usually
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/api/communication/messages`,
         {
           method: 'POST',
           headers: this.getAuthHeaders(),
-          body: JSON.stringify({
-            ...messageData,
-            conversation_id: conversationId
-          }),
+          body: JSON.stringify(body),
         }
       );
 

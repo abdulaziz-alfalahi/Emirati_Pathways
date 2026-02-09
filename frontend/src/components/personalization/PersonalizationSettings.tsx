@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { usePersonalization } from '@/context/PersonalizationContext';
+import { useTheme } from "@/components/theme-provider";
 import { Settings, Palette, Bell, Brain } from 'lucide-react';
 
 interface PreferenceSettings {
@@ -19,7 +20,8 @@ interface PreferenceSettings {
 
 const PersonalizationSettings: React.FC = () => {
   const { profile, updateProfile, isLoading } = usePersonalization();
-  
+  const { theme, setTheme } = useTheme();
+
   const [preferences, setPreferences] = useState<PreferenceSettings>({
     contentTypes: ['jobs', 'training', 'scholarships'],
     interfaceLayout: 'spacious',
@@ -34,14 +36,14 @@ const PersonalizationSettings: React.FC = () => {
   const handleContentTypeChange = (type: string, checked: boolean) => {
     setPreferences(prev => ({
       ...prev,
-      contentTypes: checked 
+      contentTypes: checked
         ? [...prev.contentTypes, type]
         : prev.contentTypes.filter(t => t !== type)
     }));
   };
 
   const handlePreferenceChange = <K extends keyof PreferenceSettings>(
-    key: K, 
+    key: K,
     value: PreferenceSettings[K]
   ) => {
     setPreferences(prev => ({
@@ -124,10 +126,27 @@ const PersonalizationSettings: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label>Theme Preference</Label>
+            <Select
+              value={theme}
+              onValueChange={(value: "light" | "dark" | "system") => setTheme(value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label>Layout Style</Label>
             <Select
               value={preferences.interfaceLayout}
-              onValueChange={(value: 'compact' | 'spacious' | 'focused') => 
+              onValueChange={(value: 'compact' | 'spacious' | 'focused') =>
                 handlePreferenceChange('interfaceLayout', value)
               }
             >
@@ -146,7 +165,7 @@ const PersonalizationSettings: React.FC = () => {
             <Label>Communication Style</Label>
             <Select
               value={preferences.communicationStyle}
-              onValueChange={(value: 'formal' | 'casual' | 'technical') => 
+              onValueChange={(value: 'formal' | 'casual' | 'technical') =>
                 handlePreferenceChange('communicationStyle', value)
               }
             >
@@ -177,7 +196,7 @@ const PersonalizationSettings: React.FC = () => {
                 <Checkbox
                   id={option.id}
                   checked={preferences.contentTypes.includes(option.id)}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     handleContentTypeChange(option.id, checked as boolean)
                   }
                 />
@@ -203,7 +222,7 @@ const PersonalizationSettings: React.FC = () => {
             <Label>Learning Pace</Label>
             <Select
               value={preferences.learningPace}
-              onValueChange={(value: 'fast' | 'moderate' | 'slow') => 
+              onValueChange={(value: 'fast' | 'moderate' | 'slow') =>
                 handlePreferenceChange('learningPace', value)
               }
             >
@@ -222,7 +241,7 @@ const PersonalizationSettings: React.FC = () => {
             <Label>Notification Frequency</Label>
             <Select
               value={preferences.notificationFrequency}
-              onValueChange={(value: 'high' | 'medium' | 'low') => 
+              onValueChange={(value: 'high' | 'medium' | 'low') =>
                 handlePreferenceChange('notificationFrequency', value)
               }
             >

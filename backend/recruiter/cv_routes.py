@@ -7,7 +7,7 @@ import json
 import uuid
 from datetime import datetime
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-from cv_parser import CVParser
+from backend.cv_parser import CVParser
 import traceback # Added for debugging
 
 from flask_cors import CORS
@@ -81,6 +81,18 @@ def upload_cv():
         result = parser.parse_cv_file(file, user_id)
         
         if result['success']:
+            # FIX: Populate Profile V2 with parsed data
+            try:
+                # FIX: Use absolute import to avoid ModuleNotFoundError
+                from backend.services.profile_v2_service import ProfileV2Service
+                success = ProfileV2Service.populate_from_cv_data(user_id, result)
+                if not success:
+                    print(f"Warning: Profile V2 population returned False for user {user_id}")
+            except Exception as e:
+                print(f"Error populating Profile V2: {e}")
+                traceback.print_exc()
+                # Don't fail the upload if profile sync fails, just log it
+            
             return jsonify({
                 'success': True,
                 'data': result['data'],

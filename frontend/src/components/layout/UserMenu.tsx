@@ -14,7 +14,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from 'react-router-dom';
-import { getDashboardRoute, UserRole } from '@/types/auth';
+import { getDashboardRoute, UserRole, normalizeRole } from '@/types/auth';
 
 // Updated role labels for the 4 main roles
 const roleLabels: Record<string, string> = {
@@ -117,12 +117,10 @@ const UserMenu: React.FC = () => {
       'administrator': '⚙️',
       'admin': '⚙️'
     };
-    return roleIcons[role?.toLowerCase()] || '👤';
+    return roleIcons[normalizeRole(role) as string] || '👤';
   };
 
   const currentRole = getUserRole() || 'job_seeker';
-
-
 
   return (
     <DropdownMenu>
@@ -172,19 +170,20 @@ const UserMenu: React.FC = () => {
               <DropdownMenuItem
                 key={role}
                 onClick={async () => {
-                  if (role && role !== currentRole) {
-                    await authContext.switchRole(role);
-                    navigate(getDashboardRoute(role));
+                  const normalized = normalizeRole(role!);
+                  if (normalized && normalized !== currentRole) {
+                    await authContext.switchRole(normalized as string);
+                    navigate(getDashboardRoute(normalized as string));
                   }
                 }}
                 className="cursor-pointer flex items-center justify-between"
-                disabled={role === currentRole}
+                disabled={normalizeRole(role!) === currentRole}
               >
                 <div className="flex items-center">
                   <span className="mr-2">{getRoleIcon(role!)}</span>
                   {roleLabels[role!.toLowerCase()] || role}
                 </div>
-                {role === currentRole && <span className="text-xs text-muted-foreground">(Current)</span>}
+                {normalizeRole(role!) === currentRole && <span className="text-xs text-muted-foreground">(Current)</span>}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
@@ -193,7 +192,7 @@ const UserMenu: React.FC = () => {
 
         {/* Request New Role Shortcut */}
         <DropdownMenuItem
-          onClick={() => navigate('/profile?tab=roles')}
+          onClick={() => navigate('/candidate/profile/identity')}
           className="cursor-pointer text-teal-600 focus:text-teal-700"
         >
           <span className="mr-2">+</span> Request New Role
@@ -202,7 +201,13 @@ const UserMenu: React.FC = () => {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
-          onClick={() => navigate('/profile')}
+          onClick={() => {
+            if (['job_seeker', 'candidate', 'student'].includes(currentRole.toLowerCase())) {
+              navigate('/candidate/profile/identity');
+            } else {
+              navigate('/profile');
+            }
+          }}
           className="cursor-pointer"
         >
           Profile

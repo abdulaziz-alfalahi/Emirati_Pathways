@@ -306,48 +306,51 @@ CANDIDATE PROFILE:
 - Name: {cv_profile.get('name', 'Not specified')}
 - Current Title: {cv_profile.get('current_title', 'Not specified')}
 - Experience Level: {cv_profile.get('experience_level', 'trainee')} ({cv_profile.get('experience_years', 0)} years)
-- Skills: {', '.join(cv_profile.get('skills', [])[:20]) or 'Not specified'}
+- Skills: {', '.join(cv_profile.get('skills', [])[:30]) or 'Not specified'}
 - Education: {json.dumps(cv_profile.get('education', [])[:3])}
 - Location: {cv_profile.get('location', 'Not specified')}
 - Summary: {cv_profile.get('summary', 'Not specified')[:500]}
+- Industries: {', '.join(cv_profile.get('industries', []))}
 
 JOB REQUIREMENTS:
 - Title: {job_requirements.get('title', 'Not specified')}
 - Company: {job_requirements.get('company', 'Not specified')}
 - Experience Level: {job_requirements.get('experience_level', 'mid')} (min {job_requirements.get('min_experience_years', 0)} years)
-- Required Skills: {', '.join(job_requirements.get('required_skills', [])[:15]) or 'Not specified'}
+- Required Skills: {', '.join(job_requirements.get('required_skills', [])[:20]) or 'Not specified'}
 - Location: {job_requirements.get('location', 'Not specified')}
+- Industry: {job_requirements.get('industry', 'Not specified')}
+- D33 Sectors: {', '.join(job_requirements.get('d33_alignment', []))}
 - Description: {job_requirements.get('description', 'Not specified')[:500]}
 
 SCORING CRITERIA:
-1. Skills Match (0-40 points): How well do the candidate's skills match the job requirements? Consider semantic similarity, not just exact matches.
-2. Experience Match (0-25 points): Is the candidate's experience level appropriate? 
-   - Trainee/intern should match trainee/entry-level jobs (high score)
-   - Trainee applying to senior roles should get LOW score (0-5 points)
-   - Senior candidates are overqualified for trainee positions
-3. Title/Role Match (0-20 points): Is the candidate's current role similar to the job?
-4. Location Match (0-10 points): Is the candidate in or near the job location?
-5. D33 Alignment (0-5 points): Does the candidate's background align with UAE's D33 priority sectors?
+1. Skills Match (0-40 points): Semantic match of skills. deeply understand transferable skills.
+2. Experience Match (0-25 points):
+   - Trainee/Intern applying to Senior/Lead roles = 0 points (FAIL)
+   - Senior applying to Junior roles = 10-15 points (Overqualified)
+   - Exact level match = 25 points
+3. Title/Role Match (0-20 points): Relevance of current and past roles.
+4. Location Match (0-10 points): Proximity or willingness to relocate (if implied).
+5. D33/Strategic Alignment (0-5 points): Alignment with UAE strategic sectors.
 
 CRITICAL RULES:
-- A trainee with 0 years experience MUST get LOW scores (under 30%) for senior positions requiring 5+ years
-- A trainee should get HIGH scores (70%+) for entry-level, trainee, and internship positions
-- Match the experience level appropriately - this is the most important factor
-- Be realistic about skill gaps
+- BE STRICT on experience years. 0 years cannot match 5+ years.
+- BE LENIENT on skill names (e.g., "React" matches "ReactJS", "Frontend" matches "Web Dev").
 
-Return ONLY a valid JSON object in this exact format (no markdown, no code blocks):
+Return ONLY a valid JSON object in this format:
 {{
-  "total_score": <0-100>,
+  "total_score": <int 0-100>,
   "breakdown": {{
-    "skills_match": <0-40>,
-    "experience_match": <0-25>,
-    "title_match": <0-20>,
-    "location_match": <0-10>,
-    "d33_alignment": <0-5>
+    "skills_match": <int 0-40>,
+    "experience_match": <int 0-25>,
+    "title_match": <int 0-20>,
+    "location_match": <int 0-10>,
+    "d33_alignment": <int 0-5>
   }},
   "matching_skills": ["skill1", "skill2"],
   "missing_skills": ["skill1", "skill2"],
-  "recommendation": "Brief recommendation for the candidate",
+  "pros": ["Key strength 1", "Key strength 2"],
+  "cons": ["Key weakness 1", "Key weakness 2"],
+  "recommendation": " actionable advice for candidate...",
   "fit_assessment": "excellent|good|moderate|poor|not_suitable"
 }}"""
 
@@ -406,6 +409,8 @@ Return ONLY a valid JSON object in this exact format (no markdown, no code block
                         'details': {
                             'matching_skills': result.get('matching_skills', []),
                             'missing_skills': result.get('missing_skills', []),
+                            'pros': result.get('pros', []),
+                            'cons': result.get('cons', []),
                             'recommendation': result.get('recommendation', ''),
                             'fit_assessment': result.get('fit_assessment', 'moderate'),
                             'ai_analyzed': True,

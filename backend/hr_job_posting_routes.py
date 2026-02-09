@@ -170,6 +170,71 @@ def _get_company_id_for_user(cursor, user_id: str):
     row = cursor.fetchone()
     return row['company_id'] if row and row.get('company_id') else None
 
+def ensure_job_postings_table_exists():
+    """Ensure job_postings and related tables exist"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # job_postings
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS job_postings (
+                id SERIAL PRIMARY KEY,
+                jd_id VARCHAR(100) UNIQUE NOT NULL,
+                recruiter_id VARCHAR(100) NOT NULL,
+                company_id UUID,
+                created_by VARCHAR(100),
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                requirements JSONB,
+                responsibilities JSONB,
+                benefits JSONB,
+                salary_range_min DECIMAL,
+                salary_range_max DECIMAL,
+                currency VARCHAR(10) DEFAULT 'AED',
+                location VARCHAR(255),
+                remote_option BOOLEAN DEFAULT FALSE,
+                employment_type VARCHAR(50),
+                experience_level VARCHAR(50),
+                status VARCHAR(50) DEFAULT 'draft',
+                priority_level VARCHAR(20) DEFAULT 'normal',
+                application_deadline DATE,
+                expires_at DATE,
+                uae_compliance_checked BOOLEAN DEFAULT FALSE,
+                emiratization_target INTEGER DEFAULT 0,
+                visa_sponsorship_available BOOLEAN DEFAULT FALSE,
+                tags JSONB,
+                seo_keywords JSONB,
+                latitude DECIMAL,
+                longitude DECIMAL,
+                views_count INTEGER DEFAULT 0,
+                applications_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                published_at TIMESTAMP
+            )
+        """)
+        
+        # job_shortlists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS job_shortlists (
+                job_posting_id INTEGER REFERENCES job_postings(id) ON DELETE CASCADE,
+                candidate_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                added_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (job_posting_id, candidate_id)
+            )
+        """)
+        
+        conn.commit()
+        logger.info("✅ Job Posting tables initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize Job Posting tables: {e}")
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
+
 def _uploads_dir() -> str:
     base_dir = os.getenv('JOB_DOCS_UPLOAD_DIR')
     if not base_dir:
@@ -319,7 +384,7 @@ def get_job_postings():
                         COUNT(CASE WHEN status = 'submitted' THEN 1 END) as new_applications
                     FROM job_applications
                     GROUP BY job_id
-                ) app_counts ON jp.jd_id::text = app_counts.job_id::text
+                ) app_counts ON (jp.jd_id::text = app_counts.job_id::text OR jp.id::text = app_counts.job_id::text)
                 {where_clause}
                 ORDER BY jp.created_at DESC
                 LIMIT %s OFFSET %s

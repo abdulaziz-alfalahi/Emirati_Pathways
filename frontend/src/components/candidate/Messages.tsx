@@ -23,7 +23,9 @@ const Messages: React.FC = () => {
     const fetchConversations = async () => {
         if (!user) return;
         try {
-            const response = await restClient.get('/api/communication/conversations');
+            const response = await restClient.get('/api/communication/conversations', {
+                params: { role: 'candidate' }
+            });
             if (response.data.success) {
                 const backendConvs = response.data.data.conversations;
 
@@ -35,6 +37,7 @@ const Messages: React.FC = () => {
                         id: c.id,
                         participantId: otherId,
                         participantName: otherName,
+                        jobTitle: c.job_title || c.title || 'Job Application',
                         lastMessage: c.last_message_content || 'No messages yet',
                         lastMessageTime: c.last_message_at || c.created_at,
                         unreadCount: c.unread_count || 0
@@ -105,7 +108,8 @@ const Messages: React.FC = () => {
                 recipient_id: conversation.participantId,
                 content: newMessage,
                 conversation_id: selectedConversation,
-                message_type: 'text'
+                message_type: 'text',
+                sender_role: 'candidate'
             };
 
             const response = await restClient.post('/api/communication/messages', payload);
@@ -128,6 +132,38 @@ const Messages: React.FC = () => {
         }
     };
 
+    const handleDeleteConversation = async (conversationId: string) => {
+        if (!confirm('Are you sure you want to delete this conversation?')) return;
+
+        try {
+            // Optimistic update
+            const previousConversations = [...conversations];
+            setConversations(prev => prev.filter(c => c.id !== conversationId));
+
+            if (selectedConversation === conversationId) {
+                setSelectedConversation(null);
+                setMessages([]);
+            }
+
+            // Backend call
+            await restClient.delete(`/api/communication/conversations/${conversationId}`);
+
+            toast({
+                title: 'Conversation Deleted',
+                description: 'Usage logs updated.',
+            });
+        } catch (error) {
+            console.error('Failed to delete conversation', error);
+            // Revert on failure (normally) or just show error
+            toast({
+                title: 'Error',
+                description: 'Failed to delete conversation.',
+                variant: 'destructive'
+            });
+            fetchConversations();
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -143,6 +179,7 @@ const Messages: React.FC = () => {
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
                         onSelectConversation={handleSelectConversation}
+                        onDeleteConversation={handleDeleteConversation}
                     />
                 </div>
 

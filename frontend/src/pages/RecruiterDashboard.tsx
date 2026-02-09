@@ -74,9 +74,26 @@ const RecruiterDashboard: React.FC = () => {
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
   const [roiCalculatorOpen, setRoiCalculatorOpen] = useState(false);
 
+  // Get user data from localStorage for dynamic display
+  const getUserData = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : {};
+    } catch {
+      return {};
+    }
+  };
+  const userData = getUserData();
+  // Use full_name first, then construct from first/last, then fallback to 'Recruiter'
+  const recruiterName = userData.full_name
+    || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
+    || 'Recruiter';
+  const recruiterId = userData.id || '';
+  const companyId = userData.company_id || '';
+
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
-    navigate(`/recruiter-dashboard?tab=${value}`, { replace: true });
+    navigate(`/recruiter?tab=${value}`, { replace: true });
   };
 
   const [dashboardData, setDashboardData] = useState<RecruiterData>({
@@ -111,8 +128,40 @@ const RecruiterDashboard: React.FC = () => {
       const response = await restClient.get('/api/recruiter/statistics/dashboard');
 
       if (response.data && response.data.success && response.data.data) {
-        setDashboardData(response.data.data);
-        console.log('✅ Dashboard data loaded from backend');
+        const apiData = response.data.data;
+        console.log('✅ Dashboard data loaded from backend:', apiData);
+
+        // Map backend data to frontend structure
+        const mappedData: RecruiterData = {
+          placements: {
+            thisMonth: apiData.overview?.positions_filled || 0, // Approx
+            thisQuarter: apiData.overview?.positions_filled || 0, // Approx
+            thisYear: apiData.overview?.positions_filled || 0,
+            target: 100 // Hardcoded target for now
+          },
+          pipeline: {
+            activeSearches: apiData.overview?.active_vacancies || 0,
+            candidatesInProcess: apiData.overview?.total_applications || 0,
+            interviewsScheduled: apiData.overview?.interviews_scheduled || 0,
+            offersExtended: apiData.overview?.offers_pending || 0
+          },
+          performance: {
+            placementRate: 0, // Not available in API yet
+            averageTimeToFill: 0, // Not available in API yet
+            clientSatisfaction: 5.0, // Mock
+            candidateQuality: 5.0 // Mock
+          },
+          activity: apiData.recent_activity ? apiData.recent_activity.map((a: any) => ({
+            id: a.id || Math.random(),
+            type: a.action || 'info',
+            title: a.action ? a.action.replace(/_/g, ' ') : 'Activity',
+            description: a.details ? JSON.stringify(a.details) : (a.resourceType + ' ' + a.resourceId),
+            timestamp: a.timestamp || new Date().toISOString(),
+            priority: 'medium'
+          })) : []
+        };
+
+        setDashboardData(mappedData);
       } else {
         console.log('⚠️ API returned no data, using mock data');
         setMockData();
@@ -206,7 +255,7 @@ const RecruiterDashboard: React.FC = () => {
                   Recruitment Dashboard
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  {getGreeting()}, Omar Al Rashid. You have <span className="text-teal-600 font-bold">5 new matches</span> today.
+                  {getGreeting()}, {recruiterName}. You have <span className="text-teal-600 font-bold">5 new matches</span> today.
                 </p>
               </div>
               <div className="flex items-center space-x-3">
@@ -233,11 +282,11 @@ const RecruiterDashboard: React.FC = () => {
                   Post New Job
                 </Button>
               </Link>
-              <Button variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50" onClick={() => setSourceCandidatesDialogOpen(true)}>
+              <Button variant="outline" className="font-dubai-medium bg-card hover:bg-muted" onClick={() => setSourceCandidatesDialogOpen(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Source Candidates
               </Button>
-              <Button variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50" onClick={() => setRoiCalculatorOpen(true)}>
+              <Button variant="outline" className="font-dubai-medium bg-card hover:bg-muted" onClick={() => setRoiCalculatorOpen(true)}>
                 <Calculator className="h-4 w-4 mr-2" />
                 ROI Calculator
               </Button>
@@ -246,7 +295,7 @@ const RecruiterDashboard: React.FC = () => {
 
           {/* Tabs - Simplified to 5 main tabs */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
+            <TabsList className="grid w-full grid-cols-6 bg-card shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium" onClick={() => handleTabChange('overview')}>Overview</TabsTrigger>
               <TabsTrigger value="jobs" className="font-dubai-medium" onClick={() => handleTabChange('jobs')}>My Jobs</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium" onClick={() => handleTabChange('candidates')}>Candidates</TabsTrigger>
@@ -259,7 +308,7 @@ const RecruiterDashboard: React.FC = () => {
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">Placements This Year</CardTitle>
                     <Target className="h-4 w-4 text-green-600" />
@@ -414,7 +463,7 @@ const RecruiterDashboard: React.FC = () => {
                   <div className="space-y-4">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-muted rounded-lg">
                           <div className="flex-shrink-0">
                             {activity.type === 'placement_success' && (
                               <CheckCircle className="h-5 w-5 text-green-500 mt-1" />

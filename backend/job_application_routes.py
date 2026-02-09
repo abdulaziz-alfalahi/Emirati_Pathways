@@ -48,14 +48,9 @@ def get_user_id_from_request():
         user_id = get_jwt_identity()
         logger.info(f"JWT authentication successful, user ID: {user_id}")
         if user_id:
-            # Normalize to UUID if needed (to match candidate_job_routes)
-            try:
-                uuid.UUID(str(user_id))
-                return str(user_id)
-            except ValueError:
-                # Use same namespace as other routes for consistency
-                # Note: candidate_job_routes uses uuid.NAMESPACE_DNS
-                return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_id)))
+            # CRITICAL: Use user_id AS-IS from JWT, do NOT convert to UUID
+            # The database uses text IDs, so keep them as strings
+            return str(user_id)
     except Exception as e:
         logger.warning(f"JWT verification failed: {e}")
     
@@ -107,7 +102,8 @@ def apply_for_job():
         cur = conn.cursor()
         
         # Check if already applied
-        cur.execute("SELECT id FROM job_applications WHERE candidate_id = %s AND job_id = %s", (current_user_id, job_id))
+        # Cast job_id to string because job_applications.job_id is text, while frontend sends int
+        cur.execute("SELECT id FROM job_applications WHERE candidate_id = %s AND job_id = %s", (current_user_id, str(job_id)))
         existing = cur.fetchone()
         if existing:
             logger.warning(f"User {current_user_id} already applied for job {job_id}")

@@ -20,6 +20,11 @@ const ProfilePage = () => {
     if (!isLoading && !user) {
       navigate('/auth');
     }
+
+    // Redirect candidates to new Profile Studio
+    if (!isLoading && user && ['job_seeker', 'candidate', 'student'].includes((user.role || '').toLowerCase())) {
+      navigate('/candidate/profile/identity');
+    }
   }, [user, isLoading, navigate]);
 
   const handleProfileUpdate = () => {
@@ -41,12 +46,12 @@ const ProfilePage = () => {
     secondaryRoles: user.roles || [],
     profileCompletion: 75, // mock or from DB if available
     lastUpdated: new Date().toISOString().split('T')[0],
-    verificationStatus: 'pending',
-    profileVisibility: 'professional'
+    verificationStatus: 'pending' as 'verified' | 'pending' | 'unverified',
+    profileVisibility: 'professional' as 'public' | 'professional' | 'organization' | 'private'
   } : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4">
         <Card className="mb-6">
           <CardHeader>

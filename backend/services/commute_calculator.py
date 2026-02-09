@@ -29,3 +29,29 @@ def estimate_commute_time(distance_km, average_speed_kmh=40):
         return None
     time_hours = distance_km / average_speed_kmh
     return round(time_hours * 60)
+
+def estimate_peak_hour_commute(distance_km):
+    """
+    Estimate commute time in minutes during peak hours in UAE.
+    
+    Peak hours typically have:
+    - Morning (7-9 AM): Heavy congestion, ~25 km/h average
+    - Evening (5-7 PM): Heavy congestion, ~20 km/h average
+    
+    Returns dict with normal and peak times.
+    """
+    if distance_km is None:
+        return None
+    
+    # Normal traffic (40 km/h)
+    normal_time = round((distance_km / 40) * 60)
+    
+    # Peak hour traffic (22.5 km/h average of morning + evening)
+    peak_time = round((distance_km / 22.5) * 60)
+    
+    return {
+        'normal_mins': normal_time,
+        'peak_mins': peak_time,
+        'peak_difference': peak_time - normal_time
+    }
+

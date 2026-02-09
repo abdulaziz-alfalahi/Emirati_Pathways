@@ -7,11 +7,11 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
-import { 
-  UserCheck, 
-  Users, 
-  Target, 
-  TrendingUp, 
+import {
+  UserCheck,
+  Users,
+  Target,
+  TrendingUp,
   Calendar,
   Search,
   Filter,
@@ -177,12 +177,12 @@ const MentorDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+    <div className="min-h-screen bg-background font-dubai">
       {/* Navigation */}
       <HybridGovernmentNavFixed showAuthButtons={true} />
-      
 
-      
+
+
       {/* Main Content */}
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -190,10 +190,10 @@ const MentorDashboard: React.FC = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
+                <h1 className="text-3xl font-dubai-bold text-foreground mb-2">
                   Mentor Dashboard
                 </h1>
-                <p className="text-slate-600 font-dubai-medium">
+                <p className="text-muted-foreground font-dubai-medium">
                   Welcome back, Khalid Waleed - Technology Leadership Mentor
                 </p>
               </div>
@@ -236,7 +236,7 @@ const MentorDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
+            <TabsList className="grid w-full grid-cols-5 bg-card shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
               <TabsTrigger value="mentees" className="font-dubai-medium">Mentees</TabsTrigger>
               <TabsTrigger value="sessions" className="font-dubai-medium">Sessions</TabsTrigger>
@@ -248,7 +248,7 @@ const MentorDashboard: React.FC = () => {
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Mentees</CardTitle>
                     <Users className="h-4 w-4 text-blue-600" />
@@ -261,7 +261,7 @@ const MentorDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">Sessions This Month</CardTitle>
                     <Calendar className="h-4 w-4 text-purple-600" />
@@ -274,7 +274,7 @@ const MentorDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">Success Stories</CardTitle>
                     <Award className="h-4 w-4 text-green-600" />
@@ -287,7 +287,7 @@ const MentorDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+                <Card className="bg-card shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-dubai-medium text-slate-600">Session Rating</CardTitle>
                     <Star className="h-4 w-4 text-yellow-600" />
@@ -296,9 +296,9 @@ const MentorDashboard: React.FC = () => {
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.mentees.averageSessionRating}</div>
                     <div className="flex mt-1">
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <Star 
-                          key={star} 
-                          className={`h-3 w-3 ${star <= dashboardData.mentees.averageSessionRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                        <Star
+                          key={star}
+                          className={`h-3 w-3 ${star <= dashboardData.mentees.averageSessionRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
                         />
                       ))}
                     </div>
@@ -307,7 +307,7 @@ const MentorDashboard: React.FC = () => {
               </div>
 
               {/* Mentoring Impact */}
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Mentoring Impact</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -338,7 +338,7 @@ const MentorDashboard: React.FC = () => {
 
               {/* Expertise & Experience */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="bg-white shadow-sm">
+                <Card className="bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="font-dubai-bold text-slate-900">Expertise Areas</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
@@ -357,7 +357,7 @@ const MentorDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm">
+                <Card className="bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="font-dubai-bold text-slate-900">Professional Profile</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
@@ -384,7 +384,7 @@ const MentorDashboard: React.FC = () => {
               </div>
 
               {/* Recent Activity */}
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -416,7 +416,7 @@ const MentorDashboard: React.FC = () => {
                                 {activity.title}
                               </p>
                               {activity.priority && (
-                                <Badge 
+                                <Badge
                                   variant={activity.priority === 'high' ? 'destructive' : 'secondary'}
                                   className="text-xs"
                                 >
@@ -443,7 +443,7 @@ const MentorDashboard: React.FC = () => {
 
             {/* Mentees Tab */}
             <TabsContent value="mentees" className="space-y-6">
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Mentee Management</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -465,7 +465,7 @@ const MentorDashboard: React.FC = () => {
 
             {/* Sessions Tab */}
             <TabsContent value="sessions" className="space-y-6">
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Session Management</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -488,7 +488,7 @@ const MentorDashboard: React.FC = () => {
 
             {/* Impact Tab */}
             <TabsContent value="impact" className="space-y-6">
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Impact Analytics</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
@@ -510,7 +510,7 @@ const MentorDashboard: React.FC = () => {
 
             {/* Resources Tab */}
             <TabsContent value="resources" className="space-y-6">
-              <Card className="bg-white shadow-sm">
+              <Card className="bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Mentoring Resources</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">

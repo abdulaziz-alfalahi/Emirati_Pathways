@@ -74,15 +74,15 @@ export default function RecruiterAnalyticsPage() {
   const d = data?.data || {};
 
   return (
-    <div className="p-6 min-h-screen bg-slate-50/50">
+    <div className="p-6 min-h-screen bg-background">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8 hover:bg-slate-200">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8 hover:bg-muted">
             <ArrowLeft className="h-5 w-5 text-slate-600" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Analytics Dashboard</h1>
-            <p className="text-slate-500">Real-time insights into your recruitment pipeline</p>
+            <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
+            <p className="text-muted-foreground">Real-time insights into your recruitment pipeline</p>
           </div>
         </div>
         <div className="flex gap-2">

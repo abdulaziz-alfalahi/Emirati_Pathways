@@ -12,8 +12,8 @@ import logging
 from functools import wraps
 from typing import Dict, Any, Optional
 
-from administrator_system import AdministratorSystem
-from auth.auth_manager_fixed import AuthenticationManager as AuthManager
+from backend.administrator_system import AdministratorSystem
+from backend.auth.auth_manager_fixed import AuthenticationManager as AuthManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -102,7 +102,7 @@ export default function RecruiterCandidatesPage() {
   };
 
   const SortHeader: React.FC<{ label: string; field: string }> = ({ label, field }) => (
-    <th className="p-3 sticky top-0 bg-white z-10">
+    <th className="p-3 sticky top-0 bg-card z-10">
       <button
         className="text-left w-full flex items-center gap-1"
         onClick={() => {
@@ -195,16 +195,16 @@ export default function RecruiterCandidatesPage() {
               </div>
               <div className="text-sm text-slate-500 mb-2">Total: {total}</div>
               <div className="overflow-x-auto rounded border">
-                <table className="min-w-full bg-white">
+                <table className="min-w-full bg-card">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="p-3 sticky top-0 bg-white z-10">ID</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">ID</th>
                       <SortHeader label="Name" field="name" />
-                      <th className="p-3 sticky top-0 bg-white z-10">Emirate</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">Emirate</th>
                       <SortHeader label="Education" field="education_level" />
                       <SortHeader label="Experience" field="experience" />
-                      <th className="p-3 sticky top-0 bg-white z-10">Skills</th>
-                      <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">Skills</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -214,7 +214,7 @@ export default function RecruiterCandidatesPage() {
                       </tr>
                     )}
                     {results.map((c) => (
-                      <tr key={c.id} className="border-b hover:bg-slate-50">
+                      <tr key={c.id} className="border-b hover:bg-muted/50">
                         <td className="p-3 text-xs">{c.id}</td>
                         <td className="p-3">{c.first_name} {c.last_name}</td>
                         <td className="p-3">{c.emirate}</td>
@@ -272,12 +272,12 @@ export default function RecruiterCandidatesPage() {
                 }}>Publish & Match</Button>
               </div>
               <div className="overflow-x-auto rounded border">
-                <table className="min-w-full bg-white">
+                <table className="min-w-full bg-card">
                   <thead>
                     <tr className="text-left border-b">
-                      <th className="p-3 sticky top-0 bg-white z-10">Candidate ID</th>
-                      <th className="p-3 sticky top-0 bg-white z-10">Name</th>
-                      <th className="p-3 sticky top-0 bg-white z-10">
+                      <th className="p-3 sticky top-0 bg-card z-10">Candidate ID</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">Name</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">
                         <button
                           className="text-left w-full flex items-center gap-1"
                           onClick={() => {
@@ -289,8 +289,8 @@ export default function RecruiterCandidatesPage() {
                           <span className="text-xs text-slate-500">{mSortBy === 'percentage' ? (mSortOrder === 'asc' ? '▲' : '▼') : ''}</span>
                         </button>
                       </th>
-                      <th className="p-3 sticky top-0 bg-white z-10">Level</th>
-                      <th className="p-3 sticky top-0 bg-white z-10">Actions</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">Level</th>
+                      <th className="p-3 sticky top-0 bg-card z-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -306,7 +306,7 @@ export default function RecruiterCandidatesPage() {
                         <tr><td className="p-4 text-center text-sm text-slate-500" colSpan={5}>No matches yet</td></tr>
                       );
                       return rows.map((m) => (
-                        <tr key={m.candidate_id} className="border-b hover:bg-slate-50">
+                        <tr key={m.candidate_id} className="border-b hover:bg-muted/50">
                           <td className="p-3 text-xs">{m.candidate_id}</td>
                           <td className="p-3">{m.first_name || ''} {m.last_name || ''}</td>
                           <td className="p-3">{m.match_score?.match_percentage ?? '-'}</td>

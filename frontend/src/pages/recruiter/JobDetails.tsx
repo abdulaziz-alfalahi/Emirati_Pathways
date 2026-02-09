@@ -179,9 +179,9 @@ export default function JobDetailsPage() {
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>{job?.title || 'Loading…'}</CardTitle>
-          <CardDescription>
+          <div className="text-sm text-muted-foreground">
             {job?.location} • {job?.employment_type} • {job?.experience_level} • Status: <Badge variant="outline">{job?.status}</Badge>
-          </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="documents" className="w-full">

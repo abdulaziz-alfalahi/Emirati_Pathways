@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
-interview_sessions_bp = Blueprint('interview_sessions_api', __name__, url_prefix='/api/interviews')
+interview_sessions_bp = Blueprint('interview_sessions_api', __name__, url_prefix='/api/video-interview')
 
 # Database configuration
 DATABASE_CONFIG = {

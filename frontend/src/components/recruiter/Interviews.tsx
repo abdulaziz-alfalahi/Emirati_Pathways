@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -37,9 +38,15 @@ export default function RecruiterInterviews() {
   const [rescheduleSession, setRescheduleSession] = useState<any>(null);
   const [rescheduleData, setRescheduleData] = useState({ date: "", time: "" });
 
+  const [searchParams] = useSearchParams();
+  const candidateIdParam = searchParams.get('candidateId');
+
   useEffect(() => {
     fetchSessions();
-  }, []);
+    if (candidateIdParam) {
+      setScheduleOpen(true);
+    }
+  }, [candidateIdParam]);
 
 
 
@@ -186,6 +193,7 @@ export default function RecruiterInterviews() {
             open={scheduleOpen}
             onOpenChange={setScheduleOpen}
             onSuccess={fetchSessions}
+            initialCandidateId={candidateIdParam || undefined}
           />
           <Button onClick={() => setScheduleOpen(true)}>
             <Calendar className="mr-2 h-4 w-4" /> Schedule Interview

@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
 @import './styles/dubai-font.css';
+@import url('https://fonts.googleapis.com/css2?family=Open+Dyslexic:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -16,27 +17,44 @@
     --ehrdc-white: #FFFFFF;
 
     /* Professional Growth color palette */
-    --pg-primary: 238 100 156; /* Fuchsia-500 */
-    --pg-primary-light: 245 208 254; /* Fuchsia-200 */
-    --pg-secondary: 99 102 241; /* Indigo-500 */
-    --pg-secondary-light: 199 210 254; /* Indigo-200 */
-    --pg-accent: 139 92 246; /* Violet-500 */
-    --pg-accent-light: 221 214 254; /* Violet-200 */
-    --pg-background: 245 243 255; /* Violet-50 */
-    --pg-gradient-from: 79 70 229; /* Indigo-600 */
-    --pg-gradient-to: 147 51 234; /* Purple-600 */
+    --pg-primary: 238 100 156;
+    /* Fuchsia-500 */
+    --pg-primary-light: 245 208 254;
+    /* Fuchsia-200 */
+    --pg-secondary: 99 102 241;
+    /* Indigo-500 */
+    --pg-secondary-light: 199 210 254;
+    /* Indigo-200 */
+    --pg-accent: 139 92 246;
+    /* Violet-500 */
+    --pg-accent-light: 221 214 254;
+    /* Violet-200 */
+    --pg-background: 245 243 255;
+    /* Violet-50 */
+    --pg-gradient-from: 79 70 229;
+    /* Indigo-600 */
+    --pg-gradient-to: 147 51 234;
+    /* Purple-600 */
 
     /* Group 1 - Early Education/Administrative */
-    --group-early-bg: rgba(179, 222, 221, 0.2);       /* ehrdc-light-teal at 20% opacity */
-    --group-early-hover: rgba(179, 222, 221, 0.3);    /* ehrdc-light-teal at 30% opacity */
-    --group-early-text: #006E6D;                      /* ehrdc-teal */
-    --group-early-border: rgba(179, 222, 221, 0.5);   /* ehrdc-light-teal at 50% opacity */
-    
+    --group-early-bg: rgba(179, 222, 221, 0.2);
+    /* ehrdc-light-teal at 20% opacity */
+    --group-early-hover: rgba(179, 222, 221, 0.3);
+    /* ehrdc-light-teal at 30% opacity */
+    --group-early-text: #006E6D;
+    /* ehrdc-teal */
+    --group-early-border: rgba(179, 222, 221, 0.5);
+    /* ehrdc-light-teal at 50% opacity */
+
     /* Group 2 - Advanced Education/Exploratory */
-    --group-advanced-bg: rgba(219, 234, 254, 0.5);    /* blue-100 at 50% opacity */
-    --group-advanced-hover: rgba(191, 219, 254, 0.5); /* blue-200 at 50% opacity */
-    --group-advanced-text: #1d4ed8;                   /* blue-700 */
-    --group-advanced-border: rgba(191, 219, 254, 0.7);/* blue-200 at 70% opacity */
+    --group-advanced-bg: rgba(219, 234, 254, 0.5);
+    /* blue-100 at 50% opacity */
+    --group-advanced-hover: rgba(191, 219, 254, 0.5);
+    /* blue-200 at 50% opacity */
+    --group-advanced-text: #1d4ed8;
+    /* blue-700 */
+    --group-advanced-border: rgba(191, 219, 254, 0.7);
+    /* blue-200 at 70% opacity */
 
     /* Semantic color mappings */
     --background: var(--ehrdc-white);
@@ -70,17 +88,64 @@
     --emirati-navy: var(--ehrdc-neutral-dark);
     --emirati-gold: #D4AF37;
   }
+
+  .dark {
+    --background: #020817;
+    /* Slate 950 */
+    --foreground: #F8FAFC;
+    /* Slate 50 */
+
+    --card: #020817;
+    --card-foreground: #F8FAFC;
+
+    --popover: #020817;
+    --popover-foreground: #F8FAFC;
+
+    --primary: #F8FAFC;
+    --primary-foreground: #0F172A;
+
+    --secondary: #1E293B;
+    --secondary-foreground: #F8FAFC;
+
+    --muted: #1E293B;
+    --muted-foreground: #94A3B8;
+
+    --accent: #1E293B;
+    --accent-foreground: #F8FAFC;
+
+    --destructive: #7f1d1d;
+    --destructive-foreground: #F8FAFC;
+
+    --border: #1E293B;
+    --input: #1E293B;
+    --ring: #cbd5e1;
+
+    /* EHRDC Specific Overrides for Dark Mode */
+    --ehrdc-teal: #4A9B9A;
+    /* Light Teal */
+    --ehrdc-dark-teal: #2DD4BF;
+    /* Teal 400 */
+    --ehrdc-light-teal: #134E4A;
+    /* Teal 900 */
+    --ehrdc-neutral-dark: #F8FAFC;
+    /* White text */
+    --ehrdc-neutral-light: #1E293B;
+    /* Dark background elements */
+    --ehrdc-white: #020817;
+    /* Dark background */
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-  
+
   /* Arabic font support */
   [dir="rtl"] body {
     font-family: 'Noto Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -91,11 +156,11 @@
   .dubai-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   .ehrdc-button-primary {
     @apply bg-ehrdc-teal text-white hover:bg-ehrdc-dark-teal focus:ring-2 focus:ring-ehrdc-teal/20 focus:ring-offset-2 transition-all duration-200 font-medium;
   }
-  
+
   .ehrdc-button-secondary {
     @apply bg-ehrdc-neutral-light text-ehrdc-neutral-dark hover:bg-ehrdc-neutral-light/80 focus:ring-2 focus:ring-ehrdc-teal/20 focus:ring-offset-2 transition-all duration-200 font-medium;
   }
@@ -113,27 +178,27 @@
   .text-ehrdc-teal {
     color: var(--ehrdc-teal);
   }
-  
+
   .text-ehrdc-dark-teal {
     color: var(--ehrdc-dark-teal);
   }
-  
+
   .text-ehrdc-light-teal {
     color: var(--ehrdc-light-teal);
   }
-  
+
   .bg-ehrdc-teal {
     background-color: var(--ehrdc-teal);
   }
-  
+
   .bg-ehrdc-dark-teal {
     background-color: var(--ehrdc-dark-teal);
   }
-  
+
   .bg-ehrdc-light-teal {
     background-color: var(--ehrdc-light-teal);
   }
-  
+
   .border-ehrdc-teal {
     border-color: var(--ehrdc-teal);
   }
@@ -142,23 +207,23 @@
   .text-emirati-teal {
     color: var(--emirati-teal);
   }
-  
+
   .text-emirati-navy {
     color: var(--emirati-navy);
   }
-  
+
   .text-emirati-gold {
     color: var(--emirati-gold);
   }
-  
+
   .bg-emirati-teal {
     background-color: var(--emirati-teal);
   }
-  
+
   .bg-emirati-navy {
     background-color: var(--emirati-navy);
   }
-  
+
   .bg-emirati-gold {
     background-color: var(--emirati-gold);
   }
@@ -181,11 +246,12 @@
 }
 
 @layer components {
+
   /* Button components */
   .btn-primary {
     @apply bg-teal-600 hover:bg-teal-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500/20 focus:ring-offset-2;
   }
-  
+
   .btn-secondary {
     @apply bg-white hover:bg-gray-50 text-teal-600 border border-teal-600 font-medium px-6 py-3 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500/20 focus:ring-offset-2;
   }
@@ -194,7 +260,7 @@
   .card-base {
     @apply bg-white rounded-lg shadow-subtle border border-gray-200;
   }
-  
+
   .card-hover {
     @apply card-base hover:shadow-md transition-shadow duration-200;
   }
@@ -211,10 +277,105 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Accessibility & High Contrast Styles */
+.high-contrast {
+  /* Force System Colors for High Contrast */
+  --ehrdc-teal: #000000;
+  --ehrdc-dark-teal: #000000;
+  --ehrdc-light-teal: #FFFFFF;
+  --ehrdc-neutral-dark: #000000;
+  --ehrdc-neutral-light: #FFFFFF;
+  --ehrdc-white: #FFFFFF;
+
+  --primary: #000000;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #000000;
+  --background: #FFFFFF;
+  --foreground: #000000;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+
+  /* Ensure readability on the body */
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Force specific element visibility in HC mode */
+.high-contrast button,
+.high-contrast .btn-primary,
+.high-contrast .ehrdc-button-primary {
+  background-color: #000000 !important;
+  color: #FFFF00 !important;
+  /* Yellow text on Black key for high visibility */
+  border: 2px solid #000000 !important;
+  text-decoration: none !important;
+}
+
+.high-contrast .card-base,
+.high-contrast .card-hover,
+.high-contrast .bg-white,
+.high-contrast .bg-slate-50,
+.high-contrast .bg-gray-50 {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  /* Force border to verify structure */
+  box-shadow: none !important;
+}
+
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast a {
+  text-decoration: underline !important;
+  font-weight: bold !important;
+  color: #0000EE !important;
+  /* Standard Link Blue or Black */
+}
+
+
+/* Dyslexia Friendly Font */
+.dyslexia-font {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Verdana', sans-serif !important;
+}
+
+.dyslexia-font * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Verdana', sans-serif !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.6 !important;
+}
+
+/* Color Blind Filters */
+.filter-protanopia {
+  filter: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"><filter id="protanopia"><feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0" /></filter></svg>#protanopia');
+}
+
+.filter-deuteranopia {
+  filter: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"><filter id="deuteranopia"><feColorMatrix type="matrix" values="0.625, 0.375, 0, 0, 0  0.7, 0.3, 0, 0, 0  0, 0.3, 0.7, 0, 0  0, 0, 0, 1, 0" /></filter></svg>#deuteranopia');
+}
+
+.filter-tritanopia {
+  filter: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"><filter id="tritanopia"><feColorMatrix type="matrix" values="0.95, 0.05, 0, 0, 0  0, 0.433, 0.567, 0, 0  0, 0.475, 0.525, 0, 0  0, 0, 0, 1, 0" /></filter></svg>#tritanopia');
+}
+
+/* Enhanced Focus Indicators */
+.enhanced-focus :focus-visible {
+  outline: 4px solid #F59E0B !important;
+  /* Amber-500 */
+  outline-offset: 2px !important;
 }
 
 /* Responsive design enhancements */
@@ -237,9 +398,8 @@
   .animate-fade-in {
     animation: none;
   }
-  
+
   * {
     transition-duration: 0.01ms !important;
   }
 }
-

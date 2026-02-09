@@ -27,6 +27,7 @@ export interface AuthResponse {
       phone: string;
       emirate: string;
       roles?: string[];
+      is_new_user?: boolean;
     };
     expires_in: number;
   };
@@ -49,6 +50,11 @@ export interface UserRolesResponse {
   };
 }
 
+import {
+  ROLE_DASHBOARD_MAP,
+  UserRole
+} from '@/types/auth';
+
 // Available roles with metadata
 export const AVAILABLE_ROLES = [
   {
@@ -56,6 +62,12 @@ export const AVAILABLE_ROLES = [
     name: 'Job Seeker',
     description: 'Find your dream career with AI-powered job matching',
     dashboard: '/candidate-dashboard'
+  },
+  {
+    id: 'student',
+    name: 'Student',
+    description: 'Explore scholarships, internships, and educational programs',
+    dashboard: '/student-dashboard'
   },
   {
     id: 'hr_recruiter',
@@ -82,19 +94,6 @@ export const AVAILABLE_ROLES = [
     dashboard: '/assessor-dashboard'
   }
 ];
-
-// Role mapping for dashboard routing
-const ROLE_DASHBOARD_MAP: Record<string, string> = {
-  job_seeker: '/candidate-dashboard',
-  candidate: '/candidate-dashboard', // Legacy support
-  hr_recruiter: '/recruiter-dashboard',
-  hr_manager: '/hr-dashboard',
-  recruiter: '/recruiter-dashboard', // Legacy support
-  educator: '/educator-dashboard',
-  mentor: '/mentor-dashboard',
-  assessor: '/assessor-dashboard',
-  administrator: '/admin-dashboard'
-};
 
 class AuthService {
   private readonly API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ? `${(import.meta as any).env.VITE_API_BASE_URL}/api` : '/api';
@@ -453,6 +452,9 @@ class AuthService {
         case 'admin':
           console.log('AuthService: Routing to Admin Dashboard (legacy)');
           return '/admin-dashboard';
+        case 'student':
+          console.log('AuthService: Routing to Student Dashboard (legacy fallback)');
+          return '/student-dashboard';
         case 'job_seeker':
         case 'candidate':
         case 'job seeker':
@@ -496,7 +498,7 @@ class AuthService {
   /**
    * Update user roles (for future multi-role support)
    */
-  async updateUserRoles(primaryRole: string, secondaryRoles: string[] = []): Promise<any> {
+  async updateUserRoles(primaryRole: string, secondaryRoles: string[] = [], metadata: any = {}): Promise<any> {
     try {
       const token = localStorage.getItem('access_token');
 
@@ -512,7 +514,8 @@ class AuthService {
         },
         body: JSON.stringify({
           primary_role: primaryRole,
-          secondary_roles: secondaryRoles
+          secondary_roles: secondaryRoles,
+          metadata: metadata
         }),
       });
 
@@ -529,10 +532,12 @@ class AuthService {
       }
 
       if (data.success && data.data) {
-        localStorage.setItem('access_token', data.data.access_token);
-        localStorage.setItem('refresh_token', data.data.refresh_token);
-        // Store the user data directly from data.data (not data.data.user)
-        localStorage.setItem('user', JSON.stringify(data.data));
+        if (data.data.access_token) localStorage.setItem('access_token', data.data.access_token);
+        if (data.data.refresh_token) localStorage.setItem('refresh_token', data.data.refresh_token);
+        // Store the user object under 'user'
+        if (data.data.user) {
+          localStorage.setItem('user', JSON.stringify(data.data.user));
+        }
       }
       return data;
     } catch (error) {

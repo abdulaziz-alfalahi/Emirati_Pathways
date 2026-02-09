@@ -41,7 +41,10 @@ import { useSearchParams } from 'react-router-dom';
 export const FeedbackWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState('');
+    const [title, setTitle] = useState('');
     const [type, setType] = useState('bug');
+    const [severity, setSeverity] = useState('medium');
+    const [reproSteps, setReproSteps] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user, isAuthenticated } = useAuth();
     const { toast } = useToast();
@@ -133,19 +136,32 @@ export const FeedbackWidget = () => {
     if (!isAuthenticated) return null;
 
     const handleSubmit = async () => {
-        if (!message.trim()) return;
+        if (!message.trim() || !title.trim()) return;
 
         setIsSubmitting(true);
         try {
+            // Enhanced Payload
             const metadata = {
                 userAgent: navigator.userAgent,
                 screenSize: `${window.innerWidth}x${window.innerHeight}`,
                 timestamp: new Date().toISOString(),
-                path: window.location.pathname
+                path: window.location.pathname,
+                title,
+                severity,
+                reproSteps
             };
 
+            // Format message for immediate visibility
+            let formattedMessage = `[${title}]\n\n${message}`;
+            if (type === 'bug') {
+                formattedMessage += `\n\n[Severity]: ${severity.toUpperCase()}`;
+                if (reproSteps) {
+                    formattedMessage += `\n\n[Steps to Reproduce]:\n${reproSteps}`;
+                }
+            }
+
             await restClient.post('/api/feedback/submit', {
-                message,
+                message: formattedMessage,
                 type,
                 pageUrl: window.location.href,
                 consoleLogs,
@@ -159,6 +175,9 @@ export const FeedbackWidget = () => {
             });
 
             setMessage('');
+            setTitle('');
+            setReproSteps('');
+            setSeverity('medium');
             setType('bug');
             setConsoleLogs([]); // Clear logs after send
 
@@ -222,6 +241,22 @@ export const FeedbackWidget = () => {
 
                         <TabsContent value="new" className="space-y-4 py-4">
                             <div className="grid gap-4">
+
+                                {/* 1. Title Field (New) */}
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label htmlFor="title" className="text-right">
+                                        Subject
+                                    </Label>
+                                    <input
+                                        id="title"
+                                        placeholder="Brief summary of the issue"
+                                        className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label htmlFor="type" className="text-right">
                                         Type
@@ -233,12 +268,12 @@ export const FeedbackWidget = () => {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="bug">
-                                                    <div className="flex items-center">
+                                                    <div className="flex items-center text-red-600">
                                                         <Bug className="mr-2 h-4 w-4" /> Bug Report
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="feature">
-                                                    <div className="flex items-center">
+                                                    <div className="flex items-center text-amber-600">
                                                         <Lightbulb className="mr-2 h-4 w-4" /> Feature Request
                                                     </div>
                                                 </SelectItem>
@@ -248,26 +283,66 @@ export const FeedbackWidget = () => {
                                     </div>
                                 </div>
 
+                                {/* 2. Severity (Only for Bugs) */}
+                                {type === 'bug' && (
+                                    <div className="grid grid-cols-4 items-center gap-4 animate-in slide-in-from-top-1 duration-200">
+                                        <Label htmlFor="severity" className="text-right">
+                                            Severity
+                                        </Label>
+                                        <div className="col-span-3">
+                                            <Select value={severity} onValueChange={setSeverity}>
+                                                <SelectTrigger className={severity === 'critical' ? 'border-red-500 text-red-600' : ''}>
+                                                    <SelectValue placeholder="Select severity" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="low">Low - Minor cosmetic issue</SelectItem>
+                                                    <SelectItem value="medium">Medium - Functional issue but workaround exists</SelectItem>
+                                                    <SelectItem value="high">High - Feature is broken</SelectItem>
+                                                    <SelectItem value="critical">Critical - System crash or data loss</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-4 items-start gap-4">
                                     <Label htmlFor="message" className="text-right pt-2">
-                                        Message
+                                        Description
                                     </Label>
                                     <Textarea
                                         id="message"
                                         value={message}
                                         onChange={(e) => setMessage(e.target.value)}
-                                        placeholder="Describe the issue or idea..."
-                                        className="col-span-3 min-h-[100px]"
+                                        placeholder={type === 'bug' ? "What happened? What did you expect to happen?" : "Describe your idea..."}
+                                        className="col-span-3 min-h-[80px]"
                                     />
                                 </div>
+
+                                {/* 3. Steps to Reproduce (Only for Bugs) */}
+                                {type === 'bug' && (
+                                    <div className="grid grid-cols-4 items-start gap-4 animate-in slide-in-from-top-2 duration-300">
+                                        <Label htmlFor="steps" className="text-right pt-2 text-xs font-semibold text-muted-foreground uppercase">
+                                            Steps to Reproduce
+                                        </Label>
+                                        <Textarea
+                                            id="steps"
+                                            value={reproSteps}
+                                            onChange={(e) => setReproSteps(e.target.value)}
+                                            placeholder="1. Go to page X&#10;2. Click on button Y&#10;3. See error Z"
+                                            className="col-span-3 min-h-[100px] font-mono text-sm bg-slate-50"
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label className="text-right text-xs text-muted-foreground">
                                         Context
                                     </Label>
-                                    <div className="col-span-3 text-xs text-muted-foreground bg-muted p-2 rounded">
-                                        <p>path: {window.location.pathname}</p>
-                                        <p>logs captured: {consoleLogs.length}</p>
+                                    <div className="col-span-3 text-xs text-muted-foreground bg-muted p-2 rounded flex justify-between items-center">
+                                        <span>path: {window.location.pathname}</span>
+                                        <span className={consoleLogs.length > 0 ? "text-amber-600 font-bold" : ""}>
+                                            logs captured: {consoleLogs.length}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -275,7 +350,7 @@ export const FeedbackWidget = () => {
                                 <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
                                     Cancel
                                 </Button>
-                                <Button onClick={handleSubmit} disabled={isSubmitting || !message.trim()}>
+                                <Button onClick={handleSubmit} disabled={isSubmitting || !title.trim() || !message.trim()}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Send Feedback
                                 </Button>

@@ -44,6 +44,7 @@ interface DashboardData {
     completionPercentage: number;
     cvUploaded: boolean;
     profile_photo_url?: string;
+    ats_score?: number;
   };
   stats: {
     profileViews: number;
@@ -67,9 +68,10 @@ const CandidateDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     profile: {
-      name: 'Candidate',
+      name: 'Job Seeker',
       completionPercentage: 0,
-      cvUploaded: false
+      cvUploaded: false,
+      ats_score: 0
     },
     stats: {
       profileViews: 0,
@@ -137,7 +139,7 @@ const CandidateDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50">
+    <div className="min-h-screen bg-background">
       <HybridGovernmentNavFixed
         showAuthButtons={false}
         currentPage="dashboard"
@@ -181,14 +183,14 @@ const CandidateDashboard: React.FC = () => {
                     const formData = new FormData();
                     formData.append('photo', file);
                     try {
-                      const token = localStorage.getItem('access_token');
-                      // Use the same endpoint we created earlier
-                      const res = await fetch('/api/profile/candidate/photo', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        body: formData
+                      // Use restClient for consistent base URL and auth headers
+                      const response = await restClient.post('/api/profile/candidate/photo', formData, {
+                        headers: {
+                          'Content-Type': 'multipart/form-data',
+                        },
                       });
-                      const data = await res.json();
+
+                      const data = response.data;
                       if (data.success) {
                         setDashboardData(prev => ({
                           ...prev,
@@ -203,10 +205,14 @@ const CandidateDashboard: React.FC = () => {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 animate-in fade-in slide-in-from-left-4 duration-500">
-                Welcome back, {dashboardData.profile.name.split(' ')[0]}!
+              <h1 className="text-2xl font-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
+                {dashboardData.profile.name === 'New Member' ? 'Welcome!' : `Welcome back, ${dashboardData.profile.name.split(' ')[0]}!`}
               </h1>
-              <p className="text-gray-600">Your career journey continues here</p>
+              <p className="text-muted-foreground">
+                {dashboardData.profile.name === 'New Member'
+                  ? 'Complete your profile to unlock your career journey'
+                  : 'Your career journey continues here'}
+              </p>
             </div>
           </div>
 
@@ -220,7 +226,7 @@ const CandidateDashboard: React.FC = () => {
                 <span>
                   <strong>Boost your profile!</strong> Upload your CV to get AI-powered job matches and a professional profile.
                 </span>
-                <Button size="sm" className="ml-4 bg-teal-600 hover:bg-teal-700" onClick={() => navigate('/cv-builder')}>
+                <Button size="sm" className="ml-4 bg-teal-600 hover:bg-teal-700" onClick={() => navigate('/candidate/profile')}>
                   Upload CV Now <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </AlertDescription>
@@ -230,7 +236,7 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-white/50 p-1 rounded-xl shadow-sm">
+            <TabsList className="grid w-full grid-cols-7 bg-muted/50 p-1 rounded-xl shadow-sm">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="profile">Profile & CV</TabsTrigger>
               <TabsTrigger value="jobs">Job Matches</TabsTrigger>
@@ -249,8 +255,8 @@ const CandidateDashboard: React.FC = () => {
                         <Eye className="h-6 w-6 text-blue-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Profile Views</p>
-                        <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.profileViews}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Profile Views</p>
+                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.profileViews}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -262,8 +268,8 @@ const CandidateDashboard: React.FC = () => {
                         <Target className="h-6 w-6 text-green-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Job Matches</p>
-                        <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.jobMatches}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Job Matches</p>
+                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.jobMatches}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -275,8 +281,8 @@ const CandidateDashboard: React.FC = () => {
                         <FileText className="h-6 w-6 text-purple-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Applications</p>
-                        <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.applications}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Applications</p>
+                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.applications}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -288,8 +294,8 @@ const CandidateDashboard: React.FC = () => {
                         <Calendar className="h-6 w-6 text-orange-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Interviews</p>
-                        <p className="text-2xl font-bold text-gray-900">{dashboardData.stats.interviews}</p>
+                        <p className="text-sm font-medium text-muted-foreground">Interviews</p>
+                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.interviews}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -298,7 +304,7 @@ const CandidateDashboard: React.FC = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+                  <CardHeader className="bg-card border-b">
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5 text-teal-600" />
                       Profile Completion
@@ -331,19 +337,30 @@ const CandidateDashboard: React.FC = () => {
                           )}
                         </div>
                         <Button
-                          onClick={() => navigate('/cv-builder')}
+                          onClick={() => navigate('/candidate/profile')}
                           variant="default"
                           className="w-full bg-slate-900 hover:bg-slate-800"
                         >
-                          {dashboardData.profile.cvUploaded ? 'Enhance / Edit CV' : 'Upload CV to Start'}
+                          {dashboardData.profile.cvUploaded ? 'Enhance Profile / CV' : 'Build Profile & CV'}
                         </Button>
+                      </div>
+                      <div className="flex items-center justify-between text-sm p-3 bg-blue-50 rounded-lg mt-3">
+                        <span className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-blue-500" />
+                          ATS Compatibility
+                        </span>
+                        <span className={`font-bold ${(dashboardData.profile.ats_score || 0) >= 80 ? 'text-green-600' :
+                          (dashboardData.profile.ats_score || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                          {dashboardData.profile.ats_score || 0}/100
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+                  <CardHeader className="bg-card border-b">
                     <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-teal-600" />
                       Quick Actions
@@ -371,7 +388,7 @@ const CandidateDashboard: React.FC = () => {
                         Track Applications ({dashboardData.stats.applications})
                       </Button>
                       <Button
-                        onClick={() => navigate('/cv-builder')}
+                        onClick={() => navigate('/candidate/profile')}
                         variant="outline"
                         className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
@@ -411,7 +428,7 @@ const CandidateDashboard: React.FC = () => {
           </Tabs>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

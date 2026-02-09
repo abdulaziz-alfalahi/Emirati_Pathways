@@ -919,3 +919,14 @@ Passive: 15
 Total: 16
 Matches return count: 16
 Sample Match Payload: {"candidate": {"candidate_id": 21, "user_id": 21, "first_name": "Khalid", "last_name": "Al Mazrouei", "email": "khalid.almazrouei@email.ae", "phone": "+971501234567", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor's Degree", "experience_years": 5, "current_position": "HR Coordinator", "current_company": "Previous HR Company", "employment_status": "applicant", "skills": ["Recruitment", "Talent Acquisition", "Employee Relations", "Labor Law", "HRIS", "Onboarding", "Performance Management", "Microsoft Office"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.206995338016622, "longitude": 55.365054891837445, "cv_url": null, "linkedin_url": null, "application_status": "withdrawn", "submitted_at": "2025-12-28 11:44:36.519345+04:00", "status": "withdrawn", "is_applicant": true, "application_date": "2025-12-28 11:44:36.519345+04:00", "distance_km": 9.5}, "match_score": 15.0, "score_breakdown": {"skills_match_score": 72, "experience_match_score": 72, "cultural_fit_score": 77, "location_preference_score": 60, "language_compatibility_score": 82, "education_match_score": 82, "overall_compatibility": 0, "strengths": ["Potential for growth"], "gaps": [], "cultural_insights": "Candidate appears to have relevant background", "recommendations": ["Verify specific technical requirements"], "overall_score": 73.45, "skills": 0.0, "location": 10, "uae_national": 5}, "matching_skills": [], "missing_skills": [], "strengths": ["UAE National", "Located in same emirate"], "concerns": [], "distance_km": 9.5}
+
+--- Request for JD jd_20251212_101707_596dbdbc ---
+Applicants: 0
+Passive: 29
+Total: 29
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 21, "user_id": 21, "first_name": "Khalid", "last_name": "Al Mazrouei", "email": "khalid.almazrouei@email.ae", "phone": "+971501234567", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor's Degree", "experience_years": 5, "current_position": "HR Coordinator", "current_company": "Previous HR Company", "employment_status": "open_to_opportunities", "skills": ["Recruitment", "Talent Acquisition", "Employee Relations", "Labor Law", "HRIS", "Onboarding", "Performance Management", "Microsoft Office"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.206995338016622, "longitude": 55.365054891837445, "cv_url": null, "linkedin_url": null, "distance_km": 9.5}, "match_score": 35.0, "score_breakdown": {"skills": 20.0, "location": 10, "uae_national": 5}, "matching_skills": ["hr"], "missing_skills": ["assessment"], "strengths": ["Located in same emirate", "UAE National"], "concerns": [], "distance_km": 9.5}
+
+--- Request for JD JD108_20260128_8 ---
+
+--- Request for JD JD108_20260128_8 ---

@@ -128,7 +128,7 @@ export const VerifyJob: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-50">
+            <div className="flex h-screen items-center justify-center bg-background">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
                     <p className="text-gray-500">Verifying Link...</p>
@@ -159,7 +159,7 @@ export const VerifyJob: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Header / Banner */}
-            <div className="bg-white border-b sticky top-0 z-20">
+            <div className="bg-card border-b sticky top-0 z-20">
                 <div className="container mx-auto px-4 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="bg-teal-100 p-2 rounded-lg">

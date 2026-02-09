@@ -67,6 +67,16 @@ class IndustryCategory(Enum):
     CONSTRUCTION = "construction"
     ENERGY = "energy"
     MEDIA = "media"
+    
+    # D33 Strategic Sectors
+    LOGISTICS_AVIATION = "logistics_aviation"
+    ADVANCED_MANUFACTURING = "advanced_manufacturing"
+    DIGITAL_ECONOMY = "digital_economy"
+    # Finance, Healthcare, Tourism are already present or covered, ensuring specific mapping:
+    # FINANCE covers Financial Services
+    # HEALTHCARE covers Healthcare
+    # HOSPITALITY covers Tourism (or we can add specifically)
+    TOURISM_TRAVEL = "tourism_travel"
 
 class AssessmentStatus(Enum):
     """Assessment session status"""

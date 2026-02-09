@@ -25,17 +25,78 @@ export const restClient: AxiosInstance = axios.create({
 })
 
 // Add request interceptor to inject token
+// Request interceptor to inject token
 restClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token') ||
-    localStorage.getItem('accessToken') ||
-    localStorage.getItem('auth_token') ||
-    localStorage.getItem('HR_TOKEN');
-
+  const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Response interceptor for 401 handling
+restClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Prevent infinite loops
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
+        // Perform refresh using a fresh axios instance to avoid interceptors
+        // We assume the refresh endpoint is at /api/auth/refresh
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}/api/auth/refresh`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${refreshToken}` }
+          }
+        );
+
+        if (refreshResponse.data?.success && refreshResponse.data?.data?.access_token) {
+          const newAccessToken = refreshResponse.data.data.access_token;
+
+          // Update storage
+          localStorage.setItem('access_token', newAccessToken);
+
+          // Update header for the original request
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+          // If we got a new user object, update that too (optional but good)
+          if (refreshResponse.data.data.user) {
+            localStorage.setItem('user', JSON.stringify(refreshResponse.data.data.user));
+          }
+
+          // Return the original request with new token
+          return restClient(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        // Clear auth and redirect
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+
+        // Dispatch storage event so other tabs/components know
+        window.dispatchEvent(new Event('storage'));
+
+        // Hard redirect to auth if needed, or let the app handle the 401
+        window.location.href = '/auth';
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const flaskClient: AxiosInstance = axios.create({
   baseURL: FLASK_API_URL,

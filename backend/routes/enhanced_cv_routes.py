@@ -11,11 +11,34 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import uuid
+from datetime import datetime
+
+# DEBUG HELPER
+def log_debug_cv(msg):
+    try:
+        with open("backend_cv_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now().isoformat()} - {msg}\n")
+    except:
+        pass
 
 # Import our CV processing modules
-from ..cv_parser import cv_parser
-from ..cv_storage_manager import cv_storage_manager
-from ..cv_job_matching_integration import cv_job_matching_integration
+# Robust import for cv_parser
+try:
+    # Try relative import first (module context)
+    from ..cv_parser import cv_parser
+    from ..cv_storage_manager import cv_storage_manager
+    from ..cv_job_matching_integration import cv_job_matching_integration
+except (ImportError, ValueError):
+    # Fallback for script execution or different path structure
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from cv_parser import cv_parser
+    try:
+         from cv_storage_manager import cv_storage_manager
+         from cv_job_matching_integration import cv_job_matching_integration
+    except ImportError:
+         # Last resort: try finding them in parent
+         pass
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +56,30 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_normalized_user_id(identity):
+    """
+    Normalize user identity to a consistent UUID string.
+    Matches logic in profile_routes_v2.py and cv_routes.py to ensure data consistency.
+    """
+    if not identity:
+        return None
+        
+    if isinstance(identity, dict):
+        identity = identity.get('id')
+    
+    identity_str = str(identity).strip()
+    
+    # Legacy Integer ID Support
+    if identity_str.isdigit():
+        return identity_str
+    
+    try:
+        # Check if already valid UUID
+        return str(uuid.UUID(identity_str))
+    except ValueError:
+        # If not, hash strictly using DNS namespace
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+
 def get_user_id_from_token():
     """Extract user ID from JWT token (simplified)"""
     # In production, this would properly decode and validate JWT
@@ -41,13 +88,10 @@ def get_user_id_from_token():
     try:
         if not auth_header:
             return None
-        # Basic check, in real app let decorator handle or verify token
-        # For now, we rely on the route decorators or manual check if needed
-        # But for this specific helper, we should try to extract properly
         from flask_jwt_extended import decode_token
         token = auth_header.split(" ")[1]
         decoded = decode_token(token)
-        return decoded['sub']
+        return str(decoded['sub'])
     except Exception as e:
         logger.error(f"Token validation error: {e}")
         return None
@@ -57,13 +101,26 @@ def upload_cv():
     """Upload and parse CV file"""
     try:
         # Check authentication
-        user_id = get_user_id_from_token()
-        if not user_id:
+        raw_user_id = get_user_id_from_token()
+        if not raw_user_id:
             return jsonify({
                 'success': False,
                 'message': 'Authentication required'
             }), 401
+            
+        # NORMALIZE USER ID (Crucial for V2 Compatibility)
+        user_id = get_normalized_user_id(raw_user_id)
+        logger.info(f"Processing Upload for User: {user_id} (Raw: {raw_user_id})")
+        log_debug_cv(f"UPLOAD START: Raw ID='{raw_user_id}', Normalized ID='{user_id}'")
         
+        # Check CV limit (Max 3)
+        current_cvs = cv_storage_manager.get_user_cvs(user_id)
+        if current_cvs.get('total_count', 0) >= 3:
+            return jsonify({
+                'success': False,
+                'message': 'CV limit reached. You can only upload up to 3 CVs. Please delete an old CV to upload a new one.'
+            }), 400
+
         # Check if file is present
         if 'cv_file' not in request.files:
             return jsonify({
@@ -103,7 +160,8 @@ def upload_cv():
         unique_filename = f"{uuid.uuid4()}_{filename}"
         
         # Save file temporarily
-        upload_folder = '/tmp/cv_uploads'
+        import tempfile
+        upload_folder = os.path.join(tempfile.gettempdir(), 'cv_uploads')
         os.makedirs(upload_folder, exist_ok=True)
         file_path = os.path.join(upload_folder, unique_filename)
         file.save(file_path)
@@ -150,6 +208,16 @@ def upload_cv():
             
             # Complete user profile
             profile_result = cv_job_matching_integration.complete_profile_from_cv(parse_result)
+            
+            # --- PROFILE V2 INTEGRATION ---
+            # Automatically populate the new Profile 2.0 SQL tables
+            try:
+                from backend.services.profile_v2_service import ProfileV2Service
+                ProfileV2Service.populate_from_cv_data(user_id, parse_result)
+                logger.info(f"✅ Auto-populated Profile V2 for user {user_id}")
+            except Exception as v2_err:
+                logger.error(f"⚠️ Failed to populate Profile V2: {v2_err}")
+            # ------------------------------
             
             # Prepare response
             response_data = {
@@ -275,6 +343,87 @@ def parse_cv_text():
             'message': f'Text parsing failed: {str(e)}'
         }), 500
 
+@enhanced_cv_bp.route('/save', methods=['POST'])
+def save_cv():
+    """Save or update CV data"""
+    try:
+        # Check authentication
+        user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Authentication required'
+            }), 401
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No data provided'
+            }), 400
+            
+        # Store metadata
+        # Ensure we have minimum required structure
+        if 'data' not in data and 'personal_info' in data:
+            # Handle flattened format if sent by frontend
+            data = {'data': data}
+            
+        # Store CV (store_cv handles updates if cv_id is present)
+        result = cv_storage_manager.store_cv(data, user_id)
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+
+    except Exception as e:
+        logger.error(f"CV save error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to save CV: {str(e)}'
+        }), 500
+
+@enhanced_cv_bp.route('/data', methods=['GET'])
+def get_latest_cv_data():
+    """Get latest CV data for the user"""
+    try:
+        # Check authentication
+        user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Authentication required'
+            }), 401
+        
+        # Get user CVs (limit 1)
+        result = cv_storage_manager.get_user_cvs(user_id, limit=1)
+        
+        if not result.get('success'):
+             return jsonify({
+                'success': False,
+                'message': f'Failed to retrieve CVs: {result.get("message")}'
+            }), 500
+
+        cvs = result.get('cvs', [])
+        if not cvs:
+            return jsonify({
+                'success': False,
+                'message': 'No CV found found for this user'
+            }), 404
+            
+        # Get the full details of the most recent CV
+        latest_cv_id = cvs[0]['cv_id']
+        cv_result = cv_storage_manager.get_cv(latest_cv_id, user_id)
+        
+        return jsonify(cv_result), 200 if cv_result.get('success') else 404
+        
+    except Exception as e:
+        logger.error(f"Latest CV retrieval error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to retrieve latest CV: {str(e)}'
+        }), 500
+
 @enhanced_cv_bp.route('/list', methods=['GET'])
 def list_user_cvs():
     """List user's CVs"""
@@ -292,7 +441,9 @@ def list_user_cvs():
         offset = int(request.args.get('offset', 0))
         
         # Get user CVs
+        logger.info(f"Listing CVs for user_id: {user_id} (type: {type(user_id)})")
         result = cv_storage_manager.get_user_cvs(user_id, limit, offset)
+        logger.info(f"Found {len(result.get('cvs', []))} CVs for user {user_id}")
         
         return jsonify(result), 200
     
@@ -302,6 +453,73 @@ def list_user_cvs():
             'success': False,
             'message': f'Failed to retrieve CVs: {str(e)}'
         }), 500
+
+@enhanced_cv_bp.route('/<cv_id>/visible', methods=['PUT'])
+def update_cv_visibility(cv_id):
+    """Update CV visibility"""
+    try:
+        # Check authentication
+        user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Authentication required'
+            }), 401
+        
+        data = request.get_json()
+        if not data or 'visible' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Visibility status required'
+            }), 400
+            
+        is_visible = bool(data['visible'])
+        
+        # Update visibility
+        result = cv_storage_manager.set_cv_visibility(cv_id, user_id, is_visible)
+        
+        return jsonify(result), 200 if result.get('success') else 500
+    
+    except Exception as e:
+        logger.error(f"CV visibility update error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to update visibility: {str(e)}'
+        }), 500
+
+
+@enhanced_cv_bp.route('/debug-stats', methods=['GET'])
+def get_debug_stats():
+    """Get storage stats with debug records"""
+    try:
+        stats = cv_storage_manager.get_storage_stats()
+        return jsonify(stats), 200
+    except Exception as e:
+        logger.error(f"Debug stats error: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@enhanced_cv_bp.route('/debug-list/<user_id>', methods=['GET'])
+def debug_list_cvs(user_id):
+    """Debug: List CVs for specific user ID (Bypass Auth)"""
+    try:
+        result = cv_storage_manager.get_user_cvs(user_id)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@enhanced_cv_bp.route('/debug-auth', methods=['GET'])
+def debug_auth_check():
+    """Debug: Check what user ID is extracted from token"""
+    try:
+        user_id = get_user_id_from_token()
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'user_id_type': str(type(user_id)),
+            'raw_header': request.headers.get('Authorization', 'Missing')[:20] + '...' if request.headers.get('Authorization') else 'Missing'
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @enhanced_cv_bp.route('/<cv_id>', methods=['GET'])
 def get_cv(cv_id):
@@ -325,6 +543,50 @@ def get_cv(cv_id):
         return jsonify({
             'success': False,
             'message': f'Failed to retrieve CV: {str(e)}'
+        }), 500
+
+@enhanced_cv_bp.route('/<cv_id>', methods=['PUT'])
+def update_cv(cv_id):
+    """Update specific CV"""
+    try:
+        # Check authentication
+        user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Authentication required'
+            }), 401
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No data provided'
+            }), 400
+            
+        # Ensure ID in data matches URL
+        data['cv_id'] = cv_id
+        
+        # Store metadata wrapper if needed (frontend sends flat or wrapped)
+        # store_cv expects 'data' key for CV fields usually, or handles it.
+        # Let's ensure consistency with save_cv
+        if 'data' not in data and 'personalInfo' in data: # CamelCase check from frontend
+             # Frontend (cvStorageService) sends the raw payload which matches SaveCVRequest
+             # SaveCVRequest has cvData, title etc.
+             # But the backend parser often produces snake_case.
+             # store_cv handles persistence. Let's pass it through.
+             pass
+
+        # Update CV
+        result = cv_storage_manager.store_cv(data, user_id)
+        
+        return jsonify(result), 200 if result.get('success') else 500
+    
+    except Exception as e:
+        logger.error(f"CV update error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to update CV: {str(e)}'
         }), 500
 
 @enhanced_cv_bp.route('/<cv_id>', methods=['DELETE'])

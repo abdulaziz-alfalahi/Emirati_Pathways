@@ -429,6 +429,16 @@ def list_jds():
                  with open("debug_list_jds.log", "a") as f:
                     f.write(f"Error looking up company: {e}\n")
 
+        # Get user role from JWT
+        claims = {}
+        try:
+            from flask_jwt_extended import get_jwt
+            claims = get_jwt()
+        except:
+            pass
+            
+        user_role = claims.get('role', 'recruiter')
+        
         # Build query with filters
         query = "SELECT * FROM job_postings WHERE 1=1"
         params = []
@@ -438,14 +448,25 @@ def list_jds():
             params.append(recruiter_id)
         
         if company_id:
-            if current_user_id:
-                query += " AND (company_id = %s OR created_by = %s)"
-                params.extend([company_id, current_user_id])
-            else:
+            # RBAC: HR Manager/Admin sees all company jobs, Recruiter sees only their own
+            if user_role in ['hr_manager', 'admin', 'administrator', 'super_admin']:
                 query += " AND company_id = %s"
                 params.append(company_id)
+                # Optional: If specific created_by requested, add it
+                if current_user_id and not recruiter_id: 
+                     # Only filter by created_by if explicitly passed? 
+                     # No, for HR view, default is ALL.
+                     pass 
+            else:
+                # Regular Recruiter - STRICT SCOPE
+                query += " AND created_by = %s"
+                params.append(current_user_id)
+                # Ensure we strictly stay within company if known
+                query += " AND company_id = %s"
+                params.append(company_id)
+                
         elif current_user_id:
-            # Fallback if no company ID found
+            # Fallback if no company ID found - strictly own jobs
             query += " AND created_by = %s"
             params.append(current_user_id)
         

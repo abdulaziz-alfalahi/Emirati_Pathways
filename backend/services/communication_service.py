@@ -119,6 +119,7 @@ class Conversation:
     id: str
     participants: List[str]
     participant_names: Dict[str, str] # Map user_id -> Name
+    participant_roles: Dict[str, str] # Map user_id -> Role
     application_id: Optional[str]
     job_id: Optional[str]
     title: str
@@ -127,15 +128,18 @@ class Conversation:
     is_active: bool = True
     unread_count: int = 0
     last_message_content: Optional[str] = None
+    job_title: Optional[str] = None
     
     def to_dict(self):
         return {
             'id': self.id,
             'participants': self.participants,
             'participant_names': self.participant_names,
+            'participant_roles': self.participant_roles,
             'application_id': self.application_id,
             'job_id': self.job_id,
             'title': self.title,
+            'job_title': self.job_title,
             'created_at': self.created_at.isoformat(),
             'last_message_at': self.last_message_at.isoformat() if self.last_message_at else None,
             'is_active': self.is_active,
@@ -252,6 +256,36 @@ class CommunicationService:
                     self.logger.info("Adding is_archived column to conversation_participants")
                     cur.execute("ALTER TABLE conversation_participants ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;")
 
+                # Check and add role column if missing (Migration for Messaging Separation)
+                cur.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='conversation_participants' AND column_name='role';
+                """)
+                if not cur.fetchone():
+                    self.logger.info("Adding role column to conversation_participants")
+                    cur.execute("ALTER TABLE conversation_participants ADD COLUMN role VARCHAR(50);")
+
+                # Check and add conversation_type column for group discussions
+                cur.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='conversations' AND column_name='conversation_type';
+                """)
+                if not cur.fetchone():
+                    self.logger.info("Adding conversation_type column to conversations")
+                    cur.execute("ALTER TABLE conversations ADD COLUMN conversation_type VARCHAR(50) DEFAULT 'direct';")
+
+                # Check and add candidate_id column for candidate discussions
+                cur.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='conversations' AND column_name='candidate_id';
+                """)
+                if not cur.fetchone():
+                    self.logger.info("Adding candidate_id column to conversations")
+                    cur.execute("ALTER TABLE conversations ADD COLUMN candidate_id VARCHAR(255);")
+
                 # Messages Table
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS messages (
@@ -306,8 +340,11 @@ class CommunicationService:
             raise
 
     def create_conversation(self, participants: List[str], application_id: Optional[str] = None, 
-                          job_id: Optional[str] = None, title: str = "Conversation") -> Conversation:
-        """Create a new conversation between participants"""
+                          job_id: Optional[str] = None, title: str = "Conversation", participant_roles: Dict[str, str] = None) -> Conversation:
+        """
+        Create a new conversation between participants
+        participant_roles: Optional map of user_id -> role (e.g. {'1': 'recruiter', '2': 'candidate'})
+        """
         # Ensure all participants are strings to avoid SQL type mismatch with VARCHAR column
         participants = [str(p) for p in participants]
         
@@ -331,11 +368,24 @@ class CommunicationService:
                         self.logger.info(f"Found existing conversation: {existing['id']}")
                         # Ensure it's active/unarchived for both if it exists
                         # If I am creating it, I should see it even if I hid it before.
-                        cur.execute("""
-                            UPDATE conversation_participants 
-                            SET is_archived = FALSE 
-                            WHERE conversation_id = %s AND user_id IN %s
-                        """, (existing['id'], tuple(participants)))
+                        
+                        if participant_roles:
+                             # Also update ROLES if provided (fixes legacy/broken conversations)
+                             for user_id, role in participant_roles.items():
+                                  if role:
+                                      cur.execute("""
+                                          UPDATE conversation_participants
+                                          SET role = %s, is_archived = FALSE
+                                          WHERE conversation_id = %s AND user_id = %s
+                                      """, (role, existing['id'], str(user_id)))
+                        else:
+                            # Fallback just unarchive
+                            cur.execute("""
+                                UPDATE conversation_participants 
+                                SET is_archived = FALSE 
+                                WHERE conversation_id = %s AND user_id IN %s
+                            """, (existing['id'], tuple(participants)))
+                            
                         conn.commit() # Commit un-archive
                         self.logger.info(f"Returning existing conversation {existing['id']}")
                         return self._get_conversation_by_id(cur, existing['id'])
@@ -351,10 +401,11 @@ class CommunicationService:
                 
                 # Add participants
                 for p_id in participants:
+                    role = participant_roles.get(p_id) if participant_roles else None
                     cur.execute("""
-                        INSERT INTO conversation_participants (conversation_id, user_id, is_archived)
-                        VALUES (%s, %s, FALSE)
-                    """, (conv_id, p_id))
+                        INSERT INTO conversation_participants (conversation_id, user_id, is_archived, role)
+                        VALUES (%s, %s, FALSE, %s)
+                    """, (conv_id, p_id, role))
                 
                 conn.commit()
                 return self._get_conversation_by_id(cur, conv_id)
@@ -363,6 +414,104 @@ class CommunicationService:
             self.logger.error(f"Error creating conversation: {str(e)}", exc_info=True)
             print(f"CRITICAL ERROR in create_conversation: {str(e)}") # Print to stdout for CLI visibility
             raise
+        finally:
+            conn.close()
+
+    def create_candidate_discussion(self, creator_id: str, candidate_id: str, job_id: str, 
+                                   participant_ids: List[str], candidate_name: str = "Candidate",
+                                   job_title: str = "Position") -> Dict[str, Any]:
+        """
+        Create or get existing discussion thread for a candidate.
+        This is a group conversation where team members can discuss a specific candidate.
+        """
+        creator_id = str(creator_id)
+        candidate_id = str(candidate_id)
+        all_participants = list(set([creator_id] + [str(p) for p in participant_ids]))
+        
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Check if a discussion already exists for this candidate + job
+                cur.execute("""
+                    SELECT id FROM conversations 
+                    WHERE conversation_type = 'candidate_discussion' 
+                    AND candidate_id = %s 
+                    AND job_id = %s
+                    LIMIT 1
+                """, (candidate_id, job_id))
+                existing = cur.fetchone()
+                
+                if existing:
+                    conv_id = existing['id']
+                    self.logger.info(f"Found existing candidate discussion: {conv_id}")
+                    
+                    # Add new participants if not already in
+                    for p_id in all_participants:
+                        cur.execute("""
+                            INSERT INTO conversation_participants (conversation_id, user_id, is_archived, role)
+                            VALUES (%s, %s, FALSE, 'recruiter')
+                            ON CONFLICT (conversation_id, user_id) 
+                            DO UPDATE SET is_archived = FALSE
+                        """, (conv_id, p_id))
+                    
+                    conn.commit()
+                    return {'success': True, 'conversation_id': str(conv_id), 'is_new': False}
+                
+                # Create new discussion thread
+                title = f"Discussion: {candidate_name} - {job_title}"
+                cur.execute("""
+                    INSERT INTO conversations (job_id, candidate_id, title, conversation_type)
+                    VALUES (%s, %s, %s, 'candidate_discussion')
+                    RETURNING id, created_at
+                """, (job_id, candidate_id, title))
+                conv_data = cur.fetchone()
+                conv_id = conv_data['id']
+                
+                # Add all participants
+                for p_id in all_participants:
+                    cur.execute("""
+                        INSERT INTO conversation_participants (conversation_id, user_id, is_archived, role)
+                        VALUES (%s, %s, FALSE, 'recruiter')
+                    """, (conv_id, p_id))
+                
+                # Add system message announcing the discussion
+                cur.execute("""
+                    INSERT INTO messages (conversation_id, sender_id, content, message_type, metadata)
+                    VALUES (%s, %s, %s, 'system', %s)
+                """, (
+                    conv_id, 
+                    creator_id, 
+                    f"Started a discussion about {candidate_name} for {job_title}",
+                    json.dumps({'type': 'discussion_started', 'candidate_id': candidate_id})
+                ))
+                
+                conn.commit()
+                self.logger.info(f"Created new candidate discussion: {conv_id}")
+                return {'success': True, 'conversation_id': str(conv_id), 'is_new': True}
+                
+        except Exception as e:
+            conn.rollback()
+            self.logger.error(f"Error creating candidate discussion: {str(e)}", exc_info=True)
+            return {'success': False, 'error': str(e)}
+        finally:
+            conn.close()
+
+    def add_participant_to_discussion(self, conversation_id: str, user_id: str) -> Dict[str, Any]:
+        """Add a participant to an existing candidate discussion"""
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO conversation_participants (conversation_id, user_id, is_archived, role)
+                    VALUES (%s, %s, FALSE, 'recruiter')
+                    ON CONFLICT (conversation_id, user_id) DO UPDATE SET is_archived = FALSE
+                """, (conversation_id, str(user_id)))
+                conn.commit()
+                return {'success': True}
+        except Exception as e:
+            conn.rollback()
+            self.logger.error(f"Error adding participant: {str(e)}")
+            return {'success': False, 'error': str(e)}
         finally:
             conn.close()
 
@@ -385,24 +534,48 @@ class CommunicationService:
         # Get participants and names
         # Get participants and names
         # Cast cp.user_id to integer for join with users.id
+        # Cast cp.user_id to integer for join with users.id
         cur.execute("""
-            SELECT cp.user_id, u.first_name, u.last_name
+            SELECT cp.user_id, 
+                   cp.role,
+                   COALESCE(u.full_name, 'Unknown User') as full_name
             FROM conversation_participants cp
-            JOIN users u ON cp.user_id = u.id::varchar
+            LEFT JOIN users u ON cp.user_id = u.id::varchar
             WHERE cp.conversation_id = %s
         """, (conversation_id,))
         part_rows = cur.fetchall()
         
         participants = [str(r['user_id']) for r in part_rows]
-        participant_names = {str(r['user_id']): f"{r['first_name']} {r['last_name']}" for r in part_rows}
+        participant_names = {str(r['user_id']): r['full_name'] for r in part_rows}
+        participant_roles = {str(r['user_id']): r['role'] for r in part_rows}
         
+        # Fetch Job Title if job_id is present
+        job_title = None
+        if conv_row['job_id']:
+            try:
+                # Try fetching from job_postings or job_descriptions. jobs_api uses job_postings.
+                cur.execute("SELECT title FROM job_postings WHERE id::text = %s", (str(conv_row['job_id']),))
+                j_row = cur.fetchone()
+                if j_row:
+                    job_title = j_row['title']
+                else:
+                    # Fallback check job_descriptions just in case
+                    cur.execute("SELECT title FROM job_descriptions WHERE id::text = %s", (str(conv_row['job_id']),))
+                    j_row_2 = cur.fetchone()
+                    if j_row_2:
+                        job_title = j_row_2['title']
+            except Exception:
+                pass # Ignore if table missing/error
+
         return Conversation(
             id=str(conv_row['id']),
             participants=participants,
             participant_names=participant_names,
+            participant_roles=participant_roles,
             application_id=str(conv_row['application_id']) if conv_row['application_id'] else None,
             job_id=str(conv_row['job_id']) if conv_row['job_id'] else None,
             title=conv_row['title'],
+            job_title=job_title,
             created_at=conv_row['created_at'],
             last_message_at=conv_row['last_message_at'],
             is_active=conv_row['is_active'],
@@ -431,18 +604,56 @@ class CommunicationService:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Find or create conversation
                 if not conversation_id:
-                     # Reuse create logic logic or call it (doing inline for atomic)
-                    pass # Assumes converastion exists or generated by higher level usually. 
-                    # If not exists, create one.
-                    # Simplified: Call create_conversation if ID not provided
-                    conv = self.create_conversation([sender_id, recipient_id])
+                    # Create conversation with both sender and recipient
+                    # Try to infer roles from metadata if possible, otherwise rely on create default
+                    sender_role = metadata.get('sender_role') if metadata else None
+                    recipient_role = metadata.get('recipient_role') if metadata else None
+                    
+                    # Infer recipient role if not provided but sender role is known
+                    if sender_role and not recipient_role:
+                        if sender_role == 'recruiter':
+                            recipient_role = 'candidate'
+                        elif sender_role == 'candidate':
+                            recipient_role = 'recruiter'
+                    
+                    roles = {}
+                    if sender_role: roles[sender_id] = sender_role
+                    if recipient_role: roles[recipient_id] = recipient_role
+                    
+                    conv = self.create_conversation([sender_id, recipient_id], participant_roles=roles)
                     conversation_id = conv.id
+                    self.logger.info(f"Auto-created conversation {conversation_id} between {sender_id} and {recipient_id}")
                 
                 # Un-archive for ALL participants (Sender + Recipient)
                 # Logic: If I send a message, it should be active for me and the recipient.
                 participants_to_active = [sender_id, recipient_id]
                 self.logger.info(f"Attempting to un-archive conversation {conversation_id} for participants {participants_to_active}")
                 
+                # Also update their roles if provided in metadata (e.g. if starting chat as Recruiter)
+                sender_role = metadata.get('sender_role') if metadata else None
+                
+                if sender_role:
+                   # Update Sender Role
+                   cur.execute("""
+                       UPDATE conversation_participants 
+                       SET role = %s 
+                       WHERE conversation_id = %s AND user_id = %s AND (role IS NULL OR role != %s)
+                   """, (sender_role, conversation_id, sender_id, sender_role))
+
+                   # Update Recipient Role (Infer)
+                   recipient_role = None
+                   if sender_role == 'recruiter':
+                        recipient_role = 'candidate'
+                   elif sender_role == 'candidate':
+                        recipient_role = 'recruiter'
+                   
+                   if recipient_role:
+                       cur.execute("""
+                           UPDATE conversation_participants 
+                           SET role = %s 
+                           WHERE conversation_id = %s AND user_id != %s AND (role IS NULL OR role != %s)
+                       """, (recipient_role, conversation_id, sender_id, recipient_role))
+
                 cur.execute("""
                     UPDATE conversation_participants 
                     SET is_archived = FALSE 
@@ -466,7 +677,7 @@ class CommunicationService:
                 
                 conn.commit()
                 
-                return Message(
+                msg_obj = Message(
                     id=str(msg_row['id']),
                     conversation_id=conversation_id,
                     sender_id=sender_id,
@@ -477,6 +688,20 @@ class CommunicationService:
                     status=MessageStatus(msg_row['status']),
                     created_at=msg_row['created_at']
                 )
+                
+                # Enrich with sender name for notification purposes
+                try:
+                    self.logger.info(f"DEBUG: Resolving name for sender_id='{sender_id}' (Type: {type(sender_id)})")
+                    cur.execute("SELECT full_name FROM users WHERE id::varchar = %s", (sender_id,))
+                    sender_row = cur.fetchone()
+                    self.logger.info(f"DEBUG: User Query Result: {sender_row}")
+                    
+                    if sender_row:
+                        msg_obj.sender_name = sender_row['full_name']
+                except Exception as e:
+                    self.logger.warning(f"Failed to resolve sender name: {e}") 
+                
+                return msg_obj
         except Exception as e:
             conn.rollback()
             self.logger.error(f"Error sending message: {str(e)}")
@@ -527,17 +752,28 @@ class CommunicationService:
         finally:
             conn.close()
     
-    def get_user_conversations(self, user_id: str) -> List[Conversation]:
-        """Get all conversations for a user"""
+    def get_user_conversations(self, user_id: str, role: Optional[str] = None) -> List[Conversation]:
+        """Get all conversations for a user, optionally filtered by role context"""
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Find all conversation IDs for user
-                self.logger.info(f"DEBUG: get_user_conversations querying for user_id={user_id} (type={type(user_id)})")
-                cur.execute("""
+                self.logger.info(f"DEBUG: get_user_conversations querying for user_id={user_id} role={role}")
+                
+                query = """
                     SELECT conversation_id FROM conversation_participants 
                     WHERE user_id = %s AND (is_archived IS FALSE OR is_archived IS NULL)
-                """, (user_id,))
+                """
+                params = [user_id]
+                
+                if role:
+                    # If role specified:
+                    # STRICTLY show only conversations where matches specified role.
+                    # We do NOT show NULLS anymore to prevent bleeding.
+                    query += " AND role = %s"
+                    params.append(role)
+                
+                cur.execute(query, tuple(params))
                 rows = cur.fetchall()
                 conv_ids = [r['conversation_id'] for r in rows]
                 self.logger.info(f"DEBUG: Found conversation IDs: {conv_ids}")

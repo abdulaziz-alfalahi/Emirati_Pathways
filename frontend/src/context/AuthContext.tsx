@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { normalizeRole } from '@/types/auth'; // Import normalization helper
 import { authService } from '@/services/authService';
 
 // User interface with all necessary properties for role-based routing
@@ -13,6 +14,8 @@ export interface User {
   emirate?: string;
   user_type?: string;  // Primary role field
   role?: string;       // Alternative role field
+  company_id?: string; // Company ID for HR users
+  company_name?: string; // Company Name for HR users
   roles?: string[];    // Array of roles
   secondary_roles?: string[]; // Secondary roles from backend
   // Supabase/Auth0 style metadata
@@ -76,8 +79,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    // window.addEventListener('storage', handleStorageChange);
-    // return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen to custom 'auth-change' events if we decide to dispatch them manually
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const initializeAuth = async () => {
@@ -242,62 +246,87 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return null;
 
     // Try different role sources in order of preference
+    let role = null;
     if (user.roles && user.roles.length > 0) {
-      return user.roles[0];
+      role = user.roles[0];
+    } else if (user.role) {
+      role = user.role;
+    } else if (user.user_type) {
+      role = user.user_type;
+    } else if (user.user_metadata?.roles && user.user_metadata.roles.length > 0) {
+      role = user.user_metadata.roles[0];
+    } else if (user.user_metadata?.user_type) {
+      role = user.user_metadata.user_type;
     }
 
-    if (user.role) {
-      return user.role;
-    }
-
-    if (user.user_type) {
-      return user.user_type;
-    }
-
-    if (user.user_metadata?.roles && user.user_metadata.roles.length > 0) {
-      return user.user_metadata.roles[0];
-    }
-
-    if (user.user_metadata?.user_type) {
-      return user.user_metadata.user_type;
-    }
-
-    return null;
+    return role ? normalizeRole(role) as string : null;
   };
 
   // Check if user has specific role
   const hasRole = (targetRole: string): boolean => {
     const userRole = getUserRole();
-    return userRole?.toLowerCase() === targetRole.toLowerCase();
+    return userRole === normalizeRole(targetRole);
   };
 
   // Switch user's active role context
   const switchRole = async (newRole: string): Promise<void> => {
-    if (!user) return;
+    // CRITICAL FIX: Read from localStorage to bypass closure staleness
+    // When refreshUser() is called immediately before switchRole(), 
+    // the 'user' state variable in this closure is still the OLD value.
+    let currentUser = user;
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        currentUser = JSON.parse(storedUser);
+      }
+    } catch (e) {
+      console.warn("Failed to parse stored user in switchRole", e);
+    }
 
-    // Verify user has this role
-    const allRoles = [user.user_type, user.role, ...(user.secondary_roles || [])].filter(Boolean);
-    const hasTargetRole = allRoles.some(r => r?.toLowerCase() === newRole.toLowerCase());
+    if (!currentUser) return;
+
+    const targetRoleNormalized = normalizeRole(newRole) as string;
+
+    // Verify user has this role (normalize everything for comparison)
+    const allRoles = [currentUser.user_type, currentUser.role, ...(currentUser.secondary_roles || [])]
+      .filter(Boolean)
+      .map(r => normalizeRole(r as string));
+
+    const hasTargetRole = allRoles.includes(targetRoleNormalized);
 
     // Also allow switching back to primary role if defined in user_type/role
+    // (Already covered by including currentUser.user_type in allRoles above)
 
-    if (hasTargetRole || newRole === user.user_type || newRole === user.role) {
+    if (hasTargetRole) {
+      // Reorder roles array to put the new active role first (so getUserRole picks it up)
+      const currentRoles = currentUser.roles || [];
+      const otherRoles = currentRoles
+        .map(r => normalizeRole(r))
+        .filter(r => r !== targetRoleNormalized);
+
+      // Ensure the new role is at the front
+      const newRoles = [targetRoleNormalized, ...otherRoles];
+
       const updatedUser = {
-        ...user,
-        role: newRole,
-        // Also update nested metadata if it exists to be consistent
+        ...currentUser,
+        role: targetRoleNormalized,      // Update explicit active role
+        user_type: targetRoleNormalized, // Update legacy user_type to match
+        roles: newRoles,                 // Update roles array order
+        // Update metadata for consistency if it exists
         user_metadata: {
-          ...user.user_metadata,
-          roles: [newRole, ...(user.user_metadata?.roles?.slice(1) || [])]
+          ...currentUser.user_metadata,
+          roles: newRoles,
+          user_type: targetRoleNormalized
         }
       };
 
+      // @ts-ignore
       setUser(updatedUser);
-      console.log(`Switched role to ${newRole}`);
+      console.log(`Switched role to ${targetRoleNormalized}`);
     } else {
-      console.warn(`Attempted to switch to unauthorized role: ${newRole}`);
+      console.warn(`Attempted to switch to unauthorized role: ${newRole} (normalized: ${targetRoleNormalized})`);
       // meaningful error for UI
-      throw new Error(`You do not have the ${newRole} role.`);
+      throw new Error(`You do not have the ${targetRoleNormalized} role.`);
     }
   };
 

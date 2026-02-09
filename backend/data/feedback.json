@@ -502,7 +502,7 @@
       "timestamp": "2026-01-12T16:56:44.551Z",
       "path": "/profile"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-12T16:56:41.905058"
   },
   {
@@ -518,7 +518,7 @@
       "timestamp": "2026-01-12T17:39:47.960Z",
       "path": "/candidate-dashboard"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-12T17:39:48.001972"
   },
   {
@@ -550,7 +550,7 @@
       "timestamp": "2026-01-13T06:33:26.249Z",
       "path": "/admin-dashboard"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-13T06:33:26.523094"
   },
   {
@@ -566,7 +566,7 @@
       "timestamp": "2026-01-14T02:43:18.430Z",
       "path": "/cv-builder"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-14T02:43:18.473995"
   },
   {
@@ -587,7 +587,7 @@
       "timestamp": "2026-01-14T09:38:33.984Z",
       "path": "/profile"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-14T09:38:34.046320"
   },
   {
@@ -603,7 +603,7 @@
       "timestamp": "2026-01-14T11:40:03.377Z",
       "path": "/recruiter-dashboard"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-14T11:40:03.421075"
   },
   {
@@ -619,7 +619,7 @@
       "timestamp": "2026-01-15T11:34:14.390Z",
       "path": "/candidate-dashboard"
     },
-    "status": "open",
+    "status": "resolved",
     "created_at": "2026-01-15T11:34:14.398823"
   },
   {
@@ -637,5 +637,56 @@
     },
     "status": "open",
     "created_at": "2026-01-15T11:38:20.464701"
+  },
+  {
+    "id": "37917ab3-f523-4404-b32d-deadd8f5e490",
+    "user_id": "75",
+    "role": "student",
+    "message": "I signed in as a student, and I am getting a Job seeker dashboard. ",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2549x1264",
+      "timestamp": "2026-01-15T16:58:07.711Z",
+      "path": "/candidate-dashboard"
+    },
+    "status": "open",
+    "created_at": "2026-01-15T16:58:07.719019"
+  },
+  {
+    "id": "cf7973c8-b611-42b3-9395-7e0591448ef3",
+    "user_id": "81",
+    "role": "student",
+    "message": "When I update my personal details in both my student role and my job seeker role,  and click save, they are not saved.",
+    "type": "bug",
+    "console_logs": [],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "1556x1264",
+      "timestamp": "2026-01-18T10:41:51.368Z",
+      "path": "/profile"
+    },
+    "status": "open",
+    "created_at": "2026-01-18T10:41:51.381680"
+  },
+  {
+    "id": "a6c1ba20-fc69-49f9-aa99-31641f469612",
+    "user_id": "81",
+    "role": "student",
+    "message": "Profile updates are not saved. ",
+    "type": "bug",
+    "console_logs": [
+      "[WARN] Authentication failed for notifications, stopping polling",
+      "[WARN] Authentication failed for notifications, stopping polling"
+    ],
+    "metadata": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "screenSize": "2124x1053",
+      "timestamp": "2026-01-19T09:21:56.321Z",
+      "path": "/profile"
+    },
+    "status": "open",
+    "created_at": "2026-01-19T09:21:56.938664"
   }
 ]

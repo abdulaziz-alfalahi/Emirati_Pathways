@@ -13,6 +13,8 @@ import enCareerAdvisory from '../locales/en/career-advisory.json';
 import arCareerAdvisory from '../locales/ar/career-advisory.json';
 import enCVBuilder from '../locales/en/cv-builder.json';
 import arCVBuilder from '../locales/ar/cv-builder.json';
+import enAssessments from '../locales/en/assessments.json';
+import arAssessments from '../locales/ar/assessments.json';
 
 
 const resources = {
@@ -20,13 +22,15 @@ const resources = {
     translation: enTranslations,
     'career-planning-hub': enCareerPlanningHub,
     'career-advisory': enCareerAdvisory,
-    'cv-builder': enCVBuilder
+    'cv-builder': enCVBuilder,
+    'assessments': enAssessments
   },
   ar: {
     translation: arTranslations,
     'career-planning-hub': arCareerPlanningHub,
     'career-advisory': arCareerAdvisory,
-    'cv-builder': arCVBuilder
+    'cv-builder': arCVBuilder,
+    'assessments': arAssessments
   }
 };
 
@@ -41,7 +45,7 @@ i18n
     },
     lng: 'en',
     defaultNS: 'translation',
-    ns: ['translation', 'career-planning-hub', 'career-advisory', 'cv-builder'],
+    ns: ['translation', 'career-planning-hub', 'career-advisory', 'cv-builder', 'assessments'],
     keySeparator: false,
     nsSeparator: ':',
     returnObjects: true,

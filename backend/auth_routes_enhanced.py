@@ -23,6 +23,12 @@ AVAILABLE_ROLES = [
         'dashboard': '/candidate-dashboard'
     },
     {
+        'id': 'student',
+        'name': 'Student',
+        'description': 'Access student resources, academic tracking, and career guidance',
+        'dashboard': '/student-dashboard'
+    },
+    {
         'id': 'hr_recruiter',
         'name': 'HR / Recruiter',
         'description': 'Streamline hiring with advanced recruitment tools',

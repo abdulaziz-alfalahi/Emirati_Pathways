@@ -6,6 +6,7 @@ import UserMenu from '@/components/layout/UserMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { NotificationBell } from '@/components/notifications/NotificationSystem';
+import { AccessibilityToolbar } from '@/components/accessibility/AccessibilityToolbar';
 
 interface HybridGovernmentNavProps {
   showAuthButtons?: boolean;
@@ -108,7 +109,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   return (
     <>
       {/* Main Government Header */}
-      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center h-20`}>
             {/* Government Logos Section */}
@@ -136,6 +137,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
             {/* Navigation Actions */}
             <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
+
+              {/* Accessibility & Theme Toolbar */}
+              <AccessibilityToolbar />
+
               {/* Language Toggle */}
               {onLanguageToggle && (
                 <button
@@ -172,7 +177,9 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     <div className="hidden sm:flex items-center space-x-2">
                       <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
                       <span className="text-sm text-slate-600">
-                        {getRoleDisplayName(userRole)}
+                        {(user?.full_name === 'New Member' || (user?.first_name === 'New' && user?.last_name === 'Member'))
+                          ? 'New Member'
+                          : getRoleDisplayName(userRole)}
                       </span>
                     </div>
                   )}
@@ -217,7 +224,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 </button>
 
                 {activeDropdown === group.id && (
-                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50`}>
+                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-popover rounded-lg shadow-xl border border-border z-50`}>
                     <div className="p-4">
                       <div className="mb-3">
                         <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
@@ -253,7 +260,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 shadow-lg">
+        <div className="lg:hidden bg-background border-b border-border shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="space-y-4">
               {/* Mobile Language Toggle */}

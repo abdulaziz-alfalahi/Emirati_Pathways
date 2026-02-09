@@ -14,6 +14,7 @@ export interface Conversation {
   id: string;
   participantId: string;
   participantName: string;
+  jobTitle?: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;

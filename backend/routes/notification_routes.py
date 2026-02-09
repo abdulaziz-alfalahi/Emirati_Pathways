@@ -11,13 +11,13 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 # Import notification system components
-from backend.notification_system import NotificationType, NotificationPriority
+from notification_system import NotificationType, NotificationPriority
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Create Blueprint
-notification_bp = Blueprint('notifications', __name__, url_prefix='/api/notifications')
+notification_bp = Blueprint('notifications', __name__)
 
 def get_notification_system():
     """Get notification system from app context"""
