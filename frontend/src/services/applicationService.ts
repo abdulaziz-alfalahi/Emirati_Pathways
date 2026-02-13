@@ -1,7 +1,8 @@
 // Application Service for Emirati Journey Platform
 // Handles all application-related API calls to the backend
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+// Use Vite proxy (empty string) to route through the dev server to the backend (port 5005)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface ApplicationData {
   id?: string;
@@ -153,8 +154,8 @@ class ApplicationService {
   }
 
   async updateApplicationStatus(
-    applicationId: string, 
-    status: string, 
+    applicationId: string,
+    status: string,
     notes?: string
   ): Promise<ApplicationResponse> {
     try {
@@ -240,8 +241,8 @@ class ApplicationService {
   }
 
   async addRecruiterNotes(
-    applicationId: string, 
-    notes: string, 
+    applicationId: string,
+    notes: string,
     rating?: number
   ): Promise<ApplicationResponse> {
     try {

@@ -450,10 +450,12 @@ def record_candidate_response(offer_id, response, notes=''):
         if response not in valid_responses:
             return {'success': False, 'error': f'Invalid response. Must be one of: {valid_responses}'}
         
-        # Get shortlist_id before updating
-        cur.execute("SELECT shortlist_id FROM job_offers WHERE offer_id = %s", (offer_id,))
+        # Get shortlist_id, recruiter_id, and position_title before updating
+        cur.execute("SELECT shortlist_id, recruiter_id, position_title FROM job_offers WHERE offer_id = %s", (offer_id,))
         result = cur.fetchone()
         shortlist_id = result[0] if result else None
+        recruiter_id = result[1] if result else None
+        position_title = result[2] if result else 'a position'
         
         # Determine new status based on response
         new_status = response
@@ -491,6 +493,92 @@ def record_candidate_response(offer_id, response, notes=''):
                     'rejected', 
                     f'Candidate rejected offer {offer_id}'
                 )
+        
+        # Create notification for the recruiter
+        if recruiter_id:
+            try:
+                notif_conn = get_db_connection()
+                notif_cur = notif_conn.cursor()
+                
+                if response == 'accepted':
+                    notif_title = 'Offer Accepted'
+                    notif_content = f'Great news! The candidate has accepted your offer for {position_title}.'
+                    notif_type = 'offer_accepted'
+                elif response == 'rejected':
+                    notif_title = 'Offer Declined'
+                    notif_content = f'The candidate has declined your offer for {position_title}.'
+                    notif_type = 'offer_declined'
+                else:  # negotiating
+                    notif_title = 'Offer Negotiation Started'
+                    notif_content = f'The candidate wants to negotiate the offer for {position_title}.'
+                    notif_type = 'offer_negotiation'
+                
+                notif_metadata = json.dumps({
+                    'offer_id': offer_id,
+                    'position_title': position_title,
+                    'candidate_response': response,
+                    'link': '/recruiter?tab=offers'
+                })
+                
+                notif_cur.execute("""
+                    INSERT INTO notifications (user_id, type, title, content, metadata)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (str(recruiter_id), notif_type, notif_title, notif_content, notif_metadata))
+                
+                notif_conn.commit()
+                notif_cur.close()
+                notif_conn.close()
+                logger.info(f"Notification sent to recruiter {recruiter_id} for candidate response '{response}' on offer {offer_id}")
+            except Exception as notif_err:
+                logger.warning(f"Failed to create notification for recruiter {recruiter_id}: {notif_err}")
+        
+        # Sync candidate response status to the `offers` and `offer_approval_requests` tables
+        # These are the tables queried by the recruiter dashboard
+        try:
+            sync_conn = get_db_connection()
+            sync_cur = sync_conn.cursor()
+            
+            # Map candidate response to dashboard-friendly status
+            dashboard_status = response  # 'accepted', 'rejected', 'negotiating'
+            if response == 'rejected':
+                dashboard_status = 'declined'
+            
+            # Update offers table (used by recruiter dashboard fallback)
+            # Match by candidate_id and current 'sent' status
+            sync_cur.execute("""
+                UPDATE offers 
+                SET status = %s, updated_at = NOW()
+                WHERE candidate_id = %s AND status = 'sent'
+            """, (dashboard_status, result[3] if result and len(result) > 3 else None))
+            
+            # Also try matching by candidate_id from the job_offers record
+            if result:
+                # Get candidate_id from job_offers table
+                sync_cur.execute("SELECT candidate_id FROM job_offers WHERE offer_id = %s", (offer_id,))
+                jf_row = sync_cur.fetchone()
+                if jf_row:
+                    candidate_id_val = jf_row[0]
+                    sync_cur.execute("""
+                        UPDATE offers 
+                        SET status = %s, updated_at = NOW()
+                        WHERE candidate_id::text = %s AND status = 'sent'
+                    """, (dashboard_status, str(candidate_id_val)))
+                    
+                    # Also update offer_approval_requests (primary table for dashboard)
+                    sync_cur.execute("""
+                        UPDATE offer_approval_requests
+                        SET status = %s, updated_at = NOW()
+                        WHERE candidate_id::text = %s AND status = 'approved'
+                    """, (dashboard_status, str(candidate_id_val)))
+                    
+                    rows_updated = sync_cur.rowcount
+                    logger.info(f"Synced candidate response '{response}' to dashboard tables for candidate {candidate_id_val} (approval_requests updated: {rows_updated})")
+            
+            sync_conn.commit()
+            sync_cur.close()
+            sync_conn.close()
+        except Exception as sync_err:
+            logger.warning(f"Failed to sync candidate response to dashboard tables: {sync_err}")
         
         logger.info(f"Candidate response recorded for offer: {offer_id} - {response}")
         return {'success': True, 'message': 'Response recorded successfully'}

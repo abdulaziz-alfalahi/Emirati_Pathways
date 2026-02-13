@@ -430,7 +430,7 @@ class MentorSessionScheduler:
             with self.get_database_connection() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT id FROM users WHERE id = %s AND role = 'candidate'
+                        SELECT id FROM users WHERE id = %s AND role = 'job_seeker'
                     """, (mentee_id,))
                     
                     result = cursor.fetchone()

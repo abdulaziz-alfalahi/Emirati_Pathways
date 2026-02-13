@@ -14,7 +14,12 @@ from psycopg2.extras import RealDictCursor
 import os
 import uuid
 from functools import wraps
-from services.communication_service import communication_service, MessageType, NotificationType
+try:
+    from backend.services.communication_service import communication_service, MessageType, NotificationType
+except ImportError:
+    communication_service = None
+    MessageType = None
+    NotificationType = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

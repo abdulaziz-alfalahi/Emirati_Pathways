@@ -232,18 +232,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     };
 
     const isRecruiter = userType === 'recruiter' || userType === 'hr_recruiter';
+    const isHRManager = userType === 'hr_manager' || userType === 'hr';
     const isCandidate = userType === 'candidate' || userType === 'job_seeker';
 
     const handleToastClick = () => {
       if (notification_type === 'new_message' && notification.metadata?.conversation_id) {
         if (isCandidate) {
           navigate(`/candidate-dashboard?tab=messages&conversation=${notification.metadata.conversation_id}`);
+        } else if (isHRManager) {
+          navigate(`/hr-dashboard?tab=messages&conversationId=${notification.metadata.conversation_id}`);
         } else {
           navigate(`/messages?conversation=${notification.metadata.conversation_id}`);
         }
       } else if (notification_type === 'application_update') {
         if (isRecruiter) {
           navigate('/recruiter/jobs');
+        } else if (isHRManager) {
+          navigate('/hr-dashboard?tab=positions');
         } else if (isCandidate) {
           navigate('/candidate-dashboard?tab=applications');
         } else {
@@ -253,6 +258,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       else if (notification_type === 'interview_scheduled') {
         if (isRecruiter) {
           navigate('/recruiter/interviews/details');
+        } else if (isHRManager) {
+          navigate('/hr-dashboard?tab=interviews');
         } else if (isCandidate) {
           navigate('/candidate-dashboard?tab=interviews');
         }
@@ -527,8 +534,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
 
     // Navigation Logic
     const isRecruiter = user?.role === 'recruiter' || user?.role === 'hr_recruiter' || user?.user_type === 'recruiter' || user?.user_type === 'hr_recruiter';
-    // Default to isCandidate if not recruiter to ensure candidates always get routed correctly
-    const isCandidate = !isRecruiter;
+    const isHRManager = user?.role === 'hr_manager' || user?.role === 'hr' || user?.user_type === 'hr_manager' || user?.user_type === 'hr';
+    // Default to isCandidate if not recruiter OR hr_manager to ensure candidates always get routed correctly
+    const isCandidate = !isRecruiter && !isHRManager;
 
     // Helper to detect intent from text if type is ambiguous
     const text = (notification.title + ' ' + notification.content).toLowerCase();
@@ -540,12 +548,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       if (conversationId) {
         if (isCandidate) {
           navigate(`/candidate-dashboard?tab=messages&conversation=${conversationId}`);
+        } else if (isHRManager) {
+          navigate(`/hr-dashboard?tab=messages&conversationId=${conversationId}`);
         } else {
           navigate(`/messages?conversation=${conversationId}`);
         }
       } else {
         if (isCandidate) {
           navigate('/candidate-dashboard?tab=messages');
+        } else if (isHRManager) {
+          navigate('/hr-dashboard?tab=messages');
         } else {
           navigate('/messages');
         }
@@ -558,6 +570,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
         } else {
           navigate('/recruiter/interviews/details');
         }
+      } else if (isHRManager) {
+        navigate('/hr-dashboard?tab=interviews');
       } else {
         navigate('/candidate-dashboard?tab=interviews');
       }
@@ -565,13 +579,15 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     else if (type === 'application_update' || type === 'application_submitted' || type === 'application_reviewed') {
       if (isRecruiter) {
         navigate('/recruiter/jobs');
+      } else if (isHRManager) {
+        navigate('/hr-dashboard?tab=positions');
       } else {
         navigate('/candidate-dashboard?tab=applications');
       }
     }
     else if (type === 'job_alert') {
       if (metadata.job_id) {
-        navigate(`/jobs/${metadata.job_id}`);
+        navigate(`/jobs/${metadata.job_id}`); // TODO: HR view for specific job?
       } else {
         navigate('/jobs');
       }
@@ -585,7 +601,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
           navigate('/admin-dashboard?tab=feedback');
         } else {
           // New logic: Trigger Feedback Widget via Deep Link
-          const basePath = isRecruiter ? '/recruiter-dashboard' : '/candidate-dashboard';
+          let basePath = '/candidate-dashboard';
+          if (isRecruiter) basePath = '/recruiter-dashboard';
+          if (isHRManager) basePath = '/hr-dashboard';
+
           navigate(`${basePath}?action=feedback_history`);
         }
       }

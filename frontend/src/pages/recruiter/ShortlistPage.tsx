@@ -1,6 +1,8 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ShortlistManager } from '@/components/recruiter/shortlist/ShortlistManager';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 /**
  * Shortlist Page
@@ -8,6 +10,7 @@ import { ShortlistManager } from '@/components/recruiter/shortlist/ShortlistMana
  */
 const ShortlistPage: React.FC = () => {
   const { jdId } = useParams<{ jdId: string }>();
+  const navigate = useNavigate();
 
   if (!jdId) {
     return (
@@ -21,10 +24,20 @@ const ShortlistPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="px-4 pt-3 pb-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/recruiter')}
+          className="gap-1 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </div>
       <ShortlistManager jdId={jdId} />
     </div>
   );
 };
 
 export default ShortlistPage;
-

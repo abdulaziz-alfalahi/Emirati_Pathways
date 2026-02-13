@@ -34,13 +34,14 @@ DATABASE_CONFIG = {
 
 # Valid roles
 VALID_ROLES = [
-    'super_admin', 'administrator', 'admin',
+    'super_admin', 'administrator',
     'content_admin', 'user_admin',
     'content_editor', 'content_reviewer',
-    'job_seeker', 'candidate',
-    'recruiter', 'hr_manager', 'hr',
+    'job_seeker',
+    'recruiter', 'hr_manager',
     'mentor', 'educator', 'student', 'guardian', 'assessor',
-    'growth_operator', 'growth_operator_candidate', 'growth_operator_company',
+    'retiree', 'operator',
+    'growth_operator_candidate', 'growth_operator_company',
     'growth_operator_education', 'growth_operator_assessment',
     'growth_operator_mentorship', 'growth_operator_community',
     'growth_operator_monitoring'
@@ -771,7 +772,6 @@ def list_roles():
             {'id': 'content_editor', 'name': 'content_editor', 'display_name': 'Content Editor', 'description': 'Edit content', 'permissions': [], 'is_system': True},
             {'id': 'content_reviewer', 'name': 'content_reviewer', 'display_name': 'Content Reviewer', 'description': 'Review content', 'permissions': [], 'is_system': True},
             {'id': 'job_seeker', 'name': 'job_seeker', 'display_name': 'Job Seeker', 'description': 'Search and apply for jobs', 'permissions': [], 'is_system': True},
-            {'id': 'candidate', 'name': 'candidate', 'display_name': 'Candidate', 'description': 'Job candidate', 'permissions': [], 'is_system': True},
             {'id': 'recruiter', 'name': 'recruiter', 'display_name': 'Recruiter', 'description': 'Post jobs and screen candidates', 'permissions': [], 'is_system': True},
             {'id': 'hr_manager', 'name': 'hr_manager', 'display_name': 'HR Manager', 'description': 'Manage HR operations', 'permissions': [], 'is_system': True},
             {'id': 'mentor', 'name': 'mentor', 'display_name': 'Mentor', 'description': 'Provide mentorship', 'permissions': [], 'is_system': True},
@@ -779,7 +779,7 @@ def list_roles():
             {'id': 'student', 'name': 'student', 'display_name': 'Student', 'description': 'Student', 'permissions': [], 'is_system': True},
             {'id': 'guardian', 'name': 'guardian', 'display_name': 'Guardian', 'description': 'Guardian', 'permissions': [], 'is_system': True},
             {'id': 'assessor', 'name': 'assessor', 'display_name': 'Assessor', 'description': 'Conduct assessments', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator', 'name': 'growth_operator', 'display_name': 'Growth Operator', 'description': 'Platform growth operations', 'permissions': [], 'is_system': True},
+            {'id': 'operator', 'name': 'operator', 'display_name': 'Growth Operator', 'description': 'Platform growth operations', 'permissions': [], 'is_system': True},
             {'id': 'growth_operator_candidate', 'name': 'growth_operator_candidate', 'display_name': 'Candidate Onboarding Operator', 'description': 'Candidate operations and onboarding', 'permissions': [], 'is_system': True},
             {'id': 'growth_operator_company', 'name': 'growth_operator_company', 'display_name': 'Company Onboarding Operator', 'description': 'Private sector company onboarding', 'permissions': [], 'is_system': True},
             {'id': 'growth_operator_monitoring', 'name': 'growth_operator_monitoring', 'display_name': 'Monitoring Center Operator', 'description': 'Monitoring and status tracking', 'permissions': [], 'is_system': True},

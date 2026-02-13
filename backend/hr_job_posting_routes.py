@@ -303,14 +303,13 @@ def get_job_postings():
                 # If user has a company, show company jobs and their own jobs
                 where_conditions.append("(jp.company_id::text = %s OR jp.recruiter_id::text = %s)")
                 params.extend([company_id, current_user_id])
-            elif user_role in ('hr_manager', 'admin'):
-                # HR Managers and Admins can see all job postings when no company is assigned
-                # This allows them to have an overview of all positions
-                logger.info(f"HR Manager/Admin {current_user_id} viewing all job postings")
+            elif user_role == 'admin':
+                # Admins can see all job postings
+                logger.info(f"Admin {current_user_id} viewing all job postings")
                 # No filter needed - show all jobs
                 pass
             else:
-                # Regular recruiters only see their own jobs
+                # Regular recruiters AND HR Managers without company only see their own jobs
                 where_conditions.append("jp.recruiter_id::text = %s")
                 params.append(current_user_id)
             
@@ -1222,7 +1221,7 @@ def publish_and_match(job_id):
                     u.experience_years, u.preferred_salary_min, u.preferred_salary_max,
                     u.preferred_location, u.is_uae_national, u.skills, u.last_login
                 FROM users u
-                WHERE u.role = 'candidate' AND u.is_active = true
+                WHERE u.role = 'job_seeker' AND u.is_active = true
                 LIMIT 500
             """)
             candidates = [dict(r) for r in cursor.fetchall()]
@@ -1364,7 +1363,7 @@ def add_to_shortlist(job_id):
                 return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
 
             # Ensure candidate exists and is a candidate
-            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'candidate'", (candidate_id,))
+            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'job_seeker'", (candidate_id,))
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Candidate not found'}), 404
 
@@ -1613,60 +1612,7 @@ def create_job_template():
         logger.error(f"Error creating job template: {str(e)}")
         return jsonify({'success': False, 'message': 'Failed to create job template'}), 500
 
-@hr_job_posting_bp.route('/shortlisted-candidates', methods=['GET'])
-@jwt_required()
-def get_my_shortlisted_candidates():
-    """Retrieve all shortlisted candidates for the current HR user's company"""
-    try:
-        current_user_id = get_jwt_identity()
-        claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
-            return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
+# REMOVED: get_my_shortlisted_candidates was dead code — shadowed by
+# REMOVED: hr_dashboard_api.get_all_shortlisted_candidates (registered first via blueprint).
 
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        try:
-            # Get company ID first
-            cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
-            hr_profile = cursor.fetchone()
-            
-            query = """
-                SELECT 
-                    sc.candidate_id,
-                    sc.job_id as job_posting_id,
-                    sc.notes,
-                    sc.created_at,
-                    u.first_name,
-                    u.last_name,
-                    u.email,
-                    u.job_title as current_title,
-                    jp.title as job_title,
-                    'System' as added_by
-                FROM shortlisted_candidates sc
-                JOIN job_postings jp ON sc.job_id = jp.id
-                JOIN users u ON sc.candidate_id = u.id
-                WHERE 1=1
-            """
-            params = []
-
-            if hr_profile and hr_profile['company_id']:
-                query += " AND jp.company_id::text = %s"
-                params.append(str(hr_profile['company_id']))
-            else:
-                # Fallback: only jobs created by this user if no company link
-                query += " AND jp.created_by = %s"
-                params.append(current_user_id)
-            
-            query += " ORDER BY sc.created_at DESC LIMIT 50"
-            
-            cursor.execute(query, tuple(params))
-            rows = [dict(r) for r in cursor.fetchall()]
-
-            return jsonify({'success': True, 'data': rows})
-        finally:
-            cursor.close()
-            conn.close()
-    except Exception as e:
-        logger.error(f"Error getting my shortlisted candidates: {str(e)}")
-        return jsonify({'success': False, 'message': 'Failed to fetch shortlisted candidates'}), 500
 

@@ -8,6 +8,7 @@ export type UserRole =
   | 'recruiter'
   | 'hr_recruiter' // Specific HR Recruiter Role
   | 'educator'
+  | 'guardian'
   | 'administrator'
   | 'admin'
   // Growth Operator Roles (Domain-Specific)
@@ -96,13 +97,11 @@ export interface AuthUser {
 
 // Login/Register Types
 export interface LoginCredentials {
-  email: string;
-  password: string;
+  phone: string;
 }
 
 export interface RegisterData {
   email: string;
-  password: string;
   first_name: string;
   last_name: string;
   phone: string;
@@ -142,6 +141,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'recruiter': '/recruiter',
   'hr_recruiter': '/recruiter', // Alias for hr/recruiter role
   'educator': '/educator-dashboard',
+  'guardian': '/guardian-dashboard',
   'administrator': '/admin-dashboard',
   'admin': '/admin-dashboard',
   // Growth Operator Routes
@@ -164,6 +164,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'recruiter': 'Recruiter',
   'hr_recruiter': 'HR / Recruiter',
   'educator': 'Educator',
+  'guardian': 'Guardian / Parent',
   'administrator': 'Administrator',
   'admin': 'Administrator',
   // Growth Operator Display Names
@@ -231,6 +232,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'recruiter': ['manage_candidates', 'post_jobs', 'screen_candidates'],
   'hr_recruiter': ['manage_candidates', 'post_jobs', 'screen_candidates'],
   'educator': ['manage_profile'],
+  'guardian': ['view_jobs', 'manage_profile'],
   'administrator': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'],
   'admin': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'],
   // Growth Operator Permissions

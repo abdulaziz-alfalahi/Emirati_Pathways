@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -52,10 +52,40 @@ export default function RecruiterInterviews() {
 
   const fetchSessions = async () => {
     try {
-      const res = await restClient.get('/api/video-interview/sessions?role=recruiter');
-      if (res.data.success) {
-        setSessions(res.data.sessions || []);
-      }
+      // Fetch both video-interview sessions and scheduled interviews in parallel
+      const [videoRes, scheduledRes] = await Promise.all([
+        restClient.get('/api/video-interview/sessions?role=recruiter').catch(() => ({ data: { success: false } })),
+        restClient.get('/api/recruiter/interviews/all').catch(() => ({ data: { success: false } })),
+      ]);
+
+      const videoSessions = videoRes.data?.success ? (videoRes.data.sessions || []) : [];
+
+      // Normalize scheduled interviews to match video session card shape
+      const scheduledInterviews = scheduledRes.data?.success
+        ? (scheduledRes.data.interviews || []).map((interview: any) => ({
+          id: interview.id || interview.interview_id,
+          title: interview.title || `${interview.interview_type || 'Interview'}`,
+          job_title: interview.jd_id ? `JD: ${interview.jd_id.slice(0, 8)}...` : '',
+          candidate_first_name: interview.candidate_first_name || '',
+          candidate_last_name: interview.candidate_last_name || '',
+          scheduled_time: interview.scheduled_date
+            ? `${interview.scheduled_date}T${interview.scheduled_time || '00:00:00'}`
+            : interview.scheduled_at,
+          status: interview.status || 'scheduled',
+          duration_minutes: interview.duration_minutes || 60,
+          interview_type: interview.interview_type || 'video',
+          source: 'scheduled',
+        }))
+        : [];
+
+      // Merge, deduplicating by id
+      const existingIds = new Set(videoSessions.map((s: any) => s.id));
+      const merged = [
+        ...videoSessions,
+        ...scheduledInterviews.filter((s: any) => !existingIds.has(s.id)),
+      ];
+
+      setSessions(merged);
     } catch (error) {
       console.error(error);
     } finally {
@@ -63,8 +93,11 @@ export default function RecruiterInterviews() {
     }
   };
 
+  const navigate = useNavigate();
+
   const handleJoin = (session: any) => {
-    setActiveSession(session);
+    // Navigate to the dedicated video interview page which includes the AI analytics sidebar
+    navigate(`/recruiter/video-interview/${session.id}`);
   };
 
   const handleEndCall = () => {

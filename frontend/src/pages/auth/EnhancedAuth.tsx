@@ -20,14 +20,16 @@ const EnhancedAuthPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Form states
+  // Sign-up form states
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [emirate, setEmirate] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
+
+  // Sign-in form states (separate from sign-up to prevent leakage)
+  const [loginPhone, setLoginPhone] = useState('');
 
   // UI states
   const [error, setError] = useState('');
@@ -38,6 +40,7 @@ const EnhancedAuthPage: React.FC = () => {
 
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // UAE Emirates list
   const emirates = [
@@ -97,18 +100,13 @@ const EnhancedAuthPage: React.FC = () => {
     setError('');
     setSuccess('');
 
-    if (!email || !password || !firstName || !lastName || !phone || !emirate || !selectedRole) {
+    if (!email || !firstName || !lastName || !phone || !emirate || !selectedRole) {
       setError('Please fill in all fields');
       return;
     }
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
       return;
     }
 
@@ -125,7 +123,6 @@ const EnhancedAuthPage: React.FC = () => {
         first_name: firstName,
         last_name: lastName,
         email,
-        password,
         phone,
         emirate,
         user_type: selectedRole
@@ -171,17 +168,18 @@ const EnhancedAuthPage: React.FC = () => {
     setError('');
     setSuccess('');
 
-    if (!phone) {
+    if (!loginPhone) {
       setError('Phone number is required');
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await authService.requestOtp(phone);
+      const res = await authService.requestOtp(loginPhone);
       if (res.success) {
         setSuccess(res.message + (res.debug_otp ? ` (Code: ${res.debug_otp})` : ''));
         setOtpSent(true);
+        setResendCooldown(60);
       } else {
         setError(res.message || 'Failed to send OTP');
       }
@@ -190,6 +188,42 @@ const EnhancedAuthPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setError('');
+    setIsLoading(true);
+    try {
+      const res = await authService.requestOtp(loginPhone);
+      if (res.success) {
+        setSuccess('New code sent!' + (res.debug_otp ? ` (Code: ${res.debug_otp})` : ''));
+        setResendCooldown(60);
+      } else {
+        setError(res.message || 'Failed to resend OTP');
+      }
+    } catch (err) {
+      setError('Failed to resend OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  // Reset OTP state when switching tabs
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setError('');
+    setSuccess('');
+    setOtpSent(false);
+    setOtpCode('');
+    setResendCooldown(0);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -204,7 +238,7 @@ const EnhancedAuthPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await authService.loginWithOtp(phone, otpCode);
+      const response = await authService.loginWithOtp(loginPhone, otpCode);
       if (response.success && response.data) {
         // Store auth data
         localStorage.setItem('access_token', response.data.access_token);
@@ -343,20 +377,7 @@ const EnhancedAuthPage: React.FC = () => {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Minimum 8 characters with letters and numbers
-                </p>
-              </div>
+
 
               <Button
                 type="submit"
@@ -389,7 +410,7 @@ const EnhancedAuthPage: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Account Created Successfully!</h2>
               <p className="text-gray-600">
-                Welcome to the Emirati Journey Platform! Please check your email and phone for verification instructions.
+                Welcome to the Emirati Journey Platform! You can now sign in using your WhatsApp number.
               </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
@@ -443,7 +464,7 @@ const EnhancedAuthPage: React.FC = () => {
 
               <Card className="max-w-4xl mx-auto shadow-xl border-0">
                 <CardContent className="p-8">
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <Tabs value={activeTab} onValueChange={handleTabChange}>
                     <TabsList className="grid w-full grid-cols-2 mb-8">
                       <TabsTrigger value="signin" className="text-lg py-3">Sign In</TabsTrigger>
                       <TabsTrigger value="signup" className="text-lg py-3">Sign Up</TabsTrigger>
@@ -464,8 +485,8 @@ const EnhancedAuthPage: React.FC = () => {
                             <Input
                               id="login-phone"
                               type="tel"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
+                              value={loginPhone}
+                              onChange={(e) => setLoginPhone(e.target.value)}
                               placeholder="0501234567"
                               required
                               disabled={otpSent}
@@ -509,14 +530,27 @@ const EnhancedAuthPage: React.FC = () => {
                           </Button>
 
                           {otpSent && (
-                            <Button
-                              type="button"
-                              variant="link"
-                              className="w-full"
-                              onClick={() => setOtpSent(false)}
-                            >
-                              Change Phone Number
-                            </Button>
+                            <div className="flex flex-col items-center space-y-2">
+                              <Button
+                                type="button"
+                                variant="link"
+                                onClick={handleResendOtp}
+                                disabled={resendCooldown > 0 || isLoading}
+                                className="text-sm"
+                              >
+                                {resendCooldown > 0
+                                  ? `Resend code in ${resendCooldown}s`
+                                  : 'Resend Code'}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => { setOtpSent(false); setOtpCode(''); setResendCooldown(0); }}
+                              >
+                                Change Phone Number
+                              </Button>
+                            </div>
                           )}
                         </form>
                       </div>

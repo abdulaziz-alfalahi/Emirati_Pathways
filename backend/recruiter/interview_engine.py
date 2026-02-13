@@ -5,7 +5,11 @@ Core business logic for managing candidate interviews
 
 from enum import Enum
 from datetime import datetime, timedelta, time as dt_time
-from services.communication_service import communication_service, NotificationType
+try:
+    from backend.services.communication_service import communication_service, NotificationType
+except ImportError:
+    communication_service = None
+    NotificationType = None
 from typing import List, Dict, Optional, Tuple
 import uuid
 import logging

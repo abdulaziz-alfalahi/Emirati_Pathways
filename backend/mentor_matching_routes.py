@@ -62,7 +62,7 @@ def find_mentors():
         
         # Verify user is a candidate/mentee
         user_role = get_user_role(current_user_id)
-        if user_role != 'candidate':
+        if user_role != 'job_seeker':
             return jsonify({
                 'error': 'Only candidates can search for mentors',
                 'code': 'INVALID_ROLE'
@@ -187,14 +187,14 @@ def send_mentoring_request():
         
         if request_type == 'mentoring':
             # Candidate requesting mentoring from mentor
-            if current_user_role != 'candidate' or target_user_role != 'mentor':
+            if current_user_role != 'job_seeker' or target_user_role != 'mentor':
                 return jsonify({
                     'error': 'Invalid request: candidate can only request mentoring from mentors',
                     'code': 'INVALID_REQUEST_TYPE'
                 }), 400
         elif request_type == 'mentee':
             # Mentor requesting to mentor a candidate
-            if current_user_role != 'mentor' or target_user_role != 'candidate':
+            if current_user_role != 'mentor' or target_user_role != 'job_seeker':
                 return jsonify({
                     'error': 'Invalid request: mentor can only request to mentor candidates',
                     'code': 'INVALID_REQUEST_TYPE'
@@ -322,7 +322,7 @@ def get_matching_analytics():
                 analytics = matching_engine.get_match_analytics(mentor_id=mentor_profile['id'])
             else:
                 analytics = {}
-        elif user_role == 'candidate':
+        elif user_role == 'job_seeker':
             # Get mentee analytics
             analytics = matching_engine.get_match_analytics(mentee_id=current_user_id)
         else:
@@ -387,7 +387,7 @@ def get_potential_mentees(mentor_user_id, limit):
                     SELECT cp.*, u.full_name, u.email, u.emirate
                     FROM candidate_profiles cp
                     JOIN users u ON cp.user_id = u.id
-                    WHERE u.role = 'candidate'
+                    WHERE u.role = 'job_seeker'
                     AND cp.user_id NOT IN (
                         SELECT mentee_user_id FROM mentorship_matching 
                         WHERE mentor_id = (

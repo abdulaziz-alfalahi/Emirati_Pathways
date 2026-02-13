@@ -334,7 +334,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/recruiter/shortlist/:jdId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter', 'hr_manager', 'hr', 'administrator', 'admin']}>
                     <ShortlistPage />
                   </ProtectedRoute>
                 }
@@ -343,7 +343,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/candidate-profile/:candidateId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter', 'hr_manager', 'hr', 'administrator', 'admin']}>
                     <CandidateProfilePage />
                   </ProtectedRoute>
                 }

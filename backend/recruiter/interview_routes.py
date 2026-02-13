@@ -71,6 +71,55 @@ def health_check():
     }), 200
 
 
+@interview_bp.route('/all', methods=['GET'])
+@jwt_required()
+def get_all_recruiter_interviews():
+    """
+    Get all interviews for the current recruiter.
+    Returns interviews across all JDs with candidate names.
+    """
+    try:
+        recruiter_id = get_jwt_identity()
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Get all interviews where this user is the recruiter OR is listed as an interviewer/attendee
+        # interviewers JSONB can store IDs as integers [121] or strings ["121"], so check both
+        cur.execute("""
+            SELECT i.*,
+                   u.first_name as candidate_first_name,
+                   u.last_name as candidate_last_name,
+                   u.email as candidate_email
+            FROM interview_schedules i
+            LEFT JOIN users u ON CAST(i.candidate_id AS INTEGER) = u.id
+            WHERE i.recruiter_id = %s
+               OR (i.interviewers IS NOT NULL AND (
+                   i.interviewers @> %s::jsonb 
+                   OR i.interviewers @> %s::jsonb
+               ))
+            ORDER BY i.scheduled_date DESC, i.scheduled_time DESC
+        """, (str(recruiter_id), json.dumps([int(recruiter_id)]), json.dumps([str(recruiter_id)])))
+
+        columns = [desc[0] for desc in cur.description]
+        interviews = [dict(zip(columns, row)) for row in cur.fetchall()]
+        conn.close()
+
+        serialized_interviews = [serialize_interview(i) for i in interviews]
+
+        return jsonify({
+            'success': True,
+            'interviews': serialized_interviews
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching recruiter interviews: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @interview_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_interview():

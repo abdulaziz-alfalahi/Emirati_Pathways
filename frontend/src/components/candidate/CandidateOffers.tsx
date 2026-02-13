@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,9 @@ import {
   Send,
   AlertTriangle,
   PartyPopper,
-  Coins
+  Coins,
+  MessageCircle,
+  Mail
 } from 'lucide-react';
 import { formatCurrency } from '@/utils/currency';
 
@@ -65,10 +68,24 @@ export const CandidateOffers: React.FC = () => {
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
-  const [responseAction, setResponseAction] = useState<'accept' | 'decline' | null>(null);
+  const [responseAction, setResponseAction] = useState<'accept' | 'decline' | 'negotiate' | null>(null);
   const [responseMessage, setResponseMessage] = useState('');
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
+  const navigate = useNavigate();
+
+  // Expiry helper
+  const getExpiryInfo = (expiryDate: string | null) => {
+    if (!expiryDate) return null;
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const diffMs = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { label: 'Expired', className: 'bg-red-100 text-red-800 border-red-200', urgent: true, days: diffDays };
+    if (diffDays <= 3) return { label: `${diffDays}d left`, className: 'bg-red-100 text-red-800 border-red-200 animate-pulse', urgent: true, days: diffDays };
+    if (diffDays <= 7) return { label: `${diffDays}d left`, className: 'bg-amber-100 text-amber-800 border-amber-200', urgent: false, days: diffDays };
+    return { label: `${diffDays}d left`, className: 'bg-green-100 text-green-800 border-green-200', urgent: false, days: diffDays };
+  };
   const { toast } = useToast();
 
   useEffect(() => {
@@ -117,7 +134,7 @@ export const CandidateOffers: React.FC = () => {
     setShowOfferDialog(true);
   };
 
-  const handleRespondClick = (action: 'accept' | 'decline') => {
+  const handleRespondClick = (action: 'accept' | 'decline' | 'negotiate') => {
     setResponseAction(action);
     setResponseMessage('');
     setShowOfferDialog(false);
@@ -130,17 +147,18 @@ export const CandidateOffers: React.FC = () => {
     try {
       setProcessing(true);
       const res = await restClient.post(`/api/candidate/offers/${selectedOffer.id}/respond`, {
-        action: responseAction,
+        action: responseAction === 'negotiate' ? 'negotiate' : responseAction,
         message: responseMessage
       });
 
       if (res.data?.success) {
-        toast({
-          title: responseAction === 'accept' ? 'Offer Accepted!' : 'Offer Declined',
-          description: responseAction === 'accept'
-            ? 'Congratulations! The recruiter will be notified.'
-            : 'The recruiter will be notified of your decision.',
-        });
+        const toastMessages: Record<string, { title: string; description: string }> = {
+          accept: { title: 'Offer Accepted!', description: 'Congratulations! The recruiter will be notified.' },
+          decline: { title: 'Offer Declined', description: 'The recruiter will be notified of your decision.' },
+          negotiate: { title: 'Negotiation Started', description: 'The recruiter will be notified and can respond to your proposal.' }
+        };
+        const msg = toastMessages[responseAction || 'accept'];
+        toast({ title: msg.title, description: msg.description });
         setShowResponseDialog(false);
         setSelectedOffer(null);
         setResponseAction(null);
@@ -362,6 +380,15 @@ export const CandidateOffers: React.FC = () => {
                               Received: {new Date(offer.created_at).toLocaleDateString()}
                               {offer.recruiter_name && ` • From: ${offer.recruiter_name}`}
                             </p>
+                            {offer.expiry_date && offer.status === 'sent' && (() => {
+                              const expiry = getExpiryInfo(offer.expiry_date);
+                              return expiry ? (
+                                <Badge variant="outline" className={`mt-1 text-xs ${expiry.className}`}>
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {expiry.urgent ? '⚡ ' : ''}{expiry.label}
+                                </Badge>
+                              ) : null;
+                            })()}
                           </div>
                           <Button onClick={() => handleViewOffer(offer)}>
                             View Details
@@ -402,6 +429,28 @@ export const CandidateOffers: React.FC = () => {
                     </AlertDescription>
                   </Alert>
                 )}
+                {/* Expiry Warning */}
+                {selectedOffer.expiry_date && (selectedOffer.status === 'sent' || selectedOffer.status === 'negotiating') && (() => {
+                  const expiry = getExpiryInfo(selectedOffer.expiry_date);
+                  if (!expiry) return null;
+                  return expiry.urgent ? (
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-800 font-medium">
+                        {expiry.days < 0
+                          ? 'This offer has expired. Contact the recruiter if you are still interested.'
+                          : `⚡ This offer expires in ${expiry.days} day${expiry.days !== 1 ? 's' : ''}. Respond soon!`}
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-200">
+                      <Clock className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-amber-800">
+                        This offer expires in {expiry.days} days ({new Date(selectedOffer.expiry_date!).toLocaleDateString()}).
+                      </AlertDescription>
+                    </Alert>
+                  );
+                })()}
                 {selectedOffer.status === 'accepted' && (
                   <Alert className="bg-green-50 border-green-200">
                     <PartyPopper className="h-4 w-4 text-green-600" />
@@ -523,11 +572,21 @@ export const CandidateOffers: React.FC = () => {
             </ScrollArea>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
             <Button variant="outline" onClick={() => setShowOfferDialog(false)}>
               Close
             </Button>
-            {selectedOffer?.status === 'sent' && (
+            {selectedOffer?.recruiter_email && (
+              <Button
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => navigate('/candidate-dashboard?tab=messages')}
+              >
+                <Mail className="h-4 w-4 mr-1" />
+                Message Recruiter
+              </Button>
+            )}
+            {(selectedOffer?.status === 'sent' || selectedOffer?.status === 'negotiating') && (
               <>
                 <Button
                   variant="destructive"
@@ -535,6 +594,14 @@ export const CandidateOffers: React.FC = () => {
                 >
                   <XCircle className="h-4 w-4 mr-1" />
                   Decline Offer
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                  onClick={() => handleRespondClick('negotiate')}
+                >
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Negotiate
                 </Button>
                 <Button
                   className="bg-green-600 hover:bg-green-700"
@@ -554,25 +621,29 @@ export const CandidateOffers: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {responseAction === 'accept' ? 'Accept Offer' : 'Decline Offer'}
+              {responseAction === 'accept' ? 'Accept Offer' : responseAction === 'negotiate' ? 'Negotiate Offer' : 'Decline Offer'}
             </DialogTitle>
             <DialogDescription>
               {responseAction === 'accept'
                 ? 'Are you sure you want to accept this offer? The recruiter will be notified.'
-                : 'Are you sure you want to decline this offer? You can optionally provide a reason.'}
+                : responseAction === 'negotiate'
+                  ? 'Describe what you\'d like to negotiate. The recruiter will be notified and can respond.'
+                  : 'Are you sure you want to decline this offer? You can optionally provide a reason.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="responseMessage">
-                Message to Recruiter {responseAction === 'accept' ? '(Optional)' : '(Optional - reason for declining)'}
+                Message to Recruiter {responseAction === 'accept' ? '(Optional)' : responseAction === 'negotiate' ? '(Describe your counter-proposal)' : '(Optional - reason for declining)'}
               </Label>
               <Textarea
                 id="responseMessage"
                 placeholder={responseAction === 'accept'
                   ? 'Thank you for this opportunity...'
-                  : 'Thank you for the offer, but...'}
+                  : responseAction === 'negotiate'
+                    ? 'I appreciate the offer. I would like to discuss...'
+                    : 'Thank you for the offer, but...'}
                 value={responseMessage}
                 onChange={(e) => setResponseMessage(e.target.value)}
                 className="mt-2"
@@ -585,19 +656,21 @@ export const CandidateOffers: React.FC = () => {
               Cancel
             </Button>
             <Button
-              className={responseAction === 'accept' ? 'bg-green-600 hover:bg-green-700' : ''}
+              className={responseAction === 'accept' ? 'bg-green-600 hover:bg-green-700' : responseAction === 'negotiate' ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}
               variant={responseAction === 'decline' ? 'destructive' : 'default'}
               onClick={handleSubmitResponse}
-              disabled={processing}
+              disabled={processing || (responseAction === 'negotiate' && !responseMessage.trim())}
             >
               {processing ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
               ) : responseAction === 'accept' ? (
                 <CheckCircle className="h-4 w-4 mr-1" />
+              ) : responseAction === 'negotiate' ? (
+                <MessageCircle className="h-4 w-4 mr-1" />
               ) : (
                 <XCircle className="h-4 w-4 mr-1" />
               )}
-              {responseAction === 'accept' ? 'Confirm Accept' : 'Confirm Decline'}
+              {responseAction === 'accept' ? 'Confirm Accept' : responseAction === 'negotiate' ? 'Send Proposal' : 'Confirm Decline'}
             </Button>
           </DialogFooter>
         </DialogContent>

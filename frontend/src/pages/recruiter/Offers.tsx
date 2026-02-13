@@ -3,9 +3,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Send, Link as LinkIcon, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Eye, Send, Link as LinkIcon, Clock, CheckCircle, XCircle, AlertTriangle, X, User, Briefcase, DollarSign, Calendar, Gift } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface ApprovalStats {
   total: number;
@@ -26,6 +27,9 @@ export default function OffersPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [approvalStats, setApprovalStats] = useState<ApprovalStats>({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedOfferDetails, setSelectedOfferDetails] = useState<any>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // Get user data from localStorage for data isolation
   const getUserData = () => {
@@ -375,9 +379,17 @@ export default function OffersPage() {
                     <td className="p-3">{o.created_at ? new Date(o.created_at).toLocaleDateString() : '-'}</td>
                     <td className="p-3 space-x-2 whitespace-nowrap">
                       <Button size="sm" variant="outline" onClick={async () => {
-                        const res = await restClient.get(`/api/hr/offers/${o.id}`);
-                        const txt = JSON.stringify(res.data, null, 2);
-                        toast({ title: 'Offer details', description: txt.substring(0, 200) + (txt.length > 200 ? '...' : '') });
+                        try {
+                          setDetailsLoading(true);
+                          setDetailsDialogOpen(true);
+                          const res = await restClient.get(`/api/hr/offers/${o.id}`);
+                          setSelectedOfferDetails(res.data?.data || res.data);
+                        } catch (err: any) {
+                          toast({ title: 'Error loading offer', description: err?.message || 'Failed to load offer details', variant: 'destructive' });
+                          setDetailsDialogOpen(false);
+                        } finally {
+                          setDetailsLoading(false);
+                        }
                       }}>
                         <Eye className="h-4 w-4 mr-1" /> View
                       </Button>
@@ -438,6 +450,223 @@ export default function OffersPage() {
           </div>
         </CardContent>
       </Card>
+      {/* Offer Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-teal-600" />
+              Offer Details
+            </DialogTitle>
+            <DialogDescription>
+              Review the offer information below.
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600"></div>
+            </div>
+          ) : selectedOfferDetails ? (
+            <div className="space-y-6">
+              {/* Candidate Info */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-500">CANDIDATE</span>
+                </div>
+                <p className="text-lg font-semibold">
+                  {selectedOfferDetails.candidate_first_name || selectedOfferDetails.first_name || ''}{' '}
+                  {selectedOfferDetails.candidate_last_name || selectedOfferDetails.last_name || ''}
+                  {!selectedOfferDetails.candidate_first_name && !selectedOfferDetails.first_name && (
+                    <span className="text-slate-400">Candidate #{selectedOfferDetails.candidate_id}</span>
+                  )}
+                </p>
+                {(selectedOfferDetails.candidate_email || selectedOfferDetails.email) && (
+                  <p className="text-sm text-slate-500">{selectedOfferDetails.candidate_email || selectedOfferDetails.email}</p>
+                )}
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-500">Status:</span>
+                {statusBadge(selectedOfferDetails.status || 'unknown')}
+              </div>
+
+              {/* Candidate Response Banner */}
+              {(selectedOfferDetails.status === 'declined' || selectedOfferDetails.status === 'accepted' || selectedOfferDetails.status === 'negotiating') && (
+                <div className={`rounded-lg p-4 border ${selectedOfferDetails.status === 'declined' ? 'bg-red-50 border-red-200' :
+                    selectedOfferDetails.status === 'negotiating' ? 'bg-amber-50 border-amber-200' :
+                      'bg-green-50 border-green-200'
+                  }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {selectedOfferDetails.status === 'declined' && <XCircle className="h-4 w-4 text-red-600" />}
+                    {selectedOfferDetails.status === 'negotiating' && <AlertTriangle className="h-4 w-4 text-amber-600" />}
+                    {selectedOfferDetails.status === 'accepted' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                    <span className={`font-semibold text-sm ${selectedOfferDetails.status === 'declined' ? 'text-red-800' :
+                        selectedOfferDetails.status === 'negotiating' ? 'text-amber-800' :
+                          'text-green-800'
+                      }`}>
+                      {selectedOfferDetails.status === 'declined' ? 'Candidate Declined This Offer' :
+                        selectedOfferDetails.status === 'negotiating' ? 'Candidate Wants to Negotiate' :
+                          'Candidate Accepted This Offer'}
+                    </span>
+                  </div>
+                  {(selectedOfferDetails.offer_data?.candidate_message || selectedOfferDetails.response_notes) && (
+                    <div className="mt-2 pl-6">
+                      <p className="text-sm text-slate-700 italic">
+                        "{selectedOfferDetails.offer_data?.candidate_message || selectedOfferDetails.response_notes}"
+                      </p>
+                    </div>
+                  )}
+                  {selectedOfferDetails.offer_data?.responded_at && (
+                    <p className="text-xs text-slate-500 mt-2 pl-6">
+                      Responded: {new Date(selectedOfferDetails.offer_data.responded_at).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Position & Compensation */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-teal-600" />
+                  <span className="font-semibold">Position & Compensation</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-slate-500">Position</p>
+                    <p className="font-medium">{selectedOfferDetails.position_title || selectedOfferDetails.job_title || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500">Salary</p>
+                    <p className="font-medium">
+                      {selectedOfferDetails.salary_amount
+                        ? `${Number(selectedOfferDetails.salary_amount).toLocaleString()} ${selectedOfferDetails.salary_currency || 'AED'}`
+                        : selectedOfferDetails.offer_data?.salary || '-'}
+                      {selectedOfferDetails.salary_period && (
+                        <span className="text-sm text-slate-400 ml-1">({selectedOfferDetails.salary_period})</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contract Details */}
+              {(selectedOfferDetails.contract_type || selectedOfferDetails.start_date || selectedOfferDetails.probation_period_months) && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-teal-600" />
+                    <span className="font-semibold">Contract Details</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedOfferDetails.contract_type && (
+                      <div>
+                        <p className="text-sm text-slate-500">Contract Type</p>
+                        <p className="font-medium">{selectedOfferDetails.contract_type}</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.start_date && (
+                      <div>
+                        <p className="text-sm text-slate-500">Start Date</p>
+                        <p className="font-medium">{new Date(selectedOfferDetails.start_date).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.probation_period_months && (
+                      <div>
+                        <p className="text-sm text-slate-500">Probation Period</p>
+                        <p className="font-medium">{selectedOfferDetails.probation_period_months} months</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.work_location && (
+                      <div>
+                        <p className="text-sm text-slate-500">Work Location</p>
+                        <p className="font-medium">{selectedOfferDetails.work_location}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Benefits */}
+              {selectedOfferDetails.benefits && typeof selectedOfferDetails.benefits === 'object' && Object.keys(selectedOfferDetails.benefits).length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-4 w-4 text-teal-600" />
+                    <span className="font-semibold">Benefits & Perks</span>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <ul className="space-y-1 text-sm">
+                      {selectedOfferDetails.benefits.annual_leave_days && (
+                        <li>• {selectedOfferDetails.benefits.annual_leave_days} days annual leave</li>
+                      )}
+                      {selectedOfferDetails.benefits.health_insurance && (
+                        <li>• Health insurance included</li>
+                      )}
+                      {selectedOfferDetails.benefits.housing_allowance > 0 && (
+                        <li>• Housing allowance: {Number(selectedOfferDetails.benefits.housing_allowance).toLocaleString()} {selectedOfferDetails.salary_currency || 'AED'}</li>
+                      )}
+                      {selectedOfferDetails.benefits.transportation_allowance > 0 && (
+                        <li>• Transportation allowance: {Number(selectedOfferDetails.benefits.transportation_allowance).toLocaleString()} {selectedOfferDetails.salary_currency || 'AED'}</li>
+                      )}
+                      {selectedOfferDetails.benefits.flight_tickets && (
+                        <li>• {selectedOfferDetails.benefits.flight_tickets} flight tickets per year</li>
+                      )}
+                      {selectedOfferDetails.benefits.additional_benefits?.map((b: string, i: number) => (
+                        <li key={i}>• {b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline */}
+              {(selectedOfferDetails.sent_at || selectedOfferDetails.approved_at || selectedOfferDetails.created_at) && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-teal-600" />
+                    <span className="font-semibold">Timeline</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {selectedOfferDetails.created_at && (
+                      <div>
+                        <p className="text-slate-500">Created</p>
+                        <p>{new Date(selectedOfferDetails.created_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.approved_at && (
+                      <div>
+                        <p className="text-slate-500">Approved</p>
+                        <p>{new Date(selectedOfferDetails.approved_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.sent_at && (
+                      <div>
+                        <p className="text-slate-500">Sent</p>
+                        <p>{new Date(selectedOfferDetails.sent_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.response_deadline && (
+                      <div>
+                        <p className="text-slate-500">Response Deadline</p>
+                        <p>{new Date(selectedOfferDetails.response_deadline).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {selectedOfferDetails.candidate_response && (
+                      <div>
+                        <p className="text-slate-500">Candidate Response</p>
+                        <p className="font-medium">{selectedOfferDetails.candidate_response}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">No offer details available.</div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Video, Clock, Loader2, Sparkles } from 'lucide-react';
+import { Video, Clock, Loader2, Sparkles, Building } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { toast } from 'sonner';
@@ -87,7 +87,12 @@ export default function CandidateInterviews() {
                                         <div>
                                             <CardTitle className="text-lg">{session.title || session.job_title || 'Interview'}</CardTitle>
                                             <div className="text-sm font-medium text-slate-700 mb-1">{session.job_title}</div>
-                                            <div className="text-xs text-slate-500 mb-2">Candidate: {session.candidate_first_name} {session.candidate_last_name}</div>
+                                            {(session.company_name || session.recruiter_name) && (
+                                                <div className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                                                    <Building className="h-3 w-3" />
+                                                    {session.company_name || session.recruiter_name}
+                                                </div>
+                                            )}
                                             <CardDescription>{new Date(session.scheduled_time || session.scheduled_at).toLocaleString()}</CardDescription>
                                         </div>
                                         <Badge variant={
@@ -103,7 +108,7 @@ export default function CandidateInterviews() {
                                     <div className="space-y-4">
                                         <div className="flex items-center text-sm text-muted-foreground">
                                             <Clock className="mr-2 h-4 w-4" />
-                                            Expected Duration: 45 Mins
+                                            Expected Duration: {session.duration_minutes || 45} Mins
                                         </div>
 
                                         {session.ai_analysis && (
@@ -131,8 +136,12 @@ export default function CandidateInterviews() {
                     {sessions
                         .filter(session => showCancelled || session.status !== 'cancelled')
                         .length === 0 && (
-                            <div className="col-span-full text-center p-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                                No upcoming interviews.
+                            <div className="col-span-full flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-lg">
+                                <Video className="h-12 w-12 text-gray-300 mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-600 mb-1">No Upcoming Interviews</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    When a recruiter schedules an interview, it will appear here.
+                                </p>
                             </div>
                         )}
                 </div>

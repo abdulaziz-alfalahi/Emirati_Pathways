@@ -769,6 +769,8 @@ def get_job_matches():
         # If raw jobs (no match), default order.
         if sort_by == 'distance' and user_lat:
             matched_jobs.sort(key=lambda x: x.get('commute', {}).get('distance_km', 99999) or 99999)
+        elif sort_by == 'commute' and user_lat:
+            matched_jobs.sort(key=lambda x: x.get('commute', {}).get('peak_time_mins', None) or x.get('commute', {}).get('time_mins', 99999) or 99999)
         
         # Final checkpoint
         logger.info(f"📊 CHECKPOINT: Final matched_jobs count before return = {len(matched_jobs)}")
@@ -1302,16 +1304,16 @@ def get_candidate_offer_details(offer_id):
 
 @candidate_job_bp.route('/offers/<offer_id>/respond', methods=['POST'])
 def respond_to_offer(offer_id):
-    """Accept or decline an offer"""
+    """Accept, decline, or negotiate an offer"""
     try:
         data = request.get_json() or {}
-        action = data.get('action')  # 'accept' or 'decline'
+        action = data.get('action')  # 'accept', 'decline', or 'negotiate'
         message = data.get('message', '')  # Optional message to recruiter
         
-        if action not in ['accept', 'decline']:
+        if action not in ['accept', 'decline', 'negotiate']:
             return jsonify({
                 'success': False,
-                'message': 'Invalid action. Must be "accept" or "decline"'
+                'message': 'Invalid action. Must be "accept", "decline", or "negotiate"'
             }), 400
         
         conn = get_db_connection()
@@ -1323,9 +1325,9 @@ def respond_to_offer(offer_id):
         
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # First check if the offer exists and is in 'sent' status
+        # First check if the offer exists and is in a valid state
         cur.execute("""
-            SELECT id, status, candidate_id, recruiter_id 
+            SELECT id, status, candidate_id, recruiter_id, offer_data
             FROM offers 
             WHERE id = %s::uuid
         """, (offer_id,))
@@ -1346,8 +1348,16 @@ def respond_to_offer(offer_id):
                 'message': f"Cannot respond to offer. Current status is '{offer.get('status')}'"
             }), 400
         
-        # Update offer status
-        new_status = 'accepted' if action == 'accept' else 'declined'
+        # Map action to status
+        status_map = {'accept': 'accepted', 'decline': 'declined', 'negotiate': 'negotiating'}
+        new_status = status_map[action]
+        
+        # Build response metadata
+        response_meta = {
+            'candidate_response': action,
+            'candidate_message': message,
+            'responded_at': datetime.now().isoformat()
+        }
         
         cur.execute("""
             UPDATE offers
@@ -1358,20 +1368,77 @@ def respond_to_offer(offer_id):
             RETURNING id
         """, (
             new_status,
-            json.dumps({
-                'candidate_response': action,
-                'candidate_message': message,
-                'responded_at': datetime.now().isoformat()
-            }),
+            json.dumps(response_meta),
+            offer_id
+        ))
+        
+        # Also sync the job_offers table if a matching row exists
+        cur.execute("""
+            UPDATE job_offers
+            SET candidate_response = %s,
+                response_date = CURRENT_TIMESTAMP,
+                response_notes = %s,
+                status = %s,
+                negotiation_status = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE offer_id = %s AND status IN ('sent', 'viewed', 'negotiating')
+        """, (
+            action if action != 'decline' else 'rejected',
+            message,
+            'rejected' if action == 'decline' else new_status,
+            'in_progress' if action == 'negotiate' else 'none',
             offer_id
         ))
         
         conn.commit()
-        conn.close()
         
         logger.info(f"Candidate responded to offer {offer_id}: {action}")
         
-        # TODO: Send notification to recruiter
+        # Determine position title from offer_data
+        offer_data = offer.get('offer_data') or {}
+        if isinstance(offer_data, str):
+            offer_data = json.loads(offer_data)
+        position_title = offer_data.get('position_title') or offer_data.get('job_title') or 'a position'
+        
+        # Send notification to recruiter
+        recruiter_id = offer.get('recruiter_id')
+        if recruiter_id:
+            try:
+                if action == 'accept':
+                    notif_title = 'Offer Accepted'
+                    notif_content = f'Great news! The candidate has accepted your offer for {position_title}.'
+                    notif_type = 'offer_accepted'
+                elif action == 'decline':
+                    notif_title = 'Offer Declined'
+                    notif_content = f'The candidate has declined your offer for {position_title}.'
+                    if message:
+                        notif_content += f' Reason: "{message}"'
+                    notif_type = 'offer_declined'
+                else:  # negotiate
+                    notif_title = 'Offer Negotiation Started'
+                    notif_content = f'The candidate wants to negotiate the offer for {position_title}.'
+                    if message:
+                        notif_content += f' Message: "{message}"'
+                    notif_type = 'offer_negotiation'
+                
+                notif_metadata = json.dumps({
+                    'offer_id': offer_id,
+                    'position_title': position_title,
+                    'candidate_response': action,
+                    'candidate_message': message,
+                    'link': '/recruiter?tab=offers'
+                })
+                
+                cur.execute("""
+                    INSERT INTO notifications (user_id, type, title, content, metadata)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (str(recruiter_id), notif_type, notif_title, notif_content, notif_metadata))
+                
+                conn.commit()
+            except Exception as notif_err:
+                logger.error(f"Failed to create recruiter notification: {notif_err}")
+        
+        conn.close()
         
         return jsonify({
             'success': True,

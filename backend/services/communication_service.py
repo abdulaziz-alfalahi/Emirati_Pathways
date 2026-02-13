@@ -361,11 +361,12 @@ class CommunicationService:
                         JOIN conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
                         JOIN conversations c ON cp1.conversation_id = c.id
                         WHERE cp1.user_id = %s AND cp2.user_id = %s
+                        AND (c.conversation_type = 'direct' OR c.conversation_type IS NULL)
                         LIMIT 1
                     """, (participants[0], participants[1]))
                     existing = cur.fetchone()
                     if existing:
-                        self.logger.info(f"Found existing conversation: {existing['id']}")
+                        self.logger.info(f"Found existing direct conversation: {existing['id']}")
                         # Ensure it's active/unarchived for both if it exists
                         # If I am creating it, I should see it even if I hid it before.
                         
@@ -612,8 +613,8 @@ class CommunicationService:
                     # Infer recipient role if not provided but sender role is known
                     if sender_role and not recipient_role:
                         if sender_role == 'recruiter':
-                            recipient_role = 'candidate'
-                        elif sender_role == 'candidate':
+                            recipient_role = 'job_seeker'
+                        elif sender_role == 'job_seeker':
                             recipient_role = 'recruiter'
                     
                     roles = {}
@@ -643,8 +644,8 @@ class CommunicationService:
                    # Update Recipient Role (Infer)
                    recipient_role = None
                    if sender_role == 'recruiter':
-                        recipient_role = 'candidate'
-                   elif sender_role == 'candidate':
+                        recipient_role = 'job_seeker'
+                   elif sender_role == 'job_seeker':
                         recipient_role = 'recruiter'
                    
                    if recipient_role:
@@ -768,9 +769,8 @@ class CommunicationService:
                 
                 if role:
                     # If role specified:
-                    # STRICTLY show only conversations where matches specified role.
-                    # We do NOT show NULLS anymore to prevent bleeding.
-                    query += " AND role = %s"
+                    # Show conversations matching the role OR where role is NULL (legacy/unspecified)
+                    query += " AND (role = %s OR role IS NULL)"
                     params.append(role)
                 
                 cur.execute(query, tuple(params))

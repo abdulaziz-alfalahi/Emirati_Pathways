@@ -127,7 +127,7 @@ const HRDashboard: React.FC = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await restClient.get('/api/recruiter/offers/approval-stats');
+        const response = await restClient.get('/api/hr/approvals/stats');
         if (response.data?.success) {
           setPendingApprovalsCount(response.data.data.pending || 0);
         }
@@ -389,14 +389,7 @@ const HRDashboard: React.FC = () => {
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </Button>
-                <Button variant="ghost" size="icon" className="relative" onClick={() => setActiveTab('approvals')}>
-                  <Bell className="h-5 w-5 text-slate-600" />
-                  {pendingApprovalsCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white rounded-full">
-                      {pendingApprovalsCount}
-                    </Badge>
-                  )}
-                </Button>
+
               </div>
             </div>
           </div>

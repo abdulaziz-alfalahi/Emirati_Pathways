@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Building2, 
-  GraduationCap, 
-  Users, 
+import {
+  User,
+  Building2,
+  GraduationCap,
+  Users,
   ClipboardCheck,
   ArrowRight,
   CheckCircle2,
@@ -14,7 +14,8 @@ import {
   Target,
   BookOpen,
   UserCheck,
-  Award
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 
 export interface RoleOption {
@@ -50,15 +51,29 @@ const roleOptions: RoleOption[] = [
     popular: true
   },
   {
-    id: 'hr_recruiter',
-    title: 'HR / Recruiter',
-    description: 'Streamline your hiring process with advanced recruitment tools and candidate management.',
+    id: 'hr_manager',
+    title: 'HR Manager',
+    description: 'Oversee workforce planning, approve offers, and manage your organization\'s talent strategy.',
     icon: <Building2 className="h-8 w-8" />,
+    features: [
+      'Workforce planning dashboard',
+      'Offer approval workflows',
+      'Emiratisation compliance tracking',
+      'Hiring pipeline oversight',
+      'HR analytics and reporting'
+    ],
+    color: 'bg-emerald-500'
+  },
+  {
+    id: 'recruiter',
+    title: 'Recruiter',
+    description: 'Source top candidates, manage interviews, and build talent pipelines efficiently.',
+    icon: <Briefcase className="h-8 w-8" />,
     features: [
       'Advanced candidate screening',
       'AI video interview analysis',
       'Talent pipeline management',
-      'Educational opportunity posting',
+      'Job posting and management',
       'Performance analytics'
     ],
     color: 'bg-green-500'
@@ -104,6 +119,20 @@ const roleOptions: RoleOption[] = [
       'Certification management'
     ],
     color: 'bg-red-500'
+  },
+  {
+    id: 'guardian',
+    title: 'Guardian / Parent',
+    description: 'Monitor your child\'s career journey, approve internships, and connect with educators.',
+    icon: <ShieldCheck className="h-8 w-8" />,
+    features: [
+      'Child\'s career progress tracking',
+      'Internship & program approvals',
+      'Educator communication',
+      'Career milestone notifications',
+      'Family career planning'
+    ],
+    color: 'bg-sky-500'
   }
 ];
 
@@ -131,13 +160,11 @@ const RoleSelection: React.FC<RoleSelectionProps> = ({
         {roleOptions.map((role) => (
           <Card
             key={role.id}
-            className={`relative cursor-pointer transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 ${
-              selectedRole === role.id
+            className={`relative cursor-pointer transition-all duration-300 hover:shadow-lg transform hover:-translate-y-1 ${selectedRole === role.id
                 ? 'ring-2 ring-blue-500 shadow-lg'
                 : 'hover:shadow-md'
-            } ${
-              hoveredRole === role.id ? 'scale-105' : ''
-            }`}
+              } ${hoveredRole === role.id ? 'scale-105' : ''
+              }`}
             onClick={() => onRoleSelect(role.id)}
             onMouseEnter={() => setHoveredRole(role.id)}
             onMouseLeave={() => setHoveredRole(null)}

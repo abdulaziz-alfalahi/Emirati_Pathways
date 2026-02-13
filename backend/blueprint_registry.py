@@ -57,13 +57,14 @@ def register_all_blueprints(app: Flask):
 
     # 8. Feedback & Utilities
     try:
-        from backend.routes.admin_dashboard_api import feedback_bp as sql_feedback_bp, ensure_feedback_table_exist
+        from backend.routes.admin_dashboard_api import admin_dashboard_bp, feedback_bp as sql_feedback_bp, ensure_feedback_table_exist
+        app.register_blueprint(admin_dashboard_bp)
         app.register_blueprint(sql_feedback_bp)
         # Ensure DB table exists
         ensure_feedback_table_exist()
-        logger.info("✅ Feedback Routes (SQL) registered successfully")
+        logger.info("✅ Admin Dashboard & Feedback Routes (SQL) registered successfully")
     except Exception as e:
-        logger.error(f"❌ Failed to register SQL Feedback Routes: {e}")
+        logger.error(f"❌ Failed to register Admin Dashboard / SQL Feedback Routes: {e}")
         # Fallback to old JSON file routes if SQL fails (unlikely)
         _register_safe(app, 'feedback_routes', 'feedback_bp', 'Feedback Routes (JSON Fallback)', url_prefix='/api/feedback')
     
@@ -116,6 +117,13 @@ def register_all_blueprints(app: Flask):
 
     # 11. Recruiter & HR Modules (CRITICAL FIX)
     try:
+        from backend.routes.hr_dashboard_api import hr_dashboard_api_bp
+        app.register_blueprint(hr_dashboard_api_bp)
+        logger.info("✅ HR Dashboard API routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ HR Dashboard API routes not available: {e}")
+
+    try:
         from backend.routes.recruiter_dashboard_api import recruiter_dashboard_bp
         app.register_blueprint(recruiter_dashboard_bp)
         logger.info("✅ Recruiter Dashboard routes registered")
@@ -144,6 +152,14 @@ def register_all_blueprints(app: Flask):
         logger.info("✅ Interview routes registered (as /api/interviews)")
     except ImportError as e:
         logger.warning(f"⚠️ Interview routes not available: {e}")
+
+    # Recruiter Interview Scheduling (shortlist → interview workflow)
+    try:
+        from backend.recruiter.interview_routes import interview_bp as recruiter_interview_bp
+        app.register_blueprint(recruiter_interview_bp, url_prefix='/api/recruiter/interviews')
+        logger.info("✅ Recruiter Interview Scheduling routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Recruiter Interview Scheduling routes not available: {e}")
 
     try:
         from backend.hr_job_posting_routes import hr_job_posting_bp, ensure_job_postings_table_exists
@@ -174,6 +190,22 @@ def register_all_blueprints(app: Flask):
         logger.info("✅ Jobs API routes registered (includes application withdrawal)")
     except ImportError as e:
         logger.warning(f"⚠️ Jobs API routes not available: {e}")
+
+    # 13. HR Analytics (recruiter pipeline/conversion metrics)
+    try:
+        from backend.hr_analytics_routes import hr_analytics_bp
+        app.register_blueprint(hr_analytics_bp)
+        logger.info("✅ HR Analytics routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ HR Analytics routes not available: {e}")
+
+    # 14. Recruiter Reports (pipeline, candidates, interviews, offers, performance)
+    try:
+        from backend.recruiter.reports_routes import reports_bp
+        app.register_blueprint(reports_bp, url_prefix='/api/recruiter/reports')
+        logger.info("✅ Recruiter Reports routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Recruiter Reports routes not available: {e}")
 
 
 

@@ -20,12 +20,15 @@ import {
   Alert,
   InputAdornment,
   Autocomplete,
+  createFilterOptions,
   Chip,
+  IconButton,
 } from '@mui/material';
 import {
   AttachMoney as AttachMoneyIcon,
   CalendarToday as CalendarIcon,
   Description as DescriptionIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import LocationPicker from '../../common/LocationPicker'; // Adjust path if needed, assuming common is in components/common
 import { restClient } from '../../../utils/api';
@@ -87,9 +90,13 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
   const [transportAllowance, setTransportAllowance] = useState('');
   const [flightTickets, setFlightTickets] = useState('2');
   const [additionalBenefits, setAdditionalBenefits] = useState<string[]>([]);
+  const [customBenefitInput, setCustomBenefitInput] = useState('');
+
+  const initializedRef = React.useRef(false);
 
   useEffect(() => {
-    if (open) {
+    if (open && !initializedRef.current) {
+      initializedRef.current = true;
       loadCandidates();
       loadJobDescription();
       resetForm();
@@ -108,7 +115,10 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         setSelectedCandidate(candidate);
       }
     }
-  }, [open, jdId, preselectedCandidate]);
+    if (!open) {
+      initializedRef.current = false;
+    }
+  }, [open, jdId]);
 
   const loadJobDescription = async () => {
     try {
@@ -490,9 +500,34 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                   'Mobile Allowance',
                   'Meal Allowance',
                   'Professional Development',
-                ]}
+                  'Relocation Assistance',
+                  'Stock Options',
+                  'Childcare Allowance',
+                  'Retirement Plan',
+                  'Training Budget',
+                  'Remote Work Stipend',
+                ].filter(opt => !additionalBenefits.includes(opt))}
                 value={additionalBenefits}
-                onChange={(_, newValue) => setAdditionalBenefits(newValue)}
+                onChange={(_, newValue) => {
+                  // Clean up any "Add: ..." prefixes from createFilterOptions
+                  const cleaned = newValue.map(v => {
+                    if (typeof v === 'string' && v.startsWith('Add "') && v.endsWith('"')) {
+                      return v.slice(5, -1);
+                    }
+                    return v;
+                  });
+                  setAdditionalBenefits(cleaned);
+                }}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter(option =>
+                    option.toLowerCase().includes(params.inputValue.toLowerCase())
+                  );
+                  // Suggest creating a new value if typed text doesn't match any option
+                  if (params.inputValue !== '' && !filtered.some(o => o.toLowerCase() === params.inputValue.toLowerCase())) {
+                    filtered.push(`Add "${params.inputValue}"`);
+                  }
+                  return filtered;
+                }}
                 ListboxProps={{
                   style: {
                     maxHeight: '250px',
@@ -508,18 +543,54 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
                 }}
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
-                    <Chip label={option} {...getTagProps({ index })} size="small" />
+                    <Chip label={option} {...getTagProps({ index })} size="small" color="primary" variant="outlined" />
                   ))
                 }
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     label="Additional Benefits"
-                    placeholder="Add benefit and press Enter"
+                    placeholder={additionalBenefits.length === 0 ? 'Select or type custom benefits' : 'Add more...'}
                     fullWidth
+                    helperText="Select from suggestions or type a custom benefit and press Enter"
                   />
                 )}
               />
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  size="small"
+                  label="Custom Benefit"
+                  placeholder="e.g. Company Car, Tuition Reimbursement"
+                  value={customBenefitInput}
+                  onChange={(e) => setCustomBenefitInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customBenefitInput.trim()) {
+                      e.preventDefault();
+                      if (!additionalBenefits.includes(customBenefitInput.trim())) {
+                        setAdditionalBenefits([...additionalBenefits, customBenefitInput.trim()]);
+                      }
+                      setCustomBenefitInput('');
+                    }
+                  }}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  disabled={!customBenefitInput.trim()}
+                  onClick={() => {
+                    if (customBenefitInput.trim() && !additionalBenefits.includes(customBenefitInput.trim())) {
+                      setAdditionalBenefits([...additionalBenefits, customBenefitInput.trim()]);
+                    }
+                    setCustomBenefitInput('');
+                  }}
+                >
+                  Add
+                </Button>
+              </Box>
             </Grid>
           </Grid>
         );

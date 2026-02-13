@@ -69,6 +69,8 @@ interface Job {
   commute?: {
     distance_km?: number;
     time_mins?: number;
+    peak_time_mins?: number;
+    peak_difference_mins?: number;
   };
 }
 
@@ -90,7 +92,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'high-match' | 'recent'>('all');
   const [experienceFilter, setExperienceFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'relevance' | 'distance' | 'date'>('relevance');
+  const [sortBy, setSortBy] = useState<'relevance' | 'distance' | 'commute' | 'date'>('relevance');
   const [bookmarkedJobs, setBookmarkedJobs] = useState<Set<string>>(new Set());
   const [cvLoaded, setCvLoaded] = useState(false);
   const [aiMatching, setAiMatching] = useState(false);
@@ -209,7 +211,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     loadJobMatches(true);
   };
 
-  const handleSortChange = (type: 'relevance' | 'distance' | 'date') => {
+  const handleSortChange = (type: 'relevance' | 'distance' | 'commute' | 'date') => {
     setSortBy(type);
   };
 
@@ -601,6 +603,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                     Distance
                   </Button>
                   <Button
+                    variant={sortBy === 'commute' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleSortChange('commute')}
+                  >
+                    Commute
+                  </Button>
+                  <Button
                     variant={sortBy === 'date' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handleSortChange('date')}
@@ -642,13 +651,22 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           <div className="flex items-center space-x-1">
                             <MapPin className="h-4 w-4" />
                             <span>{job.location}</span>
-                            {job.commute?.distance_km && (
-                              <Badge variant="secondary" className="ml-2 text-xs flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {job.commute.distance_km} km (~{job.commute.time_mins} mins)
-                              </Badge>
-                            )}
                           </div>
+                          {job.commute?.distance_km && (
+                            <>
+                              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                🚗 {job.commute.distance_km} km
+                              </Badge>
+                              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                ⏱ {job.commute.time_mins} min
+                              </Badge>
+                              {job.commute.peak_time_mins && (
+                                <Badge className="text-xs flex items-center gap-1 bg-amber-100 text-amber-800">
+                                  🚦 Peak: {job.commute.peak_time_mins} min
+                                </Badge>
+                              )}
+                            </>
+                          )}
                           <div className="flex items-center space-x-1">
                             <Coins className="h-4 w-4" />
                             <span>{job.salary}</span>

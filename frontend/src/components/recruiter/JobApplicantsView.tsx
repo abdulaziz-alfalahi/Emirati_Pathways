@@ -154,13 +154,38 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
   // Update applicant status
   const updateStatus = async (applicationId: string, newStatus: string) => {
     try {
-      // This would call the backend to update status
+      // When shortlisting, also add to the shortlisted_candidates table
+      if (newStatus === 'shortlisted') {
+        const applicant = applicants.find(
+          (a: Applicant) => a.application_id === applicationId
+        );
+        if (applicant) {
+          // Get current user from localStorage  
+          let recruiterId = '';
+          try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+              const u = JSON.parse(userStr);
+              recruiterId = String(u.id || '');
+            }
+          } catch (e) { /* ignore */ }
+
+          await restClient.post('/api/recruiter/jd/shortlist/add', {
+            jd_id: jdId,
+            candidate_id: applicant.candidate_id,
+            recruiter_id: recruiterId,
+            notes: `Shortlisted from applicant review`,
+          });
+        }
+      }
+
       toast({
         title: 'Status Updated',
         description: `Application status changed to ${newStatus}`,
       });
       refetch();
     } catch (error) {
+      console.error('Status update error:', error);
       toast({
         variant: 'destructive',
         title: 'Update Failed',
@@ -184,7 +209,23 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
       if (response.data?.success) {
         const conversationId = response.data.data.id;
         // 2. Navigate to messages tab with conversation ID
-        navigate(`/recruiter?tab=messages&conversationId=${conversationId}`);
+        // Check role for correct dashboard redirection
+        let role = '';
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            role = user.role || user.user_type || '';
+          }
+        } catch (e) {
+          console.error('Error parsing user role', e);
+        }
+
+        if (role === 'hr_manager' || role === 'hr') {
+          navigate(`/hr-dashboard?tab=messages&conversationId=${conversationId}`);
+        } else {
+          navigate(`/recruiter?tab=messages&conversationId=${conversationId}`);
+        }
       } else {
         throw new Error('Failed to start conversation');
       }

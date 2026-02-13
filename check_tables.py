@@ -1,31 +1,32 @@
-import sys
+
+import psycopg2
 import os
 
-# Add backend to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend')))
-from backend.auth.auth_manager import AuthenticationManager
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'emirati_journey'),
+    'user': os.getenv('DB_USER', 'emirati_user'),
+    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+    'port': int(os.getenv('DB_PORT', 5432))
+}
 
-def check_tables():
-    try:
-        auth_mgr = AuthenticationManager()
-        conn = auth_mgr._get_db_connection()
-        cursor = conn.cursor()
+try:
+    conn = psycopg2.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public'
+    """)
+    tables = cursor.fetchall()
+    print("Tables:", [t[0] for t in tables])
+    
+    # Check columns in candidate_experience if it exists
+    if ('candidate_experience',) in tables:
+        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'candidate_experience'")
+        print("candidate_experience columns:", [c[0] for c in cursor.fetchall()])
         
-        cursor.execute("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_name LIKE 'admin_%'
-            ORDER BY table_name;
-        """)
-        
-        tables = cursor.fetchall()
-        print("Existing Tables:")
-        for t in tables:
-            print(f"- {t[0]}")
-            
-    except Exception as e:
-        print(f"Error: {e}")
-
-if __name__ == "__main__":
-    check_tables()
+    cursor.close()
+    conn.close()
+except Exception as e:
+    print(e)

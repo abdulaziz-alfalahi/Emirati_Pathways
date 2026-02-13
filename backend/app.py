@@ -1755,7 +1755,7 @@ def dev_login():
         
         user_id = data.get('user_id')
         email = data.get('email')
-        role = data.get('role', 'candidate')
+        role = data.get('role', 'job_seeker')
         
         if not user_id:
             return jsonify({
@@ -1890,131 +1890,11 @@ def register():
     #     }), 500
 
 # =====================================================
-# DASHBOARD ROUTES
+# DASHBOARD ROUTES (moved to candidate_job_routes blueprint)
 # =====================================================
-
-@app.route('/api/candidate/dashboard/stats', methods=['GET'])
-def get_candidate_dashboard_stats():
-    """Get aggregated stats for candidate dashboard"""
-    logger.info("HIT: /api/candidate/dashboard/stats route")
-    try:
-        # Auth check
-        auth_header = request.headers.get('Authorization', '')
-        # Verify JWT properly
-        try:
-            from flask_jwt_extended import verify_jwt_in_request
-            verify_jwt_in_request()
-            user_id = get_jwt_identity()
-        except Exception as e:
-            logger.error(f"JWT Verification Failed in Dashboard Stats: {e}")
-            logger.error(f"Auth Header: {auth_header[:20]}...")
-            if 'mock_token' in auth_header:
-                 user_id = 'mock_user_candidate'
-            else:
-                 return jsonify({'success': False, 'message': f'Unauthorized: {str(e)}'}), 401
-
-        user_name = "Candidate"
-        
-        # Connect to DB
-        conn = psycopg2.connect(**DATABASE_CONFIG)
-        try:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                # 1. Fetch User Details (Name)
-                # Handle both Integer (Real) and String/UUID (Mock) IDs
-                try:
-                    # Check if user_id is likely an integer (real user)
-                    int_id = int(user_id)
-                    cur.execute("SELECT first_name, last_name, email FROM users WHERE id = %s", (int_id,))
-                    user = cur.fetchone()
-                    if user:
-                        if user.get('first_name'):
-                            user_name = f"{user['first_name']}"
-                            if user.get('last_name') and user['last_name'] != 'None':
-                                 user_name += f" {user['last_name']}"
-                        elif user.get('email'):
-                             # Fallback: Parse name from email (e.g. ahmed.almansouri@...)
-                             email_parts = user['email'].split('@')[0].split('.')
-                             user_name = " ".join([p.capitalize() for p in email_parts])
-                    
-                    # For CVs, we have a schema mismatch (CVs use UUIDs, Users use Ints).
-                    # We skip CV fetch for Int users for now to avoid 500s, or we need to migrate CV table.
-                    # Assuming we can't fetch CV stats for Int users yet without schema change.
-                    cv = None 
-                    
-                except (ValueError, TypeError):
-                    # user_id is string/UUID (likely mock)
-                    if user_id == 'mock_user_candidate':
-                        user_uuid = '550e8400-e29b-41d4-a716-446655440000'
-                    else:
-                        user_uuid = user_id
-                        
-                    cur.execute("SELECT * FROM user_cvs WHERE user_id = %s::uuid ORDER BY created_at DESC LIMIT 1", (user_uuid,))
-                    cv = cur.fetchone()
-
-                cv_uploaded = bool(cv)
-                completeness = 0
-                
-                if cv:
-                    cv_dict = dict(cv)
-                    fields = [
-                        cv_dict.get('personal_info'),
-                        cv_dict.get('professional_summary'),
-                        cv_dict.get('technical_skills'),
-                        cv_dict.get('work_experience'),
-                        cv_dict.get('education')
-                    ]
-                    filled_count = sum(1 for f in fields if f)
-                    completeness = int((filled_count / 5) * 100)
-                    
-                    # Only use CV name if we didn't find a User name (e.g. mock user)
-                    if user_name == "Candidate" and cv_dict.get('personal_info'):
-                        info = cv_dict['personal_info']
-                        user_name = info.get('name') or info.get('fullName') or "Candidate"
-
-        finally:
-            conn.close()
-
-        # 2. Calculate Job Matches (if CV exists)
-        matches_count = 0
-        if cv:
-            cvk = _collect_cv_keywords(dict(cv))
-            vacancies = execute_query("SELECT * FROM recruiter_vacancies") or []
-            
-            # Simple threshold match
-            for v in vacancies:
-                vk = _vacancy_keywords(dict(v))
-                score = _compute_match_score(cvk, vk)
-                if score >= 50: # Count matches with >= 50% score
-                    matches_count += 1
-
-        # 3. Get Applications Count (Placeholder until table exists)
-        applications_count = 0 
-        # Future: execute_query("SELECT COUNT(*) as cnt FROM applications WHERE user_id = ...")
-
-        # 4. Profile Views (Placeholder)
-        profile_views = 12 # Mock number to look good
-
-        return jsonify({
-            'success': True,
-            'data': {
-                'profile': {
-                    'name': user_name,
-                    'cvUploaded': cv_uploaded,
-                    'completionPercentage': completeness
-                },
-                'stats': {
-                    'jobMatches': matches_count,
-                    'applications': applications_count,
-                    'profileViews': profile_views,
-                    'interviews': 0
-                }
-            }
-        }), 200
-
-    except Exception as e:
-        logger.error(f"Dashboard stats error: {e}")
-        return jsonify({'success': False, 'message': 'Failed to load stats'}), 500
-
+# REMOVED: get_candidate_dashboard_stats was dead code — shadowed by
+# candidate_job_bp.get_dashboard_stats (registered first).
+# The blueprint handler in candidate_job_routes.py is the active one.
 # =====================================================
 # CV UPLOAD ROUTES
 # =====================================================
@@ -2522,15 +2402,8 @@ def update_cv_fixed_deprecated(cv_id):
         logger.error(f"Update CV error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/cv/<cv_id>', methods=['DELETE'])
-def delete_cv_fixed(cv_id):
-    try:
-        user_uuid = get_current_user_uuid_inline()
-        execute_query("DELETE FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_all=False)
-        return jsonify({'success': True, 'message': 'CV deleted successfully'})
-    except Exception as e:
-        logger.error(f"Delete CV error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+# REMOVED: delete_cv_fixed was dead code — shadowed by
+# enhanced_cv.delete_cv (registered first via enhanced_cv_routes blueprint).
 
 @app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
 def duplicate_cv_fixed(cv_id):
@@ -2577,20 +2450,8 @@ def duplicate_cv_fixed(cv_id):
         logger.error(f"Duplicate CV error: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/cv/<cv_id>/visible', methods=['PUT'])
-def set_visible_fixed(cv_id):
-    try:
-        user_uuid = get_current_user_uuid_inline()
-        
-        # Set all to false
-        execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s::uuid", (user_uuid,), fetch_all=False)
-        # Set specific to true
-        execute_query("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid", (cv_id,), fetch_all=False)
-        
-        return jsonify({'success': True, 'message': 'CV set as visible'})
-    except Exception as e:
-        logger.error(f"Set visible error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+# REMOVED: set_visible_fixed was dead code — shadowed by
+# enhanced_cv.update_cv_visibility (registered first via enhanced_cv_routes blueprint).
 
 @app.route('/api/cv/<cv_id>/export/<format>', methods=['GET'])
 def export_cv_fixed(cv_id, format):
@@ -3092,80 +2953,15 @@ def initialize_unified_server():
 
 # NOTE: This duplicate route has been REMOVED. The correct implementation
 # is in routes/recruiter_dashboard_api.py which includes:
-# - JWT authentication
-# - Proper recruiter filtering
-# - Correct JOIN conditions for job_applications
-# - Support for both job_postings and job_descriptions tables
-# 
-# The route was moved to the blueprint to:
-# 1. Follow proper Flask architecture
-# 2. Enable proper authentication
-# 3. Avoid route conflicts
-
-
-@app.route('/api/recruiter/recent-applicants', methods=['GET'])
-def get_recent_applicants():
-    """Get recent job applicants across all jobs (last 7 days)"""
-    try:
-        days = request.args.get('days', 7, type=int)
-        limit = request.args.get('limit', 10, type=int)
-        
-        query = """
-            SELECT 
-                ja.id as application_id,
-                ja.job_id,
-                ja.candidate_id,
-                ja.status,
-                ja.submitted_at,
-                ja.cover_letter,
-                jp.title as job_title,
-                jp.company as company_name,
-                COALESCE(u.first_name || ' ' || u.last_name, uc.personal_info->>'fullName', 'Unknown Candidate') as candidate_name,
-                COALESCE(u.email, uc.personal_info->>'email', '') as candidate_email
-            FROM job_applications ja
-            LEFT JOIN job_postings jp ON jp.jd_id::text = ja.job_id
-            LEFT JOIN users u ON (
-                CASE 
-                    WHEN ja.candidate_id ~ '^[0-9]+$' THEN u.id = ja.candidate_id::integer
-                    ELSE u.id::text = ja.candidate_id
-                END
-            )
-            LEFT JOIN user_cvs uc ON uc.user_id::text = ja.candidate_id
-            WHERE ja.submitted_at >= NOW() - INTERVAL '%s days'
-            ORDER BY ja.submitted_at DESC
-            LIMIT %s
-        """
-        
-        results = execute_query(query, (days, limit)) or []
-        
-        recent_applicants = []
-        for row in results:
-            row_dict = dict(row)
-            # Convert datetime to ISO string
-            if row_dict.get('submitted_at'):
-                row_dict['submitted_at'] = row_dict['submitted_at'].isoformat()
-            recent_applicants.append(row_dict)
-        
-        return jsonify({
-            'success': True,
-            'data': recent_applicants,
-            'count': len(recent_applicants)
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Get recent applicants error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': 'Failed to get recent applicants'}), 500
-
-
+# REMOVED: get_recent_applicants was dead code — shadowed by
+# recruiter_dashboard_api.get_recent_applicants (registered first via blueprint).
 @app.route('/api/recruiter/job-shortlist-count', methods=['GET'])
 def get_job_shortlist_count():
     """Get shortlist counts for all jobs"""
     try:
         query = """
             SELECT 
-                s.jd_id as job_id,
+                jp.jd_id as job_id,
                 jp.title as job_title,
                 COUNT(*) as total_shortlisted,
                 COUNT(CASE WHEN s.status = 'shortlisted' THEN 1 END) as shortlisted,
@@ -3176,9 +2972,9 @@ def get_job_shortlist_count():
                 COUNT(CASE WHEN s.status = 'hired' THEN 1 END) as hired,
                 COUNT(CASE WHEN s.status = 'rejected' THEN 1 END) as rejected,
                 MAX(s.created_at) as last_shortlist_date
-            FROM shortlist s
-            LEFT JOIN job_postings jp ON jp.jd_id::text = s.jd_id
-            GROUP BY s.jd_id, jp.title
+            FROM shortlisted_candidates s
+            JOIN job_postings jp ON s.job_id = jp.id
+            GROUP BY jp.jd_id, jp.title
             ORDER BY last_shortlist_date DESC
         """
         
@@ -3203,249 +2999,11 @@ def get_job_shortlist_count():
         return jsonify({'success': False, 'message': 'Failed to get shortlist counts'}), 500
 
 
-@app.route('/api/recruiter/jobs/<job_id>/applicants', methods=['GET'])
-# Legacy get_job_applicants removed (replaced by newer version at end of file)
-
-
-@app.route('/api/recruiter/jd/<jd_id>/match-candidates', methods=['POST'])
-def match_candidates_for_jd(jd_id):
-    """Find top candidates matching a job description using AI"""
-    try:
-        data = request.get_json() or {}
-        employment_status_filter = data.get('employment_status_filter')
-        top_n = data.get('top_n', 10)
-        
-        # Get the job description details
-        jd_query = """
-            SELECT jd_id, title, description, requirements, responsibilities, 
-                   department, location, employment_type, experience_level
-            FROM job_postings
-            WHERE jd_id = %s
-        """
-        jd_result = execute_query(jd_query, (jd_id,), fetch_one=True)
-        
-        if not jd_result:
-            return jsonify({'success': False, 'message': 'Job description not found'}), 404
-        
-        jd_data = dict(jd_result)
-        
-        # Get all candidates with their CV data
-        candidate_query = """
-            SELECT 
-                uc.id as cv_id,
-                uc.user_id,
-                uc.personal_info,
-                uc.professional_summary,
-                uc.technical_skills,
-                uc.soft_skills,
-                uc.work_experience,
-                uc.education,
-                uc.certifications,
-                u.first_name,
-                u.last_name,
-                u.email,
-                u.employment_status
-            FROM user_cvs uc
-            LEFT JOIN users u ON uc.user_id::text = u.id::text
-            WHERE uc.is_visible = true OR uc.is_visible IS NULL
-        """
-        
-        # Add employment status filter if specified
-        params = []
-        if employment_status_filter:
-            candidate_query += " AND (u.employment_status = %s OR u.employment_status IS NULL)"
-            params.append(employment_status_filter)
-        
-        candidates = execute_query(candidate_query, tuple(params) if params else None) or []
-        
-        if not candidates:
-            return jsonify({
-                'success': True,
-                'top_matches': [],
-                'match_count': 0,
-                'message': 'No candidates found matching the criteria'
-            }), 200
-        
-        # Extract job requirements for matching
-        job_requirements = []
-        if jd_data.get('requirements'):
-            reqs = jd_data['requirements']
-            if isinstance(reqs, str):
-                try:
-                    reqs = json.loads(reqs)
-                except:
-                    reqs = []
-            if isinstance(reqs, list):
-                for req in reqs:
-                    if isinstance(req, dict):
-                        job_requirements.append(req.get('description', '').lower())
-                    elif isinstance(req, str):
-                        job_requirements.append(req.lower())
-        
-        job_title = (jd_data.get('title') or '').lower()
-        job_description = (jd_data.get('description') or '').lower()
-        job_location = (jd_data.get('location') or '').lower()
-        
-        # Score each candidate
-        scored_candidates = []
-        for candidate in candidates:
-            candidate_dict = dict(candidate)
-            
-            # Parse JSON fields
-            for field in ['personal_info', 'technical_skills', 'soft_skills', 'work_experience', 'education', 'certifications']:
-                if candidate_dict.get(field) and isinstance(candidate_dict[field], str):
-                    try:
-                        candidate_dict[field] = json.loads(candidate_dict[field])
-                    except:
-                        candidate_dict[field] = []
-            
-            # Extract candidate skills
-            candidate_skills = set()
-            tech_skills = candidate_dict.get('technical_skills') or []
-            soft_skills = candidate_dict.get('soft_skills') or []
-            
-            if isinstance(tech_skills, list):
-                for skill in tech_skills:
-                    if isinstance(skill, str):
-                        candidate_skills.add(skill.lower())
-                    elif isinstance(skill, dict):
-                        candidate_skills.add(skill.get('name', '').lower())
-            
-            if isinstance(soft_skills, list):
-                for skill in soft_skills:
-                    if isinstance(skill, str):
-                        candidate_skills.add(skill.lower())
-                    elif isinstance(skill, dict):
-                        candidate_skills.add(skill.get('name', '').lower())
-            
-            # Calculate match score
-            score = 0
-            matched_skills = []
-            missing_skills = []
-            
-            # Skills matching (40 points)
-            for req in job_requirements:
-                req_words = set(req.split())
-                matched = False
-                for skill in candidate_skills:
-                    skill_words = set(skill.split())
-                    if skill_words & req_words or skill in req or req in skill:
-                        matched = True
-                        matched_skills.append(skill)
-                        break
-                if not matched:
-                    missing_skills.append(req)
-            
-            if job_requirements:
-                skills_score = (len(matched_skills) / len(job_requirements)) * 40
-            else:
-                skills_score = 20  # Default if no requirements specified
-            score += skills_score
-            
-            # Title/Role matching (25 points)
-            personal_info = candidate_dict.get('personal_info') or {}
-            candidate_title = ''
-            if isinstance(personal_info, dict):
-                candidate_title = (personal_info.get('currentTitle') or personal_info.get('title') or '').lower()
-            
-            if candidate_title and job_title:
-                title_words = set(job_title.split())
-                candidate_words = set(candidate_title.split())
-                common_words = title_words & candidate_words
-                if common_words:
-                    score += min(25, len(common_words) * 8)
-            
-            # Experience matching (20 points)
-            work_exp = candidate_dict.get('work_experience') or []
-            years_exp = 0
-            if isinstance(work_exp, list):
-                years_exp = len(work_exp) * 2  # Rough estimate: 2 years per position
-            
-            exp_level = (jd_data.get('experience_level') or '').lower()
-            if 'entry' in exp_level or 'junior' in exp_level or 'trainee' in exp_level:
-                if years_exp <= 2:
-                    score += 20
-                elif years_exp <= 4:
-                    score += 15
-                else:
-                    score += 10
-            elif 'mid' in exp_level:
-                if 2 <= years_exp <= 5:
-                    score += 20
-                elif years_exp > 5:
-                    score += 15
-                else:
-                    score += 10
-            elif 'senior' in exp_level:
-                if years_exp >= 5:
-                    score += 20
-                elif years_exp >= 3:
-                    score += 15
-                else:
-                    score += 5
-            else:
-                score += min(20, years_exp * 2)  # Default scoring
-            
-            # Location matching (15 points)
-            candidate_location = ''
-            if isinstance(personal_info, dict):
-                candidate_location = (personal_info.get('location') or personal_info.get('city') or '').lower()
-            
-            if candidate_location and job_location:
-                if candidate_location in job_location or job_location in candidate_location:
-                    score += 15
-                elif 'uae' in candidate_location or 'dubai' in candidate_location or 'abu dhabi' in candidate_location:
-                    score += 10  # UAE-based candidate bonus
-            else:
-                score += 10  # Default if location not specified
-            
-            # Get candidate name
-            candidate_name = ''
-            if candidate_dict.get('first_name') and candidate_dict.get('last_name'):
-                candidate_name = f"{candidate_dict['first_name']} {candidate_dict['last_name']}"
-            elif isinstance(personal_info, dict):
-                candidate_name = personal_info.get('fullName') or personal_info.get('name') or 'Unknown'
-            else:
-                candidate_name = 'Unknown Candidate'
-            
-            scored_candidates.append({
-                'candidate_id': str(candidate_dict.get('user_id') or candidate_dict.get('cv_id')),
-                'cv_id': str(candidate_dict.get('cv_id')),
-                'name': candidate_name,
-                'email': candidate_dict.get('email') or (personal_info.get('email') if isinstance(personal_info, dict) else ''),
-                'current_title': candidate_title.title() if candidate_title else 'Not specified',
-                'location': candidate_location.title() if candidate_location else 'Not specified',
-                'employment_status': candidate_dict.get('employment_status') or 'Not specified',
-                'match_score': round(score, 1),
-                'matched_skills': list(set(matched_skills))[:10],
-                'missing_skills': missing_skills[:5],
-                'years_experience': years_exp,
-                'professional_summary': candidate_dict.get('professional_summary') or '',
-                'fit_assessment': 'Excellent Fit' if score >= 75 else 'Good Fit' if score >= 60 else 'Moderate Fit' if score >= 45 else 'Below Average'
-            })
-        
-        # Sort by score and get top N
-        scored_candidates.sort(key=lambda x: x['match_score'], reverse=True)
-        top_matches = scored_candidates[:top_n]
-        
-        return jsonify({
-            'success': True,
-            'top_matches': top_matches,
-            'match_count': len(top_matches),
-            'total_candidates_evaluated': len(scored_candidates),
-            'job_title': jd_data.get('title'),
-            'filters_applied': {
-                'employment_status': employment_status_filter
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Match candidates error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': f'Failed to match candidates: {str(e)}'}), 500
-
-
+# REMOVED: match_candidates_for_jd was dead code — its two route decorators
+# (/api/recruiter/jobs/<job_id>/applicants and /api/recruiter/jd/<jd_id>/match-candidates)
+# were both shadowed by handlers registered first:
+# - get_job_applicants (app.py line 337) for the /applicants route
+# - jd_routes_v2.match_candidates for the /match-candidates route
 # ============================================================================
 # RECRUITER OFFERS ENDPOINTS
 # ============================================================================
@@ -3664,178 +3222,11 @@ def get_offer_statistics(jd_id):
         }), 200
 
 
-@app.route('/api/recruiter/offers', methods=['POST'])
-@app.route('/api/recruiter/offers/create', methods=['POST'])
-def create_offer():
-    """Create a new offer for a candidate"""
-    try:
-        data = request.get_json()
-        logger.info(f"Create offer request data: {data}")
-        
-        jd_id = data.get('jd_id')
-        candidate_id = data.get('candidate_id')
-        shortlist_id = data.get('shortlist_id')
-        recruiter_id = data.get('recruiter_id') or '21'  # Default to mock recruiter
-        position_title = data.get('position_title', '')
-        salary_amount = data.get('salary_amount')
-        salary_currency = data.get('salary_currency', 'AED')
-        salary_period = data.get('salary_period', 'annual')
-        benefits = data.get('benefits', {})
-        start_date = data.get('start_date')
-        employment_type = data.get('employment_type', 'full-time')
-        probation_period_months = data.get('probation_period_months', 3)
-        work_location = data.get('work_location', '')
-        expiry_date = data.get('expiry_date')
-        notes = data.get('notes', '')
-        
-        if not jd_id or not candidate_id:
-            return jsonify({'success': False, 'error': 'Job ID and Candidate ID are required'}), 400
-        
-        # Generate offer ID
-        import uuid
-        offer_id = str(uuid.uuid4())
-        
-        # Build offer_data JSONB for the existing schema
-        offer_data = {
-            'position_title': position_title,
-            'salary_amount': salary_amount,
-            'salary_currency': salary_currency,
-            'salary_period': salary_period,
-            'benefits': benefits,
-            'start_date': start_date,
-            'employment_type': employment_type,
-            'probation_period_months': probation_period_months,
-            'work_location': work_location,
-            'notes': notes,
-            'shortlist_id': shortlist_id
-        }
-        
-        # Try to insert using the existing schema (job_posting_id, offer_data JSONB)
-        # The existing offers table uses: job_posting_id (UUID), candidate_id (INTEGER), recruiter_id (INTEGER), offer_data (JSONB)
-        try:
-            query = """
-                INSERT INTO offers (
-                    id, job_posting_id, candidate_id, recruiter_id, offer_data, status, expires_at, created_at, updated_at
-                )
-                VALUES (
-                    uuid_generate_v4(), 
-                    %s::uuid, 
-                    %s::integer, 
-                    %s::integer, 
-                    %s::jsonb, 
-                    'draft', 
-                    %s::timestamptz, 
-                    NOW(), 
-                    NOW()
-                )
-                RETURNING id
-            """
-            
-            # Convert candidate_id to integer if it's a string
-            candidate_id_int = int(candidate_id) if candidate_id else None
-            recruiter_id_int = int(recruiter_id) if recruiter_id else 21
-            
-            result = execute_query(query, (
-                jd_id,
-                candidate_id_int,
-                recruiter_id_int,
-                json.dumps(offer_data),
-                expiry_date if expiry_date else None
-            ))
-            
-            if result and len(result) > 0:
-                offer_id = str(result[0].get('id', offer_id))
-            
-            logger.info(f"Offer created successfully with ID: {offer_id} using existing schema")
-            
-            return jsonify({
-                'success': True,
-                'offer_id': offer_id,
-                'message': 'Offer created successfully'
-            }), 201
-            
-        except Exception as schema_err:
-            logger.warning(f"Existing schema insert failed: {schema_err}, trying alternative schema")
-            
-            # Fallback: Create table with our schema and insert
-            create_table_query = """
-                CREATE TABLE IF NOT EXISTS recruiter_offers (
-                    id VARCHAR(36) PRIMARY KEY,
-                    jd_id VARCHAR(100) NOT NULL,
-                    candidate_id VARCHAR(100) NOT NULL,
-                    shortlist_id VARCHAR(100),
-                    recruiter_id VARCHAR(100),
-                    position_title VARCHAR(255),
-                    salary_amount DECIMAL(12,2),
-                    salary_currency VARCHAR(10) DEFAULT 'AED',
-                    salary_period VARCHAR(50) DEFAULT 'annual',
-                    benefits JSONB DEFAULT '{}',
-                    start_date DATE,
-                    expiry_date DATE,
-                    employment_type VARCHAR(50) DEFAULT 'full-time',
-                    contract_type VARCHAR(50),
-                    probation_period_months INTEGER DEFAULT 3,
-                    work_location VARCHAR(255),
-                    status VARCHAR(50) DEFAULT 'draft',
-                    sent_at TIMESTAMP,
-                    response_deadline TIMESTAMP,
-                    candidate_response VARCHAR(50),
-                    candidate_response_at TIMESTAMP,
-                    approved_by VARCHAR(100),
-                    approved_at TIMESTAMP,
-                    notes TEXT,
-                    created_at TIMESTAMP DEFAULT NOW(),
-                    updated_at TIMESTAMP DEFAULT NOW()
-                )
-            """
-            execute_query(create_table_query)
-            
-            # Insert into our table
-            query = """
-                INSERT INTO recruiter_offers (
-                    id, jd_id, candidate_id, shortlist_id, recruiter_id, position_title,
-                    salary_amount, salary_currency, salary_period, benefits, start_date,
-                    expiry_date, employment_type, probation_period_months, work_location,
-                    status, notes, created_at, updated_at
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft', %s, NOW(), NOW())
-                RETURNING id
-            """
-            
-            result = execute_query(query, (
-                offer_id,
-                jd_id,
-                str(candidate_id),
-                shortlist_id,
-                str(recruiter_id),
-                position_title,
-                salary_amount,
-                salary_currency,
-                salary_period,
-                json.dumps(benefits) if benefits else '{}',
-                start_date if start_date else None,
-                expiry_date if expiry_date else None,
-                employment_type,
-                probation_period_months,
-                work_location,
-                notes
-            ))
-            
-            logger.info(f"Offer created successfully with ID: {offer_id} using recruiter_offers table")
-            
-            return jsonify({
-                'success': True,
-                'offer_id': offer_id,
-                'message': 'Offer created successfully'
-            }), 201
-        
-    except Exception as e:
-        logger.error(f"Create offer error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': f'Failed to create offer: {str(e)}'}), 500
-
-
+# REMOVED: create_offer was dead code — its two route decorators
+# (/api/recruiter/offers POST and /api/recruiter/offers/create POST)
+# were both shadowed by recruiter_dashboard_api handlers registered first:
+# - recruiter_dashboard_api.create_offer
+# - recruiter_dashboard_api.create_offer_legacy
 @app.route('/api/recruiter/offers/<offer_id>', methods=['PUT'])
 def update_offer(offer_id):
     """Update an existing offer"""

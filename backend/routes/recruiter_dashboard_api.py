@@ -332,21 +332,66 @@ def get_jd_list_enhanced():
                 filter_sql_legacy = ""
                 params_legacy = []
                 
-                # RBAC: If not admin/HR manager, strictly filter by recruiter/creator
-                if current_user_id and user_role not in ('hr_manager', 'admin', 'administrator', 'super_admin'):
+                # Get user's company_id and role details
+                user_company_id = None
+                is_admin = user_role in ('admin', 'administrator', 'super_admin')
+                
+                if current_user_id and not is_admin:
+                    try:
+                        # Fetch company for the user (column is 'company', not 'company_id')
+                        with conn.cursor() as cur_user:
+                            cur_user.execute("SELECT company FROM users WHERE id = %s", (current_user_id,))
+                            user_data = cur_user.fetchone()
+                            if user_data:
+                                user_company_id = user_data[0] # Tuple index 0
+                            
+                            # Fallback: check company_team_members if users.company is NULL
+                            if not user_company_id:
+                                cur_user.execute(
+                                    "SELECT company_id FROM company_team_members WHERE user_id = %s LIMIT 1",
+                                    (int(current_user_id),)
+                                )
+                                team_data = cur_user.fetchone()
+                                if team_data:
+                                    user_company_id = str(team_data[0])
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch company for user {current_user_id}: {e}")
+                        # CRITICAL: rollback so the connection isn't stuck in aborted state
+                        try:
+                            conn.rollback()
+                        except:
+                            pass
+
+                # RBAC Logic
+                if is_admin:
+                    # Admin sees all jobs
+                    pass
+                elif user_role in ('hr_manager', 'hr') and user_company_id:
+                     # HR Manager with Company: See all jobs for that company OR created by them
+                     filter_sql_new = " AND (company_id = %s OR recruiter_id = %s OR created_by = %s)"
+                     params_new = [user_company_id, str(current_user_id), str(current_user_id)]
+                     
+                     # Legacy table: Try user_id (most likely) or recruiter_id
+                     # Since we confirmed user_id exists for legacy jobs, use that.
+                     filter_sql_legacy = " AND user_id = %s" 
+                     try:
+                        params_legacy = [int(current_user_id)]
+                     except:
+                        params_legacy = [0]
+                        filter_sql_legacy = " AND 1=0"
+                else:
+                    # Regular Recruiter OR HR Manager without Company: See ONLY their own jobs
                     filter_sql_new = " AND (recruiter_id = %s OR created_by = %s)"
                     params_new = [str(current_user_id), str(current_user_id)]
                     
-                    filter_sql_legacy = " AND recruiter_id = %s" # Legacy table uses int usually, but let's try safely
-                    # Legacy ID might be integer
+                    # Legacy table: Use user_id
+                    filter_sql_legacy = " AND user_id = %s"
                     try: 
                         rec_id_int = int(current_user_id)
                         params_legacy = [rec_id_int]
                     except:
-                        # If ID is uuid string, legacy lookup might fail or use string if columns allow
-                        # Assuming legacy uses int recruiter_id
-                        params_legacy = [0] # Logic break prevention: ID 0 likely returns nothing
-                        filter_sql_legacy = " AND 1=0" # Safer to show nothing loop
+                        params_legacy = [0]
+                        filter_sql_legacy = " AND 1=0"
                 
                 # Query 1: job_postings (New Table)
                 try:
@@ -380,44 +425,53 @@ def get_jd_list_enhanced():
                     new_rows = []
 
                 # Query 2: job_descriptions (Legacy Table)
+                # Note: job_descriptions has different schema than job_postings
+                # (is_active instead of status, no applications_count, salary_range as single field)
                 try:
                     query_legacy = f"""
                         SELECT 
                             id::text as jd_id,
-                            id::text as jd_id,
                             title,
                             COALESCE(company, 'Company') as company,
                             location,
-                            status,
-                            COALESCE(applications_count, 0) as applications,
+                            CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status,
+                            0 as applications,
                             created_at,
-                            description,
-                            requirements,
-                            responsibilities,
-                            benefits,
-                            salary_range_min,
-                            salary_range_max,
+                            NULL as description,
+                            NULL as requirements,
+                            NULL as responsibilities,
+                            NULL as benefits,
+                            NULL::float as salary_range_min,
+                            NULL::float as salary_range_max,
                             employment_type,
-                            experience_level,
+                            experience_level::text as experience_level,
                             id::text as pk
                         FROM job_descriptions
-                        WHERE status != 'deleted' {filter_sql_legacy}
+                        WHERE is_active = true {filter_sql_legacy}
                         ORDER BY created_at DESC
                         LIMIT 50
                     """
                     cur.execute(query_legacy, params_legacy)
                     legacy_rows = cur.fetchall()
                 except Exception as e:
-                    logger.warning(f"Error querying job_descriptions: {e}")
+                    logger.warning(f"Error querying job_descriptions (legacy): {e}")
                     legacy_rows = []
+                    # Rollback so the connection isn't stuck in aborted state
+                    try:
+                        conn.rollback()
+                    except:
+                        pass
                 
-                # Merge logic
+                # Merge logic — deduplicate by title (prefer job_postings over legacy)
                 all_rows = []
-                # Simple mapping to unify fields
+                new_titles = {row['title'].lower().strip() for row in new_rows if row.get('title')}
                 for row in new_rows:
                     row['source'] = 'job_postings'
                     all_rows.append(row)
                 for row in legacy_rows:
+                    # Skip legacy entries that duplicate a job_postings entry
+                    if row.get('title') and row['title'].lower().strip() in new_titles:
+                        continue
                     row['source'] = 'job_descriptions'
                     all_rows.append(row)
                 
@@ -461,7 +515,7 @@ def get_jd_list_enhanced():
                 conn.close()
                 
                 # Debug Log
-                logger.info(f"User {current_user_id} ({user_role}) fetched {len(job_descriptions)} jobs.")
+                logger.info(f"User {current_user_id} ({user_role}) fetched {len(job_descriptions)} jobs (new: {len(new_rows)}, legacy: {len(legacy_rows)}).")
                 
         except Exception as db_error:
              import traceback
@@ -535,9 +589,9 @@ def get_candidate_details(candidate_id):
     """Get detailed candidate information"""
     try:
         candidates = {
-            'c_001': {'id': 'c_001', 'name': 'Ahmed Al Maktoum', 'email': 'ahmed@email.ae', 'phone': '+971501234567', 'location': 'Dubai', 'experience_years': 5, 'skills': ['Python', 'JavaScript', 'React', 'AWS'], 'education': 'BSc Computer Science', 'current_role': 'Senior Developer'},
-            'c_002': {'id': 'c_002', 'name': 'Fatima Al Nahyan', 'email': 'fatima@email.ae', 'phone': '+971502345678', 'location': 'Abu Dhabi', 'experience_years': 4, 'skills': ['Python', 'Django', 'PostgreSQL'], 'education': 'MSc Data Science', 'current_role': 'Backend Developer'},
-            '1': {'id': '1', 'name': 'Ahmed Al Maktoum', 'email': 'ahmed@email.ae', 'phone': '+971501234567', 'location': 'Dubai', 'experience_years': 5, 'skills': ['Python', 'JavaScript', 'React', 'AWS'], 'education': 'BSc Computer Science', 'current_role': 'Senior Developer'}
+            'c_001': {'id': 'c_001', 'name': 'Ahmed Al Maktoum', 'location': 'Dubai', 'experience_years': 5, 'skills': ['Python', 'JavaScript', 'React', 'AWS'], 'education': 'BSc Computer Science', 'current_role': 'Senior Developer'},
+            'c_002': {'id': 'c_002', 'name': 'Fatima Al Nahyan', 'location': 'Abu Dhabi', 'experience_years': 4, 'skills': ['Python', 'Django', 'PostgreSQL'], 'education': 'MSc Data Science', 'current_role': 'Backend Developer'},
+            '1': {'id': '1', 'name': 'Ahmed Al Maktoum', 'location': 'Dubai', 'experience_years': 5, 'skills': ['Python', 'JavaScript', 'React', 'AWS'], 'education': 'BSc Computer Science', 'current_role': 'Senior Developer'}
         }
         candidate = candidates.get(candidate_id, candidates.get('1'))
         return jsonify({'success': True, 'data': candidate})
@@ -1067,66 +1121,9 @@ def get_approval_stats():
         })
 
 
-@recruiter_dashboard_bp.route('/offers', methods=['GET'])
-@optional_auth
-def list_offers():
-    """Get list of job offers"""
-    try:
-        status = request.args.get('status')
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        
-        offset = (page - 1) * per_page
-        
-        query = """
-            SELECT 
-                o.id,
-                o.job_id,
-                o.candidate_id,
-                o.position_title,
-                o.salary_offered,
-                o.currency,
-                o.start_date,
-                o.offer_expiry,
-                o.benefits,
-                o.status,
-                o.notes,
-                o.created_at,
-                u.full_name as candidate_name,
-                u.email as candidate_email,
-                j.title as job_title,
-                j.company as company_name
-            FROM job_offers o
-            LEFT JOIN users u ON o.candidate_id = u.id
-            LEFT JOIN job_descriptions j ON o.job_id = j.id
-            WHERE 1=1
-        """
-        params = []
-        
-        if status:
-            query += " AND o.status = %s"
-            params.append(status)
-        
-        query += " ORDER BY o.created_at DESC LIMIT %s OFFSET %s"
-        params.extend([per_page, offset])
-        
-        offers = execute_query(query, tuple(params))
-        
-        return jsonify({
-            'success': True,
-            'data': offers or [],
-            'page': page,
-            'per_page': per_page
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to list offers: {e}")
-        return jsonify({
-            'success': True,
-            'data': [],
-            'page': 1,
-            'per_page': 20
-        })
+# REMOVED: list_offers was dead code — duplicate within same file,
+# REMOVED: shadowed by get_offers_list (registered first, line ~579).
+
 
 
 @recruiter_dashboard_bp.route('/offers/create', methods=['POST'])
@@ -1596,7 +1593,11 @@ def get_all_offer_approvals():
                 oar.position_title,
                 oar.salary_amount,
                 oar.salary_currency,
-                oar.status,
+                CASE 
+                    WHEN o_latest.status IN ('sent', 'declined', 'accepted', 'negotiating', 'rejected') 
+                    THEN o_latest.status 
+                    ELSE oar.status 
+                END as status,
                 oar.approved_by,
                 oar.approved_at,
                 oar.rejection_reason,
@@ -1613,6 +1614,7 @@ def get_all_offer_approvals():
             LEFT JOIN users r ON oar.recruiter_id = r.id
             LEFT JOIN job_descriptions jd ON oar.jd_id::text = jd.id::text
             LEFT JOIN hr_profiles hp ON oar.recruiter_id = hp.user_id
+            LEFT JOIN offers o_latest ON oar.offer_id::text = o_latest.id::text
             WHERE 1=1
         """
         params = []
@@ -1742,6 +1744,9 @@ def approve_offer(approval_id):
         offer_id = None
         
         # First try to update the approval request
+        recruiter_id = None
+        position_title = None
+        
         update_query = """
             UPDATE offer_approval_requests
             SET status = 'approved',
@@ -1750,13 +1755,15 @@ def approve_offer(approval_id):
                 comments = %s,
                 updated_at = NOW()
             WHERE id = %s::uuid
-            RETURNING offer_id
+            RETURNING offer_id, recruiter_id, position_title
         """
         
         result = execute_query(update_query, (approver_id, comments, approval_id), fetch_one=True)
         
         if result:
             offer_id = result.get('offer_id')
+            recruiter_id = result.get('recruiter_id')
+            position_title = result.get('position_title', 'a position')
         else:
             # Fallback: approval_id might actually be the offer_id directly
             # This happens when using the offers table fallback
@@ -1770,12 +1777,48 @@ def approve_offer(approval_id):
                 SET status = 'approved',
                     updated_at = NOW()
                 WHERE id = %s::uuid
-                RETURNING id
+                RETURNING id, position_title, job_title
             """
             offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
             
             if offer_result:
                 logger.info(f"Offer {offer_id} approved by HR Manager {approver_id}")
+                
+                # Use position_title from offer if not found in approval request
+                if not position_title:
+                    position_title = offer_result.get('position_title') or offer_result.get('job_title') or 'a position'
+                
+                # If recruiter_id not found from approval request, try to get from offers table
+                if not recruiter_id:
+                    recruiter_query = """
+                        SELECT recruiter_id FROM offers WHERE id = %s::uuid
+                    """
+                    recruiter_result = execute_query(recruiter_query, (str(offer_id),), fetch_one=True)
+                    if recruiter_result:
+                        recruiter_id = recruiter_result.get('recruiter_id')
+                
+                # Create notification for the recruiter who submitted the offer
+                if recruiter_id:
+                    try:
+                        notif_query = """
+                            INSERT INTO notifications (user_id, type, title, content, metadata)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """
+                        notif_title = 'Offer Approved'
+                        notif_content = f'Your offer for {position_title} has been approved by HR Manager. You can now send it to the candidate.'
+                        notif_metadata = json.dumps({
+                            'offer_id': str(offer_id),
+                            'approval_id': str(approval_id),
+                            'position_title': position_title,
+                            'link': '/recruiter?tab=offers'
+                        })
+                        execute_query(notif_query, (
+                            str(recruiter_id), 'offer_approved', notif_title, notif_content, notif_metadata
+                        ))
+                        logger.info(f"Notification sent to recruiter {recruiter_id} for approved offer {offer_id}")
+                    except Exception as notif_err:
+                        # Don't fail the approval if notification fails
+                        logger.warning(f"Failed to create notification for recruiter {recruiter_id}: {notif_err}")
                 
                 return jsonify({
                     'success': True,
@@ -1821,6 +1864,8 @@ def reject_offer(approval_id):
                 approver_id = 1
         
         offer_id = None
+        recruiter_id = None
+        position_title = None
         
         # First try to update the approval request
         update_query = """
@@ -1832,13 +1877,15 @@ def reject_offer(approval_id):
                 comments = %s,
                 updated_at = NOW()
             WHERE id = %s::uuid
-            RETURNING offer_id
+            RETURNING offer_id, recruiter_id, position_title
         """
         
         result = execute_query(update_query, (approver_id, rejection_reason, comments, approval_id), fetch_one=True)
         
         if result:
             offer_id = result.get('offer_id')
+            recruiter_id = result.get('recruiter_id')
+            position_title = result.get('position_title', 'a position')
         else:
             # Fallback: approval_id might actually be the offer_id directly
             logger.info(f"No approval request found, treating {approval_id} as offer_id")
@@ -1851,12 +1898,50 @@ def reject_offer(approval_id):
                 SET status = 'rejected',
                     updated_at = NOW()
                 WHERE id = %s::uuid
-                RETURNING id
+                RETURNING id, position_title, job_title
             """
             offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
             
             if offer_result:
                 logger.info(f"Offer {offer_id} rejected by HR Manager {approver_id}")
+                
+                # Use position_title from offer if not found in approval request
+                if not position_title:
+                    position_title = offer_result.get('position_title') or offer_result.get('job_title') or 'a position'
+                
+                # If recruiter_id not found from approval request, try to get from offers table
+                if not recruiter_id:
+                    recruiter_query = """
+                        SELECT recruiter_id FROM offers WHERE id = %s::uuid
+                    """
+                    recruiter_result = execute_query(recruiter_query, (str(offer_id),), fetch_one=True)
+                    if recruiter_result:
+                        recruiter_id = recruiter_result.get('recruiter_id')
+                
+                # Create notification for the recruiter who submitted the offer
+                if recruiter_id:
+                    try:
+                        notif_query = """
+                            INSERT INTO notifications (user_id, type, title, content, metadata)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """
+                        reason_text = f' Reason: {rejection_reason}' if rejection_reason else ''
+                        notif_title = 'Offer Rejected'
+                        notif_content = f'Your offer for {position_title} has been rejected by HR Manager.{reason_text}'
+                        notif_metadata = json.dumps({
+                            'offer_id': str(offer_id),
+                            'approval_id': str(approval_id),
+                            'position_title': position_title,
+                            'rejection_reason': rejection_reason,
+                            'link': '/recruiter?tab=offers'
+                        })
+                        execute_query(notif_query, (
+                            str(recruiter_id), 'offer_rejected', notif_title, notif_content, notif_metadata
+                        ))
+                        logger.info(f"Rejection notification sent to recruiter {recruiter_id} for offer {offer_id}")
+                    except Exception as notif_err:
+                        # Don't fail the rejection if notification fails
+                        logger.warning(f"Failed to create rejection notification for recruiter {recruiter_id}: {notif_err}")
                 
                 return jsonify({
                     'success': True,
@@ -1914,14 +1999,48 @@ def send_offer_to_candidate(offer_id):
             SET status = 'sent',
                 updated_at = NOW()
             WHERE id = %s::uuid
-            RETURNING id, candidate_id
+            RETURNING id, candidate_id, position_title, job_title
         """
         
         update_result = execute_query(update_query, (offer_id,), fetch_one=True)
         
         if update_result:
-            # TODO: Send notification to candidate (email, in-app notification, etc.)
-            logger.info(f"Offer {offer_id} sent to candidate {update_result.get('candidate_id')}")
+            candidate_id = update_result.get('candidate_id')
+            position_title = update_result.get('position_title') or update_result.get('job_title') or 'a position'
+            logger.info(f"Offer {offer_id} sent to candidate {candidate_id}")
+            
+            # Also sync offer_approval_requests status to 'sent'
+            try:
+                execute_query("""
+                    UPDATE offer_approval_requests
+                    SET status = 'sent', updated_at = NOW()
+                    WHERE offer_id::text = %s
+                """, (str(offer_id),))
+                logger.info(f"Synced offer_approval_requests status to 'sent' for offer {offer_id}")
+            except Exception as sync_err:
+                logger.warning(f"Failed to sync offer_approval_requests: {sync_err}")
+            
+            # Send notification to candidate
+            if candidate_id:
+                try:
+                    notif_query = """
+                        INSERT INTO notifications (user_id, type, title, content, metadata)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """
+                    notif_title = 'New Job Offer Received'
+                    notif_content = f'You have received a job offer for {position_title}. Review and respond to the offer.'
+                    notif_metadata = json.dumps({
+                        'offer_id': str(offer_id),
+                        'position_title': position_title,
+                        'link': '/candidate-dashboard'
+                    })
+                    execute_query(notif_query, (
+                        str(candidate_id), 'offer_received', notif_title, notif_content, notif_metadata
+                    ))
+                    logger.info(f"Notification sent to candidate {candidate_id} for offer {offer_id}")
+                except Exception as notif_err:
+                    # Don't fail the send if notification fails
+                    logger.warning(f"Failed to create notification for candidate {candidate_id}: {notif_err}")
             
             return jsonify({
                 'success': True,
@@ -1941,54 +2060,9 @@ def send_offer_to_candidate(offer_id):
         }), 500
 
 
-@recruiter_dashboard_bp.route('/offers/approval-stats', methods=['GET'])
-@optional_auth
-def get_offer_approval_stats():
-    """Get statistics about offer approvals"""
-    try:
-        # First try offer_approval_requests table
-        query = """
-            SELECT 
-                COUNT(*) as total,
-                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
-                COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
-                COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
-            FROM offer_approval_requests
-        """
-        
-        result = execute_query(query, fetch_one=True)
-        
-        # If no data in approval_requests table, fallback to offers table
-        if not result or (result.get('total', 0) == 0):
-            logger.info("No data in offer_approval_requests, falling back to offers table")
-            # Count pending as any offer that hasn't been approved/rejected/sent yet
-            fallback_query = """
-                SELECT 
-                    COUNT(*) as total,
-                    COUNT(CASE WHEN status IN ('pending_approval', 'pending', 'draft') THEN 1 END) as pending,
-                    COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
-                    COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
-                FROM offers
-            """
-            result = execute_query(fallback_query, fetch_one=True)
-            logger.info(f"Fallback stats from offers table: {result}")
-        
-        return jsonify({
-            'success': True,
-            'data': result or {'total': 0, 'pending': 0, 'approved': 0, 'rejected': 0}
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to get approval stats: {e}")
-        return jsonify({
-            'success': True,
-            'data': {'total': 0, 'pending': 0, 'approved': 0, 'rejected': 0}
-        })
+# REMOVED: get_offer_approval_stats was dead code — duplicate within same file,
+# REMOVED: shadowed by get_approval_stats (registered first, line ~1060).
 
-
-# =====================================================
-# HELPER FUNCTIONS
-# =====================================================
 
 
 
@@ -2067,13 +2141,15 @@ def get_candidate_profile_full(candidate_id):
             except Exception as e:
                 logger.error(f"Error fetching related data for profile {profile_id}: {e}")
 
-        # Construct Response
+        # Privacy: extract emirate from location string for recruiter view
+        raw_location = profile.get('location') or ''
+        emirate = raw_location.split(',')[0].strip() if raw_location else None
+
+        # Construct Response — exclude email/phone for privacy (all communication on-platform)
         data = {
             'candidate_id': candidate_id,
             'full_name': profile.get('full_name') or f"{profile.get('first_name','')} {profile.get('last_name','')}".strip(),
-            'email': profile.get('email'),
-            'phone': profile.get('phone'),
-            'location': profile.get('location'),
+            'emirate': emirate,
             'headline': profile.get('headline'),
             'bio': profile.get('bio'),
             'summary': profile.get('bio'), 

@@ -39,7 +39,7 @@ def register():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['email', 'password', 'first_name', 'last_name', 'phone', 'emirate']
+        required_fields = ['email', 'first_name', 'last_name', 'phone', 'emirate']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({
@@ -851,7 +851,7 @@ def dev_login():
     try:
         data = request.get_json()
         mock_user_id = data.get('user_id')
-        role = data.get('role', 'candidate')
+        role = data.get('role', 'job_seeker')
         email = data.get('email')
         
         if not email:
@@ -980,7 +980,7 @@ def login_with_otp_route():
         if success and user_data:
             # Create tokens
             # Determine role/user_type
-            identity_role = user_data.get('user_type') or user_data.get('role') or 'candidate'
+            identity_role = user_data.get('user_type') or user_data.get('role') or 'job_seeker'
             
             # Ensure ID is string
             user_id = str(user_data.get('id', ''))

@@ -1,0 +1,170 @@
+=== ROLE DISTRIBUTION ===
+  candidate: 30
+  job_seeker: 14
+  student: 9
+  recruiter: 6
+  administrator: 5
+  hr_manager: 3
+  admin: 2
+  educator: 2
+  growth_operator: 1
+
+=== USER_TYPE DISTRIBUTION ===
+  candidate: 53
+  job_seeker: 6
+  recruiter: 5
+  admin: 3
+  student: 3
+  educator: 2
+
+=== ROLE vs USER_TYPE MISMATCHES ===
+  id=29 email=admin@emiratijourney.ae role=admin user_type=candidate
+  id=34 email=ops@emiratijourney.ae role=admin user_type=candidate
+  id=45 email=omar.alrashid@recruitment.ae role=recruiter user_type=candidate
+  id=47 email=zara.saeed@company.ae role=hr_manager user_type=candidate
+  id=52 email=test_stats_d852e92f@example.com role=job_seeker user_type=candidate
+  id=54 email=test_stats_16d88e31@example.com role=job_seeker user_type=candidate
+  id=55 email=form_test_8b45bb3a@example.com role=job_seeker user_type=candidate
+  id=56 email=photo_test_b804cb76@example.com role=job_seeker user_type=candidate
+  id=59 email=admin_05ed36@example.com role=administrator user_type=candidate
+  id=61 email=admin_e96710@example.com role=administrator user_type=candidate
+  id=63 email=admin_03690c@example.com role=administrator user_type=candidate
+  id=65 email=admin_4ff980@example.com role=administrator user_type=candidate
+  id=67 email=admin_f399d9@example.com role=administrator user_type=candidate
+  id=71 email=u971509998888.f8767199@emirati-pathway.temp role=growth_operator user_type=admin
+  id=72 email=zara.saeed@demo.com role=hr_manager user_type=admin
+  id=85 email=student_0rshj2fs@example.com role=student user_type=candidate
+  id=86 email=student_stlmy5ch@example.com role=student user_type=candidate
+  id=87 email=student_znarkvo2@example.com role=student user_type=candidate
+  id=88 email=loc_test_voi2b98h@example.com role=job_seeker user_type=candidate
+  id=89 email=loc_test_ae0w68t2@example.com role=job_seeker user_type=candidate
+  id=90 email=loc_test_i1kkj7dp@example.com role=job_seeker user_type=candidate
+  id=91 email=eid_test_d1guj7o0@example.com role=job_seeker user_type=candidate
+  id=104 email=bugtest_a3859cc9@emirati.ae role=student user_type=candidate
+  id=105 email=bugtest_3165bfb9@emirati.ae role=student user_type=candidate
+  id=106 email=bugtest_5f1ee39b@emirati.ae role=student user_type=candidate
+  id=121 email=hr.manager1@testchat.com role=hr_manager user_type=admin
+
+=== SHORTLIST TABLES ===
+  candidate_shortlist: 21 rows
+    {'id': 10, 'shortlist_id': 'sl_20251128_095400_51578606', 'jd_id': 'test_jd_8e254413', 'candidate_id': 'user_d9795904', 'recruiter_id': 'recruiter_test', 'match_score': Decimal('85.50'), 'match_details': {}, 'status': 'shortlisted', 'notes': 'Test candidate', 'tags': [], 'contacted_at': None, 'interview_scheduled_at': None, 'created_at': datetime.datetime(2025, 11, 28, 9, 54, 0, 507313), 'updated_at': datetime.datetime(2025, 11, 28, 9, 54, 0, 507313)}
+    {'id': 15, 'shortlist_id': 'sl_20251128_234814_6f8ed5ef', 'jd_id': 'jd_20251124_184251_c863c1f4', 'candidate_id': '4', 'recruiter_id': '3', 'match_score': Decimal('0.00'), 'match_details': {'skills': {'matched': [], 'missing': [], 'additional': []}, 'location': {'distance': 0, 'compatible': True}, 'education': {'field': 'Computer Science', 'level': 'Bachelor', 'relevant': True}, 'languages': {'matched': ['English', 'Arabic'], 'missing': []}, 'experience': {'level': 'Mid', 'years': 2, 'relevant': True}}, 'status': 'shortlisted', 'notes': 'Shortlisted from candidate matching', 'tags': [], 'contacted_at': None, 'interview_scheduled_at': None, 'created_at': datetime.datetime(2025, 11, 28, 23, 48, 14, 787188), 'updated_at': datetime.datetime(2025, 11, 28, 23, 48, 14, 787188)}
+    {'id': 16, 'shortlist_id': 'sl_20251128_234815_e8144c2e', 'jd_id': 'jd_20251124_184251_c863c1f4', 'candidate_id': '13', 'recruiter_id': '3', 'match_score': Decimal('0.00'), 'match_details': {'skills': {'matched': [], 'missing': [], 'additional': []}, 'location': {'distance': 0, 'compatible': True}, 'education': {'field': 'Computer Science', 'level': 'Bachelor', 'relevant': True}, 'languages': {'matched': ['English', 'Arabic'], 'missing': []}, 'experience': {'level': 'Mid', 'years': 2, 'relevant': True}}, 'status': 'shortlisted', 'notes': 'Shortlisted from candidate matching', 'tags': [], 'contacted_at': None, 'interview_scheduled_at': None, 'created_at': datetime.datetime(2025, 11, 28, 23, 48, 15, 962684), 'updated_at': datetime.datetime(2025, 11, 28, 23, 48, 15, 962684)}
+    {'id': 17, 'shortlist_id': 'sl_20251128_234817_67ad7f21', 'jd_id': 'jd_20251124_184251_c863c1f4', 'candidate_id': '17', 'recruiter_id': '3', 'match_score': Decimal('0.00'), 'match_details': {'skills': {'matched': [], 'missing': [], 'additional': []}, 'location': {'distance': 0, 'compatible': True}, 'education': {'field': 'Computer Science', 'level': 'Bachelor', 'relevant': True}, 'languages': {'matched': ['English', 'Arabic'], 'missing': []}, 'experience': {'level': 'Mid', 'years': 6, 'relevant': True}}, 'status': 'shortlisted', 'notes': 'Shortlisted from candidate matching', 'tags': [], 'contacted_at': None, 'interview_scheduled_at': None, 'created_at': datetime.datetime(2025, 11, 28, 23, 48, 17, 120554), 'updated_at': datetime.datetime(2025, 11, 28, 23, 48, 17, 120554)}
+    {'id': 1, 'shortlist_id': 'sl_20251030_232607_139190d1', 'jd_id': 'jd_test_001', 'candidate_id': 'candidate_123', 'recruiter_id': 'recruiter_456', 'match_score': Decimal('85.50'), 'match_details': {'skills': 90}, 'status': 'interviewed', 'notes': 'Test candidate\n2025-10-30 23:39: Sent initial email\n[2025-10-30 23:40] Great communication skills\n2025-11-04 09:46: Matching the job requirements.\n2025-11-04 09:46: 4/5', 'tags': [], 'contacted_at': datetime.datetime(2025, 11, 2, 20, 27, 57, 149601), 'interview_scheduled_at': None, 'created_at': datetime.datetime(2025, 10, 30, 23, 26, 7, 722444), 'updated_at': datetime.datetime(2025, 11, 4, 9, 46, 47, 579401)}
+  shortlisted_candidates: 3 rows
+    {'id': 6, 'job_id': 31, 'candidate_id': 21, 'hr_user_id': 1, 'notes': 'Shortlisted from search', 'status': 'shortlisted', 'created_at': datetime.datetime(2026, 1, 5, 22, 6, 29, 495489), 'updated_at': datetime.datetime(2026, 1, 5, 22, 6, 29, 495489)}
+    {'id': 10, 'job_id': 74, 'candidate_id': 21, 'hr_user_id': 1, 'notes': 'Shortlisted from search', 'status': 'shortlisted', 'created_at': datetime.datetime(2026, 1, 5, 22, 9, 6, 119934), 'updated_at': datetime.datetime(2026, 1, 5, 22, 9, 6, 119934)}
+    {'id': 14, 'job_id': 30, 'candidate_id': 21, 'hr_user_id': 1, 'notes': 'Shortlisted from search', 'status': 'shortlisted', 'created_at': datetime.datetime(2026, 1, 5, 22, 50, 19, 457051), 'updated_at': datetime.datetime(2026, 1, 5, 22, 50, 19, 457051)}
+  job_shortlists: 2 rows
+    {'job_posting_id': 30, 'candidate_id': 22, 'added_by': 47, 'notes': 'Shortlisted from search', 'created_at': datetime.datetime(2025, 12, 20, 17, 23, 59, 462694)}
+    {'job_posting_id': 30, 'candidate_id': 1, 'added_by': 47, 'notes': 'Shortlisted from search', 'created_at': datetime.datetime(2025, 12, 20, 17, 23, 59, 751473)}
+
+=== OFFER TABLES ===
+  job_offers: 7 rows
+    {'offer_id': 'offer_5e42cc27908e', 'jd_id': 'jd_test_001', 'shortlist_id': 'sl_20251030_232607_139190d1', 'candidate_id': 'candidate_123', 'recruiter_id': 'recruiter_001', 'position_title': 'Senior Software Engineer', 'department': 'Engineering', 'employment_type': 'full_time', 'start_date': datetime.date(2025, 12, 2), 'salary_amount': Decimal('200000.00'), 'salary_currency': 'AED', 'salary_period': 'annual', 'bonus_amount': Decimal('25000.00'), 'equity_percentage': Decimal('0.50'), 'benefits': {'flight_tickets': 2, 'health_insurance': True, 'annual_leave_days': 30, 'housing_allowance': 36000, 'transportation_allowance': 12000}, 'status': 'negotiating', 'offer_date': datetime.datetime(2025, 11, 2, 22, 3, 55, 286510), 'expiry_date': datetime.date(2025, 11, 9), 'response_deadline': datetime.date(2025, 11, 9), 'candidate_response': 'negotiating', 'response_date': datetime.datetime(2025, 11, 2, 22, 3, 57, 360895), 'response_notes': 'Candidate negotiating the offer', 'negotiation_status': 'in_progress', 'negotiation_rounds': 14, 'negotiation_notes': '[{"party": "recruiter", "timestamp": "2025-11-03T17:28:55.174370", "proposed_salary": 210000, "notes...', 'contract_duration_months': None, 'probation_period_months': 3, 'notice_period_days': 30, 'work_location': 'Dubai, UAE', 'remote_work_policy': 'hybrid', 'offer_letter_url': None, 'contract_url': None, 'additional_documents': None, 'approval_status': 'approved', 'approved_by': 'manager_001', 'approval_date': datetime.datetime(2025, 11, 2, 22, 3, 53, 214887), 'approval_notes': 'Approved by hiring manager', 'created_at': datetime.datetime(2025, 11, 2, 22, 3, 44, 778898), 'updated_at': datetime.datetime(2025, 11, 3, 18, 37, 23, 752515), 'created_by': 'recruiter_001', 'notes': 'Updated salary after negotiation', 'rejected_by': None, 'rejection_date': None, 'rejection_reason': None}
+    {'offer_id': 'offer_b282a64db75d', 'jd_id': '1', 'shortlist_id': 'sl_002', 'candidate_id': '18', 'recruiter_id': 'recruiter_001', 'position_title': 'Software Engineer', 'department': None, 'employment_type': 'full-time', 'start_date': datetime.date(2025, 12, 1), 'salary_amount': Decimal('200000.00'), 'salary_currency': 'AED', 'salary_period': 'annual', 'bonus_amount': None, 'equity_percentage': None, 'benefits': {'flight_tickets': 2, 'health_insurance': True, 'annual_leave_days': 30, 'housing_allowance': 10000, 'additional_benefits': [], 'transportation_allowance': 10000}, 'status': 'draft', 'offer_date': None, 'expiry_date': None, 'response_deadline': None, 'candidate_response': None, 'response_date': None, 'response_notes': None, 'negotiation_status': 'none', 'negotiation_rounds': 0, 'negotiation_notes': None, 'contract_duration_months': None, 'probation_period_months': 3, 'notice_period_days': 30, 'work_location': 'Dubai', 'remote_work_policy': None, 'offer_letter_url': None, 'contract_url': None, 'additional_documents': None, 'approval_status': 'pending', 'approved_by': None, 'approval_date': None, 'approval_notes': None, 'created_at': datetime.datetime(2025, 11, 7, 12, 23, 14, 567000), 'updated_at': datetime.datetime(2025, 11, 7, 12, 23, 14, 567000), 'created_by': 'recruiter_001', 'notes': None, 'rejected_by': None, 'rejection_date': None, 'rejection_reason': None}
+    {'offer_id': 'offer_c426ba7b86e7', 'jd_id': 'e8209c95-3c10-416a-afc9-15a38c374d33', 'shortlist_id': 'sl_20251229_065347_f8f47be2', 'candidate_id': '21', 'recruiter_id': '45', 'position_title': 'HR Coordinator', 'department': None, 'employment_type': 'full-time', 'start_date': datetime.date(2026, 2, 2), 'salary_amount': Decimal('100000.00'), 'salary_currency': 'AED', 'salary_period': 'annual', 'bonus_amount': None, 'equity_percentage': None, 'benefits': {'flight_tickets': 2, 'health_insurance': True, 'annual_leave_days': 30, 'housing_allowance': 10000, 'additional_benefits': ['Performance Bonus', 'Education Allowance', 'Gym Membership', 'Mobile Allowance'], 'transportation_allowance': 1500}, 'status': 'draft', 'offer_date': None, 'expiry_date': None, 'response_deadline': None, 'candidate_response': None, 'response_date': None, 'response_notes': None, 'negotiation_status': 'none', 'negotiation_rounds': 0, 'negotiation_notes': None, 'contract_duration_months': None, 'probation_period_months': 3, 'notice_period_days': 30, 'work_location': 'Lat: 25.233001, Lng: 55.384561', 'remote_work_policy': None, 'offer_letter_url': None, 'contract_url': None, 'additional_documents': None, 'approval_status': 'pending', 'approved_by': None, 'approval_date': None, 'approval_notes': None, 'created_at': datetime.datetime(2026, 1, 5, 7, 36, 44, 535008), 'updated_at': datetime.datetime(2026, 1, 8, 0, 1, 3, 228133), 'created_by': '45', 'notes': None, 'rejected_by': None, 'rejection_date': None, 'rejection_reason': None}
+  offers: 2 rows
+    {'id': 'ba1ffda8-4ade-41c2-ba68-69f725df7eae', 'job_posting_id': 'e8209c95-3c10-416a-afc9-15a38c374d33', 'application_id': None, 'candidate_id': 21, 'recruiter_id': 21, 'offer_data': {'notes': '', 'benefits': {'flight_tickets': 2, 'health_insurance': True, 'annual_leave_days': 30, 'housing_allowance': 1000, 'additional_benefits': ['Performance Bonus', 'Gym Membership'], 'transportation_allowance': 1000}, 'start_date': '2026-01-01', 'responded_at': '2025-12-29T12:04:53.326134', 'shortlist_id': 'sl_20251229_065347_f8f47be2', 'salary_amount': 20000, 'salary_period': 'monthly', 'work_location': 'Dubai', 'position_title': 'HR Coordinator', 'employment_type': 'full-time', 'salary_currency': 'AED', 'candidate_message': 'Thank you for this opportunity. ', 'candidate_response': 'accept', 'probation_period_months': 3}, 'status': 'accepted', 'signature_token': None, 'signed_at': None, 'accepted_at': None, 'declined_at': None, 'expires_at': None, 'created_at': datetime.datetime(2025, 12, 29, 7, 48, 43, 212032, tzinfo=datetime.timezone(datetime.timedelta(seconds=14400))), 'updated_at': datetime.datetime(2025, 12, 29, 12, 4, 53, 324371, tzinfo=datetime.timezone(datetime.timedelta(seconds=14400)))}
+    {'id': '944eb50f-968a-4108-a752-611242ce43e2', 'job_posting_id': 'e8209c95-3c10-416a-afc9-15a38c374d33', 'application_id': None, 'candidate_id': 21, 'recruiter_id': 21, 'offer_data': {'notes': '', 'benefits': {'flight_tickets': 2, 'health_insurance': True, 'annual_leave_days': 30, 'housing_allowance': 1500, 'additional_benefits': ['Performance Bonus', 'Education Allowance', 'Gym Membership', 'Mobile Allowance', 'Meal Allowance', 'Professional Development'], 'transportation_allowance': 1500}, 'start_date': '2026-01-01', 'responded_at': '2026-01-05T20:54:48.778270', 'shortlist_id': 'sl_20251229_065347_f8f47be2', 'salary_amount': 25000, 'salary_period': 'monthly', 'work_location': 'Dubai', 'position_title': 'HR Coordinator', 'employment_type': 'full-time', 'salary_currency': 'AED', 'candidate_message': 'Got a better opportunity. ', 'candidate_response': 'decline', 'probation_period_months': 3}, 'status': 'declined', 'signature_token': 'YzcPcz9upX0rY9l_ETuFYMzDIlN4iIQpF2O7cn3M1wk', 'signed_at': None, 'accepted_at': None, 'declined_at': None, 'expires_at': datetime.datetime(2026, 1, 12, 16, 41, 6, 392815, tzinfo=datetime.timezone(datetime.timedelta(seconds=14400))), 'created_at': datetime.datetime(2025, 12, 29, 13, 49, 34, 802004, tzinfo=datetime.timezone(datetime.timedelta(seconds=14400))), 'updated_at': datetime.datetime(2026, 1, 5, 20, 54, 48, 777459, tzinfo=datetime.timezone(datetime.timedelta(seconds=14400)))}
+  recruiter_offers: ERROR: relation "recruiter_offers" does not exist
+LINE 1: SELECT COUNT(*) as cnt FROM recruiter_offers
+                                    ^
+
+  offer_approval_requests: 1 rows
+    {'id': '71486029-b901-4797-a0f1-c5932c923bfe', 'offer_id': '944eb50f-968a-4108-a752-611242ce43e2', 'jd_id': 'e8209c95-3c10-416a-afc9-15a38c374d33', 'candidate_id': 21, 'recruiter_id': 21, 'position_title': 'HR Coordinator', 'salary_amount': Decimal('25000.00'), 'salary_currency': 'AED', 'status': 'approved', 'approver_id': None, 'approved_by': 1, 'approved_at': datetime.datetime(2025, 12, 29, 14, 2, 56, 487242), 'rejection_reason': None, 'comments': '', 'requested_at': datetime.datetime(2025, 12, 29, 13, 49, 34, 840586), 'created_at': datetime.datetime(2025, 12, 29, 13, 49, 34, 840586), 'updated_at': datetime.datetime(2025, 12, 29, 14, 2, 56, 487242)}
+
+=== EMPTY TABLES ===
+  Total empty tables: 85
+    admin_notifications
+    admin_system_metrics
+    admin_user_sessions
+    analytics_events
+    application_analytics
+    application_documents
+    application_feedback
+    application_interviews
+    application_notifications
+    application_status_history
+    attendance
+    candidate_assessments
+    candidate_certifications
+    career_development_plans
+    classes
+    cms_categories
+    cms_content
+    cms_content_media
+    cms_content_versions
+    cms_content_workflows
+    cms_media
+    cms_workflows
+    company_settings
+    course_assessments
+    course_certificates
+    course_enrollments
+    course_modules
+    courses
+    curriculum_standards
+    cv_analytics
+    cv_profiles
+    cv_versions
+    educational_institutions
+    educator_analytics
+    educator_profiles
+    educator_qualifications
+    enhanced_analytics_events
+    enrollments
+    growth_operator_activity_log
+    growth_operator_assignments
+    institution_partnerships
+    interview_participants
+    interview_reports
+    jd_analytics
+    job_benefits
+    job_documents
+    job_matches
+    job_requirements
+    job_templates
+    learning_resources
+    mentor_profiles
+    mentor_specializations
+    mentorship_analytics
+    mentorship_feedback
+    mentorship_goals
+    mentorship_matching
+    mentorship_outcomes
+    mentorship_programs
+    mentorship_resources
+    mentorship_schedules
+    mentorship_sessions
+    parent_communications
+    predictive_models
+    program_categories
+    program_enrollments
+    program_notifications
+    program_reviews
+    program_success_metrics
+    program_tags
+    program_workflow_history
+    real_time_metrics
+    recruiter_activity_log
+    saved_jobs
+    student_achievements
+    student_behavior
+    student_guardians
+    student_progress
+    students
+    team_members
+    uae_analytics_metrics
+    user_activity_log
+    user_journey_analytics
+    user_roles
+    user_sessions
+    video_interview_sessions
+
+=== RECRUITER_VACANCIES ===
+  recruiter_vacancies: 20 rows
+    {'id': '930a4e43-109c-4721-9910-c9e6ac2bde92', 'title': 'Software Engineer (1)', 'posted_by': None}
+    {'id': '9c6bc8e0-a345-4194-b770-d47d19cda93f', 'title': 'Data Analyst (2)', 'posted_by': None}
+    {'id': '1cbe7a90-bf63-4a70-81b2-550e27de6617', 'title': 'IT Security Specialist (3)', 'posted_by': None}

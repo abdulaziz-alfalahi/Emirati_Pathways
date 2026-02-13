@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import CreateInterviewDialog from './CreateInterviewDialog';
+import { ScheduleVideoInterviewDialog } from '../ScheduleVideoInterviewDialog';
 import InterviewFeedbackDialog from './InterviewFeedbackDialog';
 import {
   Box,
@@ -398,11 +398,10 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
       </TableContainer>
 
       {/* Create Interview Dialog */}
-      <CreateInterviewDialog
+      <ScheduleVideoInterviewDialog
         open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        jdId={jdId}
-        recruiterId={recruiterId}
+        onOpenChange={setCreateDialogOpen}
+        initialJobId={jdId}
         onSuccess={() => {
           fetchInterviews();
           fetchStats();

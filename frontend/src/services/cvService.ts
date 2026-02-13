@@ -5,7 +5,8 @@
 
 import { authService } from './authService';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003/api';
+// Use Vite proxy (empty string) to route through the dev server to the backend (port 5005)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface CVParseResponse {
   success: boolean;
@@ -109,7 +110,7 @@ class CVService {
       const formData = new FormData();
       formData.append('cv_file', file);
 
-      const response = await fetch(`${API_BASE_URL}/cv/parse`, {
+      const response = await fetch(`${API_BASE_URL}/cv/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authService.getToken()}`,

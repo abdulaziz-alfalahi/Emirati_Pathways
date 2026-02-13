@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,10 +54,11 @@ interface ApplicationTrackerProps {
 }
 
 const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) => {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
-  
+
   // Withdraw dialog state
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
@@ -106,19 +108,19 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
 
   const handleWithdrawConfirm = async () => {
     if (!selectedApplication) return;
-    
+
     setWithdrawing(true);
     try {
       // Store the ID to withdraw before making the API call
       const applicationIdToWithdraw = String(selectedApplication.id);
-      
+
       const response = await restClient.post(`/api/candidate/applications/${applicationIdToWithdraw}/withdraw`, {
         reason: withdrawReason
       });
-      
+
       if (response.data.success) {
         // Update only the specific application by comparing string IDs
-        setApplications(prev => 
+        setApplications(prev =>
           prev.map(app => {
             const appIdStr = String(app.id);
             if (appIdStr === applicationIdToWithdraw) {
@@ -311,13 +313,13 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
 
         <div className="flex flex-wrap gap-2">
           {application.status === 'interview' && (
-            <Button size="sm">
+            <Button size="sm" onClick={() => navigate('/candidate-dashboard?tab=interviews')}>
               <Calendar className="h-4 w-4 mr-2" />
               View Interview Details
             </Button>
           )}
           {application.status === 'offer' && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => navigate('/candidate-dashboard?tab=offers')}>
               <CheckCircle className="h-4 w-4 mr-2" />
               Respond to Offer
             </Button>
@@ -393,8 +395,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               {filterApplications('pending').length > 0 ? (
                 filterApplications('pending').map(renderApplicationCard)
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No pending applications
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <Clock className="h-10 w-10 text-gray-300 mb-3" />
+                  <h4 className="font-semibold text-gray-600 mb-1">No Pending Applications</h4>
+                  <p className="text-sm text-muted-foreground">Applications awaiting review will appear here.</p>
                 </div>
               )}
             </TabsContent>
@@ -403,8 +407,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               {filterApplications('reviewed').length > 0 ? (
                 filterApplications('reviewed').map(renderApplicationCard)
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No applications under review
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <Eye className="h-10 w-10 text-gray-300 mb-3" />
+                  <h4 className="font-semibold text-gray-600 mb-1">No Applications Under Review</h4>
+                  <p className="text-sm text-muted-foreground">Applications being reviewed by employers will show here.</p>
                 </div>
               )}
             </TabsContent>
@@ -413,8 +419,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               {filterApplications('interview').length > 0 ? (
                 filterApplications('interview').map(renderApplicationCard)
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No scheduled interviews
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <Calendar className="h-10 w-10 text-gray-300 mb-3" />
+                  <h4 className="font-semibold text-gray-600 mb-1">No Scheduled Interviews</h4>
+                  <p className="text-sm text-muted-foreground">When employers schedule interviews, they'll appear here.</p>
                 </div>
               )}
             </TabsContent>
@@ -423,8 +431,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               {filterApplications('offer').length > 0 ? (
                 filterApplications('offer').map(renderApplicationCard)
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No offers received yet
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <CheckCircle className="h-10 w-10 text-gray-300 mb-3" />
+                  <h4 className="font-semibold text-gray-600 mb-1">No Offers Received</h4>
+                  <p className="text-sm text-muted-foreground">Job offers from employers will appear here.</p>
                 </div>
               )}
             </TabsContent>
@@ -433,8 +443,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               {filterApplications('rejected').length > 0 ? (
                 filterApplications('rejected').map(renderApplicationCard)
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No rejected applications
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <XCircle className="h-10 w-10 text-gray-300 mb-3" />
+                  <h4 className="font-semibold text-gray-600 mb-1">No Rejected Applications</h4>
+                  <p className="text-sm text-muted-foreground">Keep applying — this section will stay empty with the right match!</p>
                 </div>
               )}
             </TabsContent>
@@ -443,8 +455,10 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               {filterApplications('withdrawn').length > 0 ? (
                 filterApplications('withdrawn').map(renderApplicationCard)
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No withdrawn applications
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <AlertTriangle className="h-10 w-10 text-gray-300 mb-3" />
+                  <h4 className="font-semibold text-gray-600 mb-1">No Withdrawn Applications</h4>
+                  <p className="text-sm text-muted-foreground">Applications you withdraw will appear here.</p>
                 </div>
               )}
             </TabsContent>
@@ -466,14 +480,14 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               <strong>{selectedApplication?.company}</strong>?
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-amber-800">
                 <strong>Note:</strong> This action cannot be undone. You may not be able to reapply for this position.
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="withdraw-reason">Reason for withdrawal (optional)</Label>
               <Textarea

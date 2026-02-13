@@ -1,0 +1,572 @@
+==========================================================================================
+SECTION 1: ALL REGISTERED BLUEPRINTS
+==========================================================================================
+  company_team                             prefix=/api/company/team              module=backend.routes.company_team_routes
+  role_management                          prefix=/api/roles                     module=backend.role_routes
+  feedback_api                             prefix=/api/feedback                  module=backend.routes.admin_dashboard_api
+  student_bp                               prefix=(none)                         module=backend.routes.student_routes
+  profile_v2                               prefix=/api/v2/profile                module=backend.routes.profile.profile_routes_v2
+  candidate_profile                        prefix=/api/profile                   module=backend.candidate_profile_routes
+  enhanced_cv                              prefix=/api/cv                        module=backend.routes.enhanced_cv_routes
+  candidate_job_bp                         prefix=/api/candidate                 module=backend.candidate_job_routes
+  communication                            prefix=/api/communication             module=backend.routes.communication_routes
+  hr_dashboard_api                         prefix=/api/hr                        module=backend.routes.hr_dashboard_api
+  recruiter_dashboard_api                  prefix=/api/recruiter                 module=backend.routes.recruiter_dashboard_api
+  hr_offer                                 prefix=/api/hr/offers                 module=backend.hr_offer_routes
+  public_offer                             prefix=/api/offers                    module=backend.hr_offer_routes
+  hr_job_posting                           prefix=/api/hr/jobs                   module=backend.hr_job_posting_routes
+  job_application                          prefix=/api/jobs                      module=backend.job_application_routes
+  hr_candidate                             prefix=/api/hr/candidates             module=backend.hr_candidate_routes
+  jobs_api                                 prefix=/api/jobs                      module=backend.routes.jobs_api
+  candidate_jobs_api                       prefix=/api/candidate                 module=backend.routes.jobs_api
+  shortlist                                prefix=(none)                         module=backend.recruiter.shortlist_routes
+  hr_interview                             prefix=/api/hr/interviews             module=backend.hr_interview_scheduling_routes
+  video_interview                          prefix=/api/video-interview           module=backend.video_interview_routes
+  jd_routes_v2                             prefix=/api/recruiter/jd              module=backend.recruiter.jd_routes_v2
+
+  Total blueprints: 22
+
+==========================================================================================
+SECTION 2: ALL REGISTERED ROUTES (sorted by URL)
+==========================================================================================
+  GET      /api/admin/dashboard-stats                                        -> backend.app.get_dashboard_stats                    [(app)]
+  GET      /api/admin/health                                                 -> backend.app.admin_health_check                     [(app)]
+  GET      /api/admin/providers                                              -> backend.app.list_providers                         [(app)]
+  POST     /api/auth/dev-login                                               -> backend.app.dev_login                              [(app)]
+  POST     /api/auth/login                                                   -> backend.app.login                                  [(app)]
+  POST     /api/auth/register                                                -> backend.app.register                               [(app)]
+  GET      /api/candidate/applications                                       -> backend.routes.jobs_api.get_candidate_applications [candidate_jobs_api]
+  POST     /api/candidate/applications                                       -> backend.routes.jobs_api.submit_application         [candidate_jobs_api]
+  POST     /api/candidate/applications/<application_id>/withdraw             -> backend.routes.jobs_api.withdraw_candidate_application [candidate_jobs_api]
+  GET      /api/candidate/dashboard/stats                                    -> backend.candidate_job_routes.get_dashboard_stats   [candidate_job_bp]
+  GET      /api/candidate/dashboard/stats                                    -> backend.app.get_candidate_dashboard_stats          [(app)]
+  GET      /api/candidate/job-matches                                        -> backend.candidate_job_routes.get_job_matches       [candidate_job_bp]
+  GET      /api/candidate/job-matches                                        -> backend.routes.jobs_api.get_candidate_job_matches  [candidate_jobs_api]
+  POST     /api/candidate/match-analysis                                     -> backend.candidate_job_routes.analyze_job_match     [candidate_job_bp]
+  GET      /api/candidate/offers                                             -> backend.candidate_job_routes.get_candidate_offers  [candidate_job_bp]
+  GET      /api/candidate/offers/<offer_id>                                  -> backend.candidate_job_routes.get_candidate_offer_details [candidate_job_bp]
+  POST     /api/candidate/offers/<offer_id>/respond                          -> backend.candidate_job_routes.respond_to_offer      [candidate_job_bp]
+  GET      /api/candidate/offers/stats                                       -> backend.candidate_job_routes.get_candidate_offer_stats [candidate_job_bp]
+  GET      /api/candidate/saved-jobs                                         -> backend.routes.jobs_api.get_candidate_saved_jobs   [candidate_jobs_api]
+  GET      /api/candidate/service-status                                     -> backend.candidate_job_routes.get_service_status    [candidate_job_bp]
+  GET      /api/communication/admin/stats                                    -> backend.routes.communication_routes.get_platform_communication_stats [communication]
+  POST     /api/communication/candidate-discussion                           -> backend.routes.communication_routes.create_candidate_discussion [communication]
+  POST     /api/communication/candidate-discussion/<conversation_id>/participants -> backend.routes.communication_routes.add_discussion_participant [communication]
+  GET      /api/communication/conversations                                  -> backend.routes.communication_routes.get_user_conversations [communication]
+  POST     /api/communication/conversations                                  -> backend.routes.communication_routes.create_conversation [communication]
+  GET      /api/communication/conversations/<conversation_id>                -> backend.routes.communication_routes.get_conversation [communication]
+  DELETE   /api/communication/conversations/<conversation_id>                -> backend.routes.communication_routes.delete_conversation [communication]
+  GET      /api/communication/conversations/<conversation_id>/messages       -> backend.routes.communication_routes.get_conversation_messages [communication]
+  POST     /api/communication/conversations/<conversation_id>/read           -> backend.routes.communication_routes.mark_conversation_as_read [communication]
+  POST     /api/communication/messages                                       -> backend.routes.communication_routes.send_message   [communication]
+  POST     /api/communication/messages/<message_id>/read                     -> backend.routes.communication_routes.mark_message_as_read [communication]
+  GET      /api/communication/notifications                                  -> backend.routes.communication_routes.get_user_notifications [communication]
+  POST     /api/communication/notifications                                  -> backend.routes.communication_routes.create_notification [communication]
+  POST     /api/communication/notifications/<notification_id>/read           -> backend.routes.communication_routes.mark_notification_as_read [communication]
+  POST     /api/communication/notifications/mark-all-read                    -> backend.routes.communication_routes.mark_all_notifications_as_read [communication]
+  GET      /api/communication/notifications/preferences                      -> backend.routes.communication_routes.get_notification_preferences [communication]
+  POST     /api/communication/notifications/preferences                      -> backend.routes.communication_routes.update_notification_preferences [communication]
+  GET      /api/communication/stats                                          -> backend.routes.communication_routes.get_communication_stats [communication]
+  POST     /api/communication/test/email                                     -> backend.routes.communication_routes.test_email_notification [communication]
+  POST     /api/communication/workflows/application-status                   -> backend.routes.communication_routes.trigger_application_status_workflow [communication]
+  POST     /api/communication/workflows/interview-reminder                   -> backend.routes.communication_routes.schedule_interview_reminder [communication]
+  POST     /api/company/team/invite                                          -> backend.routes.company_team_routes.invite_member   [company_team]
+  GET      /api/company/team/members                                         -> backend.routes.company_team_routes.get_team_members [company_team]
+  POST     /api/company/team/remove                                          -> backend.routes.company_team_routes.remove_member   [company_team]
+  GET      /api/cv/<cv_id>                                                   -> backend.routes.enhanced_cv_routes.get_cv           [enhanced_cv]
+  PUT      /api/cv/<cv_id>                                                   -> backend.routes.enhanced_cv_routes.update_cv        [enhanced_cv]
+  DELETE   /api/cv/<cv_id>                                                   -> backend.routes.enhanced_cv_routes.delete_cv        [enhanced_cv]
+  DELETE   /api/cv/<cv_id>                                                   -> backend.app.delete_cv_fixed                        [(app)]
+  GET      /api/cv/<cv_id>/analytics                                         -> backend.routes.enhanced_cv_routes.get_cv_analytics [enhanced_cv]
+  POST     /api/cv/<cv_id>/duplicate                                         -> backend.app.duplicate_cv_fixed                     [(app)]
+  GET      /api/cv/<cv_id>/export/<format>                                   -> backend.app.export_cv_fixed                        [(app)]
+  POST     /api/cv/<cv_id>/job-application-insights                          -> backend.routes.enhanced_cv_routes.get_job_application_insights [enhanced_cv]
+  GET      /api/cv/<cv_id>/job-matches                                       -> backend.routes.enhanced_cv_routes.get_cv_job_matches [enhanced_cv]
+  PUT      /api/cv/<cv_id>/visible                                           -> backend.routes.enhanced_cv_routes.update_cv_visibility [enhanced_cv]
+  PUT      /api/cv/<cv_id>/visible                                           -> backend.app.set_visible_fixed                      [(app)]
+  GET      /api/cv/data                                                      -> backend.routes.enhanced_cv_routes.get_latest_cv_data [enhanced_cv]
+  GET      /api/cv/debug-auth                                                -> backend.routes.enhanced_cv_routes.debug_auth_check [enhanced_cv]
+  GET      /api/cv/debug-list/<user_id>                                      -> backend.routes.enhanced_cv_routes.debug_list_cvs   [enhanced_cv]
+  GET      /api/cv/debug-stats                                               -> backend.routes.enhanced_cv_routes.get_debug_stats  [enhanced_cv]
+  GET      /api/cv/health                                                    -> backend.routes.enhanced_cv_routes.health_check     [enhanced_cv]
+  GET      /api/cv/list                                                      -> backend.routes.enhanced_cv_routes.list_user_cvs    [enhanced_cv]
+  GET      /api/cv/list-mock                                                 -> backend.app.list_cvs_mock                          [(app)]
+  POST     /api/cv/parse-text                                                -> backend.routes.enhanced_cv_routes.parse_cv_text    [enhanced_cv]
+  GET      /api/cv/public/<cv_id>                                            -> backend.app.get_public_cv                          [(app)]
+  POST     /api/cv/save                                                      -> backend.routes.enhanced_cv_routes.save_cv          [enhanced_cv]
+  GET      /api/cv/storage-stats                                             -> backend.routes.enhanced_cv_routes.get_storage_stats [enhanced_cv]
+  POST     /api/cv/upload                                                    -> backend.routes.enhanced_cv_routes.upload_cv        [enhanced_cv]
+  GET      /api/feedback/                                                    -> backend.routes.admin_dashboard_api.get_all_feedback [feedback_api]
+  PUT      /api/feedback/<feedback_id>/status                                -> backend.routes.admin_dashboard_api.update_feedback_status [feedback_api]
+  GET      /api/feedback/my-feedback                                         -> backend.routes.admin_dashboard_api.get_my_feedback [feedback_api]
+  GET      /api/feedback/stats                                               -> backend.routes.admin_dashboard_api.get_feedback_stats [feedback_api]
+  POST     /api/feedback/submit                                              -> backend.routes.admin_dashboard_api.submit_feedback [feedback_api]
+  GET      /api/hr/approval-workflows                                        -> backend.routes.hr_dashboard_api.get_approval_workflows [hr_dashboard_api]
+  POST     /api/hr/approval-workflows/delegate                               -> backend.routes.hr_dashboard_api.delegate_approval  [hr_dashboard_api]
+  GET      /api/hr/approvals                                                 -> backend.routes.hr_dashboard_api.get_all_approvals  [hr_dashboard_api]
+  POST     /api/hr/approvals/<approval_id>/approve                           -> backend.routes.hr_dashboard_api.approve_request    [hr_dashboard_api]
+  POST     /api/hr/approvals/<approval_id>/reject                            -> backend.routes.hr_dashboard_api.reject_request     [hr_dashboard_api]
+  POST     /api/hr/approvals/delegate                                        -> backend.routes.hr_dashboard_api.delegate_approval_enhanced [hr_dashboard_api]
+  GET      /api/hr/approvals/pending                                         -> backend.routes.hr_dashboard_api.get_pending_approvals [hr_dashboard_api]
+  GET      /api/hr/approvals/stats                                           -> backend.routes.hr_dashboard_api.get_approval_stats [hr_dashboard_api]
+  GET      /api/hr/candidates/<int:candidate_id>                             -> backend.hr_candidate_routes.get_candidate_profile_hr [hr_candidate]
+  GET,POST /api/hr/candidates/search                                         -> backend.routes.hr_dashboard_api.search_candidates  [hr_dashboard_api]
+  GET      /api/hr/candidates/search                                         -> backend.hr_candidate_routes.search_candidates      [hr_candidate]
+  GET      /api/hr/dashboard                                                 -> backend.routes.hr_dashboard_api.get_hr_dashboard   [hr_dashboard_api]
+  GET      /api/hr/dashboard/candidates/search                               -> backend.routes.hr_dashboard_api.search_candidates_dashboard [hr_dashboard_api]
+  GET      /api/hr/dashboard/metrics                                         -> backend.routes.hr_dashboard_api.get_hr_metrics_dashboard [hr_dashboard_api]
+  GET      /api/hr/dashboard/shortlisted                                     -> backend.routes.hr_dashboard_api.get_shortlisted_candidates_dashboard [hr_dashboard_api]
+  GET      /api/hr/dashboard/team                                            -> backend.routes.hr_dashboard_api.get_team_members_dashboard [hr_dashboard_api]
+  GET      /api/hr/delegations                                               -> backend.routes.hr_dashboard_api.get_delegations    [hr_dashboard_api]
+  GET      /api/hr/interviews/                                               -> backend.hr_interview_scheduling_routes.get_interviews [hr_interview]
+  POST     /api/hr/interviews/                                               -> backend.hr_interview_scheduling_routes.schedule_interview [hr_interview]
+  GET      /api/hr/interviews/<interview_id>                                 -> backend.hr_interview_scheduling_routes.get_interview_details [hr_interview]
+  POST     /api/hr/interviews/<interview_id>/cancel                          -> backend.hr_interview_scheduling_routes.cancel_interview [hr_interview]
+  POST     /api/hr/interviews/<interview_id>/feedback                        -> backend.hr_interview_scheduling_routes.submit_interview_feedback [hr_interview]
+  GET      /api/hr/interviews/<interview_id>/ics                             -> backend.hr_interview_scheduling_routes.download_interview_ics [hr_interview]
+  POST     /api/hr/interviews/<interview_id>/reschedule                      -> backend.hr_interview_scheduling_routes.reschedule_interview [hr_interview]
+  POST     /api/hr/interviews/<interview_id>/send-invites                    -> backend.hr_interview_scheduling_routes.send_interview_invites [hr_interview]
+  GET      /api/hr/interviews/availability/<interviewer_id>                  -> backend.hr_interview_scheduling_routes.get_interviewer_availability [hr_interview]
+  GET      /api/hr/interviews/calendar                                       -> backend.hr_interview_scheduling_routes.get_interview_calendar [hr_interview]
+  GET      /api/hr/interviews/health                                         -> backend.hr_interview_scheduling_routes.health_check [hr_interview]
+  POST     /api/hr/interviews/reminders/run                                  -> backend.hr_interview_scheduling_routes.run_interview_reminders [hr_interview]
+  GET      /api/hr/jobs                                                      -> backend.hr_job_posting_routes.get_job_postings     [hr_job_posting]
+  POST     /api/hr/jobs/                                                     -> backend.hr_job_posting_routes.create_job_posting   [hr_job_posting]
+  POST     /api/hr/jobs/<int:job_id>/shortlist                               -> backend.routes.hr_dashboard_api.add_to_shortlist   [hr_dashboard_api]
+  DELETE   /api/hr/jobs/<int:job_id>/shortlist/<int:candidate_id>            -> backend.routes.hr_dashboard_api.remove_from_shortlist [hr_dashboard_api]
+  PUT      /api/hr/jobs/<int:job_id>/shortlist/<int:candidate_id>/status     -> backend.routes.hr_dashboard_api.update_shortlist_status [hr_dashboard_api]
+  GET      /api/hr/jobs/<job_id>                                             -> backend.hr_job_posting_routes.get_job_posting      [hr_job_posting]
+  PUT      /api/hr/jobs/<job_id>                                             -> backend.hr_job_posting_routes.update_job_posting   [hr_job_posting]
+  POST     /api/hr/jobs/<job_id>/compliance-check                            -> backend.hr_job_posting_routes.check_compliance     [hr_job_posting]
+  POST     /api/hr/jobs/<job_id>/documents                                   -> backend.hr_job_posting_routes.upload_job_document  [hr_job_posting]
+  GET      /api/hr/jobs/<job_id>/documents                                   -> backend.hr_job_posting_routes.list_job_documents   [hr_job_posting]
+  DELETE   /api/hr/jobs/<job_id>/documents/<doc_id>                          -> backend.hr_job_posting_routes.delete_job_document  [hr_job_posting]
+  POST     /api/hr/jobs/<job_id>/publish                                     -> backend.hr_job_posting_routes.publish_job_posting  [hr_job_posting]
+  POST     /api/hr/jobs/<job_id>/publish-and-match                           -> backend.hr_job_posting_routes.publish_and_match    [hr_job_posting]
+  GET      /api/hr/jobs/<job_id>/shortlist                                   -> backend.hr_job_posting_routes.get_job_shortlist    [hr_job_posting]
+  POST     /api/hr/jobs/<job_id>/shortlist                                   -> backend.hr_job_posting_routes.add_to_shortlist     [hr_job_posting]
+  DELETE   /api/hr/jobs/<job_id>/shortlist/<int:candidate_id>                -> backend.hr_job_posting_routes.remove_from_shortlist [hr_job_posting]
+  POST     /api/hr/jobs/batch                                                -> backend.hr_job_posting_routes.create_job_postings_batch [hr_job_posting]
+  GET      /api/hr/jobs/health                                               -> backend.hr_job_posting_routes.health_check         [hr_job_posting]
+  GET      /api/hr/jobs/shortlisted-candidates                               -> backend.routes.hr_dashboard_api.get_all_shortlisted_candidates [hr_dashboard_api]
+  GET      /api/hr/jobs/shortlisted-candidates                               -> backend.hr_job_posting_routes.get_my_shortlisted_candidates [hr_job_posting]
+  GET      /api/hr/jobs/templates                                            -> backend.hr_job_posting_routes.get_job_templates    [hr_job_posting]
+  POST     /api/hr/jobs/templates                                            -> backend.hr_job_posting_routes.create_job_template  [hr_job_posting]
+  GET      /api/hr/metrics                                                   -> backend.routes.hr_dashboard_api.get_hr_metrics     [hr_dashboard_api]
+  GET      /api/hr/offers/                                                   -> backend.hr_offer_routes.list_offers                [hr_offer]
+  POST     /api/hr/offers/                                                   -> backend.hr_offer_routes.create_offer               [hr_offer]
+  GET      /api/hr/offers/<offer_id>                                         -> backend.hr_offer_routes.get_offer                  [hr_offer]
+  POST     /api/hr/offers/<offer_id>/send                                    -> backend.hr_offer_routes.send_offer                 [hr_offer]
+  GET      /api/hr/team/members                                              -> backend.routes.hr_dashboard_api.get_team_members   [hr_dashboard_api]
+  GET      /api/jobs                                                         -> backend.routes.jobs_api.list_jobs                  [jobs_api]
+  GET      /api/jobs/<int:job_id>                                            -> backend.routes.jobs_api.get_job                    [jobs_api]
+  POST     /api/jobs/<int:job_id>/apply                                      -> backend.routes.jobs_api.apply_to_specific_job      [jobs_api]
+  POST     /api/jobs/<int:job_id>/save                                       -> backend.routes.jobs_api.save_job                   [jobs_api]
+  DELETE,POST /api/jobs/<int:job_id>/unsave                                     -> backend.routes.jobs_api.unsave_job                 [jobs_api]
+  GET      /api/jobs/applications                                            -> backend.job_application_routes.get_user_applications [job_application]
+  GET      /api/jobs/applications                                            -> backend.routes.jobs_api.get_applications           [jobs_api]
+  GET      /api/jobs/applications/<int:application_id>                       -> backend.routes.jobs_api.get_application            [jobs_api]
+  POST     /api/jobs/applications/<int:application_id>/withdraw              -> backend.routes.jobs_api.withdraw_application       [jobs_api]
+  POST     /api/jobs/apply                                                   -> backend.job_application_routes.apply_for_job       [job_application]
+  POST     /api/jobs/apply                                                   -> backend.routes.jobs_api.apply_to_job               [jobs_api]
+  GET      /api/jobs/jobs/<job_id>/apply-status                              -> backend.job_application_routes.check_application_status [job_application]
+  GET      /api/jobs/matches                                                 -> backend.routes.jobs_api.get_job_matches            [jobs_api]
+  GET      /api/jobs/saved                                                   -> backend.routes.jobs_api.get_saved_jobs             [jobs_api]
+  GET      /api/jobs/search                                                  -> backend.routes.jobs_api.search_jobs                [jobs_api]
+  GET      /api/matching/cv/<cv_id>/top-vacancies                            -> backend.app.match_cv_top_vacancies                 [(app)]
+  GET      /api/matching/visible/top-vacancies                               -> backend.app.match_visible_cv_top_vacancies         [(app)]
+  POST     /api/offers/<offer_id>/accept                                     -> backend.hr_offer_routes.accept_offer               [public_offer]
+  POST     /api/offers/<offer_id>/decline                                    -> backend.hr_offer_routes.decline_offer              [public_offer]
+  POST     /api/profile/candidate                                            -> backend.candidate_profile_routes.create_candidate_profile [candidate_profile]
+  GET      /api/profile/candidate                                            -> backend.candidate_profile_routes.get_candidate_profile [candidate_profile]
+  GET      /api/profile/candidate/completion                                 -> backend.candidate_profile_routes.get_profile_completion [candidate_profile]
+  POST     /api/profile/candidate/cv                                         -> backend.candidate_profile_routes.upload_cv         [candidate_profile]
+  POST     /api/profile/candidate/photo                                      -> backend.candidate_profile_routes.upload_photo      [candidate_profile]
+  POST     /api/profile/candidate/preferences                                -> backend.candidate_profile_routes.update_job_preferences [candidate_profile]
+  GET      /api/profile/health                                               -> backend.candidate_profile_routes.health_check      [candidate_profile]
+  GET      /api/recruiter/analytics                                          -> backend.app.recruiter_analytics                    [(app)]
+  GET      /api/recruiter/candidates/<candidate_id>                          -> backend.routes.recruiter_dashboard_api.get_candidate_details [recruiter_dashboard_api]
+  GET      /api/recruiter/candidates/<candidate_id>/full-profile             -> backend.routes.recruiter_dashboard_api.get_candidate_profile_full [recruiter_dashboard_api]
+  GET      /api/recruiter/communication/templates                            -> backend.app.get_communication_templates            [(app)]
+  GET      /api/recruiter/dashboard                                          -> backend.routes.recruiter_dashboard_api.get_recruiter_dashboard [recruiter_dashboard_api]
+  GET      /api/recruiter/dashboard/offers                                   -> backend.routes.recruiter_dashboard_api.get_dashboard_offers [recruiter_dashboard_api]
+  GET      /api/recruiter/dashboard/overview                                 -> backend.routes.recruiter_dashboard_api.get_dashboard_overview [recruiter_dashboard_api]
+  GET      /api/recruiter/dashboard/vacancies                                -> backend.routes.recruiter_dashboard_api.get_dashboard_vacancies [recruiter_dashboard_api]
+  GET      /api/recruiter/jd                                                 -> backend.routes.recruiter_dashboard_api.get_jd_list [recruiter_dashboard_api]
+  POST     /api/recruiter/jd                                                 -> backend.routes.recruiter_dashboard_api.create_jd   [recruiter_dashboard_api]
+  POST     /api/recruiter/jd/<int:jd_id>/match                               -> backend.routes.recruiter_dashboard_api.match_candidates [recruiter_dashboard_api]
+  GET      /api/recruiter/jd/<jd_id>                                         -> backend.recruiter.jd_routes_v2.get_jd              [jd_routes_v2]
+  DELETE   /api/recruiter/jd/<jd_id>                                         -> backend.recruiter.jd_routes_v2.delete_jd           [jd_routes_v2]
+  PUT      /api/recruiter/jd/<jd_id>/basic-info                              -> backend.recruiter.jd_routes_v2.update_basic_info   [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/benefits                                -> backend.recruiter.jd_routes_v2.add_benefit         [jd_routes_v2]
+  PUT      /api/recruiter/jd/<jd_id>/compensation                            -> backend.recruiter.jd_routes_v2.update_compensation [jd_routes_v2]
+  GET      /api/recruiter/jd/<jd_id>/completion-score                        -> backend.recruiter.jd_routes_v2.get_completion_score [jd_routes_v2]
+  PUT      /api/recruiter/jd/<jd_id>/description                             -> backend.recruiter.jd_routes_v2.update_description  [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/generate-description                    -> backend.recruiter.jd_routes_v2.generate_description [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/match-candidates                        -> backend.recruiter.jd_routes_v2.match_candidates    [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/match-candidates                        -> backend.app.match_candidates_for_jd                [(app)]
+  POST     /api/recruiter/jd/<jd_id>/publish                                 -> backend.recruiter.jd_routes_v2.publish_jd          [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/requirements                            -> backend.recruiter.jd_routes_v2.add_requirement     [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/responsibilities                        -> backend.recruiter.jd_routes_v2.add_responsibility  [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/save                                    -> backend.recruiter.jd_routes_v2.save_jd             [jd_routes_v2]
+  POST     /api/recruiter/jd/<jd_id>/validate                                -> backend.recruiter.jd_routes_v2.validate_jd         [jd_routes_v2]
+  POST     /api/recruiter/jd/create                                          -> backend.routes.recruiter_dashboard_api.create_jd_enhanced [recruiter_dashboard_api]
+  POST     /api/recruiter/jd/create                                          -> backend.recruiter.jd_routes_v2.create_jd           [jd_routes_v2]
+  GET      /api/recruiter/jd/health                                          -> backend.recruiter.jd_routes_v2.jd_health           [jd_routes_v2]
+  GET      /api/recruiter/jd/list                                            -> backend.routes.recruiter_dashboard_api.get_jd_list_enhanced [recruiter_dashboard_api]
+  GET      /api/recruiter/jd/list                                            -> backend.recruiter.jd_routes_v2.list_jds            [jd_routes_v2]
+  GET      /api/recruiter/jd/shortlist/<jd_id>                               -> backend.recruiter.jd_routes_v2.get_shortlist       [jd_routes_v2]
+  POST     /api/recruiter/jd/shortlist/add                                   -> backend.recruiter.jd_routes_v2.add_to_shortlist    [jd_routes_v2]
+  GET      /api/recruiter/jd/templates                                       -> backend.routes.recruiter_dashboard_api.get_recruiter_jd_templates [recruiter_dashboard_api]
+  GET      /api/recruiter/jd/test_probe_123                                  -> backend.recruiter.jd_routes_v2.test_probe          [jd_routes_v2]
+  GET      /api/recruiter/job-applicants-count                               -> backend.routes.recruiter_dashboard_api.get_job_applicants_count [recruiter_dashboard_api]
+  GET      /api/recruiter/job-shortlist-count                                -> backend.app.get_job_shortlist_count                [(app)]
+  GET      /api/recruiter/jobs/<job_id>/applicants                           -> backend.app.get_job_applicants                     [(app)]
+  GET      /api/recruiter/jobs/<job_id>/applicants                           -> backend.app.match_candidates_for_jd                [(app)]
+  POST     /api/recruiter/match                                              -> backend.routes.recruiter_dashboard_api.match_candidates_global [recruiter_dashboard_api]
+  GET      /api/recruiter/offers                                             -> backend.routes.recruiter_dashboard_api.get_offers_list [recruiter_dashboard_api]
+  POST     /api/recruiter/offers                                             -> backend.routes.recruiter_dashboard_api.create_offer [recruiter_dashboard_api]
+  GET      /api/recruiter/offers                                             -> backend.routes.recruiter_dashboard_api.list_offers [recruiter_dashboard_api]
+  POST     /api/recruiter/offers                                             -> backend.app.create_offer                           [(app)]
+  GET      /api/recruiter/offers/<int:offer_id>                              -> backend.routes.recruiter_dashboard_api.get_offer   [recruiter_dashboard_api]
+  PUT      /api/recruiter/offers/<int:offer_id>/status                       -> backend.routes.recruiter_dashboard_api.update_offer_status [recruiter_dashboard_api]
+  PUT      /api/recruiter/offers/<offer_id>                                  -> backend.app.update_offer                           [(app)]
+  POST     /api/recruiter/offers/<offer_id>/send                             -> backend.routes.recruiter_dashboard_api.send_offer_to_candidate [recruiter_dashboard_api]
+  POST     /api/recruiter/offers/<offer_id>/send-to-candidate                -> backend.routes.recruiter_dashboard_api.send_offer_to_candidate [recruiter_dashboard_api]
+  GET      /api/recruiter/offers/approval-stats                              -> backend.routes.recruiter_dashboard_api.get_approval_stats [recruiter_dashboard_api]
+  GET      /api/recruiter/offers/approval-stats                              -> backend.routes.recruiter_dashboard_api.get_offer_approval_stats [recruiter_dashboard_api]
+  POST     /api/recruiter/offers/approvals/<approval_id>/approve             -> backend.routes.recruiter_dashboard_api.approve_offer [recruiter_dashboard_api]
+  POST     /api/recruiter/offers/approvals/<approval_id>/reject              -> backend.routes.recruiter_dashboard_api.reject_offer [recruiter_dashboard_api]
+  GET      /api/recruiter/offers/approvals/all                               -> backend.routes.recruiter_dashboard_api.get_all_offer_approvals [recruiter_dashboard_api]
+  GET      /api/recruiter/offers/approvals/pending                           -> backend.routes.recruiter_dashboard_api.get_pending_offer_approvals [recruiter_dashboard_api]
+  POST     /api/recruiter/offers/create                                      -> backend.routes.recruiter_dashboard_api.create_offer_legacy [recruiter_dashboard_api]
+  POST     /api/recruiter/offers/create                                      -> backend.app.create_offer                           [(app)]
+  GET      /api/recruiter/offers/jd/<jd_id>                                  -> backend.app.get_offers_for_job                     [(app)]
+  GET      /api/recruiter/offers/statistics/<jd_id>                          -> backend.app.get_offer_statistics                   [(app)]
+  GET      /api/recruiter/recent-applicants                                  -> backend.routes.recruiter_dashboard_api.get_recent_applicants [recruiter_dashboard_api]
+  GET      /api/recruiter/recent-applicants                                  -> backend.app.get_recent_applicants                  [(app)]
+  GET      /api/recruiter/shortlist                                          -> backend.routes.recruiter_dashboard_api.get_shortlist [recruiter_dashboard_api]
+  POST     /api/recruiter/shortlist                                          -> backend.routes.recruiter_dashboard_api.add_to_shortlist [recruiter_dashboard_api]
+  GET      /api/recruiter/shortlist/<jd_id>                                  -> backend.recruiter.shortlist_routes.get_shortlist   [shortlist]
+  GET      /api/recruiter/shortlist/<jd_id>/stats                            -> backend.recruiter.shortlist_routes.get_shortlist_stats [shortlist]
+  DELETE   /api/recruiter/shortlist/<shortlist_id>                           -> backend.recruiter.shortlist_routes.remove_from_shortlist [shortlist]
+  POST     /api/recruiter/shortlist/<shortlist_id>/notes                     -> backend.recruiter.shortlist_routes.add_note        [shortlist]
+  PUT      /api/recruiter/shortlist/<shortlist_id>/status                    -> backend.recruiter.shortlist_routes.update_shortlist_status [shortlist]
+  POST     /api/recruiter/shortlist/add                                      -> backend.recruiter.shortlist_routes.add_to_shortlist [shortlist]
+  GET      /api/recruiter/shortlist/health                                   -> backend.recruiter.shortlist_routes.health_check    [shortlist]
+  GET      /api/recruiter/statistics/dashboard                               -> backend.routes.recruiter_dashboard_api.get_dashboard_overview [recruiter_dashboard_api]
+  GET      /api/recruiter/vacancies                                          -> backend.app.list_vacancies                         [(app)]
+  GET      /api/recruiter/vacancies/active                                   -> backend.routes.recruiter_dashboard_api.get_active_vacancies [recruiter_dashboard_api]
+  PUT      /api/roles/admin/request/<request_id>/action                      -> backend.role_routes.action_request                 [role_management]
+  GET      /api/roles/admin/requests                                         -> backend.role_routes.get_all_requests               [role_management]
+  GET      /api/roles/my-requests                                            -> backend.role_routes.get_my_requests                [role_management]
+  POST     /api/roles/request                                                -> backend.role_routes.submit_role_request            [role_management]
+  GET      /api/school-programs                                              -> backend.app.get_school_programs                    [(app)]
+  POST     /api/school-programs                                              -> backend.app.create_school_program                  [(app)]
+  GET      /api/schools                                                      -> backend.app.get_schools                            [(app)]
+  GET      /api/student/dashboard/stats                                      -> backend.routes.student_routes.get_student_stats    [student_bp]
+  GET      /api/student/programs                                             -> backend.routes.student_routes.get_student_programs [student_bp]
+  GET      /api/v2/profile/                                                  -> backend.routes.profile.profile_routes_v2.get_my_profile [profile_v2]
+  POST     /api/v2/profile/education                                         -> backend.routes.profile.profile_routes_v2.add_education [profile_v2]
+  POST     /api/v2/profile/experience                                        -> backend.routes.profile.profile_routes_v2.add_experience [profile_v2]
+  PUT      /api/v2/profile/identity                                          -> backend.routes.profile.profile_routes_v2.update_identity [profile_v2]
+  POST     /api/video-interview/agora/token                                  -> backend.video_interview_routes.generate_agora_token [video_interview]
+  GET      /api/video-interview/analytics/performance                        -> backend.video_interview_routes.get_interview_analytics [video_interview]
+  GET      /api/video-interview/health                                       -> backend.video_interview_routes.health_check        [video_interview]
+  GET      /api/video-interview/interview-types                              -> backend.video_interview_routes.get_interview_types [video_interview]
+  GET      /api/video-interview/quality-assurance/sessions                   -> backend.video_interview_routes.get_qa_sessions     [video_interview]
+  POST     /api/video-interview/schedule                                     -> backend.video_interview_routes.schedule_interview  [video_interview]
+  GET      /api/video-interview/sessions                                     -> backend.video_interview_routes.get_interview_sessions [video_interview]
+  POST     /api/video-interview/sessions/<session_id>/analysis/realtime      -> backend.video_interview_routes.process_realtime_analysis [video_interview]
+  POST     /api/video-interview/sessions/<session_id>/end                    -> backend.video_interview_routes.end_interview_session [video_interview]
+  GET      /api/video-interview/sessions/<session_id>/recordings             -> backend.video_interview_routes.get_session_recordings [video_interview]
+  GET      /api/video-interview/sessions/<session_id>/report                 -> backend.video_interview_routes.get_interview_report [video_interview]
+  POST     /api/video-interview/sessions/<session_id>/start                  -> backend.video_interview_routes.start_interview_session [video_interview]
+  GET      /api/video-interview/stream/<session_id>                          -> backend.video_interview_routes.stream_interview_recording [video_interview]
+  GET      /api/video-interview/system-check                                 -> backend.video_interview_routes.system_check        [video_interview]
+  POST     /debug/save_pdf                                                   -> backend.app.debug_save_pdf                         [(app)]
+  GET      /health                                                           -> backend.app.health_check                           [(app)]
+  GET      /static/<path:filename>                                           -> flask.app.<lambda>                                 [(app)]
+  GET      /uploads/<path:filename>                                          -> backend.app.serve_uploads                          [(app)]
+
+  Total routes: 259
+
+==========================================================================================
+SECTION 3: DUPLICATE / SHADOWED ROUTES
+==========================================================================================
+  Routes where multiple handlers are registered for the same URL+method combination,
+  or where URL patterns overlap and could shadow each other.
+
+  EXACT DUPLICATES (same URL + method, multiple handlers):
+
+    DELETE /api/cv/<cv_id>:
+      -> backend.routes.enhanced_cv_routes.delete_cv (endpoint: enhanced_cv.delete_cv)
+      -> backend.app.delete_cv_fixed (endpoint: delete_cv_fixed)
+
+    GET /api/candidate/dashboard/stats:
+      -> backend.candidate_job_routes.get_dashboard_stats (endpoint: candidate_job_bp.get_dashboard_stats)
+      -> backend.app.get_candidate_dashboard_stats (endpoint: get_candidate_dashboard_stats)
+
+    GET /api/candidate/job-matches:
+      -> backend.candidate_job_routes.get_job_matches (endpoint: candidate_job_bp.get_job_matches)
+      -> backend.routes.jobs_api.get_candidate_job_matches (endpoint: candidate_jobs_api.get_candidate_job_matches)
+
+    GET /api/hr/candidates/search:
+      -> backend.routes.hr_dashboard_api.search_candidates (endpoint: hr_dashboard_api.search_candidates)
+      -> backend.hr_candidate_routes.search_candidates (endpoint: hr_candidate.search_candidates)
+
+    GET /api/hr/jobs/shortlisted-candidates:
+      -> backend.routes.hr_dashboard_api.get_all_shortlisted_candidates (endpoint: hr_dashboard_api.get_all_shortlisted_candidates)
+      -> backend.hr_job_posting_routes.get_my_shortlisted_candidates (endpoint: hr_job_posting.get_my_shortlisted_candidates)
+
+    GET /api/jobs/applications:
+      -> backend.job_application_routes.get_user_applications (endpoint: job_application.get_user_applications)
+      -> backend.routes.jobs_api.get_applications (endpoint: jobs_api.get_applications)
+
+    GET /api/recruiter/jd/list:
+      -> backend.routes.recruiter_dashboard_api.get_jd_list_enhanced (endpoint: recruiter_dashboard_api.get_jd_list_enhanced)
+      -> backend.recruiter.jd_routes_v2.list_jds (endpoint: jd_routes_v2.list_jds)
+
+    GET /api/recruiter/jobs/<job_id>/applicants:
+      -> backend.app.get_job_applicants (endpoint: get_job_applicants)
+      -> backend.app.match_candidates_for_jd (endpoint: match_candidates_for_jd)
+
+    GET /api/recruiter/offers:
+      -> backend.routes.recruiter_dashboard_api.get_offers_list (endpoint: recruiter_dashboard_api.get_offers_list)
+      -> backend.routes.recruiter_dashboard_api.list_offers (endpoint: recruiter_dashboard_api.list_offers)
+
+    GET /api/recruiter/offers/approval-stats:
+      -> backend.routes.recruiter_dashboard_api.get_approval_stats (endpoint: recruiter_dashboard_api.get_approval_stats)
+      -> backend.routes.recruiter_dashboard_api.get_offer_approval_stats (endpoint: recruiter_dashboard_api.get_offer_approval_stats)
+
+    GET /api/recruiter/recent-applicants:
+      -> backend.routes.recruiter_dashboard_api.get_recent_applicants (endpoint: recruiter_dashboard_api.get_recent_applicants)
+      -> backend.app.get_recent_applicants (endpoint: get_recent_applicants)
+
+    POST /api/jobs/apply:
+      -> backend.job_application_routes.apply_for_job (endpoint: job_application.apply_for_job)
+      -> backend.routes.jobs_api.apply_to_job (endpoint: jobs_api.apply_to_job)
+
+    POST /api/recruiter/jd/<jd_id>/match-candidates:
+      -> backend.recruiter.jd_routes_v2.match_candidates (endpoint: jd_routes_v2.match_candidates)
+      -> backend.app.match_candidates_for_jd (endpoint: match_candidates_for_jd)
+
+    POST /api/recruiter/jd/create:
+      -> backend.routes.recruiter_dashboard_api.create_jd_enhanced (endpoint: recruiter_dashboard_api.create_jd_enhanced)
+      -> backend.recruiter.jd_routes_v2.create_jd (endpoint: jd_routes_v2.create_jd)
+
+    POST /api/recruiter/offers:
+      -> backend.routes.recruiter_dashboard_api.create_offer (endpoint: recruiter_dashboard_api.create_offer)
+      -> backend.app.create_offer (endpoint: create_offer)
+
+    POST /api/recruiter/offers/create:
+      -> backend.routes.recruiter_dashboard_api.create_offer_legacy (endpoint: recruiter_dashboard_api.create_offer_legacy)
+      -> backend.app.create_offer (endpoint: create_offer)
+
+    PUT /api/cv/<cv_id>/visible:
+      -> backend.routes.enhanced_cv_routes.update_cv_visibility (endpoint: enhanced_cv.update_cv_visibility)
+      -> backend.app.set_visible_fixed (endpoint: set_visible_fixed)
+
+  OVERLAPPING PATTERNS (same normalized URL, different handlers):
+
+    Pattern: DELETE /api/hr/jobs/*/shortlist/*
+      /api/hr/jobs/<int:job_id>/shortlist/<int:candidate_id>            -> backend.routes.hr_dashboard_api.remove_from_shortlist
+      /api/hr/jobs/<job_id>/shortlist/<int:candidate_id>                -> backend.hr_job_posting_routes.remove_from_shortlist
+
+    Pattern: POST /api/hr/jobs/*/shortlist
+      /api/hr/jobs/<int:job_id>/shortlist                               -> backend.routes.hr_dashboard_api.add_to_shortlist
+      /api/hr/jobs/<job_id>/shortlist                                   -> backend.hr_job_posting_routes.add_to_shortlist
+
+==========================================================================================
+SECTION 4: BLUEPRINT PREFIX CONFLICTS
+==========================================================================================
+  Blueprints whose URL prefixes overlap, which can cause route shadowing:
+
+  PREFIX '/' shared by: student_bp, shortlist
+  PREFIX '/api/candidate' shared by: candidate_job_bp, candidate_jobs_api
+  PREFIX '/api/jobs' shared by: job_application, jobs_api
+
+  Nested prefix hierarchy:
+    /
+      └─ /api/candidate (candidate_job_bp, candidate_jobs_api)
+      └─ /api/communication (communication)
+      └─ /api/company/team (company_team)
+      └─ /api/cv (enhanced_cv)
+      └─ /api/feedback (feedback_api)
+      └─ /api/hr (hr_dashboard_api)
+      └─ /api/hr/candidates (hr_candidate)
+      └─ /api/hr/interviews (hr_interview)
+      └─ /api/hr/jobs (hr_job_posting)
+      └─ /api/hr/offers (hr_offer)
+      └─ /api/jobs (job_application, jobs_api)
+      └─ /api/offers (public_offer)
+      └─ /api/profile (candidate_profile)
+      └─ /api/recruiter (recruiter_dashboard_api)
+      └─ /api/recruiter/jd (jd_routes_v2)
+      └─ /api/roles (role_management)
+      └─ /api/v2/profile (profile_v2)
+      └─ /api/video-interview (video_interview)
+    /api/hr
+      └─ /api/hr/candidates (hr_candidate)
+      └─ /api/hr/interviews (hr_interview)
+      └─ /api/hr/jobs (hr_job_posting)
+      └─ /api/hr/offers (hr_offer)
+    /api/recruiter
+      └─ /api/recruiter/jd (jd_routes_v2)
+
+==========================================================================================
+SECTION 5: KEY API ENDPOINTS AND THEIR ACTUAL HANDLERS
+==========================================================================================
+  Critical endpoints the frontend is likely calling:
+
+
+  Routes matching '/api/recruiter/jd/list':
+    GET      /api/recruiter/jd/list                                  -> backend.routes.recruiter_dashboard_api.get_jd_list_enhanced
+    GET      /api/recruiter/jd/list                                  -> backend.recruiter.jd_routes_v2.list_jds
+
+  Routes matching '/api/recruiter/jd/create':
+    POST     /api/recruiter/jd/create                                -> backend.routes.recruiter_dashboard_api.create_jd_enhanced
+    POST     /api/recruiter/jd/create                                -> backend.recruiter.jd_routes_v2.create_jd
+
+  Routes matching '/api/recruiter/jd/':
+    POST     /api/recruiter/jd/<int:jd_id>/match                     -> backend.routes.recruiter_dashboard_api.match_candidates
+    GET      /api/recruiter/jd/<jd_id>                               -> backend.recruiter.jd_routes_v2.get_jd
+    DELETE   /api/recruiter/jd/<jd_id>                               -> backend.recruiter.jd_routes_v2.delete_jd
+    PUT      /api/recruiter/jd/<jd_id>/basic-info                    -> backend.recruiter.jd_routes_v2.update_basic_info
+    POST     /api/recruiter/jd/<jd_id>/benefits                      -> backend.recruiter.jd_routes_v2.add_benefit
+    PUT      /api/recruiter/jd/<jd_id>/compensation                  -> backend.recruiter.jd_routes_v2.update_compensation
+    GET      /api/recruiter/jd/<jd_id>/completion-score              -> backend.recruiter.jd_routes_v2.get_completion_score
+    PUT      /api/recruiter/jd/<jd_id>/description                   -> backend.recruiter.jd_routes_v2.update_description
+    POST     /api/recruiter/jd/<jd_id>/generate-description          -> backend.recruiter.jd_routes_v2.generate_description
+    POST     /api/recruiter/jd/<jd_id>/match-candidates              -> backend.recruiter.jd_routes_v2.match_candidates
+    POST     /api/recruiter/jd/<jd_id>/match-candidates              -> backend.app.match_candidates_for_jd
+    POST     /api/recruiter/jd/<jd_id>/publish                       -> backend.recruiter.jd_routes_v2.publish_jd
+    POST     /api/recruiter/jd/<jd_id>/requirements                  -> backend.recruiter.jd_routes_v2.add_requirement
+    POST     /api/recruiter/jd/<jd_id>/responsibilities              -> backend.recruiter.jd_routes_v2.add_responsibility
+    POST     /api/recruiter/jd/<jd_id>/save                          -> backend.recruiter.jd_routes_v2.save_jd
+    POST     /api/recruiter/jd/<jd_id>/validate                      -> backend.recruiter.jd_routes_v2.validate_jd
+    POST     /api/recruiter/jd/create                                -> backend.routes.recruiter_dashboard_api.create_jd_enhanced
+    POST     /api/recruiter/jd/create                                -> backend.recruiter.jd_routes_v2.create_jd
+    GET      /api/recruiter/jd/health                                -> backend.recruiter.jd_routes_v2.jd_health
+    GET      /api/recruiter/jd/list                                  -> backend.routes.recruiter_dashboard_api.get_jd_list_enhanced
+    GET      /api/recruiter/jd/list                                  -> backend.recruiter.jd_routes_v2.list_jds
+    GET      /api/recruiter/jd/shortlist/<jd_id>                     -> backend.recruiter.jd_routes_v2.get_shortlist
+    POST     /api/recruiter/jd/shortlist/add                         -> backend.recruiter.jd_routes_v2.add_to_shortlist
+    GET      /api/recruiter/jd/templates                             -> backend.routes.recruiter_dashboard_api.get_recruiter_jd_templates
+    GET      /api/recruiter/jd/test_probe_123                        -> backend.recruiter.jd_routes_v2.test_probe
+
+  Routes matching '/api/auth/':
+    POST     /api/auth/dev-login                                     -> backend.app.dev_login
+    POST     /api/auth/login                                         -> backend.app.login
+    POST     /api/auth/register                                      -> backend.app.register
+
+  Routes matching '/api/hr/jobs':
+    GET      /api/hr/jobs                                            -> backend.hr_job_posting_routes.get_job_postings
+    POST     /api/hr/jobs/                                           -> backend.hr_job_posting_routes.create_job_posting
+    POST     /api/hr/jobs/<int:job_id>/shortlist                     -> backend.routes.hr_dashboard_api.add_to_shortlist
+    DELETE   /api/hr/jobs/<int:job_id>/shortlist/<int:candidate_id>  -> backend.routes.hr_dashboard_api.remove_from_shortlist
+    PUT      /api/hr/jobs/<int:job_id>/shortlist/<int:candidate_id>/status -> backend.routes.hr_dashboard_api.update_shortlist_status
+    GET      /api/hr/jobs/<job_id>                                   -> backend.hr_job_posting_routes.get_job_posting
+    PUT      /api/hr/jobs/<job_id>                                   -> backend.hr_job_posting_routes.update_job_posting
+    POST     /api/hr/jobs/<job_id>/compliance-check                  -> backend.hr_job_posting_routes.check_compliance
+    POST     /api/hr/jobs/<job_id>/documents                         -> backend.hr_job_posting_routes.upload_job_document
+    GET      /api/hr/jobs/<job_id>/documents                         -> backend.hr_job_posting_routes.list_job_documents
+    DELETE   /api/hr/jobs/<job_id>/documents/<doc_id>                -> backend.hr_job_posting_routes.delete_job_document
+    POST     /api/hr/jobs/<job_id>/publish                           -> backend.hr_job_posting_routes.publish_job_posting
+    POST     /api/hr/jobs/<job_id>/publish-and-match                 -> backend.hr_job_posting_routes.publish_and_match
+    GET      /api/hr/jobs/<job_id>/shortlist                         -> backend.hr_job_posting_routes.get_job_shortlist
+    POST     /api/hr/jobs/<job_id>/shortlist                         -> backend.hr_job_posting_routes.add_to_shortlist
+    DELETE   /api/hr/jobs/<job_id>/shortlist/<int:candidate_id>      -> backend.hr_job_posting_routes.remove_from_shortlist
+    POST     /api/hr/jobs/batch                                      -> backend.hr_job_posting_routes.create_job_postings_batch
+    GET      /api/hr/jobs/health                                     -> backend.hr_job_posting_routes.health_check
+    GET      /api/hr/jobs/shortlisted-candidates                     -> backend.routes.hr_dashboard_api.get_all_shortlisted_candidates
+    GET      /api/hr/jobs/shortlisted-candidates                     -> backend.hr_job_posting_routes.get_my_shortlisted_candidates
+    GET      /api/hr/jobs/templates                                  -> backend.hr_job_posting_routes.get_job_templates
+    POST     /api/hr/jobs/templates                                  -> backend.hr_job_posting_routes.create_job_template
+
+  Routes matching '/api/jobs':
+    GET      /api/jobs                                               -> backend.routes.jobs_api.list_jobs
+    GET      /api/jobs/<int:job_id>                                  -> backend.routes.jobs_api.get_job
+    POST     /api/jobs/<int:job_id>/apply                            -> backend.routes.jobs_api.apply_to_specific_job
+    POST     /api/jobs/<int:job_id>/save                             -> backend.routes.jobs_api.save_job
+    DELETE,POST /api/jobs/<int:job_id>/unsave                           -> backend.routes.jobs_api.unsave_job
+    GET      /api/jobs/applications                                  -> backend.job_application_routes.get_user_applications
+    GET      /api/jobs/applications                                  -> backend.routes.jobs_api.get_applications
+    GET      /api/jobs/applications/<int:application_id>             -> backend.routes.jobs_api.get_application
+    POST     /api/jobs/applications/<int:application_id>/withdraw    -> backend.routes.jobs_api.withdraw_application
+    POST     /api/jobs/apply                                         -> backend.job_application_routes.apply_for_job
+    POST     /api/jobs/apply                                         -> backend.routes.jobs_api.apply_to_job
+    GET      /api/jobs/jobs/<job_id>/apply-status                    -> backend.job_application_routes.check_application_status
+    GET      /api/jobs/matches                                       -> backend.routes.jobs_api.get_job_matches
+    GET      /api/jobs/saved                                         -> backend.routes.jobs_api.get_saved_jobs
+    GET      /api/jobs/search                                        -> backend.routes.jobs_api.search_jobs
+
+  Routes matching '/api/cv/':
+    GET      /api/cv/<cv_id>                                         -> backend.routes.enhanced_cv_routes.get_cv
+    PUT      /api/cv/<cv_id>                                         -> backend.routes.enhanced_cv_routes.update_cv
+    DELETE   /api/cv/<cv_id>                                         -> backend.routes.enhanced_cv_routes.delete_cv
+    DELETE   /api/cv/<cv_id>                                         -> backend.app.delete_cv_fixed
+    GET      /api/cv/<cv_id>/analytics                               -> backend.routes.enhanced_cv_routes.get_cv_analytics
+    POST     /api/cv/<cv_id>/duplicate                               -> backend.app.duplicate_cv_fixed
+    GET      /api/cv/<cv_id>/export/<format>                         -> backend.app.export_cv_fixed
+    POST     /api/cv/<cv_id>/job-application-insights                -> backend.routes.enhanced_cv_routes.get_job_application_insights
+    GET      /api/cv/<cv_id>/job-matches                             -> backend.routes.enhanced_cv_routes.get_cv_job_matches
+    PUT      /api/cv/<cv_id>/visible                                 -> backend.routes.enhanced_cv_routes.update_cv_visibility
+    PUT      /api/cv/<cv_id>/visible                                 -> backend.app.set_visible_fixed
+    GET      /api/cv/data                                            -> backend.routes.enhanced_cv_routes.get_latest_cv_data
+    GET      /api/cv/debug-auth                                      -> backend.routes.enhanced_cv_routes.debug_auth_check
+    GET      /api/cv/debug-list/<user_id>                            -> backend.routes.enhanced_cv_routes.debug_list_cvs
+    GET      /api/cv/debug-stats                                     -> backend.routes.enhanced_cv_routes.get_debug_stats
+    GET      /api/cv/health                                          -> backend.routes.enhanced_cv_routes.health_check
+    GET      /api/cv/list                                            -> backend.routes.enhanced_cv_routes.list_user_cvs
+    GET      /api/cv/list-mock                                       -> backend.app.list_cvs_mock
+    POST     /api/cv/parse-text                                      -> backend.routes.enhanced_cv_routes.parse_cv_text
+    GET      /api/cv/public/<cv_id>                                  -> backend.app.get_public_cv
+    POST     /api/cv/save                                            -> backend.routes.enhanced_cv_routes.save_cv
+    GET      /api/cv/storage-stats                                   -> backend.routes.enhanced_cv_routes.get_storage_stats
+    POST     /api/cv/upload                                          -> backend.routes.enhanced_cv_routes.upload_cv
+
+  Routes matching '/api/recruiter/offers':
+    GET      /api/recruiter/offers                                   -> backend.routes.recruiter_dashboard_api.get_offers_list
+    POST     /api/recruiter/offers                                   -> backend.routes.recruiter_dashboard_api.create_offer
+    GET      /api/recruiter/offers                                   -> backend.routes.recruiter_dashboard_api.list_offers
+    POST     /api/recruiter/offers                                   -> backend.app.create_offer
+    GET      /api/recruiter/offers/<int:offer_id>                    -> backend.routes.recruiter_dashboard_api.get_offer
+    PUT      /api/recruiter/offers/<int:offer_id>/status             -> backend.routes.recruiter_dashboard_api.update_offer_status
+    PUT      /api/recruiter/offers/<offer_id>                        -> backend.app.update_offer
+    POST     /api/recruiter/offers/<offer_id>/send                   -> backend.routes.recruiter_dashboard_api.send_offer_to_candidate
+    POST     /api/recruiter/offers/<offer_id>/send-to-candidate      -> backend.routes.recruiter_dashboard_api.send_offer_to_candidate
+    GET      /api/recruiter/offers/approval-stats                    -> backend.routes.recruiter_dashboard_api.get_approval_stats
+    GET      /api/recruiter/offers/approval-stats                    -> backend.routes.recruiter_dashboard_api.get_offer_approval_stats
+    POST     /api/recruiter/offers/approvals/<approval_id>/approve   -> backend.routes.recruiter_dashboard_api.approve_offer
+    POST     /api/recruiter/offers/approvals/<approval_id>/reject    -> backend.routes.recruiter_dashboard_api.reject_offer
+    GET      /api/recruiter/offers/approvals/all                     -> backend.routes.recruiter_dashboard_api.get_all_offer_approvals
+    GET      /api/recruiter/offers/approvals/pending                 -> backend.routes.recruiter_dashboard_api.get_pending_offer_approvals
+    POST     /api/recruiter/offers/create                            -> backend.routes.recruiter_dashboard_api.create_offer_legacy
+    POST     /api/recruiter/offers/create                            -> backend.app.create_offer
+    GET      /api/recruiter/offers/jd/<jd_id>                        -> backend.app.get_offers_for_job
+    GET      /api/recruiter/offers/statistics/<jd_id>                -> backend.app.get_offer_statistics
+
+  Routes matching '/api/recruiter/interviews':
+    (no routes found)
+
+  Routes matching '/api/recruiter/shortlist':
+    GET      /api/recruiter/shortlist                                -> backend.routes.recruiter_dashboard_api.get_shortlist
+    POST     /api/recruiter/shortlist                                -> backend.routes.recruiter_dashboard_api.add_to_shortlist
+    GET      /api/recruiter/shortlist/<jd_id>                        -> backend.recruiter.shortlist_routes.get_shortlist
+    GET      /api/recruiter/shortlist/<jd_id>/stats                  -> backend.recruiter.shortlist_routes.get_shortlist_stats
+    DELETE   /api/recruiter/shortlist/<shortlist_id>                 -> backend.recruiter.shortlist_routes.remove_from_shortlist
+    POST     /api/recruiter/shortlist/<shortlist_id>/notes           -> backend.recruiter.shortlist_routes.add_note
+    PUT      /api/recruiter/shortlist/<shortlist_id>/status          -> backend.recruiter.shortlist_routes.update_shortlist_status
+    POST     /api/recruiter/shortlist/add                            -> backend.recruiter.shortlist_routes.add_to_shortlist
+    GET      /api/recruiter/shortlist/health                         -> backend.recruiter.shortlist_routes.health_check
+
+  Routes matching '/api/recruiter/candidates':
+    GET      /api/recruiter/candidates/<candidate_id>                -> backend.routes.recruiter_dashboard_api.get_candidate_details
+    GET      /api/recruiter/candidates/<candidate_id>/full-profile   -> backend.routes.recruiter_dashboard_api.get_candidate_profile_full
+
+  Routes matching '/api/recruiter/dashboard':
+    GET      /api/recruiter/dashboard                                -> backend.routes.recruiter_dashboard_api.get_recruiter_dashboard
+    GET      /api/recruiter/dashboard/offers                         -> backend.routes.recruiter_dashboard_api.get_dashboard_offers
+    GET      /api/recruiter/dashboard/overview                       -> backend.routes.recruiter_dashboard_api.get_dashboard_overview
+    GET      /api/recruiter/dashboard/vacancies                      -> backend.routes.recruiter_dashboard_api.get_dashboard_vacancies

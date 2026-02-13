@@ -2,18 +2,26 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { restClient } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import {
+    Video, Phone, MapPin, Users, ChevronDown, ChevronUp, Calendar, Clock, Loader2, Info
+} from 'lucide-react';
 
 interface ScheduleVideoInterviewDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialJobId?: string;
     initialCandidateId?: string;
+    /** When supplied, the candidate dropdown is locked to this shortlist entry */
+    initialShortlistId?: string;
     onSuccess?: () => void;
 }
 
@@ -22,6 +30,7 @@ export function ScheduleVideoInterviewDialog({
     onOpenChange,
     initialJobId,
     initialCandidateId,
+    initialShortlistId,
     onSuccess
 }: ScheduleVideoInterviewDialogProps) {
     const { user } = useAuth();
@@ -29,21 +38,28 @@ export function ScheduleVideoInterviewDialog({
 
     // Data State
     const [jobs, setJobs] = useState<any[]>([]);
-    const [candidates, setCandidates] = useState<any[]>([]); // This stores the shortlist
+    const [candidates, setCandidates] = useState<any[]>([]);
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
 
     // Form State
     const [selectedJobId, setSelectedJobId] = useState<string>("");
     const [formData, setFormData] = useState({
         candidateName: "",
-        candidateId: "", // This MUST be the shortlist_id
+        candidateId: "",    // This MUST be the shortlist_id
         title: "",
         scheduledAt: "",
         time: "",
+        interviewType: "video" as string,
+        duration: 60 as number,
+        location: "",
+        notes: "",
         attendees: [] as string[]
     });
 
-    // const COMPANY_ID = "7e5edea0-ea73-436c-b7ed-f47cfe57423a"; // REMOVED hardcoded ID
+    // Collapsible state
+    const [showAdvanced, setShowAdvanced] = useState(false);
+
+    // ─── Data Fetching ─────────────────────────────────────────────
 
     const fetchJobs = async () => {
         try {
@@ -99,7 +115,7 @@ export function ScheduleVideoInterviewDialog({
                 notes: "Auto-shortlisted for interview"
             });
             if (response.data.success) {
-                return response.data.data?.id || response.data.shortlist_id; // Check both possibilities
+                return response.data.data?.id || response.data.shortlist_id;
             }
             return null;
         } catch (error) {
@@ -108,21 +124,33 @@ export function ScheduleVideoInterviewDialog({
         }
     };
 
-    // Initialize Dialog
+    // ─── Initialization ────────────────────────────────────────────
+
     useEffect(() => {
         const initializeDialog = async () => {
             if (open) {
                 fetchJobs();
                 fetchTeamMembers();
 
+                // If a shortlistId was passed directly, pre‑set it
+                if (initialShortlistId) {
+                    setFormData(prev => ({ ...prev, candidateId: initialShortlistId }));
+                }
+
                 if (initialJobId) {
                     setSelectedJobId(initialJobId);
-
-                    // Fetch shortlist
                     const shortlist = await fetchShortlist(initialJobId);
 
-                    if (initialCandidateId) {
-                        // Check if candidate is already in shortlist
+                    if (initialShortlistId) {
+                        const match = shortlist.find((c: any) => String(c.shortlist_id) === String(initialShortlistId));
+                        if (match) {
+                            setFormData(prev => ({
+                                ...prev,
+                                candidateId: String(match.shortlist_id),
+                                candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
+                            }));
+                        }
+                    } else if (initialCandidateId) {
                         let targetShortlistId = "";
                         const match = shortlist.find((c: any) => c.candidate_id === initialCandidateId || c.shortlist_id === initialCandidateId);
 
@@ -131,23 +159,19 @@ export function ScheduleVideoInterviewDialog({
                             setFormData(prev => ({
                                 ...prev,
                                 candidateId: targetShortlistId,
-                                candidateName: `${match.first_name} ${match.last_name}`
+                                candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
                             }));
                         } else {
-                            // Link applicant if not shortlisted
                             toast.info("Preparing candidate for interview...");
                             const newShortlistId = await addToShortlist(initialJobId, initialCandidateId);
-
                             if (newShortlistId) {
                                 targetShortlistId = newShortlistId;
-                                // Refresh to show in list
                                 const updatedShortlist = await fetchShortlist(initialJobId);
                                 const newMatch = updatedShortlist.find((c: any) => c.shortlist_id === newShortlistId);
-
                                 setFormData(prev => ({
                                     ...prev,
                                     candidateId: targetShortlistId,
-                                    candidateName: newMatch ? `${newMatch.first_name} ${newMatch.last_name}` : ""
+                                    candidateName: newMatch ? `${newMatch.first_name || ''} ${newMatch.last_name || ''}`.trim() : ""
                                 }));
                             } else {
                                 toast.error("Could not add candidate to shortlist. Please try manually.");
@@ -163,26 +187,23 @@ export function ScheduleVideoInterviewDialog({
         };
 
         initializeDialog();
-    }, [open, initialJobId, initialCandidateId]);
+    }, [open, initialJobId, initialCandidateId, initialShortlistId]);
 
-    // Update name when manually selecting from dropdown OR when shortlist loads and we have an initialCandidateId
+    // Update candidate name when manually selecting from dropdown
     useEffect(() => {
         if (candidates.length > 0) {
-            // Case 1: User manually selected an ID
             if (formData.candidateId) {
-                const c = candidates.find(c => c.shortlist_id === formData.candidateId);
+                const c = candidates.find(c => String(c.shortlist_id) === String(formData.candidateId));
                 if (c) {
-                    setFormData(prev => ({ ...prev, candidateName: `${c.first_name} ${c.last_name}` }));
+                    setFormData(prev => ({ ...prev, candidateName: `${c.first_name || ''} ${c.last_name || ''}`.trim() }));
                 }
-            }
-            // Case 2: We have an initialCandidateId passed from parent, and we just loaded the shortlist
-            else if (initialCandidateId) {
+            } else if (initialCandidateId) {
                 const match = candidates.find((c: any) => c.candidate_id === initialCandidateId || c.shortlist_id === initialCandidateId);
                 if (match) {
                     setFormData(prev => ({
                         ...prev,
                         candidateId: match.shortlist_id,
-                        candidateName: `${match.first_name} ${match.last_name}`
+                        candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
                     }));
                     toast.success(`Candidate ${match.first_name} ${match.last_name} selected`);
                 }
@@ -190,37 +211,31 @@ export function ScheduleVideoInterviewDialog({
         }
     }, [formData.candidateId, candidates, initialCandidateId]);
 
+    // ─── Handlers ──────────────────────────────────────────────────
 
     const handleJobChange = async (value: string) => {
         setSelectedJobId(value);
-        const list = await fetchShortlist(value); // fetchShortlist returns the list
+        const list = await fetchShortlist(value);
 
-        // If we came from Chat (initialCandidateId exists), try to find or add the candidate
         if (initialCandidateId) {
-            // Check by candidate_id (from props) or shortlist_id
             const match = list.find((c: any) => c.candidate_id == initialCandidateId || c.candidate_id === String(initialCandidateId));
-
             if (match) {
                 setFormData(prev => ({
                     ...prev,
                     candidateId: match.shortlist_id,
-                    candidateName: `${match.first_name} ${match.last_name}`
+                    candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
                 }));
             } else {
-                // Not in shortlist? Add them!
                 toast.info("Adding candidate to job shortlist...");
                 const newShortlistId = await addToShortlist(value, initialCandidateId);
-
                 if (newShortlistId) {
-                    // Refresh list to see the new person
                     const updatedList = await fetchShortlist(value);
                     const newMatch = updatedList.find((c: any) => c.shortlist_id === newShortlistId);
-
                     if (newMatch) {
                         setFormData(prev => ({
                             ...prev,
                             candidateId: newShortlistId,
-                            candidateName: `${newMatch.first_name} ${newMatch.last_name}`
+                            candidateName: `${newMatch.first_name || ''} ${newMatch.last_name || ''}`.trim()
                         }));
                         toast.success("Candidate added and selected");
                     }
@@ -241,21 +256,33 @@ export function ScheduleVideoInterviewDialog({
                 toast.error("Please select date and time");
                 return;
             }
+            if (formData.interviewType === 'in_person' && !formData.location) {
+                toast.error("Location is required for in-person interviews");
+                return;
+            }
 
             setLoading(true);
 
-            // Payload expects shortlist_id
+            // Auto-generate meeting link for built-in video interviews
+            let meetingLink = '';
+            if (formData.interviewType === 'video') {
+                const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                meetingLink = `${window.location.origin}/recruiter/video-interview/${sessionId}`;
+            }
+
             await restClient.post('/api/recruiter/interviews/create', {
                 shortlist_id: formData.candidateId,
                 recruiter_id: user?.id || "recruiter_001",
-                interview_type: "video",
+                interview_type: formData.interviewType,
                 interview_round: 1,
                 interview_title: formData.title,
                 scheduled_date: formData.scheduledAt,
                 scheduled_time: formData.time + ":00",
-                duration_minutes: 60,
-                notes: "Scheduled via Dashboard",
-                meeting_platform: "built-in",
+                duration_minutes: formData.duration,
+                notes: formData.notes || "Scheduled via Dashboard",
+                meeting_platform: formData.interviewType === 'video' ? 'built-in' : '',
+                meeting_link: meetingLink,
+                location: formData.interviewType === 'in_person' ? formData.location : '',
                 interviewers: formData.attendees
             });
 
@@ -264,8 +291,13 @@ export function ScheduleVideoInterviewDialog({
             onSuccess?.();
 
             // Cleanup
-            setFormData({ candidateName: "", candidateId: "", scheduledAt: "", time: "", title: "", attendees: [] });
+            setFormData({
+                candidateName: "", candidateId: "", scheduledAt: "", time: "",
+                title: "", attendees: [], interviewType: "video", duration: 60,
+                location: "", notes: ""
+            });
             setSelectedJobId("");
+            setShowAdvanced(false);
 
         } catch (error: any) {
             const errorMessage = error.response?.data?.error || "Failed to schedule interview";
@@ -275,50 +307,81 @@ export function ScheduleVideoInterviewDialog({
         }
     };
 
+    // ─── Interview Type Helpers ────────────────────────────────────
+
+    const interviewTypeIcon = (type: string) => {
+        switch (type) {
+            case 'video': return <Video className="h-4 w-4" />;
+            case 'phone': return <Phone className="h-4 w-4" />;
+            case 'in_person': return <MapPin className="h-4 w-4" />;
+            case 'panel': return <Users className="h-4 w-4" />;
+            default: return <Calendar className="h-4 w-4" />;
+        }
+    };
+
+    const isCandiatePreselected = !!(initialShortlistId || (initialCandidateId && formData.candidateId));
+
+    // ─── Render ────────────────────────────────────────────────────
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Schedule Video Interview</DialogTitle>
-                    <DialogDescription>Select a candidate and time for the video interview.</DialogDescription>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-emerald-600" />
+                        Schedule Interview
+                    </DialogTitle>
+                    <DialogDescription>
+                        Set up an interview session on the platform's built-in video system.
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+
+                <div className="space-y-4 py-2">
+                    {/* ── Job Position ──────────────────────────────── */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Job Position</label>
+                        <Label className="text-sm font-medium">Job Position</Label>
                         <Select
                             value={selectedJobId}
                             onValueChange={handleJobChange}
                             disabled={!!initialJobId}
                         >
-                            <SelectTrigger><SelectValue placeholder="Select job position..." /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select job position..." />
+                            </SelectTrigger>
                             <SelectContent>
                                 {jobs.map(job => (
-                                    <SelectItem key={job.id} value={job.jd_id || job.id}>{job.title} ({job.status})</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Candidate</label>
-                        <Select
-                            disabled={!selectedJobId || (!!initialCandidateId && !!formData.candidateId)}
-                            value={formData.candidateId}
-                            onValueChange={(value) => {
-                                setFormData(prev => ({ ...prev, candidateId: value }));
-                            }}
-                        >
-                            <SelectTrigger><SelectValue placeholder={selectedJobId ? "Select candidate..." : "Select a job first"} /></SelectTrigger>
-                            <SelectContent>
-                                {candidates.map(c => (
-                                    <SelectItem key={c.shortlist_id} value={c.shortlist_id}>
-                                        {c.first_name} {c.last_name} (Match: {c.match_score}%)
+                                    <SelectItem key={job.id} value={job.jd_id || job.id}>
+                                        {job.title} ({job.status})
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
 
+                    {/* ── Candidate ─────────────────────────────────── */}
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium">Candidate</Label>
+                        <Select
+                            disabled={!selectedJobId || isCandiatePreselected}
+                            value={formData.candidateId}
+                            onValueChange={(value) => {
+                                setFormData(prev => ({ ...prev, candidateId: value }));
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder={selectedJobId ? "Select candidate..." : "Select a job first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {candidates.map(c => (
+                                    <SelectItem key={c.shortlist_id} value={String(c.shortlist_id)}>
+                                        {c.first_name} {c.last_name} {c.match_score ? `(Match: ${c.match_score}%)` : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* ── Interview Title ───────────────────────────── */}
                     <div className="space-y-2">
                         <Label>Interview Title</Label>
                         <Input
@@ -328,9 +391,61 @@ export function ScheduleVideoInterviewDialog({
                         />
                     </div>
 
+                    {/* ── Interview Type ────────────────────────────── */}
+                    <div className="space-y-2">
+                        <Label>Interview Type</Label>
+                        <Select
+                            value={formData.interviewType}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, interviewType: value }))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="video">
+                                    <span className="flex items-center gap-2"><Video className="h-4 w-4" /> Video Call (Built-in)</span>
+                                </SelectItem>
+                                <SelectItem value="phone">
+                                    <span className="flex items-center gap-2"><Phone className="h-4 w-4" /> Phone Call</span>
+                                </SelectItem>
+                                <SelectItem value="in_person">
+                                    <span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> In-Person</span>
+                                </SelectItem>
+                                <SelectItem value="panel">
+                                    <span className="flex items-center gap-2"><Users className="h-4 w-4" /> Panel Interview</span>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* ── Built-in Video Notice ─────────────────────── */}
+                    {formData.interviewType === 'video' && (
+                        <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-3">
+                            <Info className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                            <div className="text-xs text-emerald-700 dark:text-emerald-300">
+                                <span className="font-semibold">Emirati Pathways Video (Built-in)</span>
+                                <br />
+                                A secure interview link will be auto-generated and sent to the candidate. The session can be recorded and AI-analyzed.
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Location (in-person only) ────────────────── */}
+                    {formData.interviewType === 'in_person' && (
+                        <div className="space-y-2">
+                            <Label>Location *</Label>
+                            <Input
+                                value={formData.location}
+                                onChange={e => setFormData({ ...formData, location: e.target.value })}
+                                placeholder="Office address or meeting room"
+                            />
+                        </div>
+                    )}
+
+                    {/* ── Date & Time ───────────────────────────────── */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Date</Label>
+                            <Label>Date *</Label>
                             <Input
                                 type="date"
                                 value={formData.scheduledAt}
@@ -338,7 +453,7 @@ export function ScheduleVideoInterviewDialog({
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Time</Label>
+                            <Label>Time *</Label>
                             <Input
                                 type="time"
                                 value={formData.time}
@@ -347,11 +462,37 @@ export function ScheduleVideoInterviewDialog({
                         </div>
                     </div>
 
+                    {/* ── Duration ──────────────────────────────────── */}
                     <div className="space-y-2">
-                        <Label>Invite Team Members (Optional)</Label>
-                        <div className="border rounded-md p-3 max-h-32 overflow-y-auto space-y-2">
+                        <Label>Duration</Label>
+                        <Select
+                            value={String(formData.duration)}
+                            onValueChange={(val) => setFormData(prev => ({ ...prev, duration: parseInt(val) }))}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="30">30 minutes</SelectItem>
+                                <SelectItem value="45">45 minutes</SelectItem>
+                                <SelectItem value="60">1 hour</SelectItem>
+                                <SelectItem value="90">1.5 hours</SelectItem>
+                                <SelectItem value="120">2 hours</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Separator />
+
+                    {/* ── Invite Colleagues / HR Manager ────────────── */}
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-slate-500" />
+                            Invite Colleagues & HR Manager
+                        </Label>
+                        <div className="border rounded-md p-3 max-h-36 overflow-y-auto space-y-2 bg-slate-50 dark:bg-slate-900">
                             {teamMembers.length === 0 ? (
-                                <p className="text-sm text-slate-500">No team members found.</p>
+                                <p className="text-sm text-slate-500 italic">No team members found.</p>
                             ) : (
                                 teamMembers.map(member => (
                                     <div key={member.user_id} className="flex items-center space-x-2">
@@ -371,18 +512,47 @@ export function ScheduleVideoInterviewDialog({
                                             htmlFor={`invite-${member.user_id}`}
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                         >
-                                            {member.full_name} <span className="text-xs text-slate-400">({member.role})</span>
+                                            {member.full_name}
+                                            <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
+                                                {member.role}
+                                            </Badge>
                                         </label>
                                     </div>
                                 ))
                             )}
                         </div>
+                        {formData.attendees.length > 0 && (
+                            <p className="text-xs text-emerald-600 font-medium">
+                                {formData.attendees.length} colleague{formData.attendees.length > 1 ? 's' : ''} invited
+                            </p>
+                        )}
                     </div>
 
-                    <Button className="w-full" onClick={handleSchedule} disabled={loading}>
-                        {loading ? "Scheduling..." : "Confirm Schedule"}
-                    </Button>
+                    {/* ── Notes ─────────────────────────────────────── */}
+                    <div className="space-y-2">
+                        <Label>Notes</Label>
+                        <Textarea
+                            value={formData.notes}
+                            onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                            placeholder="Interview agenda, topics to cover, etc."
+                            rows={3}
+                            className="resize-none"
+                        />
+                    </div>
                 </div>
+
+                <DialogFooter className="pt-2">
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSchedule} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
+                        {loading ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scheduling...</>
+                        ) : (
+                            <><Calendar className="mr-2 h-4 w-4" /> Schedule Interview</>
+                        )}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

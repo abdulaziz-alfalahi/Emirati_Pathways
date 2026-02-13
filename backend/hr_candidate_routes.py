@@ -24,76 +24,9 @@ DB_CONFIG = {
     'port': int(os.getenv('DB_PORT', 5432))
 }
 
-@hr_candidate_bp.route('/search', methods=['GET'])
-@jwt_required()
-def search_candidates():
-    """
-    Search candidates by name, email, or skills.
-    Url: /api/hr/candidates/search?q=query
-    """
-    try:
-        query = request.args.get('q', '').strip()
-        limit = request.args.get('limit', 20, type=int)
-        
-        conn = psycopg2.connect(**DB_CONFIG)
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        try:
-            sql = """
-                SELECT 
-                    u.id, 
-                    u.first_name, 
-                    u.last_name, 
-                    u.email,
-                    p.headline,
-                    p.bio,
-                    -- Try to aggregate skills if table exists, else empty
-                    COALESCE(
-                        (SELECT json_agg(s.name) FROM candidate_skills s WHERE s.candidate_id = u.id), 
-                        '[]'::json
-                    ) as skills
-                FROM users u
-                LEFT JOIN candidate_profiles p ON u.id = p.user_id
-                WHERE u.role IN ('candidate', 'job_seeker')
-            """
-            params = []
-            
-            if query:
-                sql += """ AND (
-                    u.first_name ILIKE %s OR 
-                    u.last_name ILIKE %s OR 
-                    u.email ILIKE %s OR
-                    p.headline ILIKE %s
-                )"""
-                term = f"%{query}%"
-                params = [term, term, term, term]
-                
-            sql += " LIMIT %s"
-            params.append(limit)
-            
-            cursor.execute(sql, params)
-            candidates = cursor.fetchall()
-            
-            # Format
-            results = []
-            for c in candidates:
-                results.append({
-                    'id': c['id'],
-                    'name': f"{c.get('first_name','')} {c.get('last_name','')}".strip(),
-                    'email': c['email'],
-                    'headline': c.get('headline'),
-                    'skills': c.get('skills', [])
-                })
-                
-            return jsonify({'success': True, 'data': results})
-            
-        finally:
-            cursor.close()
-            conn.close()
-            
-    except Exception as e:
-        logger.error(f"Error searching candidates: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
+# REMOVED: search_candidates was dead code — shadowed by
+# REMOVED: hr_dashboard_api.search_candidates (registered first via blueprint).
+
 
 @hr_candidate_bp.route('/<int:candidate_id>', methods=['GET'])
 @jwt_required()
@@ -154,42 +87,93 @@ def get_candidate_profile_hr(candidate_id):
             if candidate_data.get('skills') is None:
                 candidate_data['skills'] = []
             
-            # 2. Get Recent Applications
-            cursor.execute("""
-                SELECT 
-                    ja.id,
-                    ja.job_id,
-                    ja.status,
-                    ja.submitted_at,
-                    ja.updated_at,
-                    jd.title as job_title,
-                    jd.company as company_name
-                FROM job_applications ja
-                JOIN job_descriptions jd ON ja.job_id = jd.id
-                WHERE ja.candidate_id = %s
-                ORDER BY ja.submitted_at DESC
-                LIMIT 5
-            """, (candidate_id,))
-            
-            recent_applications = cursor.fetchall()
-            
-            # Format Applications
+            # 2. Get CV data (work experience, education, etc.) from user_cvs
+            work_experience = []
+            education = []
+            certifications = []
+            cv_current_position = None
+            cv_current_company = None
+            cv_education_level = None
+            try:
+                cursor.execute("""
+                    SELECT parsed_data, work_experience, education
+                    FROM user_cvs
+                    WHERE user_id = %s
+                    ORDER BY updated_at DESC NULLS LAST, created_at DESC
+                    LIMIT 1
+                """, (candidate_id,))
+                cv_row = cursor.fetchone()
+                if cv_row:
+                    # Try parsed_data first (richest source), fall back to direct columns
+                    pd = cv_row.get('parsed_data')
+                    if pd:
+                        if isinstance(pd, str):
+                            pd = json.loads(pd)
+                        work_experience = pd.get('work_experience') or pd.get('experience') or []
+                        education = pd.get('education') or []
+                        certifications = pd.get('certifications') or []
+                        # Derive current position from latest work experience
+                        if work_experience and isinstance(work_experience, list) and len(work_experience) > 0:
+                            latest = work_experience[0]
+                            cv_current_position = latest.get('title') or latest.get('job_title') or latest.get('position')
+                            cv_current_company = latest.get('company') or latest.get('organization')
+                        # Derive education level from education entries
+                        if education and isinstance(education, list) and len(education) > 0:
+                            cv_education_level = education[0].get('degree') or education[0].get('level')
+                    else:
+                        # Fall back to direct columns
+                        we_raw = cv_row.get('work_experience')
+                        ed_raw = cv_row.get('education')
+                        if we_raw:
+                            work_experience = json.loads(we_raw) if isinstance(we_raw, str) else we_raw
+                        if ed_raw:
+                            education = json.loads(ed_raw) if isinstance(ed_raw, str) else ed_raw
+            except Exception as e:
+                logger.warning(f"Failed to fetch CV data for candidate {candidate_id}: {e}")
+
+            # 3. Get Recent Applications (try job_postings first, then legacy job_descriptions)
             apps_formatted = []
-            for app in recent_applications:
-                apps_formatted.append({
-                    'id': app['id'],
-                    'job_id': app['job_id'],
-                    'job_title': app['job_title'],
-                    'company_name': app['company_name'],
-                    'status': app['status'],
-                    'submitted_at': app['submitted_at'].isoformat() if app['submitted_at'] else None,
-                    'updated_at': app['updated_at'].isoformat() if app['updated_at'] else None
-                })
+            try:
+                cursor.execute("""
+                    SELECT 
+                        ja.id,
+                        ja.job_id,
+                        ja.status,
+                        ja.submitted_at,
+                        COALESCE(jp.title, jd.title) as job_title,
+                        COALESCE(jp.company_id::text, jd.company) as company_name
+                    FROM job_applications ja
+                    LEFT JOIN job_postings jp ON ja.job_id = jp.id
+                    LEFT JOIN job_descriptions jd ON ja.job_id = jd.id
+                    WHERE ja.candidate_id = %s
+                    ORDER BY ja.submitted_at DESC
+                    LIMIT 5
+                """, (candidate_id,))
+                
+                recent_applications = cursor.fetchall()
+                
+                for app in recent_applications:
+                    apps_formatted.append({
+                        'id': app['id'],
+                        'job_id': app['job_id'],
+                        'job_title': app['job_title'],
+                        'company_name': app['company_name'],
+                        'status': app['status'],
+                        'submitted_at': app['submitted_at'].isoformat() if app['submitted_at'] else None,
+                        'updated_at': app['submitted_at'].isoformat() if app['submitted_at'] else None
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to fetch applications for candidate {candidate_id}: {e}")
             
             # Salary helper
             salary_min = candidate_data.get('preferred_salary_min') or 0
             salary_max = candidate_data.get('preferred_salary_max') or 0
             salary_range = f"{salary_min} - {salary_max} AED" if salary_max > 0 else "Not specified"
+            
+            # Use CV-derived data as fallback for missing user fields
+            current_position = candidate_data.get('current_position') or cv_current_position
+            current_company = candidate_data.get('current_company') or cv_current_company
+            education_level = candidate_data.get('education_level') or cv_education_level or 'Not specified'
 
             # Final Response Structure
             response_data = {
@@ -201,7 +185,7 @@ def get_candidate_profile_hr(candidate_id):
                     'phone': candidate_data['phone'],
                     'emirate': candidate_data['emirate'],
                     'nationality': candidate_data['nationality'],
-                    'education_level': candidate_data.get('education_level') or 'Not specified',
+                    'education_level': education_level,
                     'experience_years': candidate_data.get('experience_years') or 0,
                     'preferred_salary_min': candidate_data.get('preferred_salary_min'),
                     'preferred_salary_max': candidate_data.get('preferred_salary_max'),
@@ -217,9 +201,12 @@ def get_candidate_profile_hr(candidate_id):
                     'profile_photo_url': candidate_data.get('profile_photo_url'),
                     'bio': candidate_data.get('bio'),
                     'headline': candidate_data.get('headline'),
-                    'current_position': candidate_data.get('current_position'),
-                    'current_company': candidate_data.get('current_company'),
-                    'notice_period': candidate_data.get('notice_period')
+                    'current_position': current_position,
+                    'current_company': current_company,
+                    'notice_period': candidate_data.get('notice_period'),
+                    'work_experience': work_experience,
+                    'education': education,
+                    'certifications': certifications
                 },
                 'recent_applications': apps_formatted
             }

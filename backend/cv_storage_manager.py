@@ -68,6 +68,24 @@ class CVStorageManager:
             analysis_results = json.dumps(cv_data.get('analysis', {}))
             file_info = cv_data.get('file_info', {})
             
+            # Derive a title for the CV (required: NOT NULL column)
+            # Priority: explicit title > filename without extension > personal info name > default
+            title = cv_data.get('title')
+            if not title:
+                original_filename = file_info.get('original_filename', '')
+                if original_filename:
+                    # Strip extension to make a human-readable title
+                    title = os.path.splitext(original_filename)[0]
+                else:
+                    # Try to extract name from parsed data for the title
+                    data_dict = cv_data.get('data', {})
+                    personal_info = data_dict.get('personal_info', {})
+                    name = personal_info.get('name') or personal_info.get('full_name')
+                    if name:
+                        title = f"{name}'s CV"
+                    else:
+                        title = f"CV Upload {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+            
             with self._get_db_connection() as conn:
                 # Use RealDictCursor to check existence
                 check_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -102,16 +120,22 @@ class CVStorageManager:
                     
                 else:
                     # Insert new record using the unified user_cvs table
-                    # We default stats to Active
+                    # First, de-flag any existing visible CV for this user
+                    # (partial unique index enforces only one visible CV per user)
+                    cur.execute(
+                        'UPDATE user_cvs SET is_visible = false WHERE user_id = %s AND is_visible = true',
+                        (user_id,)
+                    )
+                    
                     cur.execute('''
                         INSERT INTO user_cvs 
-                        (id, user_id, filename, file_size, file_type, mime_type, 
+                        (id, user_id, title, filename, file_size, file_type, mime_type, 
                          upload_timestamp, parsed_data, analysis_results, last_accessed_at,
                          status, is_visible, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 
                                 'active', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                     ''', (
-                        cv_id, user_id,
+                        cv_id, user_id, title,
                         file_info.get('original_filename'),
                         file_info.get('file_size'),
                         file_info.get('file_type'),

@@ -38,8 +38,17 @@ const MessagesPage: React.FC = () => {
   const { user } = useAuth();
 
   // Redirect Recruiters to their Dashboard
-  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'hr_manager' || user?.user_type === 'hr_manager' || user?.role === 'hr_recruiter' || user?.user_type === 'hr_recruiter') {
-    return <Navigate to="/recruiter?tab=messages" replace />;
+  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'hr_recruiter' || user?.user_type === 'hr_recruiter') {
+    const params = new URLSearchParams(window.location.search);
+    const conversationId = params.get('conversationId') || params.get('conversation');
+    return <Navigate to={`/recruiter?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`} replace />;
+  }
+
+  // Redirect HR Managers to their Dashboard
+  if (user?.role === 'hr_manager' || user?.user_type === 'hr_manager' || user?.role === 'hr' || user?.user_type === 'hr') {
+    const params = new URLSearchParams(window.location.search);
+    const conversationId = params.get('conversationId') || params.get('conversation');
+    return <Navigate to={`/hr-dashboard?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`} replace />;
   }
 
   // --- Existing Candidate View Logic Below ---
@@ -140,7 +149,7 @@ const MessagesPage: React.FC = () => {
   };
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const conversationIdParam = searchParams.get('conversation');
+  const conversationIdParam = searchParams.get('conversationId') || searchParams.get('conversation');
   const userIdParam = searchParams.get('userId');
   const userNameParam = searchParams.get('userName');
 
@@ -202,7 +211,7 @@ const MessagesPage: React.FC = () => {
     if (selectedConversation) {
       loadMessages(selectedConversation.id);
       if (selectedConversation.id !== conversationIdParam) {
-        setSearchParams({ conversation: selectedConversation.id });
+        setSearchParams({ conversationId: selectedConversation.id });
       }
     }
   }, [selectedConversation]);

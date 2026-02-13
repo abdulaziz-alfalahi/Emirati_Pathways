@@ -1,56 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageComposer } from '../communication/MessageComposer';
-import CreateInterviewDialog from '../interviews/CreateInterviewDialog';
+import { ScheduleVideoInterviewDialog } from '../ScheduleVideoInterviewDialog';
 import OfferManager from '../offers/OfferManager';
 import CreateOfferDialog from '../offers/CreateOfferDialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
-  Box,
-  Paper,
-  Typography,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
+  TableHeader,
   TableRow,
-  Chip,
-  IconButton,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Grid,
-  Card,
-  CardContent,
-  Avatar,
-  Tooltip,
-  Alert,
-} from '@mui/material';
+} from '@/components/ui/table';
 import {
-  Delete as DeleteIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Event as EventIcon,
-  CalendarToday as CalendarIcon,
-  CalendarMonth as CalendarMonthIcon,
-  Notes as NotesIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Info as InfoIcon,
-  Send as SendIcon,
-  Close as CloseIcon,
-  CardGiftcard as CardGiftcardIcon,
-  RateReview as RateReviewIcon,
-  Refresh as RefreshCw,
-} from '@mui/icons-material';
-// import axios from 'axios'; // Removed axios
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import {
+  RefreshCw,
+  CalendarDays,
+  Send,
+  Gift,
+  Trash2,
+  Mail,
+  Phone,
+  Calendar,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Info,
+  Star,
+  X,
+  Users,
+  Briefcase,
+  Clock,
+  MessageSquare,
+} from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -68,7 +88,6 @@ interface ShortlistedCandidate {
   interview_scheduled_at: string | null;
   created_at: string;
   updated_at: string;
-  // Candidate details
   first_name: string;
   last_name: string;
   email: string;
@@ -78,7 +97,6 @@ interface ShortlistedCandidate {
   years_of_experience: number;
   emirates_id: string;
   is_uae_national: boolean;
-  // Interview details
   interview_rating?: number;
   interview_recommendation?: string;
   interview_feedback?: string;
@@ -102,15 +120,26 @@ interface ShortlistManagerProps {
   onClose?: () => void;
 }
 
-const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info'> = {
-  shortlisted: 'info',
-  contacted: 'primary',
-  interview_scheduled: 'secondary',
-  interviewed: 'warning',
-  offer_sent: 'success',
-  hired: 'success',
-  rejected: 'error',
-  withdrawn: 'default',
+const statusBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  shortlisted: 'default',
+  contacted: 'secondary',
+  interview_scheduled: 'outline',
+  interviewed: 'secondary',
+  offer_sent: 'default',
+  hired: 'default',
+  rejected: 'destructive',
+  withdrawn: 'outline',
+};
+
+const statusBadgeClass: Record<string, string> = {
+  shortlisted: 'bg-blue-500 hover:bg-blue-600',
+  contacted: 'bg-purple-500 hover:bg-purple-600 text-white',
+  interview_scheduled: 'border-amber-400 text-amber-700 bg-amber-50',
+  interviewed: 'bg-amber-500 hover:bg-amber-600 text-white',
+  offer_sent: 'bg-emerald-500 hover:bg-emerald-600',
+  hired: 'bg-emerald-600 hover:bg-emerald-700',
+  rejected: '',
+  withdrawn: '',
 };
 
 const statusLabels: Record<string, string> = {
@@ -155,32 +184,29 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [selectedCandidateDetails, setSelectedCandidateDetails] = useState<ShortlistedCandidate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<string | null>(null);
-
-  // New state for interview management
   const [cancelInterviewDialogOpen, setCancelInterviewDialogOpen] = useState(false);
   const [interviewToCancel, setInterviewToCancel] = useState<any>(null);
   const [cancellationReason, setCancellationReason] = useState('');
-
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [interviewToReschedule, setInterviewToReschedule] = useState<any>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('');
 
+  // ─── API Handlers ────────────────────────────────────────────────
+
   const handleCancelInterview = async () => {
     if (!interviewToCancel || !cancellationReason) return;
-
     try {
       const response = await restClient.post(
         `/api/recruiter/interviews/${interviewToCancel.interview_id}/cancel`,
         { reason: cancellationReason }
       );
-
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setSuccess('Interview cancelled successfully');
         setCancelInterviewDialogOpen(false);
         setCancellationReason('');
         setInterviewToCancel(null);
-        handleViewInterviews(); // Refresh list
+        handleViewInterviews();
       } else {
         setError(response.data?.error || 'Failed to cancel interview');
       }
@@ -191,22 +217,15 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleRescheduleInterview = async () => {
     if (!interviewToReschedule || !rescheduleDate || !rescheduleTime) return;
-
     try {
       const response = await restClient.put(
         `/api/recruiter/interviews/${interviewToReschedule.interview_id}`,
-        {
-          scheduled_date: rescheduleDate,
-          scheduled_time: rescheduleTime
-        }
+        { scheduled_date: rescheduleDate, scheduled_time: rescheduleTime }
       );
-
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setSuccess('Interview rescheduled successfully');
         setRescheduleDialogOpen(false);
         setInterviewToReschedule(null);
-        // handleViewInterviews(); // Refresh list - wait, handleViewInterviews depends on state? It just calls API and sets state.
-        // But handleViewInterviews uses `jdId` from props, which is available in closure.
         handleViewInterviews();
       } else {
         setError(response.data?.error || 'Failed to reschedule interview');
@@ -216,31 +235,21 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
   };
 
-  // API_BASE_URL is handled by restClient
-
   useEffect(() => {
     loadShortlist();
     loadStats();
   }, [jdId]);
 
   const loadShortlist = async () => {
-    console.log('ShortlistManager: Loading shortlist for JD:', jdId);
     try {
       setLoading(true);
       const response = await restClient.get(`/api/recruiter/shortlist/${jdId}`);
-      console.log('ShortlistManager: API Response:', response.data);
-
-      // restClient returns { data: ..., success: ... } structure
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setShortlist(response.data.shortlist);
-        console.log('ShortlistManager: Set shortlist state:', response.data.shortlist);
       } else {
-        // Handle cases where success might be false in the body
-        console.warn('Shortlist load failed:', response.data);
         setError(response.data?.message || 'Failed to load shortlist');
       }
     } catch (err: any) {
-      console.error('Load shortlist error:', err);
       setError(err.message || 'Failed to load shortlist');
     } finally {
       setLoading(false);
@@ -250,7 +259,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const loadStats = async () => {
     try {
       const response = await restClient.get(`/api/recruiter/shortlist/${jdId}/stats`);
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setStats(response.data.stats);
       }
     } catch (err: any) {
@@ -260,17 +269,12 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleUpdateStatus = async () => {
     if (!selectedCandidate || !newStatus) return;
-
     try {
       const response = await restClient.put(
         `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/status`,
-        {
-          status: newStatus,
-          notes: statusNotes,
-        }
+        { status: newStatus, notes: statusNotes }
       );
-
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setSuccess('Status updated successfully');
         setStatusDialogOpen(false);
         setNewStatus('');
@@ -285,17 +289,12 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleAddNote = async () => {
     if (!selectedCandidate || !newNote.trim()) return;
-
     try {
       const response = await restClient.post(
         `/api/recruiter/shortlist/${selectedCandidate.shortlist_id}/notes`,
-        {
-          note: newNote,
-          recruiter_id: user?.id?.toString() || '45',
-        }
+        { note: newNote, recruiter_id: user?.id?.toString() || '45' }
       );
-
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setSuccess('Note added successfully');
         setNoteDialogOpen(false);
         setNewNote('');
@@ -308,8 +307,6 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleCreateOfferForSelected = () => {
     if (selectedCandidates.length === 0) return;
-
-    // Get the first selected candidate
     const candidate = shortlist.find(c => c.shortlist_id === selectedCandidates[0]);
     if (candidate) {
       setSelectedCandidateForOffer(candidate);
@@ -319,7 +316,6 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleOpenFeedbackDialog = (candidate: ShortlistedCandidate) => {
     setSelectedCandidate(candidate);
-    // Pre-fill with existing feedback if available
     setFeedbackRating(candidate.interview_rating || 3);
     setFeedbackRecommendation(candidate.interview_recommendation || 'next_round');
     setFeedbackNotes(candidate.interview_feedback || '');
@@ -328,38 +324,26 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleAddFeedback = async () => {
     if (!selectedCandidate) return;
-
     try {
-      // Find the interview for this candidate
-      const interviewResponse = await restClient.get(
-        `/api/recruiter/interviews/jd/${jdId}`
-      );
-
+      const interviewResponse = await restClient.get(`/api/recruiter/interviews/jd/${jdId}`);
       const interview = interviewResponse.data.interviews?.find(
         (i: any) => i.shortlist_id === selectedCandidate.shortlist_id
       );
-
       if (!interview) {
-        setError('No interview found for this candidate. Please schedule an interview first.');
+        setError('No interview found. Please schedule an interview first.');
         return;
       }
-
-      // Update the interview with feedback
-      await restClient.put(
-        `/api/recruiter/interviews/${interview.interview_id}`,
-        {
-          rating: feedbackRating,
-          recommendation: feedbackRecommendation,
-          feedback: feedbackNotes
-        }
-      );
-
+      await restClient.put(`/api/recruiter/interviews/${interview.interview_id}`, {
+        rating: feedbackRating,
+        recommendation: feedbackRecommendation,
+        feedback: feedbackNotes,
+      });
       setSuccess('Interview feedback added successfully!');
       setFeedbackDialogOpen(false);
       setFeedbackRating(3);
       setFeedbackRecommendation('next_round');
       setFeedbackNotes('');
-      loadShortlist(); // Reload to show updated feedback
+      loadShortlist();
     } catch (err: any) {
       setError(err.message || 'Failed to add interview feedback');
     }
@@ -367,12 +351,18 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const handleViewInterviews = async () => {
     try {
-      const response = await restClient.get(
-        `/api/recruiter/interviews/jd/${jdId}`
-      );
-
-      if (response.data && response.data.success) {
-        setInterviews(response.data.interviews || []);
+      const response = await restClient.get(`/api/recruiter/interviews/jd/${jdId}`);
+      if (response.data?.success) {
+        // Enrich interview data with candidate names from the shortlist
+        const enriched = (response.data.interviews || []).map((interview: any) => {
+          const match = shortlist.find(c => c.shortlist_id === interview.shortlist_id);
+          return {
+            ...interview,
+            candidate_first_name: interview.candidate_first_name || match?.first_name || '',
+            candidate_last_name: interview.candidate_last_name || match?.last_name || '',
+          };
+        });
+        setInterviews(enriched);
         setViewInterviewsDialogOpen(true);
       }
     } catch (err: any) {
@@ -386,10 +376,8 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   };
 
   const handleRemoveFromShortlist = (shortlistId: string) => {
-    console.log('handleRemoveFromShortlist called with ID:', shortlistId);
     if (!shortlistId) {
-      console.error('Error: shortlistId is missing!');
-      setError('Error: Cannot delete candidate (missing ID)');
+      setError('Cannot delete candidate (missing ID)');
       return;
     }
     setCandidateToDelete(shortlistId);
@@ -398,26 +386,16 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
 
   const confirmDelete = async () => {
     if (!candidateToDelete) return;
-
-    console.log('User confirmed delete. Sending DELETE request...');
     try {
-      const response = await restClient.delete(
-        `/api/recruiter/shortlist/${candidateToDelete}`
-      );
-
-      console.log('DELETE response:', response);
-
-      if (response.data && response.data.success) {
-        console.log('Delete successful');
+      const response = await restClient.delete(`/api/recruiter/shortlist/${candidateToDelete}`);
+      if (response.data?.success) {
         setSuccess('Candidate removed from shortlist');
         loadShortlist();
         loadStats();
       } else {
-        console.error('Delete failed:', response.data);
         setError(response.data?.message || 'Failed to remove candidate');
       }
     } catch (err: any) {
-      console.error('Delete error:', err);
       setError(err.message || 'Failed to remove candidate');
     } finally {
       setDeleteDialogOpen(false);
@@ -425,683 +403,683 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
     }
   };
 
+  // ─── Render ──────────────────────────────────────────────────────
+
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <Typography>Loading shortlist...</Typography>
-      </Box>
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
+      </div>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4">
-          Shortlisted Candidates
-          <Typography variant="caption" display="block" color="textSecondary">
-            JD ID: {jdId}
-          </Typography>
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshCw />}
-            onClick={() => {
-              loadShortlist();
-              loadStats();
-            }}
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<CalendarMonthIcon />}
-            onClick={handleViewInterviews}
-          >
-            View Interviews
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<SendIcon />}
-            onClick={() => setMessageDialogOpen(true)}
-            disabled={selectedCandidates.length === 0}
-          >
-            Message Selected ({selectedCandidates.length})
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<CardGiftcardIcon />}
-            onClick={handleCreateOfferForSelected}
-            disabled={selectedCandidates.length === 0}
-          >
-            Create Offer{selectedCandidates.length > 1 ? 's' : ''} ({selectedCandidates.length})
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<CardGiftcardIcon />}
-            onClick={() => setShowOfferManager(true)}
-          >
-            Manage Offers
-          </Button>
-        </Box>
-      </Box>
+    <TooltipProvider>
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-3">
+              <Users className="h-6 w-6 text-emerald-600" />
+              Shortlisted Candidates
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">JD ID: {jdId}</p>
+          </div>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => { loadShortlist(); loadStats(); }}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleViewInterviews}>
+              <CalendarDays className="h-4 w-4 mr-2" />
+              View Interviews
+            </Button>
 
-      {success && (
-        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2 }}>
-          {success}
-        </Alert>
-      )}
+            <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Statistics Cards */}
-      {stats && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMessageDialogOpen(true)}
+              disabled={selectedCandidates.length === 0}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Message ({selectedCandidates.length})
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreateOfferForSelected}
+              disabled={selectedCandidates.length === 0}
+            >
+              <Gift className="h-4 w-4 mr-2" />
+              Create Offer ({selectedCandidates.length})
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => setShowOfferManager(true)}
+            >
+              <Gift className="h-4 w-4 mr-2" />
+              Manage Offers
+            </Button>
+          </div>
+        </div>
+
+        {/* Alerts */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription className="flex justify-between items-center">
+              {error}
+              <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        {success && (
+          <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800">
+            <AlertDescription className="flex justify-between items-center">
+              {success}
+              <Button variant="ghost" size="sm" onClick={() => setSuccess(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Total Shortlisted
-                </Typography>
-                <Typography variant="h4">{stats.total}</Typography>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Total Shortlisted</p>
+                <p className="text-3xl font-bold">{stats.total}</p>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Contacted
-                </Typography>
-                <Typography variant="h4">{stats.contacted}</Typography>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Contacted</p>
+                <p className="text-3xl font-bold">{stats.contacted}</p>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Interviews
-                </Typography>
-                <Typography variant="h4">{stats.interview_count || 0}</Typography>
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Interviews</p>
+                <p className="text-3xl font-bold">{stats.interview_count || 0}</p>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
             <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Avg Match Score
-                </Typography>
-                <Typography variant="h4">
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">Avg Match Score</p>
+                <p className="text-3xl font-bold">
                   {stats.avg_match_score ? Number(stats.avg_match_score).toFixed(1) : '0'}%
-                </Typography>
+                </p>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
-      )}
+          </div>
+        )}
 
-      {/* Shortlist Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox"></TableCell>
-              <TableCell>Candidate</TableCell>
-              <TableCell>Contact</TableCell>
-              <TableCell>Current Role</TableCell>
-              <TableCell align="center">Match Score</TableCell>
-              <TableCell>Interview</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>UAE National</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {shortlist && shortlist.length > 0 && shortlist.map((candidate) => (
-              <TableRow key={candidate.shortlist_id}>
-                <TableCell padding="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedCandidates.includes(candidate.shortlist_id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedCandidates([...selectedCandidates, candidate.shortlist_id]);
-                      } else {
-                        setSelectedCandidates(selectedCandidates.filter(id => id !== candidate.shortlist_id));
-                      }
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar>
-                      {candidate.first_name?.[0]}
-                      {candidate.last_name?.[0]}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body1">
-                        {candidate.first_name || 'Test'} {candidate.last_name || 'Candidate'}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {candidate.years_of_experience || 0} years exp. | ID: {candidate.shortlist_id}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <EmailIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{candidate.email || 'No email'}</Typography>
-                    </Box>
-                    {candidate.phone_number && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <PhoneIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{candidate.phone_number}</Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{candidate.current_job_title || 'N/A'}</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {candidate.current_company || 'N/A'}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Chip
-                    label={`${parseFloat(candidate.match_score as any).toFixed(1)}%`}
-                    color={parseFloat(candidate.match_score as any) >= 80 ? 'success' : parseFloat(candidate.match_score as any) >= 60 ? 'warning' : 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  {candidate.interview_rating ? (
-                    <Typography variant="body2">
-                      ⭐ {candidate.interview_rating}/5
-                      {candidate.interview_recommendation && (
-                        <Typography variant="caption" display="block" color="textSecondary">
-                          {candidate.interview_recommendation}
-                        </Typography>
-                      )}
-                    </Typography>
-                  ) : (
-                    <Typography variant="caption" color="textSecondary">-</Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={statusLabels[candidate.status] || candidate.status}
-                    color={statusColors[candidate.status] || 'default'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  {candidate.is_uae_national ? (
-                    <CheckCircleIcon color="success" />
-                  ) : (
-                    <CancelIcon color="disabled" />
-                  )}
-                </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Schedule Interview">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => {
-                        setSelectedShortlistId(candidate.shortlist_id);
-                        setInterviewDialogOpen(true);
-                      }}
-                    >
-                      <CalendarIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Add Interview Feedback">
-                    <IconButton
-                      size="small"
-                      color="secondary"
-                      onClick={() => handleOpenFeedbackDialog(candidate)}
-                    >
-                      <RateReviewIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Update Status">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSelectedCandidate(candidate);
-                        setNewStatus(candidate.status);
-                        setStatusDialogOpen(true);
-                      }}
-                    >
-                      <EventIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Add Note">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSelectedCandidate(candidate);
-                        setNoteDialogOpen(true);
-                      }}
-                    >
-                      <NotesIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="View Details">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewDetails(candidate)}
-                    >
-                      <InfoIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Message Candidate">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={async () => {
-                        if (user) {
-                          try {
-                            const response = await restClient.post('/api/communication/conversations', {
-                              participants: [String(user.id), candidate.candidate_id],
-                              title: 'Recruiter Chat',
-                              job_id: jdId,
-                              sender_role: 'recruiter'
-                            });
-                            if (response.data && response.data.success) {
-                              const conversationId = response.data.data.id || response.data.data.conversation?.id;
-                              if (conversationId) {
-                                // Use window.location or navigate if available. 
-                                // Since this component might be used where navigate isn't directly passed or available easily, 
-                                // we should try to use a hook if possible. ShortlistManager doesn't utilize `useNavigate` yet.
-                                // We need to add `useNavigate` hook first.
-                                navigate(`/messages?conversationId=${conversationId}`);
-                              }
+        {/* Shortlist Table */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40px]" />
+                  <TableHead>Candidate</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Current Role</TableHead>
+                  <TableHead className="text-center">Match</TableHead>
+                  <TableHead>Interview</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>UAE National</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shortlist && shortlist.length > 0 ? (
+                  shortlist.map((candidate) => (
+                    <TableRow key={candidate.shortlist_id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedCandidates.includes(candidate.shortlist_id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedCandidates([...selectedCandidates, candidate.shortlist_id]);
+                            } else {
+                              setSelectedCandidates(selectedCandidates.filter(id => id !== candidate.shortlist_id));
                             }
-                          } catch (error) {
-                            console.error('Failed to start conversation:', error);
-                          }
-                        }
-                      }}
-                    >
-                      <SendIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Remove from Shortlist">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleRemoveFromShortlist(candidate.shortlist_id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-            {(!shortlist || shortlist.length === 0) && (
-              <TableRow>
-                <TableCell colSpan={8} align="center">
-                  <Typography color="textSecondary">No candidates in shortlist</Typography>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Status Update Dialog */}
-      <Dialog open={statusDialogOpen} onClose={() => setStatusDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Update Candidate Status</DialogTitle>
-        <DialogContent>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Status</InputLabel>
-            <Select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} label="Status">
-              <MenuItem value="shortlisted">Shortlisted</MenuItem>
-              <MenuItem value="contacted">Contacted</MenuItem>
-              <MenuItem value="interview_scheduled">Interview Scheduled</MenuItem>
-              <MenuItem value="interviewed">Interviewed</MenuItem>
-              <MenuItem value="offer_sent">Offer Sent</MenuItem>
-              <MenuItem value="hired">Hired</MenuItem>
-              <MenuItem value="rejected">Rejected</MenuItem>
-              <MenuItem value="withdrawn">Withdrawn</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Notes (optional)"
-            value={statusNotes}
-            onChange={(e) => setStatusNotes(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleUpdateStatus} variant="contained">
-            Update
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove this candidate from the shortlist? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Add Note Dialog */}
-      <Dialog open={noteDialogOpen} onClose={() => setNoteDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Note</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="Note"
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            sx={{ mt: 2 }}
-            placeholder="Enter your notes about this candidate..."
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddNote} variant="contained">
-            Add Note
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Message Composer Dialog */}
-      <Dialog
-        open={messageDialogOpen}
-        onClose={() => setMessageDialogOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>
-          Send Message to Selected Candidates
-          <IconButton
-            aria-label="close"
-            onClick={() => setMessageDialogOpen(false)}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <MessageComposer
-            candidates={shortlist
-              .filter(c => selectedCandidates.includes(c.shortlist_id))
-              .map(c => ({
-                shortlist_id: c.shortlist_id,
-                candidate_id: c.candidate_id,
-                first_name: c.first_name || 'Test',
-                last_name: c.last_name || 'Candidate',
-                email: c.email || '',
-                phone_number: c.phone_number,
-              }))}
-            jdId={jdId}
-            recruiterId={user?.id?.toString() || "45"}
-            onClose={() => setMessageDialogOpen(false)}
-            onSent={() => {
-              setMessageDialogOpen(false);
-              setSelectedCandidates([]);
-              loadShortlist();
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Schedule Interview Dialog */}
-      <CreateInterviewDialog
-        open={interviewDialogOpen}
-        onClose={() => {
-          setInterviewDialogOpen(false);
-          setSelectedShortlistId(null);
-        }}
-        jdId={jdId}
-        shortlistId={selectedShortlistId || undefined}
-        recruiterId={user?.id?.toString() || "45"}
-        onSuccess={() => {
-          setSuccess('Interview scheduled successfully');
-          loadShortlist();
-        }}
-      />
-
-      {/* Offer Management Dialog */}
-      <Dialog
-        open={showOfferManager}
-        onClose={() => setShowOfferManager(false)}
-        maxWidth="xl"
-        fullWidth
-      >
-        <OfferManager
-          jdId={jdId}
-          onClose={() => setShowOfferManager(false)}
-        />
-      </Dialog>
-
-      {/* Interview Feedback Dialog */}
-      <Dialog
-        open={feedbackDialogOpen}
-        onClose={() => setFeedbackDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add Interview Feedback</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Rating (1-5)</InputLabel>
-              <Select
-                value={feedbackRating}
-                onChange={(e) => setFeedbackRating(Number(e.target.value))}
-                label="Rating (1-5)"
-              >
-                <MenuItem value={1}>1 - Poor</MenuItem>
-                <MenuItem value={2}>2 - Below Average</MenuItem>
-                <MenuItem value={3}>3 - Average</MenuItem>
-                <MenuItem value={4}>4 - Good</MenuItem>
-                <MenuItem value={5}>5 - Excellent</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Recommendation</InputLabel>
-              <Select
-                value={feedbackRecommendation}
-                onChange={(e) => setFeedbackRecommendation(e.target.value)}
-                label="Recommendation"
-              >
-                <MenuItem value="hire">Hire</MenuItem>
-                <MenuItem value="reject">Reject</MenuItem>
-                <MenuItem value="next_round">Next Round</MenuItem>
-                <MenuItem value="hold">Hold</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="Feedback Notes"
-              value={feedbackNotes}
-              onChange={(e) => setFeedbackNotes(e.target.value)}
-              placeholder="Enter detailed feedback about the interview..."
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFeedbackDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleAddFeedback}
-            disabled={!feedbackNotes.trim()}
-          >
-            Save Feedback
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Create Offer Dialog */}
-      {selectedCandidateForOffer && (
-        <CreateOfferDialog
-          open={createOfferDialogOpen}
-          onClose={() => {
-            setCreateOfferDialogOpen(false);
-            setSelectedCandidateForOffer(null);
-            setSelectedCandidates([]);
-          }}
-          jdId={jdId}
-          preselectedCandidate={{
-            shortlist_id: selectedCandidateForOffer.shortlist_id,
-            candidate_id: selectedCandidateForOffer.candidate_id,
-            name: `${selectedCandidateForOffer.first_name} ${selectedCandidateForOffer.last_name}`,
-            email: selectedCandidateForOffer.email
-          }}
-          onOfferCreated={() => {
-            setSuccess('Offer created successfully!');
-            loadShortlist();
-          }}
-        />
-      )}
-
-      {/* View Interviews Dialog */}
-      <Dialog
-        open={viewInterviewsDialogOpen}
-        onClose={() => setViewInterviewsDialogOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>Scheduled Interviews</DialogTitle>
-        <DialogContent>
-          {interviews.length > 0 ? (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Candidate</TableCell>
-                    <TableCell>Interview Type</TableCell>
-                    <TableCell>Date & Time</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Rating</TableCell>
-                    <TableCell>Recommendation</TableCell>
-                    <TableCell>Feedback</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {interviews.map((interview: any) => (
-                    <TableRow key={interview.interview_id}>
-                      <TableCell>
-                        {interview.candidate_first_name} {interview.candidate_last_name}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={interview.interview_type}
-                          size="small"
-                          color="primary"
+                          }}
                         />
                       </TableCell>
                       <TableCell>
-                        {interview.scheduled_date && (
-                          <Box>
-                            <Typography variant="body2">
-                              {new Date(interview.scheduled_date).toLocaleDateString()}
-                            </Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {interview.scheduled_time}
-                            </Typography>
-                          </Box>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                            <span className="text-emerald-700 font-semibold text-sm">
+                              {candidate.first_name?.[0]}{candidate.last_name?.[0]}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {candidate.first_name || 'Test'} {candidate.last_name || 'Candidate'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {candidate.years_of_experience || 0} yrs exp · ID: {candidate.shortlist_id}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 text-sm">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span className="truncate max-w-[180px]">{candidate.email || 'No email'}</span>
+                          </div>
+                          {candidate.phone_number && (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Phone className="h-3 w-3 text-muted-foreground" />
+                              {candidate.phone_number}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm">{candidate.current_job_title || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground">{candidate.current_company || 'N/A'}</p>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant={parseFloat(candidate.match_score as any) >= 80 ? 'default' : 'outline'}
+                          className={
+                            parseFloat(candidate.match_score as any) >= 80
+                              ? 'bg-emerald-500 hover:bg-emerald-600'
+                              : parseFloat(candidate.match_score as any) >= 60
+                                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                : ''
+                          }
+                        >
+                          {parseFloat(candidate.match_score as any).toFixed(1)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {candidate.interview_rating ? (
+                          <div>
+                            <span className="text-sm">⭐ {candidate.interview_rating}/5</span>
+                            {candidate.interview_recommendation && (
+                              <p className="text-xs text-muted-foreground">{candidate.interview_recommendation}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={interview.status}
-                          size="small"
-                          color={interview.status === 'completed' ? 'success' : interview.status === 'cancelled' ? 'error' : 'default'}
-                        />
+                        <Badge
+                          variant={statusBadgeVariant[candidate.status] || 'outline'}
+                          className={statusBadgeClass[candidate.status] || ''}
+                        >
+                          {statusLabels[candidate.status] || candidate.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {candidate.is_uae_national ? (
+                          <CheckCircle className="h-5 w-5 text-emerald-500" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-gray-300" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setSelectedShortlistId(candidate.shortlist_id);
+                                  setInterviewDialogOpen(true);
+                                }}
+                              >
+                                <Calendar className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Schedule Interview</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleOpenFeedbackDialog(candidate)}
+                              >
+                                <Star className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Add Feedback</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setSelectedCandidate(candidate);
+                                  setNewStatus(candidate.status);
+                                  setStatusDialogOpen(true);
+                                }}
+                              >
+                                <Clock className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Update Status</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setSelectedCandidate(candidate);
+                                  setNoteDialogOpen(true);
+                                }}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Add Note</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewDetails(candidate)}>
+                                <Info className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>View Details</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                                onClick={async () => {
+                                  if (user) {
+                                    try {
+                                      const response = await restClient.post('/api/communication/conversations', {
+                                        participants: [String(user.id), candidate.candidate_id],
+                                        title: 'Recruiter Chat',
+                                        job_id: jdId,
+                                        sender_role: 'recruiter',
+                                      });
+                                      if (response.data?.success) {
+                                        const conversationId = response.data.data.id || response.data.data.conversation?.id;
+                                        if (conversationId) {
+                                          navigate(`/messages?conversationId=${conversationId}`);
+                                        }
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to start conversation:', error);
+                                    }
+                                  }
+                                }}
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Message</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600"
+                                onClick={() => handleRemoveFromShortlist(candidate.shortlist_id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Remove</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-12">
+                      <Users className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                      <p className="text-muted-foreground">No candidates in shortlist</p>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* ─── Dialogs ──────────────────────────────────────────── */}
+
+        {/* Update Status Dialog */}
+        <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Candidate Status</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Status</label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="interview_scheduled">Interview Scheduled</SelectItem>
+                    <SelectItem value="interviewed">Interviewed</SelectItem>
+                    <SelectItem value="offer_sent">Offer Sent</SelectItem>
+                    <SelectItem value="hired">Hired</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Notes (optional)</label>
+                <Textarea
+                  rows={3}
+                  value={statusNotes}
+                  onChange={(e) => setStatusNotes(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleUpdateStatus}>Update</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Candidate</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove this candidate from the shortlist? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={confirmDelete}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Add Note Dialog */}
+        <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Note</DialogTitle>
+            </DialogHeader>
+            <Textarea
+              rows={4}
+              value={newNote}
+              onChange={(e) => setNewNote(e.target.value)}
+              placeholder="Enter your notes about this candidate..."
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddNote}>Add Note</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Message Composer Dialog */}
+        <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Send Message to Selected Candidates</DialogTitle>
+            </DialogHeader>
+            <MessageComposer
+              candidates={shortlist
+                .filter(c => selectedCandidates.includes(c.shortlist_id))
+                .map(c => ({
+                  shortlist_id: c.shortlist_id,
+                  candidate_id: c.candidate_id,
+                  first_name: c.first_name || 'Test',
+                  last_name: c.last_name || 'Candidate',
+                  email: c.email || '',
+                  phone_number: c.phone_number,
+                }))}
+              jdId={jdId}
+              recruiterId={user?.id?.toString() || '45'}
+              onClose={() => setMessageDialogOpen(false)}
+              onSent={() => {
+                setMessageDialogOpen(false);
+                setSelectedCandidates([]);
+                loadShortlist();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Schedule Interview Dialog */}
+        <ScheduleVideoInterviewDialog
+          open={interviewDialogOpen}
+          onOpenChange={(val) => {
+            setInterviewDialogOpen(val);
+            if (!val) setSelectedShortlistId(null);
+          }}
+          initialJobId={jdId}
+          initialShortlistId={selectedShortlistId || undefined}
+          onSuccess={() => {
+            setSuccess('Interview scheduled successfully');
+            loadShortlist();
+          }}
+        />
+
+        {/* Offer Management Dialog */}
+        <Dialog open={showOfferManager} onOpenChange={setShowOfferManager}>
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+            <OfferManager jdId={jdId} onClose={() => setShowOfferManager(false)} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Interview Feedback Dialog */}
+        <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Interview Feedback</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Rating (1-5)</label>
+                <Select value={String(feedbackRating)} onValueChange={(v) => setFeedbackRating(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 - Poor</SelectItem>
+                    <SelectItem value="2">2 - Below Average</SelectItem>
+                    <SelectItem value="3">3 - Average</SelectItem>
+                    <SelectItem value="4">4 - Good</SelectItem>
+                    <SelectItem value="5">5 - Excellent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Recommendation</label>
+                <Select value={feedbackRecommendation} onValueChange={setFeedbackRecommendation}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hire">Hire</SelectItem>
+                    <SelectItem value="reject">Reject</SelectItem>
+                    <SelectItem value="next_round">Next Round</SelectItem>
+                    <SelectItem value="hold">Hold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Feedback Notes</label>
+                <Textarea
+                  rows={4}
+                  value={feedbackNotes}
+                  onChange={(e) => setFeedbackNotes(e.target.value)}
+                  placeholder="Enter detailed feedback about the interview..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFeedbackDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddFeedback} disabled={!feedbackNotes.trim()}>
+                Save Feedback
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Offer Dialog */}
+        {selectedCandidateForOffer && (
+          <CreateOfferDialog
+            open={createOfferDialogOpen}
+            onClose={() => {
+              setCreateOfferDialogOpen(false);
+              setSelectedCandidateForOffer(null);
+              setSelectedCandidates([]);
+            }}
+            jdId={jdId}
+            preselectedCandidate={{
+              shortlist_id: selectedCandidateForOffer.shortlist_id,
+              candidate_id: selectedCandidateForOffer.candidate_id,
+              name: `${selectedCandidateForOffer.first_name} ${selectedCandidateForOffer.last_name}`,
+              email: selectedCandidateForOffer.email,
+            }}
+            onOfferCreated={() => {
+              setSuccess('Offer created successfully!');
+              loadShortlist();
+            }}
+          />
+        )}
+
+        {/* View Interviews Dialog */}
+        <Dialog open={viewInterviewsDialogOpen} onOpenChange={setViewInterviewsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Scheduled Interviews</DialogTitle>
+            </DialogHeader>
+            {interviews.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Candidate</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Recommendation</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {interviews.map((interview: any) => (
+                    <TableRow key={interview.interview_id}>
+                      <TableCell className="font-medium">
+                        {interview.candidate_first_name} {interview.candidate_last_name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{interview.interview_type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {interview.scheduled_date && (
+                          <div>
+                            <p className="text-sm">{new Date(interview.scheduled_date).toLocaleDateString()}</p>
+                            <p className="text-xs text-muted-foreground">{interview.scheduled_time}</p>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={interview.status === 'completed' ? 'default' : interview.status === 'cancelled' ? 'destructive' : 'outline'}
+                          className={interview.status === 'completed' ? 'bg-emerald-500' : ''}
+                        >
+                          {interview.status}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {interview.rating ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography>⭐</Typography>
-                            <Typography>{interview.rating}/5</Typography>
-                          </Box>
+                          <span className="text-sm">⭐ {interview.rating}/5</span>
                         ) : (
-                          <Typography color="textSecondary">-</Typography>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {interview.recommendation ? (
-                          <Chip
-                            label={interview.recommendation}
-                            size="small"
-                            color={interview.recommendation === 'hire' ? 'success' : 'default'}
-                          />
+                          <Badge variant={interview.recommendation === 'hire' ? 'default' : 'outline'}
+                            className={interview.recommendation === 'hire' ? 'bg-emerald-500' : ''}
+                          >
+                            {interview.recommendation}
+                          </Badge>
                         ) : (
-                          <Typography color="textSecondary">-</Typography>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        {interview.feedback ? (
-                          <Tooltip title={interview.feedback}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                maxWidth: 200,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {interview.feedback}
-                            </Typography>
-                          </Tooltip>
-                        ) : (
-                          <Typography color="textSecondary">-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <div className="flex items-center justify-end gap-1">
                           <Button
-                            variant="contained"
-                            size="small"
-                            color="primary"
+                            size="sm"
                             disabled={interview.status === 'completed' || interview.status === 'cancelled'}
-                            onClick={() => window.open(`/recruiter-dashboard?tab=interviews`, '_blank')}
+                            onClick={() => {
+                              // Determine the video room URL
+                              let videoUrl = '';
+                              if (interview.meeting_link) {
+                                // Use stored meeting link
+                                videoUrl = interview.meeting_link;
+                              } else if (interview.interview_type === 'video') {
+                                // Generate video room URL from interview ID for legacy entries
+                                videoUrl = `/recruiter/video-interview/${interview.interview_id}`;
+                              }
+
+                              if (videoUrl) {
+                                // Extract the path from absolute URLs for SPA navigation
+                                if (videoUrl.startsWith('http')) {
+                                  try {
+                                    const url = new URL(videoUrl);
+                                    navigate(url.pathname);
+                                  } catch {
+                                    window.open(videoUrl, '_blank');
+                                  }
+                                } else {
+                                  navigate(videoUrl);
+                                }
+                              } else {
+                                // Non-video interview: navigate to Interviews tab
+                                navigate(`/recruiter/interviews`);
+                              }
+                            }}
                           >
                             Join
                           </Button>
-                          <IconButton
-                            size="small"
-                            color="primary"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             disabled={interview.status === 'completed' || interview.status === 'cancelled'}
                             onClick={() => {
                               setInterviewToReschedule(interview);
@@ -1110,287 +1088,205 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                               setRescheduleDialogOpen(true);
                             }}
                           >
-                            <EventIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
+                            <Calendar className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500"
                             disabled={interview.status === 'completed' || interview.status === 'cancelled'}
                             onClick={() => {
                               setInterviewToCancel(interview);
                               setCancelInterviewDialogOpen(true);
                             }}
                           >
-                            <CancelIcon />
-                          </IconButton>
-                        </Box>
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
-          ) : (
-            <Box sx={{ py: 4, textAlign: 'center' }}>
-              <Typography color="textSecondary">
-                No interviews scheduled for this job description yet.
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewInterviewsDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+            ) : (
+              <div className="text-center py-8">
+                <CalendarDays className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <p className="text-muted-foreground">No interviews scheduled yet.</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
-      {/* Cancel Interview Dialog */}
-      <Dialog open={cancelInterviewDialogOpen} onClose={() => setCancelInterviewDialogOpen(false)}>
-        <DialogTitle>Cancel Interview</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to cancel the interview with {interviewToCancel?.candidate_first_name} {interviewToCancel?.candidate_last_name}?
-          </Typography>
-          <TextField
-            fullWidth
-            label="Reason for Cancellation"
-            value={cancellationReason}
-            onChange={(e) => setCancellationReason(e.target.value)}
-            sx={{ mt: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCancelInterviewDialogOpen(false)}>Back</Button>
-          <Button
-            onClick={handleCancelInterview}
-            color="error"
-            variant="contained"
-            disabled={!cancellationReason.trim()}
-          >
-            Confirm Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Reschedule Interview Dialog */}
-      <Dialog open={rescheduleDialogOpen} onClose={() => setRescheduleDialogOpen(false)}>
-        <DialogTitle>Reschedule Interview</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="New Date"
-              type="date"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={rescheduleDate}
-              onChange={(e) => setRescheduleDate(e.target.value)}
+        {/* Cancel Interview Dialog */}
+        <Dialog open={cancelInterviewDialogOpen} onOpenChange={setCancelInterviewDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancel Interview</DialogTitle>
+              <DialogDescription>
+                Cancel the interview with {interviewToCancel?.candidate_first_name} {interviewToCancel?.candidate_last_name}?
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              placeholder="Reason for cancellation"
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
             />
-            <TextField
-              label="New Time"
-              type="time"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              value={rescheduleTime}
-              onChange={(e) => setRescheduleTime(e.target.value)}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRescheduleDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleRescheduleInterview} color="primary" variant="contained">
-            Reschedule
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCancelInterviewDialogOpen(false)}>Back</Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelInterview}
+                disabled={!cancellationReason.trim()}
+              >
+                Confirm Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* View Details Dialog */}
-      <Dialog
-        open={viewDetailsDialogOpen}
-        onClose={() => setViewDetailsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          Candidate Details
-        </DialogTitle>
-        <DialogContent>
-          {selectedCandidateDetails && (
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={3}>
-                {/* Basic Information */}
-                <Grid item xs={12}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Basic Information
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Name
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.first_name} {selectedCandidateDetails.last_name}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Email
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.email}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Phone
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.phone_number || 'N/A'}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            UAE National
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.is_uae_national ? 'Yes' : 'No'}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
+        {/* Reschedule Interview Dialog */}
+        <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reschedule Interview</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">New Date</label>
+                <Input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">New Time</label>
+                <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleRescheduleInterview}>Reschedule</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-                {/* Professional Information */}
-                <Grid item xs={12}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Professional Information
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Current Job Title
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.current_job_title || 'N/A'}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Current Company
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.current_company || 'N/A'}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Years of Experience
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.years_of_experience || 0} years
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Emirates ID
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.emirates_id || 'N/A'}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
+        {/* View Details Dialog */}
+        <Dialog open={viewDetailsDialogOpen} onOpenChange={setViewDetailsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Candidate Details</DialogTitle>
+            </DialogHeader>
+            {selectedCandidateDetails && (
+              <div className="space-y-4">
+                {/* Basic Info */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Basic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Name</p>
+                        <p className="font-medium">{selectedCandidateDetails.first_name} {selectedCandidateDetails.last_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Email</p>
+                        <p className="font-medium">{selectedCandidateDetails.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Phone</p>
+                        <p className="font-medium">{selectedCandidateDetails.phone_number || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">UAE National</p>
+                        <p className="font-medium">{selectedCandidateDetails.is_uae_national ? 'Yes' : 'No'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                {/* Shortlist Information */}
-                <Grid item xs={12}>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        Shortlist Information
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Match Score
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.match_score}%
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="textSecondary">
-                            Status
-                          </Typography>
-                          <Chip
-                            label={selectedCandidateDetails.status}
-                            size="small"
-                            color={statusColors[selectedCandidateDetails.status] || 'default'}
-                          />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Typography variant="body2" color="textSecondary">
-                            Notes
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedCandidateDetails.notes || 'No notes available'}
-                          </Typography>
-                        </Grid>
-                        {selectedCandidateDetails.tags && selectedCandidateDetails.tags.length > 0 && (
-                          <Grid item xs={12}>
-                            <Typography variant="body2" color="textSecondary" gutterBottom>
-                              Tags
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {selectedCandidateDetails.tags.map((tag: string, index: number) => (
-                                <Chip key={index} label={tag} size="small" />
-                              ))}
-                            </Box>
-                          </Grid>
-                        )}
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                {/* Professional */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Professional Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Current Job Title</p>
+                        <p className="font-medium">{selectedCandidateDetails.current_job_title || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Current Company</p>
+                        <p className="font-medium">{selectedCandidateDetails.current_company || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Years of Experience</p>
+                        <p className="font-medium">{selectedCandidateDetails.years_of_experience || 0} years</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Emirates ID</p>
+                        <p className="font-medium">{selectedCandidateDetails.emirates_id || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Shortlist Info */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Shortlist Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Match Score</p>
+                        <p className="font-medium">{selectedCandidateDetails.match_score}%</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Status</p>
+                        <Badge
+                          variant={statusBadgeVariant[selectedCandidateDetails.status] || 'outline'}
+                          className={statusBadgeClass[selectedCandidateDetails.status] || ''}
+                        >
+                          {statusLabels[selectedCandidateDetails.status] || selectedCandidateDetails.status}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Notes</p>
+                        <p className="font-medium">{selectedCandidateDetails.notes || 'No notes available'}</p>
+                      </div>
+                      {selectedCandidateDetails.tags && selectedCandidateDetails.tags.length > 0 && (
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground mb-1">Tags</p>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedCandidateDetails.tags.map((tag: string, idx: number) => (
+                              <Badge key={idx} variant="outline">{tag}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Match Details */}
                 {selectedCandidateDetails.match_details && (
-                  <Grid item xs={12}>
-                    <Card>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          Match Details
-                        </Typography>
-                        <Box sx={{
-                          backgroundColor: '#f5f5f5',
-                          p: 2,
-                          borderRadius: 1,
-                          maxHeight: 200,
-                          overflow: 'auto'
-                        }}>
-                          <pre style={{ margin: 0, fontSize: '0.875rem' }}>
-                            {JSON.stringify(selectedCandidateDetails.match_details, null, 2)}
-                          </pre>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Match Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <pre className="bg-muted p-3 rounded-md text-xs overflow-auto max-h-[200px]">
+                        {JSON.stringify(selectedCandidateDetails.match_details, null, 2)}
+                      </pre>
+                    </CardContent>
+                  </Card>
                 )}
-              </Grid>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewDetailsDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 };
 
 export default ShortlistManager;
-

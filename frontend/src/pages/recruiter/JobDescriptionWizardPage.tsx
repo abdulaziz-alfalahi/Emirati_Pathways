@@ -64,15 +64,37 @@ const JobDescriptionWizardPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Get user role for navigation logic
+  const getUserRole = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.role || user.user_type || '';
+      }
+    } catch {
+      return '';
+    }
+    return '';
+  };
+
   const handleComplete = (jdId: string) => {
     console.log('JD created successfully:', jdId);
-    // Navigate back to recruiter dashboard
-    navigate('/recruiter?tab=jobs');
+    const role = getUserRole();
+    if (role === 'hr_manager' || role === 'hr') {
+      navigate('/hr-dashboard?tab=positions');
+    } else {
+      navigate('/recruiter?tab=jobs');
+    }
   };
 
   const handleCancel = () => {
-    // Navigate back to recruiter dashboard
-    navigate('/recruiter?tab=jobs');
+    const role = getUserRole();
+    if (role === 'hr_manager' || role === 'hr') {
+      navigate('/hr-dashboard?tab=positions');
+    } else {
+      navigate('/recruiter?tab=jobs');
+    }
   };
 
   return (

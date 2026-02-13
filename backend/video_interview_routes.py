@@ -6,7 +6,7 @@ Revolutionary AI-powered video interview system endpoints
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
-from video_interview_system import video_interview_engine, InterviewStatus, InterviewType
+from backend.video_interview_system import video_interview_engine, InterviewStatus, InterviewType
 from datetime import datetime
 import json
 import io
@@ -19,44 +19,9 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 video_interview_bp = Blueprint('video_interview', __name__, url_prefix='/api/video-interview')
 
-@video_interview_bp.route('/schedule', methods=['POST'])
-@jwt_required()
-def schedule_interview():
-    """Schedule a new video interview"""
-    try:
-        hr_user_id = get_jwt_identity()
-        data = request.get_json()
-        
-        # Validate required fields
-        required_fields = ['application_id', 'scheduled_time', 'duration_minutes']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'success': False,
-                    'error': f'{field} is required'
-                }), 400
-        
-        logger.info(f"Scheduling interview for application {data['application_id']}")
-        
-        session_id = video_interview_engine.schedule_interview(
-            data['application_id'],
-            hr_user_id,
-            data
-        )
-        
-        return jsonify({
-            'success': True,
-            'session_id': session_id,
-            'message': 'Interview scheduled successfully'
-        }), 201
-        
-    except Exception as e:
-        logger.error(f"Error scheduling interview: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Failed to schedule interview',
-            'message': str(e)
-        }), 500
+# REMOVED: schedule_interview was dead code — shadowed by
+# REMOVED: interview_sessions_api.schedule_interview (registered first via blueprint).
+
 
 @video_interview_bp.route('/sessions/<session_id>/start', methods=['POST'])
 @jwt_required()
@@ -190,37 +155,9 @@ def get_interview_report():
             'message': str(e)
         }), 500
 
-@video_interview_bp.route('/sessions', methods=['GET'])
-@jwt_required()
-def get_interview_sessions():
-    """Get interview sessions for user"""
-    try:
-        user_id = get_jwt_identity()
-        role = request.args.get('role', 'both')  # interviewer, candidate, or both
-        
-        logger.info(f"Getting interview sessions for user {user_id} with role {role}")
-        
-        sessions = video_interview_engine.get_interview_sessions(user_id, role)
-        
-        # Convert datetime objects to ISO format
-        for session in sessions:
-            for key, value in session.items():
-                if isinstance(value, datetime):
-                    session[key] = value.isoformat()
-        
-        return jsonify({
-            'success': True,
-            'sessions': sessions,
-            'total_count': len(sessions)
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error getting interview sessions: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Failed to get interview sessions',
-            'message': str(e)
-        }), 500
+# REMOVED: get_interview_sessions was dead code — shadowed by
+# REMOVED: interview_sessions_api.list_sessions (registered first via blueprint).
+
 
 @video_interview_bp.route('/sessions/<session_id>/recordings', methods=['GET'])
 @jwt_required()

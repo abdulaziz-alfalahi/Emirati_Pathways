@@ -275,7 +275,7 @@ def update_shortlist_status(shortlist_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Update status
+        # Build update fields for shortlisted_candidates (only has status, notes, updated_at)
         update_fields = ["status = %s", "updated_at = CURRENT_TIMESTAMP"]
         params = [status]
         
@@ -283,25 +283,44 @@ def update_shortlist_status(shortlist_id):
             update_fields.append("notes = COALESCE(notes, '') || %s")
             params.append(f"\n{datetime.now().strftime('%Y-%m-%d %H:%M')}: {notes}")
         
-        # Update contacted_at if status is contacted
-        if status == 'contacted':
-            update_fields.append("contacted_at = CURRENT_TIMESTAMP")
-        
-        # Update interview_scheduled_at if status is interview_scheduled
-        if status == 'interview_scheduled':
-            update_fields.append("interview_scheduled_at = CURRENT_TIMESTAMP")
-        
         params.append(shortlist_id)
         
+        # The frontend sends shortlisted_candidates.id (cast to text) as the shortlist_id
         cur.execute(f"""
-            UPDATE candidate_shortlist 
+            UPDATE shortlisted_candidates 
             SET {', '.join(update_fields)}
-            WHERE shortlist_id = %s
+            WHERE id = %s::integer
         """, params)
+        
+        rows_affected = cur.rowcount
+        
+        # Fallback: try candidate_shortlist (legacy table, has extra columns)
+        if rows_affected == 0:
+            legacy_fields = list(update_fields)
+            legacy_params = list(params)
+            # Legacy table has contacted_at and interview_scheduled_at columns
+            if status == 'contacted':
+                legacy_fields.append("contacted_at = CURRENT_TIMESTAMP")
+            if status == 'interview_scheduled':
+                legacy_fields.append("interview_scheduled_at = CURRENT_TIMESTAMP")
+            
+            cur.execute(f"""
+                UPDATE candidate_shortlist 
+                SET {', '.join(legacy_fields)}
+                WHERE shortlist_id = %s
+            """, legacy_params)
+            rows_affected = cur.rowcount
         
         conn.commit()
         cur.close()
         conn.close()
+        
+        if rows_affected == 0:
+            logger.warning(f"No rows updated for shortlist_id {shortlist_id}")
+            return jsonify({
+                'success': False,
+                'message': f'No shortlist entry found with id {shortlist_id}'
+            }), 404
         
         logger.info(f"Updated shortlist {shortlist_id} to status: {status}")
         

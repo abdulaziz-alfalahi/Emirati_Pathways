@@ -331,220 +331,24 @@ def jd_health():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-@jd_bp.route('/create', methods=['POST'])
-def create_jd():
-    """Create a new job description"""
+# REMOVED: create_jd was dead code — shadowed by
+# REMOVED: recruiter_dashboard_api.create_jd_enhanced (registered first via blueprint).
+
+
+
+@jd_bp.route('/test_probe_123', methods=['GET'])
+def test_probe():
+    print("!!! PROBE HIT !!!", flush=True)
     try:
-        data = request.get_json() or {}
-        
-        # Get recruiter_id and company_id with defaults for development
-        recruiter_id = data.get('recruiter_id', 1)  # Default to 1 for development
-        company_id = data.get('company_id', 1)  # Default to 1 for development
-        
-        # Get optional parameters
-        template = data.get('template', 'standard')
-        
-        # Create JD
-        jd_data = jd_engine.create_jd(recruiter_id, company_id, template)
-        
-        # Store in database (placeholder - implement actual DB storage)
-        jd_id = jd_data['metadata']['jd_id']
-        
-        logger.info(f"Created JD {jd_id} for recruiter {recruiter_id}")
-        
-        return jsonify({
-            'success': True,
-            'jd_id': jd_id,
-            'metadata': jd_data['metadata'],
-            'current_step': jd_data['metadata']['current_step']
-        }), 201
-        
+        log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'debug_trace.txt'))
+        with open(log_path, "a") as f: f.write(f"\n[{datetime.now()}] PROBE HIT\n")
+        return jsonify({'status': 'alive', 'file': 'jd_routes_v2.py', 'log_path': log_path}), 200
     except Exception as e:
-        logger.error(f"Error creating JD: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
+# REMOVED: list_jds was dead code — shadowed by
+# REMOVED: recruiter_dashboard_api.get_jd_list_enhanced (registered first via blueprint).
 
-@jd_bp.route('/list', methods=['GET'])
-def list_jds():
-    """
-    List all job descriptions with optional filters
-    
-    Query parameters:
-    - recruiter_id: Filter by recruiter
-    - company_id: Filter by company
-    - status: Filter by status (draft, published, closed)
-    - limit: Number of results (default 50)
-    - offset: Pagination offset (default 0)
-    """
-    try:
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
-        current_user_id = None
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            current_user_id = user_id
-        else:
-            # Fallback to real JWT if configured and valid
-            try:
-                from flask_jwt_extended import verify_jwt_in_request
-                verify_jwt_in_request()
-                current_user_id = get_jwt_identity()
-            except Exception as e:
-                logger.warning(f"JWT verification failed: {e}")
-                pass
-
-        recruiter_id = request.args.get('recruiter_id')
-        company_id = request.args.get('company_id')
-        status = request.args.get('status')
-        limit = int(request.args.get('limit', 50))
-        offset = int(request.args.get('offset', 0))
-        
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        # If authenticated but no filters provided, try to filter by current user's company
-        if current_user_id and not recruiter_id and not company_id:
-             try:
-                # Get company ID for the user
-                cur.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
-                row = cur.fetchone()
-                
-                if not row or not row.get('company_id'):
-                    # Try to find company via job_postings if no profile (fallback)
-                    cur.execute("SELECT company_id FROM job_postings WHERE recruiter_id = %s LIMIT 1", (current_user_id,))
-                    row = cur.fetchone()
-                    
-                if row and row.get('company_id'):
-                     company_id = row['company_id']
-                     logger.info(f"Auto-detected company_id {company_id} for user {current_user_id}")
-                     
-                with open("debug_list_jds.log", "a") as f:
-                    f.write(f"User: {current_user_id}, Detected Company: {company_id}\n")
-             except Exception as e:
-                 logger.error(f"Error looking up company for user {current_user_id}: {e}")
-                 with open("debug_list_jds.log", "a") as f:
-                    f.write(f"Error looking up company: {e}\n")
-
-        # Get user role from JWT
-        claims = {}
-        try:
-            from flask_jwt_extended import get_jwt
-            claims = get_jwt()
-        except:
-            pass
-            
-        user_role = claims.get('role', 'recruiter')
-        
-        # Build query with filters
-        query = "SELECT * FROM job_postings WHERE 1=1"
-        params = []
-        
-        if recruiter_id:
-            query += " AND recruiter_id = %s"
-            params.append(recruiter_id)
-        
-        if company_id:
-            # RBAC: HR Manager/Admin sees all company jobs, Recruiter sees only their own
-            if user_role in ['hr_manager', 'admin', 'administrator', 'super_admin']:
-                query += " AND company_id = %s"
-                params.append(company_id)
-                # Optional: If specific created_by requested, add it
-                if current_user_id and not recruiter_id: 
-                     # Only filter by created_by if explicitly passed? 
-                     # No, for HR view, default is ALL.
-                     pass 
-            else:
-                # Regular Recruiter - STRICT SCOPE
-                query += " AND created_by = %s"
-                params.append(current_user_id)
-                # Ensure we strictly stay within company if known
-                query += " AND company_id = %s"
-                params.append(company_id)
-                
-        elif current_user_id:
-            # Fallback if no company ID found - strictly own jobs
-            query += " AND created_by = %s"
-            params.append(current_user_id)
-        
-        if status:
-            query += " AND status = %s"
-            params.append(status)
-        
-        query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-        
-        cur.execute(query, params)
-        jds = cur.fetchall()
-        
-        # Convert to list of dicts
-        jd_list = []
-        for jd in jds:
-            jd_dict = dict(jd)
-            # Ensure JSON fields are parsed
-            for field in ['requirements', 'responsibilities', 'benefits', 'compensation', 'application_process', 'metadata']:
-                 if isinstance(jd_dict.get(field), str):
-                      try:
-                          jd_dict[field] = json.loads(jd_dict[field])
-                      except:
-                          pass # Keep as string or whatever it is
-            
-            jd_list.append(jd_dict)
-        
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'job_descriptions': jd_list,
-            'count': len(jd_list),
-            'limit': limit,
-            'offset': offset
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error listing JDs: {e}")
-        # Return fallback data when database is unavailable
-        fallback_jds = [
-            {
-                'id': 1,
-                'jd_id': 'jd_001',
-                'title': 'Software Engineer',
-                'company': 'Emirates NBD',
-                'location': 'Dubai, UAE',
-                'status': 'published',
-                'created_at': '2025-01-15T10:00:00',
-                'applications_count': 45
-            },
-            {
-                'id': 2,
-                'jd_id': 'jd_002',
-                'title': 'Product Manager',
-                'company': 'Careem',
-                'location': 'Dubai, UAE',
-                'status': 'published',
-                'created_at': '2025-01-18T14:30:00',
-                'applications_count': 32
-            },
-            {
-                'id': 3,
-                'jd_id': 'jd_003',
-                'title': 'Data Analyst',
-                'company': 'ADNOC',
-                'location': 'Abu Dhabi, UAE',
-                'status': 'draft',
-                'created_at': '2025-01-20T09:15:00',
-                'applications_count': 0
-            }
-        ]
-        return jsonify({
-            'success': True,
-            'job_descriptions': fallback_jds,
-            'count': len(fallback_jds),
-            'source': 'fallback'
-        }), 200
 
 @jd_bp.route('/<jd_id>', methods=['GET'])
 def get_jd(jd_id):
@@ -943,7 +747,7 @@ def match_candidates(jd_id):
                 NULL as cv_url,
                 NULL as linkedin_url
             FROM users
-            WHERE role = 'candidate'
+            WHERE role = 'job_seeker'
                 AND is_active = true
         """
         
@@ -1106,49 +910,128 @@ def match_candidates(jd_id):
 
 @jd_bp.route('/shortlist/add', methods=['POST'])
 def add_to_shortlist():
-    """Add a candidate to the shortlist for a JD"""
+    """Add a candidate to the shortlist for a JD.
+    
+    Writes to shortlisted_candidates table using integer job_id
+    looked up from job_postings.jd_id (UUID).
+    """
     try:
         data = request.get_json()
         jd_id = data.get('jd_id')
         candidate_id = data.get('candidate_id')
         recruiter_id = data.get('recruiter_id')
-        match_score = data.get('match_score')
-        match_details = data.get('match_details')
-        notes = data.get('notes')
+        notes = data.get('notes', '')
 
         if not jd_id or not candidate_id:
             return jsonify({'error': 'jd_id and candidate_id are required'}), 400
 
-        # TODO: Implement actual database storage for shortlist
-        # For now, we'll return success to unblock the frontend
-        
-        logger.info(f"Added candidate {candidate_id} to shortlist for JD {jd_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Candidate added to shortlist',
-            'shortlist_id': f"sl_{jd_id}_{candidate_id}" 
-        })
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            # Look up integer job_postings.id from the UUID jd_id
+            cursor.execute(
+                "SELECT id FROM job_postings WHERE jd_id = %s",
+                (str(jd_id),)
+            )
+            jp_row = cursor.fetchone()
+            if not jp_row:
+                return jsonify({'error': f'Job posting not found for jd_id: {jd_id}'}), 404
+            job_id_int = jp_row['id']
+
+            # Resolve recruiter user id (may be string or int)
+            hr_user_id = None
+            if recruiter_id:
+                try:
+                    hr_user_id = int(recruiter_id)
+                except (ValueError, TypeError):
+                    hr_user_id = None
+
+            # Upsert into shortlisted_candidates
+            cursor.execute("""
+                INSERT INTO shortlisted_candidates (job_id, candidate_id, hr_user_id, notes, status)
+                VALUES (%s, %s, %s, %s, 'shortlisted')
+                ON CONFLICT (job_id, candidate_id)
+                DO UPDATE SET
+                    notes = COALESCE(EXCLUDED.notes, shortlisted_candidates.notes),
+                    status = 'shortlisted',
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING id, job_id, candidate_id, status, created_at
+            """, (job_id_int, int(candidate_id), hr_user_id, notes))
+
+            row = dict(cursor.fetchone())
+            conn.commit()
+
+            logger.info(f"Added candidate {candidate_id} to shortlist for JD {jd_id} (job_id={job_id_int})")
+
+            return jsonify({
+                'success': True,
+                'message': 'Candidate added to shortlist',
+                'shortlist_id': str(row['id'])
+            }), 201
+
+        finally:
+            cursor.close()
+            conn.close()
 
     except Exception as e:
         logger.error(f"Error adding to shortlist: {str(e)}")
+        import traceback; traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
 @jd_bp.route('/shortlist/<jd_id>', methods=['GET'])
 def get_shortlist(jd_id):
-    """Get shortlisted candidates for a JD"""
+    """Get shortlisted candidates for a JD.
+    
+    Reads from shortlisted_candidates joined with job_postings and users.
+    """
     try:
-        # TODO: Implement actual database retrieval
-        # For now, return empty list or mock data
-        
-        return jsonify({
-            'success': True,
-            'shortlist': [] # Return empty list so frontend doesn't error
-        })
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cursor.execute("""
+                SELECT
+                    sc.id AS shortlist_id,
+                    sc.job_id,
+                    sc.candidate_id::text AS candidate_id,
+                    sc.status,
+                    sc.notes,
+                    sc.created_at,
+                    sc.updated_at,
+                    u.first_name,
+                    u.last_name,
+                    u.email
+                FROM shortlisted_candidates sc
+                JOIN job_postings jp ON sc.job_id = jp.id
+                LEFT JOIN users u ON sc.candidate_id = u.id
+                WHERE jp.jd_id = %s
+                ORDER BY sc.created_at DESC
+            """, (str(jd_id),))
+
+            rows = cursor.fetchall()
+            shortlist = []
+            for row in rows:
+                entry = dict(row)
+                # Serialise datetime for JSON
+                if entry.get('created_at'):
+                    entry['created_at'] = entry['created_at'].isoformat()
+                if entry.get('updated_at'):
+                    entry['updated_at'] = entry['updated_at'].isoformat()
+                shortlist.append(entry)
+
+            return jsonify({
+                'success': True,
+                'shortlist': shortlist,
+                'count': len(shortlist)
+            })
+
+        finally:
+            cursor.close()
+            conn.close()
 
     except Exception as e:
         logger.error(f"Error retrieving shortlist: {str(e)}")
+        import traceback; traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

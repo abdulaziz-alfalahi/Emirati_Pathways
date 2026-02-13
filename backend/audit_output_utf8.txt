@@ -1,0 +1,564 @@
+================================================================================
+SECTION 1: ALL TABLES WITH 'user' IN THE NAME
+================================================================================
+  - admin_user_roles
+  - admin_user_sessions
+  - user_activity_log
+  - user_cvs
+  - user_journey_analytics
+  - user_roles
+  - user_sessions
+  - users
+
+Total: 8 tables
+
+================================================================================
+SECTION 2: ALL TABLES WITH 'candidate' IN THE NAME
+================================================================================
+  - candidate_assessments
+  - candidate_certifications
+  - candidate_education_entries
+  - candidate_experience_entries
+  - candidate_profiles
+  - candidate_shortlist
+  - candidate_skills
+  - shortlisted_candidates
+
+Total: 8 tables
+
+================================================================================
+SECTION 3: ALL TABLES WITH 'recruiter' or 'hr' IN THE NAME
+================================================================================
+  - hr_profiles
+  - recruiter_activity_log
+  - recruiter_vacancies
+
+Total: 3 tables
+
+================================================================================
+SECTION 4: ALL TABLES WITH 'profile' IN THE NAME
+================================================================================
+  - candidate_profiles
+  - cv_profiles
+  - educator_profiles
+  - hr_profiles
+  - mentor_profiles
+
+Total: 5 tables
+
+================================================================================
+SECTION 5: SCHEMA + ROW COUNTS FOR EACH DISCOVERED TABLE
+================================================================================
+
+--- TABLE: admin_user_roles ---
+  Row count: 11
+  Columns (6):
+    id                                  integer                   NOT NULL DEFAULT=nextval('admin_user_roles_id_seq'::regclass)
+    user_id                             integer                   NULL
+    role_id                             integer                   NULL
+    assigned_by                         integer                   NULL
+    assigned_at                         timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    expires_at                          timestamp without time zone NULL
+
+--- TABLE: admin_user_sessions ---
+  Row count: 0
+  Columns (9):
+    id                                  integer                   NOT NULL DEFAULT=nextval('admin_user_sessions_id_seq'::regclass)
+    user_id                             integer                   NULL
+    session_token                       character varying         NOT NULL
+    ip_address                          inet                      NULL
+    user_agent                          text                      NULL
+    is_active                           boolean                   NULL DEFAULT=true
+    last_activity                       timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    expires_at                          timestamp without time zone NOT NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: candidate_assessments ---
+  Row count: 0
+  Columns (9):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_assessments_id_seq'::regclass)
+    profile_id                          integer                   NOT NULL
+    assessment_type                     character varying         NULL
+    title                               character varying         NULL
+    score                               double precision          NULL
+    max_score                           double precision          NULL
+    status                              character varying         NULL
+    completed_at                        timestamp without time zone NULL
+    d33_sector                          character varying         NULL
+
+--- TABLE: candidate_certifications ---
+  Row count: 0
+  Columns (8):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_certifications_id_seq'::regclass)
+    profile_id                          integer                   NOT NULL
+    name                                character varying         NOT NULL
+    issuing_organization                character varying         NOT NULL
+    issue_date                          timestamp without time zone NULL
+    expiry_date                         timestamp without time zone NULL
+    credential_id                       character varying         NULL
+    credential_url                      character varying         NULL
+
+--- TABLE: candidate_education_entries ---
+  Row count: 9
+  Columns (11):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_education_entries_id_seq'::regclass)
+    profile_id                          integer                   NOT NULL
+    institution                         character varying         NOT NULL
+    degree                              character varying         NOT NULL
+    field_of_study                      character varying         NULL
+    start_date                          timestamp without time zone NULL
+    end_date                            timestamp without time zone NULL
+    grade                               character varying         NULL
+    is_verified                         boolean                   NULL DEFAULT=false
+    verification_source                 character varying         NULL DEFAULT='self_reported'::character varying
+    verification_id                     character varying         NULL
+
+--- TABLE: candidate_experience_entries ---
+  Row count: 20
+  Columns (10):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_experience_entries_id_seq'::regclass)
+    profile_id                          integer                   NOT NULL
+    job_title                           character varying         NOT NULL
+    company                             character varying         NOT NULL
+    location                            character varying         NULL
+    start_date                          timestamp without time zone NULL
+    end_date                            timestamp without time zone NULL
+    is_current                          boolean                   NULL DEFAULT=false
+    description                         text                      NULL
+    skills_used                         jsonb                     NULL
+
+--- TABLE: candidate_profiles ---
+  Row count: 5
+  Columns (21):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_profiles_id_seq'::regclass)
+    user_id                             integer                   NOT NULL
+    headline                            character varying         NULL
+    bio                                 text                      NULL
+    phone                               character varying         NULL
+    location                            character varying         NULL
+    nationality                         character varying         NULL DEFAULT='UAE'::character varying
+    dob                                 timestamp without time zone NULL
+    avatar_url                          character varying         NULL
+    video_intro_url                     character varying         NULL
+    target_roles                        jsonb                     NULL
+    willing_to_relocate                 boolean                   NULL DEFAULT=false
+    expected_salary_range               character varying         NULL
+    notice_period                       character varying         NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    full_name                           character varying         NULL
+    ats_score                           integer                   NULL DEFAULT=0
+    profile_photo_url                   text                      NULL
+    latitude                            double precision          NULL
+    longitude                           double precision          NULL
+
+--- TABLE: candidate_shortlist ---
+  Row count: 21
+  Columns (14):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_shortlist_id_seq'::regclass)
+    shortlist_id                        character varying         NOT NULL
+    jd_id                               character varying         NOT NULL
+    candidate_id                        character varying         NOT NULL
+    recruiter_id                        character varying         NOT NULL
+    match_score                         numeric                   NULL
+    match_details                       jsonb                     NULL
+    status                              character varying         NULL DEFAULT='shortlisted'::character varying
+    notes                               text                      NULL
+    tags                                jsonb                     NULL DEFAULT='[]'::jsonb
+    contacted_at                        timestamp without time zone NULL
+    interview_scheduled_at              timestamp without time zone NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: candidate_skills ---
+  Row count: 59
+  Columns (7):
+    id                                  integer                   NOT NULL DEFAULT=nextval('candidate_skills_id_seq'::regclass)
+    profile_id                          integer                   NOT NULL
+    name                                character varying         NOT NULL
+    category                            character varying         NULL
+    level                               character varying         NULL
+    is_verified                         boolean                   NULL DEFAULT=false
+    assessment_score                    integer                   NULL
+
+--- TABLE: cv_profiles ---
+  Row count: 0
+  Columns (15):
+    id                                  integer                   NOT NULL DEFAULT=nextval('cv_profiles_id_seq'::regclass)
+    user_id                             integer                   NULL
+    cv_data                             jsonb                     NOT NULL
+    parsed_data                         jsonb                     NULL DEFAULT='{}'::jsonb
+    skills                              jsonb                     NULL DEFAULT='[]'::jsonb
+    experience_years                    integer                   NULL DEFAULT=0
+    education_level                     character varying         NULL
+    languages                           jsonb                     NULL DEFAULT='[]'::jsonb
+    location                            character varying         NULL
+    emirate                             character varying         NULL
+    is_active                           boolean                   NULL DEFAULT=true
+    quality_score                       double precision          NULL DEFAULT=0.0
+    completeness_score                  double precision          NULL DEFAULT=0.0
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: educator_profiles ---
+  Row count: 0
+  Columns (24):
+    id                                  uuid                      NOT NULL DEFAULT=uuid_generate_v4()
+    user_id                             integer                   NOT NULL
+    institution_id                      uuid                      NULL
+    position_title                      character varying         NOT NULL
+    department                          character varying         NULL
+    years_of_experience                 integer                   NULL DEFAULT=0
+    education_level                     character varying         NULL
+    teaching_subjects                   jsonb                     NULL DEFAULT='[]'::jsonb
+    certifications                      jsonb                     NULL DEFAULT='[]'::jsonb
+    specializations                     jsonb                     NULL DEFAULT='[]'::jsonb
+    languages_taught                    jsonb                     NULL DEFAULT='[]'::jsonb
+    teaching_methodology                text                      NULL
+    professional_summary                text                      NULL
+    research_interests                  text                      NULL
+    publications                        jsonb                     NULL DEFAULT='[]'::jsonb
+    awards_recognition                  jsonb                     NULL DEFAULT='[]'::jsonb
+    professional_memberships            jsonb                     NULL DEFAULT='[]'::jsonb
+    contact_preferences                 jsonb                     NULL DEFAULT='{}'::jsonb
+    availability_schedule               jsonb                     NULL DEFAULT='{}'::jsonb
+    is_active                           boolean                   NULL DEFAULT=true
+    is_verified                         boolean                   NULL DEFAULT=false
+    verification_documents              jsonb                     NULL DEFAULT='[]'::jsonb
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: hr_profiles ---
+  Row count: 7
+  Columns (5):
+    id                                  uuid                      NOT NULL DEFAULT=uuid_generate_v4()
+    user_id                             integer                   NOT NULL
+    company_id                          uuid                      NOT NULL
+    position_title                      character varying         NULL
+    department                          character varying         NULL
+
+--- TABLE: mentor_profiles ---
+  Row count: 0
+  Columns (35):
+    id                                  uuid                      NOT NULL DEFAULT=uuid_generate_v4()
+    user_id                             integer                   NOT NULL
+    professional_title                  character varying         NOT NULL
+    current_company                     character varying         NULL
+    industry                            character varying         NULL
+    years_of_experience                 integer                   NULL DEFAULT=0
+    expertise_areas                     jsonb                     NULL DEFAULT='[]'::jsonb
+    mentoring_specializations           jsonb                     NULL DEFAULT='[]'::jsonb
+    languages_spoken                    jsonb                     NULL DEFAULT='[]'::jsonb
+    professional_summary                text                      NULL
+    mentoring_philosophy                text                      NULL
+    achievements                        jsonb                     NULL DEFAULT='[]'::jsonb
+    certifications                      jsonb                     NULL DEFAULT='[]'::jsonb
+    education_background                jsonb                     NULL DEFAULT='[]'::jsonb
+    professional_memberships            jsonb                     NULL DEFAULT='[]'::jsonb
+    linkedin_profile                    character varying         NULL
+    portfolio_url                       character varying         NULL
+    hourly_rate                         numeric                   NULL
+    currency                            character varying         NULL DEFAULT='AED'::character varying
+    availability_hours                  jsonb                     NULL DEFAULT='{}'::jsonb
+    time_zone                           character varying         NULL DEFAULT='Asia/Dubai'::character varying
+    preferred_communication             jsonb                     NULL DEFAULT='[]'::jsonb
+    max_mentees                         integer                   NULL DEFAULT=5
+    current_mentees                     integer                   NULL DEFAULT=0
+    mentoring_approach                  character varying         NULL
+    session_duration_preference         integer                   NULL DEFAULT=60
+    is_available                        boolean                   NULL DEFAULT=true
+    is_verified                         boolean                   NULL DEFAULT=false
+    verification_documents              jsonb                     NULL DEFAULT='[]'::jsonb
+    rating                              numeric                   NULL DEFAULT=0.00
+    total_reviews                       integer                   NULL DEFAULT=0
+    total_sessions                      integer                   NULL DEFAULT=0
+    success_rate                        numeric                   NULL DEFAULT=0.00
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: recruiter_activity_log ---
+  Row count: 0
+  Columns (7):
+    id                                  integer                   NOT NULL DEFAULT=nextval('recruiter_activity_log_id_seq'::regclass)
+    recruiter_id                        integer                   NULL
+    action                              character varying         NULL
+    resource_type                       character varying         NULL
+    resource_id                         character varying         NULL
+    details                             jsonb                     NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: recruiter_vacancies ---
+  Row count: 20
+  Columns (11):
+    id                                  uuid                      NOT NULL
+    title                               text                      NOT NULL
+    employer                            text                      NULL
+    location                            text                      NULL
+    description                         text                      NULL
+    requirements                        jsonb                     NULL
+    tags                                jsonb                     NULL
+    posted_by                           uuid                      NULL
+    created_at                          timestamp with time zone  NULL DEFAULT=CURRENT_TIMESTAMP
+    latitude                            double precision          NULL
+    longitude                           double precision          NULL
+
+--- TABLE: shortlisted_candidates ---
+  Row count: 3
+  Columns (8):
+    id                                  integer                   NOT NULL DEFAULT=nextval('shortlisted_candidates_id_seq'::regclass)
+    job_id                              integer                   NOT NULL
+    candidate_id                        integer                   NOT NULL
+    hr_user_id                          integer                   NOT NULL
+    notes                               text                      NULL
+    status                              character varying         NULL DEFAULT='shortlisted'::character varying
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: user_activity_log ---
+  Row count: 0
+  Columns (7):
+    id                                  integer                   NOT NULL DEFAULT=nextval('user_activity_log_id_seq'::regclass)
+    user_id                             integer                   NOT NULL
+    action                              character varying         NULL
+    performed_by                        integer                   NULL
+    details                             jsonb                     NULL
+    ip_address                          character varying         NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: user_cvs ---
+  Row count: 77
+  Columns (35):
+    id                                  uuid                      NOT NULL DEFAULT=uuid_generate_v4()
+    user_id                             integer                   NOT NULL
+    title                               character varying         NOT NULL
+    template_id                         uuid                      NULL
+    language                            character varying         NULL DEFAULT='en'::character varying
+    personal_info                       jsonb                     NOT NULL DEFAULT='{}'::jsonb
+    professional_summary                text                      NULL
+    technical_skills                    jsonb                     NULL
+    soft_skills                         jsonb                     NULL
+    languages_spoken                    jsonb                     NULL DEFAULT='[]'::jsonb
+    work_experience                     jsonb                     NULL DEFAULT='[]'::jsonb
+    education                           jsonb                     NULL DEFAULT='[]'::jsonb
+    certifications                      jsonb                     NULL DEFAULT='[]'::jsonb
+    projects                            jsonb                     NULL DEFAULT='[]'::jsonb
+    cv_score                            integer                   NULL DEFAULT=0
+    ats_score                           integer                   NULL DEFAULT=0
+    last_analyzed_at                    timestamp without time zone NULL
+    status                              character varying         NULL DEFAULT='draft'::character varying
+    is_public                           boolean                   NULL DEFAULT=false
+    sharing_token                       character varying         NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    last_accessed_at                    timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    template_name                       text                      NULL
+    is_visible                          boolean                   NULL DEFAULT=false
+    latitude                            double precision          NULL
+    longitude                           double precision          NULL
+    filename                            text                      NULL
+    file_size                           bigint                    NULL
+    file_type                           text                      NULL
+    mime_type                           text                      NULL
+    parsed_data                         jsonb                     NULL
+    analysis_results                    jsonb                     NULL
+    access_count                        integer                   NULL DEFAULT=0
+    upload_timestamp                    timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: user_journey_analytics ---
+  Row count: 0
+  Columns (11):
+    id                                  bigint                    NOT NULL DEFAULT=nextval('user_journey_analytics_id_seq'::regclass)
+    user_id                             uuid                      NOT NULL
+    journey_stage                       character varying         NOT NULL
+    entry_timestamp                     timestamp with time zone  NOT NULL
+    exit_timestamp                      timestamp with time zone  NULL
+    duration_seconds                    integer                   NULL
+    actions_count                       integer                   NULL DEFAULT=0
+    conversion_achieved                 boolean                   NULL DEFAULT=false
+    drop_off_point                      character varying         NULL
+    journey_data                        jsonb                     NULL
+    created_at                          timestamp with time zone  NULL DEFAULT=now()
+
+--- TABLE: user_roles ---
+  Row count: 0
+  Columns (5):
+    id                                  integer                   NOT NULL DEFAULT=nextval('user_roles_id_seq'::regclass)
+    user_id                             integer                   NOT NULL
+    role                                character varying         NOT NULL
+    assigned_by                         integer                   NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: user_sessions ---
+  Row count: 0
+  Columns (9):
+    id                                  integer                   NOT NULL DEFAULT=nextval('user_sessions_id_seq'::regclass)
+    user_id                             integer                   NULL
+    session_token                       character varying         NOT NULL
+    refresh_token                       character varying         NULL
+    expires_at                          timestamp without time zone NOT NULL
+    is_active                           boolean                   NULL DEFAULT=true
+    ip_address                          inet                      NULL
+    user_agent                          text                      NULL
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+
+--- TABLE: users ---
+  Row count: 72
+  Columns (32):
+    id                                  integer                   NOT NULL DEFAULT=nextval('users_id_seq'::regclass)
+    email                               character varying         NOT NULL
+    password_hash                       character varying         NOT NULL
+    full_name                           character varying         NULL
+    user_type                           character varying         NOT NULL DEFAULT='candidate'::character varying
+    phone                               character varying         NULL
+    location                            character varying         NULL
+    emirate                             character varying         NULL
+    company                             character varying         NULL
+    job_title                           character varying         NULL
+    is_active                           boolean                   NULL DEFAULT=true
+    is_verified                         boolean                   NULL DEFAULT=false
+    created_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    updated_at                          timestamp without time zone NULL DEFAULT=CURRENT_TIMESTAMP
+    last_login                          timestamp without time zone NULL
+    profile_data                        jsonb                     NULL DEFAULT='{}'::jsonb
+    preferences                         jsonb                     NULL DEFAULT='{}'::jsonb
+    first_name                          character varying         NULL
+    last_name                           character varying         NULL
+    role                                character varying         NULL DEFAULT='candidate'::character varying
+    nationality                         character varying         NULL DEFAULT='UAE'::character varying
+    education_level                     character varying         NULL
+    preferred_salary_min                integer                   NULL
+    preferred_salary_max                integer                   NULL
+    preferred_location                  character varying         NULL
+    is_uae_national                     boolean                   NULL DEFAULT=false
+    skills                              ARRAY                     NULL
+    experience_years                    integer                   NULL
+    username                            character varying         NULL
+    latitude                            double precision          NULL
+    longitude                           double precision          NULL
+    secondary_roles                     ARRAY                     NULL DEFAULT='{}'::text[]
+
+================================================================================
+SECTION 6: COLUMNS NAMED 'user_id' ACROSS ALL TABLES
+================================================================================
+  admin_audit_log                          user_id (integer)
+  admin_user_roles                         user_id (integer)
+  admin_user_sessions                      user_id (integer)
+  analytics_events                         user_id (integer)
+  application_notifications                user_id (integer)
+  candidate_profiles                       user_id (integer)
+  company_team_members                     user_id (integer)
+  conversation_participants                user_id (character varying)
+  cv_profiles                              user_id (integer)
+  cv_usage_logs                            user_id (character varying)
+  educator_profiles                        user_id (integer)
+  enhanced_analytics_events                user_id (uuid)
+  feedback                                 user_id (text)
+  growth_operator_activity_log             user_id (integer)
+  growth_operator_assignments              user_id (integer)
+  hr_profiles                              user_id (integer)
+  interview_participants                   user_id (integer)
+  interview_recordings                     user_id (integer)
+  job_descriptions                         user_id (integer)
+  mentor_profiles                          user_id (integer)
+  notifications                            user_id (character varying)
+  role_requests                            user_id (integer)
+  saved_jobs                               user_id (integer)
+  students                                 user_id (integer)
+  team_members                             user_id (integer)
+  user_activity_log                        user_id (integer)
+  user_cvs                                 user_id (integer)
+  user_journey_analytics                   user_id (uuid)
+  user_roles                               user_id (integer)
+  user_sessions                            user_id (integer)
+
+Total tables with user_id column: 30
+
+================================================================================
+SECTION 7: SAMPLE DATA FROM MAIN 'users' TABLE (first 15 rows)
+================================================================================
+  ERROR: unsupported format string passed to NoneType.__format__
+
+================================================================================
+SECTION 8: ROLE DISTRIBUTION IN 'users' TABLE
+================================================================================
+  candidate                 30 users
+  job_seeker                14 users
+  student                   9 users
+  recruiter                 6 users
+  administrator             5 users
+  hr_manager                3 users
+  admin                     2 users
+  educator                  2 users
+  growth_operator           1 users
+
+================================================================================
+SECTION 9: FK CONSTRAINTS REFERENCING 'users' TABLE
+================================================================================
+  admin_audit_log.user_id -> users.id
+  admin_notifications.target_user_id -> users.id
+  admin_roles.created_by -> users.id
+  admin_settings.updated_by -> users.id
+  admin_user_roles.user_id -> users.id
+  admin_user_roles.assigned_by -> users.id
+  admin_user_sessions.user_id -> users.id
+  analytics_events.user_id -> users.id
+  application_documents.uploaded_by -> users.id
+  application_feedback.provided_by -> users.id
+  application_notifications.user_id -> users.id
+  application_status_history.changed_by -> users.id
+  approval_requests.approver_id -> users.id
+  approval_requests.requested_by -> users.id
+  attendance.marked_by -> users.id
+  candidate_profiles.user_id -> users.id
+  career_development_plans.mentee_user_id -> users.id
+  classes.educator_id -> users.id
+  cms_content.created_by -> users.id
+  cms_content.updated_by -> users.id
+  cms_content_versions.created_by -> users.id
+  cms_content_workflows.assigned_to -> users.id
+  cms_media.uploaded_by -> users.id
+  cms_workflows.created_by -> users.id
+  company_team_members.invited_by -> users.id
+  company_team_members.user_id -> users.id
+  course_enrollments.student_user_id -> users.id
+  cv_profiles.user_id -> users.id
+  educator_profiles.user_id -> users.id
+  hr_profiles.user_id -> users.id
+  job_applications.candidate_id -> users.id
+  job_descriptions.user_id -> users.id
+  job_documents.uploaded_by -> users.id
+  job_postings.created_by -> users.id
+  job_shortlists.added_by -> users.id
+  job_shortlists.candidate_id -> users.id
+  job_templates.created_by -> users.id
+  mentor_profiles.user_id -> users.id
+  mentorship_analytics.mentee_user_id -> users.id
+  mentorship_goals.mentee_user_id -> users.id
+  mentorship_matching.mentee_user_id -> users.id
+  mentorship_sessions.mentee_user_id -> users.id
+  offers.recruiter_id -> users.id
+  offers.candidate_id -> users.id
+  parent_communications.educator_id -> users.id
+  program_enrollments.student_id -> users.id
+  program_enrollments.parent_id -> users.id
+  program_notifications.recipient_id -> users.id
+  program_reviews.reviewer_id -> users.id
+  program_workflow_history.actor_id -> users.id
+  role_requests.user_id -> users.id
+  role_requests.reviewer_id -> users.id
+  student_behavior.reported_by -> users.id
+  students.user_id -> users.id
+  user_cvs.user_id -> users.id
+  user_sessions.user_id -> users.id
+  video_interview_sessions.interviewer_id -> users.id
+  video_interview_sessions.candidate_id -> users.id
+
+Total FK refs to users: 58
+
+================================================================================
+SECTION 10: CHECK FOR DUPLICATE/OVERLAPPING TABLES
+================================================================================
+  Core identity tables found: ['users']
+
+
+AUDIT COMPLETE.

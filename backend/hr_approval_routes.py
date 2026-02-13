@@ -164,8 +164,44 @@ def list_approval_requests():
             where_clause = " AND ".join(where)
             cursor.execute(
                 f"""
-                SELECT ar.*
+                SELECT ar.*,
+                    req_user.full_name AS requested_by_name,
+                    appr_user.full_name AS approver_name,
+                    CASE
+                        WHEN ar.resource_type = 'offer' THEN (
+                            SELECT COALESCE(o.offer_data->>'position_title',
+                                            o.offer_data->>'job_title',
+                                            jp.title,
+                                            'Unknown Position')
+                            FROM offers o
+                            LEFT JOIN job_postings jp ON o.job_posting_id = jp.id
+                            WHERE o.id = ar.resource_id::uuid
+                        )
+                        WHEN ar.resource_type = 'job_posting' THEN (
+                            SELECT COALESCE(jp.title, 'Unknown Position')
+                            FROM job_postings jp WHERE jp.id = ar.resource_id::uuid
+                        )
+                        ELSE ar.resource_type
+                    END AS position_title,
+                    CASE
+                        WHEN ar.resource_type = 'offer' THEN (
+                            SELECT cand.full_name
+                            FROM offers o
+                            LEFT JOIN users cand ON o.candidate_id = cand.id
+                            WHERE o.id = ar.resource_id::uuid
+                        )
+                        ELSE NULL
+                    END AS candidate_name,
+                    CASE
+                        WHEN ar.resource_type = 'offer' THEN (
+                            SELECT o.offer_data->>'salary'
+                            FROM offers o WHERE o.id = ar.resource_id::uuid
+                        )
+                        ELSE NULL
+                    END AS salary_info
                 FROM approval_requests ar
+                LEFT JOIN users req_user ON ar.requested_by = req_user.id
+                LEFT JOIN users appr_user ON ar.approver_id = appr_user.id
                 WHERE {where_clause}
                 ORDER BY {order_clause} {sort_order}
                 LIMIT %s OFFSET %s

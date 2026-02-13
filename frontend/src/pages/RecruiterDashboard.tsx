@@ -255,16 +255,15 @@ const RecruiterDashboard: React.FC = () => {
                   Recruitment Dashboard
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  {getGreeting()}, {recruiterName}. You have <span className="text-teal-600 font-bold">5 new matches</span> today.
+                  {getGreeting()}, {recruiterName}. You have <span className="text-teal-600 font-bold">{dashboardData.pipeline.activeSearches} active searches</span> and <span className="text-teal-600 font-bold">{dashboardData.pipeline.interviewsScheduled} interviews</span> scheduled.
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-dubai-medium">
-                  Senior Recruiter
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
-                  Tech Specialist
-                </Badge>
+                {userData.role && (
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-dubai-medium capitalize">
+                    {userData.role.replace(/_/g, ' ')}
+                  </Badge>
+                )}
                 <Button variant="outline" size="sm">
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
@@ -329,8 +328,8 @@ const RecruiterDashboard: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.pipeline.activeSearches}</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      +3 new this week
+                    <p className="text-xs text-slate-500 font-dubai-medium">
+                      Across all job postings
                     </p>
                   </CardContent>
                 </Card>
@@ -342,8 +341,8 @@ const RecruiterDashboard: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.performance.averageTimeToFill} days</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      -3 days from last month
+                    <p className="text-xs text-slate-500 font-dubai-medium">
+                      Average across all roles
                     </p>
                   </CardContent>
                 </Card>
@@ -355,8 +354,8 @@ const RecruiterDashboard: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.performance.placementRate}%</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      +5% from last quarter
+                    <p className="text-xs text-slate-500 font-dubai-medium">
+                      Of total positions
                     </p>
                   </CardContent>
                 </Card>
@@ -367,27 +366,28 @@ const RecruiterDashboard: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="font-dubai-bold text-slate-900">Recruitment Pipeline</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Current status of your recruitment activities
+                    Candidates flowing through your recruitment stages
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.pipeline.activeSearches}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Active Searches</p>
-                    </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-yellow-600">{dashboardData.pipeline.candidatesInProcess}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Candidates in Process</p>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.pipeline.interviewsScheduled}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Interviews Scheduled</p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.pipeline.offersExtended}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Offers Extended</p>
-                    </div>
+                  <div className="flex items-center justify-between gap-1">
+                    {[
+                      { label: 'Active Searches', count: dashboardData.pipeline.activeSearches, bg: 'bg-blue-500', lightBg: 'bg-blue-50', text: 'text-blue-600' },
+                      { label: 'In Process', count: dashboardData.pipeline.candidatesInProcess, bg: 'bg-yellow-500', lightBg: 'bg-yellow-50', text: 'text-yellow-600' },
+                      { label: 'Interviews', count: dashboardData.pipeline.interviewsScheduled, bg: 'bg-purple-500', lightBg: 'bg-purple-50', text: 'text-purple-600' },
+                      { label: 'Offers', count: dashboardData.pipeline.offersExtended, bg: 'bg-green-500', lightBg: 'bg-green-50', text: 'text-green-600' },
+                    ].map((stage, i, arr) => (
+                      <React.Fragment key={stage.label}>
+                        <div className={`flex-1 ${stage.lightBg} rounded-xl p-4 text-center relative group hover:shadow-md transition-shadow cursor-default`}>
+                          <div className={`${stage.bg} h-1.5 rounded-full mb-3 transition-all group-hover:h-2`} />
+                          <div className={`text-2xl font-dubai-bold ${stage.text}`}>{stage.count}</div>
+                          <p className="text-xs text-slate-600 font-dubai-medium mt-1">{stage.label}</p>
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div className="text-slate-300 text-xl font-bold shrink-0 px-1">→</div>
+                        )}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -413,8 +413,8 @@ const RecruiterDashboard: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <p className="text-sm text-green-600 font-dubai-medium mt-2">
-                      +0.2 from last quarter
+                    <p className="text-sm text-slate-500 font-dubai-medium mt-2">
+                      Based on hiring manager feedback
                     </p>
                   </CardContent>
                 </Card>
@@ -438,8 +438,8 @@ const RecruiterDashboard: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <p className="text-sm text-green-600 font-dubai-medium mt-2">
-                      +0.1 from last quarter
+                    <p className="text-sm text-slate-500 font-dubai-medium mt-2">
+                      Based on post-placement reviews
                     </p>
                   </CardContent>
                 </Card>

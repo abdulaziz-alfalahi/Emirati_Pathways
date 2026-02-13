@@ -125,7 +125,19 @@ export default function RecruiterCandidatesPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <Button variant="ghost" className="gap-2 pl-0 hover:pl-2 transition-all" onClick={() => navigate('/recruiter-dashboard')}>
+        <Button variant="ghost" className="gap-2 pl-0 hover:pl-2 transition-all" onClick={() => {
+          try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+              const u = JSON.parse(userStr);
+              if (u.role === 'hr_manager' || u.role === 'hr' || u.user_type === 'hr_manager') {
+                navigate('/hr-dashboard');
+                return;
+              }
+            }
+          } catch (e) { }
+          navigate('/recruiter');
+        }}>
           <ChevronLeft className="h-4 w-4" />
           Back to Dashboard
         </Button>

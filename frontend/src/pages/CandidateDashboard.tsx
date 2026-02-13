@@ -393,7 +393,7 @@ const CandidateDashboard: React.FC = () => {
                         className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
                         <Sparkles className="h-4 w-4 mr-2" />
-                        Used our AI Resume Builder?
+                        Build Your Resume with AI
                       </Button>
                     </div>
                   </CardContent>

@@ -1,7 +1,8 @@
 // Job Service for Emirati Journey Platform
 // Handles all job-related API calls to the backend
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+// Use Vite proxy (empty string) to route through the dev server to the backend (port 5005)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface JobData {
   id?: string;
@@ -109,7 +110,7 @@ class JobService {
   }): Promise<JobResponse> {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null && value !== '') {
@@ -119,7 +120,7 @@ class JobService {
       }
 
       const url = `${API_BASE_URL}/api/jobs/list${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: this.getAuthHeaders(),

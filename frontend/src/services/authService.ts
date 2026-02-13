@@ -5,7 +5,6 @@ export interface LoginData {
 
 export interface RegisterData {
   email: string;
-  password: string;
   first_name: string;
   last_name: string;
   phone: string;
@@ -70,9 +69,15 @@ export const AVAILABLE_ROLES = [
     dashboard: '/student-dashboard'
   },
   {
-    id: 'hr_recruiter',
-    name: 'HR / Recruiter',
-    description: 'Streamline hiring with advanced recruitment tools',
+    id: 'hr_manager',
+    name: 'HR Manager',
+    description: 'Oversee workforce planning and talent strategy',
+    dashboard: '/hr-dashboard'
+  },
+  {
+    id: 'recruiter',
+    name: 'Recruiter',
+    description: 'Source candidates and manage talent pipelines',
     dashboard: '/recruiter'
   },
   {
@@ -92,6 +97,12 @@ export const AVAILABLE_ROLES = [
     name: 'Assessor',
     description: 'Evaluate and validate professional competencies',
     dashboard: '/assessor-dashboard'
+  },
+  {
+    id: 'guardian',
+    name: 'Guardian / Parent',
+    description: 'Monitor your child\'s career journey and milestones',
+    dashboard: '/guardian-dashboard'
   }
 ];
 
@@ -455,6 +466,10 @@ class AuthService {
         case 'student':
           console.log('AuthService: Routing to Student Dashboard (legacy fallback)');
           return '/student-dashboard';
+        case 'guardian':
+        case 'parent':
+          console.log('AuthService: Routing to Guardian Dashboard (legacy)');
+          return '/guardian-dashboard';
         case 'job_seeker':
         case 'candidate':
         case 'job seeker':
