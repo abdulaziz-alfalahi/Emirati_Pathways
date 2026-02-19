@@ -15,10 +15,45 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from 'react-router-dom';
 import { getDashboardRoute, UserRole, normalizeRole, ROLE_DISPLAY_NAMES } from '@/types/auth';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
-const roleLabels: Record<string, string> = ROLE_DISPLAY_NAMES;
+const ROLE_DISPLAY_NAMES_AR: Record<string, string> = {
+  'job_seeker': 'باحث عن عمل',
+  'candidate': 'مرشح',
+  'student': 'طالب',
+  'hr_manager': 'مدير الموارد البشرية',
+  'hr': 'مدير الموارد البشرية',
+  'recruiter': 'مسؤول توظيف',
+  'hr_recruiter': 'موارد بشرية / توظيف',
+  'educator': 'معلم',
+  'guardian': 'ولي أمر',
+  'parent': 'ولي أمر',
+  'administrator': 'مسؤول النظام',
+  'admin': 'مسؤول النظام',
+  'growth_operator': 'مشغّل النمو',
+  'growth_operator_candidate': 'مشغّل نمو المرشحين',
+  'growth_operator_company': 'مشغّل نمو الشركات',
+  'growth_operator_education': 'مشغّل نمو التعليم',
+  'growth_operator_assessment': 'مشغّل نمو التقييم',
+  'growth_operator_mentorship': 'مشغّل نمو الإرشاد',
+  'growth_operator_community': 'مشغّل نمو المجتمع',
+  'mentor': 'مرشد',
+  'assessor': 'مُقيّم',
+};
 
 const UserMenu: React.FC = () => {
+  const { language, isRTL } = useLanguage();
+  const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
+
+  // Role label helper based on language
+  const getRoleLabel = (role: string): string => {
+    const key = role.toLowerCase();
+    if (isRTL) {
+      return ROLE_DISPLAY_NAMES_AR[key] || ROLE_DISPLAY_NAMES[key as UserRole] || role;
+    }
+    return ROLE_DISPLAY_NAMES[key as UserRole] || role;
+  };
+
   // Add error handling wrapper around useAuth
   let authContext;
   try {
@@ -28,7 +63,7 @@ const UserMenu: React.FC = () => {
     // Return a sign-in button when context isn't available
     return (
       <Button variant="outline" onClick={() => window.location.href = '/auth'}>
-        Sign In
+        {t('Sign In', 'تسجيل الدخول')}
       </Button>
     );
   }
@@ -40,7 +75,7 @@ const UserMenu: React.FC = () => {
   if (!user) {
     return (
       <Button variant="outline" onClick={() => navigate('/auth')}>
-        Sign In
+        {t('Sign In', 'تسجيل الدخول')}
       </Button>
     );
   }
@@ -90,12 +125,12 @@ const UserMenu: React.FC = () => {
       user.user_metadata?.full_name ||
       user.user_metadata?.name ||
       (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
-      'User';
+      t('User', 'مستخدم');
   };
 
   const getCurrentRole = () => {
     const role = getUserRole();
-    return role ? roleLabels[role.toLowerCase()] || role : 'Job Seeker';
+    return role ? getRoleLabel(role) : t('Job Seeker', 'باحث عن عمل');
   };
 
   const getRoleIcon = (role: string): string => {
@@ -106,7 +141,8 @@ const UserMenu: React.FC = () => {
       'hr': '👥',
       'recruiter': '💼',
       'administrator': '⚙️',
-      'admin': '⚙️'
+      'admin': '⚙️',
+      'mentor': '🎓',
     };
     return roleIcons[normalizeRole(role) as string] || '👤';
   };
@@ -124,13 +160,13 @@ const UserMenu: React.FC = () => {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-64" dir={isRTL ? 'rtl' : 'ltr'}>
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
               {getUserDisplayName()}
             </p>
-            <p className="text-xs leading-none text-muted-foreground">
+            <p className="text-xs leading-none text-muted-foreground" dir="ltr">
               {user.email}
             </p>
           </div>
@@ -141,8 +177,8 @@ const UserMenu: React.FC = () => {
         {/* Active Role Display */}
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Current Role:</p>
-            <div className="flex items-center space-x-2">
+            <p className="text-xs font-medium text-muted-foreground">{t('Current Role:', 'الدور الحالي:')}</p>
+            <div className="flex items-center gap-2">
               <span className="text-lg">{getRoleIcon(currentRole)}</span>
               <span className="text-sm font-medium">
                 {getCurrentRole()}
@@ -175,7 +211,7 @@ const UserMenu: React.FC = () => {
 
           return (
             <>
-              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Switch Role</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">{t('Switch Role', 'تبديل الدور')}</DropdownMenuLabel>
               {uniqueRoles.map((role) => (
                 <DropdownMenuItem
                   key={role}
@@ -189,11 +225,11 @@ const UserMenu: React.FC = () => {
                   className="cursor-pointer flex items-center justify-between"
                   disabled={role === currentRole}
                 >
-                  <div className="flex items-center">
-                    <span className="mr-2">{getRoleIcon(role as string)}</span>
-                    {roleLabels[(role as string).toLowerCase()] || role}
+                  <div className="flex items-center gap-2">
+                    <span>{getRoleIcon(role as string)}</span>
+                    {getRoleLabel(role as string)}
                   </div>
-                  {role === currentRole && <span className="text-xs text-muted-foreground">(Current)</span>}
+                  {role === currentRole && <span className="text-xs text-muted-foreground">{t('(Current)', '(الحالي)')}</span>}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
@@ -206,7 +242,7 @@ const UserMenu: React.FC = () => {
           onClick={() => navigate('/candidate/profile/identity')}
           className="cursor-pointer text-teal-600 focus:text-teal-700"
         >
-          <span className="mr-2">+</span> Request New Role
+          <span className={`${isRTL ? 'ml-2' : 'mr-2'}`}>+</span> {t('Request New Role', 'طلب دور جديد')}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
@@ -221,14 +257,14 @@ const UserMenu: React.FC = () => {
           }}
           className="cursor-pointer"
         >
-          Profile
+          {t('Profile', 'الملف الشخصي')}
         </DropdownMenuItem>
 
         <DropdownMenuItem
           onClick={handleDashboardNavigation}
           className="cursor-pointer"
         >
-          Dashboard
+          {t('Dashboard', 'لوحة التحكم')}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
@@ -238,7 +274,7 @@ const UserMenu: React.FC = () => {
           className="cursor-pointer text-destructive focus:text-destructive"
           disabled={isSigningOut}
         >
-          {isSigningOut ? 'Signing out...' : 'Sign out'}
+          {isSigningOut ? t('Signing out...', 'جارٍ تسجيل الخروج...') : t('Sign out', 'تسجيل الخروج')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu >

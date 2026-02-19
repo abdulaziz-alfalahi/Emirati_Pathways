@@ -2,7 +2,7 @@
 import React from 'react';
 import DubaiGovHeader from './DubaiGovHeader';
 import Navbar from './Navbar';
-import DubaiGovStickyBar from './DubaiGovStickyBar';
+// DubaiGovStickyBar removed per user request
 import { MessageSquare, Zap, ThumbsUp, Phone, Mail, MapPin } from 'lucide-react';
 
 interface LayoutProps {
@@ -14,16 +14,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col bg-background">
       {/* Dubai Government Standard Header */}
       <DubaiGovHeader />
-      
+
       {/* Enhanced Navigation Bar */}
       <nav id="navigation" className="bg-white border-b border-ehrdc-neutral-light">
         <Navbar />
       </nav>
-      
+
       <main id="main-content" className="flex-1" tabIndex={-1}>{children}</main>
-      
+
       {/* Dubai Government Standard Footer */}
-      <footer className="bg-ehrdc-teal text-white" role="contentinfo">
+      <footer className="bg-[#111827] text-white border-t-2 border-[#006E6D]" role="contentinfo">
         {/* Main Footer Section */}
         <div className="py-12 px-6">
           <div className="dubai-container">
@@ -31,19 +31,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* EHRDC Information */}
               <div className="lg:col-span-2">
                 <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-ehrdc-teal font-bold text-lg">EG</span>
+                  <div className="w-12 h-12 bg-[#006E6D] rounded-xl flex items-center justify-center mr-4">
+                    <span className="text-white font-bold text-lg">EG</span>
                   </div>
                   <div>
                     <h3 className="font-bold text-xl text-white">Emirati Gateway</h3>
-                    <p className="text-ehrdc-light-teal text-sm">EHRDC Digital Platform</p>
+                    <p className="text-gray-400 text-sm">EHRDC Digital Platform</p>
                   </div>
                 </div>
-                <p className="text-white/90 mb-6 leading-relaxed max-w-md">
-                  Supporting UAE citizens throughout their journey from education to retirement, 
+                <p className="text-gray-400 mb-6 leading-relaxed max-w-md">
+                  Supporting UAE citizens throughout their journey from education to retirement,
                   fostering career development, skills enhancement, and professional growth.
                 </p>
-                <div className="flex items-center space-x-3 text-sm text-white/80">
+                <div className="flex items-center space-x-3 text-sm text-gray-500">
                   <MapPin className="h-4 w-4 flex-shrink-0" />
                   <span>Dubai, United Arab Emirates</span>
                 </div>
@@ -75,7 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </div>
         </div>
-        
+
         {/* Government Standard Footer Section */}
         <div className="border-t border-white/20 py-6 px-6">
           <div className="dubai-container">
@@ -83,28 +83,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* Government Services Links */}
               <div className="flex flex-wrap justify-center lg:justify-start gap-6">
                 {/* Dubai AI */}
-                <a 
-                  href="https://www.dubaidigital.ae/en/dubaiAI.html" 
-                  target="_blank" 
+                <a
+                  href="https://www.dubaidigital.ae/en/dubaiAI.html"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors text-sm font-medium"
                 >
                   <Zap className="h-4 w-4" />
                   <span>Dubai AI</span>
                 </a>
-                
+
                 {/* 04 Suggestions */}
-                <a 
-                  href="tel:04" 
+                <a
+                  href="tel:04"
                   className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors text-sm font-medium"
                 >
                   <Phone className="h-4 w-4" />
                   <span>04 Suggestions</span>
                 </a>
-                
+
                 {/* Suggestions & Complaints */}
-                <a 
-                  href="#complaints" 
+                <a
+                  href="#complaints"
                   className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors text-sm font-medium"
                   onClick={(e) => {
                     e.preventDefault();
@@ -115,10 +115,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <MessageSquare className="h-4 w-4" />
                   <span>Suggestions & Complaints</span>
                 </a>
-                
+
                 {/* Happiness Meter */}
-                <a 
-                  href="#happiness-meter" 
+                <a
+                  href="#happiness-meter"
                   className="flex items-center space-x-2 text-white/80 hover:text-white transition-colors text-sm font-medium"
                   onClick={(e) => {
                     e.preventDefault();
@@ -130,13 +130,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <span>Happiness Meter</span>
                 </a>
               </div>
-              
+
               {/* Copyright */}
               <div className="text-center lg:text-right">
-                <div className="text-white/70 text-sm mb-2">
+                <div className="text-gray-500 text-sm mb-2">
                   © {new Date().getFullYear()} Emirati Human Resources Development Council
                 </div>
-                <div className="flex flex-wrap justify-center lg:justify-end gap-4 text-xs text-white/60">
+                <div className="flex flex-wrap justify-center lg:justify-end gap-4 text-xs text-gray-600">
                   <a href="/privacy" className="hover:text-white/80 transition-colors">Privacy Policy</a>
                   <a href="/terms" className="hover:text-white/80 transition-colors">Terms of Service</a>
                   <a href="/accessibility" className="hover:text-white/80 transition-colors">Accessibility</a>
@@ -146,9 +146,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </footer>
-      
-      {/* Dubai Government Sticky Bar */}
-      <DubaiGovStickyBar />
+
+
     </div>
   );
 };

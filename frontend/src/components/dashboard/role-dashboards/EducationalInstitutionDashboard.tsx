@@ -19,16 +19,16 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
       <TabsTrigger value="students"><Users className="h-4 w-4 mr-2" /> Students</TabsTrigger>
       <TabsTrigger value="programs"><BookOpen className="h-4 w-4 mr-2" /> Programs</TabsTrigger>
     </TabsList>
-    
+
     <TabsContent value="overview" className="space-y-8">
-      <DashboardOverview 
+      <DashboardOverview
         metrics={[
           { title: "Students", value: "1,247", change: "+5%", description: "Total registered students" },
           { title: "Programs", value: "24", change: "", description: "Active educational programs" },
           { title: "Scholarships", value: "12", change: "", description: "Available scholarship opportunities" }
         ]}
       />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -36,7 +36,7 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
               <CardTitle>Summer Knowledge Camps</CardTitle>
               <CardDescription>Manage your institution's summer programs</CardDescription>
             </div>
-            <Link to="/summer-camps">
+            <Link to="/knowledge-camps">
               <Button>
                 <Calendar className="mr-2 h-4 w-4" /> Manage Camps
               </Button>
@@ -121,7 +121,7 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
         </Card>
       </div>
     </TabsContent>
-    
+
     <TabsContent value="students" className="space-y-8">
       <Card>
         <CardHeader>
@@ -141,7 +141,7 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
         </CardContent>
       </Card>
     </TabsContent>
-    
+
     <TabsContent value="programs" className="space-y-8">
       <Card>
         <CardHeader>
@@ -149,12 +149,12 @@ const EducationalInstitutionDashboard: React.FC<EducationalInstitutionDashboardP
           <CardDescription>Manage your educational institution</CardDescription>
         </CardHeader>
         <CardContent>
-          <DashboardActions 
+          <DashboardActions
             actions={[
               { title: "Student Records", description: "Upload and manage", icon: Users },
               { title: "Programs", description: "Manage educational offerings", icon: BookOpen },
               { title: "Scholarships", description: "Create opportunities", icon: Award, link: "/scholarships" },
-              { title: "Summer Knowledge Camps", description: "Organize programs", icon: Calendar, link: "/summer-camps" }
+              { title: "Knowledge Camps", description: "Organize programs", icon: Calendar, link: "/knowledge-camps" }
             ]}
           />
         </CardContent>

@@ -93,10 +93,10 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
       { label: 'Professional Growth', phase: 'professional' },
       { label: 'Assessments', isActive: true }
     ],
-    '/summer-camps': [
+    '/knowledge-camps': [
       { label: 'Home', href: '/' },
       { label: 'Education Pathway', phase: 'education' },
-      { label: 'Summer Camps', isActive: true }
+      { label: 'Knowledge Camps', isActive: true }
     ],
     '/scholarships': [
       { label: 'Home', href: '/' },
@@ -138,36 +138,36 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   // Generate breadcrumbs based on current path
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     if (customItems) return customItems;
-    
+
     const path = location.pathname;
-    
+
     // Check exact matches first
     if (routeMap[path]) {
       return routeMap[path];
     }
-    
+
     // Handle dynamic routes
     const pathSegments = path.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [
       { label: 'Home', href: '/' }
     ];
-    
+
     // Build breadcrumbs from path segments
     let currentPath = '';
     pathSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;
-      
+
       // Detect phase from current path
       const phase = detectPhaseFromPath(currentPath);
-      
+
       // Format segment label
       const label = segment
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
-      
+
       const isActive = index === pathSegments.length - 1;
-      
+
       breadcrumbs.push({
         label,
         href: isActive ? undefined : currentPath,
@@ -175,7 +175,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
         isActive
       });
     });
-    
+
     return breadcrumbs;
   };
 
@@ -190,13 +190,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     if (!showPhaseContext || !currentPhase) return null;
 
     const phaseData = phaseInfo[currentPhase];
-    
+
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
-              <div 
+              <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: phaseData.color }}
               />
@@ -274,7 +274,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
               {index > 0 && (
                 <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
               )}
-              
+
               <div className="flex items-center gap-2">
                 {item.href ? (
                   <Link
@@ -289,12 +289,12 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
                     {item.label}
                   </span>
                 )}
-                
+
                 {item.phase && (
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className="text-xs"
-                    style={{ 
+                    style={{
                       borderColor: getPhaseColor(item.phase),
                       color: getPhaseColor(item.phase)
                     }}

@@ -10,6 +10,7 @@ import { Toaster as HotToaster } from 'react-hot-toast';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
+import './styles/content-pages.css';
 
 // Development components
 
@@ -32,6 +33,7 @@ const StudentDashboard = lazy(() => import('@/pages/StudentDashboard'));
 const HRDashboard = lazy(() => import('@/pages/HRDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const GrowthOperatorDashboard = lazy(() => import('@/pages/GrowthOperatorDashboard'));
+const ParentDashboardPage = lazy(() => import('@/pages/ParentDashboardPage'));
 const EmployerDashboard = lazy(() => import('@/pages/EmployerDashboard'));
 const EducatorDashboard = lazy(() => import('@/pages/EducatorDashboard'));
 const MentorDashboard = lazy(() => import('@/pages/MentorDashboard'));
@@ -69,7 +71,7 @@ const ProfileStudioPage = lazy(() => import('@/pages/candidate/profile-studio/Pr
 // Resume Builder
 const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
 // const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
-const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
+// const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
 const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
 const PublicCVViewer = lazy(() => import('@/pages/cv-builder/PublicCVViewer'));
 
@@ -82,32 +84,47 @@ const CVUploadPage = lazy(() => import('@/pages/cv-upload/CVUploadPage'));
 
 // Core Pages
 const IndustryExplorationPage = lazy(() => import('./pages/industry-exploration/IndustryExplorationPage'));
-const CVBuilderPage = lazy(() => import('./pages/cv-builder/CVBuilderPage'));
-const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard'));
-const CommunitiesPage = lazy(() => import('./pages/communities/CommunitiesPage'));
+/* Old CVBuilderPage import removed — /cv-builder-new now redirects to /cv-builder */
+/* Old AnalyticsDashboard import removed — replaced by AnalyticsPage3 */
+
 const SchoolProgramsPage = lazy(() => import('./pages/SchoolProgramsPage'));
 const SchoolProgramsAdmin = lazy(() => import('./pages/admin/SchoolProgramsAdmin'));
 const SchoolProgramsAdminAPI = lazy(() => import('./pages/admin/SchoolProgramsAdminAPI'));
 const RoleRequestsPage = lazy(() => import('./pages/admin/RoleRequestsPage'));
 const UniversityProgramsPage = lazy(() => import('./pages/education/UniversityProgramsPage'));
+const KnowledgeCampsPage = lazy(() => import('./pages/summer-camps'));
+const ScholarshipsPage = lazy(() => import('./pages/scholarships'));
+const GraduateProgramsPage = lazy(() => import('./pages/graduate-programs'));
+const LMSPage = lazy(() => import('./pages/lms'));
 
 // Other key pages
-const Analytics = lazy(() => import('@/pages/analytics'));
+const AnalyticsPage3 = lazy(() => import('@/pages/analytics/AnalyticsPage2'));
 const Messages = lazy(() => import('@/pages/messages'));
 const Profile = lazy(() => import('@/pages/profile'));
-const JobMatching = lazy(() => import('@/pages/job-matching'));
+const JobMatchingPage2 = lazy(() => import('@/pages/job-matching/JobMatchingPage'));
 const Applications = lazy(() => import('@/pages/applications'));
-const Training = lazy(() => import('@/pages/training'));
-const Communities = lazy(() => import('@/pages/communities'));
-const DigitalSkills = lazy(() => import('@/pages/digital-skills'));
+const TrainingPage2 = lazy(() => import('@/pages/training/TrainingPage'));
+const CommunitiesPage3 = lazy(() => import('@/pages/communities/CommunitiesPage2'));
+const DigitalSkillsPage2 = lazy(() => import('@/pages/digital-skills/DigitalSkillsPage'));
 const CareerPlanningHub = lazy(() => import('@/pages/career-planning-hub/functional'));
-const Mentorship = lazy(() => import('@/pages/mentorship'));
-const SuccessStories = lazy(() => import('@/pages/success-stories'));
+const FinancialPlanningPage = lazy(() => import('@/pages/financial-planning/FinancialPlanningPage'));
+const PortfolioPage = lazy(() => import('@/pages/portfolio/PortfolioPage'));
+const InterviewPreparationPage2 = lazy(() => import('@/pages/interview-preparation/InterviewPreparationPage'));
+const InternshipsPage = lazy(() => import('@/pages/internships/InternshipsPage'));
+const CareerAdvisoryPage = lazy(() => import('@/pages/career-advisory/CareerAdvisoryPage'));
+const AssessmentsPage2 = lazy(() => import('@/pages/assessments/AssessmentsPage'));
+const ProfessionalCertificationsPage = lazy(() => import('@/pages/professional-certifications/ProfessionalCertificationsPage'));
+const BlockchainCredentialsPage = lazy(() => import('@/pages/blockchain-credentials/BlockchainCredentialsPage'));
+const MentorshipPage2 = lazy(() => import('@/pages/mentorship/MentorshipPage'));
+const YouthDevelopmentPage = lazy(() => import('@/pages/youth-development/YouthDevelopmentPage'));
+const NationalServicePage = lazy(() => import('@/pages/national-service/NationalServicePage'));
+const ThoughtLeadershipPage = lazy(() => import('@/pages/thought-leadership/ThoughtLeadershipPage'));
+const ShareSuccessStoriesPage = lazy(() => import('@/pages/success-stories/ShareSuccessStoriesPage'));
+const RetireePage = lazy(() => import('@/pages/retiree/RetireePage'));
 const NotFound = lazy(() => import('@/pages/not-found'));
 
 // Protected Route Component
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-const AssessmentsPage = lazy(() => import('@/pages/assessments'));
 
 // Role-based Dashboard Components
 // Removed old RecruiterDashboard import - now using the new one from pages
@@ -174,14 +191,7 @@ const AppContent: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/assessments"
-                element={
-                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'student']}>
-                    <AssessmentsPage />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Old protected /assessments route removed — replaced by new route below */}
 
               <Route
                 path="/candidate/profile/*"
@@ -196,6 +206,14 @@ const AppContent: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['student']}>
                     <StudentDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/guardian-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['parent', 'guardian']}>
+                    <ParentDashboardPage />
                   </ProtectedRoute>
                 }
               />
@@ -458,6 +476,15 @@ const AppContent: React.FC = () => {
               />
 
               <Route
+                path="/guardian-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['parent', 'guardian']}>
+                    <ParentDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/admin/user-roles"
                 element={
                   <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
@@ -508,20 +535,15 @@ const AppContent: React.FC = () => {
                 element={<IndustryExplorationPage />}
               />
 
+              {/* Redirect old cv-builder-new to cv-builder */}
               <Route
                 path="/cv-builder-new"
-                element={<CVBuilderPage />}
+                element={<Navigate to="/cv-builder" replace />}
               />
 
-              <Route
-                path="/analytics-dashboard"
-                element={<AnalyticsDashboard />}
-              />
+              {/* Old /analytics-dashboard route removed — merged into /analytics */}
 
-              <Route
-                path="/communities-new"
-                element={<CommunitiesPage />}
-              />
+              {/* Old /communities-new route removed — merged into /communities */}
 
               <Route
                 path="/school-programs"
@@ -533,14 +555,30 @@ const AppContent: React.FC = () => {
                 element={<UniversityProgramsPage />}
               />
 
+              <Route
+                path="/knowledge-camps"
+                element={<KnowledgeCampsPage />}
+              />
+
+              <Route
+                path="/scholarships"
+                element={<ScholarshipsPage />}
+              />
+
+              <Route
+                path="/graduate-programs"
+                element={<GraduateProgramsPage />}
+              />
+
+              <Route
+                path="/lms"
+                element={<LMSPage />}
+              />
+
               {/* Core Feature Routes */}
               <Route
                 path="/analytics"
-                element={
-                  <ProtectedRoute>
-                    <Analytics />
-                  </ProtectedRoute>
-                }
+                element={<AnalyticsPage3 />}
               />
 
               <Route
@@ -561,14 +599,7 @@ const AppContent: React.FC = () => {
                 }
               />
 
-              <Route
-                path="/job-matching"
-                element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                    <JobMatching />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Old protected /job-matching route removed — replaced by new route below */}
 
               <Route
                 path="/applications"
@@ -581,29 +612,17 @@ const AppContent: React.FC = () => {
 
               <Route
                 path="/training"
-                element={
-                  <ProtectedRoute>
-                    <Training />
-                  </ProtectedRoute>
-                }
+                element={<TrainingPage2 />}
               />
 
               <Route
                 path="/communities"
-                element={
-                  <ProtectedRoute>
-                    <Communities />
-                  </ProtectedRoute>
-                }
+                element={<CommunitiesPage3 />}
               />
 
               <Route
                 path="/digital-skills"
-                element={
-                  <ProtectedRoute>
-                    <DigitalSkills />
-                  </ProtectedRoute>
-                }
+                element={<DigitalSkillsPage2 />}
               />
 
               <Route
@@ -612,21 +631,78 @@ const AppContent: React.FC = () => {
               />
 
               <Route
-                path="/mentorship"
-                element={
-                  <ProtectedRoute>
-                    <Mentorship />
-                  </ProtectedRoute>
-                }
+                path="/financial-planning"
+                element={<FinancialPlanningPage />}
               />
 
               <Route
-                path="/success-stories"
-                element={
-                  <ProtectedRoute>
-                    <SuccessStories />
-                  </ProtectedRoute>
-                }
+                path="/portfolio"
+                element={<PortfolioPage />}
+              />
+
+              <Route
+                path="/interview-preparation"
+                element={<InterviewPreparationPage2 />}
+              />
+
+              <Route
+                path="/internships"
+                element={<InternshipsPage />}
+              />
+
+              <Route
+                path="/job-matching"
+                element={<JobMatchingPage2 />}
+              />
+
+              <Route
+                path="/career-advisory"
+                element={<CareerAdvisoryPage />}
+              />
+
+              <Route
+                path="/assessments"
+                element={<AssessmentsPage2 />}
+              />
+
+              <Route
+                path="/professional-certifications"
+                element={<ProfessionalCertificationsPage />}
+              />
+
+              <Route
+                path="/blockchain-credentials"
+                element={<BlockchainCredentialsPage />}
+              />
+
+              <Route
+                path="/mentorship"
+                element={<MentorshipPage2 />}
+              />
+
+              <Route
+                path="/youth-development"
+                element={<YouthDevelopmentPage />}
+              />
+
+              <Route
+                path="/national-service"
+                element={<NationalServicePage />}
+              />
+
+              <Route
+                path="/thought-leadership"
+                element={<ThoughtLeadershipPage />}
+              />
+
+              <Route
+                path="/share-success-stories"
+                element={<ShareSuccessStoriesPage />}
+              />
+
+              <Route
+                path="/retiree"
+                element={<RetireePage />}
               />
 
               {/* Login Test Route */}

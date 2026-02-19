@@ -7,39 +7,46 @@ import {
     Award,
     Layers,
     Compass,
-    ChevronRight
+    ChevronRight,
+    ChevronLeft
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-const SidebarItem = ({ icon: Icon, label, path, active }: any) => {
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
+
+const SidebarItem = ({ icon: Icon, label, path, active, isRTL }: any) => {
     const navigate = useNavigate();
+    const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
     return (
         <div
             onClick={() => navigate(path)}
-            className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${active
-                ? 'bg-blue-50 text-blue-600 shadow-sm dark:bg-blue-900/20 dark:text-blue-400'
+            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${active
+                ? 'bg-teal-50 text-teal-600 shadow-sm dark:bg-teal-900/20 dark:text-teal-400'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
         >
             <Icon size={20} />
             <span className="font-medium text-sm">{label}</span>
-            {active && <ChevronRight size={16} className="ml-auto opacity-50" />}
+            {active && <ChevronIcon size={16} className={`${isRTL ? 'mr-auto' : 'ml-auto'} opacity-50`} />}
         </div>
     );
 };
 
-import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
-import { useLanguage } from '@/context/EnhancedLanguageContext';
-
 export const ProfileStudioLayout = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
     const currentPath = location.pathname;
-    const { language, toggleLanguage } = useLanguage();
+    const { language, toggleLanguage, isRTL } = useLanguage();
+    const { t: i18t } = useTranslation();
+
+    // Bilingual helper
+    const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
     // Calculate completion (Mock for now)
     const completion = 65;
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className={`min-h-screen bg-background flex flex-col ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
             <HybridGovernmentNavFixed
                 currentPage="profile_studio"
                 userRole="job seeker"
@@ -49,71 +56,80 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
             />
             <div className="flex flex-1 pt-20">
                 {/* Sidebar Navigation */}
-                <div className="w-64 bg-card border-r border-border h-[calc(100vh-5rem)] fixed left-0 top-20 overflow-y-auto px-4 pt-6">
+                <div
+                    className={`w-64 bg-card ${isRTL ? 'border-l' : 'border-r'} border-border h-[calc(100vh-5rem)] fixed top-20 overflow-y-auto px-4 pt-6`}
+                    style={isRTL ? { right: 0, left: 'auto' } : { left: 0, right: 'auto' }}
+                >
                     <div className="mb-8">
-                        <h2 className="text-xl font-bold text-foreground px-2">Profile Studio</h2>
-                        <p className="text-xs text-muted-foreground px-2 mt-1">Unified Candidate Profile</p>
+                        <h2 className="text-xl font-bold text-foreground px-2">{t('Profile Studio', 'استوديو الملف')}</h2>
+                        <p className="text-xs text-muted-foreground px-2 mt-1">{t('Unified Candidate Profile', 'الملف الموحد للمرشح')}</p>
                     </div>
 
                     {/* Completion Meter */}
-                    <div className="mb-8 bg-blue-50 p-4 rounded-xl">
+                    <div className="mb-8 bg-teal-50 p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-blue-700">Profile Strength</span>
-                            <span className="text-xs font-bold text-blue-700">{completion}%</span>
+                            <span className="text-xs font-semibold text-teal-700">{t('Profile Strength', 'قوة الملف')}</span>
+                            <span className="text-xs font-bold text-teal-700">{completion}%</span>
                         </div>
-                        <div className="w-full bg-blue-200 rounded-full h-1.5">
+                        <div className="w-full bg-teal-200 rounded-full h-1.5">
                             <div
-                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+                                className="bg-teal-600 h-1.5 rounded-full transition-all duration-500"
                                 style={{ width: `${completion}%` }}
                             ></div>
                         </div>
-                        <p className="text-[10px] text-blue-600 mt-2">Add 1 more project to reach "All-Star"</p>
+                        <p className="text-[10px] text-teal-600 mt-2">{t('Add 1 more project to reach "All-Star"', 'أضف مشروعاً واحداً للوصول إلى "نجم"')}</p>
                     </div>
 
                     <nav className="space-y-1">
                         <SidebarItem
                             icon={User}
-                            label="Identity & Bio"
+                            label={t('Identity & Bio', 'الهوية والسيرة')}
                             path="/candidate/profile"
                             active={currentPath === '/candidate/profile'}
+                            isRTL={isRTL}
                         />
                         <SidebarItem
                             icon={Compass}
-                            label="Career Compass"
+                            label={t('Career Compass', 'البوصلة المهنية')}
                             path="/candidate/profile/compass"
                             active={currentPath.includes('compass')}
+                            isRTL={isRTL}
                         />
                         <div className="w-full h-px bg-border my-2"></div>
                         <SidebarItem
                             icon={Briefcase}
-                            label="Experience"
+                            label={t('Experience', 'الخبرة')}
                             path="/candidate/profile/experience"
                             active={currentPath.includes('experience')}
+                            isRTL={isRTL}
                         />
                         <SidebarItem
                             icon={BookOpen}
-                            label="Education"
+                            label={t('Education', 'التعليم')}
                             path="/candidate/profile/education"
                             active={currentPath.includes('education')}
+                            isRTL={isRTL}
                         />
                         <SidebarItem
                             icon={Layers}
-                            label="Skills & Assessments"
+                            label={t('Skills & Assessments', 'المهارات والتقييمات')}
                             path="/candidate/profile/skills"
                             active={currentPath.includes('skills')}
+                            isRTL={isRTL}
                         />
                         <div className="w-full h-px bg-border my-2"></div>
                         <SidebarItem
                             icon={Award}
-                            label="CV Preview"
+                            label={t('CV Preview', 'معاينة السيرة الذاتية')}
                             path="/candidate/profile/preview"
                             active={currentPath.includes('preview')}
+                            isRTL={isRTL}
                         />
                     </nav>
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 ml-64 pt-20 px-8 pb-12">
+                <div className="flex-1 pt-20 px-8 pb-12" style={isRTL ? { marginRight: '16rem' } : { marginLeft: '16rem' }}>
                     <div className="max-w-5xl mx-auto">
                         {children}
                     </div>

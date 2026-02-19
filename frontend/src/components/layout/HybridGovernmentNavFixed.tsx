@@ -28,8 +28,8 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
   // Get authentication state
   const { user, isAuthenticated } = useAuth();
-  const { t } = useTranslation();
-  const isRTL = currentLanguage === 'ar';
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
 
   // Get user role from authenticated user, fallback to prop
   const userRole = user?.role || propUserRole;
@@ -55,7 +55,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
   // Function to get human-readable role display names
   const getRoleDisplayName = (role: string): string => {
-    const roleMap: Record<string, string> = {
+    const roleMapEn: Record<string, string> = {
       'candidate': 'Job Seeker',
       'job_seeker': 'Job Seeker',
       'hr_recruiter': 'Recruiter',
@@ -72,12 +72,30 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       'government_entity': 'Government Entity',
       'private_sector': 'Private Sector',
     };
+    const roleMapAr: Record<string, string> = {
+      'candidate': 'باحث عن عمل',
+      'job_seeker': 'باحث عن عمل',
+      'hr_recruiter': 'مسؤول توظيف',
+      'recruiter': 'مسؤول توظيف',
+      'hr_manager': 'مدير الموارد البشرية',
+      'parent': 'ولي أمر',
+      'mentor': 'مرشد',
+      'assessor': 'مُقيّم',
+      'operator': 'مشغّل',
+      'admin': 'مسؤول النظام',
+      'administrator': 'مسؤول النظام',
+      'training_center': 'مركز تدريب',
+      'educational_institution': 'مؤسسة تعليمية',
+      'government_entity': 'جهة حكومية',
+      'private_sector': 'قطاع خاص',
+    };
+    const roleMap = isRTL ? roleMapAr : roleMapEn;
     return roleMap[role.toLowerCase()] || role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const itemKeyByHref: Record<string, { name: string; desc: string }> = {
     '/school-programs': { name: 'nav_item_school_programs', desc: 'nav_item_school_programs_desc' },
-    '/summer-camps': { name: 'nav_item_summer_camps', desc: 'nav_item_summer_camps_desc' },
+    '/knowledge-camps': { name: 'nav_item_summer_camps', desc: 'nav_item_summer_camps_desc' },
     '/scholarships': { name: 'nav_item_scholarships', desc: 'nav_item_scholarships_desc' },
     '/university-programs': { name: 'nav_item_university_programs', desc: 'nav_item_university_programs_desc' },
     '/graduate-programs': { name: 'nav_item_graduate_programs', desc: 'nav_item_graduate_programs_desc' },
@@ -109,7 +127,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   return (
     <>
       {/* Main Government Header */}
-      <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
+      <header className="bg-white border-b border-[#E2E5E9] sticky top-0 z-50" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between items-center h-20`}>
             {/* Government Logos Section */}
@@ -118,18 +136,20 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 <img
                   src="/dubai-gov-logo.jpg"
                   alt="Government of Dubai"
-                  className="h-14 w-auto"
+                  className="h-16 w-auto"
+                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
-                <div className="w-px h-12 bg-slate-300"></div>
+                <div className="w-px h-14 bg-slate-300"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-12 w-auto"
+                  className="h-14 w-auto"
+                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold text-slate-900">{t('platform_title', 'Emirati Journey Platform')}</h1>
+                  <h1 className="text-xl font-bold text-slate-900">{t('platform_title', 'Dubai Human Development Platform')}</h1>
                   <p className="text-sm text-slate-600">{t('platform_subtitle', 'UAE Nationals Career Development')}</p>
                 </Link>
               </div>
@@ -175,10 +195,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 <div className="flex items-center space-x-4">
                   {userRole && (
                     <div className="hidden sm:flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-teal-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-[#006E6D] rounded-full"></div>
                       <span className="text-sm text-slate-600">
                         {(user?.full_name === 'New Member' || (user?.first_name === 'New' && user?.last_name === 'Member'))
-                          ? 'New Member'
+                          ? (isRTL ? 'عضو جديد' : 'New Member')
                           : getRoleDisplayName(userRole)}
                       </span>
                     </div>
@@ -195,10 +215,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   </Link>
                   <Link
                     to="/auth"
-                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
+                    className="bg-[#006E6D] hover:bg-[#005A59] text-white px-6 py-2.5 rounded-full font-medium transition-all duration-200 flex items-center"
                   >
                     {t('get_started', 'Get Started')}
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <ArrowRight className={`w-4 h-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
                   </Link>
                 </>
               ) : null}
@@ -208,7 +228,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       </header>
 
       {/* Dedicated Navigation Bar */}
-      <nav className="bg-teal-600 text-white shadow-lg">
+      <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
             {navigationGroups.map((group) => (
@@ -218,28 +238,28 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 onMouseEnter={() => setActiveDropdown(group.id)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-md text-white hover:bg-teal-700 transition-colors font-medium`}>
+                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium`}>
                   <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
 
                 {activeDropdown === group.id && (
-                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-popover rounded-lg shadow-xl border border-border z-50`}>
+                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} dir={isRTL ? 'rtl' : 'ltr'} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
                     <div className="p-4">
                       <div className="mb-3">
-                        <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
-                        <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
+                        <h3 className="font-semibold text-slate-900 text-lg">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
+                        <p className="text-sm text-slate-600">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
                         {group.items.map((item) => (
                           <Link
                             key={item.name}
                             to={item.href}
-                            className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-start gap-3 p-3 rounded-md hover:bg-teal-50 transition-colors group`}
+                            className="flex flex-row items-start gap-3 p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group"
                           >
-                            <item.icon className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
+                            <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                              <div className="font-medium text-slate-900 group-hover:text-teal-600">
+                              <div className="font-medium text-[#1A1A1A] group-hover:text-[#006E6D]">
                                 {t(itemKeyByHref[item.href]?.name || '', item.name)}
                               </div>
                               <div className="text-sm text-slate-600 line-clamp-2">
@@ -280,7 +300,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               {navigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
                   <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
-                    <span className={`w-3 h-3 bg-teal-600 rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
+                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
                     {t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}
                   </h3>
                   <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
@@ -288,7 +308,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-slate-600 hover:text-teal-600 transition-colors py-1`}
+                        className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#6B7280] hover:text-[#006E6D] transition-colors py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon className="h-4 w-4" />
@@ -298,7 +318,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     {group.items.length > 4 && (
                       <Link
                         to={`/${group.id}`}
-                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-teal-600 font-medium py-1`}
+                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-[#006E6D] font-medium py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <ChevronRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />

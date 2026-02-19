@@ -112,7 +112,7 @@ export const StudentDashboard = () => {
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
                         <TabsTrigger value="scholarships">Scholarships</TabsTrigger>
-                        <TabsTrigger value="camps">Summer Camps</TabsTrigger>
+                        <TabsTrigger value="camps">Knowledge Camps</TabsTrigger>
                         <TabsTrigger value="university">University</TabsTrigger>
                     </TabsList>
 

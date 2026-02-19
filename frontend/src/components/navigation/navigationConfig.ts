@@ -37,9 +37,9 @@ export const navigationGroups: NavGroup[] = [
         icon: BookOpen
       },
       {
-        name: 'Summer Camps',
-        href: '/summer-camps',
-        description: 'Educational summer programs for youth development',
+        name: 'Knowledge Camps',
+        href: '/knowledge-camps',
+        description: 'Knowledge programs for youth development',
         icon: Calendar
       },
       {

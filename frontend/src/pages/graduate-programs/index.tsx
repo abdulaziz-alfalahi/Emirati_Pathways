@@ -1,190 +1,534 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { GraduationCap, Users, BookOpen, Award, Target, Building } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { GraduationCap, Users, Building, Target, BookOpen, Award, Clock, MapPin, Star, ArrowRight, ArrowLeft, CheckCircle, Globe, Briefcase } from 'lucide-react';
+
+// Brand tokens
+const brand = {
+  primary: '#0D9488',
+  primaryDark: '#0F766E',
+  primarySurface: '#F0FDFA',
+  border: '#E5E7EB',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+};
 
 const GraduateProgramsPage: React.FC = () => {
-  const { t } = useTranslation('graduate-programs');
 
-  const stats = [
-    { 
-      value: t('stats.graduatePrograms.value'), 
-      label: t('stats.graduatePrograms.label'), 
-      icon: GraduationCap 
-    },
-    { 
-      value: t('stats.partnerUniversities.value'), 
-      label: t('stats.partnerUniversities.label'), 
-      icon: Building 
-    },
-    { 
-      value: t('stats.graduateStudents.value'), 
-      label: t('stats.graduateStudents.label'), 
-      icon: Users 
-    },
-    { 
-      value: t('stats.employmentRate.value'), 
-      label: t('stats.employmentRate.label'), 
-      icon: Target 
-    }
-  ];
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
+  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
+  // Graduate program data (translated)
   const programs = [
     {
-      title: t('programs.mba.title'),
-      university: t('programs.mba.university'),
-      duration: t('programs.mba.duration'),
-      type: t('programs.mba.type'),
-      specializations: t('programs.mba.specializations', { returnObjects: true }) as string[],
-      tuition: t('programs.mba.tuition')
+      id: '1',
+      title: t('MBA – Executive Leadership', 'ماجستير إدارة أعمال – القيادة التنفيذية'),
+      university: t('Mohammed Bin Rashid School of Government', 'كلية محمد بن راشد للإدارة الحكومية'),
+      location: t('Dubai, UAE', 'دبي، الإمارات'),
+      duration: t('18 months', '18 شهراً'),
+      type: 'Full-Time',
+      typeLabel: t('Full-Time', 'دوام كامل'),
+      tuition: t('AED 95,000', '95,000 د.إ'),
+      rating: 4.9,
+      enrolled: 45,
+      capacity: 50,
+      featured: true,
+      specializations: [
+        t('Strategic Management', 'الإدارة الاستراتيجية'),
+        t('Digital Transformation', 'التحول الرقمي'),
+        t('Government Innovation', 'الابتكار الحكومي'),
+      ],
+      highlights: [
+        t('AACSB Accredited', 'معتمد من AACSB'),
+        t('Industry Capstone', 'مشروع تطبيقي'),
+        t('C-Suite Mentorship', 'إرشاد من القيادات العليا'),
+      ],
     },
     {
-      title: t('programs.dataScience.title'),
-      university: t('programs.dataScience.university'),
-      duration: t('programs.dataScience.duration'),
-      type: t('programs.dataScience.type'),
-      specializations: t('programs.dataScience.specializations', { returnObjects: true }) as string[],
-      tuition: t('programs.dataScience.tuition')
+      id: '2',
+      title: t('MSc Data Science & AI', 'ماجستير علوم البيانات والذكاء الاصطناعي'),
+      university: t('Khalifa University', 'جامعة خليفة'),
+      location: t('Abu Dhabi, UAE', 'أبوظبي، الإمارات'),
+      duration: t('2 years', 'سنتان'),
+      type: 'Full-Time',
+      typeLabel: t('Full-Time', 'دوام كامل'),
+      tuition: t('AED 78,000', '78,000 د.إ'),
+      rating: 4.8,
+      enrolled: 60,
+      capacity: 70,
+      featured: true,
+      specializations: [
+        t('Machine Learning', 'التعلم الآلي'),
+        t('Natural Language Processing', 'معالجة اللغات الطبيعية'),
+        t('Computer Vision', 'الرؤية الحاسوبية'),
+      ],
+      highlights: [
+        t('Research Lab Access', 'الوصول لمختبرات البحث'),
+        t('Industry Partnerships', 'شراكات صناعية'),
+        t('Publication Support', 'دعم النشر العلمي'),
+      ],
     },
     {
-      title: t('programs.engineeringManagement.title'),
-      university: t('programs.engineeringManagement.university'),
-      duration: t('programs.engineeringManagement.duration'),
-      type: t('programs.engineeringManagement.type'),
-      specializations: t('programs.engineeringManagement.specializations', { returnObjects: true }) as string[],
-      tuition: t('programs.engineeringManagement.tuition')
+      id: '3',
+      title: t('MSc Engineering Management', 'ماجستير إدارة الهندسة'),
+      university: t('American University of Sharjah', 'الجامعة الأمريكية في الشارقة'),
+      location: t('Sharjah, UAE', 'الشارقة، الإمارات'),
+      duration: t('2 years', 'سنتان'),
+      type: 'Part-Time',
+      typeLabel: t('Part-Time', 'دوام جزئي'),
+      tuition: t('AED 72,000', '72,000 د.إ'),
+      rating: 4.7,
+      enrolled: 35,
+      capacity: 45,
+      featured: false,
+      specializations: [
+        t('Systems Engineering', 'هندسة النظم'),
+        t('Project Management', 'إدارة المشاريع'),
+        t('Quality Engineering', 'هندسة الجودة'),
+      ],
+      highlights: [
+        t('Flexible Schedule', 'جدول مرن'),
+        t('Industry Projects', 'مشاريع صناعية'),
+        t('Professional Network', 'شبكة مهنية'),
+      ],
     },
     {
-      title: t('programs.publicAdministration.title'),
-      university: t('programs.publicAdministration.university'),
-      duration: t('programs.publicAdministration.duration'),
-      type: t('programs.publicAdministration.type'),
-      specializations: t('programs.publicAdministration.specializations', { returnObjects: true }) as string[],
-      tuition: t('programs.publicAdministration.tuition')
-    }
+      id: '4',
+      title: t('Master of Public Administration', 'ماجستير الإدارة العامة'),
+      university: t('UAE University', 'جامعة الإمارات'),
+      location: t('Al Ain, UAE', 'العين، الإمارات'),
+      duration: t('2 years', 'سنتان'),
+      type: 'Full-Time',
+      typeLabel: t('Full-Time', 'دوام كامل'),
+      tuition: t('AED 55,000', '55,000 د.إ'),
+      rating: 4.6,
+      enrolled: 40,
+      capacity: 60,
+      featured: false,
+      specializations: [
+        t('Policy Analysis', 'تحليل السياسات'),
+        t('Urban Governance', 'الحوكمة الحضرية'),
+        t('Public Finance', 'المالية العامة'),
+      ],
+      highlights: [
+        t('Government Placements', 'تعيينات حكومية'),
+        t('Policy Lab Access', 'الوصول لمختبر السياسات'),
+        t('International Exchange', 'تبادل دولي'),
+      ],
+    },
+    {
+      id: '5',
+      title: t('PhD in Sustainable Energy', 'دكتوراه في الطاقة المستدامة'),
+      university: t('Masdar Institute – Khalifa University', 'معهد مصدر – جامعة خليفة'),
+      location: t('Abu Dhabi, UAE', 'أبوظبي، الإمارات'),
+      duration: t('3-4 years', '3-4 سنوات'),
+      type: 'Full-Time Research',
+      typeLabel: t('Full-Time Research', 'بحث بدوام كامل'),
+      tuition: t('Fully Funded', 'ممولة بالكامل'),
+      rating: 4.9,
+      enrolled: 15,
+      capacity: 20,
+      featured: true,
+      specializations: [
+        t('Solar Energy', 'الطاقة الشمسية'),
+        t('Energy Storage', 'تخزين الطاقة'),
+        t('Smart Grid Systems', 'أنظمة الشبكات الذكية'),
+      ],
+      highlights: [
+        t('Full Scholarship', 'منحة كاملة'),
+        t('Research Stipend', 'بدل بحثي'),
+        t('International Conference Travel', 'سفر لمؤتمرات دولية'),
+      ],
+    },
+    {
+      id: '6',
+      title: t('LLM – International Business Law', 'ماجستير القانون – قانون الأعمال الدولي'),
+      university: t('University of Sharjah', 'جامعة الشارقة'),
+      location: t('Sharjah, UAE', 'الشارقة، الإمارات'),
+      duration: t('18 months', '18 شهراً'),
+      type: 'Part-Time',
+      typeLabel: t('Part-Time', 'دوام جزئي'),
+      tuition: t('AED 65,000', '65,000 د.إ'),
+      rating: 4.5,
+      enrolled: 28,
+      capacity: 35,
+      featured: false,
+      specializations: [
+        t('Arbitration & Dispute Resolution', 'التحكيم وحل النزاعات'),
+        t('Corporate Governance', 'حوكمة الشركات'),
+        t('IP Law', 'قانون الملكية الفكرية'),
+      ],
+      highlights: [
+        t('Moot Court Competitions', 'مسابقات المحاكم الصورية'),
+        t('Dual Certification', 'شهادة مزدوجة'),
+        t('Legal Clinic', 'عيادة قانونية'),
+      ],
+    },
   ];
 
-  const generalRequirements = t('requirements.general.items', { returnObjects: true }) as string[];
-  const programSpecificRequirements = t('requirements.programSpecific.items', { returnObjects: true }) as string[];
+  const generalRequirements = [
+    t('UAE National or eligible resident', 'مواطن إماراتي أو مقيم مؤهل'),
+    t("Bachelor's degree from an accredited institution (GPA 3.0+ preferred)", 'درجة بكالوريوس من مؤسسة معتمدة (يُفضّل معدل 3.0+)'),
+    t('English proficiency (IELTS 6.5+ or TOEFL 90+)', 'إتقان اللغة الإنجليزية (IELTS 6.5+ أو TOEFL 90+)'),
+    t('Two academic or professional letters of recommendation', 'رسالتا توصية أكاديمية أو مهنية'),
+    t('Statement of purpose (500-1,000 words)', 'بيان الغرض (500-1,000 كلمة)'),
+    t('Updated CV/Resume', 'سيرة ذاتية محدّثة'),
+  ];
+
+  const programSpecificRequirements = [
+    t('MBA programs may require GMAT/GRE scores (550+/310+)', 'قد تتطلب برامج MBA درجات GMAT/GRE (550+/310+)'),
+    t('STEM programs require relevant undergraduate degree in science or engineering', 'تتطلب برامج STEM درجة بكالوريوس ذات صلة في العلوم أو الهندسة'),
+    t("PhD applicants need a completed Master's degree and research proposal", 'يحتاج المتقدمون للدكتوراه إلى درجة ماجستير مكتملة ومقترح بحثي'),
+    t('Professional programs may accept equivalent work experience (5+ years)', 'قد تقبل البرامج المهنية خبرة عمل مكافئة (5+ سنوات)'),
+    t('LLM programs require a law degree or equivalent legal qualification', 'تتطلب برامج LLM درجة في القانون أو مؤهل قانوني مكافئ'),
+  ];
+
+  const typeFilters = [
+    { key: 'All', label: t('All', 'الكل') },
+    { key: 'Full-Time', label: t('Full-Time', 'دوام كامل') },
+    { key: 'Part-Time', label: t('Part-Time', 'دوام جزئي') },
+    { key: 'Full-Time Research', label: t('Full-Time Research', 'بحث بدوام كامل') },
+  ];
+
+  const [selectedType, setSelectedType] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filtered = programs.filter(p => {
+    const matchType = selectedType === 'All' || p.type === selectedType;
+    const matchSearch = !searchQuery ||
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchType && matchSearch;
+  });
+
+  const stats = [
+    { value: '25+', label: t('Graduate Programs', 'برامج الدراسات العليا'), icon: GraduationCap },
+    { value: '15+', label: t('Partner Universities', 'الجامعات الشريكة'), icon: Building },
+    { value: '800+', label: t('Graduate Students', 'طلاب الدراسات العليا'), icon: Users },
+    { value: '94%', label: t('Employment Rate', 'نسبة التوظيف'), icon: Target },
+  ];
 
   const tabs = [
     {
-      id: "programs",
-      label: t('tabs.programs'),
+      id: 'programs', label: t('Programs', 'البرامج'),
       icon: <GraduationCap className="h-4 w-4" />,
       content: (
-        <div className="grid gap-6 md:grid-cols-2">
-          {programs.map((program, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <CardTitle className="text-lg">{program.title}</CardTitle>
-                  <Badge variant="secondary">{program.type}</Badge>
-                </div>
-                <p className="text-muted-foreground">{program.university}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>{t('labels.duration')}:</span>
-                    <span className="font-medium">{program.duration}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>{t('labels.tuition')}:</span>
-                    <span className="font-medium text-ehrdc-teal">{program.tuition}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">{t('labels.specializations')}:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {program.specializations.map((spec, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {spec}
-                        </Badge>
-                      ))}
+        <div>
+          {/* Search and filter bar */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 200 }}>
+              <input
+                type="text"
+                placeholder={t('Search programs, universities…', 'ابحث عن البرامج والجامعات...')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%', padding: '10px 14px 10px 38px', borderRadius: 12,
+                  border: `1px solid ${brand.border}`, fontSize: 14, outline: 'none',
+                  transition: 'border-color 150ms',
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = brand.primary}
+                onBlur={e => e.currentTarget.style.borderColor = brand.border}
+              />
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: brand.textSecondary, pointerEvents: 'none', display: 'flex' }}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {typeFilters.map(filter => (
+                <button
+                  key={filter.key}
+                  onClick={() => setSelectedType(filter.key)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500,
+                    border: selectedType === filter.key ? 'none' : `1px solid ${brand.border}`,
+                    background: selectedType === filter.key ? brand.primary : '#fff',
+                    color: selectedType === filter.key ? '#fff' : brand.textSecondary,
+                    cursor: 'pointer', transition: 'all 150ms', whiteSpace: 'nowrap',
+                  }}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Results count */}
+          <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 20 }}>
+            {t(
+              `Showing ${filtered.length} program${filtered.length !== 1 ? 's' : ''}`,
+              `عرض ${filtered.length} ${filtered.length === 1 ? 'برنامج' : 'برامج'}`
+            )}
+          </p>
+
+          {/* Program cards */}
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 0' }}>
+              <GraduationCap style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('No programs found', 'لم يتم العثور على برامج')}</h3>
+              <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Try adjusting your search or filter criteria.', 'حاول تعديل معايير البحث أو التصفية.')}</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 20 }}>
+              {filtered.map(p => (
+                <div
+                  key={p.id}
+                  style={{
+                    background: '#fff', borderRadius: 16,
+                    border: `1px solid ${brand.border}`,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    overflow: 'hidden', transition: 'border-color 150ms, box-shadow 150ms',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = brand.primary;
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = brand.border;
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                  }}
+                >
+                  {/* Accent bar */}
+                  <div style={{ height: 4, background: p.featured ? brand.primary : brand.border }} />
+
+                  <div style={{ padding: 22 }}>
+                    {/* Badges */}
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <span style={{
+                        padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
+                        background: p.type === 'Full-Time' ? '#DBEAFE' : p.type === 'Part-Time' ? '#FEF3C7' : brand.primarySurface,
+                        color: p.type === 'Full-Time' ? '#1E40AF' : p.type === 'Part-Time' ? '#92400E' : brand.primary,
+                      }}>
+                        {p.typeLabel}
+                      </span>
+                      {p.featured && (
+                        <span style={{
+                          padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
+                          background: '#FEF3C7', color: '#92400E',
+                        }}>
+                          ★ {t('Featured', 'مميّز')}
+                        </span>
+                      )}
+                      {p.tuition === t('Fully Funded', 'ممولة بالكامل') && (
+                        <span style={{
+                          padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
+                          background: '#DCFCE7', color: '#166534',
+                        }}>
+                          {t('Fully Funded', 'ممولة بالكامل')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 4 }}>
+                      {p.title}
+                    </h3>
+
+                    {/* University & location */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <Building style={{ width: 14, height: 14, color: brand.textSecondary }} />
+                      <span style={{ fontSize: 14, color: brand.textSecondary }}>{p.university}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+                      <MapPin style={{ width: 14, height: 14, color: brand.textSecondary }} />
+                      <span style={{ fontSize: 14, color: brand.textSecondary }}>{p.location}</span>
+                    </div>
+
+                    {/* Tuition & Duration row */}
+                    <div style={{
+                      display: 'flex', gap: 12, marginBottom: 16,
+                      padding: '12px 16px', borderRadius: 12, background: brand.primarySurface,
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{t('Tuition', 'الرسوم')}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: brand.primary }}>{p.tuition}</div>
+                      </div>
+                      <div style={{ width: 1, background: brand.border }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{t('Duration', 'المدة')}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: brand.primary }}>{p.duration}</div>
+                      </div>
+                    </div>
+
+                    {/* Specializations */}
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{t('Specializations', 'التخصصات')}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {p.specializations.map((spec, i) => (
+                          <span key={i} style={{
+                            padding: '4px 10px', borderRadius: 10, fontSize: 12, fontWeight: 500,
+                            background: '#F3F4F6', color: brand.textPrimary,
+                          }}>
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Highlights */}
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {p.highlights.map((h, i) => (
+                          <span key={i} style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 12, color: brand.textSecondary,
+                            padding: '3px 8px', borderRadius: 8, background: '#F9FAFB',
+                          }}>
+                            <CheckCircle style={{ width: 12, height: 12, color: brand.primary }} />
+                            {h}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Enrollment bar */}
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: brand.textSecondary, marginBottom: 4 }}>
+                        <span>{p.enrolled} {t('enrolled', 'مسجّل')}</span>
+                        <span>{p.capacity - p.enrolled} {t('spots left', 'مقعد متاح')}</span>
+                      </div>
+                      <div style={{ height: 4, borderRadius: 2, background: '#F3F4F6' }}>
+                        <div style={{
+                          height: '100%', borderRadius: 2, background: brand.primary,
+                          width: `${(p.enrolled / p.capacity) * 100}%`,
+                          transition: 'width 300ms',
+                        }} />
+                      </div>
+                    </div>
+
+                    {/* Rating & Apply */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Star style={{ width: 14, height: 14, color: '#F59E0B', fill: '#F59E0B' }} />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{p.rating}</span>
+                      </div>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '10px 22px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                        background: brand.primary, color: '#fff',
+                        cursor: 'pointer', transition: 'background 150ms',
+                      }}>
+                        {t('Apply Now', 'قدّم الآن')} <ArrowIcon style={{ width: 16, height: 16 }} />
+                      </span>
                     </div>
                   </div>
-                  <Button className="w-full mt-4">{t('buttons.applyNow')}</Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </div>
+          )}
         </div>
-      )
+      ),
     },
     {
-      id: "requirements",
-      label: t('tabs.requirements'),
+      id: 'requirements', label: t('Requirements', 'المتطلبات'),
       icon: <BookOpen className="h-4 w-4" />,
       content: (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-green-600" />
-                {t('requirements.general.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                {generalRequirements.map((requirement, index) => (
-                  <li key={index}>• {requirement}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5 text-blue-600" />
-                {t('requirements.programSpecific.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                {programSpecificRequirements.map((requirement, index) => (
-                  <li key={index}>• {requirement}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
+          {/* General Requirements */}
+          <div style={{
+            background: '#fff', borderRadius: 16,
+            border: `1px solid ${brand.border}`, padding: 24,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Target style={{ width: 18, height: 18, color: '#166534' }} />
+              </div>
+              <h3 style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary }}>{t('General Requirements', 'المتطلبات العامة')}</h3>
+            </div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {generalRequirements.map((req, i) => (
+                <li key={i} style={{
+                  display: 'flex', gap: 10, padding: '10px 0',
+                  borderBottom: i < generalRequirements.length - 1 ? `1px solid ${brand.border}` : 'none',
+                  fontSize: 14, color: brand.textPrimary, lineHeight: 1.5,
+                }}>
+                  <CheckCircle style={{ width: 16, height: 16, color: brand.primary, flexShrink: 0, marginTop: 2 }} />
+                  {req}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Program-Specific Requirements */}
+          <div style={{
+            background: '#fff', borderRadius: 16,
+            border: `1px solid ${brand.border}`, padding: 24,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Building style={{ width: 18, height: 18, color: '#1E40AF' }} />
+              </div>
+              <h3 style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary }}>{t('Program-Specific', 'حسب البرنامج')}</h3>
+            </div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {programSpecificRequirements.map((req, i) => (
+                <li key={i} style={{
+                  display: 'flex', gap: 10, padding: '10px 0',
+                  borderBottom: i < programSpecificRequirements.length - 1 ? `1px solid ${brand.border}` : 'none',
+                  fontSize: 14, color: brand.textPrimary, lineHeight: 1.5,
+                }}>
+                  <CheckCircle style={{ width: 16, height: 16, color: '#1E40AF', flexShrink: 0, marginTop: 2 }} />
+                  {req}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      )
+      ),
     },
     {
-      id: "funding",
-      label: t('tabs.funding'),
+      id: 'funding', label: t('Funding & Support', 'التمويل والدعم'),
       icon: <Award className="h-4 w-4" />,
       content: (
-        <div className="text-center py-8">
-          <Award className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{t('funding.title')}</h3>
-          <p className="text-muted-foreground mb-4">
-            {t('funding.description')}
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+          <Award style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Funding Opportunities', 'فرص التمويل')}</h3>
+          <p style={{ color: brand.textSecondary, fontSize: 14, maxWidth: 500, margin: '0 auto 20px' }}>
+            {t(
+              'Explore scholarships, grants, and financial aid options available for UAE nationals pursuing graduate education.',
+              'استكشف المنح الدراسية والمنح البحثية وخيارات الدعم المالي المتاحة للمواطنين الإماراتيين الملتحقين بالدراسات العليا.'
+            )}
           </p>
-          <Button>{t('funding.button')}</Button>
+          <a href="/scholarships" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '10px 24px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+            background: brand.primary, color: '#fff', textDecoration: 'none',
+            cursor: 'pointer',
+          }}>
+            {t('View Scholarships', 'عرض المنح الدراسية')} <ArrowIcon style={{ width: 16, height: 16 }} />
+          </a>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
     <EducationPathwayLayout
-      title={t('title')}
-      description={t('description')}
-      icon={<GraduationCap className="h-12 w-12 text-purple-600" />}
+      title={t('Graduate Programs', 'برامج الدراسات العليا')}
+      description={t(
+        'Advance your career with world-class graduate programs at leading UAE universities, designed for ambitious Emirati professionals.',
+        'طوّر مسيرتك المهنية مع برامج دراسات عليا عالمية المستوى في الجامعات الرائدة بالإمارات، مصممة للمهنيين الإماراتيين الطموحين.'
+      )}
+      icon={<GraduationCap className="h-12 w-12" style={{ color: '#0D9488' }} />}
       stats={stats}
       tabs={tabs}
       defaultTab="programs"
-      actionButtonText={t('buttons.explorePrograms')}
+      actionButtonText={t('Explore Programs', 'استكشف البرامج')}
       actionButtonHref="#programs"
-      academicYear={t('academicYear')}
+      academicYear="2025-2026"
     />
   );
 };
 
 export default GraduateProgramsPage;
-

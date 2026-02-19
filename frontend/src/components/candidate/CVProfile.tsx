@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -208,6 +209,9 @@ const TALENT33_SKILLS = {
  */
 const CVProfile: React.FC = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const [cvData, setCvData] = useState<CVData | null>(null);
   const [loading, setLoading] = useState(true);
   const [atsScore, setAtsScore] = useState<ATSScore | null>(null);
@@ -569,26 +573,26 @@ const CVProfile: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-teal-600" />
-            Create Your Professional Profile
+            {t('Create Your Professional Profile', 'أنشئ ملفك المهني')}
           </CardTitle>
           <CardDescription>
-            Build your CV to create your professional profile. Your CV serves as your complete profile on the platform.
+            {t('Build your CV to create your professional profile. Your CV serves as your complete profile on the platform.', 'أنشئ سيرتك الذاتية لإنشاء ملفك المهني. سيرتك الذاتية هي ملفك الشخصي الكامل على المنصة.')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert className="mb-6 border-teal-200 bg-teal-50">
             <Sparkles className="h-4 w-4 text-teal-600" />
-            <AlertTitle>One Profile, One CV</AlertTitle>
+            <AlertTitle>{t('One Profile, One CV', 'ملف واحد، سيرة ذاتية واحدة')}</AlertTitle>
             <AlertDescription>
-              Your CV is your profile. Build it once and use it everywhere - for job applications, recruiter visibility, and AI-powered job matching.
+              {t('Your CV is your profile. Build it once and use it everywhere - for job applications, recruiter visibility, and AI-powered job matching.', 'سيرتك الذاتية هي ملفك الشخصي. أنشئها مرة واحدة واستخدمها في كل مكان — للتقديم على الوظائف وظهورك لمسؤولي التوظيف والمطابقة الذكية.')}
             </AlertDescription>
           </Alert>
           <Button
             onClick={() => navigate('/cv-builder')}
             className="bg-teal-600 hover:bg-teal-700"
           >
-            <Edit className="h-4 w-4 mr-2" />
-            Build Your CV Now
+            <Edit className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+            {t('Build Your CV Now', 'أنشئ سيرتك الذاتية الآن')}
           </Button>
         </CardContent>
       </Card>
@@ -613,10 +617,10 @@ const CVProfile: React.FC = () => {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-teal-600" />
-                  ATS Compatibility Score
+                  {t('ATS Compatibility Score', 'درجة توافق نظام تتبع المتقدمين')}
                 </CardTitle>
                 <CardDescription>
-                  How well your profile matches Applicant Tracking System requirements
+                  {t('How well your profile matches Applicant Tracking System requirements', 'مدى توافق ملفك الشخصي مع متطلبات أنظمة تتبع المتقدمين')}
                 </CardDescription>
               </div>
               <div className={`text-4xl font-bold ${getScoreColor(atsScore.overall)}`}>
@@ -645,11 +649,11 @@ const CVProfile: React.FC = () => {
                     keywords: 15
                   };
                   const labels: Record<string, string> = {
-                    personalInfo: 'Personal Info',
-                    experience: 'Experience',
-                    education: 'Education',
-                    skills: 'Skills',
-                    keywords: 'D33 Keywords'
+                    personalInfo: t('Personal Info', 'المعلومات الشخصية'),
+                    experience: t('Experience', 'الخبرة'),
+                    education: t('Education', 'التعليم'),
+                    skills: t('Skills', 'المهارات'),
+                    keywords: t('D33 Keywords', 'كلمات D33 المفتاحية')
                   };
                   const percentage = Math.round((value / maxScores[key]) * 100);
 
@@ -669,7 +673,7 @@ const CVProfile: React.FC = () => {
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Lightbulb className="h-4 w-4 text-yellow-500" />
-                    Quick Improvements
+                    {t('Quick Improvements', 'تحسينات سريعة')}
                   </h4>
                   <div className="space-y-2">
                     {atsScore.recommendations.slice(0, 3).map((rec, index) => (
@@ -685,8 +689,8 @@ const CVProfile: React.FC = () => {
                     className="mt-3"
                     onClick={() => navigate('/cv-builder')}
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Improve Your CV
+                    <Edit className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                    {t('Improve Your CV', 'حسّن سيرتك الذاتية')}
                   </Button>
                 </div>
               )}
@@ -743,16 +747,16 @@ const CVProfile: React.FC = () => {
               onClick={() => navigate('/cv-builder')}
               className="bg-teal-600 hover:bg-teal-700"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit CV Content
+              <Edit className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+              {t('Edit CV Content', 'تعديل محتوى السيرة الذاتية')}
             </Button>
             <Button
               variant="outline"
               onClick={() => navigate('/profile')}
-              className="ml-2"
+              style={{ marginInlineStart: 8 }}
             >
-              <Settings className="h-4 w-4 mr-2" />
-              Profile Settings
+              <Settings className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+              {t('Profile Settings', 'إعدادات الملف الشخصي')}
             </Button>
           </div>
         </CardHeader>
@@ -785,7 +789,7 @@ const CVProfile: React.FC = () => {
                 className="flex items-center gap-2 text-sm text-teal-600 hover:underline"
               >
                 <ExternalLink className="h-4 w-4" />
-                <span>LinkedIn Profile</span>
+                <span>{t('LinkedIn Profile', 'ملف لينكد إن')}</span>
               </a>
             )}
           </div>
@@ -793,7 +797,7 @@ const CVProfile: React.FC = () => {
           {/* Professional Summary */}
           {personalInfo.summary && (
             <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Professional Summary</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('Professional Summary', 'الملخص المهني')}</h3>
               <p className="text-gray-600">{personalInfo.summary}</p>
             </div>
           )}
@@ -805,7 +809,7 @@ const CVProfile: React.FC = () => {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Briefcase className="h-5 w-5 text-teal-600" />
-                Work Experience
+                {t('Work Experience', 'الخبرة المهنية')}
               </h3>
               <div className="space-y-4">
                 {experience.slice(0, 3).map((exp, index) => (
@@ -817,7 +821,7 @@ const CVProfile: React.FC = () => {
                       </div>
                       <div className="text-sm text-gray-500 flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {formatDate(exp.startDate)} - {exp.isCurrentJob ? 'Present' : formatDate(exp.endDate)}
+                        {formatDate(exp.startDate)} - {exp.isCurrentJob ? t('Present', 'حتى الآن') : formatDate(exp.endDate)}
                       </div>
                     </div>
                     {exp.description && (
@@ -827,7 +831,7 @@ const CVProfile: React.FC = () => {
                 ))}
                 {experience.length > 3 && (
                   <Button variant="link" onClick={() => navigate('/cv-builder')} className="text-teal-600 p-0">
-                    View all {experience.length} positions <ArrowRight className="h-4 w-4 ml-1" />
+                    {t(`View all ${experience.length} positions`, `عرض جميع المناصب (${experience.length})`)} <ArrowRight className="h-4 w-4" style={{ marginInlineStart: 4 }} />
                   </Button>
                 )}
               </div>
@@ -839,7 +843,7 @@ const CVProfile: React.FC = () => {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-teal-600" />
-                Education
+                {t('Education', 'التعليم')}
               </h3>
               <div className="space-y-3">
                 {education.map((edu, index) => (
@@ -865,7 +869,7 @@ const CVProfile: React.FC = () => {
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Award className="h-5 w-5 text-teal-600" />
-                Skills
+                {t('Skills', 'المهارات')}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {skills.map((skill, index) => (
@@ -883,7 +887,7 @@ const CVProfile: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Languages className="h-5 w-5 text-teal-600" />
-                  Languages
+                  {t('Languages', 'اللغات')}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {languages.map((lang, index) => (
@@ -899,7 +903,7 @@ const CVProfile: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Award className="h-5 w-5 text-teal-600" />
-                  Certifications
+                  {t('Certifications', 'الشهادات')}
                 </h3>
                 <div className="space-y-2">
                   {certifications.slice(0, 3).map((cert, index) => (
@@ -925,28 +929,30 @@ const CVProfile: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-blue-600" />
-              Skill Recommendations for UAE Job Market
+              {t('Skill Recommendations for UAE Job Market', 'توصيات المهارات لسوق العمل الإماراتي')}
             </CardTitle>
             <CardDescription>
-              Aligned with Dubai's D33 Economic Agenda and Talent 2033 initiative
+              {t("Aligned with Dubai's D33 Economic Agenda and Talent 2033 initiative", 'متوافق مع أجندة دبي الاقتصادية D33 ومبادرة المواهب 2033')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Alert className="mb-4 border-blue-200 bg-blue-50">
               <Info className="h-4 w-4 text-blue-600" />
-              <AlertTitle>Why These Skills?</AlertTitle>
+              <AlertTitle>{t('Why These Skills?', 'لماذا هذه المهارات؟')}</AlertTitle>
               <AlertDescription>
-                <strong>D33 Economic Agenda</strong> aims to double Dubai's economy by 2033, focusing on technology, sustainability, and trade.
-                <strong> Talent 2033</strong> is developing future-ready workforce skills. Adding these skills can improve your job matches by up to 40%.
+                {t(
+                  'D33 Economic Agenda aims to double Dubai\'s economy by 2033, focusing on technology, sustainability, and trade. Talent 2033 is developing future-ready workforce skills. Adding these skills can improve your job matches by up to 40%.',
+                  'تهدف أجندة دبي الاقتصادية D33 إلى مضاعفة اقتصاد دبي بحلول 2033، مع التركيز على التكنولوجيا والاستدامة والتجارة. مبادرة المواهب 2033 تطور مهارات القوى العاملة المستقبلية. إضافة هذه المهارات يمكن أن تحسن مطابقاتك الوظيفية بنسبة تصل إلى 40%.'
+                )}
               </AlertDescription>
             </Alert>
 
             <Tabs value={activeRecommendationTab} onValueChange={setActiveRecommendationTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="all">All Recommendations</TabsTrigger>
-                <TabsTrigger value="d33">D33 Priority</TabsTrigger>
-                <TabsTrigger value="talent33">Talent33</TabsTrigger>
-                <TabsTrigger value="high">High Impact</TabsTrigger>
+                <TabsTrigger value="all">{t('All Recommendations', 'جميع التوصيات')}</TabsTrigger>
+                <TabsTrigger value="d33">{t('D33 Priority', 'أولوية D33')}</TabsTrigger>
+                <TabsTrigger value="talent33">{t('Talent33', 'المواهب 33')}</TabsTrigger>
+                <TabsTrigger value="high">{t('High Impact', 'تأثير عالٍ')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="all" className="space-y-3">
@@ -988,8 +994,8 @@ const CVProfile: React.FC = () => {
                 onClick={() => navigate('/cv-builder')}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Add Skills to Your CV
+                <Sparkles className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                {t('Add Skills to Your CV', 'أضف مهارات إلى سيرتك الذاتية')}
               </Button>
             </div>
           </CardContent>
@@ -1003,6 +1009,9 @@ const CVProfile: React.FC = () => {
  * Individual skill recommendation card component
  */
 const SkillRecommendationCard: React.FC<{ recommendation: SkillRecommendation }> = ({ recommendation }) => {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const relevanceColors = {
     high: 'bg-green-100 text-green-700 border-green-200',
     medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -1018,13 +1027,13 @@ const SkillRecommendationCard: React.FC<{ recommendation: SkillRecommendation }>
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-900">{recommendation.skill}</span>
           <Badge variant="outline" className={relevanceColors[recommendation.relevance]}>
-            {recommendation.relevance === 'high' ? 'High Impact' :
-              recommendation.relevance === 'medium' ? 'Recommended' : 'Nice to Have'}
+            {recommendation.relevance === 'high' ? t('High Impact', 'تأثير عالٍ') :
+              recommendation.relevance === 'medium' ? t('Recommended', 'مُوصى به') : t('Nice to Have', 'جيد إن توفر')}
           </Badge>
         </div>
         <p className="text-sm text-gray-600 mt-1">{recommendation.description}</p>
         {recommendation.d33Sector && (
-          <p className="text-xs text-blue-600 mt-1">D33 Sector: {recommendation.d33Sector}</p>
+          <p className="text-xs text-blue-600 mt-1">{t('D33 Sector:', 'قطاع D33:')} {recommendation.d33Sector}</p>
         )}
       </div>
     </div>

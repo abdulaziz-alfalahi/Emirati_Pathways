@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Users, 
-  Building2, 
-  GraduationCap, 
-  UserCheck, 
+import {
+  ArrowRight,
+  Users,
+  Building2,
+  GraduationCap,
+  UserCheck,
   Award,
   Sparkles,
   Shield,
@@ -150,8 +150,8 @@ const BilingualHomePage: React.FC = () => {
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl arabic-text' : 'ltr english-text'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Navigation */}
-      <HybridGovernmentNavFixed 
-        showAuthButtons={true} 
+      <HybridGovernmentNavFixed
+        showAuthButtons={true}
         onLanguageToggle={toggleLanguage}
         currentLanguage={currentLanguage}
       />
@@ -199,7 +199,7 @@ const BilingualHomePage: React.FC = () => {
                 {translations.hero?.startJourney || 'Start Your Journey'}
                 <ArrowRight className={`w-5 h-5 ${isRTL ? 'mr-2' : 'ml-2'}`} />
               </Link>
-              <button 
+              <button
                 onClick={() => setIsDemoModalOpen(true)}
                 className="flex items-center text-slate-600 hover:text-slate-900 font-dubai-medium text-lg transition-colors"
               >
@@ -216,7 +216,7 @@ const BilingualHomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-dubai-bold text-slate-900 mb-4">
-              {translations.whyChoose?.title || 'Why Choose Emirati Journey Platform?'}
+              {translations.whyChoose?.title || 'Why Choose Dubai Human Development Platform?'}
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               {translations.whyChoose?.subtitle || 'Built specifically for the UAE market with advanced AI technology and cultural intelligence'}
@@ -259,7 +259,7 @@ const BilingualHomePage: React.FC = () => {
                     </span>
                   </div>
                 )}
-                
+
                 <div className={`w-16 h-16 ${persona.color} rounded-xl flex items-center justify-center mb-6`}>
                   <persona.icon className="w-8 h-8 text-white" />
                 </div>
@@ -300,9 +300,9 @@ const BilingualHomePage: React.FC = () => {
       </button>
 
       {/* Interactive Dashboard Demo */}
-      <InteractiveDashboardDemo 
-        isOpen={isDemoModalOpen} 
-        onClose={() => setIsDemoModalOpen(false)} 
+      <InteractiveDashboardDemo
+        isOpen={isDemoModalOpen}
+        onClose={() => setIsDemoModalOpen(false)}
       />
     </div>
   );

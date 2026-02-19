@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  GraduationCap, 
-  BookOpen, 
-  Users, 
-  Award, 
+import {
+  GraduationCap,
+  BookOpen,
+  Users,
+  Award,
   Calendar,
   MapPin,
   Clock,
@@ -177,14 +177,14 @@ const ModernUniversityPrograms: React.FC = () => {
 
   const filteredUniversities = universities.filter(university => {
     const matchesSearch = university.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         university.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesField = selectedField === 'all' || 
-                        university.programs_offered.some(program => program.field === selectedField);
-    
-    const matchesLevel = selectedLevel === 'all' || 
-                        university.programs_offered.some(program => program.level === selectedLevel);
-    
+      university.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesField = selectedField === 'all' ||
+      university.programs_offered.some(program => program.field === selectedField);
+
+    const matchesLevel = selectedLevel === 'all' ||
+      university.programs_offered.some(program => program.level === selectedLevel);
+
     return matchesSearch && matchesField && matchesLevel;
   });
 
@@ -273,7 +273,7 @@ const ModernUniversityPrograms: React.FC = () => {
       }
     >
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-2xl p-8 mb-12">
+      <div className="bg-[#F0F7F7] rounded-2xl p-8 mb-12 border border-[#E2E5E9]">
         <div className="max-w-4xl">
           <h2 className="text-display-2 text-gray-900 mb-4">
             {t('pages.university_programs.hero.title')}
@@ -281,7 +281,7 @@ const ModernUniversityPrograms: React.FC = () => {
           <p className="text-body-large text-gray-600 mb-6">
             {t('pages.university_programs.hero.description')}
           </p>
-          
+
           {/* Search and Filters */}
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
@@ -291,15 +291,15 @@ const ModernUniversityPrograms: React.FC = () => {
                 placeholder={t('pages.university_programs.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
               />
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={selectedField}
                 onChange={(e) => setSelectedField(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="px-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
               >
                 {fieldFilters.map((filter) => (
                   <option key={filter.id} value={filter.id}>
@@ -307,11 +307,11 @@ const ModernUniversityPrograms: React.FC = () => {
                   </option>
                 ))}
               </select>
-              
+
               <select
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="px-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
               >
                 {levelFilters.map((filter) => (
                   <option key={filter.id} value={filter.id}>
@@ -352,7 +352,7 @@ const ModernUniversityPrograms: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {popularFields.map((field, index) => {
             const Icon = field.icon;
-            
+
             return (
               <div
                 key={index}
@@ -361,11 +361,11 @@ const ModernUniversityPrograms: React.FC = () => {
                 <div className={`w-12 h-12 bg-gradient-to-br ${field.color} rounded-xl flex items-center justify-center mb-4`}>
                   <Icon className="h-6 w-6 text-white" />
                 </div>
-                
+
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {field.name}
                 </h3>
-                
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">{t('common.programs')}:</span>
@@ -412,15 +412,14 @@ const ModernUniversityPrograms: React.FC = () => {
                 />
                 {university.badge && (
                   <div className="absolute top-4 right-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      university.badge === t('common.top_ranked')
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${university.badge === t('common.top_ranked')
                         ? 'bg-yellow-100 text-yellow-800'
                         : university.badge === t('common.international')
-                        ? 'bg-blue-100 text-blue-800'
-                        : university.badge === t('common.affordable')
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-purple-100 text-purple-800'
-                    }`}>
+                          ? 'bg-blue-100 text-blue-800'
+                          : university.badge === t('common.affordable')
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-purple-100 text-purple-800'
+                      }`}>
                       {university.badge}
                     </span>
                   </div>
@@ -543,13 +542,13 @@ const ModernUniversityPrograms: React.FC = () => {
             }
           ].map((timeline, index) => {
             const Icon = timeline.icon;
-            
+
             return (
               <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Icon className="h-8 w-8 text-teal-600" />
+                <div className="w-16 h-16 bg-[#E6F5F5] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Icon className="h-8 w-8 text-[#006E6D]" />
                 </div>
-                <div className="text-sm font-bold text-teal-600 mb-2">
+                <div className="text-sm font-bold text-[#006E6D] mb-2">
                   {timeline.month}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -565,7 +564,7 @@ const ModernUniversityPrograms: React.FC = () => {
       </div>
 
       {/* Call to Action */}
-      <div className="text-center bg-gradient-to-r from-teal-600 to-blue-600 rounded-2xl p-8 text-white">
+      <div className="text-center bg-[#006E6D] rounded-2xl p-8 text-white">
         <h2 className="text-2xl font-bold mb-4">
           {t('pages.university_programs.cta.title')}
         </h2>
@@ -573,10 +572,10 @@ const ModernUniversityPrograms: React.FC = () => {
           {t('pages.university_programs.cta.description')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="bg-white text-teal-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+          <button className="bg-white text-[#006E6D] px-6 py-3 rounded-full font-medium hover:bg-gray-50 transition-colors">
             {t('pages.university_programs.cta.explore_programs')}
           </button>
-          <button className="border border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-teal-600 transition-colors">
+          <button className="border border-white/40 text-white px-6 py-3 rounded-full font-medium hover:bg-white/10 transition-colors">
             {t('pages.university_programs.cta.schedule_consultation')}
           </button>
         </div>

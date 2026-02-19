@@ -67,15 +67,15 @@ const PersonaSelector: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
-  
+
   const nextPersona = () => {
     setActiveIndex((prev) => (prev === personas.length - 1 ? 0 : prev + 1));
   };
-  
+
   const prevPersona = () => {
     setActiveIndex((prev) => (prev === 0 ? personas.length - 1 : prev - 1));
   };
-  
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -85,22 +85,22 @@ const PersonaSelector: React.FC = () => {
       },
       { threshold: 0.1 }
     );
-    
+
     const section = document.getElementById('personas');
     if (section) observer.observe(section);
-    
+
     return () => {
       if (section) observer.unobserve(section);
     };
   }, []);
-  
+
   return (
     <section id="personas" className="section bg-emirati-navy/5 relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full bg-dot-pattern opacity-50 pointer-events-none"></div>
       <div className="absolute top-1/4 -right-40 w-80 h-80 bg-emirati-teal/10 rounded-full filter blur-3xl"></div>
       <div className="absolute bottom-1/4 -left-40 w-80 h-80 bg-emirati-gold/10 rounded-full filter blur-3xl"></div>
-      
+
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-16">
           <div className="inline-block mb-6 px-4 py-2 rounded-full bg-white shadow-subtle border border-gray-100">
@@ -108,39 +108,39 @@ const PersonaSelector: React.FC = () => {
           </div>
           <h2 className="text-3xl md:text-5xl font-display font-semibold mb-6">Who Can Benefit</h2>
           <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-            The Emirati Journey platform connects various stakeholders in the UAE's human 
+            The Dubai Human Development platform connects various stakeholders in the UAE's human
             capital development ecosystem.
           </p>
         </div>
-        
+
         {/* Persona Slider */}
         <div className="relative">
           {/* Navigation Buttons */}
-          <button 
+          <button
             onClick={prevPersona}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-10 md:-left-6 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-300"
           >
             <ChevronLeft className="text-emirati-navy" />
           </button>
-          
-          <button 
+
+          <button
             onClick={nextPersona}
             className="absolute right-0 top-1/2 -translate-y-1/2 z-10 md:-right-6 bg-white rounded-full p-2 shadow-md hover:shadow-lg transition-all duration-300"
           >
             <ChevronRight className="text-emirati-navy" />
           </button>
-          
+
           {/* Persona Cards */}
-          <div 
+          <div
             ref={containerRef}
             className="flex overflow-hidden"
           >
-            <div 
+            <div
               className="flex transition-transform duration-500 ease-out"
               style={{ transform: `translateX(-${activeIndex * 100}%)` }}
             >
               {personas.map((persona, index) => (
-                <div 
+                <div
                   key={persona.id}
                   className={cn(
                     "w-full flex-shrink-0 px-6 transition-opacity duration-500",
@@ -164,7 +164,7 @@ const PersonaSelector: React.FC = () => {
               ))}
             </div>
           </div>
-          
+
           {/* Dots Indicator */}
           <div className="flex justify-center space-x-2 mt-8">
             {personas.map((_, index) => (
@@ -172,8 +172,8 @@ const PersonaSelector: React.FC = () => {
                 key={index}
                 className={cn(
                   "w-2.5 h-2.5 rounded-full transition-all duration-300",
-                  activeIndex === index 
-                    ? "bg-emirati-teal w-8" 
+                  activeIndex === index
+                    ? "bg-emirati-teal w-8"
                     : "bg-gray-300 hover:bg-gray-400"
                 )}
                 onClick={() => setActiveIndex(index)}

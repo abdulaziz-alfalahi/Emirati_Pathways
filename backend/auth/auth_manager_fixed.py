@@ -395,7 +395,8 @@ class AuthenticationManager:
                 '+971550000011',  # Test Educator
                 '+971500001001',  # Test Team Chat - HR Manager 1
                 '+971500001002',  # Test Team Chat - Recruiter 1
-                '+971500001003'   # Test Team Chat - Recruiter 2
+                '+971500001003',  # Test Team Chat - Recruiter 2
+                '+971500001004'   # Test Parent User
             ]
             is_magic = phone.endswith('1234567') or phone in magic_numbers
             
@@ -505,7 +506,8 @@ class AuthenticationManager:
                 '+971550000011',  # Test Educator
                 '+971500001001',  # Test Team Chat - HR Manager 1
                 '+971500001002',  # Test Team Chat - Recruiter 1
-                '+971500001003'   # Test Team Chat - Recruiter 2
+                '+971500001003',  # Test Team Chat - Recruiter 2
+                '+971500001004'   # Test Parent User
             ]
             if code == '123456' and (phone.endswith('1234567') or phone in magic_numbers):
                  print("DEBUG: Magic OTP match!", flush=True)

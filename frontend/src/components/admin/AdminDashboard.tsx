@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { restClient } from '@/utils/api';
-import { 
-  Users, 
-  FileText, 
-  Image, 
-  Settings, 
-  BarChart3, 
-  Bell, 
-  Shield, 
+import {
+  Users,
+  FileText,
+  Image,
+  Settings,
+  BarChart3,
+  Bell,
+  Shield,
   Activity,
   TrendingUp,
   AlertTriangle,
@@ -78,7 +78,7 @@ const AdminDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Fetch dashboard data from API with graceful fallback
       const [statsResponse, alertsResponse, activityResponse] = await Promise.allSettled([
         restClient.get('/api/admin/dashboard/stats', { params: { timeRange: selectedTimeRange } }),
@@ -143,7 +143,7 @@ const AdminDashboard: React.FC = () => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / 60000);
-    
+
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -170,7 +170,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Administrator Dashboard</h1>
               <p className="mt-1 text-sm text-gray-500">
-                Emirati Journey Platform - Administrative Control Center
+                Dubai Human Development Platform - Administrative Control Center
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -301,9 +301,8 @@ const AdminDashboard: React.FC = () => {
                     alerts.map((alert) => (
                       <div
                         key={alert.id}
-                        className={`p-4 rounded-lg border ${
-                          alert.isRead ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-300'
-                        }`}
+                        className={`p-4 rounded-lg border ${alert.isRead ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-300'
+                          }`}
                       >
                         <div className="flex items-start space-x-3">
                           {getAlertIcon(alert.type)}
@@ -381,27 +380,27 @@ const AdminDashboard: React.FC = () => {
                 <Users className="w-8 h-8 text-gray-600 group-hover:text-blue-600 mb-2" />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Manage Users</span>
               </button>
-              
+
               <button className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors group">
                 <FileText className="w-8 h-8 text-gray-600 group-hover:text-green-600 mb-2" />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-green-700">Content Manager</span>
               </button>
-              
+
               <button className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors group">
                 <Image className="w-8 h-8 text-gray-600 group-hover:text-purple-600 mb-2" />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-purple-700">Media Library</span>
               </button>
-              
+
               <button className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-colors group">
                 <BarChart3 className="w-8 h-8 text-gray-600 group-hover:text-orange-600 mb-2" />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-orange-700">Analytics</span>
               </button>
-              
+
               <button className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors group">
                 <Settings className="w-8 h-8 text-gray-600 group-hover:text-red-600 mb-2" />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-red-700">System Settings</span>
               </button>
-              
+
               <button className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors group">
                 <Shield className="w-8 h-8 text-gray-600 group-hover:text-indigo-600 mb-2" />
                 <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-700">Security</span>

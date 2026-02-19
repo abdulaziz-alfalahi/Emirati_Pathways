@@ -29,7 +29,7 @@ const useNavItems = () => {
     { name: 'Portfolio', href: '/portfolio', icon: FileText },
     { name: 'Resume Builder', href: '/resume-builder', icon: FileText },
     { name: 'Career Journey', href: '/career-journey', icon: MapPin },
-    { name: 'Summer Camps', href: '/summer-camps', icon: Calendar },
+    { name: 'Knowledge Camps', href: '/knowledge-camps', icon: Calendar },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Internships', href: '/internships', icon: Briefcase },
     { name: 'Training', href: '/training', icon: BookOpen },

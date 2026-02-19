@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
 @import './styles/dubai-font.css';
 @import url('https://fonts.googleapis.com/css2?family=Open+Dyslexic:wght@400;700&display=swap');
@@ -8,82 +9,65 @@
 
 @layer base {
   :root {
-    /* Dubai Government Colors - EHRDC Palette */
+    /* ─── EHRDC Brand Teal (extracted from logo) ─── */
     --ehrdc-teal: #006E6D;
     --ehrdc-dark-teal: #005A59;
     --ehrdc-light-teal: #4A9B9A;
+    --ehrdc-subtle-bg: #F0F7F7;
     --ehrdc-neutral-dark: #1A1A1A;
-    --ehrdc-neutral-light: #F5F5F5;
+    --ehrdc-neutral-light: #F4F5F7;
     --ehrdc-white: #FFFFFF;
 
-    /* Professional Growth color palette */
+    /* ─── Professional Growth palette ─── */
     --pg-primary: 238 100 156;
-    /* Fuchsia-500 */
     --pg-primary-light: 245 208 254;
-    /* Fuchsia-200 */
     --pg-secondary: 99 102 241;
-    /* Indigo-500 */
     --pg-secondary-light: 199 210 254;
-    /* Indigo-200 */
     --pg-accent: 139 92 246;
-    /* Violet-500 */
     --pg-accent-light: 221 214 254;
-    /* Violet-200 */
     --pg-background: 245 243 255;
-    /* Violet-50 */
     --pg-gradient-from: 79 70 229;
-    /* Indigo-600 */
     --pg-gradient-to: 147 51 234;
-    /* Purple-600 */
 
-    /* Group 1 - Early Education/Administrative */
-    --group-early-bg: rgba(179, 222, 221, 0.2);
-    /* ehrdc-light-teal at 20% opacity */
-    --group-early-hover: rgba(179, 222, 221, 0.3);
-    /* ehrdc-light-teal at 30% opacity */
+    /* ─── Group Colors ─── */
+    --group-early-bg: rgba(224, 242, 241, 0.25);
+    --group-early-hover: rgba(224, 242, 241, 0.4);
     --group-early-text: #006E6D;
-    /* ehrdc-teal */
-    --group-early-border: rgba(179, 222, 221, 0.5);
-    /* ehrdc-light-teal at 50% opacity */
+    --group-early-border: rgba(224, 242, 241, 0.6);
 
-    /* Group 2 - Advanced Education/Exploratory */
     --group-advanced-bg: rgba(219, 234, 254, 0.5);
-    /* blue-100 at 50% opacity */
     --group-advanced-hover: rgba(191, 219, 254, 0.5);
-    /* blue-200 at 50% opacity */
     --group-advanced-text: #1d4ed8;
-    /* blue-700 */
     --group-advanced-border: rgba(191, 219, 254, 0.7);
-    /* blue-200 at 70% opacity */
 
-    /* Semantic color mappings */
-    --background: var(--ehrdc-white);
-    --foreground: var(--ehrdc-neutral-dark);
-    --card: var(--ehrdc-white);
-    --card-foreground: var(--ehrdc-neutral-dark);
-    --popover: var(--ehrdc-white);
-    --popover-foreground: var(--ehrdc-neutral-dark);
-    --primary: var(--ehrdc-teal);
-    --primary-foreground: var(--ehrdc-white);
-    --secondary: var(--ehrdc-neutral-light);
-    --secondary-foreground: var(--ehrdc-neutral-dark);
-    --muted: var(--ehrdc-neutral-light);
-    --muted-foreground: var(--ehrdc-neutral-dark);
-    --accent: var(--ehrdc-light-teal);
-    --accent-foreground: var(--ehrdc-neutral-dark);
+    /* ─── Semantic Design Tokens (Stitch-inspired) ─── */
+    --background: #FAFBFC;
+    --foreground: #1A1A1A;
+    --card: #FFFFFF;
+    --card-foreground: #1A1A1A;
+    --popover: #FFFFFF;
+    --popover-foreground: #1A1A1A;
+    --primary: #006E6D;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F4F5F7;
+    --secondary-foreground: #1A1A1A;
+    --muted: #F4F5F7;
+    --muted-foreground: #6B7280;
+    --accent: #E6F5F5;
+    --accent-foreground: #006E6D;
     --destructive: #EF4444;
-    --destructive-foreground: var(--ehrdc-white);
-    --border: var(--ehrdc-neutral-light);
-    --input: var(--ehrdc-neutral-light);
-    --ring: var(--ehrdc-teal);
-    --chart-1: var(--ehrdc-teal);
-    --chart-2: var(--ehrdc-light-teal);
-    --chart-3: var(--ehrdc-dark-teal);
+    --destructive-foreground: #FFFFFF;
+    --border: #E2E5E9;
+    --input: #E2E5E9;
+    --ring: #006E6D;
+    --chart-1: #006E6D;
+    --chart-2: #4A9B9A;
+    --chart-3: #005A59;
     --chart-4: #10B981;
     --chart-5: #F59E0B;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Emirati theme colors */
+    /* ─── Emirati aliases ─── */
     --emirati-teal: var(--ehrdc-teal);
     --emirati-navy: var(--ehrdc-neutral-dark);
     --emirati-gold: #D4AF37;
@@ -91,48 +75,31 @@
 
   .dark {
     --background: #020817;
-    /* Slate 950 */
     --foreground: #F8FAFC;
-    /* Slate 50 */
-
     --card: #020817;
     --card-foreground: #F8FAFC;
-
     --popover: #020817;
     --popover-foreground: #F8FAFC;
-
     --primary: #F8FAFC;
     --primary-foreground: #0F172A;
-
     --secondary: #1E293B;
     --secondary-foreground: #F8FAFC;
-
     --muted: #1E293B;
     --muted-foreground: #94A3B8;
-
     --accent: #1E293B;
     --accent-foreground: #F8FAFC;
-
     --destructive: #7f1d1d;
     --destructive-foreground: #F8FAFC;
-
     --border: #1E293B;
     --input: #1E293B;
     --ring: #cbd5e1;
 
-    /* EHRDC Specific Overrides for Dark Mode */
     --ehrdc-teal: #4A9B9A;
-    /* Light Teal */
     --ehrdc-dark-teal: #2DD4BF;
-    /* Teal 400 */
     --ehrdc-light-teal: #134E4A;
-    /* Teal 900 */
     --ehrdc-neutral-dark: #F8FAFC;
-    /* White text */
     --ehrdc-neutral-light: #1E293B;
-    /* Dark background elements */
     --ehrdc-white: #020817;
-    /* Dark background */
   }
 }
 
@@ -144,6 +111,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Arabic font support */
@@ -158,11 +127,11 @@
   }
 
   .ehrdc-button-primary {
-    @apply bg-ehrdc-teal text-white hover:bg-ehrdc-dark-teal focus:ring-2 focus:ring-ehrdc-teal/20 focus:ring-offset-2 transition-all duration-200 font-medium;
+    @apply bg-[#006E6D] text-white hover:bg-[#005A59] focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2 transition-colors duration-200 font-medium rounded-xl;
   }
 
   .ehrdc-button-secondary {
-    @apply bg-ehrdc-neutral-light text-ehrdc-neutral-dark hover:bg-ehrdc-neutral-light/80 focus:ring-2 focus:ring-ehrdc-teal/20 focus:ring-offset-2 transition-all duration-200 font-medium;
+    @apply bg-[#F4F5F7] text-[#1A1A1A] hover:bg-[#E2E5E9] focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2 transition-colors duration-200 font-medium rounded-xl;
   }
 
   /* Dubai Government Section Styles */
@@ -199,6 +168,10 @@
     background-color: var(--ehrdc-light-teal);
   }
 
+  .bg-ehrdc-subtle {
+    background-color: var(--ehrdc-subtle-bg);
+  }
+
   .border-ehrdc-teal {
     border-color: var(--ehrdc-teal);
   }
@@ -230,12 +203,24 @@
 
   /* Animation utilities */
   .animate-fade-in {
-    animation: fadeIn 0.6s ease-in-out;
+    animation: fadeIn 0.5s ease-out;
   }
 
   /* Shadow utilities */
   .shadow-subtle {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-stitch {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .shadow-stitch-md {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-stitch-lg {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
   }
 
   /* Display font utility */
@@ -249,25 +234,30 @@
 
   /* Button components */
   .btn-primary {
-    @apply bg-teal-600 hover:bg-teal-700 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500/20 focus:ring-offset-2;
+    @apply bg-[#006E6D] hover:bg-[#005A59] text-white font-medium px-6 py-2.5 rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-teal-600 border border-teal-600 font-medium px-6 py-3 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-teal-500/20 focus:ring-offset-2;
+    @apply bg-white hover:bg-gray-50 text-[#006E6D] border border-[#006E6D] font-medium px-6 py-2.5 rounded-xl transition-colors duration-200 focus:ring-2 focus:ring-[#006E6D]/20 focus:ring-offset-2;
   }
 
   /* Card components */
   .card-base {
-    @apply bg-white rounded-lg shadow-subtle border border-gray-200;
+    @apply bg-white rounded-2xl border border-[#E2E5E9];
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
   .card-hover {
-    @apply card-base hover:shadow-md transition-shadow duration-200;
+    @apply card-base hover:border-[#006E6D]/30 transition-all duration-200;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
   }
 
   /* Hero section */
   .hero-gradient {
-    background: linear-gradient(135deg, var(--emirati-teal) 0%, #4A9B9A 100%);
+    background: linear-gradient(135deg, #006E6D 0%, #4A9B9A 100%);
   }
 }
 
@@ -275,7 +265,7 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
 
   to {
@@ -286,14 +276,12 @@
 
 /* Accessibility & High Contrast Styles */
 .high-contrast {
-  /* Force System Colors for High Contrast */
   --ehrdc-teal: #000000;
   --ehrdc-dark-teal: #000000;
   --ehrdc-light-teal: #FFFFFF;
   --ehrdc-neutral-dark: #000000;
   --ehrdc-neutral-light: #FFFFFF;
   --ehrdc-white: #FFFFFF;
-
   --primary: #000000;
   --primary-foreground: #FFFFFF;
   --secondary: #FFFFFF;
@@ -302,19 +290,15 @@
   --foreground: #000000;
   --card: #FFFFFF;
   --card-foreground: #000000;
-
-  /* Ensure readability on the body */
   background-color: #FFFFFF !important;
   color: #000000 !important;
 }
 
-/* Force specific element visibility in HC mode */
 .high-contrast button,
 .high-contrast .btn-primary,
 .high-contrast .ehrdc-button-primary {
   background-color: #000000 !important;
   color: #FFFF00 !important;
-  /* Yellow text on Black key for high visibility */
   border: 2px solid #000000 !important;
   text-decoration: none !important;
 }
@@ -327,7 +311,6 @@
   background-color: #FFFFFF !important;
   color: #000000 !important;
   border: 2px solid #000000 !important;
-  /* Force border to verify structure */
   box-shadow: none !important;
 }
 
@@ -343,7 +326,6 @@
   text-decoration: underline !important;
   font-weight: bold !important;
   color: #0000EE !important;
-  /* Standard Link Blue or Black */
 }
 
 
@@ -373,12 +355,11 @@
 
 /* Enhanced Focus Indicators */
 .enhanced-focus :focus-visible {
-  outline: 4px solid #F59E0B !important;
-  /* Amber-500 */
+  outline: 3px solid #006E6D !important;
   outline-offset: 2px !important;
 }
 
-/* Responsive design enhancements */
+/* Responsive design */
 @media (max-width: 640px) {
   .dubai-container {
     @apply px-4;

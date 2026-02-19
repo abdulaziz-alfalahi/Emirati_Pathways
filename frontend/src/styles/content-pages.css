@@ -1,0 +1,407 @@
+/* ═══════════════════════════════════════════════════════════
+   Content Page Styles — shared across all EducationPathwayLayout pages
+   Brand tokens: EHRDC teal (#0D9488)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Brand Tokens as CSS Variables ── */
+:root {
+    --ep-primary: #0D9488;
+    --ep-primary-dark: #0F766E;
+    --ep-primary-surface: #F0FDFA;
+    --ep-bg: #FAFBFC;
+    --ep-border: #E5E7EB;
+    --ep-text: #111827;
+    --ep-text-secondary: #6B7280;
+    --ep-text-tertiary: #9CA3AF;
+    --ep-amber: #FEF3C7;
+    --ep-amber-text: #92400E;
+    --ep-green: #DCFCE7;
+    --ep-green-text: #166534;
+    --ep-blue: #DBEAFE;
+    --ep-blue-text: #1E40AF;
+    --ep-purple: #F3E8FF;
+    --ep-purple-text: #6B21A8;
+    --ep-red: #FEE2E2;
+    --ep-red-text: #991B1B;
+    --ep-shadow-hover: 0 4px 20px rgba(0, 0, 0, .08);
+    --ep-radius: 12px;
+    --ep-radius-sm: 8px;
+    --ep-radius-pill: 20px;
+}
+
+/* ── Section heading + description ── */
+.ep-section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ep-text);
+    margin: 0 0 8px;
+}
+
+.ep-section-desc {
+    font-size: 14px;
+    color: var(--ep-text-secondary);
+    margin: 0 0 24px;
+    line-height: 1.6;
+}
+
+/* ── Grid layouts ── */
+.ep-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.ep-grid--2col {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.ep-grid--3col {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.ep-grid--4col {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.ep-grid--gap-sm {
+    gap: 12px;
+}
+
+.ep-grid--gap-md {
+    gap: 14px;
+}
+
+/* ── Card ── */
+.ep-card {
+    background: #fff;
+    border-radius: var(--ep-radius);
+    border: 1px solid var(--ep-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow .2s ease;
+}
+
+.ep-card:hover {
+    box-shadow: var(--ep-shadow-hover);
+}
+
+.ep-card--row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.ep-card--center {
+    text-align: center;
+    align-items: center;
+}
+
+/* ── Card header (icon + title + subtitle) ── */
+.ep-card__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ep-card__icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.ep-card__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ep-text);
+    margin: 0;
+}
+
+.ep-card__subtitle {
+    font-size: 11px;
+    color: var(--ep-primary);
+    font-weight: 600;
+}
+
+.ep-card__desc {
+    font-size: 13px;
+    color: var(--ep-text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.ep-card__meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--ep-text-secondary);
+    margin-bottom: 8px;
+}
+
+.ep-card__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.ep-card__body {
+    flex: 1;
+    min-width: 240px;
+}
+
+.ep-card__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 120px;
+}
+
+/* ── Divider line inside card ── */
+.ep-card__divider {
+    border-top: 1px solid var(--ep-border);
+    padding-top: 10px;
+}
+
+/* ── Check list inside card ── */
+.ep-checklist {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 4px;
+}
+
+.ep-checklist__icon {
+    color: var(--ep-primary);
+    flex-shrink: 0;
+}
+
+.ep-checklist__text {
+    font-size: 12px;
+    color: var(--ep-text-secondary);
+}
+
+/* ── Buttons ── */
+.ep-btn {
+    border: none;
+    border-radius: var(--ep-radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s ease, box-shadow .15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.ep-btn:hover {
+    opacity: 0.9;
+}
+
+.ep-btn:focus-visible {
+    outline: 2px solid var(--ep-primary);
+    outline-offset: 2px;
+}
+
+.ep-btn--primary {
+    background: var(--ep-primary);
+    color: #fff;
+    padding: 9px 16px;
+    font-size: 13px;
+}
+
+.ep-btn--primary-full {
+    background: var(--ep-primary);
+    color: #fff;
+    padding: 9px 0;
+    font-size: 13px;
+    width: 100%;
+    margin-top: auto;
+}
+
+.ep-btn--outline {
+    background: var(--ep-primary-surface);
+    color: var(--ep-primary);
+    border: 1px solid rgba(13, 148, 136, .2);
+    padding: 7px 0;
+    font-size: 12px;
+    width: 100%;
+    margin-top: auto;
+}
+
+.ep-btn--lg {
+    padding: 12px 28px;
+    font-size: 15px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+/* ── Badges / Pills ── */
+.ep-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.ep-badge--green {
+    background: var(--ep-green);
+    color: var(--ep-green-text);
+}
+
+.ep-badge--blue {
+    background: var(--ep-blue);
+    color: var(--ep-blue-text);
+}
+
+.ep-badge--purple {
+    background: var(--ep-purple);
+    color: var(--ep-purple-text);
+}
+
+.ep-badge--amber {
+    background: var(--ep-amber);
+    color: var(--ep-amber-text);
+}
+
+.ep-badge--red {
+    background: var(--ep-red);
+    color: var(--ep-red-text);
+}
+
+.ep-badge--teal {
+    background: var(--ep-primary-surface);
+    color: var(--ep-primary);
+}
+
+.ep-badge--pill {
+    padding: 3px 10px;
+}
+
+/* ── Banners / CTAs ── */
+.ep-banner {
+    border-radius: var(--ep-radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.ep-banner--teal {
+    background: var(--ep-primary-surface);
+    border: 1px solid rgba(13, 148, 136, .13);
+    padding: 28px;
+    gap: 20px;
+}
+
+.ep-banner--red {
+    background: var(--ep-red);
+}
+
+.ep-banner__body {
+    flex: 1;
+    min-width: 200px;
+}
+
+.ep-banner__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ep-text);
+    margin: 0 0 6px;
+}
+
+.ep-banner__desc {
+    font-size: 14px;
+    color: var(--ep-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ── Info blocks (e.g. service centres) ── */
+.ep-info-block {
+    background: #F9FAFB;
+    border-radius: var(--ep-radius-sm);
+    padding: 12px;
+}
+
+.ep-info-block__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ep-text);
+    margin-bottom: 2px;
+}
+
+.ep-info-block__desc {
+    font-size: 12px;
+    color: var(--ep-text-secondary);
+    margin-bottom: 4px;
+}
+
+.ep-info-block__link {
+    font-size: 12px;
+    color: var(--ep-primary);
+    font-weight: 600;
+}
+
+/* ── Contact chip (phone numbers) ── */
+.ep-contact-chip {
+    background: #fff;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: var(--ep-radius-sm);
+    font-size: 15px;
+}
+
+/* ── List in a column ── */
+.ep-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ── Small text helpers ── */
+.ep-text-sm {
+    font-size: 11px;
+    color: var(--ep-text-secondary);
+}
+
+.ep-text-xs {
+    font-size: 10px;
+}
+
+.ep-text-primary {
+    color: var(--ep-primary);
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 640px) {
+
+    .ep-grid--2col,
+    .ep-grid--3col {
+        grid-template-columns: 1fr;
+    }
+
+    .ep-grid--4col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ep-card--row {
+        flex-direction: column;
+    }
+
+    .ep-card__actions {
+        align-items: stretch;
+        min-width: auto;
+    }
+
+    .ep-banner {
+        flex-direction: column;
+    }
+
+    .ep-btn--lg {
+        width: 100%;
+    }
+}

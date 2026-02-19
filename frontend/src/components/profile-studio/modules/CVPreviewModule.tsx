@@ -3,12 +3,15 @@ import { profileService, CandidateProfile } from '@/services/profile/profileServ
 import { Download, Layout, Printer, Share2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 export const CVPreviewModule = () => {
     const [profile, setProfile] = useState<any>(null);
     const [template, setTemplate] = useState('modern');
     const [loading, setLoading] = useState(true);
     const cvRef = useRef<HTMLDivElement>(null);
+    const { language, isRTL } = useLanguage();
+    const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
     useEffect(() => {
         loadData();
@@ -64,11 +67,18 @@ export const CVPreviewModule = () => {
 
             pdf.save(`${profile?.headline || 'CV'}_${template}_Emirati_Pathway.pdf`);
         } catch (e) {
-            alert('Failed to generate PDF');
+            alert(t('Failed to generate PDF', 'فشل إنشاء ملف PDF'));
         }
     };
 
-    if (loading) return <div className="p-8">Generating preview...</div>;
+    if (loading) return <div className="p-8">{t('Generating preview...', 'جارٍ إنشاء المعاينة...')}</div>;
+
+    const templateLabels: Record<string, string> = {
+        'modern': t('Modern', 'عصري'),
+        'classic': t('Classic', 'كلاسيكي'),
+        'creative': t('Creative', 'إبداعي'),
+        'executive': t('Executive', 'تنفيذي')
+    };
 
     const getTemplateStyles = () => {
         switch (template) {
@@ -96,7 +106,7 @@ export const CVPreviewModule = () => {
                     header: "bg-slate-900 text-white p-8 mb-8 -mx-[15mm] -mt-[15mm]",
                     name: "text-4xl font-bold mb-2",
                     subtext: "text-slate-300",
-                    sectionTitle: "text-slate-900 font-bold text-lg border-l-4 border-slate-900 pl-3 mb-4 uppercase",
+                    sectionTitle: `text-slate-900 font-bold text-lg ${isRTL ? 'border-r-4 pr-3' : 'border-l-4 pl-3'} border-slate-900 mb-4 uppercase`,
                     grid: "grid grid-cols-3 gap-8"
                 };
             default:
@@ -116,31 +126,31 @@ export const CVPreviewModule = () => {
     return (
         <div className="flex h-[calc(100vh-100px)]">
             {/* Controls Sidebar */}
-            <div className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto">
-                <h2 className="text-xl font-bold mb-6">CV Settings</h2>
+            <div className={`w-80 bg-white ${isRTL ? 'border-l' : 'border-r'} border-gray-200 p-6 overflow-y-auto`}>
+                <h2 className="text-xl font-bold mb-6">{t('CV Settings', 'إعدادات السيرة الذاتية')}</h2>
 
                 {/* Template Selector */}
                 <div className="mb-8">
-                    <label className="text-sm font-semibold text-gray-500 mb-3 block">Choose Template</label>
+                    <label className="text-sm font-semibold text-gray-500 mb-3 block">{t('Choose Template', 'اختر القالب')}</label>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { id: 'modern', color: 'bg-blue-50', border: 'border-blue-200' },
+                            { id: 'modern', color: 'bg-teal-50', border: 'border-teal-200' },
                             { id: 'classic', color: 'bg-gray-50', border: 'border-gray-300' },
                             { id: 'creative', color: 'bg-purple-900', border: 'border-purple-200' },
                             { id: 'executive', color: 'bg-slate-800', border: 'border-slate-600' }
-                        ].map(t => (
+                        ].map(tmpl => (
                             <button
-                                key={t.id}
-                                onClick={() => setTemplate(t.id)}
-                                className={`p-2 border rounded-lg text-sm capitalize transition-all ${template === t.id
-                                    ? 'border-blue-500 ring-2 ring-blue-200 shadow-sm'
+                                key={tmpl.id}
+                                onClick={() => setTemplate(tmpl.id)}
+                                className={`p-2 border rounded-lg text-sm capitalize transition-all ${template === tmpl.id
+                                    ? 'border-teal-500 ring-2 ring-teal-200 shadow-sm'
                                     : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
-                                <div className={`h-16 mb-2 rounded border ${t.border} ${t.color} flex items-center justify-center opacity-80`}>
+                                <div className={`h-16 mb-2 rounded border ${tmpl.border} ${tmpl.color} flex items-center justify-center opacity-80`}>
                                     <div className="w-8 h-[2px] bg-current opacity-40"></div>
                                 </div>
-                                <span className={template === t.id ? 'text-blue-700 font-medium' : 'text-gray-600'}>{t.id}</span>
+                                <span className={template === tmpl.id ? 'text-teal-700 font-medium' : 'text-gray-600'}>{templateLabels[tmpl.id]}</span>
                             </button>
                         ))}
                     </div>
@@ -150,14 +160,14 @@ export const CVPreviewModule = () => {
                 <div className="space-y-3">
                     <button
                         onClick={handleDownload}
-                        className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 shadow-sm"
+                        className="w-full flex items-center justify-center gap-2 bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 shadow-sm"
                     >
                         <Download size={18} />
-                        <span>Download PDF</span>
+                        <span>{t('Download PDF', 'تحميل PDF')}</span>
                     </button>
-                    <button className="w-full flex items-center justify-center space-x-2 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50">
+                    <button className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50">
                         <Share2 size={18} />
-                        <span>Share Link</span>
+                        <span>{t('Share Link', 'مشاركة الرابط')}</span>
                     </button>
                 </div>
             </div>
@@ -171,12 +181,12 @@ export const CVPreviewModule = () => {
                     {isCreative ? (
                         <div className="-m-[15mm] flex min-h-[297mm]">
                             <div className={styles.sidebar}>
-                                <h1 className="text-3xl font-bold mb-2">{profile?.full_name || 'My Name'}</h1>
+                                <h1 className="text-3xl font-bold mb-2">{profile?.full_name || t('My Name', 'اسمي')}</h1>
                                 <p className="text-purple-200 mb-6">{profile?.headline}</p>
 
                                 <div className="space-y-6 text-sm">
                                     <div>
-                                        <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">Contact</h3>
+                                        <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">{t('Contact', 'التواصل')}</h3>
                                         <div className="space-y-1 text-purple-100">
                                             <p>{profile?.contact?.email}</p>
                                             <p>{profile?.contact?.phone}</p>
@@ -185,7 +195,7 @@ export const CVPreviewModule = () => {
                                     </div>
 
                                     <div>
-                                        <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">Skills</h3>
+                                        <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">{t('Skills', 'المهارات')}</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {profile?.skills?.map((s: any, i: number) => (
                                                 <span key={i} className="bg-purple-800 px-2 py-1 rounded text-xs">{s.name}</span>
@@ -194,7 +204,7 @@ export const CVPreviewModule = () => {
                                     </div>
 
                                     <div>
-                                        <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">Education</h3>
+                                        <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">{t('Education', 'التعليم')}</h3>
                                         {profile?.education?.map((edu: any, i: number) => (
                                             <div key={i} className="mb-3">
                                                 <div className="font-bold">{edu.institution}</div>
@@ -208,18 +218,18 @@ export const CVPreviewModule = () => {
 
                             <div className={styles.main}>
                                 <section className="mb-8">
-                                    <h3 className={styles.sectionTitle}>Profile</h3>
+                                    <h3 className={styles.sectionTitle}>{t('Profile', 'الملف الشخصي')}</h3>
                                     <p className="text-gray-600 leading-relaxed">{profile?.bio}</p>
                                 </section>
 
                                 <section>
-                                    <h3 className={styles.sectionTitle}>Experience</h3>
-                                    <div className="space-y-6 border-l-2 border-purple-100 pl-4">
+                                    <h3 className={styles.sectionTitle}>{t('Experience', 'الخبرة')}</h3>
+                                    <div className={`space-y-6 ${isRTL ? 'border-r-2 pr-4' : 'border-l-2 pl-4'} border-purple-100`}>
                                         {profile?.experience?.sort((a: any, b: any) => new Date(b.start_date || 0).getTime() - new Date(a.start_date || 0).getTime()).map((exp: any, i: number) => (
                                             <div key={i} className="relative">
-                                                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-purple-500 border-2 border-white"></div>
+                                                <div className={`absolute ${isRTL ? '-right-[21px]' : '-left-[21px]'} top-1 w-3 h-3 rounded-full bg-purple-500 border-2 border-white`}></div>
                                                 <h4 className="font-bold text-gray-900">{exp.job_title}</h4>
-                                                <div className="text-sm text-purple-600 font-medium mb-1">{exp.company} | {new Date(exp.start_date).getFullYear()} - {exp.is_current ? 'Present' : new Date(exp.end_date).getFullYear()}</div>
+                                                <div className="text-sm text-purple-600 font-medium mb-1">{exp.company} | {new Date(exp.start_date).getFullYear()} - {exp.is_current ? t('Present', 'الحالي') : new Date(exp.end_date).getFullYear()}</div>
                                                 <p className="text-sm text-gray-600">{exp.description}</p>
                                             </div>
                                         ))}
@@ -231,12 +241,12 @@ export const CVPreviewModule = () => {
                         <>
                             <header className={styles.header}>
                                 <h1 className={styles.name}>
-                                    {profile?.full_name || profile?.user?.fullname || 'My Name'}
+                                    {profile?.full_name || profile?.user?.fullname || t('My Name', 'اسمي')}
                                 </h1>
                                 <p className={`text-xl mb-4 ${styles.subtext || 'text-gray-600'}`}>
                                     {profile?.headline || profile?.bio?.slice(0, 100) + '...'}
                                 </p>
-                                <div className={`flex space-x-4 text-sm ${styles.subtext || 'text-gray-500'}`}>
+                                <div className={`flex gap-4 text-sm ${styles.subtext || 'text-gray-500'}`}>
                                     <span>{profile?.contact?.email}</span>
                                     <span>•</span>
                                     <span>{profile?.contact?.phone}</span>
@@ -249,14 +259,14 @@ export const CVPreviewModule = () => {
                                 {/* Main Content Area */}
                                 <div className={template === 'classic' ? 'space-y-8' : 'col-span-2 space-y-8'}>
                                     <section>
-                                        <h3 className={styles.sectionTitle}>Profile</h3>
+                                        <h3 className={styles.sectionTitle}>{t('Profile', 'الملف الشخصي')}</h3>
                                         <p className="text-gray-700 leading-relaxed text-sm">
                                             {profile?.bio}
                                         </p>
                                     </section>
 
                                     <section>
-                                        <h3 className={styles.sectionTitle}>Experience</h3>
+                                        <h3 className={styles.sectionTitle}>{t('Experience', 'الخبرة')}</h3>
                                         <div className="space-y-6">
                                             {profile?.experience
                                                 ?.sort((a: any, b: any) => new Date(b.start_date || 0).getTime() - new Date(a.start_date || 0).getTime())
@@ -265,10 +275,10 @@ export const CVPreviewModule = () => {
                                                         <div className="flex justify-between items-baseline mb-1">
                                                             <h4 className="font-bold text-gray-900">{exp.job_title}</h4>
                                                             <span className="text-xs text-gray-500">
-                                                                {new Date(exp.start_date).getFullYear()} - {exp.is_current ? 'Present' : new Date(exp.end_date).getFullYear()}
+                                                                {new Date(exp.start_date).getFullYear()} - {exp.is_current ? t('Present', 'الحالي') : new Date(exp.end_date).getFullYear()}
                                                             </span>
                                                         </div>
-                                                        <div className="text-sm text-blue-600 font-medium mb-2">{exp.company}, {exp.location}</div>
+                                                        <div className="text-sm text-teal-600 font-medium mb-2">{exp.company}, {exp.location}</div>
                                                         <p className="text-sm text-gray-600 whitespace-pre-line">{exp.description}</p>
                                                     </div>
                                                 ))}
@@ -280,7 +290,7 @@ export const CVPreviewModule = () => {
                                 {template !== 'classic' && (
                                     <div className="space-y-8">
                                         <section>
-                                            <h3 className={styles.sectionTitle}>Skills</h3>
+                                            <h3 className={styles.sectionTitle}>{t('Skills', 'المهارات')}</h3>
                                             <div className="flex flex-wrap gap-2">
                                                 {profile?.skills?.map((s: any, i: number) => (
                                                     <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
@@ -291,7 +301,7 @@ export const CVPreviewModule = () => {
                                         </section>
 
                                         <section>
-                                            <h3 className={styles.sectionTitle}>Education</h3>
+                                            <h3 className={styles.sectionTitle}>{t('Education', 'التعليم')}</h3>
                                             <div className="space-y-4">
                                                 {profile?.education?.map((edu: any, i: number) => (
                                                     <div key={i}>
@@ -310,7 +320,7 @@ export const CVPreviewModule = () => {
                                 {template === 'classic' && (
                                     <div className="grid grid-cols-2 gap-8 pt-8 border-t border-gray-300">
                                         <section>
-                                            <h3 className={styles.sectionTitle}>Education</h3>
+                                            <h3 className={styles.sectionTitle}>{t('Education', 'التعليم')}</h3>
                                             <div className="space-y-4">
                                                 {profile?.education?.map((edu: any, i: number) => (
                                                     <div key={i}>
@@ -321,7 +331,7 @@ export const CVPreviewModule = () => {
                                             </div>
                                         </section>
                                         <section>
-                                            <h3 className={styles.sectionTitle}>Skills</h3>
+                                            <h3 className={styles.sectionTitle}>{t('Skills', 'المهارات')}</h3>
                                             <div className="flex flex-wrap gap-2">
                                                 {profile?.skills?.map((s: any, i: number) => (
                                                     <span key={i} className="text-sm text-gray-700">{s.name}, </span>

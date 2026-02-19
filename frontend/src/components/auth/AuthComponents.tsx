@@ -1,5 +1,5 @@
 /**
- * Enhanced Authentication Components for Emirati Journey Platform
+ * Enhanced Authentication Components for Dubai Human Development Platform
  * UAE-specific features and production-ready security
  */
 
@@ -159,7 +159,7 @@ export const LoginForm: React.FC = () => {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Welcome back to Emirati Journey Platform
+            Welcome back to Dubai Human Development Platform
           </p>
         </div>
 
@@ -395,7 +395,7 @@ export const RegistrationForm: React.FC = () => {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Join the Emirati Journey Platform
+            Join the Dubai Human Development Platform
           </p>
         </div>
 

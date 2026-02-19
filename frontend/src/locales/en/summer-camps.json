@@ -1,9 +1,8 @@
-
 {
   "meta": {
-    "title": "Summer Camps",
-    "description": "Engage in exciting educational summer programs designed to inspire learning and personal growth",
-    "pageTitle": "Summer Camps - Emirati Gateway"
+    "title": "Knowledge Camps",
+    "description": "Discover enriching knowledge programs designed to develop skills, creativity, and leadership in young Emiratis",
+    "pageTitle": "Knowledge Camps - Dubai Human Development Platform"
   },
   "stats": {
     "summerPrograms": {
@@ -11,7 +10,7 @@
       "value": "25+"
     },
     "studentsEnrolled": {
-      "label": "Students Enrolled", 
+      "label": "Students Enrolled",
       "value": "1,200+"
     },
     "partnerInstitutions": {
@@ -33,7 +32,7 @@
       "price": "AED 1,500"
     },
     "entrepreneurshipBootcamp": {
-      "title": "Entrepreneurship Bootcamp", 
+      "title": "Entrepreneurship Bootcamp",
       "description": "Learn business fundamentals and develop your own startup idea",
       "duration": "3 weeks",
       "ageGroup": "16-18 years",

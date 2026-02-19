@@ -121,7 +121,7 @@ const MockLogin: React.FC = () => {
             <div className="mx-auto w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mb-4">
               <Smartphone className="w-6 h-6 text-teal-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Emirati Journey Platform</CardTitle>
+            <CardTitle className="text-2xl font-bold">Dubai Human Development Platform</CardTitle>
             <CardDescription>
               {step === 'phone' ? 'Enter your mobile number to sign in or sign up' : 'Enter the verification code sent to your mobile'}
             </CardDescription>

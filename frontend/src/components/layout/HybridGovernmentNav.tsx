@@ -9,8 +9,8 @@ interface HybridGovernmentNavProps {
   userRole?: string;
 }
 
-const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({ 
-  showAuthButtons = true, 
+const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
+  showAuthButtons = true,
   currentPage = '',
   userRole = ''
 }) => {
@@ -26,26 +26,26 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
             {/* Government Logos Section */}
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-4">
-                <img 
-                  src="/dubai-gov-logo.jpg" 
-                  alt="Government of Dubai" 
+                <img
+                  src="/dubai-gov-logo.jpg"
+                  alt="Government of Dubai"
                   className="h-14 w-auto"
                 />
                 <div className="w-px h-12 bg-slate-300"></div>
-                <img 
-                  src="/ehrdc-logo.png" 
-                  alt="EHRDC Logo" 
+                <img
+                  src="/ehrdc-logo.png"
+                  alt="EHRDC Logo"
                   className="h-12 w-auto"
                 />
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold text-slate-900">Emirati Journey Platform</h1>
+                  <h1 className="text-xl font-bold text-slate-900">Dubai Human Development Platform</h1>
                   <p className="text-sm text-slate-600">UAE Nationals Career Development</p>
                 </Link>
               </div>
             </div>
-            
+
             {/* Navigation Actions */}
             <div className="flex items-center space-x-4">
               {/* Mobile Menu Button */}
@@ -58,14 +58,14 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
 
               {showAuthButtons ? (
                 <>
-                  <Link 
-                    to="/auth" 
+                  <Link
+                    to="/auth"
                     className="hidden sm:block text-slate-600 hover:text-slate-900 font-medium transition-colors"
                   >
                     Sign In
                   </Link>
-                  <Link 
-                    to="/auth" 
+                  <Link
+                    to="/auth"
                     className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-lg flex items-center"
                   >
                     Get Started
@@ -108,7 +108,7 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
                   <span>{group.name}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
-                
+
                 {activeDropdown === group.id && (
                   <div className="absolute top-full left-0 mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50">
                     <div className="p-4">

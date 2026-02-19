@@ -24,13 +24,13 @@ const DubaiGovHeader: React.FC = () => {
   return (
     <>
       {/* Skip Navigation Links - REMOVED */}
-      
+
       {/* Color Blind Filters */}
       <ColorBlindFilters />
-      
+
       <header className="bg-white border-b border-ehrdc-neutral-light shadow-sm">
         {/* Top utility bar - Government standard */}
-        <div className="bg-ehrdc-teal text-white">
+        <div className="bg-[#006E6D] text-white">
           <div className="dubai-container">
             <div className="flex justify-between items-center py-2 text-sm">
               {/* Left side - Empty space or can be removed entirely */}
@@ -97,9 +97,9 @@ const DubaiGovHeader: React.FC = () => {
         <div className="bg-white">
           <div className="dubai-container">
             <div className="relative py-4" style={{ minHeight: '80px' }}>
-              
+
               {/* Dubai Government Logo - Fixed to Physical Left (viewport left) */}
-              <div 
+              <div
                 style={{
                   position: 'fixed',
                   left: 'max(1rem, calc((100vw - 1200px) / 2))',
@@ -167,7 +167,7 @@ const DubaiGovHeader: React.FC = () => {
               </div>
 
               {/* EHRDC Logo - Fixed to Physical Right (viewport right) */}
-              <div 
+              <div
                 style={{
                   position: 'fixed',
                   right: 'max(1rem, calc((100vw - 1200px) / 2))',

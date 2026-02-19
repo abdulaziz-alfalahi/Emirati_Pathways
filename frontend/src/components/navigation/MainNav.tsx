@@ -63,7 +63,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
                     // Map the item name to the translation key
                     const getItemKey = (itemName: string) => {
                       const nameToKeyMap: { [key: string]: string } = {
-                        'Summer Camps': 'summerCamps',
+                        'Knowledge Camps': 'summerCamps',
                         'School Programs': 'schoolPrograms',
                         'Scholarships': 'scholarships',
                         'University Programs': 'universityPrograms',
@@ -123,14 +123,13 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
       {/* Right side items */}
       <div className={`flex items-center ml-auto ${language === 'ar' ? 'space-x-reverse space-x-4' : 'space-x-4'}`}>
         {user && <NotificationIcon />}
-        
+
         {/* Dashboard link for authenticated users */}
         {user && (
           <Link
             to="/dashboard"
-            className={`text-sm font-medium transition-colors hover:text-ehrdc-teal ${
-              location.pathname === '/dashboard' ? 'text-ehrdc-teal' : 'text-ehrdc-neutral-dark'
-            } ${language === 'ar' ? 'text-right' : 'text-left'}`}
+            className={`text-sm font-medium transition-colors hover:text-ehrdc-teal ${location.pathname === '/dashboard' ? 'text-ehrdc-teal' : 'text-ehrdc-neutral-dark'
+              } ${language === 'ar' ? 'text-right' : 'text-left'}`}
           >
             {t('dashboard')}
           </Link>

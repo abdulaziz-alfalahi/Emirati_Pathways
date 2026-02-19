@@ -4,16 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Menu, 
-  X, 
-  Home, 
-  Briefcase, 
-  Users, 
-  GraduationCap, 
-  BarChart3, 
-  Bell, 
-  Settings, 
+import {
+  Menu,
+  X,
+  Home,
+  Briefcase,
+  Users,
+  GraduationCap,
+  BarChart3,
+  Bell,
+  Settings,
   User,
   Search,
   Plus,
@@ -52,7 +52,7 @@ const useResponsive = () => {
   useEffect(() => {
     const checkBreakpoint = () => {
       const width = window.innerWidth;
-      
+
       if (width < 768) {
         setBreakpoint('mobile');
         setIsMobile(true);
@@ -70,7 +70,7 @@ const useResponsive = () => {
 
     checkBreakpoint();
     window.addEventListener('resize', checkBreakpoint);
-    
+
     return () => window.removeEventListener('resize', checkBreakpoint);
   }, []);
 
@@ -237,16 +237,16 @@ const MobileNavigation: React.FC<{
                   className="ml-2 p-1"
                   onClick={() => toggleExpanded(item.id)}
                 >
-                  <ChevronDown 
+                  <ChevronDown
                     className={cn(
                       'h-4 w-4 transition-transform',
                       expandedItems.has(item.id) && 'rotate-180'
-                    )} 
+                    )}
                   />
                 </Button>
               )}
             </div>
-            
+
             {item.subItems && expandedItems.has(item.id) && (
               <div className="ml-6 space-y-1">
                 {item.subItems.map((subItem) => (
@@ -284,7 +284,7 @@ const DesktopSidebar: React.FC<{
 
   const toggleExpanded = (itemId: string) => {
     if (collapsed) return;
-    
+
     const newExpanded = new Set(expandedItems);
     if (newExpanded.has(itemId)) {
       newExpanded.delete(itemId);
@@ -333,16 +333,16 @@ const DesktopSidebar: React.FC<{
                     className="ml-2 p-1"
                     onClick={() => toggleExpanded(item.id)}
                   >
-                    <ChevronDown 
+                    <ChevronDown
                       className={cn(
                         'h-4 w-4 transition-transform',
                         expandedItems.has(item.id) && 'rotate-180'
-                      )} 
+                      )}
                     />
                   </Button>
                 )}
               </div>
-              
+
               {item.subItems && expandedItems.has(item.id) && !collapsed && (
                 <div className="ml-6 space-y-1">
                   {item.subItems.map((subItem) => (
@@ -392,10 +392,10 @@ const TopHeader: React.FC<{
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        
+
         <div className="flex items-center space-x-2">
           <h1 className="text-xl font-bold text-gray-900">
-            {isMobile ? 'EJ Platform' : 'Emirati Journey Platform'}
+            {isMobile ? 'DHD Platform' : 'Dubai Human Development Platform'}
           </h1>
           {!isMobile && (
             <Badge variant="outline" className="hidden sm:flex">
@@ -451,7 +451,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   userType,
   userName,
   unreadNotifications = 0,
-  onNavigate = () => {}
+  onNavigate = () => { }
 }) => {
   const { breakpoint, isMobile, isTablet } = useResponsive();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

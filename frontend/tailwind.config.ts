@@ -62,26 +62,28 @@ export default {
 					border: 'var(--sidebar-border)',
 					ring: 'var(--sidebar-ring)'
 				},
-				// Add EHRDC specific colors as utility classes
+				// EHRDC Brand Colors (canonical source)
 				'ehrdc-teal': '#006E6D',
-				'ehrdc-dark-teal': '#00504F',
-				'ehrdc-light-teal': '#B3DEDD',
+				'ehrdc-dark-teal': '#005A59',
+				'ehrdc-light-teal': '#4A9B9A',
+				'ehrdc-subtle': '#F0F7F7',
 				'ehrdc-gold': '#C3992A',
-				'ehrdc-neutral-dark': '#333333',
-				'ehrdc-neutral-light': '#F5F5F5',
+				'ehrdc-neutral-dark': '#1A1A1A',
+				'ehrdc-neutral-light': '#F4F5F7',
 				'ehrdc-white': '#FFFFFF',
-				// Add Emirati theme colors
+				// Emirati aliases
 				'emirati-teal': '#006E6D',
-				'emirati-navy': '#333333',
+				'emirati-navy': '#1A1A1A',
 				'emirati-gold': '#C3992A',
 				// Keep the old structure for backwards compatibility
 				ehrdc: {
 					teal: '#006E6D',
-					darkTeal: '#00504F',
-					lightTeal: '#B3DEDD',
+					darkTeal: '#005A59',
+					lightTeal: '#4A9B9A',
+					subtle: '#F0F7F7',
 					gold: '#C3992A',
-					neutralDark: '#333333',
-					neutralLight: '#F5F5F5',
+					neutralDark: '#1A1A1A',
+					neutralLight: '#F4F5F7',
 				},
 				// Dubai Design System Colors
 				dubai: {
@@ -125,11 +127,10 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Dubai', 'Arial', 'sans-serif'],
-				display: ['Dubai', 'Arial', 'sans-serif'],
+				sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+				display: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 				gov: ['Dubai', 'Arial', 'sans-serif'],
 				arabic: ['Dubai', 'Arial', 'sans-serif'],
-				// Set Dubai as the default for all font families
 				dubai: ['Dubai', 'Arial', 'sans-serif'],
 			},
 			borderRadius: {
@@ -189,11 +190,14 @@ export default {
 			},
 			boxShadow: {
 				'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
-				'subtle': '0 2px 15px rgba(0, 0, 0, 0.04)',
-				'premium': '0 10px 30px rgba(0, 0, 0, 0.05), 0 1px 8px rgba(0, 0, 0, 0.06)',
-				'card': '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)',
-				'dubai': '0 2px 8px rgba(0, 121, 193, 0.1)',
-				'dubai-strong': '0 8px 24px rgba(0, 121, 193, 0.15)'
+				'subtle': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06)',
+				'stitch': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06)',
+				'stitch-md': '0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
+				'stitch-lg': '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+				'premium': '0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04)',
+				'card': '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06)',
+				'dubai': '0 2px 8px rgba(0, 110, 109, 0.08)',
+				'dubai-strong': '0 4px 16px rgba(0, 110, 109, 0.12)'
 			},
 			backdropFilter: {
 				'glass': 'blur(10px)'

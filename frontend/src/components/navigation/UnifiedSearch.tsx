@@ -10,11 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Search, 
-  Filter, 
-  Clock, 
-  TrendingUp, 
+import {
+  Search,
+  Filter,
+  Clock,
+  TrendingUp,
   Star,
   ArrowRight,
   X,
@@ -54,12 +54,12 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
   const allSearchableContent: SearchResult[] = [
     // Education Phase
     {
-      id: 'summer-camps-1',
-      title: 'STEM Summer Camps',
+      id: 'knowledge-camps-1',
+      title: 'STEM Knowledge Camps',
       description: 'Science, technology, engineering, and mathematics programs for youth',
       phase: 'education',
       category: 'programs',
-      url: '/summer-camps',
+      url: '/knowledge-camps',
       relevanceScore: 95,
       tags: ['STEM', 'youth', 'summer', 'science'],
       estimatedTime: '2-8 weeks',
@@ -76,7 +76,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
       tags: ['scholarship', 'university', 'funding', 'education'],
       difficulty: 'intermediate'
     },
-    
+
     // Career Phase
     {
       id: 'job-matching-1',
@@ -114,7 +114,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
       estimatedTime: '1-2 hours',
       difficulty: 'intermediate'
     },
-    
+
     // Professional Phase
     {
       id: 'certifications-1',
@@ -150,7 +150,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
       estimatedTime: '2-12 weeks',
       difficulty: 'intermediate'
     },
-    
+
     // Lifelong Phase
     {
       id: 'success-stories-1',
@@ -194,30 +194,30 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
   // Perform search
   const performSearch = useMemo(() => {
     if (!query.trim()) return [];
-    
+
     setIsLoading(true);
-    
+
     const filtered = allSearchableContent.filter(item => {
-      const matchesQuery = 
+      const matchesQuery =
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.description.toLowerCase().includes(query.toLowerCase()) ||
         item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()));
-      
+
       const matchesPhase = selectedPhases.length === 0 || selectedPhases.includes(item.phase);
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(item.category);
-      
+
       return matchesQuery && matchesPhase && matchesCategory;
     });
-    
+
     // Sort by relevance and current phase priority
     const sorted = filtered.sort((a, b) => {
       // Boost current phase results
       const aCurrentPhase = a.phase === currentPhase ? 10 : 0;
       const bCurrentPhase = b.phase === currentPhase ? 10 : 0;
-      
+
       return (b.relevanceScore + bCurrentPhase) - (a.relevanceScore + aCurrentPhase);
     });
-    
+
     setTimeout(() => setIsLoading(false), 300);
     return sorted;
   }, [query, selectedPhases, selectedCategories, currentPhase]);
@@ -239,16 +239,16 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
   };
 
   const togglePhaseFilter = (phase: Phase) => {
-    setSelectedPhases(prev => 
-      prev.includes(phase) 
+    setSelectedPhases(prev =>
+      prev.includes(phase)
         ? prev.filter(p => p !== phase)
         : [...prev, phase]
     );
   };
 
   const toggleCategoryFilter = (category: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
+    setSelectedCategories(prev =>
+      prev.includes(category)
         ? prev.filter(c => c !== category)
         : [...prev, category]
     );
@@ -273,9 +273,9 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-semibold">{result.title}</h3>
-                    <Badge 
+                    <Badge
                       variant="outline"
-                      style={{ 
+                      style={{
                         borderColor: getPhaseColor(result.phase),
                         color: getPhaseColor(result.phase)
                       }}
@@ -305,7 +305,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
           </Card>
         </Link>
       ))}
-      
+
       {query && searchResults.length === 0 && !isLoading && (
         <div className="text-center py-8 text-gray-500">
           <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -339,7 +339,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
           </Link>
         </div>
       </div>
-      
+
       {recentSearches.length > 0 && (
         <div>
           <h3 className="font-medium mb-3">Recent Searches</h3>
@@ -369,7 +369,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
             Search across all phases and discover relevant opportunities
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           {/* Search Input */}
           <div className="relative">
@@ -389,7 +389,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
               <Filter className="h-4 w-4 text-gray-500" />
               <span className="text-sm font-medium">Filters:</span>
             </div>
-            
+
             {/* Phase Filters */}
             <div className="flex gap-2">
               {Object.entries(phaseInfo).map(([phaseId, info]) => (
@@ -407,7 +407,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
                 </Button>
               ))}
             </div>
-            
+
             {(selectedPhases.length > 0 || selectedCategories.length > 0) && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" />
@@ -425,7 +425,7 @@ export const UnifiedSearch: React.FC<UnifiedSearchProps> = ({ isOpen, onClose })
                   Search Results {query && `(${searchResults.length})`}
                 </TabsTrigger>
               </TabsList>
-              
+
               <div className="mt-4 h-96 overflow-y-auto">
                 <TabsContent value="quick" className="mt-0">
                   {renderQuickActions()}

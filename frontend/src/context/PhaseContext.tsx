@@ -49,18 +49,18 @@ interface PhaseContextType {
   phaseProgress: PhaseProgress[];
   recommendations: CrossPhaseRecommendation[];
   phaseInfo: Record<Phase, PhaseInfo>;
-  
+
   // Navigation functions
   detectPhaseFromPath: (path: string) => Phase | null;
   updateCurrentPhase: (phase: Phase) => void;
   getPhaseProgress: (phase: Phase) => PhaseProgress | null;
   getRecommendationsForCurrentContext: () => CrossPhaseRecommendation[];
-  
+
   // Transition functions
   canTransitionToPhase: (targetPhase: Phase) => boolean;
   getTransitionGuidance: (targetPhase: Phase) => string[];
   triggerPhaseTransition: (targetPhase: Phase) => void;
-  
+
   // Search and discovery
   searchAcrossPhases: (query: string, filters?: { phases?: Phase[]; categories?: string[] }) => any[];
 }
@@ -120,12 +120,12 @@ const PHASE_INFO: Record<Phase, PhaseInfo> = {
 
 // Route to phase mapping
 const ROUTE_PHASE_MAP: Record<string, Phase> = {
-  '/summer-camps': 'education',
+  '/knowledge-camps': 'education',
   '/school-programs': 'education',
   '/scholarships': 'education',
   '/university-programs': 'education',
   '/lms': 'education',
-  
+
   '/career-planning-hub': 'career',
   '/industry-exploration': 'career',
   '/graduate-programs': 'career',
@@ -135,14 +135,14 @@ const ROUTE_PHASE_MAP: Record<string, Phase> = {
   '/resume-builder': 'career',
   '/portfolio': 'career',
   '/interview-preparation': 'career',
-  
+
   '/digital-skills-development': 'professional',
   '/professional-certifications': 'professional',
   '/training': 'professional',
   '/assessments': 'professional',
   '/mentorship': 'professional',
   '/communities': 'professional',
-  
+
   '/national-service': 'lifelong',
   '/youth-development': 'lifelong',
   '/share-success-stories': 'lifelong',
@@ -289,23 +289,23 @@ export const PhaseProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const canTransitionToPhase = (targetPhase: Phase): boolean => {
     const currentProgress = currentPhase ? getPhaseProgress(currentPhase) : null;
     const targetProgress = getPhaseProgress(targetPhase);
-    
+
     if (!currentProgress) return true; // Allow exploration if no current phase
-    
+
     // Check if user meets minimum requirements for target phase
     const targetInfo = PHASE_INFO[targetPhase];
     const currentInfo = PHASE_INFO[currentPhase!];
-    
+
     // Sequential progression check
     if (currentInfo.nextPhase === targetPhase && currentProgress.eligibleForTransition) {
       return true;
     }
-    
+
     // Allow backward navigation
     if (currentInfo.prevPhase === targetPhase) {
       return true;
     }
-    
+
     // Allow exploration with lower readiness score
     return currentProgress.readinessScore > 50;
   };
@@ -313,17 +313,17 @@ export const PhaseProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const getTransitionGuidance = (targetPhase: Phase): string[] => {
     const targetInfo = PHASE_INFO[targetPhase];
     const currentProgress = currentPhase ? getPhaseProgress(currentPhase) : null;
-    
+
     const guidance: string[] = [];
-    
+
     if (!canTransitionToPhase(targetPhase)) {
       guidance.push('Complete more milestones in your current phase before transitioning');
     }
-    
-    guidance.push(...targetInfo.transitionRequirements.map(req => 
+
+    guidance.push(...targetInfo.transitionRequirements.map(req =>
       `Ensure you have: ${req.replace(/_/g, ' ')}`
     ));
-    
+
     return guidance;
   };
 
@@ -338,17 +338,17 @@ export const PhaseProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // In real implementation, this would query a comprehensive search index
     const allPages = [
       // Education pages
-      { title: 'Summer Camps', phase: 'education', category: 'program', url: '/summer-camps' },
+      { title: 'Knowledge Camps', phase: 'education', category: 'program', url: '/knowledge-camps' },
       { title: 'Scholarships', phase: 'education', category: 'funding', url: '/scholarships' },
-      
+
       // Career pages
       { title: 'Job Matching', phase: 'career', category: 'tool', url: '/job-matching' },
       { title: 'Resume Builder', phase: 'career', category: 'tool', url: '/resume-builder' },
-      
+
       // Professional pages
       { title: 'Professional Certifications', phase: 'professional', category: 'certification', url: '/professional-certifications' },
       { title: 'Mentorship', phase: 'professional', category: 'networking', url: '/mentorship' },
-      
+
       // Lifelong pages
       { title: 'Success Stories', phase: 'lifelong', category: 'inspiration', url: '/share-success-stories' },
       { title: 'Financial Planning', phase: 'lifelong', category: 'planning', url: '/financial-planning' }
@@ -358,7 +358,7 @@ export const PhaseProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const matchesQuery = page.title.toLowerCase().includes(query.toLowerCase());
       const matchesPhase = !filters?.phases || filters.phases.includes(page.phase as Phase);
       const matchesCategory = !filters?.categories || filters.categories.includes(page.category);
-      
+
       return matchesQuery && matchesPhase && matchesCategory;
     });
   };
@@ -368,16 +368,16 @@ export const PhaseProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     phaseProgress,
     recommendations,
     phaseInfo: PHASE_INFO,
-    
+
     detectPhaseFromPath,
     updateCurrentPhase,
     getPhaseProgress,
     getRecommendationsForCurrentContext,
-    
+
     canTransitionToPhase,
     getTransitionGuidance,
     triggerPhaseTransition,
-    
+
     searchAcrossPhases
   };
 

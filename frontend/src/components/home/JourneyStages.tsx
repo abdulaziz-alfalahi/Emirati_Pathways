@@ -63,7 +63,7 @@ const journeyStages: JourneyStage[] = [
 const JourneyStages: React.FC = () => {
   const [activeStage, setActiveStage] = useState(0);
   const [isInView, setIsInView] = useState(false);
-  
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -73,22 +73,22 @@ const JourneyStages: React.FC = () => {
       },
       { threshold: 0.1 }
     );
-    
+
     const section = document.getElementById('journey');
     if (section) observer.observe(section);
-    
+
     return () => {
       if (section) observer.unobserve(section);
     };
   }, []);
-  
+
   useEffect(() => {
     if (!isInView) return;
-    
+
     const interval = setInterval(() => {
       setActiveStage((prev) => (prev === journeyStages.length - 1 ? 0 : prev + 1));
     }, 4000);
-    
+
     return () => clearInterval(interval);
   }, [isInView]);
 
@@ -101,24 +101,24 @@ const JourneyStages: React.FC = () => {
           </div>
           <h2 className="text-3xl md:text-5xl font-display font-semibold mb-6">Your Complete Journey</h2>
           <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-            The Emirati Journey platform supports you through every stage of your career development,
+            The Dubai Human Development platform supports you through every stage of your career development,
             from early education through retirement.
           </p>
         </div>
-        
+
         {/* Journey Timeline */}
         <div className="relative mb-12 pl-6 md:pl-0">
           <div className="hidden md:grid grid-cols-8 gap-0 mb-8">
             {journeyStages.map((stage, index) => (
               <div key={stage.id} className="relative" onClick={() => setActiveStage(index)}>
-                <div 
+                <div
                   className={cn(
                     "stage-indicator cursor-pointer mx-auto",
                     activeStage >= index ? "active" : ""
                   )}
                 />
                 {index < journeyStages.length - 1 && (
-                  <div 
+                  <div
                     className={cn(
                       "stage-connector",
                       activeStage > index ? "active" : ""
@@ -134,7 +134,7 @@ const JourneyStages: React.FC = () => {
               </div>
             ))}
           </div>
-          
+
           {/* Stage Details */}
           <div className="bg-white rounded-2xl shadow-card p-8 transition-all duration-500 hover:shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center mb-6">
@@ -152,16 +152,16 @@ const JourneyStages: React.FC = () => {
               {journeyStages[activeStage].description}
             </p>
           </div>
-          
+
           {/* Mobile Timeline */}
           <div className="md:hidden flex overflow-x-auto space-x-4 py-6 px-2 -mx-6 mt-8">
             {journeyStages.map((stage, index) => (
-              <div 
-                key={stage.id} 
+              <div
+                key={stage.id}
                 className={cn(
                   "flex-shrink-0 px-4 py-2 rounded-full border transition-all duration-300 cursor-pointer",
-                  activeStage === index 
-                    ? "bg-ehrdc-teal text-white border-ehrdc-teal" 
+                  activeStage === index
+                    ? "bg-ehrdc-teal text-white border-ehrdc-teal"
                     : "bg-white text-foreground/70 border-gray-200"
                 )}
                 onClick={() => setActiveStage(index)}

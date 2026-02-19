@@ -1,6 +1,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CheckCircle } from 'lucide-react';
 
 interface StandardCardProps {
   title: string;
@@ -20,7 +21,7 @@ export const StandardCard: React.FC<StandardCardProps> = ({
   title,
   description,
   icon: Icon,
-  iconColor = 'text-teal-600',
+  iconColor = 'text-[#006E6D]',
   href,
   onClick,
   badge,
@@ -30,21 +31,21 @@ export const StandardCard: React.FC<StandardCardProps> = ({
   size = 'md'
 }) => {
   const badgeColors = {
-    blue: 'bg-blue-100 text-blue-800',
-    green: 'bg-green-100 text-green-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    red: 'bg-red-100 text-red-800',
-    purple: 'bg-purple-100 text-purple-800'
+    blue: 'bg-[#E6F5F5] text-[#006E6D]',
+    green: 'bg-green-50 text-green-700',
+    yellow: 'bg-amber-50 text-amber-700',
+    red: 'bg-red-50 text-red-700',
+    purple: 'bg-purple-50 text-purple-700'
   };
 
   const sizeClasses = {
     sm: 'p-4',
     md: 'p-6',
-    lg: 'p-8'
+    lg: 'p-7'
   };
 
   const CardContent = () => (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 ${sizeClasses[size]} ${className}`}>
+    <div className={`bg-white rounded-2xl border border-[#E2E5E9] hover:border-[#006E6D]/25 transition-all duration-200 ${sizeClasses[size]} ${className}`} style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
       {/* Badge */}
       {badge && (
         <div className="mb-3">
@@ -55,17 +56,17 @@ export const StandardCard: React.FC<StandardCardProps> = ({
       )}
 
       {/* Header with Icon */}
-      <div className="flex items-start space-x-3 mb-4">
+      <div className="flex items-start space-x-3 mb-3">
         {Icon && (
-          <div className={`flex-shrink-0 ${iconColor}`}>
-            <Icon className="h-6 w-6" />
+          <div className="flex-shrink-0 w-10 h-10 bg-[#E6F5F5] rounded-xl flex items-center justify-center">
+            <Icon className={`h-5 w-5 ${iconColor}`} />
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-base font-semibold text-[#1A1A1A] mb-1">
             {title}
           </h3>
-          <p className="text-sm text-gray-600 leading-relaxed">
+          <p className="text-sm text-[#6B7280] leading-relaxed">
             {description}
           </p>
         </div>
@@ -83,9 +84,7 @@ export const StandardCard: React.FC<StandardCardProps> = ({
   if (href) {
     return (
       <Link to={href} className="block group">
-        <div className="group-hover:scale-[1.02] transition-transform duration-200">
-          <CardContent />
-        </div>
+        <CardContent />
       </Link>
     );
   }
@@ -93,9 +92,7 @@ export const StandardCard: React.FC<StandardCardProps> = ({
   if (onClick) {
     return (
       <button onClick={onClick} className="block w-full text-left group">
-        <div className="group-hover:scale-[1.02] transition-transform duration-200">
-          <CardContent />
-        </div>
+        <CardContent />
       </button>
     );
   }
@@ -130,11 +127,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       className="h-full"
     >
       {/* Features List */}
-      <div className="space-y-2 mb-6">
+      <div className="space-y-2 mb-5">
         {features.map((feature, index) => (
           <div key={index} className="flex items-center space-x-2">
-            <div className="w-1.5 h-1.5 bg-teal-600 rounded-full flex-shrink-0"></div>
-            <span className="text-sm text-gray-600">{feature}</span>
+            <CheckCircle className="w-4 h-4 text-[#006E6D] flex-shrink-0" />
+            <span className="text-sm text-[#374151]">{feature}</span>
           </div>
         ))}
       </div>
@@ -143,7 +140,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       {href && (
         <Link
           to={href}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
+          className="inline-flex items-center px-5 py-2 text-sm font-medium rounded-xl text-white bg-[#006E6D] hover:bg-[#005A59] transition-colors"
         >
           {ctaText}
         </Link>
@@ -171,7 +168,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   const changeColors = {
     positive: 'text-green-600',
     negative: 'text-red-600',
-    neutral: 'text-gray-600'
+    neutral: 'text-[#6B7280]'
   };
 
   return (
@@ -182,13 +179,15 @@ export const StatsCard: React.FC<StatsCardProps> = ({
     >
       {Icon && (
         <div className="flex justify-center mb-3">
-          <Icon className="h-8 w-8 text-teal-600" />
+          <div className="w-10 h-10 bg-[#E6F5F5] rounded-xl flex items-center justify-center">
+            <Icon className="h-5 w-5 text-[#006E6D]" />
+          </div>
         </div>
       )}
-      <div className="text-3xl font-bold text-gray-900 mb-1">
+      <div className="text-2xl font-bold text-[#1A1A1A] mb-1">
         {value}
       </div>
-      <div className="text-sm font-medium text-gray-600 mb-2">
+      <div className="text-sm font-medium text-[#6B7280] mb-1">
         {title}
       </div>
       {change && (

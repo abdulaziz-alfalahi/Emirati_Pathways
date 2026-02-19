@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,9 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
   onDeleteConversation
 }) => {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   // Filter conversations by search query
   const filteredConversations = conversations.filter(conversation =>
     conversation.participantName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -33,12 +37,12 @@ const ConversationList: React.FC<ConversationListProps> = ({
   return (
     <>
       <CardHeader className="px-4 pb-2">
-        <CardTitle>Conversations</CardTitle>
-        <CardDescription>Your recent message threads</CardDescription>
+        <CardTitle>{t('Conversations', 'المحادثات')}</CardTitle>
+        <CardDescription>{t('Your recent message threads', 'سلاسل رسائلك الأخيرة')}</CardDescription>
         <div className="relative my-2">
           <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search conversations..."
+            placeholder={t('Search conversations...', 'بحث في المحادثات...')}
             className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -90,7 +94,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                             e.stopPropagation();
                             onDeleteConversation(conversation.id);
                           }}
-                          title="Delete conversation"
+                          title={t('Delete conversation', 'حذف المحادثة')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -107,7 +111,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
             ))
           ) : (
             <div className="py-10 text-center text-muted-foreground">
-              No conversations found
+              {t('No conversations found', 'لم يتم العثور على محادثات')}
             </div>
           )}
         </div>

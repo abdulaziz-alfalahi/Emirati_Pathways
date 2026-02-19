@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import ConversationList from './messages/ConversationList';
@@ -11,6 +12,9 @@ import { useAuth } from '@/context/AuthContext';
 const Messages: React.FC = () => {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { i18n } = useTranslation();
+    const isRTL = i18n.language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -31,14 +35,14 @@ const Messages: React.FC = () => {
 
                 const mappedConversations: Conversation[] = backendConvs.map((c: any) => {
                     const otherId = c.participants.find((p: string) => p !== String(user.id)) || c.participants[0];
-                    const otherName = c.participant_names[otherId] || 'Unknown User';
+                    const otherName = c.participant_names[otherId] || t('Unknown User', 'مستخدم مجهول');
 
                     return {
                         id: c.id,
                         participantId: otherId,
                         participantName: otherName,
-                        jobTitle: c.job_title || c.title || 'Job Application',
-                        lastMessage: c.last_message_content || 'No messages yet',
+                        jobTitle: c.job_title || c.title || t('Job Application', 'طلب توظيف'),
+                        lastMessage: c.last_message_content || t('No messages yet', 'لا توجد رسائل بعد'),
                         lastMessageTime: c.last_message_at || c.created_at,
                         unreadCount: c.unread_count || 0
                     };
@@ -65,7 +69,7 @@ const Messages: React.FC = () => {
                 const mappedMsgs: Message[] = backendMsgs.map((m: any) => ({
                     id: m.id,
                     senderId: m.sender_id,
-                    senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : 'Recruiter',
+                    senderName: (m.sender_name && m.sender_name !== 'None None') ? m.sender_name : t('Recruiter', 'مسؤول توظيف'),
                     recipientId: m.recipient_id,
                     recipientName: '',
                     content: m.content,
@@ -119,21 +123,21 @@ const Messages: React.FC = () => {
                 fetchConversations();
 
                 toast({
-                    title: 'Message Sent',
-                    description: 'Sent successfully.',
+                    title: t('Message Sent', 'تم إرسال الرسالة'),
+                    description: t('Sent successfully.', 'تم الإرسال بنجاح.'),
                 });
             }
         } catch (error) {
             toast({
-                title: 'Error',
-                description: 'Failed to send.',
+                title: t('Error', 'خطأ'),
+                description: t('Failed to send.', 'فشل في الإرسال.'),
                 variant: 'destructive'
             });
         }
     };
 
     const handleDeleteConversation = async (conversationId: string) => {
-        if (!confirm('Are you sure you want to delete this conversation?')) return;
+        if (!confirm(t('Are you sure you want to delete this conversation?', 'هل أنت متأكد من حذف هذه المحادثة؟'))) return;
 
         try {
             // Optimistic update
@@ -149,15 +153,15 @@ const Messages: React.FC = () => {
             await restClient.delete(`/api/communication/conversations/${conversationId}`);
 
             toast({
-                title: 'Conversation Deleted',
-                description: 'Usage logs updated.',
+                title: t('Conversation Deleted', 'تم حذف المحادثة'),
+                description: t('Usage logs updated.', 'تم تحديث السجلات.'),
             });
         } catch (error) {
             console.error('Failed to delete conversation', error);
             // Revert on failure (normally) or just show error
             toast({
-                title: 'Error',
-                description: 'Failed to delete conversation.',
+                title: t('Error', 'خطأ'),
+                description: t('Failed to delete conversation.', 'فشل في حذف المحادثة.'),
                 variant: 'destructive'
             });
             fetchConversations();
@@ -167,8 +171,8 @@ const Messages: React.FC = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold">Your Messages</h2>
-                <p className="text-muted-foreground">Chat with recruiters directly.</p>
+                <h2 className="text-2xl font-bold">{t('Your Messages', 'رسائلك')}</h2>
+                <p className="text-muted-foreground">{t('Chat with recruiters directly.', 'تحدث مع مسؤولي التوظيف مباشرة.')}</p>
             </div>
 
             <Card className="flex flex-col md:flex-row h-[600px]">

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  GraduationCap, 
-  BookOpen, 
-  Users, 
-  Award, 
+import {
+  GraduationCap,
+  BookOpen,
+  Users,
+  Award,
   Calendar,
   MapPin,
   Clock,
@@ -119,7 +119,7 @@ const ModernSchoolPrograms: React.FC = () => {
   const filteredPrograms = programs.filter(program => {
     const matchesGrade = selectedGrade === 'all' || program.grade === selectedGrade || program.grade === 'all';
     const matchesSearch = program.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         program.description.toLowerCase().includes(searchTerm.toLowerCase());
+      program.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesGrade && matchesSearch;
   });
 
@@ -194,7 +194,7 @@ const ModernSchoolPrograms: React.FC = () => {
       }
     >
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-2xl p-8 mb-12">
+      <div className="bg-[#F0F7F7] rounded-2xl p-8 mb-12 border border-[#E2E5E9]">
         <div className="max-w-3xl">
           <h2 className="text-display-2 text-gray-900 mb-4">
             {t('pages.school_programs.hero.title')}
@@ -202,7 +202,7 @@ const ModernSchoolPrograms: React.FC = () => {
           <p className="text-body-large text-gray-600 mb-6">
             {t('pages.school_programs.hero.description')}
           </p>
-          
+
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -212,7 +212,7 @@ const ModernSchoolPrograms: React.FC = () => {
                 placeholder={t('pages.school_programs.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-[#E2E5E9] rounded-xl focus:ring-2 focus:ring-[#006E6D]/20 focus:border-[#006E6D] bg-white"
               />
             </div>
             <div className="flex space-x-2">
@@ -220,11 +220,10 @@ const ModernSchoolPrograms: React.FC = () => {
                 <button
                   key={filter.id}
                   onClick={() => setSelectedGrade(filter.id)}
-                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                    selectedGrade === filter.id
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                  }`}
+                  className={`px-4 py-3 rounded-xl font-medium transition-colors ${selectedGrade === filter.id
+                      ? 'bg-[#006E6D] text-white'
+                      : 'bg-white text-[#374151] border border-[#E2E5E9] hover:border-[#006E6D]/25'
+                    }`}
                 >
                   {filter.label}
                 </button>
@@ -262,25 +261,24 @@ const ModernSchoolPrograms: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {filteredPrograms.map((program) => {
             const Icon = program.icon;
-            
+
             return (
               <div
                 key={program.id}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300"
+                className="bg-white rounded-2xl p-6 border border-[#E2E5E9] hover:border-[#006E6D]/25 transition-all duration-200"
               >
                 {/* Program Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 bg-gradient-to-br ${program.color} rounded-xl flex items-center justify-center`}>
-                    <Icon className="h-6 w-6 text-white" />
+                  <div className={`w-12 h-12 bg-[#E6F5F5] rounded-xl flex items-center justify-center`}>
+                    <Icon className="h-6 w-6 text-[#006E6D]" />
                   </div>
                   {program.badge && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      program.badge === t('common.popular') 
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${program.badge === t('common.popular')
                         ? 'bg-yellow-100 text-yellow-800'
                         : program.badge === t('common.featured')
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
                       {program.badge}
                     </span>
                   )}
@@ -300,7 +298,7 @@ const ModernSchoolPrograms: React.FC = () => {
                     <div className="text-xs text-gray-500">{t('common.duration')}</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-lg font-bold text-blue-600">{program.students}</div>
+                    <div className="text-lg font-bold text-[#006E6D]">{program.students}</div>
                     <div className="text-xs text-gray-500">{t('common.students')}</div>
                   </div>
                   <div className="text-center">
@@ -317,7 +315,7 @@ const ModernSchoolPrograms: React.FC = () => {
                   <div className="space-y-2">
                     {program.features.slice(0, 3).map((feature, idx) => (
                       <div key={idx} className="flex items-center space-x-2">
-                        <CheckCircle className="h-4 w-4 text-teal-600 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-[#006E6D] flex-shrink-0" />
                         <span className="text-sm text-gray-600">{feature}</span>
                       </div>
                     ))}
@@ -375,7 +373,7 @@ const ModernSchoolPrograms: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {achievements.map((achievement, index) => {
             const Icon = achievement.icon;
-            
+
             return (
               <StandardCard
                 key={index}
@@ -384,8 +382,8 @@ const ModernSchoolPrograms: React.FC = () => {
                 icon={Icon}
                 className="text-center"
               >
-                <div className="mt-4 p-3 bg-teal-50 rounded-lg">
-                  <div className="text-2xl font-bold text-teal-600">
+                <div className="mt-4 p-3 bg-[#E6F5F5] rounded-xl">
+                  <div className="text-2xl font-bold text-[#006E6D]">
                     {achievement.metric}
                   </div>
                 </div>
@@ -434,13 +432,13 @@ const ModernSchoolPrograms: React.FC = () => {
             }
           ].map((step, index) => {
             const Icon = step.icon;
-            
+
             return (
               <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Icon className="h-8 w-8 text-teal-600" />
+                <div className="w-16 h-16 bg-[#E6F5F5] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Icon className="h-8 w-8 text-[#006E6D]" />
                 </div>
-                <div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-sm font-bold">
+                <div className="w-8 h-8 bg-[#006E6D] text-white rounded-xl flex items-center justify-center mx-auto mb-4 text-sm font-bold">
                   {step.step}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -456,7 +454,7 @@ const ModernSchoolPrograms: React.FC = () => {
       </div>
 
       {/* Call to Action */}
-      <div className="text-center bg-gradient-to-r from-teal-600 to-blue-600 rounded-2xl p-8 text-white">
+      <div className="text-center bg-[#006E6D] rounded-2xl p-8 text-white">
         <h2 className="text-2xl font-bold mb-4">
           {t('pages.school_programs.cta.title')}
         </h2>
@@ -464,10 +462,10 @@ const ModernSchoolPrograms: React.FC = () => {
           {t('pages.school_programs.cta.description')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="bg-white text-teal-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+          <button className="bg-white text-[#006E6D] px-6 py-3 rounded-full font-medium hover:bg-gray-50 transition-colors">
             {t('pages.school_programs.cta.browse_programs')}
           </button>
-          <button className="border border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-teal-600 transition-colors">
+          <button className="border border-white/40 text-white px-6 py-3 rounded-full font-medium hover:bg-white/10 transition-colors">
             {t('pages.school_programs.cta.contact_advisor')}
           </button>
         </div>

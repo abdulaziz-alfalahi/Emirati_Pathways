@@ -1,6 +1,5 @@
-
 {
-  "name": "Emirati Journey Platform",
+  "name": "Dubai Human Development Platform",
   "short_name": "Emirati Journey",
   "description": "Comprehensive platform for UAE career development, job matching, and Emiratization progress with real-time notifications and advanced analytics",
   "start_url": "/",
@@ -11,14 +10,19 @@
   "scope": "/",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["business", "productivity", "education", "government"],
+  "categories": [
+    "business",
+    "productivity",
+    "education",
+    "government"
+  ],
   "screenshots": [
     {
       "src": "/images/screenshot-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Desktop view of the Emirati Journey Platform dashboard"
+      "label": "Desktop view of the Dubai Human Development Platform dashboard"
     },
     {
       "src": "/images/screenshot-narrow.png",

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,9 @@ interface ApplicationTrackerProps {
 
 const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
@@ -184,17 +188,17 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'Pending Review';
+        return t('Pending Review', 'قيد المراجعة');
       case 'reviewed':
-        return 'Under Review';
+        return t('Under Review', 'تحت المراجعة');
       case 'interview':
-        return 'Interview Scheduled';
+        return t('Interview Scheduled', 'مقابلة مجدولة');
       case 'offer':
-        return 'Offer Received';
+        return t('Offer Received', 'تم استلام عرض');
       case 'rejected':
-        return 'Not Selected';
+        return t('Not Selected', 'لم يتم الاختيار');
       case 'withdrawn':
-        return 'Withdrawn';
+        return t('Withdrawn', 'تم السحب');
       default:
         return status;
     }
@@ -219,12 +223,12 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Application Tracker</CardTitle>
+          <CardTitle>{t('Application Tracker', 'متتبع الطلبات')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your applications...</p>
+            <p className="text-muted-foreground">{t('Loading your applications...', 'جاري تحميل طلباتك...')}</p>
           </div>
         </CardContent>
       </Card>
@@ -260,11 +264,11 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-sm text-muted-foreground">Applied Date</p>
+            <p className="text-sm text-muted-foreground">{t('Applied Date', 'تاريخ التقديم')}</p>
             <p className="font-medium">{new Date(application.appliedDate).toLocaleDateString()}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Last Update</p>
+            <p className="text-sm text-muted-foreground">{t('Last Update', 'آخر تحديث')}</p>
             <p className="font-medium">{new Date(application.lastUpdate).toLocaleDateString()}</p>
           </div>
         </div>
@@ -273,20 +277,20 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
           <div className="bg-purple-50 rounded-lg p-4 mb-4">
             <div className="flex items-center space-x-2 mb-2">
               <Calendar className="h-5 w-5 text-purple-600" />
-              <h4 className="font-medium text-purple-800">Interview Scheduled</h4>
+              <h4 className="font-medium text-purple-800">{t('Interview Scheduled', 'مقابلة مجدولة')}</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <p><strong>Date:</strong> {new Date(application.interviewDate).toLocaleDateString()}</p>
-              <p><strong>Type:</strong> {application.interviewType}</p>
+              <p><strong>{t('Date:', 'التاريخ:')}</strong> {new Date(application.interviewDate).toLocaleDateString()}</p>
+              <p><strong>{t('Type:', 'النوع:')}</strong> {application.interviewType}</p>
             </div>
           </div>
         )}
 
         {application.contactPerson && application.status !== 'withdrawn' && (
           <div className="bg-blue-50 rounded-lg p-4 mb-4">
-            <h4 className="font-medium text-blue-800 mb-2">Contact Person</h4>
+            <h4 className="font-medium text-blue-800 mb-2">{t('Contact Person', 'شخص الاتصال')}</h4>
             <div className="space-y-1 text-sm">
-              <p><strong>Name:</strong> {application.contactPerson.name}</p>
+              <p><strong>{t('Name:', 'الاسم:')}</strong> {application.contactPerson.name}</p>
               <div className="flex items-center space-x-1">
                 <Mail className="h-4 w-4 text-blue-600" />
                 <span>{application.contactPerson.email}</span>
@@ -305,7 +309,7 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <div className="flex items-center space-x-2 mb-2">
               <FileText className="h-4 w-4 text-gray-600" />
-              <h4 className="font-medium text-gray-800">Notes</h4>
+              <h4 className="font-medium text-gray-800">{t('Notes', 'ملاحظات')}</h4>
             </div>
             <p className="text-sm text-gray-700">{application.notes}</p>
           </div>
@@ -314,14 +318,14 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
         <div className="flex flex-wrap gap-2">
           {application.status === 'interview' && (
             <Button size="sm" onClick={() => navigate('/candidate-dashboard?tab=interviews')}>
-              <Calendar className="h-4 w-4 mr-2" />
-              View Interview Details
+              <Calendar className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+              {t('View Interview Details', 'عرض تفاصيل المقابلة')}
             </Button>
           )}
           {application.status === 'offer' && (
             <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => navigate('/candidate-dashboard?tab=offers')}>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Respond to Offer
+              <CheckCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+              {t('Respond to Offer', 'الرد على العرض')}
             </Button>
           )}
           {application.status !== 'withdrawn' && (
@@ -330,8 +334,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               size="sm"
               onClick={() => window.location.hash = '#messages'}
             >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Contact Employer
+              <MessageSquare className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+              {t('Contact Employer', 'التواصل مع الموظِّف')}
             </Button>
           )}
           {canWithdraw(application.status) && (
@@ -341,14 +345,14 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
               onClick={() => handleWithdrawClick(application)}
             >
-              <XCircle className="h-4 w-4 mr-2" />
-              Withdraw Application
+              <XCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+              {t('Withdraw Application', 'سحب الطلب')}
             </Button>
           )}
           {application.status === 'withdrawn' && (
             <span className="text-sm text-gray-500 italic flex items-center">
-              <AlertTriangle className="h-4 w-4 mr-1" />
-              Application withdrawn
+              <AlertTriangle className="h-4 w-4" style={{ marginInlineEnd: 4 }} />
+              {t('Application withdrawn', 'تم سحب الطلب')}
             </span>
           )}
         </div>
@@ -360,21 +364,21 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Application Tracker</CardTitle>
+          <CardTitle>{t('Application Tracker', 'متتبع الطلبات')}</CardTitle>
           <CardDescription>
-            Track the status of your job applications
+            {t('Track the status of your job applications', 'تتبع حالة طلبات التوظيف الخاصة بك')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="all">All ({getTabCount()})</TabsTrigger>
-              <TabsTrigger value="pending">Pending ({getTabCount('pending')})</TabsTrigger>
-              <TabsTrigger value="reviewed">Reviewed ({getTabCount('reviewed')})</TabsTrigger>
-              <TabsTrigger value="interview">Interview ({getTabCount('interview')})</TabsTrigger>
-              <TabsTrigger value="offer">Offers ({getTabCount('offer')})</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected ({getTabCount('rejected')})</TabsTrigger>
-              <TabsTrigger value="withdrawn">Withdrawn ({getTabCount('withdrawn')})</TabsTrigger>
+              <TabsTrigger value="all">{t('All', 'الكل')} ({getTabCount()})</TabsTrigger>
+              <TabsTrigger value="pending">{t('Pending', 'قيد الانتظار')} ({getTabCount('pending')})</TabsTrigger>
+              <TabsTrigger value="reviewed">{t('Reviewed', 'تمت المراجعة')} ({getTabCount('reviewed')})</TabsTrigger>
+              <TabsTrigger value="interview">{t('Interview', 'مقابلة')} ({getTabCount('interview')})</TabsTrigger>
+              <TabsTrigger value="offer">{t('Offers', 'عروض')} ({getTabCount('offer')})</TabsTrigger>
+              <TabsTrigger value="rejected">{t('Rejected', 'مرفوض')} ({getTabCount('rejected')})</TabsTrigger>
+              <TabsTrigger value="withdrawn">{t('Withdrawn', 'مسحوب')} ({getTabCount('withdrawn')})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="all" className="mt-6">
@@ -383,9 +387,9 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="text-center py-8">
                   <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Applications Yet</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t('No Applications Yet', 'لا توجد طلبات بعد')}</h3>
                   <p className="text-muted-foreground">
-                    Start applying to jobs to track your applications here.
+                    {t('Start applying to jobs to track your applications here.', 'ابدأ بالتقديم على الوظائف لتتبع طلباتك هنا.')}
                   </p>
                 </div>
               )}
@@ -397,8 +401,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Clock className="h-10 w-10 text-gray-300 mb-3" />
-                  <h4 className="font-semibold text-gray-600 mb-1">No Pending Applications</h4>
-                  <p className="text-sm text-muted-foreground">Applications awaiting review will appear here.</p>
+                  <h4 className="font-semibold text-gray-600 mb-1">{t('No Pending Applications', 'لا توجد طلبات قيد الانتظار')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('Applications awaiting review will appear here.', 'الطلبات التي تنتظر المراجعة ستظهر هنا.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -409,8 +413,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Eye className="h-10 w-10 text-gray-300 mb-3" />
-                  <h4 className="font-semibold text-gray-600 mb-1">No Applications Under Review</h4>
-                  <p className="text-sm text-muted-foreground">Applications being reviewed by employers will show here.</p>
+                  <h4 className="font-semibold text-gray-600 mb-1">{t('No Applications Under Review', 'لا توجد طلبات تحت المراجعة')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('Applications being reviewed by employers will show here.', 'الطلبات التي يراجعها أصحاب العمل ستظهر هنا.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -421,8 +425,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Calendar className="h-10 w-10 text-gray-300 mb-3" />
-                  <h4 className="font-semibold text-gray-600 mb-1">No Scheduled Interviews</h4>
-                  <p className="text-sm text-muted-foreground">When employers schedule interviews, they'll appear here.</p>
+                  <h4 className="font-semibold text-gray-600 mb-1">{t('No Scheduled Interviews', 'لا توجد مقابلات مجدولة')}</h4>
+                  <p className="text-sm text-muted-foreground">{t("When employers schedule interviews, they'll appear here.", 'عندما يجدول أصحاب العمل مقابلات، ستظهر هنا.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -433,8 +437,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <CheckCircle className="h-10 w-10 text-gray-300 mb-3" />
-                  <h4 className="font-semibold text-gray-600 mb-1">No Offers Received</h4>
-                  <p className="text-sm text-muted-foreground">Job offers from employers will appear here.</p>
+                  <h4 className="font-semibold text-gray-600 mb-1">{t('No Offers Received', 'لم يتم استلام عروض')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('Job offers from employers will appear here.', 'عروض العمل من أصحاب العمل ستظهر هنا.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -445,8 +449,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <XCircle className="h-10 w-10 text-gray-300 mb-3" />
-                  <h4 className="font-semibold text-gray-600 mb-1">No Rejected Applications</h4>
-                  <p className="text-sm text-muted-foreground">Keep applying — this section will stay empty with the right match!</p>
+                  <h4 className="font-semibold text-gray-600 mb-1">{t('No Rejected Applications', 'لا توجد طلبات مرفوضة')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('Keep applying — this section will stay empty with the right match!', 'استمر بالتقديم — هذا القسم سيبقى فارغاً مع المطابقة الصحيحة!')}</p>
                 </div>
               )}
             </TabsContent>
@@ -457,8 +461,8 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <AlertTriangle className="h-10 w-10 text-gray-300 mb-3" />
-                  <h4 className="font-semibold text-gray-600 mb-1">No Withdrawn Applications</h4>
-                  <p className="text-sm text-muted-foreground">Applications you withdraw will appear here.</p>
+                  <h4 className="font-semibold text-gray-600 mb-1">{t('No Withdrawn Applications', 'لا توجد طلبات مسحوبة')}</h4>
+                  <p className="text-sm text-muted-foreground">{t('Applications you withdraw will appear here.', 'الطلبات التي تسحبها ستظهر هنا.')}</p>
                 </div>
               )}
             </TabsContent>
@@ -472,33 +476,36 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Withdraw Application
+              {t('Withdraw Application', 'سحب الطلب')}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to withdraw your application for{' '}
-              <strong>{selectedApplication?.jobTitle}</strong> at{' '}
-              <strong>{selectedApplication?.company}</strong>?
+              {t(
+                `Are you sure you want to withdraw your application for`,
+                `هل أنت متأكد من سحب طلبك لوظيفة`
+              )}{' '}
+              <strong>{selectedApplication?.jobTitle}</strong> {t('at', 'في')}{' '}
+              <strong>{selectedApplication?.company}</strong>{t('?', '؟')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-amber-800">
-                <strong>Note:</strong> This action cannot be undone. You may not be able to reapply for this position.
+                <strong>{t('Note:', 'ملاحظة:')}</strong> {t('This action cannot be undone. You may not be able to reapply for this position.', 'لا يمكن التراجع عن هذا الإجراء. قد لا تتمكن من إعادة التقديم لهذا المنصب.')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="withdraw-reason">Reason for withdrawal (optional)</Label>
+              <Label htmlFor="withdraw-reason">{t('Reason for withdrawal (optional)', 'سبب السحب (اختياري)')}</Label>
               <Textarea
                 id="withdraw-reason"
-                placeholder="e.g., Accepted another offer, Personal reasons, Changed career direction..."
+                placeholder={t('e.g., Accepted another offer, Personal reasons, Changed career direction...', 'مثلاً: قبلت عرضاً آخر، أسباب شخصية، تغيير في المسار المهني...')}
                 value={withdrawReason}
                 onChange={(e) => setWithdrawReason(e.target.value)}
                 rows={3}
               />
               <p className="text-xs text-muted-foreground">
-                This information helps employers improve their hiring process.
+                {t('This information helps employers improve their hiring process.', 'هذه المعلومات تساعد أصحاب العمل في تحسين عملية التوظيف.')}
               </p>
             </div>
           </div>
@@ -509,7 +516,7 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
               onClick={() => setWithdrawDialogOpen(false)}
               disabled={withdrawing}
             >
-              Cancel
+              {t('Cancel', 'إلغاء')}
             </Button>
             <Button
               variant="destructive"
@@ -518,13 +525,13 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
             >
               {withdrawing ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Withdrawing...
+                  <Loader2 className="h-4 w-4 animate-spin" style={{ marginInlineEnd: 8 }} />
+                  {t('Withdrawing...', 'جاري السحب...')}
                 </>
               ) : (
                 <>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Withdraw Application
+                  <XCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                  {t('Withdraw Application', 'سحب الطلب')}
                 </>
               )}
             </Button>

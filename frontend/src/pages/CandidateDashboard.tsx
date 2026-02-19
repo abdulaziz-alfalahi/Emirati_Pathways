@@ -62,7 +62,7 @@ interface DashboardData {
 }
 
 const CandidateDashboard: React.FC = () => {
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
   const { language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -83,6 +83,10 @@ const CandidateDashboard: React.FC = () => {
   });
   const [activeTab, setActiveTab] = useState('overview');
   const location = useLocation();
+
+  // Bilingual helper
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
 
   useEffect(() => {
     // Check for hash
@@ -135,11 +139,13 @@ const CandidateDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading dashboard...</div>;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">{t('Loading dashboard...', 'جاري تحميل لوحة التحكم...')}</div>;
   }
 
+  const firstName = dashboardData.profile.name.split(' ')[0];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <HybridGovernmentNavFixed
         showAuthButtons={false}
         currentPage="dashboard"
@@ -149,7 +155,7 @@ const CandidateDashboard: React.FC = () => {
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center py-6">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
             <div className="relative group w-12 h-12 rounded-full overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-200">
               {dashboardData.profile.profile_photo_url ? (
                 <img
@@ -206,12 +212,14 @@ const CandidateDashboard: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
-                {dashboardData.profile.name === 'New Member' ? 'Welcome!' : `Welcome back, ${dashboardData.profile.name.split(' ')[0]}!`}
+                {dashboardData.profile.name === 'New Member'
+                  ? t('Welcome!', '!مرحباً')
+                  : t(`Welcome back, ${firstName}!`, `!مرحباً بعودتك، ${firstName}`)}
               </h1>
               <p className="text-muted-foreground">
                 {dashboardData.profile.name === 'New Member'
-                  ? 'Complete your profile to unlock your career journey'
-                  : 'Your career journey continues here'}
+                  ? t('Complete your profile to unlock your career journey', 'أكمل ملفك الشخصي لبدء رحلتك المهنية')
+                  : t('Your career journey continues here', 'رحلتك المهنية تستمر هنا')}
               </p>
             </div>
           </div>
@@ -224,10 +232,10 @@ const CandidateDashboard: React.FC = () => {
               <Sparkles className="h-4 w-4 text-teal-600" />
               <AlertDescription className="text-teal-800 flex justify-between items-center">
                 <span>
-                  <strong>Boost your profile!</strong> Upload your CV to get AI-powered job matches and a professional profile.
+                  <strong>{t('Boost your profile!', 'عزّز ملفك الشخصي!')}</strong> {t('Upload your CV to get AI-powered job matches and a professional profile.', 'ارفع سيرتك الذاتية للحصول على مطابقات وظيفية ذكية وملف مهني احترافي.')}
                 </span>
-                <Button size="sm" className="ml-4 bg-teal-600 hover:bg-teal-700" onClick={() => navigate('/candidate/profile')}>
-                  Upload CV Now <ArrowRight className="ml-2 h-4 w-4" />
+                <Button size="sm" className="bg-teal-600 hover:bg-teal-700" style={{ marginInlineStart: 16 }} onClick={() => navigate('/candidate/profile')}>
+                  {t('Upload CV Now', 'ارفع السيرة الذاتية')} <ArrowRight className="h-4 w-4" style={{ marginInlineStart: 8 }} />
                 </Button>
               </AlertDescription>
             </Alert>
@@ -235,27 +243,27 @@ const CandidateDashboard: React.FC = () => {
         )}
 
         <div className="py-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
             <TabsList className="grid w-full grid-cols-7 bg-muted/50 p-1 rounded-xl shadow-sm">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="profile">Profile & CV</TabsTrigger>
-              <TabsTrigger value="jobs">Job Matches</TabsTrigger>
-              <TabsTrigger value="applications">Applications</TabsTrigger>
-              <TabsTrigger value="interviews">Interviews</TabsTrigger>
-              <TabsTrigger value="offers">Offers</TabsTrigger>
-              <TabsTrigger value="messages">Messages</TabsTrigger>
+              <TabsTrigger value="overview">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="profile">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
+              <TabsTrigger value="jobs">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
+              <TabsTrigger value="applications">{t('Applications', 'الطلبات')}</TabsTrigger>
+              <TabsTrigger value="interviews">{t('Interviews', 'المقابلات')}</TabsTrigger>
+              <TabsTrigger value="offers">{t('Offers', 'العروض')}</TabsTrigger>
+              <TabsTrigger value="messages">{t('Messages', 'الرسائل')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6" dir={isRTL ? 'rtl' : 'ltr'}>
                 <Card className="hover:shadow-md transition-shadow duration-200">
                   <CardContent className="pt-6">
                     <div className="flex items-center">
                       <div className="p-3 bg-blue-100 rounded-full">
                         <Eye className="h-6 w-6 text-blue-600" />
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Profile Views</p>
+                      <div style={{ marginInlineStart: 16 }}>
+                        <p className="text-sm font-medium text-muted-foreground">{t('Profile Views', 'مشاهدات الملف')}</p>
                         <p className="text-2xl font-bold text-foreground">{dashboardData.stats.profileViews}</p>
                       </div>
                     </div>
@@ -267,8 +275,8 @@ const CandidateDashboard: React.FC = () => {
                       <div className="p-3 bg-green-100 rounded-full">
                         <Target className="h-6 w-6 text-green-600" />
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Job Matches</p>
+                      <div style={{ marginInlineStart: 16 }}>
+                        <p className="text-sm font-medium text-muted-foreground">{t('Job Matches', 'الوظائف المطابقة')}</p>
                         <p className="text-2xl font-bold text-foreground">{dashboardData.stats.jobMatches}</p>
                       </div>
                     </div>
@@ -280,8 +288,8 @@ const CandidateDashboard: React.FC = () => {
                       <div className="p-3 bg-purple-100 rounded-full">
                         <FileText className="h-6 w-6 text-purple-600" />
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Applications</p>
+                      <div style={{ marginInlineStart: 16 }}>
+                        <p className="text-sm font-medium text-muted-foreground">{t('Applications', 'الطلبات')}</p>
                         <p className="text-2xl font-bold text-foreground">{dashboardData.stats.applications}</p>
                       </div>
                     </div>
@@ -293,8 +301,8 @@ const CandidateDashboard: React.FC = () => {
                       <div className="p-3 bg-orange-100 rounded-full">
                         <Calendar className="h-6 w-6 text-orange-600" />
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Interviews</p>
+                      <div style={{ marginInlineStart: 16 }}>
+                        <p className="text-sm font-medium text-muted-foreground">{t('Interviews', 'المقابلات')}</p>
                         <p className="text-2xl font-bold text-foreground">{dashboardData.stats.interviews}</p>
                       </div>
                     </div>
@@ -307,16 +315,16 @@ const CandidateDashboard: React.FC = () => {
                   <CardHeader className="bg-card border-b">
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5 text-teal-600" />
-                      Profile Completion
+                      {t('Profile Completion', 'اكتمال الملف الشخصي')}
                     </CardTitle>
                     <CardDescription>
-                      Complete your profile to get better job matches
+                      {t('Complete your profile to get better job matches', 'أكمل ملفك الشخصي للحصول على مطابقات وظيفية أفضل')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Overall Progress</span>
+                        <span className="text-sm font-medium">{t('Overall Progress', 'التقدم العام')}</span>
                         <span className="text-sm font-bold text-teal-600">{dashboardData.profile.completionPercentage}%</span>
                       </div>
                       <Progress value={dashboardData.profile.completionPercentage} className="h-3 bg-gray-100" />
@@ -324,15 +332,15 @@ const CandidateDashboard: React.FC = () => {
                         <div className="flex items-center justify-between text-sm p-3 bg-gray-50 rounded-lg">
                           <span className="flex items-center gap-2">
                             <Upload className="h-4 w-4 text-gray-500" />
-                            CV Upload Status
+                            {t('CV Upload Status', 'حالة رفع السيرة الذاتية')}
                           </span>
                           {dashboardData.profile.cvUploaded ? (
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" /> Uploaded
+                              <CheckCircle className="h-3 w-3" /> {t('Uploaded', 'تم الرفع')}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" /> Pending
+                              <AlertCircle className="h-3 w-3" /> {t('Pending', 'قيد الانتظار')}
                             </Badge>
                           )}
                         </div>
@@ -341,13 +349,15 @@ const CandidateDashboard: React.FC = () => {
                           variant="default"
                           className="w-full bg-slate-900 hover:bg-slate-800"
                         >
-                          {dashboardData.profile.cvUploaded ? 'Enhance Profile / CV' : 'Build Profile & CV'}
+                          {dashboardData.profile.cvUploaded
+                            ? t('Enhance Profile / CV', 'تحسين الملف / السيرة الذاتية')
+                            : t('Build Profile & CV', 'إنشاء الملف والسيرة الذاتية')}
                         </Button>
                       </div>
                       <div className="flex items-center justify-between text-sm p-3 bg-blue-50 rounded-lg mt-3">
                         <span className="flex items-center gap-2">
                           <Target className="h-4 w-4 text-blue-500" />
-                          ATS Compatibility
+                          {t('ATS Compatibility', 'توافق نظام تتبع المتقدمين')}
                         </span>
                         <span className={`font-bold ${(dashboardData.profile.ats_score || 0) >= 80 ? 'text-green-600' :
                           (dashboardData.profile.ats_score || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'
@@ -363,10 +373,10 @@ const CandidateDashboard: React.FC = () => {
                   <CardHeader className="bg-card border-b">
                     <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-teal-600" />
-                      Quick Actions
+                      {t('Quick Actions', 'إجراءات سريعة')}
                     </CardTitle>
                     <CardDescription>
-                      Common tasks to boost your job search
+                      {t('Common tasks to boost your job search', 'مهام شائعة لتعزيز بحثك عن وظيفة')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
@@ -376,24 +386,24 @@ const CandidateDashboard: React.FC = () => {
                         variant="outline"
                         className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
-                        <Target className="h-4 w-4 mr-2" />
-                        Browse Job Matches
+                        <Target className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                        {t('Browse Job Matches', 'تصفح الوظائف المطابقة')}
                       </Button>
                       <Button
                         onClick={() => setActiveTab('applications')}
                         variant="outline"
                         className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Track Applications ({dashboardData.stats.applications})
+                        <FileText className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                        {t(`Track Applications (${dashboardData.stats.applications})`, `تتبع الطلبات (${dashboardData.stats.applications})`)}
                       </Button>
                       <Button
                         onClick={() => navigate('/candidate/profile')}
                         variant="outline"
                         className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
                       >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Build Your Resume with AI
+                        <Sparkles className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                        {t('Build Your Resume with AI', 'أنشئ سيرتك الذاتية بالذكاء الاصطناعي')}
                       </Button>
                     </div>
                   </CardContent>

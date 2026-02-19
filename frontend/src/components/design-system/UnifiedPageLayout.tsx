@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Home, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { EnhancedHybridGovernmentNav } from '../layout/EnhancedHybridGovernmentNav';
+import EnhancedHybridGovernmentNav from '../layout/EnhancedHybridGovernmentNav';
 
 interface BreadcrumbItem {
   label: string;
@@ -31,12 +31,12 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#FAFBFC]">
       {/* Navigation Header */}
       <EnhancedHybridGovernmentNav />
-      
+
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-[#E2E5E9]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumbs */}
           {breadcrumbs.length > 0 && (
@@ -45,7 +45,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                 <li>
                   <Link
                     to="/"
-                    className="text-gray-400 hover:text-gray-500 transition-colors"
+                    className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
                   >
                     <Home className="h-4 w-4" />
                     <span className="sr-only">{t('navigation.home')}</span>
@@ -53,16 +53,16 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                 </li>
                 {breadcrumbs.map((item, index) => (
                   <li key={index} className="flex items-center">
-                    <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+                    <ChevronRight className="h-4 w-4 text-[#9CA3AF] mx-2" />
                     {item.href ? (
                       <Link
                         to={item.href}
-                        className="text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                        className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
                       >
                         {item.label}
                       </Link>
                     ) : (
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-[#1A1A1A]">
                         {item.label}
                       </span>
                     )}
@@ -79,18 +79,18 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                 {showBackButton && (
                   <button
                     onClick={() => window.history.back()}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
+                    className="inline-flex items-center px-3 py-2 border border-[#E2E5E9] text-sm font-medium rounded-xl text-[#374151] bg-white hover:bg-[#F4F5F7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#006E6D]/20 transition-colors"
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     {t('common.back')}
                   </button>
                 )}
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  <h1 className="text-2xl md:text-3xl font-bold text-[#1A1A1A]">
                     {title}
                   </h1>
                   {subtitle && (
-                    <p className="mt-2 text-sm md:text-base text-gray-600">
+                    <p className="mt-2 text-sm md:text-base text-[#6B7280]">
                       {subtitle}
                     </p>
                   )}
@@ -112,53 +112,45 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
+      <footer className="bg-[#111827] text-white border-t-2 border-[#006E6D] mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* UAE Government Branding */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-3 mb-4">
                 <img
-                  src="/api/placeholder/40/40"
-                  alt="UAE Government"
-                  className="h-10 w-10"
+                  src="/dubai-gov-logo.jpg"
+                  alt="Government of Dubai"
+                  className="h-9 w-auto opacity-90"
                 />
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {t('footer.platform_name')}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {t('footer.government_subtitle')}
-                  </p>
-                </div>
+                <div className="w-px h-8 bg-gray-700"></div>
+                <img
+                  src="/ehrdc-logo.png"
+                  alt="EHRDC Logo"
+                  className="h-8 w-auto opacity-90"
+                />
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <h3 className="text-base font-semibold mb-1">
+                {t('footer.platform_name')}
+              </h3>
+              <p className="text-gray-500 text-xs mb-3">
+                {t('footer.government_subtitle')}
+              </p>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-md">
                 {t('footer.description')}
               </p>
-              <div className="flex items-center space-x-4">
-                <img
-                  src="/api/placeholder/80/40"
-                  alt="Dubai Government"
-                  className="h-8"
-                />
-                <img
-                  src="/api/placeholder/80/40"
-                  alt="EHRDC"
-                  className="h-8"
-                />
-              </div>
             </div>
 
             {/* Quick Links */}
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+              <h4 className="text-sm font-medium uppercase tracking-wider text-gray-400 mb-3">
                 {t('footer.quick_links')}
               </h4>
               <ul className="space-y-2">
                 <li>
                   <Link
                     to="/career-planning-hub"
-                    className="text-sm text-gray-600 hover:text-teal-600 transition-colors"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {t('navigation.career_planning')}
                   </Link>
@@ -166,7 +158,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                 <li>
                   <Link
                     to="/job-matching"
-                    className="text-sm text-gray-600 hover:text-teal-600 transition-colors"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {t('navigation.job_matching')}
                   </Link>
@@ -174,7 +166,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                 <li>
                   <Link
                     to="/cv-builder"
-                    className="text-sm text-gray-600 hover:text-teal-600 transition-colors"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {t('navigation.cv_builder')}
                   </Link>
@@ -182,7 +174,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                 <li>
                   <Link
                     to="/mentorship"
-                    className="text-sm text-gray-600 hover:text-teal-600 transition-colors"
+                    className="text-sm text-gray-400 hover:text-white transition-colors"
                   >
                     {t('navigation.mentorship')}
                   </Link>
@@ -192,17 +184,17 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
 
             {/* Contact Info */}
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+              <h4 className="text-sm font-medium uppercase tracking-wider text-gray-400 mb-3">
                 {t('footer.contact')}
               </h4>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400">
                   {t('footer.location')}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400">
                   {t('footer.phone')}: 048729292
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-400">
                   {t('footer.email')}: info@emiratijourney.ae
                 </p>
               </div>
@@ -210,8 +202,8 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
           </div>
 
           {/* Copyright */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-500">
+          <div className="mt-8 pt-6 border-t border-gray-800">
+            <p className="text-center text-xs text-gray-500">
               © 2025 {t('footer.platform_name')}. {t('footer.rights_reserved')}
             </p>
           </div>

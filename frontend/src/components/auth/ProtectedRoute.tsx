@@ -15,7 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo = '/auth'
 }) => {
   const location = useLocation();
-  const { isAuthenticated, user, isLoading } = useAuth(); // Use real AuthContext
+  const { isAuthenticated, user, isLoading, getUserRole } = useAuth();
 
   if (isLoading) {
     return (
@@ -33,12 +33,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check role-based access if roles are specified
   if (allowedRoles.length > 0) {
-    // Get user role from context (which handles fallbacks correctly)
-    const { getUserRole } = useAuth();
     const userRole = getUserRole();
 
     // Check if user has any of the allowed roles
-    // We check both the primary role and if the user data has a roles array
     // Normalize role for comparison (handle "Job Seeker" vs "job_seeker" vs "candidate")
     const normalizeRole = (r: string) => {
       const lower = r.toLowerCase();

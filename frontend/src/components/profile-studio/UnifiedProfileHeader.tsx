@@ -126,7 +126,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
 
     // Helper Configuration
     const roleConfigs: Record<string, any> = {
-        'job_seeker': { label: 'Job Seeker', icon: User, color: 'bg-blue-500' },
+        'job_seeker': { label: 'Job Seeker', icon: User, color: 'bg-teal-500' },
         'student': { label: 'Student', icon: GraduationCap, color: 'bg-teal-500' },
         'recruiter': { label: 'HR Recruiter', icon: Users, color: 'bg-green-500' }, // Updated Label
         'hr_manager': { label: 'HR Manager', icon: Users, color: 'bg-green-600' }, // Added
@@ -294,7 +294,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
-                                                    className="text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 border border-dashed border-blue-200"
+                                                    className="text-xs text-teal-600 hover:text-teal-800 hover:bg-teal-50 border border-dashed border-teal-200"
                                                     onClick={() => setShowAddRoleMenu(!showAddRoleMenu)}
                                                 >
                                                     <Plus className="h-3 w-3 mr-1" />
@@ -314,7 +314,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                                                                 {unownedKeys.map(roleKey => (
                                                                     <button
                                                                         key={roleKey}
-                                                                        className="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-colors"
+                                                                        className="flex items-center w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
                                                                         onClick={() => {
                                                                             setShowAddRoleMenu(false);
                                                                             setRequestDialog({ isOpen: true, role: roleConfigs[roleKey].label });

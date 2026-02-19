@@ -8,37 +8,37 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   RadialBarChart,
   RadialBar
 } from 'recharts';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Users, 
-  Briefcase, 
-  Target, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  BarChart3, 
-  PieChart as PieChartIcon, 
-  Activity, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Briefcase,
+  Target,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  BarChart3,
+  PieChart as PieChartIcon,
+  Activity,
   Zap,
   Brain,
   Globe,
@@ -221,7 +221,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
-          <p className="text-gray-600 mt-1">AI-powered insights for the Emirati Journey Platform</p>
+          <p className="text-gray-600 mt-1">AI-powered insights for the Dubai Human Development Platform</p>
         </div>
         <div className="flex items-center space-x-3">
           <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
@@ -410,8 +410,8 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                         <span className="font-medium">{sector.sector}</span>
                         <span>{sector.progress_percentage.toFixed(1)}%</span>
                       </div>
-                      <Progress 
-                        value={sector.progress_percentage} 
+                      <Progress
+                        value={sector.progress_percentage}
                         className="h-2"
                       />
                       <div className="flex justify-between text-xs text-gray-500">
@@ -445,11 +445,11 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="success_rate" 
-                      stackId="1" 
-                      stroke={colors.primary} 
+                    <Area
+                      type="monotone"
+                      dataKey="success_rate"
+                      stackId="1"
+                      stroke={colors.primary}
                       fill={colors.primary}
                       fillOpacity={0.6}
                     />
@@ -499,16 +499,16 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="total_applications" 
-                        stroke={colors.primary} 
+                      <Line
+                        type="monotone"
+                        dataKey="total_applications"
+                        stroke={colors.primary}
                         strokeWidth={2}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="emirati_applications" 
-                        stroke={colors.secondary} 
+                      <Line
+                        type="monotone"
+                        dataKey="emirati_applications"
+                        stroke={colors.secondary}
                         strokeWidth={2}
                       />
                     </LineChart>
@@ -621,11 +621,11 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Area 
-                        type="monotone" 
-                        dataKey="daily_activities" 
-                        stackId="1" 
-                        stroke={colors.primary} 
+                      <Area
+                        type="monotone"
+                        dataKey="daily_activities"
+                        stackId="1"
+                        stroke={colors.primary}
                         fill={colors.primary}
                         fillOpacity={0.6}
                       />
@@ -689,7 +689,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                       <div key={index} className="p-4 border rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <Badge variant="outline">{rec.category}</Badge>
-                          <Badge 
+                          <Badge
                             variant={rec.priority === 'high' ? 'destructive' : 'secondary'}
                           >
                             {rec.priority}
@@ -699,8 +699,8 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                         <p className="text-xs text-gray-600 mb-2">{rec.description}</p>
                         <div className="flex items-center">
                           <span className="text-xs text-gray-500">Impact Score:</span>
-                          <Progress 
-                            value={rec.impact_score * 100} 
+                          <Progress
+                            value={rec.impact_score * 100}
                             className="ml-2 h-2 flex-1"
                           />
                           <span className="text-xs text-gray-500 ml-2">

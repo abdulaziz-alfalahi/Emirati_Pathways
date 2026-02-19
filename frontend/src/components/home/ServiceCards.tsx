@@ -13,11 +13,11 @@ const ServiceCards: React.FC = () => {
   const navigate = useNavigate();
   const [visibleItems, setVisibleItems] = useState<number[]>([]);
   const services: Service[] = [{
-    id: 'summer-camps',
-    title: 'Summer Camps',
+    id: 'knowledge-camps',
+    title: 'Knowledge Camps',
     description: 'Discover enriching summer camp programs to enhance your skills and experience.',
     icon: <Calendar size={24} />,
-    path: '/summer-camps'
+    path: '/knowledge-camps'
   }, {
     id: 'scholarships',
     title: 'Scholarships',
@@ -89,38 +89,38 @@ const ServiceCards: React.FC = () => {
     };
   }, []);
   return <section id="services" className="section">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <div className="inline-block mb-6 px-4 py-2 rounded-full bg-white shadow-subtle border border-gray-100">
-            <p className="text-emirati-navy font-medium">Comprehensive Tools</p>
-          </div>
-          <h2 className="text-3xl md:text-5xl font-display font-semibold mb-6">Platform Services</h2>
-          <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-            The Emirati Journey platform offers a wide range of services designed to support
-            UAE citizens throughout their career development.
-          </p>
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-16">
+        <div className="inline-block mb-6 px-4 py-2 rounded-full bg-white shadow-subtle border border-gray-100">
+          <p className="text-emirati-navy font-medium">Comprehensive Tools</p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {services.map((service, index) => <div key={service.id} className={cn("service-card glass-card rounded-2xl p-6 border border-gray-100 transition-all duration-700 transform", visibleItems.includes(index) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12", service.path ? "cursor-pointer hover:shadow-md hover:border-emirati-teal/30" : "")} style={{
+        <h2 className="text-3xl md:text-5xl font-display font-semibold mb-6">Platform Services</h2>
+        <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
+          The Dubai Human Development platform offers a wide range of services designed to support
+          UAE citizens throughout their career development.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        {services.map((service, index) => <div key={service.id} className={cn("service-card glass-card rounded-2xl p-6 border border-gray-100 transition-all duration-700 transform", visibleItems.includes(index) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12", service.path ? "cursor-pointer hover:shadow-md hover:border-emirati-teal/30" : "")} style={{
           transitionDelay: `${index % 3 * 100}ms`,
           backdropFilter: 'blur(10px)'
         }} data-index={index} onClick={() => handleServiceClick(service)}>
-              <div className="w-12 h-12 rounded-xl bg-emirati-teal/10 flex items-center justify-center text-emirati-teal mb-5">
-                {service.icon}
-              </div>
-              <h3 className="text-xl font-display font-medium mb-3">{service.title}</h3>
-              <p className="text-foreground/70 leading-relaxed">{service.description}</p>
-              {service.path && <div className="mt-4 text-emirati-teal text-sm font-medium">
-                  Click to explore
-                </div>}
-            </div>)}
-        </div>
-        
-        <div className="mt-16 text-center">
-          
-        </div>
+          <div className="w-12 h-12 rounded-xl bg-emirati-teal/10 flex items-center justify-center text-emirati-teal mb-5">
+            {service.icon}
+          </div>
+          <h3 className="text-xl font-display font-medium mb-3">{service.title}</h3>
+          <p className="text-foreground/70 leading-relaxed">{service.description}</p>
+          {service.path && <div className="mt-4 text-emirati-teal text-sm font-medium">
+            Click to explore
+          </div>}
+        </div>)}
       </div>
-    </section>;
+
+      <div className="mt-16 text-center">
+
+      </div>
+    </div>
+  </section>;
 };
 export default ServiceCards;

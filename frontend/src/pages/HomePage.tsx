@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Users, 
-  Building2, 
-  GraduationCap, 
-  UserCheck, 
+import {
+  ArrowRight,
+  Users,
+  Building2,
+  GraduationCap,
+  UserCheck,
   Award,
   Sparkles,
   Shield,
@@ -24,7 +24,6 @@ const HomePage: React.FC = () => {
       title: 'Job Seeker',
       description: 'Find your dream career with AI-powered job matching and personalized career guidance',
       icon: Users,
-      color: 'bg-blue-500',
       features: ['AI Job Matching', 'CV Builder', 'Career Planning', 'Skill Assessment'],
       popular: true
     },
@@ -33,7 +32,6 @@ const HomePage: React.FC = () => {
       title: 'HR / Recruiter',
       description: 'Streamline hiring with advanced recruitment tools and candidate analytics',
       icon: Building2,
-      color: 'bg-green-500',
       features: ['Talent Pipeline', 'Video Interviews', 'Analytics Dashboard', 'Compliance Tools']
     },
     {
@@ -41,7 +39,6 @@ const HomePage: React.FC = () => {
       title: 'Educator',
       description: 'Enhance student outcomes with curriculum management and industry integration',
       icon: GraduationCap,
-      color: 'bg-purple-500',
       features: ['Curriculum Tools', 'Student Tracking', 'Industry Partnerships', 'Career Guidance']
     },
     {
@@ -49,7 +46,6 @@ const HomePage: React.FC = () => {
       title: 'Mentor',
       description: 'Guide the next generation of professionals with AI-powered mentorship matching',
       icon: UserCheck,
-      color: 'bg-orange-500',
       features: ['Smart Matching', 'Progress Tracking', 'Resource Library', 'Impact Analytics']
     },
     {
@@ -57,7 +53,6 @@ const HomePage: React.FC = () => {
       title: 'Assessor',
       description: 'Evaluate and validate professional competencies with advanced assessment tools',
       icon: Award,
-      color: 'bg-red-500',
       features: ['Competency Validation', 'Certification Tracking', 'Quality Assurance', 'Analytics']
     }
   ];
@@ -117,123 +112,118 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50">
+    <div className="min-h-screen bg-[#FAFBFC]">
       {/* Navigation */}
       <HybridGovernmentNavFixed showAuthButtons={true} />
 
-      {/* Hero Section */}
-      <section className="relative py-20 lg:py-32">
+      {/* ─── Hero Section ─── */}
+      <section className="relative py-24 lg:py-36 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 bg-teal-100 text-teal-800 rounded-full text-sm font-medium mb-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-flex items-center px-4 py-1.5 bg-[#E6F5F5] text-[#006E6D] rounded-full text-sm font-medium mb-8">
               <Sparkles className="w-4 h-4 mr-2" />
               Powered by Advanced AI Technology
             </div>
-            
-            <h1 className="text-4xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+
+            <h1 className="text-4xl lg:text-[3.5rem] font-bold text-[#1A1A1A] mb-6 leading-[1.1] tracking-tight">
               Empowering UAE Nationals for
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600">
+              <span className="text-[#006E6D]">
                 {' '}Career Excellence
               </span>
             </h1>
-            
-            <p className="text-xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-              The comprehensive AI-powered platform connecting UAE professionals, employers, educators, 
-              mentors, and assessors in one unified ecosystem for career development and growth.
+
+            <p className="text-lg text-[#6B7280] mb-10 max-w-2xl mx-auto leading-relaxed">
+              The comprehensive AI-powered platform connecting UAE professionals, employers, educators,
+              mentors, and assessors in one unified ecosystem.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                to="/auth" 
-                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-xl hover:scale-105 flex items-center group"
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <Link
+                to="/auth"
+                className="bg-[#006E6D] hover:bg-[#005A59] text-white px-8 py-3 rounded-full font-semibold text-base transition-colors flex items-center group"
               >
                 Start Your Journey
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              
-              <button className="flex items-center text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                <Play className="w-5 h-5 mr-2" />
+
+              <button className="flex items-center text-[#6B7280] hover:text-[#1A1A1A] font-medium transition-colors px-6 py-3">
+                <Play className="w-4 h-4 mr-2" />
                 Watch Demo
               </button>
             </div>
           </div>
         </div>
-        
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-teal-400/20 to-emerald-400/20 rounded-full blur-3xl"></div>
-        </div>
       </section>
 
-      {/* Platform Features */}
-      <section className="py-20 bg-white">
+      {/* ─── Platform Features ─── */}
+      <section className="py-20 bg-[#FAFBFC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
-              Why Choose Emirati Journey Platform?
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-3">
+              Why Choose Dubai Human Development Platform?
             </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="text-lg text-[#6B7280] max-w-2xl mx-auto">
               Built specifically for the UAE market with advanced AI technology and cultural intelligence
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {platformFeatures.map((feature, index) => (
-              <div key={index} className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-200">
-                  <feature.icon className="w-8 h-8 text-white" />
+              <div key={index} className="bg-white rounded-2xl p-6 border border-[#E2E5E9] hover:border-[#006E6D]/25 transition-colors group" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                <div className="w-12 h-12 bg-[#E6F5F5] rounded-xl flex items-center justify-center mb-5">
+                  <feature.icon className="w-6 h-6 text-[#006E6D]" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
+                <h3 className="text-base font-semibold text-[#1A1A1A] mb-2">{feature.title}</h3>
+                <p className="text-sm text-[#6B7280] leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Personas Section */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 to-teal-50">
+      {/* ─── Personas Section ─── */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-3">
               Choose Your Professional Path
             </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="text-lg text-[#6B7280] max-w-2xl mx-auto">
               Tailored experiences for every professional role in the UAE career ecosystem
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {personas.map((persona) => (
-              <div key={persona.id} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 relative group">
+              <div key={persona.id} className="bg-white rounded-2xl p-7 border border-[#E2E5E9] hover:border-[#006E6D]/30 transition-all duration-200 relative group" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                 {persona.popular && (
-                  <div className="absolute -top-3 left-6 bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <div className="absolute -top-2.5 left-5 bg-[#006E6D] text-white px-3 py-0.5 rounded-full text-xs font-medium">
                     Most Popular
                   </div>
                 )}
-                
-                <div className={`w-14 h-14 ${persona.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-200`}>
-                  <persona.icon className="w-7 h-7 text-white" />
+
+                <div className="w-12 h-12 bg-[#E6F5F5] rounded-xl flex items-center justify-center mb-5">
+                  <persona.icon className="w-6 h-6 text-[#006E6D]" />
                 </div>
-                
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">{persona.title}</h3>
-                <p className="text-slate-600 mb-6 leading-relaxed">{persona.description}</p>
-                
-                <div className="space-y-2 mb-8">
+
+                <h3 className="text-xl font-semibold text-[#1A1A1A] mb-2">{persona.title}</h3>
+                <p className="text-sm text-[#6B7280] mb-5 leading-relaxed">{persona.description}</p>
+
+                <div className="space-y-2 mb-6">
                   {persona.features.map((feature, index) => (
-                    <div key={index} className="flex items-center text-sm text-slate-600">
-                      <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                    <div key={index} className="flex items-center text-sm text-[#374151]">
+                      <CheckCircle className="w-4 h-4 text-[#006E6D] mr-2 flex-shrink-0" />
                       {feature}
                     </div>
                   ))}
                 </div>
-                
-                <Link 
-                  to="/auth" 
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center group"
+
+                <Link
+                  to="/auth"
+                  className="w-full bg-[#006E6D] hover:bg-[#005A59] text-white py-2.5 rounded-xl font-medium text-sm transition-colors flex items-center justify-center group"
                 >
                   Get Started as {persona.title}
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>
             ))}
@@ -241,58 +231,58 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Statistics */}
-      <section className="py-20 bg-slate-900">
+      {/* ─── Statistics ─── */}
+      <section className="py-20 bg-[#006E6D]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-white mb-3">
               Trusted by UAE Professionals
             </h2>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+            <p className="text-lg text-white/70 max-w-2xl mx-auto">
               Join thousands of UAE nationals advancing their careers through our platform
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-4xl lg:text-5xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-slate-300 text-lg">{stat.label}</div>
+                <div className="text-4xl lg:text-5xl font-bold text-white mb-1">{stat.number}</div>
+                <div className="text-white/70 text-base">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 bg-white">
+      {/* ─── Testimonials ─── */}
+      <section className="py-20 bg-[#FAFBFC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-[#1A1A1A] mb-3">
               Success Stories from UAE Professionals
             </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="text-lg text-[#6B7280] max-w-2xl mx-auto">
               Real experiences from professionals who advanced their careers with our platform
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
+
+          <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-slate-50 rounded-2xl p-8 hover:shadow-lg transition-shadow duration-300">
+              <div key={index} className="bg-white rounded-2xl p-7 border border-[#E2E5E9] hover:border-[#006E6D]/25 transition-colors" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                 <div className="flex items-center mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={i} className="w-4 h-4 text-amber-400 fill-current" />
                   ))}
                 </div>
-                
-                <p className="text-slate-700 mb-6 leading-relaxed italic">
+
+                <p className="text-[#374151] text-sm mb-5 leading-relaxed">
                   "{testimonial.content}"
                 </p>
-                
-                <div>
-                  <div className="font-semibold text-slate-900">{testimonial.name}</div>
-                  <div className="text-slate-600">{testimonial.role}</div>
-                  <div className="text-slate-500 text-sm">{testimonial.company}</div>
+
+                <div className="border-t border-[#E2E5E9] pt-4">
+                  <div className="font-semibold text-sm text-[#1A1A1A]">{testimonial.name}</div>
+                  <div className="text-[#6B7280] text-sm">{testimonial.role}</div>
+                  <div className="text-[#9CA3AF] text-xs">{testimonial.company}</div>
                 </div>
               </div>
             ))}
@@ -300,65 +290,63 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-teal-600 to-emerald-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+      {/* ─── CTA Section ─── */}
+      <section className="py-20 bg-[#006E6D]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-5">
             Ready to Transform Your Career?
           </h2>
-          <p className="text-xl text-teal-100 mb-10 leading-relaxed">
-            Join the UAE's premier career development platform and unlock your professional potential 
+          <p className="text-lg text-white/80 mb-8 leading-relaxed">
+            Join the UAE's premier career development platform and unlock your professional potential
             with AI-powered guidance and comprehensive support.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              to="/auth" 
-              className="bg-white hover:bg-slate-50 text-teal-600 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 hover:shadow-xl flex items-center justify-center group"
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/auth"
+              className="bg-white hover:bg-gray-50 text-[#006E6D] px-8 py-3 rounded-full font-semibold text-base transition-colors flex items-center justify-center group"
             >
               Start Your Journey Today
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
-          
-          <div className="mt-8 text-teal-100 text-sm">
-            <Shield className="w-4 h-4 inline mr-2" />
-            UAE Nationals Only - Secure & Confidential Platform
+
+          <div className="mt-6 text-white/60 text-sm flex items-center justify-center">
+            <Shield className="w-3.5 h-3.5 mr-1.5" />
+            UAE Nationals Only — Secure & Confidential Platform
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12">
+      {/* ─── Footer ─── */}
+      <footer className="bg-[#111827] text-white py-10 border-t-2 border-[#006E6D]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="col-span-2">
-              <div className="flex items-center space-x-4 mb-4">
-                <img 
-                  src="/dubai-gov-logo.jpg" 
-                  alt="Government of Dubai" 
-                  className="h-12 w-auto opacity-90"
+              <div className="flex items-center space-x-3 mb-4">
+                <img
+                  src="/dubai-gov-logo.jpg"
+                  alt="Government of Dubai"
+                  className="h-9 w-auto opacity-90"
                 />
-                <div className="w-px h-10 bg-slate-600"></div>
-                <img 
-                  src="/ehrdc-logo.png" 
-                  alt="EHRDC Logo" 
-                  className="h-10 w-auto opacity-90"
+                <div className="w-px h-8 bg-gray-700"></div>
+                <img
+                  src="/ehrdc-logo.png"
+                  alt="EHRDC Logo"
+                  className="h-8 w-auto opacity-90"
                 />
               </div>
-              <div className="ml-0">
-                <h3 className="text-xl font-bold">Emirati Journey Platform</h3>
-                <p className="text-slate-400 text-sm">UAE Nationals Career Development</p>
-              </div>
-              <p className="text-slate-400 leading-relaxed max-w-md">
-                Empowering UAE nationals with AI-powered career development tools and 
+              <h3 className="text-base font-semibold mb-1">Dubai Human Development Platform</h3>
+              <p className="text-gray-500 text-xs mb-3">UAE Nationals Career Development</p>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-md">
+                Empowering UAE nationals with AI-powered career development tools and
                 comprehensive professional support ecosystem.
               </p>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold mb-4">Platform</h4>
-              <ul className="space-y-2 text-slate-400">
+              <h4 className="font-medium text-sm uppercase tracking-wider text-gray-400 mb-3">Platform</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
                 <li><Link to="/auth" className="hover:text-white transition-colors">Job Seekers</Link></li>
                 <li><Link to="/auth" className="hover:text-white transition-colors">HR & Recruiters</Link></li>
                 <li><Link to="/auth" className="hover:text-white transition-colors">Educators</Link></li>
@@ -366,10 +354,10 @@ const HomePage: React.FC = () => {
                 <li><Link to="/auth" className="hover:text-white transition-colors">Assessors</Link></li>
               </ul>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-slate-400">
+              <h4 className="font-medium text-sm uppercase tracking-wider text-gray-400 mb-3">Support</h4>
+              <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
@@ -377,8 +365,8 @@ const HomePage: React.FC = () => {
               </ul>
             </div>
           </div>
-          
-          <p className="text-slate-400 text-sm mt-8 pt-8 border-t border-slate-700">
+
+          <p className="text-gray-500 text-xs mt-8 pt-6 border-t border-gray-800">
             © 2025 Emirati Human Resources Development Council. All rights reserved.
           </p>
         </div>

@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,13 +29,16 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   conversations,
   currentUserId,
 }) => {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
   if (!selectedConversationData) {
     return (
       <div key="empty-state" className="flex flex-col h-full overflow-hidden items-center justify-center text-muted-foreground">
         <div className="text-center">
-          <h3 className="text-lg font-medium">No conversation selected</h3>
-          <p>Select a conversation to start messaging</p>
+          <h3 className="text-lg font-medium">{t('No conversation selected', 'لم يتم اختيار محادثة')}</h3>
+          <p>{t('Select a conversation to start messaging', 'اختر محادثة لبدء المراسلة')}</p>
         </div>
       </div>
     );
@@ -64,7 +68,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                 {selectedConversationData.participantName}
               </CardTitle>
               <CardDescription>
-                Conversation
+                {t('Conversation', 'محادثة')}
               </CardDescription>
             </div>
           </div>
@@ -121,7 +125,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
         <div className="p-4 border-t">
           <div className="flex gap-2">
             <Input
-              placeholder="Type your message..."
+              placeholder={t('Type your message...', 'اكتب رسالتك...')}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => {

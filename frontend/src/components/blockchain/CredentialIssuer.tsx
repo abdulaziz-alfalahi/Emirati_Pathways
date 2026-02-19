@@ -69,12 +69,12 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
         skills: skills.length > 0 ? skills : undefined,
         metadata: {
           issuer_name: user.user_metadata?.full_name || 'Unknown Issuer',
-          issued_by_platform: 'Emirati Journey Platform'
+          issued_by_platform: 'Dubai Human Development Platform'
         }
       };
 
       await blockchainCredentialService.issueCredential(request);
-      
+
       toast({
         title: 'Credential Issued Successfully',
         description: 'The digital credential has been created and secured on the blockchain'
@@ -86,7 +86,7 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
       setDescription('');
       setCredentialType('certification');
       setSkills([]);
-      
+
       onCredentialIssued?.();
     } catch (error) {
       toast({
@@ -121,7 +121,7 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
               onChange={(e) => setRecipientId(e.target.value)}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="credentialType">Credential Type *</Label>
             <Select value={credentialType} onValueChange={(value: any) => setCredentialType(value)}>
@@ -177,8 +177,8 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
               {skills.map((skill) => (
                 <Badge key={skill} variant="secondary" className="flex items-center gap-1">
                   {skill}
-                  <X 
-                    className="h-3 w-3 cursor-pointer" 
+                  <X
+                    className="h-3 w-3 cursor-pointer"
                     onClick={() => handleRemoveSkill(skill)}
                   />
                 </Badge>
@@ -187,8 +187,8 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
           )}
         </div>
 
-        <Button 
-          onClick={handleIssueCredential} 
+        <Button
+          onClick={handleIssueCredential}
           disabled={isIssuing}
           className="w-full"
         >
