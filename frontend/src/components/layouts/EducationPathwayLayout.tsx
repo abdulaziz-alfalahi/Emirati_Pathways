@@ -41,6 +41,7 @@ export interface EducationPathwayLayoutProps {
   defaultTab: string;
   actionButtonText?: string;
   actionButtonHref?: string;
+  onActionClick?: () => void;
   academicYear?: string;
 }
 
@@ -61,6 +62,7 @@ export const EducationPathwayLayout: React.FC<EducationPathwayLayoutProps> = ({
   defaultTab,
   actionButtonText,
   actionButtonHref,
+  onActionClick,
   academicYear
 }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -185,15 +187,46 @@ export const EducationPathwayLayout: React.FC<EducationPathwayLayoutProps> = ({
                 </p>
                 <div style={{ display: 'flex', gap: 12, marginTop: 20, flexWrap: 'wrap', alignItems: 'center' }}>
                   {actionButtonText && (
-                    <a href={actionButtonHref || '#'} style={{ textDecoration: 'none' }}>
-                      <button style={{
-                        padding: '10px 24px', borderRadius: 20, fontSize: 14, fontWeight: 600,
-                        background: brand.primary, color: '#fff', border: 'none',
-                        cursor: 'pointer', transition: 'background 150ms'
-                      }}>
+                    onActionClick ? (
+                      <button
+                        onClick={onActionClick}
+                        style={{
+                          padding: '10px 24px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                          background: brand.primary, color: '#fff', border: 'none',
+                          cursor: 'pointer', transition: 'background 150ms'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
+                        onMouseLeave={e => e.currentTarget.style.background = brand.primary}
+                      >
                         {actionButtonText}
                       </button>
-                    </a>
+                    ) : actionButtonHref ? (
+                      <a href={actionButtonHref} style={{ textDecoration: 'none' }}>
+                        <button style={{
+                          padding: '10px 24px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                          background: brand.primary, color: '#fff', border: 'none',
+                          cursor: 'pointer', transition: 'background 150ms'
+                        }}>
+                          {actionButtonText}
+                        </button>
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const tabBar = document.querySelector('[role="tablist"]');
+                          if (tabBar) tabBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        style={{
+                          padding: '10px 24px', borderRadius: 20, fontSize: 14, fontWeight: 600,
+                          background: brand.primary, color: '#fff', border: 'none',
+                          cursor: 'pointer', transition: 'background 150ms'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
+                        onMouseLeave={e => e.currentTarget.style.background = brand.primary}
+                      >
+                        {actionButtonText}
+                      </button>
+                    )
                   )}
                   {academicYear && (
                     <span style={{

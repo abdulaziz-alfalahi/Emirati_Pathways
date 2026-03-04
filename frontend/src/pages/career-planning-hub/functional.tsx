@@ -559,6 +559,12 @@ const FunctionalCareerPlanningHub: React.FC = () => {
       tabs={tabs}
       defaultTab="explorer"
       actionButtonText={t('Plan Your Career', 'خطّط لمسارك المهني')}
+      onActionClick={() => {
+        const tabContent = document.querySelector('[role="tablist"]');
+        if (tabContent) {
+          tabContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }}
     />
   );
 };

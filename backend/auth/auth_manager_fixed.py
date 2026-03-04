@@ -186,8 +186,11 @@ class AuthenticationManager:
             
             # Enrich with Company ID if Recruiter
             if user_row:
-                role = user_row.get('role') or user_row.get('user_type')
-                if role in ('hr_manager', 'hr_recruiter', 'recruiter', 'employer'):
+                # Normalize role: prefer 'role' column, fall back to 'user_type'
+                effective_role = user_row.get('role') or user_row.get('user_type')
+                user_row['role'] = effective_role
+                
+                if effective_role in ('hr_manager', 'hr_recruiter', 'recruiter', 'employer'):
                     try:
                         cursor.execute("""
                             SELECT hp.company_id, COALESCE(c.name, c.company_name) as company_name
@@ -206,7 +209,26 @@ class AuthenticationManager:
             conn.close()
             
             if user_row:
-                return dict(user_row)
+                row = dict(user_row)
+
+                # Ensure first_name / last_name / full_name are always populated
+                fn = row.get('first_name') or ''
+                ln = row.get('last_name') or ''
+                full = row.get('full_name') or ''
+
+                if not fn and not ln and full:
+                    # Split full_name into first/last
+                    parts = full.split(None, 1)
+                    fn = parts[0] if parts else full
+                    ln = parts[1] if len(parts) > 1 else ''
+                elif (fn or ln) and not full:
+                    full = f"{fn} {ln}".strip()
+
+                row['first_name'] = fn or None
+                row['last_name'] = ln or None
+                row['full_name'] = full or f"{fn} {ln}".strip() or row.get('email', '')
+
+                return row
             
             return None
             
@@ -389,7 +411,13 @@ class AuthenticationManager:
                 '+971507890123', # Admin
                 '+971509999999', # Administrator
                 '+971 50 123 4567', # Candidate (formatted)
-                '+971509998888',  # Growth Operator
+                '+971509998888',  # Growth Operator (legacy)
+                '+971509998889',  # Growth Operator - Candidate
+                '+971509998890',  # Growth Operator - Company
+                '+971509998891',  # Growth Operator - Education
+                '+971509998892',  # Growth Operator - Assessment
+                '+971509998893',  # Growth Operator - Mentorship
+                '+971509998894',  # Growth Operator - Community
                 '+971550000010',  # Test Student
                 '+971550000010',  # Test Student
                 '+971550000011',  # Test Educator
@@ -500,7 +528,13 @@ class AuthenticationManager:
                 '+971507890123', # Admin
                 '+971509999999', # Administrator
                 '+971 50 123 4567', # Candidate (formatted)
-                '+971509998888',  # Growth Operator
+                '+971509998888',  # Growth Operator (legacy)
+                '+971509998889',  # Growth Operator - Candidate
+                '+971509998890',  # Growth Operator - Company
+                '+971509998891',  # Growth Operator - Education
+                '+971509998892',  # Growth Operator - Assessment
+                '+971509998893',  # Growth Operator - Mentorship
+                '+971509998894',  # Growth Operator - Community
                 '+971550000010',  # Test Student
                 '+971550000010',  # Test Student
                 '+971550000011',  # Test Educator

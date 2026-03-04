@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from './messageUtils';
 import { Conversation } from './types';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
+import OnlineIndicator from '@/components/ui/OnlineIndicator';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -25,6 +27,9 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
   onDeleteConversation
 }) => {
+  const { isOnline, onlineUsers } = useOnlinePresence();
+  console.log('[ConversationList] onlineUsers set:', [...onlineUsers]);
+  console.log('[ConversationList] participantIds:', conversations.map(c => c.participantId));
   // Filter conversations by search query
   const filteredConversations = conversations.filter(conversation =>
     conversation.participantName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -59,11 +64,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>
-                        {conversation.participantName.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar>
+                        <AvatarFallback>
+                          {conversation.participantName.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineIndicator
+                        isOnline={isOnline(conversation.participantId)}
+                        size="sm"
+                        className="absolute -bottom-0.5 -right-0.5"
+                      />
+                    </div>
                     <div>
                       <div className="font-semibold">
                         {conversation.participantName}

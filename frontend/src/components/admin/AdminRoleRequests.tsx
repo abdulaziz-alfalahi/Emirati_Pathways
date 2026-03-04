@@ -159,7 +159,7 @@ const AdminRoleRequests: React.FC = () => {
                                             size="sm"
                                             onClick={() => {
                                                 const fullName = `${req.first_name} ${req.last_name}`;
-                                                navigate(`/messages?userId=${req.user_id}&userName=${encodeURIComponent(fullName)}`);
+                                                navigate(`/admin-dashboard?tab=messaging&userId=${req.user_id}&userName=${encodeURIComponent(fullName)}`);
                                             }}
                                             className="w-full"
                                         >

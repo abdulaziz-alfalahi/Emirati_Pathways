@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import UserMenu from '@/components/layout/UserMenu';
 import { useAuth } from '@/context/AuthContext';
@@ -11,133 +12,150 @@ import { Link } from 'react-router-dom';
 import { ParentAssessmentOverview } from '@/components/assessments/ParentAssessmentOverview';
 import {
     Users, GraduationCap, Calendar, BookOpen, MapPin, Clock,
-    ArrowRight, CheckCircle, TrendingUp, Award, Star, Heart,
-    BarChart3, Lightbulb, Shield, Sparkles, ChevronRight,
+    ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Award, Star, Heart,
+    BarChart3, Lightbulb, Shield, Sparkles, ChevronRight, ChevronLeft,
     Target, School, Trophy
 } from 'lucide-react';
-
-/* ─────────────────────────── MOCK DATA ─────────────────────────── */
-
-const childrenData = [
-    {
-        id: 'child-1', name: 'Ahmed', age: 16, grade: '11',
-        gpa: 3.8, attendance: 98, trend: 'up' as const,
-        subjects: [
-            { name: 'Mathematics', grade: 'A', progress: 92 },
-            { name: 'Physics', grade: 'A-', progress: 88 },
-            { name: 'Arabic', grade: 'B+', progress: 85 },
-            { name: 'English', grade: 'A', progress: 91 },
-        ],
-        activities: ['Robotics Club', 'Debate Team'],
-        campsEnrolled: 1,
-    },
-    {
-        id: 'child-2', name: 'Fatima', age: 14, grade: '9',
-        gpa: 3.9, attendance: 99, trend: 'up' as const,
-        subjects: [
-            { name: 'Mathematics', grade: 'A', progress: 95 },
-            { name: 'Biology', grade: 'A+', progress: 97 },
-            { name: 'Arabic', grade: 'A', progress: 93 },
-            { name: 'English', grade: 'A-', progress: 89 },
-        ],
-        activities: ['Science Olympiad', 'Art Club'],
-        campsEnrolled: 1,
-    },
-];
-
-const knowledgeCamps = [
-    {
-        id: '1',
-        title: 'STEM Innovation Camp',
-        category: 'Technology',
-        dates: 'Jun 15 – Jul 10, 2025',
-        location: 'Dubai Knowledge Park',
-        ages: '14–17',
-        spotsLeft: 12,
-        children: [
-            { name: 'Ahmed', status: 'enrolled' as const },
-            { name: 'Fatima', status: 'eligible' as const },
-        ],
-    },
-    {
-        id: '2',
-        title: 'Arabic Heritage & Poetry Workshop',
-        category: 'Language',
-        dates: 'Jul 5 – Jul 25, 2025',
-        location: 'Sharjah Cultural Centre',
-        ages: '12–16',
-        spotsLeft: 24,
-        children: [
-            { name: 'Ahmed', status: 'eligible' as const },
-            { name: 'Fatima', status: 'enrolled' as const },
-        ],
-    },
-    {
-        id: '3',
-        title: 'Future Leaders Programme',
-        category: 'Leadership',
-        dates: 'Aug 1 – Aug 20, 2025',
-        location: 'Abu Dhabi Youth Hub',
-        ages: '15–18',
-        spotsLeft: 8,
-        children: [
-            { name: 'Ahmed', status: 'eligible' as const },
-            { name: 'Fatima', status: 'not-eligible' as const },
-        ],
-    },
-];
-
-const upcomingEvents = [
-    { id: 1, title: 'Parent-Teacher Meeting — Grade 11', date: 'Feb 20, 2026', time: '3:00 PM', type: 'meeting' },
-    { id: 2, title: 'Science Fair — Fatima presenting', date: 'Feb 25, 2026', time: '10:00 AM', type: 'event' },
-    { id: 3, title: 'Career Day — STEM Panel', date: 'Mar 5, 2026', time: '9:00 AM', type: 'event' },
-    { id: 4, title: 'STEM Camp Registration Deadline', date: 'Mar 15, 2026', time: '11:59 PM', type: 'deadline' },
-];
-
-/* ─────────────────────────── HELPERS ─────────────────────────── */
-
-const statusBadge = (status: 'enrolled' | 'eligible' | 'not-eligible') => {
-    const config: Record<string, { className: string; label: string }> = {
-        'enrolled': { className: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: '✓ Enrolled' },
-        'eligible': { className: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Eligible' },
-        'not-eligible': { className: 'bg-gray-100 text-gray-500 border-gray-200', label: 'Age mismatch' },
-    };
-    const s = config[status];
-    return <Badge variant="outline" className={`text-[11px] font-medium ${s.className}`}>{s.label}</Badge>;
-};
-
-const categoryColor = (cat: string) => {
-    switch (cat) {
-        case 'Technology': return 'bg-blue-100 text-blue-700';
-        case 'Language': return 'bg-emerald-100 text-emerald-700';
-        case 'Leadership': return 'bg-amber-100 text-amber-700';
-        default: return 'bg-gray-100 text-gray-600';
-    }
-};
-
-const eventIcon = (type: string) => {
-    switch (type) {
-        case 'meeting': return <Users className="h-4 w-4 text-blue-500" />;
-        case 'event': return <Star className="h-4 w-4 text-amber-500" />;
-        case 'deadline': return <Clock className="h-4 w-4 text-red-500" />;
-        default: return <Calendar className="h-4 w-4 text-gray-500" />;
-    }
-};
 
 /* ────────────────────────── COMPONENT ──────────────────────────── */
 
 const ParentDashboardPage: React.FC = () => {
     const { user } = useAuth();
     const { language, toggleLanguage } = useLanguage();
+    const { i18n } = useTranslation();
+    const isRTL = i18n.language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+    const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
+
     const [activeTab, setActiveTab] = useState('overview');
 
-    const firstName = user?.first_name || user?.full_name?.split(' ')[0] || 'Parent';
+    const firstName = user?.first_name || user?.full_name?.split(' ')[0] || t('Parent', 'ولي الأمر');
     const initial = firstName.charAt(0).toUpperCase();
+
+    /* ─────────────────────────── DATA ─────────────────────────── */
+
+    const childrenData = [
+        {
+            id: 'child-1', name: t('Ahmed', 'أحمد'), age: 16, grade: '11',
+            gpa: 3.8, attendance: 98, trend: 'up' as const,
+            subjects: [
+                { name: t('Mathematics', 'الرياضيات'), grade: 'A', progress: 92 },
+                { name: t('Physics', 'الفيزياء'), grade: 'A-', progress: 88 },
+                { name: t('Arabic', 'اللغة العربية'), grade: 'B+', progress: 85 },
+                { name: t('English', 'اللغة الإنجليزية'), grade: 'A', progress: 91 },
+            ],
+            activities: [t('Robotics Club', 'نادي الروبوتات'), t('Debate Team', 'فريق المناظرات')],
+            campsEnrolled: 1,
+        },
+        {
+            id: 'child-2', name: t('Fatima', 'فاطمة'), age: 14, grade: '9',
+            gpa: 3.9, attendance: 99, trend: 'up' as const,
+            subjects: [
+                { name: t('Mathematics', 'الرياضيات'), grade: 'A', progress: 95 },
+                { name: t('Biology', 'الأحياء'), grade: 'A+', progress: 97 },
+                { name: t('Arabic', 'اللغة العربية'), grade: 'A', progress: 93 },
+                { name: t('English', 'اللغة الإنجليزية'), grade: 'A-', progress: 89 },
+            ],
+            activities: [t('Science Olympiad', 'أولمبياد العلوم'), t('Art Club', 'نادي الفنون')],
+            campsEnrolled: 1,
+        },
+    ];
+
+    const knowledgeCamps = [
+        {
+            id: '1',
+            title: t('STEM Innovation Camp', 'معسكر الابتكار في العلوم والتكنولوجيا'),
+            category: 'Technology', categoryLabel: t('Technology', 'التكنولوجيا'),
+            dates: t('Jun 15 – Jul 10, 2025', '15 يونيو – 10 يوليو 2025'),
+            location: t('Dubai Knowledge Park', 'مجمع دبي المعرفي'),
+            ages: '14–17',
+            spotsLeft: 12,
+            children: [
+                { name: t('Ahmed', 'أحمد'), status: 'enrolled' as const },
+                { name: t('Fatima', 'فاطمة'), status: 'eligible' as const },
+            ],
+        },
+        {
+            id: '2',
+            title: t('Arabic Heritage & Poetry Workshop', 'ورشة التراث العربي والشعر'),
+            category: 'Language', categoryLabel: t('Language', 'اللغة'),
+            dates: t('Jul 5 – Jul 25, 2025', '5 يوليو – 25 يوليو 2025'),
+            location: t('Sharjah Cultural Centre', 'المركز الثقافي في الشارقة'),
+            ages: '12–16',
+            spotsLeft: 24,
+            children: [
+                { name: t('Ahmed', 'أحمد'), status: 'eligible' as const },
+                { name: t('Fatima', 'فاطمة'), status: 'enrolled' as const },
+            ],
+        },
+        {
+            id: '3',
+            title: t('Future Leaders Programme', 'برنامج قادة المستقبل'),
+            category: 'Leadership', categoryLabel: t('Leadership', 'القيادة'),
+            dates: t('Aug 1 – Aug 20, 2025', '1 أغسطس – 20 أغسطس 2025'),
+            location: t('Abu Dhabi Youth Hub', 'مركز شباب أبوظبي'),
+            ages: '15–18',
+            spotsLeft: 8,
+            children: [
+                { name: t('Ahmed', 'أحمد'), status: 'eligible' as const },
+                { name: t('Fatima', 'فاطمة'), status: 'not-eligible' as const },
+            ],
+        },
+    ];
+
+    const upcomingEvents = [
+        { id: 1, title: t('Parent-Teacher Meeting — Grade 11', 'اجتماع أولياء الأمور — الصف 11'), date: t('Feb 20, 2026', '20 فبراير 2026'), time: t('3:00 PM', '3:00 مساءً'), type: 'meeting' },
+        { id: 2, title: t('Science Fair — Fatima presenting', 'معرض العلوم — فاطمة مشاركة'), date: t('Feb 25, 2026', '25 فبراير 2026'), time: t('10:00 AM', '10:00 صباحاً'), type: 'event' },
+        { id: 3, title: t('Career Day — STEM Panel', 'يوم المهن — جلسة العلوم والتكنولوجيا'), date: t('Mar 5, 2026', '5 مارس 2026'), time: t('9:00 AM', '9:00 صباحاً'), type: 'event' },
+        { id: 4, title: t('STEM Camp Registration Deadline', 'الموعد النهائي للتسجيل في معسكر العلوم'), date: t('Mar 15, 2026', '15 مارس 2026'), time: t('11:59 PM', '11:59 مساءً'), type: 'deadline' },
+    ];
+
+    /* ─────────────────────────── HELPERS ─────────────────────────── */
+
+    const statusBadge = (status: 'enrolled' | 'eligible' | 'not-eligible') => {
+        const config: Record<string, { className: string; label: string }> = {
+            'enrolled': { className: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: t('✓ Enrolled', '✓ مسجّل') },
+            'eligible': { className: 'bg-blue-100 text-blue-700 border-blue-200', label: t('Eligible', 'مؤهل') },
+            'not-eligible': { className: 'bg-gray-100 text-gray-500 border-gray-200', label: t('Age mismatch', 'غير مناسب للعمر') },
+        };
+        const s = config[status];
+        return <Badge variant="outline" className={`text-[11px] font-medium ${s.className}`}>{s.label}</Badge>;
+    };
+
+    const categoryColor = (cat: string) => {
+        switch (cat) {
+            case 'Technology': return 'bg-blue-100 text-blue-700';
+            case 'Language': return 'bg-emerald-100 text-emerald-700';
+            case 'Leadership': return 'bg-amber-100 text-amber-700';
+            default: return 'bg-gray-100 text-gray-600';
+        }
+    };
+
+    const eventIcon = (type: string) => {
+        switch (type) {
+            case 'meeting': return <Users className="h-4 w-4 text-blue-500" />;
+            case 'event': return <Star className="h-4 w-4 text-amber-500" />;
+            case 'deadline': return <Clock className="h-4 w-4 text-red-500" />;
+            default: return <Calendar className="h-4 w-4 text-gray-500" />;
+        }
+    };
 
     const totalEnrolled = childrenData.reduce((sum, c) => sum + c.campsEnrolled, 0);
 
+    const resources = [
+        { title: t('Academic Reports', 'التقارير الأكاديمية'), desc: t('View detailed progress reports', 'عرض تقارير التقدّم المفصّلة'), icon: BarChart3, color: 'bg-blue-100 text-blue-600', href: '#' },
+        { title: t('Knowledge Camps', 'المعسكرات المعرفية'), desc: t('Browse and register', 'تصفّح وسجّل'), icon: School, color: 'bg-teal-100 text-teal-600', href: '/knowledge-camps' },
+        { title: t('Scholarships', 'المنح الدراسية'), desc: t('Financial aid options', 'خيارات المساعدة المالية'), icon: Award, color: 'bg-amber-100 text-amber-600', href: '/scholarships' },
+        { title: t('Career Guidance', 'التوجيه المهني'), desc: t('Plan their future path', 'خطّط لمسارهم المستقبلي'), icon: Target, color: 'bg-purple-100 text-purple-600', href: '/career-planning-hub' },
+        { title: t('School Programs', 'البرامج المدرسية'), desc: t('Explore school activities', 'استكشف الأنشطة المدرسية'), icon: BookOpen, color: 'bg-indigo-100 text-indigo-600', href: '/school-programs' },
+        { title: t('University Programs', 'البرامج الجامعية'), desc: t('Higher education paths', 'مسارات التعليم العالي'), icon: GraduationCap, color: 'bg-emerald-100 text-emerald-600', href: '/university-programs' },
+        { title: t('LMS & Courses', 'نظام التعلّم والدورات'), desc: t('Online learning resources', 'موارد التعلّم الإلكتروني'), icon: Lightbulb, color: 'bg-orange-100 text-orange-600', href: '/lms' },
+        { title: t('Safety & Wellbeing', 'السلامة والرفاهية'), desc: t('Child safety resources', 'موارد سلامة الأطفال'), icon: Shield, color: 'bg-rose-100 text-rose-600', href: '#' },
+    ];
+
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
             {/* ── Government Navigation ── */}
             <HybridGovernmentNavFixed
                 showAuthButtons={false}
@@ -150,20 +168,19 @@ const ParentDashboardPage: React.FC = () => {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* ── Welcome Hero ── */}
                 <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-4">
+                    <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-4' : 'space-x-4'}`}>
                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg">
                             <span className="text-white font-bold text-xl">{initial}</span>
                         </div>
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
-                                Welcome back, {firstName}! 👋
+                                {t(`Welcome back, ${firstName}! 👋`, `مرحباً بعودتك، ${firstName}! 👋`)}
                             </h1>
                             <p className="text-muted-foreground mt-1">
-                                Monitor your children's education, activities, and growth
+                                {t("Monitor your children's education, activities, and growth", 'تابع تعليم أبنائك وأنشطتهم ونموهم')}
                             </p>
                         </div>
                     </div>
-                    <UserMenu />
                 </div>
 
                 {/* ── Stats Grid ── */}
@@ -175,8 +192,8 @@ const ParentDashboardPage: React.FC = () => {
                                 <div className="p-3 bg-blue-100 rounded-full">
                                     <Users className="h-6 w-6 text-blue-600" />
                                 </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Children</p>
+                                <div className={isRTL ? 'mr-4' : 'ml-4'}>
+                                    <p className="text-sm font-medium text-muted-foreground">{t('Children', 'الأبناء')}</p>
                                     <p className="text-2xl font-bold text-foreground">{childrenData.length}</p>
                                 </div>
                             </div>
@@ -190,8 +207,8 @@ const ParentDashboardPage: React.FC = () => {
                                 <div className="p-3 bg-emerald-100 rounded-full">
                                     <CheckCircle className="h-6 w-6 text-emerald-600" />
                                 </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Camp Enrolments</p>
+                                <div className={isRTL ? 'mr-4' : 'ml-4'}>
+                                    <p className="text-sm font-medium text-muted-foreground">{t('Camp Enrolments', 'التسجيل في المعسكرات')}</p>
                                     <p className="text-2xl font-bold text-foreground">{totalEnrolled}</p>
                                 </div>
                             </div>
@@ -205,8 +222,8 @@ const ParentDashboardPage: React.FC = () => {
                                 <div className="p-3 bg-purple-100 rounded-full">
                                     <Calendar className="h-6 w-6 text-purple-600" />
                                 </div>
-                                <div className="ml-4">
-                                    <p className="text-sm font-medium text-muted-foreground">Upcoming Events</p>
+                                <div className={isRTL ? 'mr-4' : 'ml-4'}>
+                                    <p className="text-sm font-medium text-muted-foreground">{t('Upcoming Events', 'الفعاليات القادمة')}</p>
                                     <p className="text-2xl font-bold text-foreground">{upcomingEvents.length}</p>
                                 </div>
                             </div>
@@ -217,13 +234,13 @@ const ParentDashboardPage: React.FC = () => {
                     <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-semibold text-lg">Quick Actions</h3>
+                                <h3 className="font-semibold text-lg">{t('Quick Actions', 'إجراءات سريعة')}</h3>
                                 <Sparkles className="h-6 w-6 opacity-80" />
                             </div>
-                            <p className="text-teal-50 text-sm mb-4">Browse programmes and track your children's progress.</p>
+                            <p className="text-teal-50 text-sm mb-4">{t("Browse programmes and track your children's progress.", 'تصفّح البرامج وتابع تقدّم أبنائك.')}</p>
                             <Link to="/knowledge-camps">
                                 <Button variant="secondary" size="sm" className="w-full text-teal-700 font-semibold">
-                                    Browse Camps <ArrowRight className="ml-2 h-4 w-4" />
+                                    {t('Browse Camps', 'تصفّح المعسكرات')} <ArrowIcon className={`h-4 w-4 ${isRTL ? 'mr-2' : 'ml-2'}`} />
                                 </Button>
                             </Link>
                         </CardContent>
@@ -232,12 +249,12 @@ const ParentDashboardPage: React.FC = () => {
 
                 {/* ── Tabbed Content ── */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-5 bg-muted/50 p-1 rounded-xl shadow-sm">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="children">Children</TabsTrigger>
-                        <TabsTrigger value="camps">Knowledge Camps</TabsTrigger>
-                        <TabsTrigger value="assessments">Assessments</TabsTrigger>
-                        <TabsTrigger value="resources">Resources</TabsTrigger>
+                    <TabsList className={`flex w-full bg-muted/50 p-1 rounded-xl shadow-sm ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <TabsTrigger value="overview" className="flex-1">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+                        <TabsTrigger value="children" className="flex-1">{t('Children', 'الأبناء')}</TabsTrigger>
+                        <TabsTrigger value="camps" className="flex-1">{t('Knowledge Camps', 'المعسكرات المعرفية')}</TabsTrigger>
+                        <TabsTrigger value="assessments" className="flex-1">{t('Assessments', 'التقييمات')}</TabsTrigger>
+                        <TabsTrigger value="resources" className="flex-1">{t('Resources', 'الموارد')}</TabsTrigger>
                     </TabsList>
 
                     {/* ────── OVERVIEW TAB ────── */}
@@ -246,7 +263,7 @@ const ParentDashboardPage: React.FC = () => {
                             {/* Children Summary */}
                             <div className="lg:col-span-2 space-y-4">
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <GraduationCap className="h-5 w-5 text-teal-600" /> Academic Overview
+                                    <GraduationCap className="h-5 w-5 text-teal-600" /> {t('Academic Overview', 'النظرة الأكاديمية')}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {childrenData.map(child => (
@@ -259,23 +276,23 @@ const ParentDashboardPage: React.FC = () => {
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold">{child.name}</p>
-                                                            <p className="text-xs text-muted-foreground">Grade {child.grade} · Age {child.age}</p>
+                                                            <p className="text-xs text-muted-foreground">{t('Grade', 'الصف')} {child.grade} · {t('Age', 'العمر')} {child.age}</p>
                                                         </div>
                                                     </div>
                                                     <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
                                                         <TrendingUp className="h-3 w-3 mr-1" />
-                                                        {child.gpa} GPA
+                                                        {child.gpa} {t('GPA', 'المعدل')}
                                                     </Badge>
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-3 mt-4">
                                                     <div className="bg-blue-50 rounded-lg p-3 text-center">
                                                         <p className="text-2xl font-bold text-blue-700">{child.gpa}</p>
-                                                        <p className="text-xs text-blue-600">GPA / 4.0</p>
+                                                        <p className="text-xs text-blue-600">{t('GPA / 4.0', 'المعدل / 4.0')}</p>
                                                     </div>
                                                     <div className="bg-emerald-50 rounded-lg p-3 text-center">
                                                         <p className="text-2xl font-bold text-emerald-700">{child.attendance}%</p>
-                                                        <p className="text-xs text-emerald-600">Attendance</p>
+                                                        <p className="text-xs text-emerald-600">{t('Attendance', 'الحضور')}</p>
                                                     </div>
                                                 </div>
 
@@ -293,7 +310,7 @@ const ParentDashboardPage: React.FC = () => {
                             {/* Upcoming Events Sidebar */}
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                                    <Calendar className="h-5 w-5 text-purple-600" /> Upcoming Events
+                                    <Calendar className="h-5 w-5 text-purple-600" /> {t('Upcoming Events', 'الفعاليات القادمة')}
                                 </h3>
                                 <Card>
                                     <CardContent className="pt-4 divide-y">
@@ -306,7 +323,7 @@ const ParentDashboardPage: React.FC = () => {
                                                     <p className="text-sm font-medium truncate">{evt.title}</p>
                                                     <p className="text-xs text-muted-foreground">{evt.date} · {evt.time}</p>
                                                 </div>
-                                                <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                                                <ChevronIcon className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
                                             </div>
                                         ))}
                                     </CardContent>
@@ -327,21 +344,21 @@ const ParentDashboardPage: React.FC = () => {
                                             </div>
                                             <div>
                                                 <CardTitle className="text-xl">{child.name}</CardTitle>
-                                                <CardDescription>Grade {child.grade} · Age {child.age}</CardDescription>
+                                                <CardDescription>{t('Grade', 'الصف')} {child.grade} · {t('Age', 'العمر')} {child.age}</CardDescription>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
-                                                <TrendingUp className="h-3 w-3 mr-1" />GPA {child.gpa}
+                                                <TrendingUp className={`h-3 w-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />{t('GPA', 'المعدل')} {child.gpa}
                                             </Badge>
-                                            <Badge variant="outline">{child.attendance}% Attendance</Badge>
+                                            <Badge variant="outline">{child.attendance}% {t('Attendance', 'الحضور')}</Badge>
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-5">
                                     {/* Subject Progress Bars */}
                                     <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Subjects</h4>
+                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{t('Subjects', 'المواد الدراسية')}</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {child.subjects.map(subj => (
                                                 <div key={subj.name} className="flex items-center gap-3">
@@ -360,13 +377,13 @@ const ParentDashboardPage: React.FC = () => {
 
                                     {/* Activities */}
                                     <div>
-                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Extracurriculars</h4>
+                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('Extracurriculars', 'الأنشطة اللاصفية')}</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {child.activities.map(a => (
                                                 <Badge key={a} className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">{a}</Badge>
                                             ))}
                                             <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100">
-                                                {child.campsEnrolled} Camp{child.campsEnrolled !== 1 ? 's' : ''} Enrolled
+                                                {child.campsEnrolled} {child.campsEnrolled !== 1 ? t('Camps', 'معسكرات') : t('Camp', 'معسكر')} {t('Enrolled', 'مسجّل')}
                                             </Badge>
                                         </div>
                                     </div>
@@ -374,10 +391,10 @@ const ParentDashboardPage: React.FC = () => {
                                     {/* Actions */}
                                     <div className="flex gap-2 pt-2">
                                         <Button variant="outline" size="sm">
-                                            <BarChart3 className="h-4 w-4 mr-2" /> Full Academic Report
+                                            <BarChart3 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t('Full Academic Report', 'التقرير الأكاديمي الكامل')}
                                         </Button>
                                         <Button variant="outline" size="sm">
-                                            <Calendar className="h-4 w-4 mr-2" /> Schedule Meeting
+                                            <Calendar className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} /> {t('Schedule Meeting', 'جدولة اجتماع')}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -389,12 +406,12 @@ const ParentDashboardPage: React.FC = () => {
                     <TabsContent value="camps" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-lg font-semibold">Knowledge Camps</h2>
-                                <p className="text-sm text-muted-foreground">Browse and manage camp enrolments for your children</p>
+                                <h2 className="text-lg font-semibold">{t('Knowledge Camps', 'المعسكرات المعرفية')}</h2>
+                                <p className="text-sm text-muted-foreground">{t('Browse and manage camp enrolments for your children', 'تصفّح وأدِر تسجيل أبنائك في المعسكرات')}</p>
                             </div>
                             <Link to="/knowledge-camps">
                                 <Button variant="outline" size="sm" className="gap-1">
-                                    Browse All Camps <ArrowRight className="h-4 w-4" />
+                                    {t('Browse All Camps', 'تصفّح جميع المعسكرات')} <ArrowIcon className="h-4 w-4" />
                                 </Button>
                             </Link>
                         </div>
@@ -406,25 +423,25 @@ const ParentDashboardPage: React.FC = () => {
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between gap-2">
                                             <CardTitle className="text-base group-hover:text-teal-700 transition-colors">{camp.title}</CardTitle>
-                                            <Badge className={`text-[11px] shrink-0 ${categoryColor(camp.category)}`}>{camp.category}</Badge>
+                                            <Badge className={`text-[11px] shrink-0 ${categoryColor(camp.category)}`}>{camp.categoryLabel}</Badge>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         <div className="space-y-1.5 text-sm text-muted-foreground">
                                             <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {camp.dates}</div>
                                             <div className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {camp.location}</div>
-                                            <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Ages {camp.ages}</div>
+                                            <div className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {t('Ages', 'الأعمار')} {camp.ages}</div>
                                         </div>
 
                                         <div className="flex items-center gap-1.5 text-xs">
                                             <Clock className="h-3 w-3 text-orange-500" />
                                             <span className={camp.spotsLeft <= 10 ? 'text-orange-600 font-medium' : 'text-muted-foreground'}>
-                                                {camp.spotsLeft} spots remaining
+                                                {camp.spotsLeft} {t('spots remaining', 'مقعد متبقٍ')}
                                             </span>
                                         </div>
 
                                         <div className="bg-muted/60 rounded-xl p-3 space-y-2">
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Your Children</p>
+                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t('Your Children', 'أبناؤك')}</p>
                                             {camp.children.map((child, i) => (
                                                 <div key={i} className="flex items-center justify-between">
                                                     <span className="text-sm font-medium">{child.name}</span>
@@ -434,7 +451,7 @@ const ParentDashboardPage: React.FC = () => {
                                         </div>
 
                                         <Button size="sm" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
-                                            Manage Enrolment
+                                            {t('Manage Enrolment', 'إدارة التسجيل')}
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -457,20 +474,11 @@ const ParentDashboardPage: React.FC = () => {
 
                     {/* ────── RESOURCES TAB ────── */}
                     <TabsContent value="resources" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <h3 className="text-lg font-semibold">Parent Resources</h3>
-                        <p className="text-sm text-muted-foreground -mt-4">Tools and information to support your children's journey</p>
+                        <h3 className="text-lg font-semibold">{t('Parent Resources', 'موارد أولياء الأمور')}</h3>
+                        <p className="text-sm text-muted-foreground -mt-4">{t("Tools and information to support your children's journey", 'أدوات ومعلومات لدعم مسيرة أبنائك')}</p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {[
-                                { title: 'Academic Reports', desc: 'View detailed progress reports', icon: BarChart3, color: 'bg-blue-100 text-blue-600', href: '#' },
-                                { title: 'Knowledge Camps', desc: 'Browse and register', icon: School, color: 'bg-teal-100 text-teal-600', href: '/knowledge-camps' },
-                                { title: 'Scholarships', desc: 'Financial aid options', icon: Award, color: 'bg-amber-100 text-amber-600', href: '/scholarships' },
-                                { title: 'Career Guidance', desc: 'Plan their future path', icon: Target, color: 'bg-purple-100 text-purple-600', href: '/career-planning-hub' },
-                                { title: 'School Programs', desc: 'Explore school activities', icon: BookOpen, color: 'bg-indigo-100 text-indigo-600', href: '/school-programs' },
-                                { title: 'University Programs', desc: 'Higher education paths', icon: GraduationCap, color: 'bg-emerald-100 text-emerald-600', href: '/university-programs' },
-                                { title: 'LMS & Courses', desc: 'Online learning resources', icon: Lightbulb, color: 'bg-orange-100 text-orange-600', href: '/lms' },
-                                { title: 'Safety & Wellbeing', desc: 'Child safety resources', icon: Shield, color: 'bg-rose-100 text-rose-600', href: '#' },
-                            ].map(item => (
+                            {resources.map(item => (
                                 <Link to={item.href} key={item.title}>
                                     <Card className="hover:shadow-md transition-all duration-200 cursor-pointer group h-full">
                                         <CardContent className="pt-6">

@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Shield, Users, Leaf, Award, TrendingUp,
-    CheckCircle, Clock, Building, ArrowRight,
+    CheckCircle, Clock, Building, ArrowRight, ArrowLeft,
     Globe, MapPin, ExternalLink, Star
 } from 'lucide-react';
 import {
-    servicePrograms, sustainabilityOpportunities,
-    nsraPartners, recentMilestones,
-    sustainabilityImpact, enrolmentSteps
+    getServicePrograms, getSustainabilityOpportunities,
+    getNsraPartners, getRecentMilestones,
+    getSustainabilityImpact, getEnrolmentSteps
 } from './data';
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
@@ -23,21 +23,35 @@ const stepColors = [
 ];
 
 const NationalServicePage: React.FC = () => {
-    const { t } = useTranslation('national-service');
+    const { i18n } = useTranslation();
+    const isRTL = i18n.language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
+    const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+
+    // Build translated data
+    const servicePrograms = getServicePrograms(t);
+    const sustainabilityOpportunities = getSustainabilityOpportunities(t);
+    const nsraPartners = getNsraPartners(t);
+    const recentMilestones = getRecentMilestones(t);
+    const sustainabilityImpact = getSustainabilityImpact(t);
+    const enrolmentSteps = getEnrolmentSteps(t);
 
     const stats = [
-        { value: t('stats.participants', '45,000+'), label: t('stats.participantsLabel', 'Citizens Served'), icon: Users },
-        { value: t('stats.programs', '150+'), label: t('stats.programsLabel', 'Partner Organisations'), icon: Building },
-        { value: t('stats.impact', '85%'), label: t('stats.impactLabel', 'Career Placement'), icon: TrendingUp },
-        { value: t('stats.hours', '18'), label: t('stats_cohorts', 'Cohorts Graduated'), icon: Award },
+        { value: '45,000+', label: t('Citizens Served', 'مواطن خدموا'), icon: Users },
+        { value: '150+', label: t('Partner Organisations', 'مؤسسة شريكة'), icon: Building },
+        { value: '85%', label: t('Career Placement', 'توظيف مهني'), icon: TrendingUp },
+        { value: '18', label: t('Cohorts Graduated', 'دفعة تخرّجت'), icon: Award },
     ];
 
     /* ── Tab 1: Service Programs ── */
     const programsTab = (
         <div>
-            <h2 className="ep-section-title">{t('tabs.programs.label', 'Service Programs')}</h2>
+            <h2 className="ep-section-title">{t('Service Programs', 'برامج الخدمة')}</h2>
             <p className="ep-section-desc">
-                {t('tabs.programs.content.overview.description', 'In liaison with the National Service and Reserve Authority (NSRA), we offer career-oriented service programmes with a focus on sustainability and national development. Choose your path — from clean energy to data science to emergency management.')}
+                {t(
+                    'In liaison with the National Service and Reserve Authority (NSRA), we offer career-oriented service programmes with a focus on sustainability and national development. Choose your path — from clean energy to data science to emergency management.',
+                    'بالتنسيق مع هيئة الخدمة الوطنية والاحتياطية، نقدم برامج خدمة موجهة مهنياً مع التركيز على الاستدامة والتنمية الوطنية. اختر مسارك — من الطاقة النظيفة إلى علم البيانات إلى إدارة الطوارئ.'
+                )}
             </p>
 
             <div className="ep-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
@@ -51,8 +65,8 @@ const NationalServicePage: React.FC = () => {
                                     <div className="ep-text-sm">{p.org}</div>
                                 </div>
                             </div>
-                            <span className={`ep-badge ${p.status === 'Enrolling' ? 'ep-badge--green' : 'ep-badge--blue'}`} style={{ borderRadius: 99 }}>
-                                {p.status}
+                            <span className={`ep-badge ${p.statusKey === 'Enrolling' ? 'ep-badge--green' : 'ep-badge--blue'}`} style={{ borderRadius: 99 }}>
+                                {p.statusLabel}
                             </span>
                         </div>
 
@@ -66,11 +80,11 @@ const NationalServicePage: React.FC = () => {
 
                         <div className="ep-card__meta">
                             <span className="ep-card__meta-item"><Clock size={12} /> {p.duration}</span>
-                            <span className="ep-card__meta-item"><Users size={12} /> {p.spots} {t('spots', 'spots')}</span>
+                            <span className="ep-card__meta-item"><Users size={12} /> {p.spots} {t('spots', 'مقعد')}</span>
                         </div>
 
                         <div className="ep-card__divider">
-                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ep-text)', marginBottom: 6 }}>{t('key_benefits', 'Key Benefits')}</div>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ep-text)', marginBottom: 6 }}>{t('Key Benefits', 'المزايا الرئيسية')}</div>
                             {p.highlights.map((h, j) => (
                                 <div key={j} className="ep-checklist">
                                     <CheckCircle size={12} className="ep-checklist__icon" />
@@ -79,7 +93,7 @@ const NationalServicePage: React.FC = () => {
                             ))}
                         </div>
 
-                        <button className="ep-btn ep-btn--primary-full">{t('btn_apply_now', 'Apply Now')}</button>
+                        <button className="ep-btn ep-btn--primary-full">{t('Apply Now', 'قدّم الآن')}</button>
                     </div>
                 ))}
             </div>
@@ -89,9 +103,12 @@ const NationalServicePage: React.FC = () => {
     /* ── Tab 2: Sustainability Careers ── */
     const sustainabilityTab = (
         <div>
-            <h2 className="ep-section-title">{t('sustainability_title', 'Sustainability Work Opportunities')}</h2>
+            <h2 className="ep-section-title">{t('Sustainability Work Opportunities', 'فرص العمل في الاستدامة')}</h2>
             <p className="ep-section-desc">
-                {t('sustainability_desc', 'Post-service career opportunities in sustainability — from marine conservation to renewable energy to climate policy. Build a career that serves both the UAE and the planet.')}
+                {t(
+                    'Post-service career opportunities in sustainability — from marine conservation to renewable energy to climate policy. Build a career that serves both the UAE and the planet.',
+                    'فرص مهنية بعد الخدمة في الاستدامة — من الحفاظ على البيئة البحرية إلى الطاقة المتجددة إلى سياسة المناخ. ابنِ مسيرة مهنية تخدم الإمارات والكوكب.'
+                )}
             </p>
 
             <div className="ep-stack">
@@ -109,7 +126,7 @@ const NationalServicePage: React.FC = () => {
                             <span className="ep-badge ep-badge--green">{o.sector}</span>
                             <span className="ep-text-sm">{o.type}</span>
                             <button className="ep-btn ep-btn--primary">
-                                {t('btn_view_role', 'View Role')} <ArrowRight size={12} />
+                                {t('View Role', 'عرض الوظيفة')} <ArrowIcon size={12} />
                             </button>
                         </div>
                     </div>
@@ -121,18 +138,21 @@ const NationalServicePage: React.FC = () => {
     /* ── Tab 3: Impact & Metrics ── */
     const impactTab = (
         <div>
-            <h2 className="ep-section-title">{t('impact_title', 'National Impact')}</h2>
+            <h2 className="ep-section-title">{t('National Impact', 'الأثر الوطني')}</h2>
             <p className="ep-section-desc">
-                {t('impact_desc', '18 cohorts graduated. 45,000+ citizens served. The NSRA programmes are shaping the UAE\'s workforce and building national resilience.')}
+                {t(
+                    "18 cohorts graduated. 45,000+ citizens served. The NSRA programmes are shaping the UAE's workforce and building national resilience.",
+                    '18 دفعة تخرّجت. أكثر من 45,000 مواطن خدموا. برامج هيئة الخدمة الوطنية تشكّل القوى العاملة الإماراتية وتبني المرونة الوطنية.'
+                )}
             </p>
 
             {/* Metric cards */}
             <div className="ep-grid ep-grid--4col ep-grid--gap-md" style={{ marginBottom: 28 }}>
                 {[
-                    { value: '18', label: t('metric_cohorts', 'Cohorts Graduated'), note: t('metric_cohorts_note', 'National Service programme'), cls: 'ep-badge--blue' },
-                    { value: '45K+', label: t('metric_citizens', 'Citizens Served'), note: t('metric_citizens_note', 'Since programme inception'), cls: 'ep-badge--green' },
-                    { value: '150+', label: t('metric_partners', 'Partner Organisations'), note: t('metric_partners_note', 'Government & private sector'), cls: 'ep-badge--purple' },
-                    { value: '85%', label: t('metric_placement', 'Career Placement Rate'), note: t('metric_placement_note', 'Within 6 months of completion'), cls: 'ep-badge--amber' },
+                    { value: '18', label: t('Cohorts Graduated', 'دفعة تخرّجت'), note: t('National Service programme', 'برنامج الخدمة الوطنية'), cls: 'ep-badge--blue' },
+                    { value: '45K+', label: t('Citizens Served', 'مواطن خدموا'), note: t('Since programme inception', 'منذ إطلاق البرنامج'), cls: 'ep-badge--green' },
+                    { value: '150+', label: t('Partner Organisations', 'مؤسسة شريكة'), note: t('Government & private sector', 'القطاعان الحكومي والخاص'), cls: 'ep-badge--purple' },
+                    { value: '85%', label: t('Career Placement Rate', 'معدل التوظيف المهني'), note: t('Within 6 months of completion', 'خلال 6 أشهر من الإكمال'), cls: 'ep-badge--amber' },
                 ].map((m, i) => (
                     <div key={i} className="ep-card ep-card--center">
                         <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--ep-primary-dark)', marginBottom: 2 }}>{m.value}</div>
@@ -145,7 +165,7 @@ const NationalServicePage: React.FC = () => {
             {/* Recent milestones */}
             <div className="ep-card" style={{ marginBottom: 20 }}>
                 <h3 className="ep-card__title" style={{ fontSize: 16, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-                    <Star size={18} style={{ color: 'var(--ep-primary)' }} /> {t('milestones_title', 'Recent Milestones')}
+                    <Star size={18} style={{ color: 'var(--ep-primary)' }} /> {t('Recent Milestones', 'الإنجازات الأخيرة')}
                 </h3>
                 <div className="ep-stack" style={{ gap: 12 }}>
                     {recentMilestones.map((m, i) => (
@@ -166,7 +186,7 @@ const NationalServicePage: React.FC = () => {
             <div className="ep-banner ep-banner--teal" style={{ padding: 24 }}>
                 <div style={{ width: '100%' }}>
                     <h3 className="ep-card__title" style={{ fontSize: 16, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-                        <Leaf size={18} style={{ color: 'var(--ep-primary)' }} /> {t('sustainability_impact_title', 'Sustainability Impact')}
+                        <Leaf size={18} style={{ color: 'var(--ep-primary)' }} /> {t('Sustainability Impact', 'أثر الاستدامة')}
                     </h3>
                     <div className="ep-grid ep-grid--4col ep-grid--gap-sm">
                         {sustainabilityImpact.map((m, i) => (
@@ -185,9 +205,12 @@ const NationalServicePage: React.FC = () => {
     /* ── Tab 4: NSRA Partners ── */
     const partnersTab = (
         <div>
-            <h2 className="ep-section-title">{t('partners_title', 'NSRA Partnership Network')}</h2>
+            <h2 className="ep-section-title">{t('NSRA Partnership Network', 'شبكة شراكات هيئة الخدمة الوطنية')}</h2>
             <p className="ep-section-desc">
-                {t('partners_desc', 'The National Service and Reserve Authority collaborates with leading UAE institutions to provide career-oriented service tracks. These partnerships ensure recruits gain real-world skills and clear career pathways.')}
+                {t(
+                    'The National Service and Reserve Authority collaborates with leading UAE institutions to provide career-oriented service tracks. These partnerships ensure recruits gain real-world skills and clear career pathways.',
+                    'تتعاون هيئة الخدمة الوطنية والاحتياطية مع المؤسسات الإماراتية الرائدة لتقديم مسارات خدمة موجهة مهنياً. تضمن هذه الشراكات اكتساب المجندين مهارات واقعية ومسارات مهنية واضحة.'
+                )}
             </p>
 
             <div className="ep-grid ep-grid--2col ep-grid--gap-md" style={{ marginBottom: 24 }}>
@@ -204,7 +227,7 @@ const NationalServicePage: React.FC = () => {
 
             {/* How to enrol */}
             <div className="ep-card" style={{ marginBottom: 20 }}>
-                <h3 className="ep-card__title" style={{ fontSize: 16, marginBottom: 18 }}>{t('enrol_title', 'How to Enrol in National Service')}</h3>
+                <h3 className="ep-card__title" style={{ fontSize: 16, marginBottom: 18 }}>{t('How to Enrol in National Service', 'كيفية التسجيل في الخدمة الوطنية')}</h3>
                 <div className="ep-grid ep-grid--4col ep-grid--gap-md">
                     {enrolmentSteps.map((s, i) => (
                         <div key={i} style={{ textAlign: 'center', padding: 16 }}>
@@ -221,15 +244,15 @@ const NationalServicePage: React.FC = () => {
             {/* External links */}
             <div className="ep-banner ep-banner--teal" style={{ justifyContent: 'space-between' }}>
                 <div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ep-text)', marginBottom: 4 }}>{t('nsra_learn_more', 'Learn more about the National Service & Reserve Authority')}</div>
-                    <div className="ep-text-sm" style={{ fontSize: 13 }}>{t('nsra_learn_more_desc', 'Visit the official NSRA resources for eligibility, registration, and programme details.')}</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ep-text)', marginBottom: 4 }}>{t('Learn more about the National Service & Reserve Authority', 'تعرّف على المزيد حول هيئة الخدمة الوطنية والاحتياطية')}</div>
+                    <div className="ep-text-sm" style={{ fontSize: 13 }}>{t('Visit the official NSRA resources for eligibility, registration, and programme details.', 'زُر الموارد الرسمية لهيئة الخدمة الوطنية للاطلاع على الأهلية والتسجيل وتفاصيل البرامج.')}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <a href="https://nscf.ae/en/" target="_blank" rel="noopener noreferrer" className="ep-btn ep-btn--primary" style={{ textDecoration: 'none' }}>
-                        {t('btn_nscf_portal', 'NSCF Portal')} <ExternalLink size={12} />
+                        {t('NSCF Portal', 'بوابة التجنيد الوطني')} <ExternalLink size={12} />
                     </a>
                     <a href="https://www.mediaoffice.abudhabi/en/topic/national-service-reserve-authority-nsra/" target="_blank" rel="noopener noreferrer" className="ep-btn" style={{ background: '#fff', color: 'var(--ep-text)', border: '1px solid var(--ep-border)', textDecoration: 'none', padding: '9px 16px', fontSize: 12 }}>
-                        {t('btn_nsra_news', 'NSRA News')} <ExternalLink size={12} />
+                        {t('NSRA News', 'أخبار هيئة الخدمة الوطنية')} <ExternalLink size={12} />
                     </a>
                 </div>
             </div>
@@ -239,16 +262,19 @@ const NationalServicePage: React.FC = () => {
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
     const tabs = [
-        { id: 'programs', label: t('tabs.programs.label', 'Service Programs'), icon: <Shield className="h-4 w-4" />, content: programsTab },
-        { id: 'sustainability', label: t('sustainability_tab', 'Sustainability Careers'), icon: <Leaf className="h-4 w-4" />, content: sustainabilityTab },
-        { id: 'impact', label: t('impact_tab', 'National Impact'), icon: <TrendingUp className="h-4 w-4" />, content: impactTab },
-        { id: 'partners', label: t('partners_tab', 'NSRA Partners'), icon: <Globe className="h-4 w-4" />, content: partnersTab },
+        { id: 'programs', label: t('Service Programs', 'برامج الخدمة'), icon: <Shield className="h-4 w-4" />, content: programsTab },
+        { id: 'sustainability', label: t('Sustainability Careers', 'وظائف الاستدامة'), icon: <Leaf className="h-4 w-4" />, content: sustainabilityTab },
+        { id: 'impact', label: t('National Impact', 'الأثر الوطني'), icon: <TrendingUp className="h-4 w-4" />, content: impactTab },
+        { id: 'partners', label: t('NSRA Partners', 'شركاء هيئة الخدمة الوطنية'), icon: <Globe className="h-4 w-4" />, content: partnersTab },
     ];
 
     return (
         <EducationPathwayLayout
-            title={t('title', 'National Service & Sustainability')}
-            description={t('description', 'In liaison with the National Service and Reserve Authority (NSRA), we offer career-oriented service tracks in sustainability, data science, emergency management, and education — building the UAE\'s workforce while serving the nation')}
+            title={t('National Service & Sustainability', 'الخدمة الوطنية والاستدامة')}
+            description={t(
+                "In liaison with the National Service and Reserve Authority (NSRA), we offer career-oriented service tracks in sustainability, data science, emergency management, and education — building the UAE's workforce while serving the nation",
+                'بالتنسيق مع هيئة الخدمة الوطنية والاحتياطية، نقدم مسارات خدمة موجهة مهنياً في الاستدامة وعلم البيانات وإدارة الطوارئ والتعليم — بناء القوى العاملة الإماراتية أثناء خدمة الوطن'
+            )}
             icon={<Shield className="h-6 w-6" />}
             stats={stats}
             tabs={tabs}

@@ -31,6 +31,10 @@
       "title": "Cultural Intelligence",
       "description": "Built-in understanding of UAE workplace culture and Emiratization goals"
     },
+    "professionalGrowth": {
+      "title": "Professional Growth",
+      "description": "Comprehensive development programs and mentorship opportunities for career advancement"
+    },
     "careerExcellence": {
       "title": "Career Excellence",
       "description": "Comprehensive career development ecosystem supporting professional growth"
@@ -125,6 +129,88 @@
       },
       "getStarted": "Get Started as Assessor"
     }
+  },
+  "stats": {
+    "users": {
+      "value": "10,000+",
+      "label": "Active Users"
+    },
+    "partners": {
+      "value": "500+",
+      "label": "Partner Companies"
+    },
+    "mentors": {
+      "value": "2,500+",
+      "label": "Expert Mentors"
+    },
+    "placements": {
+      "value": "15,000+",
+      "label": "Successful Placements"
+    }
+  },
+  "testimonials": {
+    "title": "Success Stories",
+    "subtitle": "Hear from professionals who transformed their careers",
+    "items": [
+      {
+        "quote": "The AI-powered career matching helped me find my dream role in government technology within weeks. The platform understood exactly what I was looking for.",
+        "name": "Ahmed Al Mazrouei",
+        "role": "Software Engineer",
+        "company": "Dubai Digital Authority"
+      },
+      {
+        "quote": "As a recruiter, this platform has transformed how we find and attract Emirati talent. The analytics dashboard gives us insights we never had before.",
+        "name": "Fatima Al Hashimi",
+        "role": "HR Director",
+        "company": "Emirates NBD"
+      },
+      {
+        "quote": "The mentorship matching connected me with an incredible mentor who guided my transition from education to the private sector seamlessly.",
+        "name": "Omar Al Suwaidi",
+        "role": "Business Analyst",
+        "company": "Etisalat by e&"
+      }
+    ]
+  },
+  "cta": {
+    "title": "Ready to Transform Your Career?",
+    "subtitle": "Join thousands of UAE professionals already using the platform to advance their careers",
+    "primaryButton": "Create Free Account",
+    "secondaryButton": "Explore Features"
+  },
+  "footer": {
+    "description": "The comprehensive AI-powered career development platform for UAE Nationals, backed by the Dubai Government and EHRDC.",
+    "columns": {
+      "platform": {
+        "title": "Platform",
+        "links": [
+          "Career Matching",
+          "CV Builder",
+          "Skill Assessment",
+          "Training Programs"
+        ]
+      },
+      "resources": {
+        "title": "Resources",
+        "links": [
+          "Help Center",
+          "Documentation",
+          "Career Guide",
+          "Blog"
+        ]
+      },
+      "legal": {
+        "title": "Legal",
+        "links": [
+          "Privacy Policy",
+          "Terms of Service",
+          "Cookie Policy",
+          "Accessibility"
+        ]
+      }
+    },
+    "copyright": "© 2025 Dubai Human Development Platform. All rights reserved.",
+    "government": "A Dubai Government Initiative in partnership with EHRDC"
   },
   "grid": {
     "title": "Explore Our Services",

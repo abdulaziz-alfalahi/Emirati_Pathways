@@ -23,10 +23,10 @@ const NotificationPanel: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('all');
-  
+
   useEffect(() => {
     if (!user) return;
-    
+
     // In a real implementation, we would fetch notifications from the database
     // For demonstration, we'll use mock data
     const mockNotifications: Notification[] = [
@@ -55,7 +55,7 @@ const NotificationPanel: React.FC = () => {
         type: 'message',
         createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
         isRead: false,
-        actionUrl: '/messages'
+        actionUrl: '/candidate-dashboard?tab=messages'
       },
       {
         id: '4',
@@ -67,22 +67,22 @@ const NotificationPanel: React.FC = () => {
         actionUrl: '/assessments'
       }
     ];
-    
+
     setNotifications(mockNotifications);
     setLoading(false);
   }, [user]);
-  
+
   const handleMarkAsRead = (notificationId: string) => {
     // Update the local state
-    setNotifications(notifications.map(notification => 
-      notification.id === notificationId 
-        ? { ...notification, isRead: true } 
+    setNotifications(notifications.map(notification =>
+      notification.id === notificationId
+        ? { ...notification, isRead: true }
         : notification
     ));
-    
+
     // In a real implementation, we would also update the database
   };
-  
+
   const handleMarkAllAsRead = () => {
     // Update all notifications in the current view
     const updatedNotifications = notifications.map(notification => ({
@@ -90,33 +90,33 @@ const NotificationPanel: React.FC = () => {
       isRead: true
     }));
     setNotifications(updatedNotifications);
-    
+
     // In a real implementation, we would also update the database
   };
-  
-  const filteredNotifications = activeTab === 'all' 
-    ? notifications 
+
+  const filteredNotifications = activeTab === 'all'
+    ? notifications
     : notifications.filter(notification => notification.type === activeTab);
-  
+
   const unreadCount = notifications.filter(notification => !notification.isRead).length;
-  
+
   const formatNotificationDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 24) {
       return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
     }
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) {
       return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
     }
-    
+
     return date.toLocaleDateString();
   };
-  
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'application':
@@ -136,9 +136,9 @@ const NotificationPanel: React.FC = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Notifications</CardTitle>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleMarkAllAsRead}
           disabled={unreadCount === 0}
         >
@@ -161,7 +161,7 @@ const NotificationPanel: React.FC = () => {
             <TabsTrigger value="event">Events</TabsTrigger>
             <TabsTrigger value="message">Messages</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value={activeTab} className="space-y-4">
             {loading ? (
               <div className="flex justify-center py-8">
@@ -169,17 +169,16 @@ const NotificationPanel: React.FC = () => {
               </div>
             ) : filteredNotifications.length > 0 ? (
               filteredNotifications.map(notification => (
-                <div 
+                <div
                   key={notification.id}
                   className={`p-4 rounded-lg border ${notification.isRead ? 'bg-background' : 'bg-muted/30'}`}
                 >
                   <div className="flex items-start space-x-4">
-                    <div className={`p-2 rounded-full ${
-                      notification.type === 'system' ? 'bg-blue-100 text-blue-600' :
-                      notification.type === 'application' ? 'bg-green-100 text-green-600' :
-                      notification.type === 'event' ? 'bg-amber-100 text-amber-600' :
-                      'bg-purple-100 text-purple-600'
-                    }`}>
+                    <div className={`p-2 rounded-full ${notification.type === 'system' ? 'bg-blue-100 text-blue-600' :
+                        notification.type === 'application' ? 'bg-green-100 text-green-600' :
+                          notification.type === 'event' ? 'bg-amber-100 text-amber-600' :
+                            'bg-purple-100 text-purple-600'
+                      }`}>
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-grow">
@@ -203,8 +202,8 @@ const NotificationPanel: React.FC = () => {
                             </Button>
                           )}
                           {!notification.isRead && (
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={() => handleMarkAsRead(notification.id)}
                             >

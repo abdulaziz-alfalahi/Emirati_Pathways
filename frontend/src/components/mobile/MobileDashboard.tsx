@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Briefcase, 
-  GraduationCap, 
-  FileText, 
+import {
+  Briefcase,
+  GraduationCap,
+  FileText,
   MessageSquare,
   Bell,
   User,
@@ -26,28 +26,28 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({ user, roles }) => {
   const navigate = useNavigate();
 
   const quickActions = [
-    { 
-      icon: FileText, 
-      label: 'CV Builder', 
+    {
+      icon: FileText,
+      label: 'CV Builder',
       path: '/cv-builder',
       color: 'bg-blue-500'
     },
-    { 
-      icon: Briefcase, 
-      label: 'Jobs', 
+    {
+      icon: Briefcase,
+      label: 'Jobs',
       path: '/job-matching',
       color: 'bg-ehrdc-teal'
     },
-    { 
-      icon: GraduationCap, 
-      label: 'Training', 
+    {
+      icon: GraduationCap,
+      label: 'Training',
       path: '/training',
       color: 'bg-purple-500'
     },
-    { 
-      icon: MessageSquare, 
-      label: 'Messages', 
-      path: '/messages',
+    {
+      icon: MessageSquare,
+      label: 'Messages',
+      path: '/candidate-dashboard?tab=messages',
       color: 'bg-orange-500'
     },
   ];

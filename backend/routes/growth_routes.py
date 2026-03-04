@@ -114,3 +114,144 @@ def check_companies():
     except Exception as e:
         logger.error(f"Check companies error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# =====================================================
+# COMPANY INVITATION ENDPOINTS (Magic Links)
+# =====================================================
+
+@growth_bp.route('/api/growth/invite-companies', methods=['POST'])
+def invite_companies():
+    """
+    Send magic link invitations to selected companies.
+    Expects JSON: {
+        "companies": [
+            { "name": "...", "code": "...", "email": "...", "phone": "...",
+              "sector": "...", "tradeLicense": "..." },
+            ...
+        ]
+    }
+    Returns list of invitation results with magic links.
+    """
+    try:
+        data = request.json
+        companies = data.get('companies', [])
+        if not companies:
+            return jsonify({'success': False, 'error': 'No companies provided'}), 400
+
+        # Get the current user ID if available (from JWT)
+        invited_by = None
+        try:
+            from flask_jwt_extended import get_jwt_identity
+            invited_by = get_jwt_identity()
+            if invited_by:
+                invited_by = int(invited_by)
+        except Exception:
+            pass
+
+        results = growth_sys.create_company_invitations(companies, invited_by=invited_by)
+
+        successful = [r for r in results if 'error' not in r]
+        failed = [r for r in results if 'error' in r]
+
+        return jsonify({
+            'success': True,
+            'message': f"Sent {len(successful)} invitations ({len(failed)} failed)",
+            'invitations': successful,
+            'errors': failed,
+        })
+
+    except Exception as e:
+        logger.error(f"Invite companies error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@growth_bp.route('/api/public/invitation/<token>', methods=['GET'])
+def get_invitation_details(token):
+    """
+    Public endpoint: Validate a company invitation token.
+    Returns company details for the onboarding wizard.
+    """
+    try:
+        data = growth_sys.validate_company_invitation(token)
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid or expired invitation link'
+            }), 404
+
+        return jsonify({
+            'success': True,
+            'data': data
+        })
+    except Exception as e:
+        logger.error(f"Invitation validation error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@growth_bp.route('/api/public/invitation/<token>/accept', methods=['POST'])
+def accept_invitation(token):
+    """
+    Public endpoint: Accept a company invitation.
+    Creates user account and HR profile.
+    Expects JSON: {
+        "first_name": "...",
+        "last_name": "...",
+        "phone": "...",
+        "email": "...",
+        "position_title": "...",
+        "role": "recruiter" | "hr_manager"
+    }
+    Returns JWT tokens for auto-login.
+    """
+    try:
+        payload = request.json
+        if not payload:
+            return jsonify({'success': False, 'error': 'Missing request body'}), 400
+
+        required = ['first_name', 'last_name', 'phone', 'role']
+        for field in required:
+            if not payload.get(field):
+                return jsonify({
+                    'success': False,
+                    'error': f'Missing required field: {field}'
+                }), 400
+
+        # Accept the invitation and create user
+        user_data = growth_sys.accept_company_invitation(token, payload)
+
+        # Generate JWT tokens for auto-login
+        try:
+            from flask_jwt_extended import create_access_token, create_refresh_token
+            user_id = str(user_data['id'])
+            role = user_data.get('user_type', 'recruiter')
+
+            access_token = create_access_token(
+                identity=user_id,
+                additional_claims={'role': role}
+            )
+            refresh_token = create_refresh_token(identity=user_id)
+
+            return jsonify({
+                'success': True,
+                'message': 'Registration complete! Welcome to Emirati Pathways.',
+                'data': {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
+                    'user': user_data,
+                }
+            })
+        except ImportError:
+            # If JWT is not available, just return user data
+            return jsonify({
+                'success': True,
+                'message': 'Registration complete!',
+                'data': {'user': user_data}
+            })
+
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Invitation acceptance error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+

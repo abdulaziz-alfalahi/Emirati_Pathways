@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -36,6 +37,9 @@ interface AccessibilitySettings {
 
 export const AccessibilityToolbar: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<AccessibilitySettings>({
     fontSize: 100,
@@ -150,11 +154,11 @@ export const AccessibilityToolbar: React.FC = () => {
             ? 'text-ehrdc-teal bg-ehrdc-teal/10 hover:bg-ehrdc-teal/20'
             : 'text-ehrdc-neutral-dark hover:text-ehrdc-teal hover:bg-ehrdc-teal/10'
             }`}
-          aria-label="Accessibility options"
-          title="Accessibility Toolbar"
+          aria-label={t('Accessibility options', 'خيارات إمكانية الوصول')}
+          title={t('Accessibility Toolbar', 'شريط إمكانية الوصول')}
         >
           <Accessibility className="h-4 w-4" />
-          <span className="hidden sm:inline font-medium">Accessibility</span>
+          <span className="hidden sm:inline font-medium">{t('Accessibility', 'إمكانية الوصول')}</span>
         </Button>
       </DropdownMenuTrigger>
 
@@ -164,26 +168,26 @@ export const AccessibilityToolbar: React.FC = () => {
         sideOffset={5}
       >
         <DropdownMenuLabel className="text-ehrdc-neutral-dark font-semibold">
-          Accessibility Options
+          {t('Accessibility Options', 'خيارات إمكانية الوصول')}
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator className="bg-ehrdc-neutral-light" />
 
         {/* Theme Selection */}
         <DropdownMenuLabel className="text-ehrdc-neutral-dark font-semibold mt-2">
-          Display Theme
+          {t('Display Theme', 'سمة العرض')}
         </DropdownMenuLabel>
         <div className="flex bg-slate-100 p-1 rounded-md mx-2 mb-2">
-          {['light', 'dark', 'system'].map((t) => (
+          {(['light', 'dark', 'system'] as const).map((thm) => (
             <button
-              key={t}
-              onClick={() => setTheme(t as "light" | "dark" | "system")}
-              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-sm capitalize transition-all ${theme === t
+              key={thm}
+              onClick={() => setTheme(thm)}
+              className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-sm capitalize transition-all ${theme === thm
                 ? 'bg-white text-ehrdc-teal shadow-sm'
                 : 'text-slate-500 hover:text-slate-900'
                 }`}
             >
-              {t}
+              {thm === 'light' ? t('Light', 'فاتح') : thm === 'dark' ? t('Dark', 'داكن') : t('System', 'النظام')}
             </button>
           ))}
         </div>
@@ -195,7 +199,7 @@ export const AccessibilityToolbar: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-ehrdc-neutral-dark flex items-center">
               <Type className="h-4 w-4 mr-2" />
-              Text Size
+              {t('Text Size', 'حجم النص')}
             </span>
             <span className="text-xs text-ehrdc-neutral-dark/70">
               {settings.fontSize}%
@@ -249,10 +253,10 @@ export const AccessibilityToolbar: React.FC = () => {
             }`}
         >
           <Contrast className="h-4 w-4 mr-2" />
-          <span>High Contrast</span>
+          <span>{t('High Contrast', 'تباين عالي')}</span>
           {settings.highContrast && (
             <span className="ml-auto text-xs bg-ehrdc-teal text-white px-2 py-1 rounded">
-              ON
+              {t('ON', 'مفعّل')}
             </span>
           )}
         </DropdownMenuItem>
@@ -266,10 +270,10 @@ export const AccessibilityToolbar: React.FC = () => {
             }`}
         >
           <Type className="h-4 w-4 mr-2" />
-          <span>Dyslexia-Friendly Font</span>
+          <span>{t('Dyslexia-Friendly Font', 'خط مناسب لعسر القراءة')}</span>
           {settings.dyslexiaFont && (
             <span className="ml-auto text-xs bg-ehrdc-teal text-white px-2 py-1 rounded">
-              ON
+              {t('ON', 'مفعّل')}
             </span>
           )}
         </DropdownMenuItem>
@@ -278,7 +282,7 @@ export const AccessibilityToolbar: React.FC = () => {
 
         {/* Color Blind Support */}
         <DropdownMenuLabel className="text-xs text-ehrdc-neutral-dark/70 font-medium">
-          Color Vision Support
+          {t('Color Vision Support', 'دعم رؤية الألوان')}
         </DropdownMenuLabel>
 
         <DropdownMenuItem
@@ -287,7 +291,7 @@ export const AccessibilityToolbar: React.FC = () => {
             }`}
         >
           <Eye className="h-4 w-4 mr-2" />
-          <span>Normal Vision</span>
+          <span>{t('Normal Vision', 'رؤية طبيعية')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
@@ -296,7 +300,7 @@ export const AccessibilityToolbar: React.FC = () => {
             }`}
         >
           <Eye className="h-4 w-4 mr-2" />
-          <span>Protanopia (Red-blind)</span>
+          <span>{t('Protanopia (Red-blind)', 'عمى اللون الأحمر')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
@@ -305,7 +309,7 @@ export const AccessibilityToolbar: React.FC = () => {
             }`}
         >
           <Eye className="h-4 w-4 mr-2" />
-          <span>Deuteranopia (Green-blind)</span>
+          <span>{t('Deuteranopia (Green-blind)', 'عمى اللون الأخضر')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
@@ -314,7 +318,7 @@ export const AccessibilityToolbar: React.FC = () => {
             }`}
         >
           <Eye className="h-4 w-4 mr-2" />
-          <span>Tritanopia (Blue-blind)</span>
+          <span>{t('Tritanopia (Blue-blind)', 'عمى اللون الأزرق')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="bg-ehrdc-neutral-light" />
@@ -322,12 +326,12 @@ export const AccessibilityToolbar: React.FC = () => {
         {/* Navigation Aids */}
         <DropdownMenuItem className="cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal">
           <Keyboard className="h-4 w-4 mr-2" />
-          <span>Keyboard Navigation Guide</span>
+          <span>{t('Keyboard Navigation Guide', 'دليل التنقل بلوحة المفاتيح')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem className="cursor-pointer hover:bg-ehrdc-teal/10 hover:text-ehrdc-teal">
           <Volume2 className="h-4 w-4 mr-2" />
-          <span>Screen Reader Support</span>
+          <span>{t('Screen Reader Support', 'دعم قارئ الشاشة')}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="bg-ehrdc-neutral-light" />
@@ -338,7 +342,7 @@ export const AccessibilityToolbar: React.FC = () => {
           className="cursor-pointer hover:bg-orange-50 hover:text-orange-600 text-orange-600"
         >
           <RotateCcw className="h-4 w-4 mr-2" />
-          <span>Reset All Settings</span>
+          <span>{t('Reset All Settings', 'إعادة تعيين جميع الإعدادات')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

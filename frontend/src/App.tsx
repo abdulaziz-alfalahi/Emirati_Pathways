@@ -26,6 +26,8 @@ import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 // import MockLogin from '@/pages/auth/MockLogin'; 
 import EnhancedAuthPage from '@/pages/auth/EnhancedAuth';
 import { VerifyJob } from '@/pages/public/VerifyJob';
+const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
+const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
 
 // Lazy loaded components for better performance
 const CandidateDashboard = lazy(() => import('@/pages/CandidateDashboard'));
@@ -99,7 +101,7 @@ const LMSPage = lazy(() => import('./pages/lms'));
 
 // Other key pages
 const AnalyticsPage3 = lazy(() => import('@/pages/analytics/AnalyticsPage2'));
-const Messages = lazy(() => import('@/pages/messages'));
+// Messages page removed — redirected to candidate dashboard messaging tab
 const Profile = lazy(() => import('@/pages/profile'));
 const JobMatchingPage2 = lazy(() => import('@/pages/job-matching/JobMatchingPage'));
 const Applications = lazy(() => import('@/pages/applications'));
@@ -112,6 +114,9 @@ const PortfolioPage = lazy(() => import('@/pages/portfolio/PortfolioPage'));
 const InterviewPreparationPage2 = lazy(() => import('@/pages/interview-preparation/InterviewPreparationPage'));
 const InternshipsPage = lazy(() => import('@/pages/internships/InternshipsPage'));
 const CareerAdvisoryPage = lazy(() => import('@/pages/career-advisory/CareerAdvisoryPage'));
+const GigMarketplacePage = lazy(() => import('@/pages/gig-marketplace/GigMarketplacePage'));
+const StartupLaunchpadPage = lazy(() => import('@/pages/startup-launchpad/StartupLaunchpadPage'));
+const EmiratizationTrackerPage = lazy(() => import('@/pages/emiratization-tracker/EmiratizationTrackerPage'));
 const AssessmentsPage2 = lazy(() => import('@/pages/assessments/AssessmentsPage'));
 const ProfessionalCertificationsPage = lazy(() => import('@/pages/professional-certifications/ProfessionalCertificationsPage'));
 const BlockchainCredentialsPage = lazy(() => import('@/pages/blockchain-credentials/BlockchainCredentialsPage'));
@@ -121,7 +126,15 @@ const NationalServicePage = lazy(() => import('@/pages/national-service/National
 const ThoughtLeadershipPage = lazy(() => import('@/pages/thought-leadership/ThoughtLeadershipPage'));
 const ShareSuccessStoriesPage = lazy(() => import('@/pages/success-stories/ShareSuccessStoriesPage'));
 const RetireePage = lazy(() => import('@/pages/retiree/RetireePage'));
+const NafisTalentDashboard = lazy(() => import('@/pages/operator-dashboards/NafisTalentDashboard'));
+const EducationOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/EducationOperatorDashboard'));
+const ProfessionalDevDashboard = lazy(() => import('@/pages/operator-dashboards/ProfessionalDevDashboard'));
+const CommunityOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/CommunityOperatorDashboard'));
+const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboards/OperationsMonitoringCenter'));
+const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
+const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
 const NotFound = lazy(() => import('@/pages/not-found'));
+const OurMission = lazy(() => import('@/pages/OurMission'));
 
 // Protected Route Component
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -135,6 +148,7 @@ import './index.css';
 
 import { useAuth } from '@/context/AuthContext';
 import { NotificationProvider } from '@/components/notifications/NotificationSystem';
+import ConnectionBanner from '@/components/notifications/ConnectionBanner';
 
 // App Content Component with bilingual support
 const AppContent: React.FC = () => {
@@ -167,10 +181,12 @@ const AppContent: React.FC = () => {
           userType={user.user_type || user.role || 'user'}
           authToken={token}
         >
+          <ConnectionBanner />
           <Suspense fallback={<DashboardLoading />}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<BilingualHomePage />} />
+              <Route path="/our-mission" element={<OurMission />} />
               <Route path="/auth" element={<EnhancedAuthPage />} />
               <Route path="/welcome" element={
                 <ProtectedRoute>
@@ -181,6 +197,7 @@ const AppContent: React.FC = () => {
               <Route path="/public/job/:token" element={<VerifyJob />} />
               <Route path="/jobs/:token" element={<VerifyJob />} />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
+              <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
 
               {/* Protected Role-Based Routes */}
               <Route
@@ -226,6 +243,7 @@ const AppContent: React.FC = () => {
                 }
               />
               <Route path="/verify-job/:token" element={<VerifyJob />} />
+              <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
               <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
               {/* Protected Dashboard Routes */}
@@ -425,7 +443,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/growth-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin']}>
                     <GrowthOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -433,7 +451,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/growth-operator-dashboard/:domain"
                 element={
-                  <ProtectedRoute allowedRoles={['growth_operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin']}>
                     <GrowthOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -584,9 +602,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/messages"
                 element={
-                  <ProtectedRoute>
-                    <Messages />
-                  </ProtectedRoute>
+                  <Navigate to="/candidate-dashboard?tab=messages" replace />
                 }
               />
 
@@ -626,6 +642,11 @@ const AppContent: React.FC = () => {
               />
 
               <Route
+                path="/digital-skills-development"
+                element={<DigitalSkillsPage2 />}
+              />
+
+              <Route
                 path="/career-planning-hub"
                 element={<CareerPlanningHub />}
               />
@@ -656,6 +677,16 @@ const AppContent: React.FC = () => {
               />
 
               <Route
+                path="/gig-marketplace"
+                element={<GigMarketplacePage />}
+              />
+
+              <Route
+                path="/startup-launchpad"
+                element={<StartupLaunchpadPage />}
+              />
+
+              <Route
                 path="/career-advisory"
                 element={<CareerAdvisoryPage />}
               />
@@ -663,6 +694,11 @@ const AppContent: React.FC = () => {
               <Route
                 path="/assessments"
                 element={<AssessmentsPage2 />}
+              />
+
+              <Route
+                path="/emiratization-tracker"
+                element={<EmiratizationTrackerPage />}
               />
 
               <Route
@@ -705,6 +741,41 @@ const AppContent: React.FC = () => {
                 element={<RetireePage />}
               />
 
+              {/* Operator Dashboards */}
+              <Route
+                path="/nafis-talent-dashboard"
+                element={<NafisTalentDashboard />}
+              />
+              <Route
+                path="/education-operator-dashboard"
+                element={<EducationOperatorDashboard />}
+              />
+              <Route
+                path="/professional-dev-dashboard"
+                element={<ProfessionalDevDashboard />}
+              />
+              <Route
+                path="/community-operator-dashboard"
+                element={<CommunityOperatorDashboard />}
+              />
+              <Route
+                path="/assessment-operator-dashboard"
+                element={<AssessmentOperatorDashboard />}
+              />
+              <Route
+                path="/mentorship-operator-dashboard"
+                element={<MentorshipOperatorDashboard />}
+              />
+              <Route
+                path="/operations-center"
+                element={<OperationsMonitoringCenter />}
+              />
+
+              {/* Public magic-link routes (accessible even when authenticated) */}
+              <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
+              <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
+              <Route path="/verify-job/:token" element={<VerifyJob />} />
+
               {/* Login Test Route */}
               <Route path="/login-test" element={<LoginTestPage />} />
 
@@ -731,6 +802,7 @@ const AppContent: React.FC = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<BilingualHomePage />} />
+            <Route path="/our-mission" element={<OurMission />} />
             {/* <Route path="/forgot-password" element={<ForgotPassword />} /> */}
             {/* <Route path="/reset-password" element={<ResetPassword />} /> */}
             <Route path="/welcome" element={
@@ -740,6 +812,8 @@ const AppContent: React.FC = () => {
             } />
             <Route path="/auth" element={<EnhancedAuthPage />} />
             <Route path="/verify-job/:token" element={<VerifyJob />} />
+            <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
+            <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
             <Route path="/guest/interview/:token" element={<GuestLobby />} />
 
             {/* Catch all route for unauthenticated - redirect to auth or home */}

@@ -33,15 +33,15 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     const savedLanguage = localStorage.getItem('preferred-language') as 'en' | 'ar';
     const browserLanguage = navigator.language.startsWith('ar') ? 'ar' : 'en';
     const initialLanguage = savedLanguage || browserLanguage;
-    
+
     setLanguageState(initialLanguage);
     setIsRTL(initialLanguage === 'ar');
     i18n.changeLanguage(initialLanguage);
-    
+
     // Set document direction and language
     document.documentElement.dir = initialLanguage === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = initialLanguage;
-    
+
     // Add RTL class to body for CSS styling
     if (initialLanguage === 'ar') {
       document.body.classList.add('rtl');
@@ -50,16 +50,36 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     }
   }, [i18n]);
 
+  // Listen for external i18n language changes to stay in sync
+  useEffect(() => {
+    const handleLanguageChanged = (lng: string) => {
+      const lang = (lng === 'ar' ? 'ar' : 'en') as 'en' | 'ar';
+      setLanguageState(lang);
+      setIsRTL(lang === 'ar');
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.lang = lang;
+      if (lang === 'ar') {
+        document.body.classList.add('rtl');
+      } else {
+        document.body.classList.remove('rtl');
+      }
+    };
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
+  }, [i18n]);
+
   const setLanguage = (lang: 'en' | 'ar') => {
     setLanguageState(lang);
     setIsRTL(lang === 'ar');
     i18n.changeLanguage(lang);
     localStorage.setItem('preferred-language', lang);
-    
+
     // Update document direction and language
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
-    
+
     // Update body class for RTL styling
     if (lang === 'ar') {
       document.body.classList.add('rtl');

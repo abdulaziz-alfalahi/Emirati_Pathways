@@ -8,6 +8,8 @@ export interface Notification {
   link?: string;
   is_read: boolean;
   created_at: string;
+  read_at?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface NotificationFilters {

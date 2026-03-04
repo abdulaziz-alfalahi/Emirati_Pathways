@@ -7,13 +7,36 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.services.communication_service import communication_service, MessageType, NotificationType
 import logging
+import os
+import uuid
+import mimetypes
 from datetime import datetime
+from werkzeug.utils import secure_filename
+
+try:
+    import bleach
+except ImportError:
+    bleach = None  # graceful fallback
+
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address, default_limits=[])
+except ImportError:
+    limiter = None
 
 # Create blueprint
 communication_bp = Blueprint('communication', __name__, url_prefix='/api/communication')
 
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+
+def _sanitize(text: str) -> str:
+    """Strip all HTML tags from text to prevent XSS."""
+    if bleach and text:
+        return bleach.clean(text, tags=[], strip=True)
+    return text or ''
 
 @communication_bp.route('/conversations', methods=['GET'])
 @jwt_required()
@@ -22,7 +45,7 @@ def get_user_conversations():
     Get all conversations for the current user
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = str(get_jwt_identity())
         # FIX: Read role param from request
         role = request.args.get('role')
         
@@ -44,6 +67,31 @@ def get_user_conversations():
             'message': 'Failed to retrieve conversations'
         }), 500
 
+# =====================================================
+# MESSAGING STATS (unread count)
+# =====================================================
+
+@communication_bp.route('/stats', methods=['GET'])
+@jwt_required()
+def get_messaging_stats():
+    """Return unread message count for the current user."""
+    try:
+        current_user_id = str(get_jwt_identity())
+        # Count all unread messages across conversations where user is a participant
+        conversations = communication_service.get_user_conversations(current_user_id)
+        total_unread = sum(getattr(c, 'unread_count', 0) for c in conversations)
+        return jsonify({
+            'success': True,
+            'data': {
+                'unread_messages': total_unread,
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error getting messaging stats: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+
 @communication_bp.route('/conversations/<conversation_id>', methods=['GET'])
 @jwt_required()
 def get_conversation(conversation_id):
@@ -51,7 +99,7 @@ def get_conversation(conversation_id):
     Get a single conversation by ID
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = str(get_jwt_identity())
         
         conversation = communication_service.get_conversation(conversation_id)
         
@@ -86,7 +134,7 @@ def delete_conversation(conversation_id):
     Delete (archive) a conversation for the current user
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = str(get_jwt_identity())
         
         success = communication_service.archive_conversation_for_user(conversation_id, current_user_id)
         
@@ -121,10 +169,11 @@ def create_conversation():
     }
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = str(get_jwt_identity())
         data = request.get_json()
         
-        participants = data.get('participants', [])
+        # Normalize all participant IDs to strings to avoid type mismatches
+        participants = [str(p) for p in data.get('participants', [])]
         if current_user_id not in participants:
             participants.append(current_user_id)
         
@@ -140,7 +189,7 @@ def create_conversation():
              # Infer other participant's role
              if len(participants) == 2:
                   # Note: participants list includes current_user_id (added above)
-                  other_ids = [p for p in participants if str(p) != str(current_user_id)]
+                  other_ids = [p for p in participants if p != current_user_id]
                   if other_ids:
                       other_id = other_ids[0]
                       if sender_role == 'recruiter': participant_roles[other_id] = 'job_seeker'
@@ -160,10 +209,10 @@ def create_conversation():
         }), 201
         
     except Exception as e:
-        logger.error(f"Error creating conversation: {str(e)}")
+        logger.error(f"Error creating conversation: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
-            'message': 'Failed to create conversation'
+            'message': f'Failed to create conversation: {str(e)}'
         }), 500
 
 @communication_bp.route('/conversations/<conversation_id>/messages', methods=['GET'])
@@ -188,17 +237,19 @@ def get_conversation_messages(conversation_id):
         
         limit = int(request.args.get('limit', 50))
         offset = int(request.args.get('offset', 0))
+        before = request.args.get('before', None)
         
-        messages = communication_service.get_conversation_messages(
-            conversation_id, limit, offset
+        result = communication_service.get_conversation_messages(
+            conversation_id, limit, offset, before=before
         )
         
         return jsonify({
             'success': True,
             'data': {
-                'messages': [msg.to_dict() for msg in messages],
+                'messages': [msg.to_dict() for msg in result['messages']],
                 'conversation_id': conversation_id,
-                'total_count': len(messages)
+                'total_count': len(result['messages']),
+                'has_more': result['has_more']
             }
         }), 200
         
@@ -208,6 +259,66 @@ def get_conversation_messages(conversation_id):
             'success': False,
             'message': 'Failed to retrieve messages'
         }), 500
+
+@communication_bp.route('/conversations/<conversation_id>/messages/search', methods=['GET'])
+@jwt_required()
+def search_conversation_messages(conversation_id):
+    """Search messages within a conversation by keyword."""
+    try:
+        current_user_id = str(get_jwt_identity())
+
+        # Verify access
+        conversation = communication_service.get_conversation(conversation_id)
+        if not conversation or current_user_id not in conversation.participants:
+            return jsonify({'success': False, 'message': 'Conversation not found or access denied'}), 404
+
+        q = _sanitize(request.args.get('q', '')).strip()
+        if not q or len(q) < 2:
+            return jsonify({'success': True, 'data': {'messages': [], 'query': q}}), 200
+
+        limit = min(int(request.args.get('limit', 50)), 100)
+
+        conn = communication_service._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=__import__('psycopg2.extras', fromlist=['RealDictCursor']).RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT m.id, m.conversation_id, m.sender_id, m.content,
+                           m.message_type, m.metadata, m.status, m.created_at, m.read_at,
+                           COALESCE(u.full_name, u.name, 'User') as sender_name
+                    FROM messages m
+                    LEFT JOIN users u ON CAST(m.sender_id AS TEXT) = CAST(u.id AS TEXT)
+                    WHERE m.conversation_id = %s
+                      AND m.content ILIKE %s
+                    ORDER BY m.created_at DESC
+                    LIMIT %s
+                """, (conversation_id, f'%{q}%', limit))
+                rows = cur.fetchall()
+        finally:
+            conn.close()
+
+        results = []
+        for row in rows:
+            results.append({
+                'id': str(row['id']),
+                'conversation_id': row['conversation_id'],
+                'sender_id': str(row['sender_id']),
+                'sender_name': row.get('sender_name', 'User'),
+                'content': row['content'],
+                'message_type': row.get('message_type', 'text'),
+                'metadata': row.get('metadata') or {},
+                'status': row.get('status', 'sent'),
+                'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                'read_at': row['read_at'].isoformat() if row.get('read_at') else None,
+            })
+
+        return jsonify({
+            'success': True,
+            'data': {'messages': results, 'query': q, 'count': len(results)}
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error searching messages: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to search messages'}), 500
 
 @communication_bp.route('/conversations/<conversation_id>/read', methods=['POST'])
 @jwt_required()
@@ -221,6 +332,20 @@ def mark_conversation_as_read(conversation_id):
         success = communication_service.mark_conversation_as_read(conversation_id, current_user_id)
         
         if success:
+            # Emit socket event so the sender sees ✓✓ in real-time
+            try:
+                from flask import current_app
+                socketio = current_app.extensions.get('socketio')
+                if socketio:
+                    socketio.emit('message_read', {
+                        'conversation_id': conversation_id,
+                        'reader_id': current_user_id,
+                        'all': True,
+                        'read_at': datetime.utcnow().isoformat()
+                    })
+            except Exception as emit_err:
+                logger.warning(f"Failed to emit message_read socket event: {emit_err}")
+
             return jsonify({
                 'success': True,
                 'message': 'Conversation marked as read'
@@ -241,6 +366,24 @@ def mark_conversation_as_read(conversation_id):
 @communication_bp.route('/messages', methods=['POST'])
 @jwt_required()
 def send_message():
+    # Rate limiting check (10 messages/minute per user)
+    try:
+        current_user = str(get_jwt_identity())
+        _rate_key = f"msg_send:{current_user}"
+        _rate_store = getattr(communication_bp, '_rate_store', {})
+        import time as _time
+        now = _time.time()
+        # Clean old entries
+        _rate_store[_rate_key] = [t for t in _rate_store.get(_rate_key, []) if now - t < 60]
+        if len(_rate_store.get(_rate_key, [])) >= 10:
+            return jsonify({
+                'success': False,
+                'message': 'Too many messages. Please wait a moment before sending again.'
+            }), 429
+        _rate_store.setdefault(_rate_key, []).append(now)
+        communication_bp._rate_store = _rate_store
+    except Exception:
+        pass  # Don't block messages if rate limiting fails
     """
     Send a message
     Body: {
@@ -252,11 +395,11 @@ def send_message():
     }
     """
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = str(get_jwt_identity())
         data = request.get_json()
         
         recipient_id = data.get('recipient_id')
-        content = data.get('content')
+        content = _sanitize(data.get('content', ''))
         message_type_str = data.get('message_type', 'text')
         conversation_id = data.get('conversation_id')
         metadata = data.get('metadata', {})
@@ -303,10 +446,19 @@ def send_message():
         
         # Create Notification for the recipient
         try:
-            # Get sender name (simplified, usually from user service or JWT claims if expanded)
-            # For now, generic or we fetch sender profile. 
-            # Ideally send_message returns sender name or we query it. 
-            # To avoid extra query, we can use "New Message" title or metadata.
+            # Look up recipient's role for cross-role notification routing
+            recipient_role = 'candidate'  # default
+            try:
+                conn_role = communication_service._get_db_connection()
+                with conn_role.cursor() as cur:
+                    cur.execute("SELECT role FROM users WHERE CAST(id AS TEXT) = %s", (str(recipient_id),))
+                    row = cur.fetchone()
+                    if row:
+                        recipient_role = row[0] or 'candidate'
+                conn_role.close()
+            except Exception:
+                pass
+
             notification = communication_service.create_notification(
                 user_id=recipient_id,
                 notification_type=NotificationType.NEW_MESSAGE,
@@ -314,7 +466,8 @@ def send_message():
                     'sender_name': message.sender_name or 'User',
                     'content_preview': (content[:50] + '...') if len(content) > 50 else content,
                     'conversation_id': message.conversation_id,
-                    'message_id': message.id
+                    'message_id': message.id,
+                    'recipient_role': recipient_role,
                 }
             )
         except Exception as e:
@@ -346,6 +499,32 @@ def send_message():
                     
         except Exception as e:
             logger.warning(f"Failed to emit socket event: {e}")
+
+        # ─── Offline notification fallback ─────────────────────
+        try:
+            sio = current_app.extensions.get('socketio')
+            presence = getattr(sio, 'online_users', {}) if sio else {}
+            recipient_online = str(recipient_id) in presence
+
+            if not recipient_online and notification:
+                # Queue for email delivery — privacy-safe: no content, no personal info
+                try:
+                    communication_service.create_notification(
+                        user_id=recipient_id,
+                        notification_type=NotificationType.NEW_MESSAGE,
+                        metadata={
+                            'channel': 'email',
+                            'subject': 'New message on Emirati Journey',
+                            'body': f'You have a new message from {message.sender_name or "a team member"} on Emirati Journey. Log in to view it.',
+                            'conversation_id': message.conversation_id,
+                            'offline_fallback': True,
+                        }
+                    )
+                    logger.info(f"Queued offline email notification for user {recipient_id}")
+                except Exception as email_err:
+                    logger.warning(f"Failed to queue offline email notification: {email_err}")
+        except Exception as e:
+            logger.warning(f"Offline notification check failed: {e}")
 
         return jsonify({
             'success': True,
@@ -901,3 +1080,72 @@ def add_discussion_participant(conversation_id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+# =====================================================
+# FILE UPLOAD ENDPOINT
+# =====================================================
+
+ALLOWED_EXTENSIONS = {
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+    'txt', 'csv', 'zip', 'rar',
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg',
+}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+@communication_bp.route('/upload', methods=['POST'])
+@jwt_required()
+def upload_file():
+    """
+    Upload a file attachment for a message.
+    Returns: { success, data: { url, filename, size, mimeType } }
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file provided'}), 400
+
+        file = request.files['file']
+        if not file.filename:
+            return jsonify({'success': False, 'message': 'Empty filename'}), 400
+
+        # Check extension
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in ALLOWED_EXTENSIONS:
+            return jsonify({'success': False, 'message': f'File type .{ext} not allowed'}), 400
+
+        # Read and check size
+        file_data = file.read()
+        if len(file_data) > MAX_FILE_SIZE:
+            return jsonify({'success': False, 'message': 'File exceeds 10 MB limit'}), 400
+        file.seek(0)
+
+        # Save file
+        upload_dir = os.path.join(current_app.root_path, '..', 'uploads', 'messages')
+        os.makedirs(upload_dir, exist_ok=True)
+
+        safe_name = secure_filename(file.filename)
+        unique_name = f"{uuid.uuid4().hex[:12]}_{safe_name}"
+        file_path = os.path.join(upload_dir, unique_name)
+        file.save(file_path)
+
+        # Determine MIME type
+        mime_type = file.content_type or mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+
+        # Build URL (relative to the app — frontend will prefix base URL)
+        file_url = f"/uploads/messages/{unique_name}"
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'url': file_url,
+                'filename': safe_name,
+                'size': len(file_data),
+                'mimeType': mime_type,
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error uploading file: {str(e)}")
+        return jsonify({'success': False, 'message': 'File upload failed'}), 500
+

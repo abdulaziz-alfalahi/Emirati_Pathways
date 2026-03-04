@@ -539,7 +539,12 @@ class CommunicationService:
         cur.execute("""
             SELECT cp.user_id, 
                    cp.role,
-                   COALESCE(u.full_name, 'Unknown User') as full_name
+                   COALESCE(
+                       NULLIF(NULLIF(u.full_name, 'New Member'), ''),
+                       NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+                       u.full_name,
+                       'Unknown User'
+                   ) as full_name
             FROM conversation_participants cp
             LEFT JOIN users u ON cp.user_id = u.id::varchar
             WHERE cp.conversation_id = %s
@@ -711,34 +716,43 @@ class CommunicationService:
             conn.close()
     
     def get_conversation_messages(self, conversation_id: str, limit: int = 50, 
-                                offset: int = 0) -> List[Message]:
-        """Get messages from a conversation"""
+                                offset: int = 0, before: str = None) -> dict:
+        """Get messages from a conversation. Returns {'messages': [...], 'has_more': bool}"""
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    SELECT m.*, u.first_name, u.last_name
-                    FROM messages m
-                    JOIN users u ON m.sender_id = u.id::varchar
-                    WHERE m.conversation_id = %s
-                    ORDER BY m.created_at DESC
-                    LIMIT %s OFFSET %s
-                """, (conversation_id, limit, offset))
+                if before:
+                    cur.execute("""
+                        SELECT m.*, u.first_name, u.last_name
+                        FROM messages m
+                        JOIN users u ON m.sender_id = u.id::varchar
+                        WHERE m.conversation_id = %s AND m.created_at < %s
+                        ORDER BY m.created_at DESC
+                        LIMIT %s
+                    """, (conversation_id, before, limit + 1))
+                else:
+                    cur.execute("""
+                        SELECT m.*, u.first_name, u.last_name
+                        FROM messages m
+                        JOIN users u ON m.sender_id = u.id::varchar
+                        WHERE m.conversation_id = %s
+                        ORDER BY m.created_at DESC
+                        LIMIT %s OFFSET %s
+                    """, (conversation_id, limit + 1, offset))
                 rows = cur.fetchall()
                 
-                # Determine recipient (roughly) - in 1:1 chat it's the other person.
-                # Fetch participants to know who is who?
-                # For List[Message], we mainly need content and sender.
+                has_more = len(rows) > limit
+                if has_more:
+                    rows = rows[:limit]
                 
                 messages = []
                 for r in rows:
-                    # Privacy: We don't need recipient ID in the message object if usage is just display
                     messages.append(Message(
                         id=str(r['id']),
                         conversation_id=str(r['conversation_id']),
                         sender_id=str(r['sender_id']),
                         sender_name=f"{r['first_name']} {r['last_name']}",
-                        recipient_id="", # Placeholder or derived
+                        recipient_id="",
                         message_type=MessageType(r['message_type']),
                         content=r['content'],
                         metadata=r['metadata'],
@@ -746,10 +760,10 @@ class CommunicationService:
                         created_at=r['created_at'],
                         read_at=r['read_at']
                     ))
-                return messages[::-1] # Return oldest to newest for UI? Or keep newest first? UI usually wants oldest at top or reverse list.
+                return {'messages': messages[::-1], 'has_more': has_more}
         except Exception as e:
             logger.error(f"Error getting messages: {e}")
-            return []
+            return {'messages': [], 'has_more': False}
         finally:
             conn.close()
     
@@ -909,6 +923,24 @@ class CommunicationService:
                 cur.execute("UPDATE messages SET is_read = TRUE, read_at = NOW(), status='read' WHERE id = %s", (message_id,))
                 conn.commit()
                 return True
+        finally:
+            conn.close()
+
+    def mark_messages_read(self, conversation_id: str, user_id: str) -> bool:
+        """Mark ALL unread messages in a conversation as read for the given user."""
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE messages
+                       SET is_read = TRUE, read_at = NOW(), status = 'read'
+                       WHERE conversation_id = %s
+                         AND recipient_id = %s
+                         AND (is_read = FALSE OR is_read IS NULL)""",
+                    (conversation_id, user_id)
+                )
+                conn.commit()
+                return cur.rowcount > 0
         finally:
             conn.close()
             

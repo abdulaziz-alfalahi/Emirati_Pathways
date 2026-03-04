@@ -527,32 +527,71 @@ class AdministratorSystem:
             if not current_user:
                 raise Exception("User not found")
 
-            # Remove existing roles
-            delete_query = "DELETE FROM admin_user_roles WHERE user_id = %s"
-            self._execute_query(delete_query, (user_id,), fetch=False)
-
-            # Assign new roles
-            if roles:
-                for role_name in roles:
-                    # Get role ID
-                    role_query = "SELECT id FROM admin_roles WHERE name = %s"
-                    role_result = self._execute_query(role_query, (role_name,))
-                    
-                    if role_result:
-                        role_id = role_result[0]['id']
-                        assignment_query = """
-                            INSERT INTO admin_user_roles (user_id, role_id, assigned_by)
-                            VALUES (%s, %s, %s)
-                        """
-                        self._execute_query(assignment_query, (user_id, role_id, admin_user_id), fetch=False)
-            
-            # Sync with secondary_roles column
-            update_secondary_query = """
+            # Update the primary role on the users table (first role becomes primary)
+            primary_role = roles[0] if roles else 'candidate'
+            update_role_query = """
                 UPDATE users 
-                SET secondary_roles = %s
+                SET role = %s, secondary_roles = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
             """
-            self._execute_query(update_secondary_query, (roles, user_id), fetch=False)
+            self._execute_query(update_role_query, (primary_role, roles, user_id), fetch=False)
+            
+            # Also try to sync with admin_user_roles join table (best-effort)
+            try:
+                delete_query = "DELETE FROM admin_user_roles WHERE user_id = %s"
+                self._execute_query(delete_query, (user_id,), fetch=False)
+                
+                if roles:
+                    for role_name in roles:
+                        role_query = "SELECT id FROM admin_roles WHERE name = %s"
+                        role_result = self._execute_query(role_query, (role_name,))
+                        
+                        if role_result:
+                            role_id = role_result[0]['id']
+                            assignment_query = """
+                                INSERT INTO admin_user_roles (user_id, role_id, assigned_by)
+                                VALUES (%s, %s, %s)
+                                ON CONFLICT (user_id, role_id) DO NOTHING
+                            """
+                            self._execute_query(assignment_query, (user_id, role_id, admin_user_id), fetch=False)
+            except Exception as join_err:
+                logger.warning(f"Could not sync admin_user_roles (non-critical): {str(join_err)}")
+            
+            # Sync growth_operator_assignments table for the Kanban board
+            try:
+                # Extract growth operator domains from roles
+                new_domains = set()
+                for role_name in roles:
+                    if role_name.startswith('growth_operator_'):
+                        domain = role_name.replace('growth_operator_', '')
+                        new_domains.add(domain)
+                
+                # Get current domain assignments
+                current_assignments = self._execute_query(
+                    "SELECT domain FROM growth_operator_assignments WHERE user_id = %s AND is_active = true",
+                    (user_id,)
+                ) or []
+                current_domains = {a['domain'] for a in current_assignments}
+                
+                # Add new domain assignments
+                for domain in new_domains - current_domains:
+                    is_primary = len(current_domains) == 0 and domain == list(new_domains)[0]
+                    self._execute_query("""
+                        INSERT INTO growth_operator_assignments (user_id, domain, assigned_by, is_primary, is_active, notes)
+                        VALUES (%s, %s, %s, %s, true, 'Assigned via role update')
+                        ON CONFLICT (user_id, domain) DO UPDATE SET is_active = true, updated_at = CURRENT_TIMESTAMP
+                    """, (user_id, domain, admin_user_id, is_primary), fetch=False)
+                
+                # Deactivate removed domain assignments
+                for domain in current_domains - new_domains:
+                    self._execute_query("""
+                        UPDATE growth_operator_assignments 
+                        SET is_active = false, updated_at = CURRENT_TIMESTAMP
+                        WHERE user_id = %s AND domain = %s
+                    """, (user_id, domain), fetch=False)
+                    
+            except Exception as domain_err:
+                logger.warning(f"Could not sync growth_operator_assignments (non-critical): {str(domain_err)}")
             
             self._log_admin_action(
                 admin_user_id, 'update_user_roles', 'user', str(user_id),

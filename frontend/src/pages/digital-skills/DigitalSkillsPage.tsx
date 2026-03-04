@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Code, BookOpen, Users, TrendingUp, Target,
-    Zap, ChevronRight, Clock, Star, CheckCircle,
+    Zap, ChevronRight, ChevronLeft, Clock, Star, CheckCircle,
     Play, Monitor, Cloud, Shield, Globe,
     Award, BarChart3, Layers, Cpu
 } from 'lucide-react';
@@ -29,115 +29,138 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
-/* ──────────────────────── DATA ──────────────────────── */
-
-const courses = [
-    { title: 'Cloud Computing Fundamentals', category: 'Cloud', level: 'Beginner', duration: '6 weeks', modules: 12, enrolled: 2400, rating: 4.8, Icon: Cloud, catBg: brand.blue, catColor: brand.blueText },
-    { title: 'Full-Stack Web Development', category: 'Development', level: 'Intermediate', duration: '12 weeks', modules: 24, enrolled: 1800, rating: 4.9, Icon: Code, catBg: brand.purple, catColor: brand.purpleText },
-    { title: 'Cybersecurity Essentials', category: 'Security', level: 'Intermediate', duration: '8 weeks', modules: 16, enrolled: 1500, rating: 4.7, Icon: Shield, catBg: brand.red, catColor: brand.redText },
-    { title: 'Data Science & Machine Learning', category: 'AI/ML', level: 'Advanced', duration: '10 weeks', modules: 20, enrolled: 2100, rating: 4.8, Icon: Cpu, catBg: brand.green, catColor: brand.greenText },
-    { title: 'UI/UX Design Masterclass', category: 'Design', level: 'Beginner', duration: '8 weeks', modules: 14, enrolled: 1200, rating: 4.6, Icon: Layers, catBg: brand.amber, catColor: brand.amberText },
-    { title: 'Digital Marketing & Analytics', category: 'Marketing', level: 'Beginner', duration: '6 weeks', modules: 10, enrolled: 3200, rating: 4.7, Icon: Globe, catBg: brand.primarySurface, catColor: brand.primary },
-];
-
-const learningPaths = [
-    { title: 'Cloud Architect Track', courses: 5, duration: '6 months', progress: 40, skills: ['AWS', 'Azure', 'Terraform', 'Docker'], Icon: Cloud },
-    { title: 'Full-Stack Developer Track', courses: 6, duration: '8 months', progress: 25, skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'], Icon: Code },
-    { title: 'AI & Data Science Track', courses: 5, duration: '7 months', progress: 0, skills: ['Python', 'TensorFlow', 'SQL', 'Pandas'], Icon: Cpu },
-];
-
-const myProgress = [
-    { course: 'Cloud Computing Fundamentals', progress: 72, modulesCompleted: 9, totalModules: 12, lastAccessed: 'Today' },
-    { course: 'Cybersecurity Essentials', progress: 45, modulesCompleted: 7, totalModules: 16, lastAccessed: 'Yesterday' },
-];
-
-const skills = [
-    { name: 'Python', level: 85, category: 'Programming' },
-    { name: 'Cloud (AWS)', level: 72, category: 'Infrastructure' },
-    { name: 'JavaScript', level: 78, category: 'Programming' },
-    { name: 'SQL', level: 80, category: 'Data' },
-    { name: 'Cybersecurity', level: 45, category: 'Security' },
-    { name: 'UI/UX Design', level: 35, category: 'Design' },
-];
-
-const certifications = [
-    { title: 'AWS Cloud Practitioner', issuer: 'Amazon Web Services', earned: 'Jan 2026', badge: '☁️' },
-    { title: 'Google Data Analytics', issuer: 'Google', earned: 'Dec 2025', badge: '📊' },
-];
-
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const DigitalSkillsPage: React.FC = () => {
-    const { t } = useTranslation('digital-skills-development');
+    const { i18n } = useTranslation();
+    const isRTL = i18n.language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
+    const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
+
+    /* ──────────────────────── DATA ──────────────────────── */
+
+    const beginner = t('Beginner', 'مبتدئ');
+    const intermediate = t('Intermediate', 'متوسط');
+    const advanced = t('Advanced', 'متقدم');
+
+    const levelColor = (lvl: string) => ({
+        bg: lvl === beginner ? brand.green : lvl === intermediate ? brand.amber : brand.red,
+        text: lvl === beginner ? brand.greenText : lvl === intermediate ? brand.amberText : brand.redText,
+    });
+
+    const courses = [
+        { title: t('Cloud Computing Fundamentals', 'أساسيات الحوسبة السحابية'), category: t('Cloud', 'سحابية'), level: beginner, duration: t('6 weeks', '6 أسابيع'), modules: 12, enrolled: 2400, rating: 4.8, Icon: Cloud, catBg: brand.blue, catColor: brand.blueText },
+        { title: t('Full-Stack Web Development', 'تطوير الويب المتكامل'), category: t('Development', 'تطوير'), level: intermediate, duration: t('12 weeks', '12 أسبوع'), modules: 24, enrolled: 1800, rating: 4.9, Icon: Code, catBg: brand.purple, catColor: brand.purpleText },
+        { title: t('Cybersecurity Essentials', 'أساسيات الأمن السيبراني'), category: t('Security', 'أمان'), level: intermediate, duration: t('8 weeks', '8 أسابيع'), modules: 16, enrolled: 1500, rating: 4.7, Icon: Shield, catBg: brand.red, catColor: brand.redText },
+        { title: t('Data Science & Machine Learning', 'علم البيانات والتعلم الآلي'), category: t('AI/ML', 'ذكاء اصطناعي'), level: advanced, duration: t('10 weeks', '10 أسابيع'), modules: 20, enrolled: 2100, rating: 4.8, Icon: Cpu, catBg: brand.green, catColor: brand.greenText },
+        { title: t('UI/UX Design Masterclass', 'دورة متقدمة في تصميم UI/UX'), category: t('Design', 'تصميم'), level: beginner, duration: t('8 weeks', '8 أسابيع'), modules: 14, enrolled: 1200, rating: 4.6, Icon: Layers, catBg: brand.amber, catColor: brand.amberText },
+        { title: t('Digital Marketing & Analytics', 'التسويق الرقمي والتحليلات'), category: t('Marketing', 'تسويق'), level: beginner, duration: t('6 weeks', '6 أسابيع'), modules: 10, enrolled: 3200, rating: 4.7, Icon: Globe, catBg: brand.primarySurface, catColor: brand.primary },
+    ];
+
+    const learningPaths = [
+        { title: t('Cloud Architect Track', 'مسار مهندس السحابة'), courses: 5, duration: t('6 months', '6 أشهر'), progress: 40, skills: ['AWS', 'Azure', 'Terraform', 'Docker'], Icon: Cloud },
+        { title: t('Full-Stack Developer Track', 'مسار مطوّر الويب المتكامل'), courses: 6, duration: t('8 months', '8 أشهر'), progress: 25, skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'], Icon: Code },
+        { title: t('AI & Data Science Track', 'مسار الذكاء الاصطناعي وعلم البيانات'), courses: 5, duration: t('7 months', '7 أشهر'), progress: 0, skills: ['Python', 'TensorFlow', 'SQL', 'Pandas'], Icon: Cpu },
+    ];
+
+    const myProgress = [
+        { course: t('Cloud Computing Fundamentals', 'أساسيات الحوسبة السحابية'), progress: 72, modulesCompleted: 9, totalModules: 12, lastAccessed: t('Today', 'اليوم') },
+        { course: t('Cybersecurity Essentials', 'أساسيات الأمن السيبراني'), progress: 45, modulesCompleted: 7, totalModules: 16, lastAccessed: t('Yesterday', 'أمس') },
+    ];
+
+    const skills = [
+        { name: 'Python', level: 85, category: t('Programming', 'برمجة') },
+        { name: t('Cloud (AWS)', 'سحابة (AWS)'), level: 72, category: t('Infrastructure', 'بنية تحتية') },
+        { name: 'JavaScript', level: 78, category: t('Programming', 'برمجة') },
+        { name: 'SQL', level: 80, category: t('Data', 'بيانات') },
+        { name: t('Cybersecurity', 'أمن سيبراني'), level: 45, category: t('Security', 'أمان') },
+        { name: t('UI/UX Design', 'تصميم UI/UX'), level: 35, category: t('Design', 'تصميم') },
+    ];
+
+    const certifications = [
+        { title: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), issuer: t('Amazon Web Services', 'خدمات أمازون ويب'), earned: t('Jan 2026', 'يناير 2026'), badge: '☁️' },
+        { title: t('Google Data Analytics', 'تحليلات بيانات جوجل'), issuer: t('Google', 'جوجل'), earned: t('Dec 2025', 'ديسمبر 2025'), badge: '📊' },
+    ];
+
+    const labs = [
+        { title: t('Build a REST API', 'بناء واجهة REST API'), desc: t('Design and implement a RESTful API with Node.js and Express — includes database integration and authentication', 'تصميم وتنفيذ واجهة RESTful API باستخدام Node.js وExpress — يشمل تكامل قاعدة البيانات والمصادقة'), difficulty: intermediate, time: t('2 hours', 'ساعتان'), Icon: Code, catBg: brand.purple, catColor: brand.purpleText },
+        { title: t('Deploy to AWS', 'النشر على AWS'), desc: t('Launch a full-stack application on AWS using EC2, S3, and RDS — practice infrastructure as code with Terraform', 'إطلاق تطبيق متكامل على AWS باستخدام EC2 وS3 وRDS — تدرب على البنية التحتية ككود مع Terraform'), difficulty: advanced, time: t('3 hours', '3 ساعات'), Icon: Cloud, catBg: brand.blue, catColor: brand.blueText },
+        { title: t('Security Audit Lab', 'مختبر تدقيق الأمان'), desc: t('Perform a security audit on a sample web application — identify vulnerabilities and implement fixes', 'إجراء تدقيق أمني على تطبيق ويب نموذجي — تحديد الثغرات وتنفيذ الإصلاحات'), difficulty: intermediate, time: t('2 hours', 'ساعتان'), Icon: Shield, catBg: brand.red, catColor: brand.redText },
+        { title: t('ML Model Training', 'تدريب نموذج تعلم آلي'), desc: t('Train and deploy a machine learning model using Python, scikit-learn, and TensorFlow on a real dataset', 'تدريب ونشر نموذج تعلم آلي باستخدام Python وscikit-learn وTensorFlow على مجموعة بيانات حقيقية'), difficulty: advanced, time: t('4 hours', '4 ساعات'), Icon: Cpu, catBg: brand.green, catColor: brand.greenText },
+        { title: t('Responsive Design Challenge', 'تحدي التصميم المتجاوب'), desc: t('Build a pixel-perfect responsive landing page from a Figma mockup using HTML, CSS, and JavaScript', 'بناء صفحة هبوط متجاوبة مطابقة تماماً من تصميم Figma باستخدام HTML وCSS وJavaScript'), difficulty: beginner, time: t('1.5 hours', '1.5 ساعة'), Icon: Monitor, catBg: brand.amber, catColor: brand.amberText },
+        { title: t('Data Pipeline Project', 'مشروع خط أنابيب البيانات'), desc: t('Create an ETL pipeline that ingests, transforms, and visualizes real UAE government open data', 'إنشاء خط أنابيب ETL يستقبل ويحوّل ويعرض بيانات حكومية إماراتية مفتوحة'), difficulty: intermediate, time: t('3 hours', '3 ساعات'), Icon: BarChart3, catBg: brand.primarySurface, catColor: brand.primary },
+    ];
 
     const stats = [
-        { value: t('stats.courses', '300+'), label: t('stats.coursesLabel', 'Courses'), icon: BookOpen },
-        { value: t('stats.learners', '15,000+'), label: t('stats.learnersLabel', 'Learners'), icon: Users },
-        { value: t('stats.tracks', '12'), label: t('stats.tracksLabel', 'Skill Tracks'), icon: TrendingUp },
-        { value: t('stats.completion', '92%'), label: t('stats.completionLabel', 'Completion'), icon: Target },
+        { value: '300+', label: t('Courses', 'دورة'), icon: BookOpen },
+        { value: '15,000+', label: t('Learners', 'متعلم'), icon: Users },
+        { value: '12', label: t('Skill Tracks', 'مسار مهاري'), icon: TrendingUp },
+        { value: '92%', label: t('Completion', 'نسبة الإتمام'), icon: Target },
     ];
 
     /* ── Tab 1: Course Catalog ── */
     const catalogTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                {t('tabs.catalog.label', 'Course Catalog')}
+                {t('Course Catalog', 'كتالوج الدورات')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                {t('tabs.catalog.description', 'Browse 300+ courses across cloud computing, development, cybersecurity, AI, design, and digital marketing — all aligned with UAE industry demands.')}
+                {t(
+                    'Browse 300+ courses across cloud computing, development, cybersecurity, AI, design, and digital marketing — all aligned with UAE industry demands.',
+                    'تصفّح أكثر من 300 دورة في الحوسبة السحابية والتطوير والأمن السيبراني والذكاء الاصطناعي والتصميم والتسويق الرقمي — جميعها متوافقة مع متطلبات سوق العمل الإماراتي.'
+                )}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-                {courses.map((c, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                            padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
-                        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 10, background: c.catBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <c.Icon size={22} style={{ color: c.catColor }} />
+                {courses.map((c, i) => {
+                    const lc = levelColor(c.level);
+                    return (
+                        <div
+                            key={i}
+                            style={{
+                                background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
+                                padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+                                transition: 'box-shadow .2s', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: c.catBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <c.Icon size={22} style={{ color: c.catColor }} />
+                                </div>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                    <span style={{ background: c.catBg, color: c.catColor, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
+                                        {c.category}
+                                    </span>
+                                    <span style={{ background: lc.bg, color: lc.text, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                        {c.level}
+                                    </span>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                                <span style={{ background: c.catBg, color: c.catColor, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
-                                    {c.category}
-                                </span>
-                                <span style={{
-                                    background: c.level === 'Beginner' ? brand.green : c.level === 'Intermediate' ? brand.amber : brand.red,
-                                    color: c.level === 'Beginner' ? brand.greenText : c.level === 'Intermediate' ? brand.amberText : brand.redText,
-                                    fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99,
+
+                            <div>
+                                <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{c.title}</h3>
+                                <div style={{ display: 'flex', gap: 12, fontSize: 12, color: brand.textSecondary }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={12} /> {c.duration}</span>
+                                    <span>{c.modules} {t('modules', 'وحدة')}</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} style={{ color: '#FBBF24', fill: '#FBBF24' }} /> {c.rating}</span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                                <span style={{ fontSize: 12, color: brand.textSecondary }}>{c.enrolled.toLocaleString()} {t('enrolled', 'مسجّل')}</span>
+                                <button style={{
+                                    background: brand.primary, color: '#fff', border: 'none',
+                                    padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 4,
                                 }}>
-                                    {c.level}
-                                </span>
+                                    <Play size={14} /> {t('Enroll', 'سجّل الآن')}
+                                </button>
                             </div>
                         </div>
-
-                        <div>
-                            <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{c.title}</h3>
-                            <div style={{ display: 'flex', gap: 12, fontSize: 12, color: brand.textSecondary }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Clock size={12} /> {c.duration}</span>
-                                <span>{c.modules} {t('modules', 'modules')}</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Star size={12} style={{ color: '#FBBF24', fill: '#FBBF24' }} /> {c.rating}</span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <span style={{ fontSize: 12, color: brand.textSecondary }}>{c.enrolled.toLocaleString()} {t('enrolled', 'enrolled')}</span>
-                            <button style={{
-                                background: brand.primary, color: '#fff', border: 'none',
-                                padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', gap: 4,
-                            }}>
-                                <Play size={14} /> {t('btn_enroll', 'Enroll')}
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
@@ -146,10 +169,13 @@ const DigitalSkillsPage: React.FC = () => {
     const pathsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                {t('tabs.paths.label', 'Learning Paths')}
+                {t('Learning Paths', 'مسارات التعلم')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                {t('tabs.paths.description', 'Follow structured multi-course tracks designed by industry experts to take you from beginner to job-ready.')}
+                {t(
+                    'Follow structured multi-course tracks designed by industry experts to take you from beginner to job-ready.',
+                    'اتبع مسارات دورات منظمة صممها خبراء الصناعة لنقلك من مبتدئ إلى جاهز لسوق العمل.'
+                )}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -162,7 +188,7 @@ const DigitalSkillsPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{p.title}</h3>
-                                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{p.courses} courses · {p.duration}</div>
+                                    <div style={{ fontSize: 12, color: brand.textSecondary }}>{p.courses} {t('courses', 'دورات')} · {p.duration}</div>
                                 </div>
                             </div>
                             <span style={{ fontSize: 16, fontWeight: 700, color: p.progress > 0 ? brand.primary : brand.textSecondary }}>{p.progress}%</span>
@@ -186,7 +212,7 @@ const DigitalSkillsPage: React.FC = () => {
                                 border: p.progress > 0 ? 'none' : `1px solid ${brand.primary}`,
                                 padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                             }}>
-                                {p.progress > 0 ? t('btn_continue', 'Continue') : t('btn_start_path', 'Start Path')}
+                                {p.progress > 0 ? t('Continue', 'متابعة') : t('Start Path', 'ابدأ المسار')}
                             </button>
                         </div>
                     </div>
@@ -199,14 +225,17 @@ const DigitalSkillsPage: React.FC = () => {
     const progressTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                {t('tabs.progress.label', 'My Progress')}
+                {t('My Progress', 'تقدّمي')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                {t('tabs.progress.description', 'Track your active courses, skill levels, and earned certifications in one place.')}
+                {t(
+                    'Track your active courses, skill levels, and earned certifications in one place.',
+                    'تابع دوراتك النشطة ومستويات مهاراتك وشهاداتك المكتسبة في مكان واحد.'
+                )}
             </p>
 
             {/* Active Courses */}
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('active_courses', 'Active Courses')}</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Active Courses', 'الدورات النشطة')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
                 {myProgress.map((p, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18 }}>
@@ -214,7 +243,7 @@ const DigitalSkillsPage: React.FC = () => {
                             <div>
                                 <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{p.course}</h4>
                                 <div style={{ fontSize: 12, color: brand.textSecondary }}>
-                                    {p.modulesCompleted}/{p.totalModules} modules · Last accessed {p.lastAccessed}
+                                    {p.modulesCompleted}/{p.totalModules} {t('modules', 'وحدة')} · {t('Last accessed', 'آخر دخول')} {p.lastAccessed}
                                 </div>
                             </div>
                             <button style={{
@@ -222,13 +251,13 @@ const DigitalSkillsPage: React.FC = () => {
                                 padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', gap: 4,
                             }}>
-                                <Play size={14} /> {t('btn_resume', 'Resume')}
+                                <Play size={14} /> {t('Resume', 'استئناف')}
                             </button>
                         </div>
                         <div style={{ height: 8, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
                             <div style={{ width: `${p.progress}%`, height: '100%', background: brand.primary, borderRadius: 99 }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4, fontSize: 12, color: brand.primary, fontWeight: 600 }}>
+                        <div style={{ display: 'flex', justifyContent: isRTL ? 'flex-start' : 'flex-end', marginTop: 4, fontSize: 12, color: brand.primary, fontWeight: 600 }}>
                             {p.progress}%
                         </div>
                     </div>
@@ -236,7 +265,7 @@ const DigitalSkillsPage: React.FC = () => {
             </div>
 
             {/* Skills Overview */}
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('skills_overview', 'Skills Overview')}</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Skills Overview', 'نظرة عامة على المهارات')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, marginBottom: 28 }}>
                 {skills.map((s, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14 }}>
@@ -262,14 +291,14 @@ const DigitalSkillsPage: React.FC = () => {
             </div>
 
             {/* Certifications */}
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('earned_certifications', 'Earned Certifications')}</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Earned Certifications', 'الشهادات المكتسبة')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {certifications.map((c, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 24 }}>{c.badge}</span>
                         <div style={{ flex: 1 }}>
                             <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{c.title}</h4>
-                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.issuer} · Earned {c.earned}</div>
+                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.issuer} · {t('Earned', 'حصل عليها')} {c.earned}</div>
                         </div>
                         <Award size={20} style={{ color: brand.primary }} />
                     </div>
@@ -282,57 +311,52 @@ const DigitalSkillsPage: React.FC = () => {
     const labTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                {t('tabs.lab.label', 'Practice Lab')}
+                {t('Practice Lab', 'المختبر التطبيقي')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                {t('tabs.lab.description', 'Hands-on coding environments and real-world project exercises — practice what you learn in a safe sandbox.')}
+                {t(
+                    'Hands-on coding environments and real-world project exercises — practice what you learn in a safe sandbox.',
+                    'بيئات برمجة عملية وتمارين مشاريع واقعية — تدرب على ما تعلمته في بيئة آمنة.'
+                )}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-                {[
-                    { title: 'Build a REST API', desc: 'Design and implement a RESTful API with Node.js and Express — includes database integration and authentication', difficulty: 'Intermediate', time: '2 hours', Icon: Code, catBg: brand.purple, catColor: brand.purpleText },
-                    { title: 'Deploy to AWS', desc: 'Launch a full-stack application on AWS using EC2, S3, and RDS — practice infrastructure as code with Terraform', difficulty: 'Advanced', time: '3 hours', Icon: Cloud, catBg: brand.blue, catColor: brand.blueText },
-                    { title: 'Security Audit Lab', desc: 'Perform a security audit on a sample web application — identify vulnerabilities and implement fixes', difficulty: 'Intermediate', time: '2 hours', Icon: Shield, catBg: brand.red, catColor: brand.redText },
-                    { title: 'ML Model Training', desc: 'Train and deploy a machine learning model using Python, scikit-learn, and TensorFlow on a real dataset', difficulty: 'Advanced', time: '4 hours', Icon: Cpu, catBg: brand.green, catColor: brand.greenText },
-                    { title: 'Responsive Design Challenge', desc: 'Build a pixel-perfect responsive landing page from a Figma mockup using HTML, CSS, and JavaScript', difficulty: 'Beginner', time: '1.5 hours', Icon: Monitor, catBg: brand.amber, catColor: brand.amberText },
-                    { title: 'Data Pipeline Project', desc: 'Create an ETL pipeline that ingests, transforms, and visualizes real UAE government open data', difficulty: 'Intermediate', time: '3 hours', Icon: BarChart3, catBg: brand.primarySurface, catColor: brand.primary },
-                ].map((lab, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                            padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
-                        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ width: 40, height: 40, borderRadius: 10, background: lab.catBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <lab.Icon size={20} style={{ color: lab.catColor }} />
+                {labs.map((lab, i) => {
+                    const lc = levelColor(lab.difficulty);
+                    return (
+                        <div
+                            key={i}
+                            style={{
+                                background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
+                                padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+                                transition: 'box-shadow .2s', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ width: 40, height: 40, borderRadius: 10, background: lab.catBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <lab.Icon size={20} style={{ color: lab.catColor }} />
+                                </div>
+                                <span style={{ background: lc.bg, color: lc.text, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
+                                    {lab.difficulty}
+                                </span>
                             </div>
-                            <span style={{
-                                background: lab.difficulty === 'Beginner' ? brand.green : lab.difficulty === 'Intermediate' ? brand.amber : brand.red,
-                                color: lab.difficulty === 'Beginner' ? brand.greenText : lab.difficulty === 'Intermediate' ? brand.amberText : brand.redText,
-                                fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99,
-                            }}>
-                                {lab.difficulty}
-                            </span>
-                        </div>
 
-                        <div>
-                            <h3 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{lab.title}</h3>
-                            <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{lab.desc}</p>
-                        </div>
+                            <div>
+                                <h3 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{lab.title}</h3>
+                                <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{lab.desc}</p>
+                            </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}><Clock size={14} /> {lab.time}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer' }}>
-                                {t('btn_launch_lab', 'Launch Lab')} <ChevronRight size={14} />
-                            </span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}><Clock size={14} /> {lab.time}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, cursor: 'pointer' }}>
+                                    {t('Launch Lab', 'افتح المختبر')} <ChevronIcon size={14} />
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
@@ -340,16 +364,19 @@ const DigitalSkillsPage: React.FC = () => {
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
     const tabs = [
-        { id: 'catalog', label: t('tabs.catalog.label', 'Course Catalog'), icon: <BookOpen className="h-4 w-4" />, content: catalogTab },
-        { id: 'paths', label: t('tabs.paths.label', 'Learning Paths'), icon: <TrendingUp className="h-4 w-4" />, content: pathsTab },
-        { id: 'progress', label: t('tabs.progress.label', 'My Progress'), icon: <BarChart3 className="h-4 w-4" />, content: progressTab },
-        { id: 'lab', label: t('tabs.lab.label', 'Practice Lab'), icon: <Code className="h-4 w-4" />, content: labTab },
+        { id: 'catalog', label: t('Course Catalog', 'كتالوج الدورات'), icon: <BookOpen className="h-4 w-4" />, content: catalogTab },
+        { id: 'paths', label: t('Learning Paths', 'مسارات التعلم'), icon: <TrendingUp className="h-4 w-4" />, content: pathsTab },
+        { id: 'progress', label: t('My Progress', 'تقدّمي'), icon: <BarChart3 className="h-4 w-4" />, content: progressTab },
+        { id: 'lab', label: t('Practice Lab', 'المختبر التطبيقي'), icon: <Code className="h-4 w-4" />, content: labTab },
     ];
 
     return (
         <EducationPathwayLayout
-            title={t('title', 'Digital Skills Development')}
-            description={t('description', 'Build future-ready technology skills through 300+ courses, structured learning paths, hands-on labs, and industry-recognized certifications')}
+            title={t('Digital Skills Development', 'تطوير المهارات الرقمية')}
+            description={t(
+                'Build future-ready technology skills through 300+ courses, structured learning paths, hands-on labs, and industry-recognized certifications',
+                'ابنِ مهارات تقنية جاهزة للمستقبل من خلال أكثر من 300 دورة ومسارات تعلم منظمة ومختبرات عملية وشهادات معتمدة من الصناعة'
+            )}
             icon={<Code className="h-6 w-6" />}
             stats={stats}
             tabs={tabs}

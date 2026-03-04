@@ -1250,7 +1250,7 @@ def save_jd(jd_id):
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -1264,6 +1264,8 @@ def save_jd(jd_id):
                 basic_info.get('job_level'),
                 basic_info.get('emirate'),
                 basic_info.get('city'),
+                basic_info.get('latitude'),
+                basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
                 jd_data.get('description'),
                 jd_data.get('description_arabic'),

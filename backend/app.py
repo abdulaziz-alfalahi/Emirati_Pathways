@@ -40,12 +40,41 @@ socketio = SocketIO(cors_allowed_origins="*", async_mode='threading', logger=Tru
 # ... (Previous JWT/CORS config)
 
 # =====================================================
-# SOCKET.IO HANDLERS (Video Interview Signaling)
+# SOCKET.IO HANDLERS (Video Interview Signaling + Presence)
 # =====================================================
+
+# In-memory presence tracking: user_id (str) -> session_id (str)
+online_users: dict[str, str] = {}
+# Expose to route handlers via socketio instance (accessible via current_app.extensions['socketio'])
+socketio.online_users = online_users
+
+@socketio.on('connect')
+def on_connect(auth=None):
+    """Handle new socket connection - extract user_id from JWT for presence."""
+    try:
+        token = None
+        if auth and isinstance(auth, dict):
+            token = auth.get('token')
+        if not token:
+            return  # Allow connection but don't track presence
+
+        import jwt as pyjwt
+        payload = pyjwt.decode(token, options={"verify_signature": False})
+        user_id = payload.get('sub') or payload.get('user_id')
+        if user_id:
+            user_id = str(user_id)
+            online_users[user_id] = request.sid
+            print(f"[Presence] User {user_id} connected (sid={request.sid}). Online: {list(online_users.keys())}")
+            # Broadcast to all clients
+            socketio.emit('user_online', {'user_id': user_id})
+            # Send current online users list back to the connecting client
+            emit('online_users', {'users': list(online_users.keys())})
+    except Exception as e:
+        print(f"[Presence] connect error: {e}")
+
 @socketio.on('join')
 def on_join(data):
     room = data['room']
-    # user_id = data.get('userId') # Optional auth check
     join_room(room)
     logger.debug(f"User joined room: {room} (Socket: {request.sid})")
     # Notify others that a peer joined
@@ -57,21 +86,32 @@ def on_signal(data):
     Relay WebRTC signals (Offer, Answer, ICE Candidate)
     Expected data: { 'target': sid, 'signal': payload, 'room': room }
     """
-    # print(f"DEBUG: Signal from {request.sid}: {data.keys()}", flush=True) # Too noisy?
     target = data.get('target')
     if target:
         emit('signal', {
             'sender': request.sid,
             'signal': data['signal']
         }, room=target)
-    else:
-        # Broadcast? No, signal should be P2P targeted usually, or broadcast to room for initial offer
-        pass
 
 @socketio.on('disconnect')
 def on_disconnect():
     logger.debug(f"User disconnected: {request.sid}")
-    # Could emit 'user-disconnected' to rooms if tracked
+    # Find and remove user from presence tracking
+    user_id = None
+    for uid, sid in list(online_users.items()):
+        if sid == request.sid:
+            user_id = uid
+            break
+    if user_id:
+        del online_users[user_id]
+        print(f"[Presence] User {user_id} disconnected. Online: {list(online_users.keys())}")
+        socketio.emit('user_offline', {'user_id': user_id})
+
+@socketio.on('get_online_users')
+def on_get_online_users():
+    """Return list of currently online user IDs."""
+    print(f"[Presence] get_online_users requested. Online: {list(online_users.keys())}")
+    emit('online_users', {'users': list(online_users.keys())})
 
 # ... (Rest of the file)
 
@@ -301,6 +341,50 @@ try:
     logger.info("✅ Recruiter JD Routes V2 registered")
 except Exception as e:
     logger.error(f"Failed to register Recruiter JD Routes V2: {e}")
+
+# 7. Growth Operator Routes (Company Invitations, Magic Links)
+try:
+    try:
+        from backend.routes.growth_routes import growth_bp
+    except ImportError:
+        from routes.growth_routes import growth_bp
+    app.register_blueprint(growth_bp)
+    logger.info("✅ Growth Operator routes registered")
+except Exception as e:
+    logger.error(f"Failed to register Growth Operator routes: {e}")
+
+# 7a. Growth Operator Assignment/Domain API (Admin Dashboard)
+try:
+    try:
+        from backend.routes.growth_operator_assignment_api import register_growth_operator_assignment_routes
+    except ImportError:
+        from routes.growth_operator_assignment_api import register_growth_operator_assignment_routes
+    register_growth_operator_assignment_routes(app)
+    logger.info("✅ Growth Operator Assignment API registered")
+except Exception as e:
+    logger.error(f"Failed to register Growth Operator Assignment API: {e}")
+
+# 7b. NAFIS Talent Operator Routes (Job Seeker Import)
+try:
+    try:
+        from backend.routes.nafis_talent_routes import nafis_talent_bp
+    except ImportError:
+        from routes.nafis_talent_routes import nafis_talent_bp
+    app.register_blueprint(nafis_talent_bp)
+    logger.info("✅ NAFIS Talent Operator routes registered")
+except Exception as e:
+    logger.error(f"Failed to register NAFIS Talent routes: {e}")
+
+# 8. JD Upload Routes (File upload & AI parsing)
+try:
+    try:
+        from backend.recruiter.jd_upload_routes import jd_upload_routes
+    except ImportError:
+        from recruiter.jd_upload_routes import jd_upload_routes
+    app.register_blueprint(jd_upload_routes)
+    logger.info("✅ JD Upload routes registered")
+except Exception as e:
+    logger.error(f"Failed to register JD Upload routes: {e}")
 
 # =====================================================
 # LEGACY / DIRECT ENDPOINTS (Ported from unified_server)

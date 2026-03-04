@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Shield, Link2, Award, CheckCircle, Globe,
-    Clock, ChevronRight, Star, Lock, Eye,
+    Clock, ChevronRight, ChevronLeft, Star, Lock, Eye,
     FileText, Building2, Users, Zap, ExternalLink,
     BadgeCheck, QrCode, Download, Share2
 } from 'lucide-react';
@@ -29,59 +29,65 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
-/* ──────────────────────── DATA ──────────────────────── */
-
-const myCredentials = [
-    { title: 'Bachelor of Computer Science', issuer: 'Ministry of Education (MOE)', date: 'Feb 2026', txHash: '0x8c4b...f12e', network: 'Ethereum', status: 'Verified' as const, verifications: 28, badge: '🎓', primary: true },
-    { title: 'Higher Education Equivalency Certificate', issuer: 'Ministry of Higher Education & Scientific Research (MOHESR)', date: 'Jan 2026', txHash: '0x3e7d...a93c', network: 'Ethereum', status: 'Verified' as const, verifications: 22, badge: '📜', primary: true },
-    { title: 'UAE Teaching License', issuer: 'Ministry of Education (MOE)', date: 'Dec 2025', txHash: '0x5a1f...b74d', network: 'Ethereum', status: 'Verified' as const, verifications: 18, badge: '🏛️', primary: true },
-    { title: 'AWS Cloud Practitioner', issuer: 'Amazon Web Services', date: 'Nov 2025', txHash: '0x7f3a...e82d', network: 'Polygon', status: 'Verified' as const, verifications: 12, badge: '☁️', primary: false },
-    { title: 'Google Data Analytics Professional', issuer: 'Google', date: 'Oct 2025', txHash: '0x4b2c...a91f', network: 'Polygon', status: 'Verified' as const, verifications: 8, badge: '📊', primary: false },
-    { title: 'UAE Government Excellence Award', issuer: 'Federal Authority for Gov HR (FAHR)', date: 'Sep 2025', txHash: '0x9d1e...c73b', network: 'Ethereum', status: 'Verified' as const, verifications: 15, badge: '🏅', primary: false },
-];
-
-const verificationLog = [
-    { credential: 'Bachelor of Computer Science (MOE)', verifier: 'Emirates Group HR', date: 'Feb 16, 2026', purpose: 'Job Application' },
-    { credential: 'Higher Education Equivalency (MOHESR)', verifier: 'ADNOC Recruitment', date: 'Feb 14, 2026', purpose: 'Credential Check' },
-    { credential: 'UAE Teaching License (MOE)', verifier: 'Abu Dhabi Education Council', date: 'Feb 12, 2026', purpose: 'License Validation' },
-    { credential: 'Bachelor of Computer Science (MOE)', verifier: 'Etisalat Digital', date: 'Feb 10, 2026', purpose: 'Interview' },
-    { credential: 'AWS Cloud Practitioner', verifier: 'Dubai Digital Authority', date: 'Feb 8, 2026', purpose: 'Vendor Pre-qual' },
-    { credential: 'Higher Education Equivalency (MOHESR)', verifier: 'Khalifa University', date: 'Feb 5, 2026', purpose: 'Graduate Admission' },
-    { credential: 'Google Data Analytics', verifier: 'Careem Engineering', date: 'Feb 3, 2026', purpose: 'Job Application' },
-];
-
-const issuers = [
-    { name: 'Ministry of Education (MOE)', credentials: 85, verified: 42000, network: 'Ethereum', region: 'UAE', tier: 'Primary' as const },
-    { name: 'Ministry of Higher Education & Scientific Research (MOHESR)', credentials: 62, verified: 31500, network: 'Ethereum', region: 'UAE', tier: 'Primary' as const },
-    { name: 'Federal Authority for Gov HR (FAHR)', credentials: 28, verified: 15200, network: 'Ethereum', region: 'UAE', tier: 'Government' as const },
-    { name: 'Abu Dhabi Education Council (ADEC)', credentials: 34, verified: 12800, network: 'Ethereum', region: 'UAE', tier: 'Government' as const },
-    { name: 'Knowledge & Human Development Authority (KHDA)', credentials: 22, verified: 9400, network: 'Ethereum', region: 'UAE', tier: 'Government' as const },
-    { name: 'Amazon Web Services', credentials: 45, verified: 12400, network: 'Polygon', region: 'Global', tier: 'Industry' as const },
-    { name: 'Google', credentials: 32, verified: 9800, network: 'Polygon', region: 'Global', tier: 'Industry' as const },
-    { name: 'Microsoft', credentials: 38, verified: 11200, network: 'Polygon', region: 'Global', tier: 'Industry' as const },
-];
-
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const BlockchainCredentialsPage: React.FC = () => {
 
+    const { i18n } = useTranslation();
+    const isRTL = i18n.language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
+    const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-    const { t } = useTranslation('blockchain-credentials');
+    /* ──────────────────────── DATA ──────────────────────── */
+
+    const myCredentials = [
+        { title: t('Bachelor of Computer Science', 'بكالوريوس علوم الحاسوب'), issuer: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), date: t('Feb 2026', 'فبراير 2026'), txHash: '0x8c4b...f12e', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 28, badge: '🎓', primary: true },
+        { title: t('Higher Education Equivalency Certificate', 'شهادة معادلة التعليم العالي'), issuer: t('Ministry of Higher Education & Scientific Research (MOHESR)', 'وزارة التعليم العالي والبحث العلمي'), date: t('Jan 2026', 'يناير 2026'), txHash: '0x3e7d...a93c', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 22, badge: '📜', primary: true },
+        { title: t('UAE Teaching License', 'رخصة التدريس الإماراتية'), issuer: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), date: t('Dec 2025', 'ديسمبر 2025'), txHash: '0x5a1f...b74d', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 18, badge: '🏛️', primary: true },
+        { title: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), issuer: t('Amazon Web Services', 'خدمات أمازون السحابية'), date: t('Nov 2025', 'نوفمبر 2025'), txHash: '0x7f3a...e82d', network: 'Polygon', status: t('Verified', 'مُوثّقة') as const, verifications: 12, badge: '☁️', primary: false },
+        { title: t('Google Data Analytics Professional', 'محترف تحليلات البيانات من Google'), issuer: 'Google', date: t('Oct 2025', 'أكتوبر 2025'), txHash: '0x4b2c...a91f', network: 'Polygon', status: t('Verified', 'مُوثّقة') as const, verifications: 8, badge: '📊', primary: false },
+        { title: t('UAE Government Excellence Award', 'جائزة التميز الحكومي الإماراتية'), issuer: t('Federal Authority for Gov HR (FAHR)', 'الهيئة الاتحادية للموارد البشرية الحكومية'), date: t('Sep 2025', 'سبتمبر 2025'), txHash: '0x9d1e...c73b', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 15, badge: '🏅', primary: false },
+    ];
+
+    const verificationLog = [
+        { credential: t('Bachelor of Computer Science (MOE)', 'بكالوريوس علوم الحاسوب (وزارة التعليم)'), verifier: t('Emirates Group HR', 'الموارد البشرية لمجموعة الإمارات'), date: t('Feb 16, 2026', '16 فبراير 2026'), purpose: t('Job Application', 'طلب توظيف') },
+        { credential: t('Higher Education Equivalency (MOHESR)', 'معادلة التعليم العالي (وزارة التعليم العالي)'), verifier: t('Dubai Government HR', 'الموارد البشرية لحكومة دبي'), date: t('Feb 14, 2026', '14 فبراير 2026'), purpose: t('Credential Check', 'فحص الاعتماد') },
+        { credential: t('UAE Teaching License (MOE)', 'رخصة التدريس الإماراتية (وزارة التعليم)'), verifier: t('Dubai Education Council', 'مجلس دبي للتعليم'), date: t('Feb 12, 2026', '12 فبراير 2026'), purpose: t('License Validation', 'التحقق من الرخصة') },
+        { credential: t('Bachelor of Computer Science (MOE)', 'بكالوريوس علوم الحاسوب (وزارة التعليم)'), verifier: t('Etisalat Digital', 'اتصالات ديجيتال'), date: t('Feb 10, 2026', '10 فبراير 2026'), purpose: t('Interview', 'مقابلة') },
+        { credential: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), verifier: t('Dubai Digital Authority', 'هيئة دبي الرقمية'), date: t('Feb 8, 2026', '8 فبراير 2026'), purpose: t('Vendor Pre-qual', 'تأهيل موردين') },
+        { credential: t('Higher Education Equivalency (MOHESR)', 'معادلة التعليم العالي (وزارة التعليم العالي)'), verifier: t('University of Dubai', 'جامعة دبي'), date: t('Feb 5, 2026', '5 فبراير 2026'), purpose: t('Graduate Admission', 'قبول دراسات عليا') },
+        { credential: t('Google Data Analytics', 'تحليلات بيانات Google'), verifier: t('Careem Engineering', 'هندسة كريم'), date: t('Feb 3, 2026', '3 فبراير 2026'), purpose: t('Job Application', 'طلب توظيف') },
+    ];
+
+    const issuers = [
+        { name: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), credentials: 85, verified: 42000, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Primary' as const, tierLabel: t('Primary', 'رئيسي') },
+        { name: t('Ministry of Higher Education & Scientific Research (MOHESR)', 'وزارة التعليم العالي والبحث العلمي'), credentials: 62, verified: 31500, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Primary' as const, tierLabel: t('Primary', 'رئيسي') },
+        { name: t('Federal Authority for Gov HR (FAHR)', 'الهيئة الاتحادية للموارد البشرية الحكومية'), credentials: 28, verified: 15200, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Government' as const, tierLabel: t('Government', 'حكومي') },
+        { name: t('Knowledge & Human Development Authority (KHDA)', 'هيئة المعرفة والتنمية البشرية'), credentials: 22, verified: 9400, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Government' as const, tierLabel: t('Government', 'حكومي') },
+        { name: t('Dubai Education Council', 'مجلس دبي للتعليم'), credentials: 34, verified: 12800, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Government' as const, tierLabel: t('Government', 'حكومي') },
+        { name: t('Amazon Web Services', 'خدمات أمازون السحابية'), credentials: 45, verified: 12400, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry' as const, tierLabel: t('Industry', 'قطاعي') },
+        { name: 'Google', credentials: 32, verified: 9800, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry' as const, tierLabel: t('Industry', 'قطاعي') },
+        { name: 'Microsoft', credentials: 38, verified: 11200, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry' as const, tierLabel: t('Industry', 'قطاعي') },
+    ];
+
     const stats = [
-        { value: t('stats.my_credentials_value', '6'), label: t('stats.my_credentials', 'My Credentials'), icon: Award },
-        { value: t('stats.verifications_value', '103'), label: t('stats.verifications', 'Verifications'), icon: CheckCircle },
-        { value: t('stats.issuers_value', '150+'), label: t('stats.issuers', 'Issuers'), icon: Building2 },
-        { value: t('stats.on_chain_value', '100%'), label: t('stats.on_chain', 'On-Chain'), icon: Shield },
+        { value: '6', label: t('My Credentials', 'اعتماداتي'), icon: Award },
+        { value: '103', label: t('Verifications', 'عمليات التحقق'), icon: CheckCircle },
+        { value: '150+', label: t('Issuers', 'جهة مصدّرة'), icon: Building2 },
+        { value: '100%', label: t('On-Chain', 'على السلسلة'), icon: Shield },
     ];
 
     /* ── Tab 1: My Credentials ── */
     const credentialsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                My Blockchain Credentials
+                {t('My Blockchain Credentials', 'اعتماداتي على البلوكتشين')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                Your tamper-proof, verifiable digital credentials stored on the blockchain — featuring official credentials from the UAE Ministry of Education and Ministry of Higher Education, plus industry certifications.
+                {t(
+                    'Your tamper-proof, verifiable digital credentials stored on the blockchain — featuring official credentials from the UAE Ministry of Education and Ministry of Higher Education, plus industry certifications.',
+                    'اعتماداتك الرقمية غير القابلة للتلاعب والقابلة للتحقق المخزنة على البلوكتشين — تتضمن اعتمادات رسمية من وزارة التربية والتعليم ووزارة التعليم العالي، إضافة إلى شهادات قطاعية.'
+                )}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -98,7 +104,7 @@ const BlockchainCredentialsPage: React.FC = () => {
                                     <div style={{ fontSize: 12, color: brand.textSecondary }}>
                                         <span>{c.issuer}</span>
                                         <span style={{ margin: '0 6px' }}>·</span>
-                                        <span>Issued {c.date}</span>
+                                        <span>{t('Issued', 'صدرت في')} {c.date}</span>
                                     </div>
                                 </div>
                             </div>
@@ -111,7 +117,7 @@ const BlockchainCredentialsPage: React.FC = () => {
                             <div style={{ display: 'flex', gap: 16, fontSize: 12, color: brand.textSecondary }}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Link2 size={12} /> {c.txHash}</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Globe size={12} /> {c.network}</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Eye size={12} /> {c.verifications} verifications</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Eye size={12} /> {c.verifications} {t('verifications', 'تحقق')}</span>
                             </div>
                             <div style={{ display: 'flex', gap: 6 }}>
                                 <button style={{ background: 'transparent', color: brand.primary, border: `1px solid ${brand.primary}`, padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -121,7 +127,7 @@ const BlockchainCredentialsPage: React.FC = () => {
                                     <Download size={12} /> PDF
                                 </button>
                                 <button style={{ background: brand.primary, color: '#fff', border: 'none', padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                                    <Share2 size={12} /> Share
+                                    <Share2 size={12} /> {t('Share', 'مشاركة')}
                                 </button>
                             </div>
                         </div>
@@ -135,19 +141,22 @@ const BlockchainCredentialsPage: React.FC = () => {
     const verifyTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                Verification Log
+                {t('Verification Log', 'سجل التحقق')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                See who has verified your credentials — complete transparency on how your qualifications are being accessed.
+                {t(
+                    'See who has verified your credentials — complete transparency on how your qualifications are being accessed.',
+                    'اطّلع على من تحقّق من اعتماداتك — شفافية كاملة حول كيفية الوصول إلى مؤهلاتك.'
+                )}
             </p>
 
             {/* Summary */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                 {[
-                    { label: 'Total Verifications', value: '41', Icon: CheckCircle },
-                    { label: 'This Month', value: '5', Icon: Clock },
-                    { label: 'Unique Verifiers', value: '12', Icon: Users },
-                    { label: 'Job Applications', value: '8', Icon: FileText },
+                    { label: t('Total Verifications', 'إجمالي التحققات'), value: '41', Icon: CheckCircle },
+                    { label: t('This Month', 'هذا الشهر'), value: '5', Icon: Clock },
+                    { label: t('Unique Verifiers', 'جهات فريدة'), value: '12', Icon: Users },
+                    { label: t('Job Applications', 'طلبات التوظيف'), value: '8', Icon: FileText },
                 ].map((s, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16, textAlign: 'center' }}>
                         <s.Icon size={20} style={{ color: brand.primary, margin: '0 auto 6px' }} />
@@ -166,7 +175,7 @@ const BlockchainCredentialsPage: React.FC = () => {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary }}>{v.verifier}</span>
-                            <span style={{ fontSize: 13, color: brand.textSecondary }}> verified </span>
+                            <span style={{ fontSize: 13, color: brand.textSecondary }}> {t('verified', 'تحقّق من')} </span>
                             <span style={{ fontSize: 13, fontWeight: 500, color: brand.textPrimary }}>{v.credential}</span>
                             <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>
                                 {v.date} · {v.purpose}
@@ -185,10 +194,13 @@ const BlockchainCredentialsPage: React.FC = () => {
     const issuersTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                Trusted Issuers
+                {t('Trusted Issuers', 'الجهات المصدّرة الموثوقة')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                Browse verified credential issuers on our blockchain network — led by UAE Ministry of Education and Ministry of Higher Education, plus government bodies and global industry leaders.
+                {t(
+                    'Browse verified credential issuers on our blockchain network — led by UAE Ministry of Education and Ministry of Higher Education, plus government bodies and global industry leaders.',
+                    'تصفّح الجهات المصدّرة الموثوقة على شبكة البلوكتشين — بقيادة وزارة التربية والتعليم ووزارة التعليم العالي، إضافة إلى الجهات الحكومية وقادة الصناعة العالميين.'
+                )}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
@@ -209,12 +221,12 @@ const BlockchainCredentialsPage: React.FC = () => {
                                 color: iss.tier === 'Primary' ? brand.purpleText : iss.tier === 'Government' ? brand.blueText : brand.greenText,
                                 fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 99, display: 'flex', alignItems: 'center', gap: 3
                             }}>
-                                <Lock size={10} /> {iss.tier}
+                                <Lock size={10} /> {iss.tierLabel}
                             </span>
                         </div>
                         <div style={{ display: 'flex', gap: 12, fontSize: 12, color: brand.textSecondary }}>
-                            <span>{iss.credentials} credentials</span>
-                            <span>{iss.verified.toLocaleString()} verified</span>
+                            <span>{iss.credentials} {t('credentials', 'اعتماد')}</span>
+                            <span>{iss.verified.toLocaleString()} {t('verified', 'تحقق')}</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Globe size={12} /> {iss.network}</span>
                         </div>
                     </div>
@@ -227,18 +239,21 @@ const BlockchainCredentialsPage: React.FC = () => {
     const howTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                How It Works
+                {t('How It Works', 'كيف يعمل')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                Blockchain credentials are tamper-proof digital certificates stored on a decentralized ledger — no one can forge, alter, or revoke them without your knowledge.
+                {t(
+                    'Blockchain credentials are tamper-proof digital certificates stored on a decentralized ledger — no one can forge, alter, or revoke them without your knowledge.',
+                    'اعتمادات البلوكتشين هي شهادات رقمية غير قابلة للتلاعب مخزنة على سجل لامركزي — لا يمكن لأحد تزويرها أو تعديلها أو إلغاؤها دون علمك.'
+                )}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
                 {[
-                    { step: 1, title: 'Earn a Credential', desc: 'Complete a certification, training program, or assessment through any trusted issuer on our platform.', Icon: Award },
-                    { step: 2, title: 'Issued on Blockchain', desc: 'The issuer mints your credential as a verifiable token on the Polygon or Ethereum blockchain — it\'s permanent and tamper-proof.', Icon: Link2 },
-                    { step: 3, title: 'Share Instantly', desc: 'Share your credential via QR code, link, or PDF. Employers can verify it in seconds without contacting the issuer.', Icon: Share2 },
-                    { step: 4, title: 'Verify Anywhere', desc: 'Any verifier worldwide can confirm the authenticity, issuer, and date of your credential by checking the blockchain directly.', Icon: CheckCircle },
+                    { step: 1, title: t('Earn a Credential', 'احصل على اعتماد'), desc: t('Complete a certification, training program, or assessment through any trusted issuer on our platform.', 'أكمل شهادة أو برنامج تدريبي أو تقييم من خلال أي جهة مصدّرة موثوقة على منصتنا.'), Icon: Award },
+                    { step: 2, title: t('Issued on Blockchain', 'يُصدر على البلوكتشين'), desc: t("The issuer mints your credential as a verifiable token on the Polygon or Ethereum blockchain — it's permanent and tamper-proof.", 'تسكّ الجهة المصدّرة اعتمادك كرمز قابل للتحقق على شبكة Polygon أو Ethereum — إنه دائم وغير قابل للتلاعب.'), Icon: Link2 },
+                    { step: 3, title: t('Share Instantly', 'شارك فوراً'), desc: t('Share your credential via QR code, link, or PDF. Employers can verify it in seconds without contacting the issuer.', 'شارك اعتمادك عبر رمز QR أو رابط أو PDF. يمكن لأصحاب العمل التحقق منه في ثوانٍ دون الاتصال بالجهة المصدّرة.'), Icon: Share2 },
+                    { step: 4, title: t('Verify Anywhere', 'تحقّق من أي مكان'), desc: t('Any verifier worldwide can confirm the authenticity, issuer, and date of your credential by checking the blockchain directly.', 'يمكن لأي جهة تحقق في العالم التأكد من صحة اعتمادك والجهة المصدّرة والتاريخ بالرجوع مباشرة إلى البلوكتشين.'), Icon: CheckCircle },
                 ].map((s, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                         <div style={{ width: 44, height: 44, borderRadius: '50%', background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 800, fontSize: 16, color: brand.primary }}>
@@ -256,14 +271,14 @@ const BlockchainCredentialsPage: React.FC = () => {
             <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <Zap size={20} style={{ color: brand.primary }} />
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>Why Blockchain?</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Why Blockchain?', 'لماذا البلوكتشين؟')}</h3>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {[
-                        'Tamper-proof — no one can forge or alter your credentials after issuance',
-                        'Instant verification — employers verify in seconds, no phone calls or emails needed',
-                        'You own it — your credential exists on the blockchain forever, even if the issuer closes',
-                        'Global recognition — accepted worldwide by any organization that supports W3C verifiable credentials',
+                        t('Tamper-proof — no one can forge or alter your credentials after issuance', 'غير قابلة للتلاعب — لا يمكن لأحد تزوير أو تعديل اعتماداتك بعد الإصدار'),
+                        t('Instant verification — employers verify in seconds, no phone calls or emails needed', 'تحقق فوري — يتحقق أصحاب العمل في ثوانٍ، دون حاجة لمكالمات أو رسائل'),
+                        t('You own it — your credential exists on the blockchain forever, even if the issuer closes', 'ملكك أنت — اعتمادك موجود على البلوكتشين للأبد، حتى لو أغلقت الجهة المصدّرة'),
+                        t('Global recognition — accepted worldwide by any organization that supports W3C verifiable credentials', 'اعتراف عالمي — مقبولة في جميع أنحاء العالم من أي مؤسسة تدعم اعتمادات W3C القابلة للتحقق'),
                     ].map((b, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                             <CheckCircle size={14} style={{ color: brand.primary, marginTop: 2, flexShrink: 0 }} />
@@ -278,16 +293,19 @@ const BlockchainCredentialsPage: React.FC = () => {
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
     const tabs = [
-        { id: 'credentials', label: t('tabs.credentials.label', 'My Credentials'), icon: <Shield className="h-4 w-4" />, content: credentialsTab },
-        { id: 'verification', label: t('tabs.verification.label', 'Verification Log'), icon: <CheckCircle className="h-4 w-4" />, content: verifyTab },
-        { id: 'issuers', label: t('tabs.issuers.label', 'Trusted Issuers'), icon: <Building2 className="h-4 w-4" />, content: issuersTab },
-        { id: 'how-it-works', label: t('tabs.how-it-works.label', 'How It Works'), icon: <Zap className="h-4 w-4" />, content: howTab },
+        { id: 'credentials', label: t('My Credentials', 'اعتماداتي'), icon: <Shield className="h-4 w-4" />, content: credentialsTab },
+        { id: 'verification', label: t('Verification Log', 'سجل التحقق'), icon: <CheckCircle className="h-4 w-4" />, content: verifyTab },
+        { id: 'issuers', label: t('Trusted Issuers', 'الجهات الموثوقة'), icon: <Building2 className="h-4 w-4" />, content: issuersTab },
+        { id: 'how-it-works', label: t('How It Works', 'كيف يعمل'), icon: <Zap className="h-4 w-4" />, content: howTab },
     ];
 
     return (
         <EducationPathwayLayout
-            title={t('title', 'Blockchain Credentials')}
-            description={t('description', 'Tamper-proof, instantly verifiable digital credentials stored on the blockchain — own your qualifications and share them with employers worldwide')}
+            title={t('Blockchain Credentials', 'اعتمادات البلوكتشين')}
+            description={t(
+                'Tamper-proof, instantly verifiable digital credentials stored on the blockchain — own your qualifications and share them with employers worldwide',
+                'اعتمادات رقمية غير قابلة للتلاعب وقابلة للتحقق فوراً مخزنة على البلوكتشين — امتلك مؤهلاتك وشاركها مع أصحاب العمل حول العالم'
+            )}
             icon={<Shield className="h-6 w-6" />}
             stats={stats}
             tabs={tabs}

@@ -730,9 +730,16 @@ def get_all_sessions_admin():
                 s.status,
                 s.interview_type,
                 s.created_at,
+                s.ai_analysis,
+                s.duration_minutes,
+                s.ended_at,
                 c.username as candidate_name,
                 c.email as candidate_email,
+                c.first_name as candidate_first_name,
+                c.last_name as candidate_last_name,
                 r.username as recruiter_name,
+                r.first_name as recruiter_first_name,
+                r.last_name as recruiter_last_name,
                 j.title as job_title,
                 j.company as company_name
             FROM interview_sessions s
@@ -740,8 +747,9 @@ def get_all_sessions_admin():
             LEFT JOIN users r ON s.recruiter_id = r.id
             LEFT JOIN job_descriptions j ON s.job_id = j.id
             ORDER BY s.scheduled_at DESC
-            LIMIT 100
+            LIMIT 500
         """
+
         
         sessions = execute_query(query)
         

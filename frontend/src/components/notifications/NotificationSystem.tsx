@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { restClient } from '@/utils/api';
+import { getNotificationRoute } from '@/utils/navigation';
 
 // Types
 interface Notification {
@@ -231,39 +232,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       duration: priority === 'critical' ? 10000 : 5000,
     };
 
-    const isRecruiter = userType === 'recruiter' || userType === 'hr_recruiter';
-    const isHRManager = userType === 'hr_manager' || userType === 'hr';
-    const isCandidate = userType === 'candidate' || userType === 'job_seeker';
-
     const handleToastClick = () => {
-      if (notification_type === 'new_message' && notification.metadata?.conversation_id) {
-        if (isCandidate) {
-          navigate(`/candidate-dashboard?tab=messages&conversation=${notification.metadata.conversation_id}`);
-        } else if (isHRManager) {
-          navigate(`/hr-dashboard?tab=messages&conversationId=${notification.metadata.conversation_id}`);
-        } else {
-          navigate(`/messages?conversation=${notification.metadata.conversation_id}`);
-        }
-      } else if (notification_type === 'application_update') {
-        if (isRecruiter) {
-          navigate('/recruiter/jobs');
-        } else if (isHRManager) {
-          navigate('/hr-dashboard?tab=positions');
-        } else if (isCandidate) {
-          navigate('/candidate-dashboard?tab=applications');
-        } else {
-          navigate('/dashboard#applications');
-        }
-      }
-      else if (notification_type === 'interview_scheduled') {
-        if (isRecruiter) {
-          navigate('/recruiter/interviews/details');
-        } else if (isHRManager) {
-          navigate('/hr-dashboard?tab=interviews');
-        } else if (isCandidate) {
-          navigate('/candidate-dashboard?tab=interviews');
-        }
-      }
+      const route = getNotificationRoute(notification_type, userType || '', notification.metadata);
+      if (route) navigate(route);
     };
 
     const ToastContent = ({ t }: { t: any }) => (
@@ -507,9 +478,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     refreshNotifications
   } = useNotifications();
   const navigate = useNavigate();
-  const { user } = useAuth(); // Get current user for role-based navigation
+  const { user, switchRole } = useAuth(); // Get current user + role switcher
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = async (notification: any) => {
     // Mark as read if unread
     if (!notification.read) {
       markAsRead(notification.id);
@@ -517,6 +488,12 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
 
     const type = notification.notification_type;
     const metadata = notification.metadata || {};
+
+    // ─── Cross-role routing: switch role if notification is for a different role ───
+    const recipientRole = metadata.recipient_role;
+    if (recipientRole && user?.role && recipientRole !== user.role) {
+      try { await switchRole(recipientRole); } catch { /* best effort */ }
+    }
 
     // Priority 1: Explicit Link in Metadata (Deep Linking Feature)
     if (metadata.link) {
@@ -533,10 +510,23 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     }
 
     // Navigation Logic
+    const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
     const isRecruiter = user?.role === 'recruiter' || user?.role === 'hr_recruiter' || user?.user_type === 'recruiter' || user?.user_type === 'hr_recruiter';
     const isHRManager = user?.role === 'hr_manager' || user?.role === 'hr' || user?.user_type === 'hr_manager' || user?.user_type === 'hr';
-    // Default to isCandidate if not recruiter OR hr_manager to ensure candidates always get routed correctly
-    const isCandidate = !isRecruiter && !isHRManager;
+    const userRole = user?.role || user?.user_type || '';
+
+    // Operator role → dashboard path mapping
+    const operatorDashboardMap: Record<string, string> = {
+      'mentor': '/mentor-dashboard',
+      'educator': '/educator-dashboard',
+      'assessor': '/assessor-dashboard',
+      'growth_operator': '/growth-operator-dashboard',
+      'operator': '/operator-dashboard',
+    };
+    const operatorDashboard = operatorDashboardMap[userRole];
+    const isOperator = !!operatorDashboard;
+    // Default to isCandidate if not any other known role
+    const isCandidate = !isRecruiter && !isHRManager && !isAdmin && !isOperator;
 
     // Helper to detect intent from text if type is ambiguous
     const text = (notification.title + ' ' + notification.content).toLowerCase();
@@ -545,22 +535,19 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
 
     if (isMessageContext && !text.includes('status update')) { // Avoid capturing "Application Message" if that exists
       const conversationId = metadata.conversation_id || metadata.conversationId;
-      if (conversationId) {
-        if (isCandidate) {
-          navigate(`/candidate-dashboard?tab=messages&conversation=${conversationId}`);
-        } else if (isHRManager) {
-          navigate(`/hr-dashboard?tab=messages&conversationId=${conversationId}`);
-        } else {
-          navigate(`/messages?conversation=${conversationId}`);
-        }
+      const convParam = conversationId ? `&conversationId=${conversationId}` : '';
+      if (isAdmin) {
+        navigate(`/admin-dashboard?tab=messaging${conversationId ? `&conversation=${conversationId}` : ''}`);
+      } else if (isCandidate) {
+        navigate(`/candidate-dashboard?tab=messages${conversationId ? `&conversation=${conversationId}` : ''}`);
+      } else if (isHRManager) {
+        navigate(`/hr-dashboard?tab=messages${convParam}`);
+      } else if (isRecruiter) {
+        navigate(`/recruiter?tab=messages${convParam}`);
+      } else if (isOperator) {
+        navigate(`${operatorDashboard}?tab=messages${convParam}`);
       } else {
-        if (isCandidate) {
-          navigate('/candidate-dashboard?tab=messages');
-        } else if (isHRManager) {
-          navigate('/hr-dashboard?tab=messages');
-        } else {
-          navigate('/messages');
-        }
+        navigate(`/candidate-dashboard?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`);
       }
     }
     else if (isInterviewContext) {

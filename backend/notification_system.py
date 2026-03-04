@@ -231,6 +231,9 @@ class RealTimeNotificationSystem:
                 
                 logger.info(f"User {user_id} connected with session {session_id}")
                 
+                # Broadcast online presence to all connected clients
+                self.socketio.emit('user_online', {'user_id': str(user_id)})
+                
             except Exception as e:
                 logger.error(f"Connection error: {e}")
                 disconnect()
@@ -251,6 +254,8 @@ class RealTimeNotificationSystem:
             if user_id:
                 del self.notification_manager.active_connections[user_id]
                 logger.info(f"User {user_id} disconnected")
+                # Broadcast offline presence to all connected clients
+                self.socketio.emit('user_offline', {'user_id': str(user_id)})
         
         @self.socketio.on('get_notifications')
         def handle_get_notifications(data):
@@ -318,6 +323,20 @@ class RealTimeNotificationSystem:
             except Exception as e:
                 logger.error(f"Error deleting notification: {e}")
                 emit('error', {'message': 'Failed to delete notification'})
+        
+        @self.socketio.on('get_online_users')
+        def handle_get_online_users():
+            """Return list of currently online user IDs"""
+            try:
+                print(f"[Presence] get_online_users handler ENTERED")
+                online_ids = list(self.notification_manager.active_connections.keys())
+                print(f"[Presence] Active connections: {online_ids}")
+                emit('online_users', {'users': [str(uid) for uid in online_ids]})
+                print(f"[Presence] Emitted online_users response")
+            except Exception as e:
+                print(f"[Presence] ERROR in get_online_users: {e}")
+                import traceback
+                traceback.print_exc()
     
     def send_notification(self, user_id: str, notification_type: NotificationType,
                          title: str, message: str, data: Dict = None,

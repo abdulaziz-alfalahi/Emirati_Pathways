@@ -57,7 +57,7 @@ import {
   FileSpreadsheet,
   UserCheck,
   Key,
-  Layers
+
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 
@@ -126,6 +126,7 @@ interface Role {
   permissions: string[];
   is_system: boolean;
   user_count?: number;
+  category?: string;
 }
 
 /**
@@ -368,7 +369,7 @@ const UserManagerEnhanced: React.FC = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showBulkRoleModal, setShowBulkRoleModal] = useState(false);
-  const [showRoleManagementModal, setShowRoleManagementModal] = useState(false);
+
 
   // Selected user for operations
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -587,8 +588,11 @@ const UserManagerEnhanced: React.FC = () => {
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
 
-    if (!formData.username || formData.username.length < 3) {
-      errors.username = 'Username must be at least 3 characters';
+    // Username is only required for creating new users
+    if (!showEditModal) {
+      if (!formData.username || formData.username.length < 3) {
+        errors.username = 'Username must be at least 3 characters';
+      }
     }
 
     if (!formData.email || !isValidEmail(formData.email)) {
@@ -615,6 +619,10 @@ const UserManagerEnhanced: React.FC = () => {
 
     if (formData.roles.length === 0) {
       errors.roles = 'Please select at least one role';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      console.warn('Form validation failed:', errors);
     }
 
     setValidationErrors(errors);
@@ -910,13 +918,16 @@ const UserManagerEnhanced: React.FC = () => {
   };
 
   const getDefaultRoles = (): Role[] => [
-    { id: 'platform_administrator', name: 'platform_administrator', display_name: 'Platform Administrator', description: 'Full system access', permissions: DEFAULT_PERMISSIONS, is_system: true, user_count: 2 },
-    { id: 'hr_manager', name: 'hr_manager', display_name: 'HR Manager', description: 'Manage HR operations', permissions: ['view_dashboard', 'view_candidates', 'manage_candidates', 'view_jobs'], is_system: true, user_count: 5 },
-    { id: 'recruiter', name: 'recruiter', display_name: 'Recruiter', description: 'Post jobs and manage candidates', permissions: ['view_dashboard', 'view_jobs', 'create_jobs', 'view_candidates'], is_system: true, user_count: 12 },
-    { id: 'growth_operator', name: 'growth_operator', display_name: 'Growth Operator', description: 'Platform growth operations', permissions: ['view_dashboard', 'view_analytics', 'view_users'], is_system: true, user_count: 4 },
-    { id: 'candidate', name: 'candidate', display_name: 'Candidate', description: 'Job seeker', permissions: ['view_dashboard', 'view_jobs'], is_system: true, user_count: 150 },
-    { id: 'mentor', name: 'mentor', display_name: 'Mentor', description: 'Career mentor', permissions: ['view_dashboard'], is_system: true, user_count: 8 },
-    { id: 'assessor', name: 'assessor', display_name: 'Assessor', description: 'Assessment evaluator', permissions: ['view_dashboard'], is_system: true, user_count: 6 }
+    // Administrative
+    { id: 'administrator', name: 'administrator', display_name: 'Administrator', description: 'Full platform governance and system access', permissions: ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], is_system: true, user_count: 0, category: 'Administrative' },
+    // Growth Operators
+    { id: 'growth_operator_candidate', name: 'growth_operator_candidate', display_name: 'Candidate Onboarding Operator', description: 'Onboard NAFIS job seekers', permissions: ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'growth_operator_company', name: 'growth_operator_company', display_name: 'Company Onboarding Operator', description: 'Onboard private sector companies', permissions: ['onboard_companies', 'manage_company_engagement', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'growth_operator_education', name: 'growth_operator_education', display_name: 'Education Operator', description: 'Education partnerships', permissions: ['onboard_education', 'manage_education_partnerships', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'growth_operator_assessment', name: 'growth_operator_assessment', display_name: 'Assessment Operator', description: 'Assessment centers', permissions: ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'growth_operator_mentorship', name: 'growth_operator_mentorship', display_name: 'Mentorship Operator', description: 'Mentorship programs', permissions: ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'growth_operator_community', name: 'growth_operator_community', display_name: 'Community Operator', description: 'Community management', permissions: ['moderate_communities', 'manage_community_events', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    { id: 'growth_operator_monitoring', name: 'growth_operator_monitoring', display_name: 'Monitoring Center Operator', description: 'Monitor platform operations', permissions: ['view_operations_center', 'view_all_analytics', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
   ];
 
   // ============================================
@@ -955,13 +966,6 @@ const UserManagerEnhanced: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowRoleManagementModal(true)}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <Layers className="w-4 h-4 mr-2" />
-            Manage Roles
-          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
@@ -1008,8 +1012,8 @@ const UserManagerEnhanced: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Roles</p>
-              <p className="text-2xl font-bold text-purple-600">{availableRoles.length}</p>
+              <p className="text-sm text-gray-500">Active Roles</p>
+              <p className="text-2xl font-bold text-purple-600">{new Set(users.flatMap(u => u.roles)).size}</p>
             </div>
             <Shield className="w-8 h-8 text-purple-500" />
           </div>
@@ -2117,65 +2121,7 @@ const UserManagerEnhanced: React.FC = () => {
       )}
 
       {/* Role Management Modal */}
-      {showRoleManagementModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Role Management</h3>
-              <button onClick={() => setShowRoleManagementModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="px-6 py-4">
-              <div className="space-y-4">
-                {availableRoles.map(role => (
-                  <div key={role.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-sm font-medium border ${getRoleColor(role.name)}`}>
-                            {role.display_name}
-                          </span>
-                          {role.is_system && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">System</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">{role.description}</p>
-                        <p className="text-xs text-gray-400 mt-1">{role.user_count || 0} users</p>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-gray-500 mb-2">Permissions:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {role.permissions.slice(0, 6).map((perm, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                            {perm.replace(/_/g, ' ')}
-                          </span>
-                        ))}
-                        {role.permissions.length > 6 && (
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                            +{role.permissions.length - 6} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end">
-              <button
-                onClick={() => setShowRoleManagementModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

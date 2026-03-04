@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { ServiceCard } from '@/components/cards/ServiceCard';
-import { 
-  Briefcase, 
-  GraduationCap, 
-  FileText, 
+import {
+  Briefcase,
+  GraduationCap,
+  FileText,
   Award,
   Users,
   MapPin,
@@ -131,7 +131,7 @@ const defaultServices: Service[] = [
     description: 'Communicate with advisors, recruiters, and your professional network.',
     category: 'Communication',
     icon: <MessageSquare className="h-6 w-6" />,
-    path: '/messages',
+    path: '/candidate-dashboard?tab=messages',
     status: 'available',
     users: 2890,
     duration: 'Real-time'

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -14,7 +14,9 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/context/AuthContext';
 import { Notification } from '@/types/notifications';
+import { getNotificationRoute } from '@/utils/navigation';
 import { formatDistanceToNow } from 'date-fns';
 
 interface NotificationDropdownProps {
@@ -23,6 +25,8 @@ interface NotificationDropdownProps {
 
 export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) => {
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { user, switchRole } = useAuth();
+  const navigate = useNavigate();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -50,11 +54,34 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onCl
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  /**
+   * Smart click handler: uses getNotificationRoute() for all notification types
+   * to route to the correct role-based dashboard tab.
+   * Switches role first if notification targets a different role than the active one.
+   */
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.is_read) {
       markAsRead(notification.id);
     }
     onClose();
+
+    const metadata = notification.metadata || {};
+    const notificationType = metadata.notification_type
+      || (notification.type === 'info' && notification.link?.includes('/messages') ? 'new_message' : undefined);
+
+    // Cross-role routing: switch role if notification targets a different role
+    const targetRole = metadata.recipient_role || user?.role || 'candidate';
+    if (metadata.recipient_role && user?.role && metadata.recipient_role !== user.role) {
+      try { await switchRole(metadata.recipient_role); } catch { /* best effort */ }
+    }
+
+    const route = getNotificationRoute(
+      notificationType,
+      targetRole,
+      metadata,
+      notification.link
+    );
+    if (route) navigate(route);
   };
 
   if (loading) {
@@ -110,19 +137,9 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onCl
                   className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${!notification.is_read ? 'bg-muted/30' : ''
                     }`}
                 >
-                  {notification.link ? (
-                    <Link
-                      to={notification.link}
-                      onClick={() => handleNotificationClick(notification)}
-                      className="block"
-                    >
-                      <NotificationContent notification={notification} />
-                    </Link>
-                  ) : (
-                    <div onClick={() => handleNotificationClick(notification)}>
-                      <NotificationContent notification={notification} />
-                    </div>
-                  )}
+                  <div onClick={() => handleNotificationClick(notification)} className="block">
+                    <NotificationContent notification={notification} />
+                  </div>
                 </div>
               );
             })}

@@ -702,9 +702,20 @@ def create_notification():
 @admin_bp.route('/roles', methods=['GET'])
 @admin_required
 def get_roles():
-    """Get all defined roles"""
+    """Get all available roles for admin assignment"""
     try:
-        roles = admin_system.get_roles()
+        roles = [
+            # Administrative
+            {'id': 'administrator', 'name': 'administrator', 'display_name': 'Administrator', 'description': 'Full platform governance and system access', 'permissions': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], 'is_system': True, 'category': 'Administrative'},
+            # Growth Operators
+            {'id': 'growth_operator_candidate', 'name': 'growth_operator_candidate', 'display_name': 'Candidate Onboarding Operator', 'description': 'Onboard NAFIS job seekers and manage candidate engagement', 'permissions': ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_company', 'name': 'growth_operator_company', 'display_name': 'Company Onboarding Operator', 'description': 'Onboard private sector companies and manage employer partnerships', 'permissions': ['onboard_companies', 'manage_company_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_education', 'name': 'growth_operator_education', 'display_name': 'Education Operator', 'description': 'Partner with schools, universities, and training institutes', 'permissions': ['onboard_education', 'manage_education_partnerships', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_assessment', 'name': 'growth_operator_assessment', 'display_name': 'Assessment Operator', 'description': 'Manage assessment centers and certification bodies', 'permissions': ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_mentorship', 'name': 'growth_operator_mentorship', 'display_name': 'Mentorship Operator', 'description': 'Onboard mentors and manage coaching programs', 'permissions': ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_community', 'name': 'growth_operator_community', 'display_name': 'Community Operator', 'description': 'Moderate communities and manage events', 'permissions': ['moderate_communities', 'manage_community_events', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_monitoring', 'name': 'growth_operator_monitoring', 'display_name': 'Monitoring Center Operator', 'description': 'Monitor platform operations and track metrics', 'permissions': ['view_operations_center', 'view_all_analytics', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+        ]
         return jsonify({
             'status': 'success',
             'data': roles

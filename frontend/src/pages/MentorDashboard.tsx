@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import Messages from '@/components/recruiter/Messages';
 import {
   UserCheck,
   Users,
@@ -79,7 +81,9 @@ interface MentorData {
 
 
 const MentorDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [dashboardData, setDashboardData] = useState<MentorData>({
     mentees: {
       totalMentees: 0,
@@ -236,12 +240,16 @@ const MentorDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-card shadow-sm">
+            <TabsList className="grid w-full grid-cols-6 bg-card shadow-sm">
               <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
               <TabsTrigger value="mentees" className="font-dubai-medium">Mentees</TabsTrigger>
               <TabsTrigger value="sessions" className="font-dubai-medium">Sessions</TabsTrigger>
               <TabsTrigger value="impact" className="font-dubai-medium">Impact</TabsTrigger>
               <TabsTrigger value="resources" className="font-dubai-medium">Resources</TabsTrigger>
+              <TabsTrigger value="messages" className="font-dubai-medium">
+                <MessageSquare className="h-4 w-4 mr-1" />
+                Messages
+              </TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -528,6 +536,11 @@ const MentorDashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Messages Tab */}
+            <TabsContent value="messages" className="space-y-6">
+              <Messages senderRole="mentor" />
             </TabsContent>
           </Tabs>
         </div>

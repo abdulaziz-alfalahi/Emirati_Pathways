@@ -255,7 +255,7 @@ export default function JobDetailsPage() {
                         <td className="p-3">{s.notes || '-'}</td>
                         <td className="p-3 space-x-2">
                           <Button size="sm" variant="outline" onClick={() => removeFromShortlist(s.candidate_id)}>Remove</Button>
-                          <Link to={`/messages?to=${s.candidate_id}&job=${jobId}`}>
+                          <Link to={`/recruiter?tab=messages&to=${s.candidate_id}&job=${jobId}`}>
                             <Button size="sm" variant="outline"><MessageSquare className="h-4 w-4 mr-1" /> Message</Button>
                           </Link>
                         </td>

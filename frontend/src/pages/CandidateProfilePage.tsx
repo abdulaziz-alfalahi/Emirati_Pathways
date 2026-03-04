@@ -7,6 +7,8 @@ import { ArrowLeft, Mail, Phone, Loader2, AlertCircle, MapPin, Briefcase, Gradua
 import { messagingService } from '@/services/messagingService';
 import { toast } from 'sonner';
 import { restClient } from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
+import { getMessagingPath } from '@/utils/navigation';
 
 interface WorkExperience {
   title?: string;
@@ -79,6 +81,8 @@ interface Application {
 const CandidateProfilePage: React.FC = () => {
   const { candidateId } = useParams<{ candidateId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -204,15 +208,13 @@ const CandidateProfilePage: React.FC = () => {
       });
 
       if (conversationResponse.success && conversationResponse.data) {
-        // Navigate to messages page with the new conversation selected
-        navigate(`/messages?conversationId=${conversationResponse.data.id}`);
+        navigate(getMessagingPath(user?.role || '', { conversationId: conversationResponse.data.id }));
       } else {
         toast.error('Failed to start conversation');
       }
     } catch (err: any) {
       console.error('Error creating conversation:', err);
-      // If error is just navigation or something minor, still try to go to messages
-      navigate('/messages');
+      navigate(getMessagingPath(user?.role || ''));
     } finally {
       setCreatingConversation(false);
     }

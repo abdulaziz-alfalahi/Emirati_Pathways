@@ -311,7 +311,7 @@ class AuthenticationManager:
             cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             
             cursor.execute("""
-                SELECT id, email, password_hash, full_name, user_type, phone, 
+                SELECT id, email, first_name, last_name, role, phone, 
                        emirate, is_active, is_verified, created_at, updated_at
                 FROM users WHERE id = %s
             """, (user_id,))
@@ -321,15 +321,27 @@ class AuthenticationManager:
             conn.close()
             
             if user_row:
+                first_name = user_row.get('first_name') or ''
+                last_name = user_row.get('last_name') or ''
+                full_name = f"{first_name} {last_name}".strip() or user_row.get('email', '')
+                role = user_row.get('role') or 'candidate'
+
                 return {
                     'id': user_row['id'],
                     'email': user_row['email'],
-                    'full_name': user_row['full_name'],
-                    'user_type': user_row['user_type'],
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'full_name': full_name,
+                    'name': full_name,
+                    'user_type': role,
+                    'role': role,
                     'phone': user_row['phone'],
                     'emirate': user_row['emirate'],
-                    'mfa_secret': None,  # Default for now
-                    'preferred_language': 'en'  # Default
+                    'is_active': user_row.get('is_active', True),
+                    'is_verified': user_row.get('is_verified', True),
+                    'mfa_secret': None,
+                    'preferred_language': 'en',
+                    'nationality': 'UAE',
                 }
             
             return None
@@ -337,6 +349,10 @@ class AuthenticationManager:
         except Exception as e:
             self.logger.error(f"Error getting user by ID: {e}")
             return None
+
+    # Public alias — called by auth_routes.py
+    def get_user_by_id(self, user_id) -> Optional[Dict]:
+        return self._get_user_by_id(user_id)
     
     def _increment_failed_attempts(self, email: str):
         """Increment failed login attempts (simplified implementation)"""

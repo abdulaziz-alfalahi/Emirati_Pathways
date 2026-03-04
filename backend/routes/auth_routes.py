@@ -233,8 +233,21 @@ def refresh():
     try:
         user_id = get_jwt_identity()
         
-        # Create new access token
-        access_token = create_access_token(identity=user_id)
+        # Look up the user's role so the refreshed token keeps it
+        role = None
+        try:
+            auth_manager = AuthenticationManager()
+            user_data = auth_manager.get_user_by_id(user_id)
+            if user_data:
+                role = user_data.get('role') or user_data.get('user_type')
+        except Exception as role_err:
+            logger.warning(f"Could not look up role during refresh: {role_err}")
+        
+        # Create new access token WITH role claim
+        additional_claims = {}
+        if role:
+            additional_claims['role'] = role
+        access_token = create_access_token(identity=user_id, additional_claims=additional_claims)
         
         return jsonify({
             'success': True,
@@ -731,6 +744,50 @@ def get_role_permissions(role: str) -> list:
             'view_all_analytics',
             'system_configuration',
             'roles.approve_requests'
+        ],
+        'nafis_talent_operator': [
+            'view_dashboard',
+            'bulk_import_candidates',
+            'manage_nafis_sync',
+            'onboard_candidates',
+            'manage_candidate_engagement',
+            'view_analytics'
+        ],
+        'education_operator': [
+            'view_dashboard',
+            'manage_institutions',
+            'manage_programs',
+            'onboard_education',
+            'manage_education_partnerships',
+            'view_analytics'
+        ],
+        'professional_dev_operator': [
+            'view_dashboard',
+            'manage_training',
+            'manage_certifications',
+            'onboard_mentors',
+            'onboard_assessment',
+            'manage_mentorship_programs',
+            'manage_assessment_centers',
+            'view_analytics'
+        ],
+        'community_operator': [
+            'view_dashboard',
+            'manage_content',
+            'moderate_communities',
+            'manage_community_events',
+            'view_analytics'
+        ],
+        'operations_monitor': [
+            'view_dashboard',
+            'view_operations_center',
+            'view_all_analytics',
+            'view_analytics'
+        ],
+        'operator': [
+            'view_dashboard',
+            'manage_growth',
+            'view_analytics'
         ]
     }
     

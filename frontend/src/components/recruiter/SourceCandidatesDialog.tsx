@@ -32,6 +32,8 @@ interface Candidate {
   current_position?: string;
   experience_years?: number;
   education?: string;
+  education_level?: string;
+  preferred_location?: string;
   skills?: string[];
 }
 
@@ -74,7 +76,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
         setCandidates(response.data.candidates);
       } else {
         setCandidates([]);
-        if (!response.success) {
+        if (!response.data?.success) {
           console.warn('Search returned failure:', response);
         }
       }
@@ -105,7 +107,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       onClose(); // Close dialog before navigating
 
       if (response.success && response.data) {
-        navigate(`/messages?conversation=${response.data.id}`);
+        navigate(`/recruiter?tab=messages&conversationId=${response.data.id}`);
       } else {
         toast.error(response.error || 'Failed to start conversation');
       }

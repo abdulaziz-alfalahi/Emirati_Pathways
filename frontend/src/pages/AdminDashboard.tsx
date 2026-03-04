@@ -3,11 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
-import AdminRoles from '@/components/admin/AdminRoles';
-import GrowthTools from '@/components/admin/GrowthTools';
+
+
 import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorManagerEnhanced';
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AdminInterviews from '@/components/admin/AdminInterviews';
+import Messages from '@/components/recruiter/Messages';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,11 +29,14 @@ import {
   FileText,
   MessageSquare,
   Activity,
-  Rocket,
+
   Video,
   ClipboardCopy,
   RefreshCw,
-  UserPlus
+  UserPlus,
+
+  Send,
+  Mail
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -98,6 +102,16 @@ const AdminDashboard = () => {
 
   const [feedbackList, setFeedbackList] = useState([]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
+
+  // Invitation pipeline data
+  const [invitationData, setInvitationData] = useState<any>({
+    total: 0, accepted: 0, pending: 0, expired: 0, recent: []
+  });
+
+  // Security stats (live)
+  const [securityData, setSecurityData] = useState<any>({
+    security_score: 0, failed_logins_24h: 0, active_sessions: 0, verified_users_pct: 0
+  });
 
   // Load dashboard data on mount
   useEffect(() => {
@@ -173,14 +187,26 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     try {
       // Use restClient which handles auth token automatically
-      const [response, feedbackResponse] = await Promise.all([
+      const [response, feedbackResponse, invitationResponse, securityResponse] = await Promise.all([
         restClient.get('/api/admin/dashboard'),
-        restClient.get('/api/feedback/stats')
+        restClient.get('/api/feedback/stats'),
+        restClient.get('/api/admin/invitations/stats').catch(() => ({ data: { success: false } })),
+        restClient.get('/api/admin/security/stats').catch(() => ({ data: { success: false } }))
       ]);
 
       const feedbackStats = feedbackResponse.data?.success ? feedbackResponse.data.stats : {
         total: 0, open: 0, bugs: 0, features: 0, today: 0
       };
+
+      // Set invitation data
+      if (invitationResponse.data?.success) {
+        setInvitationData(invitationResponse.data.data);
+      }
+
+      // Set security data
+      if (securityResponse.data?.success) {
+        setSecurityData(securityResponse.data.data);
+      }
 
       if (response.data && response.data.data) {
         const apiData = response.data.data;
@@ -342,18 +368,15 @@ const AdminDashboard = () => {
 
           <div className="container mx-auto px-4 py-8">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+              <TabsList className="flex flex-wrap gap-1 h-auto p-1">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="users">User Management</TabsTrigger>
-                <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
+
                 <TabsTrigger value="operators" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Growth Operators
                 </TabsTrigger>
-                <TabsTrigger value="growth" className="flex items-center gap-2">
-                  <Rocket className="h-4 w-4" />
-                  Growth Tools
-                </TabsTrigger>
+
                 <TabsTrigger value="interviews" className="flex items-center gap-2">
                   <Video className="h-4 w-4" />
                   Interviews
@@ -362,10 +385,15 @@ const AdminDashboard = () => {
                   <MessageSquare className="h-4 w-4" />
                   Feedback
                 </TabsTrigger>
+                <TabsTrigger value="messaging" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Messaging
+                </TabsTrigger>
                 <TabsTrigger value="requests" className="flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
                   Requests
                 </TabsTrigger>
+
                 <TabsTrigger value="system">System Health</TabsTrigger>
                 <TabsTrigger value="security">Security</TabsTrigger>
               </TabsList>
@@ -522,6 +550,41 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Invitation Pipeline */}
+                <Card className="border-l-4 border-l-teal-500">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Send className="h-5 w-5 mr-2" />
+                      Invitation Pipeline
+                    </CardTitle>
+                    <CardDescription>
+                      NAFIS magic-link invitations to job seekers
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Total Sent</span>
+                        <span className="text-2xl font-bold">{invitationData.total}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Accepted</span>
+                        <span className="text-2xl font-bold text-green-600">{invitationData.accepted}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Pending</span>
+                        <span className="text-2xl font-bold text-amber-600">{invitationData.pending}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-muted-foreground">Conversion</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {invitationData.total > 0 ? Math.round((invitationData.accepted / invitationData.total) * 100) : 0}%
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Feedback Overview (FUT) */}
                 <Card className="border-l-4 border-l-purple-500">
@@ -740,37 +803,33 @@ ${JSON.stringify(item.metadata, null, 2)}
               </TabsContent>
 
               {/* Roles Tab */}
-              <TabsContent value="roles" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Role Management</CardTitle>
-                    <CardDescription>Manage user roles and permissions</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <AdminRoles />
-                  </CardContent>
-                </Card>
-              </TabsContent>
+
 
               {/* Growth Operators Tab */}
               <TabsContent value="operators" className="space-y-6">
                 <GrowthOperatorManagerEnhanced />
               </TabsContent>
 
-              {/* Growth Tools Tab */}
-              <TabsContent value="growth" className="space-y-6">
-                <GrowthTools />
-              </TabsContent>
+
 
               {/* Interviews Tab */}
               <TabsContent value="interviews" className="space-y-6">
                 <AdminInterviews />
               </TabsContent>
 
+              {/* Messaging Tab */}
+              <TabsContent value="messaging" className="space-y-6">
+                <Messages senderRole="administrator" showNewConversation />
+              </TabsContent>
+
               {/* Role Requests Tab */}
               <TabsContent value="requests" className="space-y-6">
                 <AdminRoleRequests />
               </TabsContent>
+
+
+
+
 
 
 
@@ -843,11 +902,11 @@ ${JSON.stringify(item.metadata, null, 2)}
                   <CardHeader>
                     <CardTitle>Security Management</CardTitle>
                     <CardDescription>
-                      Monitor security events and manage access controls
+                      Live security metrics from platform data
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                       <Card>
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg flex items-center">
@@ -856,8 +915,13 @@ ${JSON.stringify(item.metadata, null, 2)}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-3xl font-bold text-green-600">94/100</div>
-                          <p className="text-sm text-gray-600">Excellent security posture</p>
+                          <div className={`text-3xl font-bold ${securityData.security_score >= 80 ? 'text-green-600' : securityData.security_score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {securityData.security_score}/100
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            {securityData.security_score >= 80 ? 'Excellent security posture' : securityData.security_score >= 50 ? 'Moderate — review recommendations' : 'Needs attention'}
+                          </p>
+                          <Progress value={securityData.security_score} className="w-full mt-2" />
                         </CardContent>
                       </Card>
 
@@ -866,7 +930,9 @@ ${JSON.stringify(item.metadata, null, 2)}
                           <CardTitle className="text-lg">Failed Logins</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-3xl font-bold text-yellow-600">12</div>
+                          <div className={`text-3xl font-bold ${securityData.failed_logins_24h > 10 ? 'text-red-600' : 'text-yellow-600'}`}>
+                            {securityData.failed_logins_24h}
+                          </div>
                           <p className="text-sm text-gray-600">Last 24 hours</p>
                         </CardContent>
                       </Card>
@@ -876,17 +942,25 @@ ${JSON.stringify(item.metadata, null, 2)}
                           <CardTitle className="text-lg">Active Sessions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-3xl font-bold text-blue-600">1,847</div>
-                          <p className="text-sm text-gray-600">Currently active</p>
+                          <div className="text-3xl font-bold text-blue-600">
+                            {securityData.active_sessions.toLocaleString()}
+                          </div>
+                          <p className="text-sm text-gray-600">Logged in last 24h</p>
                         </CardContent>
                       </Card>
-                    </div>
 
-                    <div className="text-center py-8">
-                      <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Security Center</h3>
-                      <p className="text-gray-500 mb-4">Advanced security monitoring and controls</p>
-                      <Button>Access Security Center</Button>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg">Verified Users</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-teal-600">
+                            {securityData.verified_users_pct}%
+                          </div>
+                          <p className="text-sm text-gray-600">Phone-verified accounts</p>
+                          <Progress value={securityData.verified_users_pct} className="w-full mt-2" />
+                        </CardContent>
+                      </Card>
                     </div>
                   </CardContent>
                 </Card>
@@ -895,7 +969,7 @@ ${JSON.stringify(item.metadata, null, 2)}
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import ConversationList from './messages/ConversationList';
@@ -8,10 +9,13 @@ import EmptyConversation from './messages/EmptyConversation';
 import { Conversation, Message } from './messages/types';
 import { restClient } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/components/notifications/NotificationSystem';
 
 const Messages: React.FC = () => {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { socket } = useNotifications();
+    const [searchParams] = useSearchParams();
     const { i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
@@ -22,6 +26,7 @@ const Messages: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
+    const selectedConversationRef = useRef<string | null>(null);
 
     // Fetch Conversations
     const fetchConversations = async () => {
@@ -56,9 +61,20 @@ const Messages: React.FC = () => {
 
     useEffect(() => {
         fetchConversations();
-        const interval = setInterval(fetchConversations, 15000);
+        const interval = setInterval(fetchConversations, 30000); // 30s fallback
         return () => clearInterval(interval);
     }, [user]);
+
+    // Deep-link: auto-select conversation from URL
+    useEffect(() => {
+        const convIdParam = searchParams.get('conversationId') || searchParams.get('conversation');
+        if (convIdParam && convIdParam !== selectedConversation) {
+            setSelectedConversation(convIdParam);
+            selectedConversationRef.current = convIdParam;
+            setIsLoading(true);
+            fetchMessages(convIdParam).finally(() => setIsLoading(false));
+        }
+    }, [searchParams]);
 
     // Fetch Messages
     const fetchMessages = async (convId: string) => {
@@ -74,7 +90,14 @@ const Messages: React.FC = () => {
                     recipientName: '',
                     content: m.content,
                     timestamp: m.created_at,
-                    read: m.status === 'read'
+                    read: m.status === 'read',
+                    status: m.status || 'sent',
+                    readAt: m.read_at || undefined,
+                    metadata: (typeof m.metadata === 'string') ? (() => { try { return JSON.parse(m.metadata); } catch { return {}; } })() : (m.metadata || {}),
+                    attachments: m.attachments || (() => {
+                        const meta = (typeof m.metadata === 'string') ? (() => { try { return JSON.parse(m.metadata); } catch { return {}; } })() : (m.metadata || {});
+                        return meta.attachments || undefined;
+                    })()
                 }));
                 setMessages(mappedMsgs);
             }
@@ -85,16 +108,68 @@ const Messages: React.FC = () => {
 
     const handleSelectConversation = (conversationId: string) => {
         setSelectedConversation(conversationId);
+        selectedConversationRef.current = conversationId;
         setIsLoading(true);
         fetchMessages(conversationId).finally(() => setIsLoading(false));
+
+        // Mark all messages in this conversation as read
+        restClient.post(`/api/communication/conversations/${conversationId}/read`)
+            .catch(err => console.error('Failed to mark as read:', err));
     };
 
+    // Keep ref in sync
+    useEffect(() => {
+        selectedConversationRef.current = selectedConversation;
+    }, [selectedConversation]);
+
+    // ─── Real-time Socket.IO listener ──────────────
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewMessage = (data: any) => {
+            const { message: msgData, conversation_id: convId } = data;
+            if (!msgData) return;
+
+            // If this message belongs to the active conversation, append it
+            if (convId === selectedConversationRef.current) {
+                setMessages(prev => {
+                    if (prev.some(m => m.id === msgData.id)) return prev;
+                    const mapped: Message = {
+                        id: msgData.id,
+                        senderId: msgData.sender_id,
+                        senderName: (msgData.sender_name && msgData.sender_name !== 'None None') ? msgData.sender_name : t('Recruiter', 'مسؤول توظيف'),
+                        recipientId: msgData.recipient_id,
+                        recipientName: '',
+                        content: msgData.content || '',
+                        timestamp: msgData.created_at,
+                        read: msgData.status === 'read',
+                        status: msgData.status || 'sent',
+                        readAt: msgData.read_at || undefined,
+                        metadata: (typeof msgData.metadata === 'string') ? (() => { try { return JSON.parse(msgData.metadata); } catch { return {}; } })() : (msgData.metadata || {}),
+                        attachments: msgData.attachments || (() => {
+                            const meta = (typeof msgData.metadata === 'string') ? (() => { try { return JSON.parse(msgData.metadata); } catch { return {}; } })() : (msgData.metadata || {});
+                            return meta.attachments || undefined;
+                        })()
+                    };
+                    return [...prev, mapped];
+                });
+            }
+
+            // Refresh conversation list
+            fetchConversations();
+        };
+
+        socket.on('new_message', handleNewMessage);
+        return () => { socket.off('new_message', handleNewMessage); };
+    }, [socket]);
+
+    // Fallback polling for active conversation
     useEffect(() => {
         if (pollingRef.current) clearInterval(pollingRef.current);
         if (selectedConversation) {
             pollingRef.current = setInterval(() => {
                 fetchMessages(selectedConversation);
-            }, 3000);
+            }, 30000); // 30s fallback
         }
         return () => {
             if (pollingRef.current) clearInterval(pollingRef.current);
@@ -107,10 +182,29 @@ const Messages: React.FC = () => {
         const conversation = conversations.find(c => c.id === selectedConversation);
         if (!conversation) return;
 
+        // ── Optimistic UI: show message immediately ──
+        const tempId = `_opt_${Date.now()}`;
+        const optimisticMsg: Message = {
+            id: tempId,
+            senderId: String(user.id),
+            senderName: (user as any).full_name || (user as any).name || user.email || 'You',
+            recipientId: conversation.participantId,
+            recipientName: conversation.participantName,
+            content: newMessage,
+            timestamp: new Date().toISOString(),
+            read: false,
+            status: 'sent',
+            _optimistic: true,
+        };
+
+        setMessages(prev => [...prev, optimisticMsg]);
+        const savedMessage = newMessage;
+        setNewMessage('');
+
         try {
             const payload = {
                 recipient_id: conversation.participantId,
-                content: newMessage,
+                content: savedMessage,
                 conversation_id: selectedConversation,
                 message_type: 'text',
                 sender_role: 'candidate'
@@ -118,16 +212,21 @@ const Messages: React.FC = () => {
 
             const response = await restClient.post('/api/communication/messages', payload);
             if (response.data.success) {
-                setNewMessage('');
-                fetchMessages(selectedConversation);
-                fetchConversations();
-
-                toast({
-                    title: t('Message Sent', 'تم إرسال الرسالة'),
-                    description: t('Sent successfully.', 'تم الإرسال بنجاح.'),
-                });
+                const realMsg = response.data.data?.message;
+                if (realMsg) {
+                    setMessages(prev => prev.map(m => m.id === tempId ? {
+                        ...m, id: realMsg.id || m.id, _optimistic: false,
+                    } : m));
+                } else {
+                    setMessages(prev => prev.map(m => m.id === tempId ? { ...m, _optimistic: false } : m));
+                }
+                if (!socket?.connected) {
+                    fetchMessages(selectedConversation);
+                    fetchConversations();
+                }
             }
         } catch (error) {
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...m, _optimistic: false, _failed: true } : m));
             toast({
                 title: t('Error', 'خطأ'),
                 description: t('Failed to send.', 'فشل في الإرسال.'),

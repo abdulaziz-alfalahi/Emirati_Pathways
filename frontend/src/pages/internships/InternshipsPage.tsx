@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Briefcase, Building2, MapPin, Clock, Calendar,
-    ChevronRight, Bookmark, CheckCircle, Search,
+    ChevronRight, ChevronLeft, Bookmark, CheckCircle, Search,
     TrendingUp, Star, Users, Award, Shield,
     GraduationCap, Banknote, Globe, Zap, Filter
 } from 'lucide-react';
@@ -29,54 +29,65 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
-/* ──────────────────────── DATA ──────────────────────── */
-
-const internships = [
-    { title: 'Software Engineering Intern', company: 'Emirates NBD', location: 'Dubai', duration: '3 months', type: 'Paid', stipend: 'AED 5,000/mo', sector: 'Banking & Finance', deadline: 'Apr 15, 2026', desc: 'Work with the digital banking team on mobile app features and API development', skills: ['React', 'Node.js', 'SQL'], catBg: brand.blue, catColor: brand.blueText },
-    { title: 'Marketing & Communications Intern', company: 'Dubai Tourism', location: 'Dubai', duration: '6 months', type: 'Paid', stipend: 'AED 4,500/mo', sector: 'Government', deadline: 'Mar 30, 2026', desc: 'Support digital marketing campaigns and social media strategy for tourism initiatives', skills: ['Marketing', 'Content', 'Analytics'], catBg: brand.green, catColor: brand.greenText },
-    { title: 'Data Science Intern', company: 'Etisalat (e&)', location: 'Abu Dhabi', duration: '4 months', type: 'Paid', stipend: 'AED 6,000/mo', sector: 'Technology', deadline: 'Apr 1, 2026', desc: 'Develop ML models for customer analytics and network optimization projects', skills: ['Python', 'TensorFlow', 'SQL'], catBg: brand.purple, catColor: brand.purpleText },
-    { title: 'Architecture & Design Intern', company: 'Emaar Properties', location: 'Dubai', duration: '3 months', type: 'Paid', stipend: 'AED 4,000/mo', sector: 'Real Estate', deadline: 'May 1, 2026', desc: 'Contribute to design concepts for upcoming mixed-use developments and community spaces', skills: ['AutoCAD', 'SketchUp', 'Revit'], catBg: brand.amber, catColor: brand.amberText },
-    { title: 'Sustainability & ESG Intern', company: 'ADNOC', location: 'Abu Dhabi', duration: '6 months', type: 'Paid', stipend: 'AED 7,000/mo', sector: 'Energy & Oil', deadline: 'Apr 20, 2026', desc: 'Support environmental impact assessments and sustainability reporting across operational units', skills: ['Sustainability', 'Data Analysis', 'Reporting'], catBg: brand.primarySurface, catColor: brand.primary },
-    { title: 'Healthcare Innovation Intern', company: 'Cleveland Clinic Abu Dhabi', location: 'Abu Dhabi', duration: '3 months', type: 'Paid', stipend: 'AED 4,500/mo', sector: 'Healthcare', deadline: 'Mar 25, 2026', desc: 'Research and implement digital health tools for patient engagement and care coordination', skills: ['Research', 'Health IT', 'UX'], catBg: brand.red, catColor: brand.redText },
-];
-
-const partnerCompanies = [
-    { name: 'Emirates NBD', sector: 'Banking', openings: 4, logo: '🏦' },
-    { name: 'Etisalat (e&)', sector: 'Technology', openings: 6, logo: '📡' },
-    { name: 'ADNOC', sector: 'Energy', openings: 5, logo: '⛽' },
-    { name: 'Emaar Properties', sector: 'Real Estate', openings: 3, logo: '🏗️' },
-    { name: 'Dubai Tourism', sector: 'Government', openings: 4, logo: '🏛️' },
-    { name: 'Mubadala', sector: 'Investment', openings: 3, logo: '💼' },
-];
-
-const applications = [
-    { title: 'Software Engineering Intern', company: 'Emirates NBD', appliedDate: 'Feb 10, 2026', status: 'Under Review', statusColor: brand.amber, statusText: brand.amberText },
-    { title: 'Data Science Intern', company: 'Etisalat (e&)', appliedDate: 'Feb 5, 2026', status: 'Interview Scheduled', statusColor: brand.green, statusText: brand.greenText },
-    { title: 'Marketing Intern', company: 'Dubai Tourism', appliedDate: 'Jan 28, 2026', status: 'Under Review', statusColor: brand.amber, statusText: brand.amberText },
-];
-
-const tips = [
-    { title: 'Start Your Search Early', desc: 'Begin looking for internships 3–6 months before your desired start date to maximize your options', Icon: Calendar },
-    { title: 'Tailor Every Application', desc: 'Customize your cover letter and highlight relevant skills for each specific opportunity', Icon: Star },
-    { title: 'Leverage University Services', desc: 'Use career services, job fairs, and alumni networks at your university for referrals', Icon: GraduationCap },
-    { title: 'Build a Strong Online Profile', desc: 'Keep your LinkedIn and portfolio up to date — UAE recruiters actively source interns online', Icon: Globe },
-    { title: 'Network at Industry Events', desc: 'Attend meetups, conferences, and career expos across Dubai and Abu Dhabi', Icon: Users },
-    { title: 'Follow Up Professionally', desc: 'Send a polite follow-up email 1–2 weeks after applying if you haven\'t heard back', Icon: CheckCircle },
-];
-
-const sectors = ['All Sectors', 'Banking & Finance', 'Technology', 'Government', 'Energy & Oil', 'Real Estate', 'Healthcare'];
-
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const InternshipsPage: React.FC = () => {
 
+    const { i18n } = useTranslation();
+    const isRTL = i18n.language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
+    const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-    const { t } = useTranslation('internships');
+    /* ──────────────────────── DATA ──────────────────────── */
+
+    const internships = [
+        { title: t('Software Engineering Intern', 'متدرب هندسة برمجيات'), company: t('Emirates NBD', 'الإمارات دبي الوطني'), location: t('Dubai', 'دبي'), duration: t('3 months', '3 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 5,000/mo', '5,000 د.إ/شهر'), sector: t('Banking & Finance', 'المصارف والتمويل'), deadline: t('Apr 15, 2026', '15 أبريل 2026'), desc: t('Work with the digital banking team on mobile app features and API development', 'العمل مع فريق الخدمات المصرفية الرقمية على ميزات التطبيق وتطوير واجهات البرمجة'), skills: ['React', 'Node.js', 'SQL'], catBg: brand.blue, catColor: brand.blueText },
+        { title: t('Marketing & Communications Intern', 'متدرب تسويق واتصالات'), company: t('Dubai Tourism', 'دبي للسياحة'), location: t('Dubai', 'دبي'), duration: t('6 months', '6 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 4,500/mo', '4,500 د.إ/شهر'), sector: t('Government', 'الحكومة'), deadline: t('Mar 30, 2026', '30 مارس 2026'), desc: t('Support digital marketing campaigns and social media strategy for tourism initiatives', 'دعم حملات التسويق الرقمي واستراتيجية وسائل التواصل لمبادرات السياحة'), skills: [t('Marketing', 'التسويق'), t('Content', 'المحتوى'), t('Analytics', 'التحليلات')], catBg: brand.green, catColor: brand.greenText },
+        { title: t('Data Science Intern', 'متدرب علم البيانات'), company: t('Etisalat (e&)', 'اتصالات (e&)'), location: t('Abu Dhabi', 'أبوظبي'), duration: t('4 months', '4 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 6,000/mo', '6,000 د.إ/شهر'), sector: t('Technology', 'التكنولوجيا'), deadline: t('Apr 1, 2026', '1 أبريل 2026'), desc: t('Develop ML models for customer analytics and network optimization projects', 'تطوير نماذج التعلم الآلي لتحليل العملاء ومشاريع تحسين الشبكة'), skills: ['Python', 'TensorFlow', 'SQL'], catBg: brand.purple, catColor: brand.purpleText },
+        { title: t('Architecture & Design Intern', 'متدرب هندسة معمارية وتصميم'), company: t('Emaar Properties', 'إعمار العقارية'), location: t('Dubai', 'دبي'), duration: t('3 months', '3 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 4,000/mo', '4,000 د.إ/شهر'), sector: t('Real Estate', 'العقارات'), deadline: t('May 1, 2026', '1 مايو 2026'), desc: t('Contribute to design concepts for upcoming mixed-use developments and community spaces', 'المساهمة في مفاهيم التصميم للمشاريع متعددة الاستخدامات والمساحات المجتمعية القادمة'), skills: ['AutoCAD', 'SketchUp', 'Revit'], catBg: brand.amber, catColor: brand.amberText },
+        { title: t('Sustainability & ESG Intern', 'متدرب الاستدامة والحوكمة البيئية'), company: t('ADNOC', 'أدنوك'), location: t('Abu Dhabi', 'أبوظبي'), duration: t('6 months', '6 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 7,000/mo', '7,000 د.إ/شهر'), sector: t('Energy & Oil', 'الطاقة والنفط'), deadline: t('Apr 20, 2026', '20 أبريل 2026'), desc: t('Support environmental impact assessments and sustainability reporting across operational units', 'دعم تقييمات الأثر البيئي وتقارير الاستدامة عبر الوحدات التشغيلية'), skills: [t('Sustainability', 'الاستدامة'), t('Data Analysis', 'تحليل البيانات'), t('Reporting', 'إعداد التقارير')], catBg: brand.primarySurface, catColor: brand.primary },
+        { title: t('Healthcare Innovation Intern', 'متدرب ابتكار الرعاية الصحية'), company: t('Cleveland Clinic Abu Dhabi', 'كليفلاند كلينك أبوظبي'), location: t('Abu Dhabi', 'أبوظبي'), duration: t('3 months', '3 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 4,500/mo', '4,500 د.إ/شهر'), sector: t('Healthcare', 'الرعاية الصحية'), deadline: t('Mar 25, 2026', '25 مارس 2026'), desc: t('Research and implement digital health tools for patient engagement and care coordination', 'بحث وتطبيق أدوات الصحة الرقمية لتفاعل المرضى وتنسيق الرعاية'), skills: [t('Research', 'البحث'), t('Health IT', 'تقنية المعلومات الصحية'), 'UX'], catBg: brand.red, catColor: brand.redText },
+    ];
+
+    const partnerCompanies = [
+        { name: t('Emirates NBD', 'الإمارات دبي الوطني'), sector: t('Banking', 'المصارف'), openings: 4, logo: '🏦' },
+        { name: t('Etisalat (e&)', 'اتصالات (e&)'), sector: t('Technology', 'التكنولوجيا'), openings: 6, logo: '📡' },
+        { name: t('ADNOC', 'أدنوك'), sector: t('Energy', 'الطاقة'), openings: 5, logo: '⛽' },
+        { name: t('Emaar Properties', 'إعمار العقارية'), sector: t('Real Estate', 'العقارات'), openings: 3, logo: '🏗️' },
+        { name: t('Dubai Tourism', 'دبي للسياحة'), sector: t('Government', 'الحكومة'), openings: 4, logo: '🏛️' },
+        { name: t('Mubadala', 'مبادلة'), sector: t('Investment', 'الاستثمار'), openings: 3, logo: '💼' },
+    ];
+
+    const applications = [
+        { title: t('Software Engineering Intern', 'متدرب هندسة برمجيات'), company: t('Emirates NBD', 'الإمارات دبي الوطني'), appliedDate: t('Feb 10, 2026', '10 فبراير 2026'), status: t('Under Review', 'قيد المراجعة'), statusColor: brand.amber, statusText: brand.amberText },
+        { title: t('Data Science Intern', 'متدرب علم البيانات'), company: t('Etisalat (e&)', 'اتصالات (e&)'), appliedDate: t('Feb 5, 2026', '5 فبراير 2026'), status: t('Interview Scheduled', 'مقابلة مجدولة'), statusColor: brand.green, statusText: brand.greenText },
+        { title: t('Marketing Intern', 'متدرب تسويق'), company: t('Dubai Tourism', 'دبي للسياحة'), appliedDate: t('Jan 28, 2026', '28 يناير 2026'), status: t('Under Review', 'قيد المراجعة'), statusColor: brand.amber, statusText: brand.amberText },
+    ];
+
+    const tips = [
+        { title: t('Start Your Search Early', 'ابدأ البحث مبكراً'), desc: t('Begin looking for internships 3–6 months before your desired start date to maximize your options', 'ابدأ البحث عن التدريب قبل 3–6 أشهر من تاريخ البدء المطلوب لتعظيم خياراتك'), Icon: Calendar },
+        { title: t('Tailor Every Application', 'خصّص كل طلب'), desc: t('Customize your cover letter and highlight relevant skills for each specific opportunity', 'خصّص رسالة التقديم وأبرز المهارات ذات الصلة لكل فرصة محددة'), Icon: Star },
+        { title: t('Leverage University Services', 'استفد من خدمات الجامعة'), desc: t('Use career services, job fairs, and alumni networks at your university for referrals', 'استخدم خدمات التوظيف ومعارض العمل وشبكات الخريجين في جامعتك للترشيحات'), Icon: GraduationCap },
+        { title: t('Build a Strong Online Profile', 'ابنِ ملفاً رقمياً قوياً'), desc: t('Keep your LinkedIn and portfolio up to date — UAE recruiters actively source interns online', 'حافظ على تحديث حسابك في لينكدإن ومعرض أعمالك — مسؤولو التوظيف في الإمارات يبحثون عن المتدربين إلكترونياً'), Icon: Globe },
+        { title: t('Network at Industry Events', 'تواصل في الفعاليات المهنية'), desc: t('Attend meetups, conferences, and career expos across Dubai and Abu Dhabi', 'احضر اللقاءات والمؤتمرات ومعارض التوظيف في دبي وأبوظبي'), Icon: Users },
+        { title: t('Follow Up Professionally', 'تابع بشكل مهني'), desc: t("Send a polite follow-up email 1–2 weeks after applying if you haven't heard back", 'أرسل بريداً إلكترونياً مهذباً للمتابعة بعد 1–2 أسبوع من التقديم إن لم تتلقَّ رداً'), Icon: CheckCircle },
+    ];
+
+    const sectors = [
+        t('All Sectors', 'جميع القطاعات'),
+        t('Banking & Finance', 'المصارف والتمويل'),
+        t('Technology', 'التكنولوجيا'),
+        t('Government', 'الحكومة'),
+        t('Energy & Oil', 'الطاقة والنفط'),
+        t('Real Estate', 'العقارات'),
+        t('Healthcare', 'الرعاية الصحية'),
+    ];
+
     const stats = [
-        { value: t('stats.open_internships_value', '25+'), label: t('stats.open_internships', 'Open Internships'), icon: Briefcase },
-        { value: t('stats.partner_companies_value', '50+'), label: t('stats.partner_companies', 'Partner Companies'), icon: Building2 },
-        { value: t('stats.placements_value', '1,200+'), label: t('stats.placements', 'Placements'), icon: Award },
-        { value: t('stats.full_time_conversion_value', '72%'), label: t('stats.full_time_conversion', 'Full-time Conversion'), icon: TrendingUp },
+        { value: '25+', label: t('Open Internships', 'تدريب متاح'), icon: Briefcase },
+        { value: '50+', label: t('Partner Companies', 'شركة شريكة'), icon: Building2 },
+        { value: '1,200+', label: t('Placements', 'توظيف'), icon: Award },
+        { value: '72%', label: t('Full-time Conversion', 'التحويل لدوام كامل'), icon: TrendingUp },
     ];
 
     /* ── Tab 1: Opportunities ── */
@@ -84,11 +95,14 @@ const InternshipsPage: React.FC = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>
-                    Internship Opportunities
+                    {t('Internship Opportunities', 'فرص التدريب')}
                 </h2>
             </div>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 20, lineHeight: 1.6 }}>
-                Explore internships across UAE's top companies — filter by sector, location, and duration to find your ideal placement.
+                {t(
+                    "Explore internships across UAE's top companies — filter by sector, location, and duration to find your ideal placement.",
+                    'استكشف فرص التدريب في أبرز شركات الإمارات — فلتر حسب القطاع والموقع والمدة للعثور على التدريب المثالي.'
+                )}
             </p>
 
             {/* Filter bar */}
@@ -162,9 +176,9 @@ const InternshipsPage: React.FC = () => {
 
                         {/* Footer */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <span style={{ fontSize: 11, color: brand.textSecondary }}><Calendar size={12} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />Deadline: {item.deadline}</span>
+                            <span style={{ fontSize: 11, color: brand.textSecondary }}><Calendar size={12} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />{t('Deadline:', 'الموعد النهائي:')} {item.deadline}</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
-                                Apply <ChevronRight size={14} />
+                                {t('Apply', 'قدّم')} <ChevronIcon size={14} />
                             </span>
                         </div>
                     </div>
@@ -177,10 +191,13 @@ const InternshipsPage: React.FC = () => {
     const applicationsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                My Applications
+                {t('My Applications', 'طلباتي')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                Track and manage your submitted internship applications — see status updates and upcoming interview schedules.
+                {t(
+                    'Track and manage your submitted internship applications — see status updates and upcoming interview schedules.',
+                    'تتبّع وأدِر طلبات التدريب المقدّمة — اطّلع على تحديثات الحالة ومواعيد المقابلات القادمة.'
+                )}
             </p>
 
             {/* Application Cards */}
@@ -193,7 +210,7 @@ const InternshipsPage: React.FC = () => {
                             </div>
                             <div>
                                 <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{app.title}</h4>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{app.company} · Applied {app.appliedDate}</div>
+                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{app.company} · {t('Applied', 'تقدّم في')} {app.appliedDate}</div>
                             </div>
                         </div>
                         <span style={{ background: app.statusColor, color: app.statusText, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 99, whiteSpace: 'nowrap' }}>
@@ -206,10 +223,10 @@ const InternshipsPage: React.FC = () => {
             {/* Stats Summary */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
                 {[
-                    { label: 'Total Applications', value: '3', color: brand.primary },
-                    { label: 'Under Review', value: '2', color: brand.amberText },
-                    { label: 'Interviews Scheduled', value: '1', color: brand.greenText },
-                    { label: 'Offers Received', value: '0', color: brand.blueText },
+                    { label: t('Total Applications', 'إجمالي الطلبات'), value: '3', color: brand.primary },
+                    { label: t('Under Review', 'قيد المراجعة'), value: '2', color: brand.amberText },
+                    { label: t('Interviews Scheduled', 'مقابلات مجدولة'), value: '1', color: brand.greenText },
+                    { label: t('Offers Received', 'عروض مستلمة'), value: '0', color: brand.blueText },
                 ].map((stat, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, textAlign: 'center' }}>
                         <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
@@ -224,10 +241,13 @@ const InternshipsPage: React.FC = () => {
     const companiesTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                Partner Companies
+                {t('Partner Companies', 'الشركات الشريكة')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                Explore 50+ partner organizations across the UAE that actively recruit interns — from government entities to private sector leaders.
+                {t(
+                    'Explore 50+ partner organizations across the UAE that actively recruit interns — from government entities to private sector leaders.',
+                    'استكشف أكثر من 50 مؤسسة شريكة في الإمارات تستقطب المتدربين بنشاط — من الجهات الحكومية إلى رواد القطاع الخاص.'
+                )}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -254,11 +274,11 @@ const InternshipsPage: React.FC = () => {
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: `1px solid ${brand.border}` }}>
                             <span style={{ fontSize: 13, color: brand.textSecondary }}>
-                                <Briefcase size={14} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
-                                {co.openings} open positions
+                                <Briefcase size={14} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />
+                                {co.openings} {t('open positions', 'وظائف متاحة')}
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
-                                View <ChevronRight size={14} />
+                                {t('View', 'عرض')} <ChevronIcon size={14} />
                             </span>
                         </div>
                     </div>
@@ -271,10 +291,13 @@ const InternshipsPage: React.FC = () => {
     const tipsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                Internship Tips & Resources
+                {t('Internship Tips & Resources', 'نصائح ومصادر التدريب')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                Expert advice to help you secure, excel in, and convert your internship into a full-time role.
+                {t(
+                    'Expert advice to help you secure, excel in, and convert your internship into a full-time role.',
+                    'نصائح خبراء لمساعدتك في الحصول على التدريب والتفوق فيه وتحويله إلى وظيفة بدوام كامل.'
+                )}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 28 }}>
@@ -295,13 +318,13 @@ const InternshipsPage: React.FC = () => {
             <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <TrendingUp size={20} style={{ color: brand.primary }} />
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>Converting Your Internship to a Full-time Role</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Converting Your Internship to a Full-time Role', 'تحويل تدريبك إلى وظيفة بدوام كامل')}</h3>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 14 }}>
                     {[
-                        { title: 'Exceed Expectations', desc: 'Go beyond assigned tasks — propose improvements and take initiative on projects' },
-                        { title: 'Build Relationships', desc: 'Network with team members, managers, and other departments during your internship' },
-                        { title: 'Ask for Feedback', desc: 'Request regular feedback and demonstrate how you\'ve actioned it' },
+                        { title: t('Exceed Expectations', 'تجاوز التوقعات'), desc: t('Go beyond assigned tasks — propose improvements and take initiative on projects', 'تجاوز المهام المسندة — اقترح تحسينات وبادر بالعمل على المشاريع') },
+                        { title: t('Build Relationships', 'ابنِ علاقات'), desc: t('Network with team members, managers, and other departments during your internship', 'تواصل مع أعضاء الفريق والمديرين والأقسام الأخرى أثناء تدريبك') },
+                        { title: t('Ask for Feedback', 'اطلب الملاحظات'), desc: t("Request regular feedback and demonstrate how you've actioned it", 'اطلب ملاحظات منتظمة وبيّن كيف طبّقتها') },
                     ].map((item, i) => (
                         <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 16 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -319,16 +342,19 @@ const InternshipsPage: React.FC = () => {
     /* ──────────────────────── TABS CONFIG ──────────────────────── */
 
     const tabs = [
-        { id: 'opportunities', label: t('tabs.opportunities.label', 'Opportunities'), icon: <Briefcase className="h-4 w-4" />, content: opportunitiesTab },
-        { id: 'applications', label: t('tabs.applications.label', 'My Applications'), icon: <CheckCircle className="h-4 w-4" />, content: applicationsTab },
-        { id: 'companies', label: t('tabs.companies.label', 'Partner Companies'), icon: <Building2 className="h-4 w-4" />, content: companiesTab },
-        { id: 'tips', label: t('tabs.tips.label', 'Tips & Resources'), icon: <Star className="h-4 w-4" />, content: tipsTab },
+        { id: 'opportunities', label: t('Opportunities', 'الفرص'), icon: <Briefcase className="h-4 w-4" />, content: opportunitiesTab },
+        { id: 'applications', label: t('My Applications', 'طلباتي'), icon: <CheckCircle className="h-4 w-4" />, content: applicationsTab },
+        { id: 'companies', label: t('Partner Companies', 'الشركات الشريكة'), icon: <Building2 className="h-4 w-4" />, content: companiesTab },
+        { id: 'tips', label: t('Tips & Resources', 'نصائح ومصادر'), icon: <Star className="h-4 w-4" />, content: tipsTab },
     ];
 
     return (
         <EducationPathwayLayout
-            title={t('title', 'Internships')}
-            description={t('description', 'Gain valuable work experience through paid internships with leading companies across the UAE — your bridge from learning to earning')}
+            title={t('Internships', 'التدريب العملي')}
+            description={t(
+                'Gain valuable work experience through paid internships with leading companies across the UAE — your bridge from learning to earning',
+                'اكتسب خبرة عملية قيّمة من خلال تدريب مدفوع مع شركات رائدة في الإمارات — جسرك من التعلّم إلى الكسب'
+            )}
             icon={<Briefcase className="h-6 w-6" />}
             stats={stats}
             tabs={tabs}

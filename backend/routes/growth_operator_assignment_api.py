@@ -247,7 +247,7 @@ def list_growth_operators():
         
         offset = (page - 1) * per_page
         
-        # Get users who are growth operators
+        # Get users who are growth operators (check primary role, secondary_roles, and assignments)
         query = """
             SELECT DISTINCT
                 u.id,
@@ -259,7 +259,12 @@ def list_growth_operators():
                 u.created_at,
                 u.last_login
             FROM users u
-            WHERE u.role LIKE 'growth_operator%'
+            LEFT JOIN growth_operator_assignments goa ON u.id = goa.user_id AND goa.is_active = true
+            WHERE u.role LIKE 'growth_operator%%'
+               OR EXISTS (
+                   SELECT 1 FROM unnest(u.secondary_roles) AS sr WHERE sr LIKE 'growth_operator_%%'
+               )
+               OR goa.user_id IS NOT NULL
         """
         params = []
         
@@ -289,10 +294,25 @@ def list_growth_operators():
                 if not has_domain:
                     continue
             
+            # Serialize datetime fields to ISO strings for JSON compatibility
+            op_data = {}
+            for key, value in op.items():
+                if isinstance(value, datetime):
+                    op_data[key] = value.isoformat()
+                else:
+                    op_data[key] = value
+            
+            serialized_assignments = []
+            for a in (assignments or []):
+                sa = {}
+                for key, value in a.items():
+                    sa[key] = value.isoformat() if isinstance(value, datetime) else value
+                serialized_assignments.append(sa)
+            
             result.append({
-                **op,
+                **op_data,
                 'domains': [a['domain'] for a in (assignments or [])],
-                'assignments': assignments or [],
+                'assignments': serialized_assignments,
                 'primaryDomain': next((a['domain'] for a in (assignments or []) if a.get('is_primary')), None)
             })
         
@@ -300,7 +320,12 @@ def list_growth_operators():
         count_query = """
             SELECT COUNT(DISTINCT u.id) as total
             FROM users u
-            WHERE u.role LIKE 'growth_operator%'
+            LEFT JOIN growth_operator_assignments goa ON u.id = goa.user_id AND goa.is_active = true
+            WHERE u.role LIKE 'growth_operator%%'
+               OR EXISTS (
+                   SELECT 1 FROM unnest(u.secondary_roles) AS sr WHERE sr LIKE 'growth_operator_%%'
+               )
+               OR goa.user_id IS NOT NULL
         """
         total_result = execute_query(count_query, fetch_one=True)
         total = total_result.get('total', 0) if total_result else 0
@@ -339,7 +364,7 @@ def get_growth_operator(user_id):
         user_query = """
             SELECT id, username, email, full_name, role, is_active, created_at, last_login
             FROM users
-            WHERE id = %s AND role LIKE 'growth_operator%'
+            WHERE id = %s AND role LIKE 'growth_operator%%'
         """
         user = execute_query(user_query, (user_id,), fetch_one=True)
         

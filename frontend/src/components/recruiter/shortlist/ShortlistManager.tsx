@@ -724,7 +724,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                                       if (response.data?.success) {
                                         const conversationId = response.data.data.id || response.data.data.conversation?.id;
                                         if (conversationId) {
-                                          navigate(`/messages?conversationId=${conversationId}`);
+                                          navigate(`/recruiter?tab=messages&conversationId=${conversationId}`);
                                         }
                                       }
                                     } catch (error) {

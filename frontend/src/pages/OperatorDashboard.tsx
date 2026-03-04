@@ -3,10 +3,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GrowthTools from '@/components/admin/GrowthTools';
 import { GrowthOperations } from '@/components/admin/GrowthOperations';
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
-import { LogOut, Rocket, UserPlus } from 'lucide-react';
+import Messages from '@/components/recruiter/Messages';
+import { LogOut, Rocket, UserPlus, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const OperatorDashboard = () => {
     const { user, signOut } = useAuth();
@@ -35,6 +36,9 @@ const OperatorDashboard = () => {
         if (operatorType.isMonitoringOps) return 'monitoring';
         return 'ops';
     }, [operatorType]);
+
+    const [searchParams] = useSearchParams();
+    const initialTab = searchParams.get('tab') || defaultTab;
 
     return (
         <div className="min-h-screen bg-background">
@@ -74,8 +78,8 @@ const OperatorDashboard = () => {
                     </p>
                 </div>
 
-                <Tabs defaultValue={defaultTab} className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-4 max-w-[800px]">
+                <Tabs defaultValue={initialTab} className="space-y-6">
+                    <TabsList className="grid w-full grid-cols-5 max-w-[900px]">
                         {(operatorType.isLegacyOps || (!operatorType.isCompanyOps && !operatorType.isCandidateOps && !operatorType.isMonitoringOps)) && (
                             <TabsTrigger value="ops">Campaigns</TabsTrigger>
                         )}
@@ -94,6 +98,12 @@ const OperatorDashboard = () => {
                         {(operatorType.isMonitoringOps || operatorType.isLegacyOps) && (
                             <TabsTrigger value="monitoring">Monitoring Center</TabsTrigger>
                         )}
+
+                        {/* Messages - always visible */}
+                        <TabsTrigger value="messages">
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Messages
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Legacy / General Ops Content */}
@@ -139,6 +149,11 @@ const OperatorDashboard = () => {
                                 </div>
                             </div>
                         </div>
+                    </TabsContent>
+
+                    {/* Messages Content */}
+                    <TabsContent value="messages" className="space-y-4">
+                        <Messages senderRole="growth_operator" />
                     </TabsContent>
                 </Tabs>
             </main>

@@ -21,7 +21,9 @@ import {
   DollarSign,
   CheckSquare,
   User,
-  GitCompare
+  GitCompare,
+  Zap,
+  Flag
 } from 'lucide-react';
 
 export const navigationGroups: NavGroup[] = [
@@ -122,6 +124,18 @@ export const navigationGroups: NavGroup[] = [
         icon: Search
       },
       {
+        name: 'Gig Marketplace',
+        href: '/gig-marketplace',
+        description: 'Freelance opportunities and project-based work',
+        icon: Zap
+      },
+      {
+        name: 'Startup Launchpad',
+        href: '/startup-launchpad',
+        description: 'Launch your startup with UAE government programs and funding',
+        icon: Lightbulb
+      },
+      {
         name: 'Career Advisory',
         href: '/career-advisory',
         description: 'Professional career guidance',
@@ -134,6 +148,12 @@ export const navigationGroups: NavGroup[] = [
     name: 'Professional Growth',
     description: 'Skill development and training programs',
     items: [
+      {
+        name: 'Emiratization Tracker',
+        href: '/emiratization-tracker',
+        description: 'Track Emiratization rates, compliance, and Nafis programs',
+        icon: Flag
+      },
       {
         name: 'Assessments',
         href: '/assessments',

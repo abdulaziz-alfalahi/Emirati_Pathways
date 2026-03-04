@@ -918,6 +918,95 @@ def update_feedback_status(feedback_id):
         logger.error(f"Failed to update feedback status: {e}")
         return jsonify({'success': False, 'message': 'Failed to update feedback status'}), 500
 
+
+# =====================================================
+# INVITATION STATS ENDPOINT (NAFIS pipeline)
+# =====================================================
+
+@admin_dashboard_bp.route('/invitations/stats', methods=['GET'])
+@optional_auth
+def get_invitation_stats():
+    """Return invitation pipeline stats for the admin dashboard."""
+    try:
+        from nafis_talent_system import NafisTalentSystem
+        nts = NafisTalentSystem()
+        stats = nts.get_invitation_stats()
+        return jsonify({'success': True, 'data': stats})
+    except Exception as e:
+        logger.error(f"Failed to get invitation stats: {e}")
+        return jsonify({
+            'success': True,
+            'data': {
+                'total': 0, 'accepted': 0, 'pending': 0, 'expired': 0,
+                'recent': []
+            }
+        })
+
+
+# =====================================================
+# SECURITY STATS ENDPOINT (live data)
+# =====================================================
+
+@admin_dashboard_bp.route('/security/stats', methods=['GET'])
+@optional_auth
+def get_security_stats():
+    """Return real security metrics for the admin dashboard Security tab."""
+    try:
+        # Active sessions: users who logged in within the last 24 h
+        active_query = """
+            SELECT COUNT(*) as active_sessions
+            FROM users
+            WHERE last_login >= NOW() - INTERVAL '24 hours'
+        """
+        active = execute_query(active_query, fetch_one=True)
+
+        # Failed OTP attempts in last 24 h
+        failed_query = """
+            SELECT COUNT(*) as failed
+            FROM otp_interactions
+            WHERE verified = FALSE AND created_at >= NOW() - INTERVAL '24 hours'
+        """
+        failed = execute_query(failed_query, fetch_one=True)
+
+        # User verification %: users with a verified phone or email
+        verified_query = """
+            SELECT
+                COUNT(*) as total_users,
+                COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone != '') as verified
+            FROM users
+        """
+        verified = execute_query(verified_query, fetch_one=True)
+
+        total_users = (verified or {}).get('total_users', 1) or 1
+        verified_count = (verified or {}).get('verified', 0)
+        verification_pct = round((verified_count / total_users) * 100)
+
+        # Compute simple security score: combination of verification % and low failed-login rate
+        failed_count = (failed or {}).get('failed', 0)
+        score = max(0, min(100, verification_pct - (failed_count * 2)))
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'security_score': score,
+                'failed_logins_24h': failed_count,
+                'active_sessions': (active or {}).get('active_sessions', 0),
+                'verified_users_pct': verification_pct,
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to get security stats: {e}")
+        return jsonify({
+            'success': True,
+            'data': {
+                'security_score': 0,
+                'failed_logins_24h': 0,
+                'active_sessions': 0,
+                'verified_users_pct': 0,
+            }
+        })
+
+
 # Register the blueprint function
 def register_admin_dashboard_routes(app):
     """Register admin dashboard routes with the Flask app"""

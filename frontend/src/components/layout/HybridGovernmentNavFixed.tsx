@@ -108,8 +108,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     '/interview-preparation': { name: 'nav_item_interview_preparation', desc: 'nav_item_interview_preparation_desc' },
     '/internships': { name: 'nav_item_internships', desc: 'nav_item_internships_desc' },
     '/job-matching': { name: 'nav_item_job_matching', desc: 'nav_item_job_matching_desc' },
+    '/gig-marketplace': { name: 'nav_item_gig_marketplace', desc: 'nav_item_gig_marketplace_desc' },
+    '/startup-launchpad': { name: 'nav_item_startup_launchpad', desc: 'nav_item_startup_launchpad_desc' },
     '/career-advisory': { name: 'nav_item_career_advisory', desc: 'nav_item_career_advisory_desc' },
     '/assessments': { name: 'nav_item_assessments', desc: 'nav_item_assessments_desc' },
+    '/emiratization-tracker': { name: 'nav_item_emiratization_tracker', desc: 'nav_item_emiratization_tracker_desc' },
     '/analytics': { name: 'nav_item_analytics', desc: 'nav_item_analytics_desc' },
     '/digital-skills-development': { name: 'nav_item_digital_skills', desc: 'nav_item_digital_skills_desc' },
     '/training': { name: 'nav_item_training', desc: 'nav_item_training_desc' },
@@ -136,14 +139,14 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 <img
                   src="/dubai-gov-logo.jpg"
                   alt="Government of Dubai"
-                  className="h-16 w-auto"
+                  className="h-20 w-auto"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
-                <div className="w-px h-14 bg-slate-300"></div>
+                <div className="w-px h-16 bg-slate-300"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-14 w-auto"
+                  className="h-20 w-auto"
                   style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.08))' }}
                 />
               </div>
@@ -274,6 +277,13 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 )}
               </div>
             ))}
+            {/* Our Mission — standalone nav link */}
+            <Link
+              to="/our-mission"
+              className={`px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${currentPage === 'mission' ? 'bg-[#F0F7F7] text-[#006E6D]' : ''}`}
+            >
+              {t('nav_our_mission', isRTL ? 'رسالتنا' : 'Our Mission')}
+            </Link>
           </div>
         </div>
       </nav>
@@ -328,6 +338,17 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                   </div>
                 </div>
               ))}
+              {/* Our Mission — mobile nav link */}
+              <div className="border-b border-slate-100 pb-4">
+                <Link
+                  to="/our-mission"
+                  className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#374151] hover:text-[#006E6D] transition-colors py-1 font-semibold`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span className={`w-3 h-3 bg-[#006E6D] rounded-full`}></span>
+                  <span>{t('nav_our_mission', isRTL ? 'رسالتنا' : 'Our Mission')}</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

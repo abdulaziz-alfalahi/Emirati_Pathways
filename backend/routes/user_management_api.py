@@ -764,29 +764,16 @@ def list_roles():
     """Get list of available roles"""
     try:
         roles = [
-            {'id': 'super_admin', 'name': 'super_admin', 'display_name': 'Super Administrator', 'description': 'Full system access', 'permissions': [], 'is_system': True},
-            {'id': 'administrator', 'name': 'administrator', 'display_name': 'Administrator', 'description': 'Administrative access', 'permissions': [], 'is_system': True},
-            {'id': 'admin', 'name': 'admin', 'display_name': 'Admin (Legacy)', 'description': 'Legacy administrative access', 'permissions': [], 'is_system': True},
-            {'id': 'content_admin', 'name': 'content_admin', 'display_name': 'Content Administrator', 'description': 'Manage content', 'permissions': [], 'is_system': True},
-            {'id': 'user_admin', 'name': 'user_admin', 'display_name': 'User Administrator', 'description': 'Manage users', 'permissions': [], 'is_system': True},
-            {'id': 'content_editor', 'name': 'content_editor', 'display_name': 'Content Editor', 'description': 'Edit content', 'permissions': [], 'is_system': True},
-            {'id': 'content_reviewer', 'name': 'content_reviewer', 'display_name': 'Content Reviewer', 'description': 'Review content', 'permissions': [], 'is_system': True},
-            {'id': 'job_seeker', 'name': 'job_seeker', 'display_name': 'Job Seeker', 'description': 'Search and apply for jobs', 'permissions': [], 'is_system': True},
-            {'id': 'recruiter', 'name': 'recruiter', 'display_name': 'Recruiter', 'description': 'Post jobs and screen candidates', 'permissions': [], 'is_system': True},
-            {'id': 'hr_manager', 'name': 'hr_manager', 'display_name': 'HR Manager', 'description': 'Manage HR operations', 'permissions': [], 'is_system': True},
-            {'id': 'mentor', 'name': 'mentor', 'display_name': 'Mentor', 'description': 'Provide mentorship', 'permissions': [], 'is_system': True},
-            {'id': 'educator', 'name': 'educator', 'display_name': 'Educator', 'description': 'Educational institution representative', 'permissions': [], 'is_system': True},
-            {'id': 'student', 'name': 'student', 'display_name': 'Student', 'description': 'Student', 'permissions': [], 'is_system': True},
-            {'id': 'guardian', 'name': 'guardian', 'display_name': 'Guardian', 'description': 'Guardian', 'permissions': [], 'is_system': True},
-            {'id': 'assessor', 'name': 'assessor', 'display_name': 'Assessor', 'description': 'Conduct assessments', 'permissions': [], 'is_system': True},
-            {'id': 'operator', 'name': 'operator', 'display_name': 'Growth Operator', 'description': 'Platform growth operations', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_candidate', 'name': 'growth_operator_candidate', 'display_name': 'Candidate Onboarding Operator', 'description': 'Candidate operations and onboarding', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_company', 'name': 'growth_operator_company', 'display_name': 'Company Onboarding Operator', 'description': 'Private sector company onboarding', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_monitoring', 'name': 'growth_operator_monitoring', 'display_name': 'Monitoring Center Operator', 'description': 'Monitoring and status tracking', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_education', 'name': 'growth_operator_education', 'display_name': 'Education Growth Operator', 'description': 'Education partnerships', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_assessment', 'name': 'growth_operator_assessment', 'display_name': 'Assessment Growth Operator', 'description': 'Assessment centers', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_mentorship', 'name': 'growth_operator_mentorship', 'display_name': 'Mentorship Growth Operator', 'description': 'Mentorship programs', 'permissions': [], 'is_system': True},
-            {'id': 'growth_operator_community', 'name': 'growth_operator_community', 'display_name': 'Community Growth Operator', 'description': 'Community management', 'permissions': [], 'is_system': True}
+            # Administrative
+            {'id': 'administrator', 'name': 'administrator', 'display_name': 'Administrator', 'description': 'Full platform governance and system access', 'permissions': ['manage_users', 'system_settings', 'view_all_analytics', 'manage_all'], 'is_system': True, 'category': 'Administrative'},
+            # Growth Operators
+            {'id': 'growth_operator_candidate', 'name': 'growth_operator_candidate', 'display_name': 'Candidate Onboarding Operator', 'description': 'Onboard NAFIS job seekers and manage candidate engagement', 'permissions': ['onboard_candidates', 'manage_candidate_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_company', 'name': 'growth_operator_company', 'display_name': 'Company Onboarding Operator', 'description': 'Onboard private sector companies and manage employer partnerships', 'permissions': ['onboard_companies', 'manage_company_engagement', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_education', 'name': 'growth_operator_education', 'display_name': 'Education Operator', 'description': 'Partner with schools, universities, and training institutes', 'permissions': ['onboard_education', 'manage_education_partnerships', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_assessment', 'name': 'growth_operator_assessment', 'display_name': 'Assessment Operator', 'description': 'Manage assessment centers and certification bodies', 'permissions': ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_mentorship', 'name': 'growth_operator_mentorship', 'display_name': 'Mentorship Operator', 'description': 'Onboard mentors and manage coaching programs', 'permissions': ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_community', 'name': 'growth_operator_community', 'display_name': 'Community Operator', 'description': 'Moderate communities and manage events', 'permissions': ['moderate_communities', 'manage_community_events', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
+            {'id': 'growth_operator_monitoring', 'name': 'growth_operator_monitoring', 'display_name': 'Monitoring Center Operator', 'description': 'Monitor platform operations and track metrics', 'permissions': ['view_operations_center', 'view_all_analytics', 'view_analytics'], 'is_system': True, 'category': 'Growth Operators'},
         ]
         
         return jsonify({

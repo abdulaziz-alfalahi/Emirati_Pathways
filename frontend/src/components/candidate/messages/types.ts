@@ -1,4 +1,11 @@
 
+export interface Attachment {
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -8,6 +15,12 @@ export interface Message {
   content: string;
   timestamp: string;
   read: boolean;
+  status?: 'sent' | 'delivered' | 'read';
+  readAt?: string;
+  attachments?: Attachment[];
+  metadata?: any;
+  _optimistic?: boolean;
+  _failed?: boolean;
 }
 
 export interface Conversation {

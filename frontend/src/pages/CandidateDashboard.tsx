@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import {
   User,
+  Users,
   Briefcase,
   FileText,
   TrendingUp,
@@ -20,9 +21,13 @@ import {
   Calendar,
   Eye,
   Bell,
+  Search,
   Settings,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Lightbulb,
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 
 // Import your existing components
@@ -34,6 +39,7 @@ import CandidateInterviews from '@/components/candidate/Interviews';
 import CandidateOffers from '@/components/candidate/CandidateOffers';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 
 interface DashboardData {
   profile: {
@@ -61,6 +67,29 @@ interface DashboardData {
   }>;
 }
 
+/* ─── Circular Progress Ring ─── */
+const CircularProgress: React.FC<{ value: number; size?: number; strokeWidth?: number }> = ({
+  value, size = 120, strokeWidth = 10
+}) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (value / 100) * circumference;
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={radius}
+        fill="none" stroke="#E5E7EB" strokeWidth={strokeWidth} />
+      <circle cx={size / 2} cy={size / 2} r={radius}
+        fill="none" stroke="#006E6D" strokeWidth={strokeWidth}
+        strokeDasharray={circumference} strokeDashoffset={offset}
+        strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+      <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central"
+        className="fill-slate-900 text-2xl font-bold" transform={`rotate(90, ${size / 2}, ${size / 2})`}>
+        {value}%
+      </text>
+    </svg>
+  );
+};
+
 const CandidateDashboard: React.FC = () => {
   const { i18n } = useTranslation();
   const { language, toggleLanguage } = useLanguage();
@@ -87,6 +116,7 @@ const CandidateDashboard: React.FC = () => {
   // Bilingual helper
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
+  const { unreadCount } = useUnreadMessageCount();
 
   useEffect(() => {
     // Check for hash
@@ -138,14 +168,46 @@ const CandidateDashboard: React.FC = () => {
     }
   };
 
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'application': return 'bg-blue-100 border-blue-200';
+      case 'interview': return 'bg-purple-100 border-purple-200';
+      case 'profile_view': return 'bg-green-100 border-green-200';
+      case 'job_match': return 'bg-orange-100 border-orange-200';
+      default: return 'bg-gray-100 border-gray-200';
+    }
+  };
+
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">{t('Loading dashboard...', 'جاري تحميل لوحة التحكم...')}</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+          <span className="text-slate-600 font-dubai-medium">{t('Loading dashboard...', 'جاري تحميل لوحة التحكم...')}</span>
+        </div>
+      </div>
+    );
   }
 
   const firstName = dashboardData.profile.name.split(' ')[0];
 
+  // Mock recent activity if none from API
+  const recentActivity = dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity : [
+    { id: '1', type: 'interview' as const, title: t('Interview Scheduled', 'تمت جدولة مقابلة'), description: t('with Dubai Municipality • 3:00 PM Tomorrow', 'مع بلدية دبي • 3:00 مساءً غداً'), timestamp: t('1h ago', 'منذ ساعة') },
+    { id: '2', type: 'application' as const, title: t('Application Viewed', 'تم عرض الطلب'), description: t('by ADNOC for Senior Analyst role', 'من أدنوك لوظيفة محلل أول'), timestamp: t('3h ago', 'منذ 3 ساعات') },
+    { id: '3', type: 'job_match' as const, title: t('New AI Matches', 'مطابقات ذكاء اصطناعي جديدة'), description: t('12 new jobs matching your skill profile', '12 وظيفة جديدة تتطابق مع ملفك المهني'), timestamp: t('Yesterday', 'أمس') },
+  ];
+
+  // Stat card config
+  const statCards = [
+    { label: t('Profile Views', 'مشاهدات الملف'), value: dashboardData.stats.profileViews, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: '+12%' },
+    { label: t('Job Matches', 'الوظائف المطابقة'), value: dashboardData.stats.jobMatches, icon: Target, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100', trend: '+8' },
+    { label: t('Applications', 'الطلبات'), value: dashboardData.stats.applications, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', trend: '' },
+    { label: t('Interviews', 'المقابلات'), value: dashboardData.stats.interviews, icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: '+1 new' },
+  ];
+
   return (
-    <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-[#FAFBFC] ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <HybridGovernmentNavFixed
         showAuthButtons={false}
         currentPage="dashboard"
@@ -154,9 +216,10 @@ const CandidateDashboard: React.FC = () => {
         onLanguageToggle={toggleLanguage}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center py-6">
+        {/* ─── Welcome Header ─── */}
+        <div className="flex justify-between items-start py-6">
           <div className="flex items-center gap-4">
-            <div className="relative group w-12 h-12 rounded-full overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-200">
+            <div className="relative group w-14 h-14 rounded-full overflow-hidden shadow-lg ring-2 ring-teal-100 transform hover:scale-105 transition-transform duration-200">
               {dashboardData.profile.profile_photo_url ? (
                 <img
                   src={dashboardData.profile.profile_photo_url || ''}
@@ -164,8 +227,8 @@ const CandidateDashboard: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-teal-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
+                <div className="w-full h-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">
                     {dashboardData.profile.name ? dashboardData.profile.name.charAt(0).toUpperCase() : 'C'}
                   </span>
                 </div>
@@ -189,13 +252,9 @@ const CandidateDashboard: React.FC = () => {
                     const formData = new FormData();
                     formData.append('photo', file);
                     try {
-                      // Use restClient for consistent base URL and auth headers
                       const response = await restClient.post('/api/profile/candidate/photo', formData, {
-                        headers: {
-                          'Content-Type': 'multipart/form-data',
-                        },
+                        headers: { 'Content-Type': 'multipart/form-data' },
                       });
-
                       const data = response.data;
                       if (data.success) {
                         setDashboardData(prev => ({
@@ -211,24 +270,26 @@ const CandidateDashboard: React.FC = () => {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
+              <h1 className="text-2xl font-bold text-slate-900 animate-in fade-in slide-in-from-left-4 duration-500">
                 {dashboardData.profile.name === 'New Member'
                   ? t('Welcome!', '!مرحباً')
-                  : t(`Welcome back, ${firstName}!`, `!مرحباً بعودتك، ${firstName}`)}
+                  : t(`Good morning, ${firstName}`, `صباح الخير، ${firstName}`)}
               </h1>
-              <p className="text-muted-foreground">
-                {dashboardData.profile.name === 'New Member'
-                  ? t('Complete your profile to unlock your career journey', 'أكمل ملفك الشخصي لبدء رحلتك المهنية')
-                  : t('Your career journey continues here', 'رحلتك المهنية تستمر هنا')}
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-sm text-slate-500">
+                  {new Date().toLocaleDateString(isRTL ? 'ar-AE' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+                <Badge className="bg-teal-50 text-teal-700 border border-teal-200 text-xs font-dubai-medium">
+                  {t('Candidate Status: Active', 'حالة المرشح: نشط')}
+                </Badge>
+              </div>
             </div>
           </div>
-
         </div>
 
         {!dashboardData.profile.cvUploaded && (
-          <div className="pt-4 mb-6">
-            <Alert className="border-teal-200 bg-teal-50 shadow-sm">
+          <div className="pt-2 mb-6">
+            <Alert className="border-teal-200 bg-teal-50/80 shadow-sm backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-teal-600" />
               <AlertDescription className="text-teal-800 flex justify-between items-center">
                 <span>
@@ -242,172 +303,265 @@ const CandidateDashboard: React.FC = () => {
           </div>
         )}
 
-        <div className="py-8">
+        <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className="grid w-full grid-cols-7 bg-muted/50 p-1 rounded-xl shadow-sm">
-              <TabsTrigger value="overview">{t('Overview', 'نظرة عامة')}</TabsTrigger>
-              <TabsTrigger value="profile">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
-              <TabsTrigger value="jobs">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
-              <TabsTrigger value="applications">{t('Applications', 'الطلبات')}</TabsTrigger>
-              <TabsTrigger value="interviews">{t('Interviews', 'المقابلات')}</TabsTrigger>
-              <TabsTrigger value="offers">{t('Offers', 'العروض')}</TabsTrigger>
-              <TabsTrigger value="messages">{t('Messages', 'الرسائل')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="profile" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
+              <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
+              <TabsTrigger value="applications" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
+              <TabsTrigger value="interviews" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
+              <TabsTrigger value="offers" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
+              <TabsTrigger value="messages" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
+                {t('Messages', 'الرسائل')}
+                {unreadCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </TabsTrigger>
             </TabsList>
 
+            {/* ════════════════════════════════════════════════════════════
+                              ENHANCED OVERVIEW TAB
+               ════════════════════════════════════════════════════════════ */}
             <TabsContent value="overview" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6" dir={isRTL ? 'rtl' : 'ltr'}>
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <div className="p-3 bg-blue-100 rounded-full">
-                        <Eye className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <div style={{ marginInlineStart: 16 }}>
-                        <p className="text-sm font-medium text-muted-foreground">{t('Profile Views', 'مشاهدات الملف')}</p>
-                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.profileViews}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <div className="p-3 bg-green-100 rounded-full">
-                        <Target className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div style={{ marginInlineStart: 16 }}>
-                        <p className="text-sm font-medium text-muted-foreground">{t('Job Matches', 'الوظائف المطابقة')}</p>
-                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.jobMatches}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <div className="p-3 bg-purple-100 rounded-full">
-                        <FileText className="h-6 w-6 text-purple-600" />
-                      </div>
-                      <div style={{ marginInlineStart: 16 }}>
-                        <p className="text-sm font-medium text-muted-foreground">{t('Applications', 'الطلبات')}</p>
-                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.applications}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <div className="p-3 bg-orange-100 rounded-full">
-                        <Calendar className="h-6 w-6 text-orange-600" />
-                      </div>
-                      <div style={{ marginInlineStart: 16 }}>
-                        <p className="text-sm font-medium text-muted-foreground">{t('Interviews', 'المقابلات')}</p>
-                        <p className="text-2xl font-bold text-foreground">{dashboardData.stats.interviews}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="overflow-hidden">
-                  <CardHeader className="bg-card border-b">
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-teal-600" />
-                      {t('Profile Completion', 'اكتمال الملف الشخصي')}
-                    </CardTitle>
-                    <CardDescription>
-                      {t('Complete your profile to get better job matches', 'أكمل ملفك الشخصي للحصول على مطابقات وظيفية أفضل')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t('Overall Progress', 'التقدم العام')}</span>
-                        <span className="text-sm font-bold text-teal-600">{dashboardData.profile.completionPercentage}%</span>
-                      </div>
-                      <Progress value={dashboardData.profile.completionPercentage} className="h-3 bg-gray-100" />
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm p-3 bg-gray-50 rounded-lg">
-                          <span className="flex items-center gap-2">
-                            <Upload className="h-4 w-4 text-gray-500" />
-                            {t('CV Upload Status', 'حالة رفع السيرة الذاتية')}
-                          </span>
-                          {dashboardData.profile.cvUploaded ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" /> {t('Uploaded', 'تم الرفع')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" /> {t('Pending', 'قيد الانتظار')}
-                            </Badge>
-                          )}
-                        </div>
-                        <Button
-                          onClick={() => navigate('/candidate/profile')}
-                          variant="default"
-                          className="w-full bg-slate-900 hover:bg-slate-800"
-                        >
-                          {dashboardData.profile.cvUploaded
-                            ? t('Enhance Profile / CV', 'تحسين الملف / السيرة الذاتية')
-                            : t('Build Profile & CV', 'إنشاء الملف والسيرة الذاتية')}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between text-sm p-3 bg-blue-50 rounded-lg mt-3">
-                        <span className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-blue-500" />
-                          {t('ATS Compatibility', 'توافق نظام تتبع المتقدمين')}
-                        </span>
-                        <span className={`font-bold ${(dashboardData.profile.ats_score || 0) >= 80 ? 'text-green-600' :
-                          (dashboardData.profile.ats_score || 0) >= 60 ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                          {dashboardData.profile.ats_score || 0}/100
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* ─── 3-Column Layout: Sidebar + Main + Right Panel ─── */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
 
-                <Card>
-                  <CardHeader className="bg-card border-b">
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-teal-600" />
-                      {t('Quick Actions', 'إجراءات سريعة')}
-                    </CardTitle>
-                    <CardDescription>
-                      {t('Common tasks to boost your job search', 'مهام شائعة لتعزيز بحثك عن وظيفة')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-3">
-                      <Button
-                        onClick={() => setActiveTab('jobs')}
-                        variant="outline"
-                        className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
-                      >
-                        <Target className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
-                        {t('Browse Job Matches', 'تصفح الوظائف المطابقة')}
-                      </Button>
-                      <Button
-                        onClick={() => setActiveTab('applications')}
-                        variant="outline"
-                        className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
-                      >
-                        <FileText className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
-                        {t(`Track Applications (${dashboardData.stats.applications})`, `تتبع الطلبات (${dashboardData.stats.applications})`)}
-                      </Button>
+                {/* Left Sidebar — Profile Status + Quick Actions */}
+                <div className="lg:col-span-3 space-y-6">
+                  {/* Profile Status */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                        <User className="h-4 w-4 text-teal-600" />
+                        {t('Profile Status', 'حالة الملف')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-5 flex flex-col items-center">
+                      <CircularProgress value={dashboardData.profile.completionPercentage} />
+                      <div className="mt-3 flex items-center gap-2">
+                        <span className="text-xs text-slate-500">{t('ATS Compatibility', 'توافق ATS')}</span>
+                        <Badge className={`text-[10px] ${(dashboardData.profile.ats_score || 0) >= 80 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                          {(dashboardData.profile.ats_score || 0) >= 80 ? t('High', 'عالي') : t('Medium', 'متوسط')}
+                        </Badge>
+                      </div>
                       <Button
                         onClick={() => navigate('/candidate/profile')}
                         variant="outline"
-                        className="w-full justify-start hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
+                        size="sm"
+                        className="w-full mt-4 text-xs font-dubai-medium text-teal-700 border-teal-200 hover:bg-teal-50"
                       >
-                        <Sparkles className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
-                        {t('Build Your Resume with AI', 'أنشئ سيرتك الذاتية بالذكاء الاصطناعي')}
+                        {t('Complete Profile →', 'أكمل الملف ←')}
                       </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Actions */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                        <TrendingUp className="h-4 w-4 text-teal-600" />
+                        {t('Quick Actions', 'إجراءات سريعة')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-2">
+                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-teal-50 hover:text-teal-700" onClick={() => navigate('/candidate/profile')}>
+                        <Upload className="h-4 w-4 text-teal-600" style={{ marginInlineEnd: 10 }} />
+                        {t('Upload Latest CV', 'ارفع أحدث سيرة ذاتية')}
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-teal-50 hover:text-teal-700" onClick={() => setActiveTab('jobs')}>
+                        <Search className="h-4 w-4 text-blue-500" style={{ marginInlineEnd: 10 }} />
+                        {t('Browse New Jobs', 'تصفح الوظائف الجديدة')}
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start text-sm h-10 hover:bg-teal-50 hover:text-teal-700" onClick={() => navigate('/mentorship')}>
+                        <Users className="h-4 w-4 text-purple-500" style={{ marginInlineEnd: 10 }} />
+                        {t('Find a Mentor', 'ابحث عن مرشد')}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Center — Stat Cards + Recommended Jobs */}
+                <div className="lg:col-span-6 space-y-6">
+                  {/* Stat Cards (2x2 grid) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {statCards.map((stat, i) => (
+                      <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
+                        <CardContent className="pt-5 pb-4 px-5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
+                              <div className="flex items-baseline gap-2">
+                                <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                                {stat.trend && (
+                                  <span className="text-xs font-medium text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
+                                    {stat.trend}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className={`p-3 ${stat.bg} rounded-xl group-hover:scale-110 transition-transform`}>
+                              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Recommended for You */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                          <Target className="h-4 w-4 text-teal-600" />
+                          {t('Recommended for You', 'موصى به لك')}
+                        </CardTitle>
+                        <Button variant="link" size="sm" className="text-xs text-teal-600" onClick={() => setActiveTab('jobs')}>
+                          {t('View All', 'عرض الكل')} →
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-3 space-y-3">
+                      {[
+                        { title: t('Senior Project Manager', 'مدير مشاريع أول'), company: t('Emirates Group', 'مجموعة الإمارات'), distance: t('12 km', '١٢ كم'), commute: t('25 min peak', '٢٥ د ذروة'), salary: t('AED 35k–45k', '35-45 ألف درهم'), match: 94, type: t('Full-time', 'دوام كامل') },
+                        { title: t('Cloud Infrastructure Architect', 'مهندس بنية سحابية'), company: t('Digital Dubai', 'دبي الرقمية'), distance: t('8 km', '٨ كم'), commute: t('18 min peak', '١٨ د ذروة'), salary: t('AED 40k–55k', '40-55 ألف درهم'), match: 89, type: t('Hybrid', 'هجين') },
+                        { title: t('Data Scientist', 'عالم بيانات'), company: t('Abu Dhabi Investment Authority', 'جهاز أبوظبي للاستثمار'), distance: t('45 km', '٤٥ كم'), commute: t('55 min peak', '٥٥ د ذروة'), salary: t('AED 30k–45k', '30-45 ألف درهم'), match: 86, type: t('Full-time', 'دوام كامل') },
+                      ].map((job, i) => (
+                        <div key={i} className="p-4 rounded-lg border border-slate-100 hover:border-teal-200 hover:shadow-sm transition-all cursor-pointer group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0">
+                                {job.company.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{job.title}</p>
+                                <p className="text-xs text-slate-500">{job.company}</p>
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
+                                  <span>📍 {job.distance}</span>
+                                  <span>🕐 {job.commute}</span>
+                                  <span>💰 {job.salary}</span>
+                                  <span>🏢 {job.type}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <Badge className="bg-teal-50 text-teal-700 border border-teal-200 text-[11px] font-bold">
+                                ✦ {job.match}% {t('Match', 'تطابق')}
+                              </Badge>
+                              <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-7 px-3">
+                                {t('Apply Now', 'قدّم الآن')}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Activity */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                        <Clock className="h-4 w-4 text-teal-600" />
+                        {t('Recent Activity', 'النشاط الأخير')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-3">
+                      <div className="space-y-1">
+                        {recentActivity.map((activity) => (
+                          <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer group">
+                            <div className={`p-2 rounded-lg border ${getActivityColor(activity.type)} flex-shrink-0 mt-0.5`}>
+                              {getActivityIcon(activity.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
+                              <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
+                            </div>
+                            <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Right Sidebar — AI Career Insight + Upcoming Events */}
+                <div className="lg:col-span-3 space-y-6">
+                  {/* AI Career Insight */}
+                  <div className="bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl p-5 text-white shadow-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                        <Sparkles className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-teal-100">
+                        {t('AI Career Insight', 'رؤية مهنية بالذكاء الاصطناعي')}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <p className="text-sm text-teal-50 leading-relaxed mb-4">
+                      {t(
+                        'Cloud computing skills are in high demand — consider an AWS certification to boost your profile and match with 30% more top-tier roles.',
+                        'مهارات الحوسبة السحابية مطلوبة بشدة — فكّر في شهادة AWS لتعزيز ملفك والتطابق مع 30٪ وظائف أكثر.'
+                      )}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-white/30 text-white hover:bg-white/10 hover:text-white text-xs rounded-lg w-full"
+                      onClick={() => navigate('/candidate/profile')}
+                    >
+                      {t('Explore Courses', 'استكشف الدورات')}
+                    </Button>
+                  </div>
+
+                  {/* Upcoming Events */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                        <Calendar className="h-4 w-4 text-teal-600" />
+                        {t('Upcoming Events', 'الأحداث القادمة')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-3 space-y-3">
+                      {/* Interview */}
+                      <div className="p-3 rounded-lg border border-slate-100 hover:border-teal-200 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-teal-50 text-teal-700 rounded-lg p-2 text-center min-w-[44px]">
+                            <div className="text-[10px] font-bold uppercase">{t('OCT', 'أكت')}</div>
+                            <div className="text-lg font-bold leading-none">12</div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-800">{t('Final Interview: Digital Dubai', 'المقابلة النهائية: دبي الرقمية')}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{t('2:00 PM - 3:00 PM • Virtual', '2:00 م - 3:00 م • عن بُعد')}</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" className="w-full mt-2 text-xs text-slate-600 hover:bg-teal-50">
+                          {t('Prepare', 'استعد')}
+                        </Button>
+                      </div>
+                      {/* Webinar */}
+                      <div className="p-3 rounded-lg border border-slate-100 hover:border-teal-200 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-indigo-50 text-indigo-700 rounded-lg p-2 text-center min-w-[44px]">
+                            <div className="text-[10px] font-bold uppercase">{t('OCT', 'أكت')}</div>
+                            <div className="text-lg font-bold leading-none">15</div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-800">{t('Emiratization Career Webinar', 'ندوة التوطين المهنية')}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{t('3:00 PM - 5:30 PM • Online', '3:00 م - 5:30 م • عبر الإنترنت')}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" className="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white text-xs">
+                          {t('Join Live', 'انضم مباشرة')}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
               </div>
             </TabsContent>
 
@@ -438,7 +592,7 @@ const CandidateDashboard: React.FC = () => {
           </Tabs>
         </div>
       </div>
-    </div >
+    </div>
   );
 };
 

@@ -438,7 +438,7 @@ const CandidateMatching = () => {
                 title: 'Conversation Started',
                 description: 'Redirecting to messages...',
               });
-              navigate(`/messages?conversationId=${conversationId}`);
+              navigate(`/recruiter?tab=messages&conversationId=${conversationId}`);
             } else {
               throw new Error('Failed to create conversation');
             }
@@ -836,7 +836,6 @@ const CandidateMatching = () => {
               </div>
             )}
             <div className="space-y-6">
-              {console.log('Rendering candidates list:', filteredAndSortedCandidates.length) || null}
               {filteredAndSortedCandidates.map((candidate) => {
                 const candidateWithStatus = candidate as MatchingResult & { status?: string };
                 const scoreBadge = getScoreBadge(candidate.overall_score);

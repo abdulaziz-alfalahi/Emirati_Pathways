@@ -53,6 +53,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner"; // Assuming sonner is available, or use alert/console for now if not confirmed
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 interface DashboardData {
   candidates: {
@@ -86,7 +88,10 @@ interface DashboardData {
 
 
 const HRDashboard: React.FC = () => {
-  const { t } = useTranslation('hr-dashboard');
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const b = (en: string, ar: string) => isRTL ? ar : en;
+  const { language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -97,6 +102,7 @@ const HRDashboard: React.FC = () => {
   const [interviewDate, setInterviewDate] = useState('');
   const [interviewTitle, setInterviewTitle] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const { unreadCount } = useUnreadMessageCount();
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -358,9 +364,9 @@ const HRDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Navigation */}
-      <HybridGovernmentNavFixed showAuthButtons={true} />
+      <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={toggleLanguage} />
 
 
 
@@ -369,25 +375,25 @@ const HRDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <div>
                 <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
-                  HR Management Dashboard
+                  {b('HR Management Dashboard', 'لوحة إدارة الموارد البشرية')}
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  Welcome back, {HR_MANAGER_NAME} - Manage UAE National talent acquisition
+                  {b(`Welcome back, ${HR_MANAGER_NAME} - Manage UAE National talent acquisition`, `مرحباً بعودتك، ${HR_MANAGER_NAME} - إدارة استقطاب المواهب الوطنية`)}
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-dubai-medium">
-                  HR Manager
+                  {b('HR Manager', 'مدير الموارد البشرية')}
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
-                  Talent33 Aligned
+                  {b('Talent33 Aligned', 'متوافق مع برنامج نافس')}
                 </Badge>
                 <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
+                  <Settings className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {b('Settings', 'الإعدادات')}
                 </Button>
 
               </div>
@@ -396,176 +402,297 @@ const HRDashboard: React.FC = () => {
 
           {/* Quick Actions */}
           <div className="mb-8">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <Button
                 className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
                 onClick={() => navigate('/recruiter/jd-builder')}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Job
+                <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {b('Post New Job', 'نشر وظيفة جديدة')}
               </Button>
               <Button
                 variant="outline"
                 className="font-dubai-medium"
                 onClick={() => navigate('/recruiter/candidates')}
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Import Candidates
+                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {b('Import Candidates', 'استيراد المرشحين')}
               </Button>
               <Button
                 variant="outline"
                 className="font-dubai-medium"
                 onClick={() => navigate('/recruiter/analytics')}
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export Reports
+                <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {b('Export Reports', 'تصدير التقارير')}
               </Button>
             </div>
           </div>
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8 bg-white shadow-sm">
-              <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
-              <TabsTrigger value="approvals" className="font-dubai-medium">Approvals</TabsTrigger>
-              <TabsTrigger value="team" className="font-dubai-medium">Team</TabsTrigger>
-              <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
-              <TabsTrigger value="interviews" className="font-dubai-medium">Interviews</TabsTrigger>
-              <TabsTrigger value="positions" className="font-dubai-medium">Positions</TabsTrigger>
-              <TabsTrigger value="messages" className="font-dubai-medium">Messages</TabsTrigger>
-              <TabsTrigger value="analytics" className="font-dubai-medium">Analytics</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-8 bg-white shadow-sm" dir={isRTL ? 'rtl' : 'ltr'}>
+              <TabsTrigger value="overview" className="font-dubai-medium">{b('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="approvals" className="font-dubai-medium">{b('Approvals', 'الموافقات')}</TabsTrigger>
+              <TabsTrigger value="team" className="font-dubai-medium">{b('Team', 'الفريق')}</TabsTrigger>
+              <TabsTrigger value="candidates" className="font-dubai-medium">{b('Candidates', 'المرشحون')}</TabsTrigger>
+              <TabsTrigger value="interviews" className="font-dubai-medium">{b('Interviews', 'المقابلات')}</TabsTrigger>
+              <TabsTrigger value="positions" className="font-dubai-medium">{b('Positions', 'الوظائف')}</TabsTrigger>
+              <TabsTrigger value="messages" className="font-dubai-medium">
+                {b('Messages', 'الرسائل')}
+                {unreadCount > 0 && (
+                  <span className={`${isRTL ? 'mr-1.5' : 'ml-1.5'} inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full min-w-[18px]`}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="font-dubai-medium">{b('Analytics', 'التحليلات')}</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Total Candidates</CardTitle>
-                    <Users className="h-4 w-4 text-teal-600" />
+              {/* Key Metrics Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: b('Total Candidates', 'إجمالي المرشحين'), value: dashboardData.candidates.total, icon: Users, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100', trend: b('+12% from last month', '+١٢٪ عن الشهر الماضي') },
+                  { label: b('Open Positions', 'الوظائف المفتوحة'), value: dashboardData.positions.open, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', trend: b(`${dashboardData.positions.pending} pending`, `${dashboardData.positions.pending} قيد الانتظار`) },
+                  { label: b('Avg. Time to Hire', 'متوسط وقت التوظيف'), value: `${dashboardData.recruitment.averageTimeToHire}${b('d', 'ي')}`, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', trend: b('-5 days from Q3', '-٥ أيام عن الربع الثالث') },
+                  { label: b('Success Rate', 'معدل النجاح'), value: `${dashboardData.recruitment.successRate}%`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', trend: b('+8% from Q3', '+٨٪ عن الربع الثالث') },
+                ].map((stat, i) => (
+                  <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
+                    <CardContent className="pt-5 pb-4 px-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
+                          <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
+                          <p className="text-xs text-green-600 font-dubai-medium mt-0.5">{stat.trend}</p>
+                        </div>
+                        <div className={`p-3 ${stat.bg} rounded-xl group-hover:scale-110 transition-transform`}>
+                          <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* 3-Column: Emiratization Gauge + Pipeline + Compliance Alerts */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Emiratization Compliance Gauge */}
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold">
+                      <Target className="h-4 w-4 text-teal-600" />
+                      {b('Emiratization Compliance', 'الامتثال للتوطين')}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.candidates.total}</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      +12% from last month
-                    </p>
+                  <CardContent className="pt-5 flex flex-col items-center">
+                    {/* SVG Circular Gauge */}
+                    <div className="relative">
+                      <svg width={140} height={140} className="transform -rotate-90">
+                        <circle cx={70} cy={70} r={55} fill="none" stroke="#E5E7EB" strokeWidth={12} />
+                        <circle cx={70} cy={70} r={55} fill="none" stroke="#006E6D" strokeWidth={12}
+                          strokeDasharray={`${2 * Math.PI * 55}`}
+                          strokeDashoffset={`${2 * Math.PI * 55 - (78 / 100) * 2 * Math.PI * 55}`}
+                          strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                        <text x={70} y={70} textAnchor="middle" dominantBaseline="central"
+                          className="fill-slate-900 text-2xl font-bold" transform={`rotate(90, 70, 70)`}>
+                          78%
+                        </text>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-slate-500 mt-2 text-center font-dubai-medium">{b('Current Emiratization Rate', 'معدل التوطين الحالي')}</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">{b('Target: 80%', 'الهدف: ٨٠٪')}</Badge>
+                      <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px]">{b('+3% this quarter', '+٣٪ هذا الربع')}</Badge>
+                    </div>
+                    <Button variant="link" size="sm" className="text-xs text-teal-600 mt-3 font-dubai-medium">
+                      {b('View Detailed Report →', 'عرض التقرير المفصل ←')}
+                    </Button>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Active Positions</CardTitle>
-                    <Briefcase className="h-4 w-4 text-blue-600" />
+                {/* Hiring Pipeline Funnel */}
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold">
+                      <BarChart3 className="h-4 w-4 text-teal-600" />
+                      {b('Hiring Pipeline', 'مسار التوظيف')}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.positions.open}</div>
-                    <p className="text-xs text-slate-500 font-dubai-medium">
-                      {dashboardData.positions.pending} pending approval
-                    </p>
+                  <CardContent className="pt-5">
+                    <div className="space-y-4">
+                      {[
+                        { stage: b('Total Candidates', 'إجمالي المرشحين'), count: dashboardData.candidates.total || 156, color: 'bg-gradient-to-r from-teal-400 to-teal-500', pct: 100 },
+                        { stage: b('Screening', 'الفرز'), count: dashboardData.candidates.active || 89, color: 'bg-gradient-to-r from-teal-500 to-teal-600', pct: 57 },
+                        { stage: b('Shortlisted', 'القائمة المختصرة'), count: dashboardData.candidates.shortlisted || 23, color: 'bg-gradient-to-r from-teal-600 to-teal-700', pct: 15 },
+                        { stage: b('Interviewed', 'تمت المقابلة'), count: dashboardData.candidates.interviewed || 12, color: 'bg-gradient-to-r from-teal-700 to-teal-800', pct: 8 },
+                        { stage: b('Hired', 'تم التوظيف'), count: dashboardData.candidates.hired || 5, color: 'bg-gradient-to-r from-slate-700 to-slate-800', pct: 3 },
+                      ].map((ps, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider font-dubai-medium">{ps.stage}</span>
+                            <span className="text-sm font-bold text-slate-700 font-dubai-bold">{ps.count}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-1000 ease-out ${ps.color}`}
+                              style={{ width: `${Math.max(ps.pct, 5)}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Avg. Time to Hire</CardTitle>
-                    <Clock className="h-4 w-4 text-orange-600" />
+                {/* Compliance Alerts + Quick Actions */}
+                <div className="space-y-6">
+                  {/* Compliance Alerts */}
+                  <Card className="bg-white border border-red-100">
+                    <CardHeader className="pb-2 border-b border-red-50 bg-red-50/30">
+                      <CardTitle className="flex items-center gap-2 text-base text-red-800 font-dubai-bold">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                        {b('Compliance Alerts', 'تنبيهات الامتثال')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-3 space-y-3">
+                      <div className="p-3 rounded-lg bg-red-50 border border-red-100">
+                        <p className="text-sm font-dubai-medium text-red-800">{b('MOHRE Deadline', 'موعد وزارة الموارد البشرية')}</p>
+                        <p className="text-xs text-red-600 mt-0.5">{b('Emiratization report due in 12 days', 'تقرير التوطين مستحق خلال ١٢ يوماً')}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
+                        <p className="text-sm font-dubai-medium text-amber-800">{b('Quota Target', 'هدف الحصة')}</p>
+                        <p className="text-xs text-amber-600 mt-0.5">{b('2% gap to achieve 80% target by Q4', 'فجوة ٢٪ لتحقيق هدف ٨٠٪ بحلول الربع الرابع')}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Actions */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold">
+                        <Settings className="h-4 w-4 text-teal-600" />
+                        {b('Quick Actions', 'إجراءات سريعة')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-3 space-y-2">
+                      <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700`}
+                        onClick={() => navigate('/recruiter/analytics')}>
+                        <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-teal-600`} />
+                        {b('Generate Report', 'إنشاء تقرير')}
+                      </Button>
+                      <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700`}
+                        onClick={() => navigate('/recruiter/jd-builder')}>
+                        <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-blue-500`} />
+                        {b('Request Headcount', 'طلب عدد موظفين')}
+                      </Button>
+                      <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700`}>
+                        <Building className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-500`} />
+                        {b('View MOHRE Portal', 'عرض بوابة الوزارة')}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Workforce Composition + Recent Hires */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Workforce Composition */}
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold">
+                      <PieChart className="h-4 w-4 text-teal-600" />
+                      {b('Workforce Composition', 'تكوين القوى العاملة')}
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.recruitment.averageTimeToHire} days</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      -5 days from last quarter
-                    </p>
+                  <CardContent className="pt-5">
+                    <div className="flex items-center gap-8">
+                      {/* Simple bar chart representation */}
+                      <div className="flex-1 space-y-3">
+                        {[
+                          { label: b('UAE Nationals', 'مواطنون إماراتيون'), value: 78, color: 'bg-teal-500' },
+                          { label: b('GCC Nationals', 'مواطنون خليجيون'), value: 12, color: 'bg-blue-500' },
+                          { label: b('International', 'دوليون'), value: 10, color: 'bg-slate-400' },
+                        ].map((item, i) => (
+                          <div key={i} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-dubai-medium text-slate-600">{item.label}</span>
+                              <span className="text-xs font-dubai-bold text-slate-800">{item.value}%</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                              <div className={`h-full rounded-full ${item.color} transition-all duration-1000`}
+                                style={{ width: `${item.value}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-center">
+                        <div className="text-4xl font-dubai-bold text-teal-700">342</div>
+                        <div className="text-xs text-slate-500 font-dubai-medium">{b('Total Employees', 'إجمالي الموظفين')}</div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Success Rate</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-green-600" />
+                {/* Recent Hires */}
+                <Card className="bg-white border border-slate-200/80">
+                  <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold">
+                        <UserCheck className="h-4 w-4 text-teal-600" />
+                        {b('Recent Hires', 'التعيينات الأخيرة')}
+                      </CardTitle>
+                      <Badge className="bg-teal-50 text-teal-700 border-teal-200 text-[10px]">
+                        {dashboardData.candidates.hired || 5} {b('this month', 'هذا الشهر')}
+                      </Badge>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.recruitment.successRate}%</div>
-                    <p className="text-xs text-green-600 font-dubai-medium">
-                      +8% from last quarter
-                    </p>
+                  <CardContent className="pt-3 space-y-3">
+                    {[
+                      { name: b('Fatima Al Nuaimi', 'فاطمة النعيمي'), role: b('Senior Data Analyst', 'محللة بيانات أولى'), dept: b('Technology', 'التكنولوجيا'), initials: isRTL ? 'فن' : 'FN', bg: 'bg-teal-100 text-teal-700' },
+                      { name: b('Ahmed Al Dhaheri', 'أحمد الظاهري'), role: b('Marketing Manager', 'مدير التسويق'), dept: b('Marketing', 'التسويق'), initials: isRTL ? 'أظ' : 'AD', bg: 'bg-indigo-100 text-indigo-700' },
+                      { name: b('Mariam Al Suwaidi', 'مريم السويدي'), role: b('HR Coordinator', 'منسقة موارد بشرية'), dept: b('Human Resources', 'الموارد البشرية'), initials: isRTL ? 'مس' : 'MS', bg: 'bg-purple-100 text-purple-700' },
+                    ].map((hire, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${hire.bg}`}>
+                          {hire.initials}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-dubai-medium text-slate-800">{hire.name}</p>
+                          <p className="text-xs text-slate-400 font-dubai">{hire.role} • {hire.dept}</p>
+                        </div>
+                        <Badge className="bg-green-50 text-green-700 border-green-200 text-[10px]">{b('Onboarded', 'تم التعيين')}</Badge>
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Recruitment Pipeline */}
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Recruitment Pipeline</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Current status of candidates in the recruitment process
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.candidates.total}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Total Candidates</p>
-                    </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-yellow-600">{dashboardData.candidates.active}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Active</p>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-orange-600">{dashboardData.candidates.shortlisted}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Shortlisted</p>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-purple-600">{dashboardData.candidates.interviewed}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Interviewed</p>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.candidates.hired}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Hired</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Recent Activity */}
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    Latest updates from your recruitment activities
-                  </CardDescription>
+              <Card className="bg-white border border-slate-200/80">
+                <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                  <CardTitle className="font-dubai-bold text-slate-900 text-base">{b('Recent Activity', 'النشاط الأخير')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="pt-3">
+                  <div className="space-y-2">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
                           <div className="flex-shrink-0">
-                            {activity.type === 'candidate_hired' && (
-                              <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
-                            )}
-                            {activity.type === 'interview_scheduled' && (
-                              <Calendar className="h-5 w-5 text-blue-500 mt-1" />
-                            )}
-                            {activity.type === 'application_received' && (
-                              <FileText className="h-5 w-5 text-purple-500 mt-1" />
-                            )}
+                            {activity.type === 'candidate_hired' && <CheckCircle className="h-4 w-4 text-green-500 mt-1" />}
+                            {activity.type === 'interview_scheduled' && <Calendar className="h-4 w-4 text-blue-500 mt-1" />}
+                            {activity.type === 'application_received' && <FileText className="h-4 w-4 text-purple-500 mt-1" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-dubai-medium text-slate-900">
-                              {activity.title}
-                            </p>
-                            <p className="text-sm text-slate-600 font-dubai">
-                              {activity.description}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1 font-dubai">
+                            <p className="text-sm font-dubai-medium text-slate-800">{activity.title}</p>
+                            <p className="text-xs text-slate-500 font-dubai">{activity.description}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5 font-dubai">
                               {new Date(activity.timestamp).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-slate-500 font-dubai-medium">No recent activity</p>
+                      <p className="text-sm text-slate-500 font-dubai-medium py-4 text-center">{b('No recent activity', 'لا يوجد نشاط حديث')}</p>
                     )}
                   </div>
                 </CardContent>
@@ -589,9 +716,9 @@ const HRDashboard: React.FC = () => {
             <TabsContent value="candidates" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Candidate Management</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{b('Candidate Management', 'إدارة المرشحين')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Manage and review candidate applications
+                    {b('Manage and review candidate applications', 'إدارة ومراجعة طلبات المرشحين')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -54,6 +54,7 @@ import {
 } from '@/components/ui/table';
 import { restClient, healthApi, jobApi, type JobDescription } from '@/utils/api';
 import { JobApplicantsView } from './JobApplicantsView';
+import { ShortlistManager } from './shortlist/ShortlistManager';
 
 // Interface for applicant counts
 interface ApplicantCount {
@@ -172,11 +173,24 @@ const JobDescriptionsList = () => {
     );
   }
 
-  // If viewing shortlist for a specific job, navigate to shortlist page
+  // If viewing shortlist for a specific job, show inline shortlist view
   if (selectedJobForShortlist) {
-    // Navigate to the shortlist page for this job
-    navigate(`/recruiter/shortlist/${selectedJobForShortlist.jd_id}`);
-    setSelectedJobForShortlist(null);
+    return (
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedJobForShortlist(null)}
+          className="mb-2"
+        >
+          ← Back to My Jobs
+        </Button>
+        <ShortlistManager
+          jdId={selectedJobForShortlist.jd_id}
+          onClose={() => setSelectedJobForShortlist(null)}
+        />
+      </div>
+    );
   }
 
   // Helper to get applicant count for a job
@@ -464,7 +478,7 @@ const JobDescriptionsList = () => {
                             {/* Shortlisted Badge */}
                             <div
                               className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
-                              onClick={() => navigate(`/recruiter/shortlist/${jdId}`)}
+                              onClick={() => setSelectedJobForShortlist({ ...job, jd_id: jdId })}
                             >
                               <CheckCircle className="h-5 w-5 text-emerald-600" />
                               <div className="text-center">
@@ -502,7 +516,7 @@ const JobDescriptionsList = () => {
                             <Button
                               size="sm"
                               className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                              onClick={() => navigate(`/recruiter/shortlist/${jdId}`)}
+                              onClick={() => setSelectedJobForShortlist({ ...job, jd_id: jdId })}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Shortlist

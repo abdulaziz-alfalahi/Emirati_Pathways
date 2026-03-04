@@ -5,12 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Bell, 
-  CheckCheck, 
-  AlertCircle, 
-  Info, 
-  AlertTriangle, 
+import {
+  Bell,
+  CheckCheck,
+  AlertCircle,
+  Info,
+  AlertTriangle,
   CheckCircle,
   Filter,
   Settings,
@@ -99,7 +99,7 @@ const NotificationsPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/messages">
+            <Link to="/candidate-dashboard?tab=messages">
               <Button variant="outline" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 Messages
@@ -151,7 +151,7 @@ const NotificationsPage: React.FC = () => {
           </TabsContent>
 
           <TabsContent value={activeTab} className="space-y-4">
-            
+
             {filteredNotifications.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -169,9 +169,8 @@ const NotificationsPage: React.FC = () => {
                 {filteredNotifications.map((notification) => (
                   <Card
                     key={notification.id}
-                    className={`border-l-4 ${getNotificationTypeColor(notification.type)} ${
-                      !notification.is_read ? 'bg-muted/30' : ''
-                    } hover:shadow-md transition-shadow cursor-pointer`}
+                    className={`border-l-4 ${getNotificationTypeColor(notification.type)} ${!notification.is_read ? 'bg-muted/30' : ''
+                      } hover:shadow-md transition-shadow cursor-pointer`}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <CardContent className="p-4">

@@ -12,6 +12,7 @@
  */
 
 import React, { ReactNode, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { LoadingSpinner, DashboardSkeleton } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/button';
@@ -128,90 +129,90 @@ const DashboardHeader: React.FC<{
   showMobileSidebar,
   onToggleMobileSidebar
 }) => {
-  return (
-    <div className="mb-6 md:mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {/* Title Section */}
-        <div className="flex items-start gap-3">
-          {/* Mobile menu toggle */}
-          {onToggleMobileSidebar && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden -ml-2"
-              onClick={onToggleMobileSidebar}
-            >
-              {showMobileSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          )}
-          
-          {/* Icon */}
-          {icon && (
-            <div className="flex-shrink-0 p-2 bg-teal-100 rounded-lg text-teal-600">
-              {icon}
-            </div>
-          )}
-          
-          {/* Title and description */}
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                {title}
-              </h1>
-              {badge && (
-                <Badge variant={badge.variant || 'default'}>
-                  {badge.text}
-                </Badge>
+    return (
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Title Section */}
+          <div className="flex items-start gap-3">
+            {/* Mobile menu toggle */}
+            {onToggleMobileSidebar && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="md:hidden -ml-2"
+                onClick={onToggleMobileSidebar}
+              >
+                {showMobileSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
+
+            {/* Icon */}
+            {icon && (
+              <div className="flex-shrink-0 p-2 bg-teal-100 rounded-lg text-teal-600">
+                {icon}
+              </div>
+            )}
+
+            {/* Title and description */}
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                  {title}
+                </h1>
+                {badge && (
+                  <Badge variant={badge.variant || 'default'}>
+                    {badge.text}
+                  </Badge>
+                )}
+              </div>
+              {description && (
+                <p className="mt-1 text-sm sm:text-base text-gray-500">
+                  {description}
+                </p>
               )}
             </div>
-            {description && (
-              <p className="mt-1 text-sm sm:text-base text-gray-500">
-                {description}
-              </p>
+          </div>
+
+          {/* Actions Section */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {showRefresh && onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="hidden sm:flex"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+                {isLoading ? '' : (typeof window !== 'undefined' && document.documentElement.lang === 'ar' ? 'تحديث' : 'Refresh')}
+              </Button>
             )}
+
+            {actions?.map((action, index) => (
+              <Button
+                key={index}
+                variant={action.variant || 'default'}
+                size="sm"
+                onClick={action.onClick}
+                disabled={action.disabled}
+              >
+                {action.icon && <span className="mr-2">{action.icon}</span>}
+                <span className="hidden sm:inline">{action.label}</span>
+                <span className="sm:hidden">{action.icon || action.label.charAt(0)}</span>
+              </Button>
+            ))}
           </div>
         </div>
-        
-        {/* Actions Section */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {showRefresh && onRefresh && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              disabled={isLoading}
-              className="hidden sm:flex"
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-              Refresh
-            </Button>
-          )}
-          
-          {actions?.map((action, index) => (
-            <Button
-              key={index}
-              variant={action.variant || 'default'}
-              size="sm"
-              onClick={action.onClick}
-              disabled={action.disabled}
-            >
-              {action.icon && <span className="mr-2">{action.icon}</span>}
-              <span className="hidden sm:inline">{action.label}</span>
-              <span className="sm:hidden">{action.icon || action.label.charAt(0)}</span>
-            </Button>
-          ))}
-        </div>
+
+        {/* Additional header content */}
+        {headerContent && (
+          <div className="mt-4">
+            {headerContent}
+          </div>
+        )}
       </div>
-      
-      {/* Additional header content */}
-      {headerContent && (
-        <div className="mt-4">
-          {headerContent}
-        </div>
-      )}
-    </div>
-  );
-};
+    );
+  };
 
 /**
  * Dashboard Breadcrumbs Component
@@ -220,7 +221,7 @@ const DashboardBreadcrumbs: React.FC<{
   items: BreadcrumbItemConfig[];
 }> = ({ items }) => {
   if (items.length === 0) return null;
-  
+
   return (
     <Breadcrumb className="mb-4">
       <BreadcrumbList>
@@ -229,7 +230,7 @@ const DashboardBreadcrumbs: React.FC<{
             <Home className="h-4 w-4" />
           </BreadcrumbLink>
         </BreadcrumbItem>
-        
+
         {items.map((item, index) => (
           <React.Fragment key={index}>
             <BreadcrumbSeparator>
@@ -271,21 +272,28 @@ const DashboardErrorFallback: React.FC<{
   title: string;
   onRetry?: () => void;
 }> = ({ title, onRetry }) => {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
+
   return (
     <div className="min-h-[400px] flex flex-col items-center justify-center text-center p-6">
       <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
         <HelpCircle className="h-8 w-8 text-red-600" />
       </div>
       <h2 className="text-xl font-semibold text-gray-900 mb-2">
-        Error Loading {title}
+        {t(`Error Loading ${title}`, `خطأ في تحميل ${title}`)}
       </h2>
       <p className="text-gray-500 mb-4 max-w-md">
-        We encountered an error while loading this dashboard. Please try again or contact support if the problem persists.
+        {t(
+          'We encountered an error while loading this dashboard. Please try again or contact support if the problem persists.',
+          'واجهنا خطأ أثناء تحميل لوحة التحكم. يرجى المحاولة مرة أخرى أو التواصل مع الدعم إذا استمرت المشكلة.'
+        )}
       </p>
       {onRetry && (
         <Button onClick={onRetry}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
+          {t('Try Again', 'حاول مرة أخرى')}
         </Button>
       )}
     </div>
@@ -360,11 +368,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {sidebar}
             </aside>
           )}
-          
+
           {/* Mobile sidebar overlay */}
           {sidebar && showMobileSidebar && (
             <div className="fixed inset-0 z-40 md:hidden">
-              <div 
+              <div
                 className="fixed inset-0 bg-black/50"
                 onClick={onToggleMobileSidebar}
               />
@@ -373,7 +381,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </aside>
             </div>
           )}
-          
+
           {/* Main content */}
           <main className={cn(
             'flex-1 min-w-0',
@@ -388,7 +396,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {breadcrumbs.length > 0 && (
                 <DashboardBreadcrumbs items={breadcrumbs} />
               )}
-              
+
               {/* Header */}
               <DashboardHeader
                 title={title}
@@ -403,7 +411,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 showMobileSidebar={showMobileSidebar}
                 onToggleMobileSidebar={onToggleMobileSidebar}
               />
-              
+
               {/* Content */}
               <Suspense fallback={<DashboardSkeleton />}>
                 {isLoading ? (

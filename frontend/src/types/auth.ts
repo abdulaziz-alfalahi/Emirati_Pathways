@@ -19,7 +19,15 @@ export type UserRole =
   | 'growth_operator_education'
   | 'growth_operator_assessment'
   | 'growth_operator_mentorship'
-  | 'growth_operator_community';
+  | 'growth_operator_community'
+  | 'growth_operator_monitoring'
+  // Specialized Operator Roles
+  | 'nafis_talent_operator'
+  | 'education_operator'
+  | 'professional_dev_operator'
+  | 'community_operator'
+  | 'operations_monitor'
+  | 'operator'; // Alias for growth_operator (DB value)
 
 // Growth Operator Domain Types
 export type GrowthOperatorDomain =
@@ -65,7 +73,16 @@ export type Permission =
   | 'onboard_mentors'
   | 'manage_mentorship_programs'
   | 'moderate_communities'
-  | 'manage_community_events';
+  | 'manage_community_events'
+  // Specialized Operator Permissions
+  | 'bulk_import_candidates'
+  | 'manage_nafis_sync'
+  | 'manage_institutions'
+  | 'manage_programs'
+  | 'manage_training'
+  | 'manage_certifications'
+  | 'manage_content'
+  | 'view_operations_center';
 
 // Authentication Types
 export interface AuthUser {
@@ -148,12 +165,20 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'admin': '/admin-dashboard',
   // Growth Operator Routes
   'growth_operator': '/growth-operator-dashboard',
-  'growth_operator_candidate': '/growth-operator-dashboard/candidates',
-  'growth_operator_company': '/growth-operator-dashboard/companies',
-  'growth_operator_education': '/growth-operator-dashboard/education',
-  'growth_operator_assessment': '/growth-operator-dashboard/assessment',
-  'growth_operator_mentorship': '/growth-operator-dashboard/mentorship',
-  'growth_operator_community': '/growth-operator-dashboard/community',
+  'growth_operator_candidate': '/nafis-talent-dashboard',
+  'growth_operator_company': '/growth-operator-dashboard',
+  'growth_operator_education': '/education-operator-dashboard',
+  'growth_operator_assessment': '/assessment-operator-dashboard',
+  'growth_operator_mentorship': '/mentorship-operator-dashboard',
+  'growth_operator_community': '/community-operator-dashboard',
+  'growth_operator_monitoring': '/operations-center',
+  // Specialized Operator Routes
+  'nafis_talent_operator': '/nafis-talent-dashboard',
+  'education_operator': '/education-operator-dashboard',
+  'professional_dev_operator': '/professional-dev-dashboard',
+  'community_operator': '/community-operator-dashboard',
+  'operations_monitor': '/operations-center',
+  'operator': '/growth-operator-dashboard', // DB alias for growth_operator
 };
 
 // Role Display Names
@@ -178,6 +203,14 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'growth_operator_assessment': 'Assessment Growth Operator',
   'growth_operator_mentorship': 'Mentorship Growth Operator',
   'growth_operator_community': 'Community Growth Operator',
+  'growth_operator_monitoring': 'Growth Operator Monitoring',
+  // Specialized Operator Display Names
+  'nafis_talent_operator': 'Nafis Talent Operator',
+  'education_operator': 'Education Operator',
+  'professional_dev_operator': 'Professional Development Operator',
+  'community_operator': 'Community & Engagement Operator',
+  'operations_monitor': 'Operations Monitoring Center',
+  'operator': 'Growth Operator', // DB alias
 };
 
 // Growth Operator Domain Configuration
@@ -247,6 +280,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'growth_operator_assessment': ['onboard_assessment', 'manage_assessment_centers', 'view_analytics'],
   'growth_operator_mentorship': ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'],
   'growth_operator_community': ['moderate_communities', 'manage_community_events', 'view_analytics'],
+  'growth_operator_monitoring': ['view_operations_center', 'view_all_analytics', 'view_analytics'],
+  // Specialized Operator Permissions
+  'nafis_talent_operator': ['bulk_import_candidates', 'manage_nafis_sync', 'onboard_candidates', 'manage_candidate_engagement', 'view_analytics'],
+  'education_operator': ['manage_institutions', 'manage_programs', 'onboard_education', 'manage_education_partnerships', 'view_analytics'],
+  'professional_dev_operator': ['manage_training', 'manage_certifications', 'onboard_mentors', 'onboard_assessment', 'manage_mentorship_programs', 'manage_assessment_centers', 'view_analytics'],
+  'community_operator': ['manage_content', 'moderate_communities', 'manage_community_events', 'view_analytics'],
+  'operations_monitor': ['view_operations_center', 'view_all_analytics', 'view_analytics'],
+  'operator': ['view_analytics'], // DB alias for growth_operator
 };
 
 export const normalizeRole = (role: string): UserRole | string => {
@@ -291,7 +332,7 @@ export const isValidRole = (role: string): role is UserRole => {
 };
 
 export const isGrowthOperatorRole = (role: UserRole | string): boolean => {
-  return role.toString().startsWith('growth_operator');
+  return role.toString().startsWith('growth_operator') || role.toString() === 'operator';
 };
 
 export const getGrowthOperatorDomain = (role: UserRole | string): GrowthOperatorDomain | null => {

@@ -432,3 +432,248 @@ class GrowthSystem:
             raise e
             
         return report
+
+    # =====================================================
+    # COMPANY INVITATION SYSTEM (Magic Links)
+    # =====================================================
+
+    def create_company_invitations(self, companies, invited_by=None):
+        """
+        Generate magic link invitation tokens for a list of companies.
+        Each company dict should have: name, code, email, phone, sector, tradeLicense
+        Returns list of generated invitation records with tokens.
+        """
+        conn = self._get_db_connection()
+        results = []
+
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                for company in companies:
+                    try:
+                        token = secrets.token_urlsafe(32)
+                        expires_at = datetime.now() + timedelta(days=7)
+
+                        cur.execute("""
+                            INSERT INTO company_invitations (
+                                token, company_name, company_code, company_email,
+                                company_phone, company_sector, trade_license,
+                                invited_by, status, is_used, expires_at
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending', FALSE, %s)
+                            RETURNING id, token, company_name, company_email
+                        """, (
+                            token,
+                            company.get('name', ''),
+                            company.get('code', ''),
+                            company.get('email', ''),
+                            company.get('phone', ''),
+                            company.get('sector', ''),
+                            company.get('tradeLicense', ''),
+                            invited_by,
+                            expires_at,
+                        ))
+
+                        record = cur.fetchone()
+
+                        # Mock email
+                        link = f"http://localhost:8089/join/{token}"
+                        print(f"\n[INVITATION EMAIL] ─────────────────────────────────────────")
+                        print(f"  To: {company.get('email', 'N/A')}")
+                        print(f"  Subject: Join Dubai Human Development Platform — {company.get('name', '')}")
+                        print(f"  Body:")
+                        print(f"  Dear {company.get('name', '')},")
+                        print(f"  You have been invited to join the Dubai Human Development Platform")
+                        print(f"  as a Recruiter or HR Manager for your company.")
+                        print(f"  Click the link below to complete your registration:")
+                        print(f"  🔗 MAGIC LINK: {link}")
+                        print(f"  This link expires in 7 days.")
+                        print(f"─────────────────────────────────────────────────────────────\n")
+
+                        results.append({
+                            'id': str(record['id']),
+                            'token': record['token'],
+                            'company_name': record['company_name'],
+                            'company_email': record['company_email'],
+                            'magic_link': link,
+                        })
+
+                    except Exception as e:
+                        logger.error(f"Failed to create invitation for {company.get('name')}: {e}")
+                        results.append({
+                            'company_name': company.get('name', ''),
+                            'error': str(e),
+                        })
+
+                conn.commit()
+
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Company invitation error: {e}")
+            raise e
+
+        return results
+
+    def validate_company_invitation(self, token):
+        """
+        Validates a company invitation token.
+        Returns invitation data if valid, None if invalid/expired/used.
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, token, company_name, company_code, company_email,
+                           company_phone, company_sector, trade_license,
+                           status, is_used, expires_at, created_at
+                    FROM company_invitations
+                    WHERE token = %s AND is_used = FALSE AND expires_at > NOW()
+                """, (token,))
+
+                result = cur.fetchone()
+                if not result:
+                    return None
+
+                # Convert non-serializable types
+                for key in ('id',):
+                    if result.get(key):
+                        result[key] = str(result[key])
+                for key in ('expires_at', 'created_at'):
+                    if result.get(key):
+                        result[key] = result[key].isoformat()
+
+                return dict(result)
+
+        except Exception as e:
+            logger.error(f"Invitation validation error: {e}")
+            raise e
+
+    def accept_company_invitation(self, token, user_data):
+        """
+        Accept a company invitation:
+        1. Validate the token
+        2. Create or find user account (by phone number)
+        3. Create HR profile linked to the company
+        4. Mark invitation as used
+        
+        user_data should contain: first_name, last_name, phone, email,
+                                   position_title, role (recruiter/hr_manager)
+        Returns: user record dict
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # 1. Get and lock the invitation
+                cur.execute("""
+                    SELECT * FROM company_invitations
+                    WHERE token = %s AND is_used = FALSE AND expires_at > NOW()
+                    FOR UPDATE
+                """, (token,))
+                invitation = cur.fetchone()
+                if not invitation:
+                    raise ValueError("Invalid, expired, or already used invitation token")
+
+                phone = user_data.get('phone', '')
+                email = user_data.get('email') or invitation.get('company_email', '')
+                first_name = user_data.get('first_name', '')
+                last_name = user_data.get('last_name', '')
+                role = user_data.get('role', 'recruiter')
+                position_title = user_data.get('position_title', '')
+
+                # 2. Check if user already exists (by phone)
+                cur.execute("SELECT id, email, user_type FROM users WHERE phone = %s", (phone,))
+                existing_user = cur.fetchone()
+
+                user_id = None
+                if existing_user:
+                    user_id = existing_user['id']
+                    # Update role if needed
+                    cur.execute("""
+                        UPDATE users SET user_type = %s, updated_at = NOW()
+                        WHERE id = %s
+                    """, (role, user_id))
+                else:
+                    # Create new user — no password (OTP-only login)
+                    cur.execute("""
+                        INSERT INTO users (
+                            email, first_name, last_name,
+                            user_type, phone, is_active,
+                            password_hash, created_at
+                        ) VALUES (
+                            %s, %s, %s,
+                            %s, %s, TRUE,
+                            'otp_only', NOW()
+                        ) RETURNING id
+                    """, (email, first_name, last_name, role, phone))
+                    user_id = cur.fetchone()['id']
+
+                # 3. Find or create company link
+                company_name = invitation.get('company_name', '')
+                cur.execute("SELECT id FROM companies WHERE company_name = %s", (company_name,))
+                company_row = cur.fetchone()
+
+                company_id = None
+                if company_row:
+                    company_id = company_row['id']
+                else:
+                    # Create shadow company
+                    cur.execute("""
+                        INSERT INTO companies (
+                            company_name, name, contact_email, phone,
+                            industry, trade_license_no, is_verified, description
+                        ) VALUES (%s, %s, %s, %s, %s, %s, FALSE, 'Invited via Growth Operator')
+                        RETURNING id
+                    """, (
+                        company_name, company_name,
+                        email, invitation.get('company_phone', ''),
+                        invitation.get('company_sector', ''),
+                        invitation.get('trade_license', ''),
+                    ))
+                    company_id = cur.fetchone()['id']
+
+                # 4. Create HR profile (if not exists)
+                cur.execute("""
+                    SELECT id FROM hr_profiles WHERE user_id = %s
+                """, (user_id,))
+                if not cur.fetchone():
+                    cur.execute("""
+                        INSERT INTO hr_profiles (user_id, company_id, position_title)
+                        VALUES (%s, %s, %s)
+                    """, (user_id, str(company_id), position_title or role.replace('_', ' ').title()))
+
+                # 4b. Auto-assign company's unassigned NAFIS jobs to the new recruiter
+                cur.execute("""
+                    UPDATE job_postings
+                    SET recruiter_id = %s, created_by = %s
+                    WHERE company_id::text = %s
+                      AND (recruiter_id IS NULL OR recruiter_id = '0' OR recruiter_id = '')
+                """, (str(user_id), str(user_id), str(company_id)))
+                assigned_count = cur.rowcount
+                if assigned_count > 0:
+                    logger.info(f"Auto-assigned {assigned_count} NAFIS job(s) to recruiter {user_id} for company {company_name}")
+
+                # 5. Mark invitation as accepted
+                cur.execute("""
+                    UPDATE company_invitations
+                    SET is_used = TRUE, status = 'accepted',
+                        accepted_at = NOW(), created_user_id = %s
+                    WHERE id = %s
+                """, (user_id, invitation['id']))
+
+                conn.commit()
+
+                # Return user data for token generation
+                return {
+                    'id': user_id,
+                    'email': email,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'phone': phone,
+                    'user_type': role,
+                    'company_name': company_name,
+                    'company_id': str(company_id),
+                }
+
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Invitation acceptance failed: {e}")
+            raise e
+
