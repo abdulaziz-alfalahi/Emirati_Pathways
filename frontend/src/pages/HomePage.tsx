@@ -146,7 +146,15 @@ const HomePage: React.FC = () => {
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
               </Link>
 
-              <button className="flex items-center text-[#6B7280] hover:text-[#1A1A1A] font-medium transition-colors px-6 py-3">
+              <button
+                className="flex items-center text-[#6B7280] hover:text-[#1A1A1A] font-medium transition-colors px-6 py-3"
+                onClick={() => {
+                  const personasSection = document.getElementById('personas-section');
+                  if (personasSection) {
+                    personasSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
                 <Play className="w-4 h-4 mr-2" />
                 Watch Demo
               </button>
@@ -182,7 +190,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ─── Personas Section ─── */}
-      <section className="py-20 bg-white">
+      <section id="personas-section" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-[#1A1A1A] mb-3">

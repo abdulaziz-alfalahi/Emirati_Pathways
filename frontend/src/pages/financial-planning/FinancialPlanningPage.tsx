@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
+import { restClient } from '@/utils/api';
+import { careerLifecycleAPI, type CareerStage } from '@/services/intelligenceAPI';
 import {
     Banknote, TrendingUp, Calculator, Shield,
     Target, ChevronRight, BookOpen, BarChart3, Users,
     Wallet, Landmark, BadgePercent, GraduationCap, Award,
-    CheckCircle, ArrowRight, ArrowLeft, Clock
+    CheckCircle, ArrowRight, ArrowLeft, Clock, Loader2
 } from 'lucide-react';
 
 // Brand tokens (unified with Education Pathway)
@@ -29,6 +31,45 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
+/* ── Types ── */
+interface BudgetItem {
+    category: string; category_ar: string; pct: number; amount: number;
+}
+interface FinancialData {
+    estimated_salary: number;
+    matching_benchmark: any;
+    budget: BudgetItem[];
+    savings_goals: { title: string; title_ar?: string; description?: string; target_date?: string; status?: string; progress: number }[];
+    benchmarks: any[];
+    skills_count: number;
+}
+
+/* ── Fallback ── */
+const FALLBACK: FinancialData = {
+    estimated_salary: 15000,
+    matching_benchmark: null,
+    budget: [
+        { category: 'Housing', category_ar: 'السكن', pct: 30, amount: 4500 },
+        { category: 'Transportation', category_ar: 'المواصلات', pct: 15, amount: 2250 },
+        { category: 'Food & Groceries', category_ar: 'الطعام والبقالة', pct: 15, amount: 2250 },
+        { category: 'Savings & Investments', category_ar: 'الادخار والاستثمار', pct: 20, amount: 3000 },
+        { category: 'Utilities & Bills', category_ar: 'الخدمات والفواتير', pct: 10, amount: 1500 },
+        { category: 'Personal & Leisure', category_ar: 'الشخصي والترفيه', pct: 10, amount: 1500 },
+    ],
+    savings_goals: [],
+    benchmarks: [],
+    skills_count: 0,
+};
+
+const catColorMap: Record<string, { bg: string; textColor: string }> = {
+    'Housing': { bg: brand.blue, textColor: brand.blueText },
+    'Transportation': { bg: brand.green, textColor: brand.greenText },
+    'Food & Groceries': { bg: brand.amber, textColor: brand.amberText },
+    'Savings & Investments': { bg: brand.primarySurface, textColor: brand.primary },
+    'Utilities & Bills': { bg: brand.purple, textColor: brand.purpleText },
+    'Personal & Leisure': { bg: brand.red, textColor: brand.redText },
+};
+
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const FinancialPlanningPage: React.FC = () => {
@@ -38,22 +79,41 @@ const FinancialPlanningPage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    /* ── State ── */
+    const [data, setData] = useState<FinancialData>(FALLBACK);
+    const [loading, setLoading] = useState(true);
+    const [careerStage, setCareerStage] = useState<CareerStage | null>(null);
 
-    const budgetCategories = [
-        { label: t('Housing', 'السكن'), pct: 30, amount: t('AED 4,500', '4,500 د.إ'), color: brand.blue, textColor: brand.blueText },
-        { label: t('Transportation', 'المواصلات'), pct: 15, amount: t('AED 2,250', '2,250 د.إ'), color: brand.green, textColor: brand.greenText },
-        { label: t('Food & Groceries', 'الطعام والبقالة'), pct: 15, amount: t('AED 2,250', '2,250 د.إ'), color: brand.amber, textColor: brand.amberText },
-        { label: t('Savings & Investments', 'الادخار والاستثمار'), pct: 20, amount: t('AED 3,000', '3,000 د.إ'), color: brand.primarySurface, textColor: brand.primary },
-        { label: t('Utilities & Bills', 'الخدمات والفواتير'), pct: 10, amount: t('AED 1,500', '1,500 د.إ'), color: brand.purple, textColor: brand.purpleText },
-        { label: t('Personal & Leisure', 'الشخصي والترفيه'), pct: 10, amount: t('AED 1,500', '1,500 د.إ'), color: brand.red, textColor: brand.redText },
-    ];
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await restClient.get('/api/career-services/financial-profile');
+                setData(res.data);
+            } catch (err) {
+                console.error('Failed to load financial profile:', err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+        // Fetch career stage (non-blocking)
+        (async () => {
+            try {
+                const stage = await careerLifecycleAPI.getStage();
+                setCareerStage(stage);
+            } catch { /* not logged in — graceful fallback */ }
+        })();
+    }, []);
 
-    const savingsGoals = [
-        { title: t('Emergency Fund', 'صندوق الطوارئ'), target: t('AED 50,000', '50,000 د.إ'), current: t('AED 32,000', '32,000 د.إ'), pct: 64, Icon: Shield, desc: t('6 months of living expenses', '6 أشهر من نفقات المعيشة') },
-        { title: t('Home Down Payment', 'دفعة أولى للمنزل'), target: t('AED 200,000', '200,000 د.إ'), current: t('AED 85,000', '85,000 د.إ'), pct: 43, Icon: Landmark, desc: t('First property in the UAE', 'أول عقار في الإمارات') },
-        { title: t('Investment Portfolio', 'المحفظة الاستثمارية'), target: t('AED 100,000', '100,000 د.إ'), current: t('AED 47,000', '47,000 د.إ'), pct: 47, Icon: TrendingUp, desc: t('Long-term wealth building', 'بناء الثروة طويل الأمد') },
-        { title: t('Education Fund', 'صندوق التعليم'), target: t('AED 75,000', '75,000 د.إ'), current: t('AED 28,000', '28,000 د.إ'), pct: 37, Icon: GraduationCap, desc: t('Postgraduate studies or certifications', 'دراسات عليا أو شهادات مهنية') },
+    const salary = data.estimated_salary;
+    const fmtAED = (n: number) => `AED ${n.toLocaleString()}`;
+
+    /* ──────────────────────── STATIC DATA ──────────────────────── */
+
+    const savingsGoalsFallback = [
+        { title: t('Emergency Fund', 'صندوق الطوارئ'), target: 50000, current: 32000, pct: 64, Icon: Shield, desc: t('6 months of living expenses', '6 أشهر من نفقات المعيشة') },
+        { title: t('Home Down Payment', 'دفعة أولى للمنزل'), target: 200000, current: 85000, pct: 43, Icon: Landmark, desc: t('First property in the UAE', 'أول عقار في الإمارات') },
+        { title: t('Investment Portfolio', 'المحفظة الاستثمارية'), target: 100000, current: 47000, pct: 47, Icon: TrendingUp, desc: t('Long-term wealth building', 'بناء الثروة طويل الأمد') },
+        { title: t('Education Fund', 'صندوق التعليم'), target: 75000, current: 28000, pct: 37, Icon: GraduationCap, desc: t('Postgraduate studies or certifications', 'دراسات عليا أو شهادات مهنية') },
     ];
 
     const investmentOptions = [
@@ -84,54 +144,101 @@ const FinancialPlanningPage: React.FC = () => {
     ];
 
     const stats = [
-        { value: t('AED 15K', '15 ألف د.إ'), label: t('Avg. Monthly Salary', 'متوسط الراتب الشهري'), icon: Banknote },
+        { value: `AED ${Math.round(salary / 1000)}K`, label: t('Est. Monthly Salary', 'الراتب الشهري المقدّر'), icon: Banknote },
         { value: '20%', label: t('Rec. Savings Rate', 'نسبة الادخار الموصى بها'), icon: Banknote },
-        { value: '6+', label: t('Investment Options', 'خيارات الاستثمار'), icon: TrendingUp },
-        { value: '8', label: t('Gov. Benefits', 'المزايا الحكومية'), icon: Shield },
+        { value: String(data.benchmarks.length || '6+'), label: t('Salary Benchmarks', 'معايير الرواتب'), icon: TrendingUp },
+        { value: '6', label: t('Gov. Benefits', 'المزايا الحكومية'), icon: Shield },
     ];
 
     /* ── Tab 1: Budget & Planning ── */
     const budgetTab = (
         <div>
+            {/* Career Stage Context */}
+            {careerStage && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: brand.primarySurface, border: `1px solid ${brand.primary}22`, borderRadius: 12, marginBottom: 20 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, background: brand.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUp style={{ width: 24, height: 24, color: '#fff' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>
+                            {t('Your Career Stage:', 'مرحلتك المهنية:')} {isRTL ? careerStage.stage_label_ar : careerStage.stage_label}
+                        </div>
+                        <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                            {t(`${careerStage.milestones_completed}/${careerStage.total_milestones} milestones completed`, `${careerStage.milestones_completed}/${careerStage.total_milestones} إنجازات مكتملة`)}
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: brand.primary }}>{careerStage.progress_pct}%</div>
+                        <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Progress', 'التقدم')}</div>
+                    </div>
+                </div>
+            )}
+
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Monthly Budget Breakdown', 'تفصيل الميزانية الشهرية')}
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    'Recommended allocation based on AED 15,000 monthly salary — adjust to fit your situation.',
-                    'توزيع موصى به بناءً على راتب شهري 15,000 د.إ — عدّله ليناسب وضعك.'
+                    `Recommended allocation based on ${fmtAED(salary)} estimated monthly salary — adjust to fit your situation.`,
+                    `توزيع موصى به بناءً على راتب شهري مقدّر ${salary.toLocaleString()} د.إ — عدّله ليناسب وضعك.`
                 )}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16, marginBottom: 28 }}>
-                {budgetCategories.map((cat, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`,
-                            padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                            transition: 'border-color 150ms, box-shadow 150ms',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                            <h3 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{cat.label}</h3>
-                            <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: cat.color, color: cat.textColor }}>{cat.pct}%</span>
-                        </div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: brand.textPrimary, marginBottom: 8 }}>{cat.amount}</div>
-                        {/* Progress bar */}
-                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#F3F4F6' }}>
-                            <div style={{ width: `${cat.pct}%`, height: 6, borderRadius: 3, background: brand.primary, transition: 'width 300ms' }} />
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                    <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto', color: brand.primary }} />
+                </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16, marginBottom: 28 }}>
+                    {data.budget.map((cat, i) => {
+                        const colors = catColorMap[cat.category] || { bg: '#F3F4F6', textColor: brand.textSecondary };
+                        return (
+                            <div
+                                key={i}
+                                style={{
+                                    background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`,
+                                    padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                                    transition: 'border-color 150ms, box-shadow 150ms',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <h3 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>
+                                        {isRTL ? cat.category_ar : cat.category}
+                                    </h3>
+                                    <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: colors.bg, color: colors.textColor }}>{cat.pct}%</span>
+                                </div>
+                                <div style={{ fontSize: 20, fontWeight: 700, color: brand.textPrimary, marginBottom: 8 }}>
+                                    {isRTL ? `${cat.amount.toLocaleString()} د.إ` : fmtAED(cat.amount)}
+                                </div>
+                                <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#F3F4F6' }}>
+                                    <div style={{ width: `${cat.pct}%`, height: 6, borderRadius: 3, background: brand.primary, transition: 'width 300ms' }} />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
-            {/* Savings Goals */}
+            {/* Savings Goals (from career plans or fallback) */}
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Savings Goals', 'أهداف الادخار')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                {savingsGoals.map((goal, i) => (
+                {(data.savings_goals.length > 0 ? data.savings_goals.map((g, i) => ({
+                    title: isRTL && g.title_ar ? g.title_ar : g.title,
+                    Icon: [Shield, Landmark, TrendingUp, GraduationCap][i % 4],
+                    desc: g.description || g.title,
+                    pct: g.progress,
+                    target: g.target_date || t('Ongoing', 'مستمر'),
+                    current: `${g.progress}%`,
+                })) : savingsGoalsFallback.map(g => ({
+                    title: g.title,
+                    Icon: g.Icon,
+                    desc: g.desc,
+                    pct: g.pct,
+                    target: fmtAED(g.target),
+                    current: fmtAED(g.current),
+                }))).map((goal, i) => (
                     <div
                         key={i}
                         style={{
@@ -154,10 +261,11 @@ const FinancialPlanningPage: React.FC = () => {
                                 </div>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: brand.textSecondary, marginBottom: 8 }}>
-                                <span>{goal.current} {t('saved', 'مُدّخر')}</span><span>{t('Target:', 'الهدف:')} {goal.target}</span>
+                                <span>{goal.current} {t('progress', 'تقدّم')}</span>
+                                <span>{t('Target:', 'الهدف:')} {goal.target}</span>
                             </div>
                             <div style={{ width: '100%', height: 8, borderRadius: 4, background: '#F3F4F6' }}>
-                                <div style={{ width: `${goal.pct}%`, height: 8, borderRadius: 4, background: brand.primary, transition: 'width 500ms' }} />
+                                <div style={{ width: `${Math.min(goal.pct, 100)}%`, height: 8, borderRadius: 4, background: brand.primary, transition: 'width 500ms' }} />
                             </div>
                             <div style={{ textAlign: isRTL ? 'left' : 'right', fontSize: 12, fontWeight: 600, color: brand.primary, marginTop: 4 }}>{goal.pct}%</div>
                         </div>
@@ -182,26 +290,16 @@ const FinancialPlanningPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                 {investmentOptions.map((opt, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`,
-                            overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                            transition: 'border-color 150ms, box-shadow 150ms',
-                        }}
+                    <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
-                    >
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
                         <div style={{ height: 4, background: brand.primary }} />
                         <div style={{ padding: 22 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                                 <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{opt.title}</h3>
-                                <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: opt.catBg, color: opt.catColor }}>
-                                    {opt.risk}
-                                </span>
+                                <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: opt.catBg, color: opt.catColor }}>{opt.risk}</span>
                             </div>
                             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{opt.desc}</p>
-
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
                                 <div style={{ padding: '10px 12px', borderRadius: 10, background: brand.green, textAlign: 'center' }}>
                                     <div style={{ fontSize: 15, fontWeight: 700, color: brand.greenText }}>{opt.returns}</div>
@@ -212,23 +310,45 @@ const FinancialPlanningPage: React.FC = () => {
                                     <div style={{ fontSize: 11, color: brand.textSecondary }}>{t('Min. Investment', 'الحد الأدنى')}</div>
                                 </div>
                             </div>
-
-                            <button
-                                style={{
-                                    width: '100%', padding: '10px 0', borderRadius: 12,
-                                    background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600,
-                                    border: 'none', cursor: 'pointer', transition: 'background 150ms',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                }}
+                            <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                                 onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
-                                onMouseLeave={e => e.currentTarget.style.background = brand.primary}
-                            >
+                                onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
                                 {t('Learn More', 'اعرف المزيد')} <ArrowIcon style={{ width: 14, height: 14 }} />
                             </button>
                         </div>
                     </div>
                 ))}
             </div>
+
+            {/* Salary Benchmarks from API */}
+            {data.benchmarks.length > 0 && (
+                <div style={{ marginTop: 28 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>
+                        {t('UAE Salary Benchmarks', 'معايير الرواتب في الإمارات')}
+                    </h3>
+                    <p style={{ fontSize: 13, color: brand.textSecondary, marginBottom: 16, lineHeight: 1.6 }}>
+                        {t('Real market data to help you negotiate and plan your financial future.', 'بيانات سوق حقيقية لمساعدتك في التفاوض والتخطيط لمستقبلك المالي.')}
+                    </p>
+                    <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, overflow: 'hidden' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr', gap: 8, padding: '12px 16px', borderBottom: `1px solid ${brand.border}`, fontSize: 12, fontWeight: 600, color: brand.textSecondary }}>
+                            <span>{t('Role', 'الدور')}</span>
+                            <span>{t('Level', 'المستوى')}</span>
+                            <span>{t('Min', 'الحد الأدنى')}</span>
+                            <span>{t('Median', 'المتوسط')}</span>
+                            <span>{t('Max', 'الحد الأعلى')}</span>
+                        </div>
+                        {data.benchmarks.map((b: any, i: number) => (
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr', gap: 8, padding: '12px 16px', borderBottom: i < data.benchmarks.length - 1 ? `1px solid ${brand.border}` : 'none', fontSize: 13, alignItems: 'center' }}>
+                                <span style={{ fontWeight: 500, color: brand.textPrimary }}>{isRTL ? (b.role_title_ar || b.role_title) : b.role_title}</span>
+                                <span style={{ background: b.experience_level === 'senior' ? brand.purple : b.experience_level === 'mid' ? brand.blue : brand.green, color: b.experience_level === 'senior' ? brand.purpleText : b.experience_level === 'mid' ? brand.blueText : brand.greenText, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, width: 'fit-content' }}>{b.experience_level}</span>
+                                <span style={{ color: brand.textSecondary }}>{b.min_salary?.toLocaleString()} {b.currency}</span>
+                                <span style={{ fontWeight: 600, color: brand.primary }}>{b.median_salary?.toLocaleString()} {b.currency}</span>
+                                <span style={{ color: brand.textSecondary }}>{b.max_salary?.toLocaleString()} {b.currency}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 
@@ -249,16 +369,9 @@ const FinancialPlanningPage: React.FC = () => {
                 {govBenefits.map((ben, i) => {
                     const isActive = ben.status === t('Active', 'نشط') || ben.status === t('Eligible', 'مؤهل');
                     return (
-                        <div
-                            key={i}
-                            style={{
-                                background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`,
-                                padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                                transition: 'border-color 150ms, box-shadow 150ms',
-                            }}
+                        <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
-                        >
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
                                 <div style={{ width: 44, height: 44, borderRadius: 12, background: brand.primarySurface, color: brand.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     <ben.Icon style={{ width: 22, height: 22 }} />
@@ -266,26 +379,14 @@ const FinancialPlanningPage: React.FC = () => {
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                         <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{ben.title}</h3>
-                                        <span style={{
-                                            padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                                            background: isActive ? brand.green : brand.blue,
-                                            color: isActive ? brand.greenText : brand.blueText,
-                                        }}>
-                                            {ben.status}
-                                        </span>
+                                        <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: isActive ? brand.green : brand.blue, color: isActive ? brand.greenText : brand.blueText }}>{ben.status}</span>
                                     </div>
                                     <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{ben.desc}</p>
                                 </div>
                             </div>
-                            <button
-                                style={{
-                                    width: '100%', padding: '10px 0', borderRadius: 12,
-                                    background: '#fff', color: brand.primary, fontSize: 14, fontWeight: 600,
-                                    border: `1px solid ${brand.primary}`, cursor: 'pointer', transition: 'all 150ms',
-                                }}
+                            <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: '#fff', color: brand.primary, fontSize: 14, fontWeight: 600, border: `1px solid ${brand.primary}`, cursor: 'pointer', transition: 'all 150ms' }}
                                 onMouseEnter={e => { e.currentTarget.style.background = brand.primarySurface; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
-                            >
+                                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
                                 {t('View Details', 'عرض التفاصيل')}
                             </button>
                         </div>
@@ -310,30 +411,17 @@ const FinancialPlanningPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
                 {resources.map((r, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`,
-                            padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                            transition: 'border-color 150ms, box-shadow 150ms',
-                        }}
+                    <div key={i} style={{ background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 22, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'border-color 150ms, box-shadow 150ms' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
-                    >
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
                         <div style={{ width: 48, height: 48, borderRadius: 14, marginBottom: 14, background: brand.primarySurface, color: brand.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <r.Icon style={{ width: 24, height: 24 }} />
                         </div>
                         <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{r.title}</h3>
                         <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{r.desc}</p>
-                        <button
-                            style={{
-                                width: '100%', padding: '10px 0', borderRadius: 12,
-                                background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600,
-                                border: 'none', cursor: 'pointer', transition: 'background 150ms',
-                            }}
+                        <button style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'background 150ms' }}
                             onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
-                            onMouseLeave={e => e.currentTarget.style.background = brand.primary}
-                        >
+                            onMouseLeave={e => e.currentTarget.style.background = brand.primary}>
                             {r.action}
                         </button>
                     </div>

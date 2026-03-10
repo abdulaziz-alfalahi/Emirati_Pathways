@@ -1,32 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
     MessageSquare, Users, Calendar, Flag, Settings, Heart,
-    CheckCircle, Clock, TrendingUp, Plus, Star,
-    ArrowUp, ArrowDown, Eye, ThumbsUp, AlertTriangle, FileText
+    Clock, TrendingUp, Plus, Eye, ThumbsUp, AlertTriangle, FileText
 } from 'lucide-react';
 
 const brand = {
-    primary: '#DB2777',
-    secondary: '#EC4899',
-    accent: '#F9A8D4',
-    bg: '#FDF2F8',
-    cardBg: '#FFFFFF',
-    textPrimary: '#831843',
-    textSecondary: '#6B7280',
-    border: '#E5E7EB',
+    primary: '#DB2777', secondary: '#EC4899', accent: '#F9A8D4',
+    bg: '#FDF2F8', cardBg: '#FFFFFF',
+    textPrimary: '#831843', textSecondary: '#6B7280', border: '#E5E7EB',
     greenBg: '#ECFDF5', greenText: '#059669',
     yellowBg: '#FFFBEB', yellowText: '#D97706',
     redBg: '#FEF2F2', redText: '#DC2626',
     pinkBg: '#FCE7F3', pinkText: '#DB2777',
 };
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+
 const CommunityOperatorDashboard: React.FC = () => {
-    const { language } = useLanguage();
+    const { language, toggleLanguage } = useLanguage();
     const isRTL = language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const [activeTab, setActiveTab] = useState('overview');
+
+    const [stats, setStats] = useState<any>({ active_communities: 0, published_stories: 0, flagged_content: 0, upcoming_events: 0, total_members: 0 });
+    const [groups, setGroups] = useState<any[]>([]);
+    const [contentQueue, setContentQueue] = useState<any[]>([]);
+    const [flaggedContent, setFlaggedContent] = useState<any[]>([]);
+    const [events, setEvents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            setLoading(true);
+            try {
+                const resp = await fetch(`${API_BASE}/api/education/community/operator/stats`);
+                if (resp.ok && !cancelled) {
+                    const d = await resp.json();
+                    setStats(d.stats || {});
+                    setGroups(d.groups || []);
+                    setContentQueue(d.content_queue || []);
+                    setFlaggedContent(d.flagged_content || []);
+                    setEvents(d.events || []);
+                }
+            } catch (err) { console.error('Community operator fetch error:', err); }
+            finally { if (!cancelled) setLoading(false); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const tabs = [
         { id: 'overview', label: t('Overview', 'نظرة عامة'), icon: TrendingUp },
@@ -36,87 +59,58 @@ const CommunityOperatorDashboard: React.FC = () => {
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
-    const stats = [
-        { label: t('Active Communities', 'المجتمعات النشطة'), value: '48', change: '+5', up: true, icon: Users },
-        { label: t('Published Stories', 'القصص المنشورة'), value: '1,245', change: '+87', up: true, icon: Heart },
-        { label: t('Flagged Content', 'محتوى مبلّغ عنه'), value: '12', change: '+3', up: true, icon: Flag },
-        { label: t('Upcoming Events', 'الفعاليات القادمة'), value: '8', change: '+2', up: true, icon: Calendar },
-    ];
-
-    const contentQueue = [
-        { title: t('My Journey from Fresh Graduate to CTO', 'رحلتي من خريج جديد إلى مدير تقنية'), author: t('Ahmed Al Falasi', 'أحمد الفلاسي'), type: t('Success Story', 'قصة نجاح'), submitted: '2024-02-18', likes: 45 },
-        { title: t('Navigating Career Change in UAE', 'التنقل المهني في الإمارات'), author: t('Fatima Al Hashmi', 'فاطمة الهاشمي'), type: t('Article', 'مقال'), submitted: '2024-02-17', likes: 32 },
-        { title: t('Youth Innovation Summit Recap', 'ملخص قمة الابتكار الشبابي'), author: t('Omar Al Suwaidi', 'عمر السويدي'), type: t('Event Recap', 'تلخيص فعالية'), submitted: '2024-02-16', likes: 28 },
-        { title: t('Building Community Through Sports', 'بناء المجتمع من خلال الرياضة'), author: t('Mariam Al Shamsi', 'مريم الشامسي'), type: t('Article', 'مقال'), submitted: '2024-02-15', likes: 19 },
-    ];
-
-    const flaggedContent = [
-        { title: t('Inappropriate job listing', 'إعلان وظيفي غير لائق'), reporter: t('System Auto-Flag', 'فحص تلقائي'), reason: t('Misleading content', 'محتوى مضلل'), severity: 'high', date: '2024-02-18' },
-        { title: t('Spam community post', 'منشور مجتمعي مزعج'), reporter: t('User Report x3', 'بلاغ مستخدمين ×3'), reason: t('Spam / advertising', 'إزعاج / إعلان'), severity: 'medium', date: '2024-02-17' },
-        { title: t('Duplicate success story', 'قصة نجاح مكررة'), reporter: t('Admin Review', 'مراجعة إدارية'), reason: t('Duplicate content', 'محتوى مكرر'), severity: 'low', date: '2024-02-16' },
-    ];
-
-    const events = [
-        { name: t('UAE Career Fair 2024', 'معرض الوظائف الإماراتي 2024'), date: '2024-03-15', location: t('ADNEC, Abu Dhabi', 'أدنيك، أبوظبي'), registrations: 2400, status: 'upcoming' },
-        { name: t('Youth Innovation Challenge', 'تحدي الابتكار الشبابي'), date: '2024-03-22', location: t('Dubai Exhibition Centre', 'مركز دبي للمعارض'), registrations: 850, status: 'upcoming' },
-        { name: t('Retiree Networking Evening', 'أمسية تواصل المتقاعدين'), date: '2024-03-08', location: t('Jumeirah Emirates Towers', 'أبراج الإمارات جميرا'), registrations: 120, status: 'upcoming' },
-        { name: t('National Service Alumni Meetup', 'لقاء خريجي الخدمة الوطنية'), date: '2024-02-25', location: t('Sharjah Youth Center', 'مركز الشارقة للشباب'), registrations: 200, status: 'completed' },
+    const overviewStats = [
+        { label: t('Active Communities', 'المجتمعات النشطة'), value: String(stats.active_communities || 0), icon: Users },
+        { label: t('Published Stories', 'القصص المنشورة'), value: String(stats.published_stories || 0), icon: Heart },
+        { label: t('Flagged Content', 'محتوى مبلّغ عنه'), value: String(stats.flagged_content || 0), icon: Flag },
+        { label: t('Upcoming Events', 'الفعاليات القادمة'), value: String(stats.upcoming_events || 0), icon: Calendar },
     ];
 
     const renderOverview = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                {stats.map((s, i) => (
+                {overviewStats.map((s, i) => (
                     <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                        <div style={{ background: brand.pinkBg, borderRadius: 10, padding: 10 }}>
-                            <s.icon size={20} color={brand.pinkText} />
-                        </div>
+                        <div style={{ background: brand.pinkBg, borderRadius: 10, padding: 10 }}><s.icon size={20} color={brand.pinkText} /></div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 13, color: brand.textSecondary, marginBottom: 4 }}>{s.label}</div>
                             <div style={{ fontSize: 24, fontWeight: 700, color: brand.textPrimary }}>{s.value}</div>
-                            <div style={{ fontSize: 12, color: s.up ? brand.greenText : brand.redText, display: 'flex', alignItems: 'center', gap: 2, marginTop: 4 }}>
-                                {s.up ? <ArrowUp size={12} /> : <ArrowDown size={12} />} {s.change}
-                            </div>
                         </div>
                     </div>
                 ))}
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div style={{ background: brand.cardBg, borderRadius: 12, padding: 24, border: `1px solid ${brand.border}` }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Content Awaiting Review', 'محتوى بانتظار المراجعة')}</h3>
-                    {contentQueue.slice(0, 3).map((c, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < 2 ? `1px solid ${brand.border}` : 'none' }}>
+                    {contentQueue.length === 0 && <div style={{ fontSize: 13, color: brand.textSecondary }}>{t('No pending content', 'لا يوجد محتوى معلق')}</div>}
+                    {contentQueue.slice(0, 3).map((c: any, i: number) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < Math.min(contentQueue.length, 3) - 1 ? `1px solid ${brand.border}` : 'none' }}>
                             <div>
-                                <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{c.title}</div>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.author} • {c.type}</div>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (c.title_ar || c.title) : c.title}</div>
+                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.author_name} • {c.content_type}</div>
                             </div>
                             <div style={{ display: 'flex', gap: 6 }}>
                                 <button style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: brand.greenBg, color: brand.greenText, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✓</button>
-                                <button style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${brand.border}`, background: 'white', color: brand.textSecondary, fontSize: 12, cursor: 'pointer' }}>
-                                    <Eye size={12} />
-                                </button>
+                                <button style={{ padding: '5px 12px', borderRadius: 6, border: `1px solid ${brand.border}`, background: 'white', color: brand.textSecondary, fontSize: 12, cursor: 'pointer' }}><Eye size={12} /></button>
                             </div>
                         </div>
                     ))}
                 </div>
-
                 <div style={{ background: brand.cardBg, borderRadius: 12, padding: 24, border: `1px solid ${brand.border}` }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>
                         <AlertTriangle size={16} color={brand.yellowText} style={{ marginRight: 8, verticalAlign: 'middle' }} />
                         {t('Flagged Items', 'العناصر المبلّغ عنها')}
                     </h3>
-                    {flaggedContent.map((f, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < flaggedContent.length - 1 ? `1px solid ${brand.border}` : 'none' }}>
+                    {flaggedContent.length === 0 && <div style={{ fontSize: 13, color: brand.textSecondary }}>{t('No flagged items', 'لا توجد عناصر مبلّغ عنها')}</div>}
+                    {flaggedContent.slice(0, 3).map((f: any, i: number) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < Math.min(flaggedContent.length, 3) - 1 ? `1px solid ${brand.border}` : 'none' }}>
                             <div>
-                                <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{f.title}</div>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{f.reason} • {f.reporter}</div>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (f.title_ar || f.title) : f.title}</div>
+                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{f.flag_reason || 'Flagged'} • {f.author_name}</div>
                             </div>
-                            <span style={{
-                                fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600,
-                                background: f.severity === 'high' ? brand.redBg : f.severity === 'medium' ? brand.yellowBg : '#F1F5F9',
-                                color: f.severity === 'high' ? brand.redText : f.severity === 'medium' ? brand.yellowText : brand.textSecondary
-                            }}>{f.severity === 'high' ? t('High', 'عالي') : f.severity === 'medium' ? t('Medium', 'متوسط') : t('Low', 'منخفض')}</span>
+                            <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: f.flag_severity === 'high' ? brand.redBg : f.flag_severity === 'medium' ? brand.yellowBg : '#F1F5F9', color: f.flag_severity === 'high' ? brand.redText : f.flag_severity === 'medium' ? brand.yellowText : brand.textSecondary }}>
+                                {(f.flag_severity || 'low').toUpperCase()}
+                            </span>
                         </div>
                     ))}
                 </div>
@@ -133,24 +127,20 @@ const CommunityOperatorDashboard: React.FC = () => {
                     ))}
                 </div>
             </div>
-            {contentQueue.map((c, i) => (
+            {contentQueue.length === 0 && !loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('No content to review', 'لا يوجد محتوى للمراجعة')}</div>}
+            {contentQueue.map((c: any, i: number) => (
                 <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ background: brand.pinkBg, borderRadius: 10, padding: 12, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <FileText size={20} color={brand.pinkText} />
-                        </div>
+                        <div style={{ background: brand.pinkBg, borderRadius: 10, padding: 12, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={20} color={brand.pinkText} /></div>
                         <div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{c.title}</div>
-                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.author} • {c.type} • {c.submitted}</div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (c.title_ar || c.title) : c.title}</div>
+                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{c.author_name} • {c.content_type} • {c.created_at?.split(' ')[0]}</div>
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 13, color: brand.textSecondary }}><ThumbsUp size={13} /> {c.likes}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 13, color: brand.textSecondary }}><ThumbsUp size={13} /> {c.likes || 0}</span>
                         <button style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: brand.greenBg, color: brand.greenText, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✓ {t('Approve', 'موافقة')}</button>
                         <button style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: brand.redBg, color: brand.redText, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>✗ {t('Reject', 'رفض')}</button>
-                        <button style={{ padding: '6px 14px', borderRadius: 6, border: `1px solid ${brand.border}`, background: 'white', color: brand.primary, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-                            <Eye size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} /> {t('Preview', 'معاينة')}
-                        </button>
                     </div>
                 </div>
             ))}
@@ -159,28 +149,22 @@ const CommunityOperatorDashboard: React.FC = () => {
 
     const renderFlagged = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {flaggedContent.map((f, i) => (
-                <div key={i} style={{
-                    background: brand.cardBg, borderRadius: 12, padding: 20,
-                    border: `1px solid ${f.severity === 'high' ? '#FCA5A5' : f.severity === 'medium' ? '#FCD34D' : brand.border}`,
-                    borderLeftWidth: 4
-                }}>
+            {flaggedContent.length === 0 && !loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('No flagged content', 'لا يوجد محتوى مبلّغ عنه')}</div>}
+            {flaggedContent.map((f: any, i: number) => (
+                <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${f.flag_severity === 'high' ? '#FCA5A5' : f.flag_severity === 'medium' ? '#FCD34D' : brand.border}`, borderLeftWidth: 4 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                         <div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{f.title}</div>
-                            <div style={{ fontSize: 13, color: brand.textSecondary, marginTop: 4 }}>{t('Reason', 'السبب')}: {f.reason}</div>
-                            <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>{t('Reported by', 'أبلغ بواسطة')}: {f.reporter} • {f.date}</div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (f.title_ar || f.title) : f.title}</div>
+                            <div style={{ fontSize: 13, color: brand.textSecondary, marginTop: 4 }}>{t('Reason', 'السبب')}: {f.flag_reason || 'Unspecified'}</div>
+                            <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 2 }}>{f.author_name} • {f.created_at?.split(' ')[0]}</div>
                         </div>
-                        <span style={{
-                            fontSize: 12, padding: '4px 14px', borderRadius: 20, fontWeight: 600,
-                            background: f.severity === 'high' ? brand.redBg : f.severity === 'medium' ? brand.yellowBg : '#F1F5F9',
-                            color: f.severity === 'high' ? brand.redText : f.severity === 'medium' ? brand.yellowText : brand.textSecondary
-                        }}>{f.severity.toUpperCase()}</span>
+                        <span style={{ fontSize: 12, padding: '4px 14px', borderRadius: 20, fontWeight: 600, background: f.flag_severity === 'high' ? brand.redBg : f.flag_severity === 'medium' ? brand.yellowBg : '#F1F5F9', color: f.flag_severity === 'high' ? brand.redText : f.flag_severity === 'medium' ? brand.yellowText : brand.textSecondary }}>
+                            {(f.flag_severity || 'low').toUpperCase()}
+                        </span>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: brand.redBg, color: brand.redText, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('Remove Content', 'إزالة المحتوى')}</button>
                         <button style={{ padding: '8px 16px', borderRadius: 6, border: `1px solid ${brand.border}`, background: 'white', color: brand.textPrimary, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>{t('Dismiss Flag', 'تجاهل البلاغ')}</button>
-                        <button style={{ padding: '8px 16px', borderRadius: 6, border: `1px solid ${brand.border}`, background: 'white', color: brand.primary, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>{t('View Content', 'عرض المحتوى')}</button>
                     </div>
                 </div>
             ))}
@@ -194,23 +178,22 @@ const CommunityOperatorDashboard: React.FC = () => {
                     <Plus size={14} /> {t('Create Event', 'إنشاء فعالية')}
                 </button>
             </div>
-            {events.map((e, i) => (
+            {events.length === 0 && !loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('No events found', 'لم يتم العثور على فعاليات')}</div>}
+            {events.map((e: any, i: number) => (
                 <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ background: brand.pinkBg, borderRadius: 10, padding: 12, textAlign: 'center', minWidth: 50 }}>
                             <Calendar size={18} color={brand.pinkText} />
-                            <div style={{ fontSize: 11, fontWeight: 700, color: brand.pinkText, marginTop: 2 }}>{e.date.split('-')[2]}/{e.date.split('-')[1]}</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: brand.pinkText, marginTop: 2 }}>{e.event_date?.split('-').slice(1).reverse().join('/')}</div>
                         </div>
                         <div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{e.name}</div>
-                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{e.location} • {e.registrations.toLocaleString()} {t('registrations', 'تسجيل')}</div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>{isRTL ? (e.name_ar || e.name) : e.name}</div>
+                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{e.location} • {(e.registrations || 0).toLocaleString()} {t('registrations', 'تسجيل')}</div>
                         </div>
                     </div>
-                    <span style={{
-                        fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 500,
-                        background: e.status === 'upcoming' ? brand.greenBg : '#F1F5F9',
-                        color: e.status === 'upcoming' ? brand.greenText : brand.textSecondary
-                    }}>{e.status === 'upcoming' ? t('Upcoming', 'قادم') : t('Completed', 'مكتمل')}</span>
+                    <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 500, background: e.status === 'upcoming' ? brand.greenBg : '#F1F5F9', color: e.status === 'upcoming' ? brand.greenText : brand.textSecondary }}>
+                        {e.status === 'upcoming' ? t('Upcoming', 'قادم') : t('Completed', 'مكتمل')}
+                    </span>
                 </div>
             ))}
         </div>
@@ -237,7 +220,7 @@ const CommunityOperatorDashboard: React.FC = () => {
 
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: brand.bg }}>
-            <HybridGovernmentNavFixed />
+            <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={language} />
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '100px 24px 40px' }}>
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: brand.pinkBg, padding: '6px 16px', borderRadius: 20, marginBottom: 12 }}>
@@ -246,26 +229,24 @@ const CommunityOperatorDashboard: React.FC = () => {
                     <h1 style={{ fontSize: 32, fontWeight: 800, color: brand.textPrimary, marginBottom: 8 }}>{t('Community Operations Dashboard', 'لوحة عمليات المجتمع')}</h1>
                     <p style={{ fontSize: 15, color: brand.textSecondary }}>{t('Moderate content, manage events, and foster community engagement', 'إدارة المحتوى والفعاليات وتعزيز التفاعل المجتمعي')}</p>
                 </div>
-
                 <div style={{ display: 'flex', gap: 4, background: brand.cardBg, padding: 4, borderRadius: 12, border: `1px solid ${brand.border}`, marginBottom: 24 }}>
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                             padding: '10px 12px', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                             background: activeTab === tab.id ? brand.primary : 'transparent',
-                            color: activeTab === tab.id ? 'white' : brand.textSecondary,
-                            transition: 'all 0.2s ease'
+                            color: activeTab === tab.id ? 'white' : brand.textSecondary, transition: 'all 0.2s ease'
                         }}>
                             <tab.icon size={15} /> {tab.label}
                         </button>
                     ))}
                 </div>
-
-                {activeTab === 'overview' && renderOverview()}
-                {activeTab === 'content' && renderContent()}
-                {activeTab === 'flagged' && renderFlagged()}
-                {activeTab === 'events' && renderEvents()}
-                {activeTab === 'settings' && renderSettings()}
+                {loading && <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>{t('Loading...', 'جاري التحميل...')}</div>}
+                {!loading && activeTab === 'overview' && renderOverview()}
+                {!loading && activeTab === 'content' && renderContent()}
+                {!loading && activeTab === 'flagged' && renderFlagged()}
+                {!loading && activeTab === 'events' && renderEvents()}
+                {!loading && activeTab === 'settings' && renderSettings()}
             </div>
         </div>
     );

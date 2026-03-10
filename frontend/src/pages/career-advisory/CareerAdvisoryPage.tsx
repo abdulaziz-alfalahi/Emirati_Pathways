@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -8,6 +8,7 @@ import {
     ChevronRight, ChevronLeft, CheckCircle, Award, Shield,
     Lightbulb, Globe, Briefcase, GraduationCap, Phone
 } from 'lucide-react';
+import { recommendationAPI, careerLifecycleAPI, type Recommendation, type CareerStage } from '@/services/intelligenceAPI';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -37,6 +38,41 @@ const CareerAdvisoryPage: React.FC = () => {
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
+
+    // Intelligence API state
+    const [aiRecommendations, setAiRecommendations] = useState<Recommendation[]>([]);
+    const [careerStage, setCareerStage] = useState<CareerStage | null>(null);
+
+    // Fetch career stage and advisory recommendations on mount
+    useEffect(() => {
+        let cancelled = false;
+        async function loadIntelligence() {
+            try {
+                const [recs, stage] = await Promise.allSettled([
+                    recommendationAPI.getRecommendations('advisory', 5),
+                    careerLifecycleAPI.getStage(),
+                ]);
+                if (cancelled) return;
+                if (recs.status === 'fulfilled') setAiRecommendations(recs.value.recommendations || []);
+                if (stage.status === 'fulfilled') setCareerStage(stage.value);
+            } catch (e) {
+                console.warn('Intelligence API not available, using static data', e);
+            }
+        }
+        loadIntelligence();
+        return () => { cancelled = true; };
+    }, []);
+
+    // Handler: book an advisory session → feed recommendation acceptance
+    const handleBookSession = useCallback(async (advisorName: string) => {
+        try {
+            // Log milestone for career lifecycle
+            await careerLifecycleAPI.completeMilestone('attend_advisory_session');
+            console.log(`✅ Advisory session booked with ${advisorName}`);
+        } catch (e) {
+            console.warn('Could not log advisory session:', e);
+        }
+    }, []);
 
     /* ──────────────────────── DATA ──────────────────────── */
 
@@ -139,14 +175,16 @@ const CareerAdvisoryPage: React.FC = () => {
                             </span>
                         </div>
 
-                        <button style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            background: adv.available ? brand.primary : '#F3F4F6',
-                            color: adv.available ? '#fff' : brand.textSecondary,
-                            border: 'none', padding: '10px 16px', borderRadius: 8,
-                            fontSize: 13, fontWeight: 600, cursor: adv.available ? 'pointer' : 'default',
-                            marginTop: 'auto',
-                        }}>
+                        <button
+                            onClick={() => handleBookSession(adv.name)}
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                background: adv.available ? brand.primary : '#F3F4F6',
+                                color: adv.available ? '#fff' : brand.textSecondary,
+                                border: 'none', padding: '10px 16px', borderRadius: 8,
+                                fontSize: 13, fontWeight: 600, cursor: adv.available ? 'pointer' : 'default',
+                                marginTop: 'auto',
+                            }}>
                             <Calendar size={16} /> {adv.available ? t('Book Session', 'احجز جلسة') : t('Join Waitlist', 'انضم لقائمة الانتظار')}
                         </button>
                     </div>

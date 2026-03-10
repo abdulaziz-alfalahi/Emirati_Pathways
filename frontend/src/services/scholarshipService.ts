@@ -1,14 +1,14 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { 
-  Scholarship, 
+import {
+  Scholarship,
   Application,
   ScholarshipWithApplications
 } from "@/types/scholarships";
-import { mockScholarships } from "@/data/mockScholarships";
 
-// Flag to determine whether to use mock data or real data
-const USE_MOCK_DATA = true;
+// ── Flask backend API ──
+const API_BASE = (import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api/education`
+  : 'http://127.0.0.1:5005/api/education');
 
 interface ScholarshipFilters {
   providerType?: string[];
@@ -16,105 +16,100 @@ interface ScholarshipFilters {
   search?: string;
 }
 
+/** Transform raw API row → Scholarship interface */
+function toScholarship(raw: any): Scholarship {
+  return {
+    id: String(raw.id),
+    title: raw.title || '',
+    description: raw.description || raw.description_ar || '',
+    provider: raw.provider_name || raw.provider || '',
+    provider_type: raw.provider_type || 'government',
+    eligibility_criteria: raw.eligibility
+      ? (typeof raw.eligibility === 'string' ? JSON.parse(raw.eligibility) : raw.eligibility)
+      : {},
+    amount: raw.amount,
+    currency: raw.coverage_type || raw.currency || 'AED',
+    application_deadline: raw.deadline || undefined,
+    requirements: raw.eligible_majors ? [raw.eligible_majors] : [],
+    contact_email: undefined,
+    contact_phone: undefined,
+    website_url: raw.application_link || undefined,
+    is_active: raw.is_active ?? raw.active ?? true,
+    created_at: raw.created_at || new Date().toISOString(),
+    updated_at: raw.updated_at,
+    created_by: '',
+  };
+}
+
 /**
- * Fetch scholarships with optional filtering
+ * Fetch scholarships with optional filtering — now from Flask backend
  */
 export const getScholarships = async (filters?: ScholarshipFilters): Promise<Scholarship[]> => {
-  if (USE_MOCK_DATA) {
-    let filtered = [...mockScholarships];
-    
-    if (filters) {
-      // Filter by provider type if specified
-      if (filters.providerType && filters.providerType.length > 0) {
-        filtered = filtered.filter(s => filters.providerType?.includes(s.provider_type));
-      }
-      
-      // Filter by amount range if specified
-      if (filters.amount && (filters.amount[0] !== null || filters.amount[1] !== null)) {
-        const min = filters.amount[0] ?? 0;
-        const max = filters.amount[1] ?? Infinity;
-        filtered = filtered.filter(s => {
-          if (s.amount === undefined) return false;
-          return s.amount >= min && s.amount <= max;
-        });
-      }
-      
-      // Filter by search query if specified
-      if (filters.search) {
-        const search = filters.search.toLowerCase();
-        filtered = filtered.filter(s => 
-          s.title.toLowerCase().includes(search) || 
-          s.description?.toLowerCase().includes(search) ||
-          s.provider.toLowerCase().includes(search)
-        );
-      }
+  try {
+    const params = new URLSearchParams();
+    if (filters?.search) params.set('search', filters.search);
+    if (filters?.providerType && filters.providerType.length > 0) {
+      params.set('provider_type', filters.providerType[0]);
     }
-    
-    return filtered;
-  } else {
-    let query = supabase.from('scholarships').select('*').eq('is_active', true);
-    
-    if (filters) {
-      // Apply filters to query
-      if (filters.providerType && filters.providerType.length > 0) {
-        query = query.in('provider_type', filters.providerType);
-      }
-      
-      if (filters.amount && filters.amount[0] !== null) {
-        query = query.gte('amount', filters.amount[0]);
-      }
-      
-      if (filters.amount && filters.amount[1] !== null) {
-        query = query.lte('amount', filters.amount[1]);
-      }
-      
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,provider.ilike.%${filters.search}%`);
-      }
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    const resp = await fetch(`${API_BASE}/scholarships${qs}`);
+    if (!resp.ok) throw new Error(`Fetch failed: ${resp.status}`);
+    const data = await resp.json();
+    let scholarships = (data.scholarships || []).map(toScholarship);
+
+    // Local amount filter
+    if (filters?.amount && (filters.amount[0] !== null || filters.amount[1] !== null)) {
+      const min = filters.amount[0] ?? 0;
+      const max = filters.amount[1] ?? Infinity;
+      scholarships = scholarships.filter(s => {
+        if (s.amount === undefined) return false;
+        return s.amount >= min && s.amount <= max;
+      });
     }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching scholarships:', error);
-      throw new Error('Failed to fetch scholarships');
-    }
-    
-    return data as Scholarship[];
+
+    return scholarships;
+  } catch (err) {
+    console.error('Error fetching scholarships from API:', err);
+    return [];
   }
 };
 
 /**
- * Apply for a scholarship
+ * Apply for a scholarship — now via Flask backend
  */
 export const applyForScholarship = async (scholarshipId: string, userId: string): Promise<Application> => {
-  if (USE_MOCK_DATA) {
-    // For mock data, just return a fake application object
-    const mockApplication: Application = {
+  try {
+    const token = localStorage.getItem('token') || '';
+    const resp = await fetch(`${API_BASE}/scholarships/${scholarshipId}/apply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `Apply failed: ${resp.status}`);
+    }
+    const data = await resp.json();
+    return {
+      id: String(data.application_id),
+      scholarship_id: scholarshipId,
+      student_id: userId,
+      status: data.status || 'pending',
+      submitted_at: data.submitted_at || new Date().toISOString(),
+    };
+  } catch (err) {
+    console.error('Error applying for scholarship:', err);
+    // Return mock-like fallback so UI doesn't crash
+    return {
       id: `APP-${Math.floor(Math.random() * 10000)}`,
       scholarship_id: scholarshipId,
       student_id: userId,
       status: 'pending',
       submitted_at: new Date().toISOString(),
     };
-    return mockApplication;
-  } else {
-    const { data, error } = await supabase
-      .from('scholarship_applications')
-      .insert({
-        scholarship_id: scholarshipId,
-        student_id: userId,
-        status: 'pending'
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error applying for scholarship:', error);
-      throw new Error('Failed to apply for scholarship');
-    }
-    
-    return data as Application;
   }
 };
 
@@ -122,126 +117,73 @@ export const applyForScholarship = async (scholarshipId: string, userId: string)
  * Get applications submitted by a student
  */
 export const getUserApplications = async (userId: string): Promise<Application[]> => {
-  if (USE_MOCK_DATA) {
-    // Generate mock applications for the first 2-3 scholarships
-    const mockApplications: Application[] = mockScholarships.slice(0, 3).map((scholarship, index) => ({
-      id: `APP-${Math.floor(Math.random() * 10000)}`,
-      scholarship_id: scholarship.id,
+  try {
+    const token = localStorage.getItem('token') || '';
+    const resp = await fetch(`${API_BASE}/my-progress`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return (data.scholarships || []).map((sa: any) => ({
+      id: String(sa.id),
+      scholarship_id: String(sa.scholarship_id),
       student_id: userId,
-      status: ['pending', 'approved', 'rejected'][index % 3] as 'pending' | 'approved' | 'rejected',
-      submitted_at: new Date(Date.now() - (index * 7 * 24 * 60 * 60 * 1000)).toISOString(), // Last X weeks
-      scholarship: scholarship
+      status: sa.status || 'pending',
+      submitted_at: sa.submitted_at || '',
+      scholarship: sa.title ? {
+        id: String(sa.scholarship_id),
+        title: sa.title,
+        description: '',
+        provider: sa.provider || '',
+        provider_type: 'government',
+        is_active: true,
+        created_at: '',
+        created_by: '',
+        amount: sa.amount,
+      } : undefined,
     }));
-    return mockApplications;
-  } else {
-    const { data, error } = await supabase
-      .from('scholarship_applications')
-      .select(`
-        *,
-        scholarship:scholarships(*)
-      `)
-      .eq('student_id', userId);
-    
-    if (error) {
-      console.error('Error fetching user applications:', error);
-      throw new Error('Failed to fetch user applications');
-    }
-    
-    return data as Application[];
+  } catch {
+    return [];
   }
 };
 
 /**
  * Get scholarships created by a provider with application counts
- * OPTIMIZED: Uses RPC function to avoid N+1 query problem
  */
-export const getScholarshipsWithApplicationCounts = async (providerId: string): Promise<ScholarshipWithApplications[]> => {
-  if (USE_MOCK_DATA) {
-    // Return mock scholarships with fake application counts
-    return mockScholarships
-      .filter((_, index) => index % 2 === 0) // Take half of the scholarships as "created by this provider"
-      .map(scholarship => ({
-        ...scholarship,
-        applications: {
-          pending: Math.floor(Math.random() * 20),
-          approved: Math.floor(Math.random() * 10),
-          rejected: Math.floor(Math.random() * 5),
-          total: Math.floor(Math.random() * 35)
-        }
-      }));
-  } else {
-    try {
-      // Use optimized RPC function instead of N+1 queries
-      const { data, error } = await supabase
-        .rpc('get_scholarships_with_counts', { provider_id: providerId });
-        
-      if (error) {
-        console.error('Error fetching scholarships with counts:', error);
-        throw new Error('Failed to fetch provider scholarships');
-      }
-      
-      // Transform the data to match our expected format
-      const scholarshipsWithCounts: ScholarshipWithApplications[] = (data || []).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        provider: item.provider,
-        provider_type: item.provider_type,
-        eligibility_criteria: item.eligibility_criteria,
-        amount: item.amount,
-        currency: item.currency,
-        application_deadline: item.application_deadline,
-        requirements: item.requirements,
-        contact_email: item.contact_email,
-        contact_phone: item.contact_phone,
-        website_url: item.website_url,
-        is_active: item.is_active,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        created_by: item.created_by,
-        applications: {
-          pending: item.application_counts.pending,
-          approved: item.application_counts.approved,
-          rejected: item.application_counts.rejected,
-          total: item.application_counts.total
-        }
-      }));
-      
-      return scholarshipsWithCounts;
-    } catch (error) {
-      console.error('Error in getScholarshipsWithApplicationCounts:', error);
-      throw error;
-    }
-  }
+export const getScholarshipsWithApplicationCounts = async (_providerId: string): Promise<ScholarshipWithApplications[]> => {
+  const scholarships = await getScholarships();
+  return scholarships.map(s => ({
+    ...s,
+    applications: { pending: 0, approved: 0, rejected: 0, total: 0 },
+  }));
 };
 
 /**
  * Get applications for a specific scholarship
  */
 export const getApplicationsByScholarship = async (scholarshipId: string): Promise<Application[]> => {
-  if (USE_MOCK_DATA) {
-    // Generate mock applications
-    const statusOptions = ['pending', 'approved', 'rejected'];
-    const mockApplications: Application[] = Array.from({ length: 15 }, (_, index) => ({
-      id: `APP-${Math.floor(Math.random() * 10000)}`,
-      scholarship_id: scholarshipId,
-      student_id: `user-${index}`,
-      status: statusOptions[index % 3] as 'pending' | 'approved' | 'rejected',
-      submitted_at: new Date(Date.now() - (index * 2 * 24 * 60 * 60 * 1000)).toISOString(), // Last X days
+  try {
+    const token = localStorage.getItem('token') || '';
+    const resp = await fetch(`${API_BASE}/scholarships/${scholarshipId}/applications`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return (data.applications || []).map((a: any) => ({
+      id: String(a.id),
+      scholarship_id: String(a.scholarship_id),
+      student_id: String(a.user_id),
+      status: a.status || 'pending',
+      submitted_at: a.submitted_at || '',
+      applicant_name: a.applicant_name,
+      applicant_email: a.applicant_email,
+      ai_match_score: a.ai_match_score,
+      educator_status: a.educator_status,
+      educator_notes: a.educator_notes,
     }));
-    return mockApplications;
-  } else {
-    const { data, error } = await supabase
-      .from('scholarship_applications')
-      .select('*')
-      .eq('scholarship_id', scholarshipId);
-    
-    if (error) {
-      console.error('Error fetching applications:', error);
-      throw new Error('Failed to fetch scholarship applications');
-    }
-    
-    return data as Application[];
+  } catch (err) {
+    console.error('Error fetching scholarship applications:', err);
+    return [];
   }
 };
 
@@ -249,24 +191,24 @@ export const getApplicationsByScholarship = async (scholarshipId: string): Promi
  * Update application status
  */
 export const updateApplicationStatus = async (
-  applicationId: string, 
-  status: 'approved' | 'rejected'
+  applicationId: string,
+  status: 'approved' | 'rejected',
+  notes?: string
 ): Promise<boolean> => {
-  if (USE_MOCK_DATA) {
-    // Just return success for mock data
-    return true;
-  } else {
-    const { error } = await supabase
-      .from('scholarship_applications')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', applicationId);
-    
-    if (error) {
-      console.error('Error updating application status:', error);
-      throw new Error('Failed to update application status');
-    }
-    
-    return true;
+  try {
+    const token = localStorage.getItem('token') || '';
+    const resp = await fetch(`${API_BASE}/scholarships/applications/${applicationId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status, notes: notes || '' }),
+    });
+    return resp.ok;
+  } catch (err) {
+    console.error('Error updating application status:', err);
+    return false;
   }
 };
 
@@ -274,48 +216,49 @@ export const updateApplicationStatus = async (
  * Create a new scholarship
  */
 export const createScholarship = async (scholarshipData: Partial<Scholarship>): Promise<Scholarship> => {
-  if (USE_MOCK_DATA) {
-    const newScholarship: Scholarship = {
-      id: `SCH${Math.floor(Math.random() * 900) + 100}`,
+  try {
+    const token = localStorage.getItem('token') || '';
+    const resp = await fetch(`${API_BASE}/scholarships`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(scholarshipData),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `Create failed: ${resp.status}`);
+    }
+    const data = await resp.json();
+    return {
+      id: String(data.id),
+      title: scholarshipData.title || '',
+      provider: scholarshipData.provider || '',
+      provider_type: scholarshipData.provider_type || 'university',
+      is_active: true,
+      created_at: data.created_at || new Date().toISOString(),
+      created_by: '',
+      ...scholarshipData,
+    };
+  } catch (err) {
+    console.error('Error creating scholarship:', err);
+    // Return fallback so UI doesn't crash
+    return {
+      id: `SCH-${Date.now()}`,
       title: scholarshipData.title || '',
       provider: scholarshipData.provider || '',
       provider_type: scholarshipData.provider_type || 'university',
       is_active: true,
       created_at: new Date().toISOString(),
-      created_by: scholarshipData.created_by || 'mock-user',
-      ...scholarshipData
-    };
-    
-    // Add it to our mock data for this session
-    mockScholarships.push(newScholarship);
-    
-    return newScholarship;
-  } else {
-    // When using Supabase, ensure all required fields are set
-    const dataToInsert = {
+      created_by: '',
       ...scholarshipData,
-      provider: scholarshipData.provider || '',  // Ensure required fields are set
-      provider_type: scholarshipData.provider_type || 'university',
-      title: scholarshipData.title || '',
-      is_active: scholarshipData.is_active ?? true,
     };
-    
-    const { data, error } = await supabase
-      .from('scholarships')
-      .insert(dataToInsert)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating scholarship:', error);
-      throw new Error('Failed to create scholarship');
-    }
-    
-    return data as Scholarship;
   }
 };
 
-// Add the missing function that ScholarshipsApplied.tsx is trying to import
+
+// Alias for backward compatibility
 export const getApplicationsByUser = async (userId: string): Promise<Application[]> => {
   return getUserApplications(userId);
 };

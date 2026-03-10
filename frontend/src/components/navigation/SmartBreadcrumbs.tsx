@@ -43,11 +43,6 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
       { label: 'Career Entry', phase: 'career' },
       { label: 'Career Planning Hub', isActive: true }
     ],
-    '/industry-exploration': [
-      { label: 'Home', href: '/' },
-      { label: 'Career Entry', phase: 'career' },
-      { label: 'Industry Exploration', isActive: true }
-    ],
     '/job-matching': [
       { label: 'Home', href: '/' },
       { label: 'Career Entry', phase: 'career' },
@@ -224,7 +219,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
 
     if (path.includes('career')) {
       actions.push(
-        <Link key="explore-industries" to="/industry-exploration">
+        <Link key="explore-industries" to="/career-planning-hub">
           <Button variant="outline" size="sm">
             Explore Industries
           </Button>

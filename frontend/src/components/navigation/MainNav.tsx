@@ -69,7 +69,6 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
                         'University Programs': 'universityPrograms',
                         'Learning Management System': 'lms',
                         'Career Planning Hub': 'planningHub',
-                        'Industry Exploration': 'industryExploration',
                         'Graduate Programs': 'graduatePrograms',
                         'Internships': 'internships',
                         'Job Matching': 'jobMatching',

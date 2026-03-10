@@ -2,6 +2,13 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { ROLE_DASHBOARD_MAP, normalizeRole } from '@/types/auth';
+
+// Exported helper: map a role string to the correct dashboard path
+export const getDashboardPath = (role: string): string => {
+  const normalized = normalizeRole(role);
+  return (ROLE_DASHBOARD_MAP as Record<string, string>)[normalized] || '/candidate-dashboard';
+};
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

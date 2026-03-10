@@ -737,16 +737,17 @@ def get_recruiter_dashboard():
             'pending_tasks': []
         }
         
-        # Get vacancy counts
+        # Get vacancy counts from both job_postings and job_descriptions
         vacancy_query = """
             SELECT 
                 COUNT(*) as total,
                 COUNT(*) FILTER (WHERE status = 'active' OR status = 'published') as active
-            FROM job_descriptions
+            FROM (
+                SELECT id, status FROM job_postings WHERE status != 'deleted'
+                UNION ALL
+                SELECT id, CASE WHEN is_active THEN 'active' ELSE 'inactive' END as status FROM job_descriptions
+            ) all_jobs
         """
-        if recruiter_id:
-            vacancy_query = vacancy_query.replace("FROM job_descriptions", 
-                f"FROM job_descriptions WHERE recruiter_id = {recruiter_id}")
         
         vacancy_stats = execute_query(vacancy_query, fetch_one=True)
         if vacancy_stats:

@@ -228,6 +228,58 @@ except ImportError:
     def estimate_peak_hour_commute(*args): return None
 
 
+# ─── UAE City Coordinate Lookup ───────────────────────────────────────────────
+# Since job and user locations are text-based ("Dubai", "Abu Dhabi", etc.),
+# we geocode them locally using known UAE city coordinates.
+UAE_CITY_COORDINATES = {
+    'dubai':              (25.2048, 55.2708),
+    'abu dhabi':          (24.4539, 54.3773),
+    'sharjah':            (25.3463, 55.4209),
+    'ajman':              (25.4052, 55.5136),
+    'ras al khaimah':     (25.7895, 55.9432),
+    'rak':                (25.7895, 55.9432),
+    'fujairah':           (25.1288, 56.3264),
+    'umm al quwain':      (25.5647, 55.5554),
+    'al ain':             (24.1917, 55.7606),
+    'jebel ali':          (25.0077, 55.0810),
+    'dubai internet city': (25.0975, 55.1571),
+    'dic':                (25.0975, 55.1571),
+    'dubai media city':   (25.0975, 55.1571),
+    'dmc':                (25.0975, 55.1571),
+    'difc':               (25.2145, 55.2795),
+    'dubai silicon oasis': (25.1214, 55.3780),
+    'dso':                (25.1214, 55.3780),
+    'knowledge village':  (25.0970, 55.1600),
+    'dubai marina':       (25.0805, 55.1403),
+    'business bay':       (25.1860, 55.2617),
+    'deira':              (25.2719, 55.3175),
+    'bur dubai':          (25.2510, 55.3000),
+    'downtown dubai':     (25.1972, 55.2744),
+    'khalifa city':       (24.4180, 54.5750),
+    'masdar city':        (24.4266, 54.6150),
+    'mussafah':           (24.3530, 54.4990),
+    'uae':                (25.2048, 55.2708),  # default to Dubai
+}
+
+def geocode_uae_location(location_text: str):
+    """Resolve a UAE location string to (lat, lng) coordinates.
+    Returns (lat, lng) tuple or None if unresolvable."""
+    if not location_text:
+        return None
+    text = location_text.strip().lower()
+    # Remove common suffixes
+    for suffix in [', uae', ', united arab emirates', ' - uae']:
+        text = text.replace(suffix, '')
+    text = text.strip()
+    # Direct lookup
+    if text in UAE_CITY_COORDINATES:
+        return UAE_CITY_COORDINATES[text]
+    # Fuzzy: check if any city name is contained within the text
+    for city, coords in UAE_CITY_COORDINATES.items():
+        if city in text or text in city:
+            return coords
+    return None
+
 
 @candidate_job_bp.route('/job-matches', methods=['GET'])
 def get_job_matches():
@@ -381,21 +433,42 @@ def get_job_matches():
                         conn.rollback()
 
 
-            # Check for profile location if not provided
+            # ── Fetch user's pin-drop coordinates ──────────────────────────────
+            # Priority 1: candidate_profiles table (where Profile Studio saves pin-drop)
+            if (user_lat is None or user_long is None) and user_id:
+                try:
+                    search_id = raw_user_id or user_id
+                    cur.execute(
+                        "SELECT latitude, longitude FROM candidate_profiles WHERE user_id = %s AND latitude IS NOT NULL AND longitude IS NOT NULL LIMIT 1",
+                        (str(search_id),)
+                    )
+                    loc_result = cur.fetchone()
+                    if loc_result:
+                        user_lat = float(loc_result['latitude'])
+                        user_long = float(loc_result['longitude'])
+                        logger.info(f"User location from candidate_profiles: ({user_lat}, {user_long})")
+                except Exception as e:
+                    logger.warning(f"Could not fetch user location from candidate_profiles: {e}")
+                    conn.rollback()
+
+            # Priority 2: user_cvs table (legacy fallback)
             if (user_lat is None or user_long is None) and user_id:
                  try:
-                     # user_cvs.user_id is character varying, not UUID - don't cast
-                     # Use raw_user_id as user_cvs likely stores the original ID
                      search_id = raw_user_id or user_id
-                     cur.execute("SELECT latitude, longitude FROM user_cvs WHERE user_id = %s LIMIT 1", (str(search_id),))
+                     cur.execute("SELECT latitude, longitude FROM user_cvs WHERE user_id = %s AND latitude IS NOT NULL LIMIT 1", (str(search_id),))
                      loc_result = cur.fetchone()
                      if loc_result and loc_result.get('latitude'):
-                         user_lat = loc_result['latitude']
-                         user_long = loc_result['longitude']
+                         user_lat = float(loc_result['latitude'])
+                         user_long = float(loc_result['longitude'])
+                         logger.info(f"User location from user_cvs: ({user_lat}, {user_long})")
                  except Exception as e:
-                     logger.warning(f"Could not fetch user location: {e}")
-                     # Rollback to prevent transaction abort from cascading
+                     logger.warning(f"Could not fetch user location from user_cvs: {e}")
                      conn.rollback()
+
+            if user_lat and user_long:
+                logger.info(f"✅ User pin-drop location resolved: ({user_lat}, {user_long})")
+            else:
+                logger.warning(f"⚠️ No pin-drop location found for user {raw_user_id}. Commute data will not be computed.")
 
             # Fetch published jobs
             # Using j.id (Primary Key) instead of jd_id for consistency
@@ -440,8 +513,15 @@ def get_job_matches():
                         
                         # Commute - Include peak hour times
                         commute_info = {}
-                        if user_lat and user_long and job.get('latitude') and job.get('longitude'):
-                            dist_km = haversine(user_lat, user_long, job['latitude'], job['longitude'])
+                        job_lat = job.get('latitude')
+                        job_lng = job.get('longitude')
+                        # Geocode job location from text if lat/lng missing
+                        if (not job_lat or not job_lng) and job.get('location'):
+                            geo = geocode_uae_location(job['location'])
+                            if geo:
+                                job_lat, job_lng = geo
+                        if user_lat and user_long and job_lat and job_lng:
+                            dist_km = haversine(user_lat, user_long, job_lat, job_lng)
                             peak_time_info = estimate_peak_hour_commute(dist_km)
                             
                             if peak_time_info:

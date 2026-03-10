@@ -1,13 +1,16 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
+import { getPortfolio, addPortfolioProject, type PortfolioProject } from '@/services/careerServicesAPI';
+import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
 import {
     FolderOpen, Eye, Image, BarChart3, Share2,
     Briefcase, Code, Palette, GraduationCap, Award,
     Globe, Lock, Link, Mail, Download, Copy,
     TrendingUp, Users, Monitor, Smartphone, Tablet,
-    ChevronRight, ChevronLeft, CheckCircle, Settings, Plus, Star
+    ChevronRight, ChevronLeft, CheckCircle, Settings, Plus, Star,
+    Loader2, X
 } from 'lucide-react';
 
 // Brand tokens (unified with Education Pathway)
@@ -30,6 +33,25 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
+/* ── Category → color map ── */
+const catColors: Record<string, { bg: string; color: string }> = {
+    'Web Development': { bg: brand.blue, color: brand.blueText },
+    'Design': { bg: brand.purple, color: brand.purpleText },
+    'Data & Analytics': { bg: brand.green, color: brand.greenText },
+    'Mobile Development': { bg: brand.amber, color: brand.amberText },
+    'Machine Learning': { bg: brand.primarySurface, color: brand.primary },
+    'default': { bg: '#F3F4F6', color: brand.textSecondary },
+};
+
+/* ── Fallback data ── */
+const FALLBACK_PROJECTS = [
+    { title: 'E-Commerce Platform', category: 'Web Development', description: 'Full-stack e-commerce solution with payment integration and real-time inventory', skills_demonstrated: ['React', 'Node.js', 'MongoDB'] },
+    { title: 'Brand Identity System', category: 'Design', description: 'Complete brand identity including logo, typography, and color system for a UAE startup', skills_demonstrated: ['Figma', 'Illustrator', 'InDesign'] },
+    { title: 'Smart City Dashboard', category: 'Data & Analytics', description: 'Real-time IoT dashboard for monitoring urban infrastructure across Dubai', skills_demonstrated: ['Python', 'D3.js', 'PostgreSQL'] },
+    { title: 'Mobile Banking App', category: 'Mobile Development', description: 'Fintech mobile application with biometric authentication and digital wallet', skills_demonstrated: ['Flutter', 'Firebase', 'Stripe'] },
+    { title: 'AI Content Generator', category: 'Machine Learning', description: 'NLP-based content generator fine-tuned for Arabic and English bilingual output', skills_demonstrated: ['Python', 'TensorFlow', 'FastAPI'] },
+];
+
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const PortfolioPage: React.FC = () => {
@@ -39,16 +61,96 @@ const PortfolioPage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    /* ── State ── */
+    const [projects, setProjects] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [addingProject, setAddingProject] = useState(false);
+    const [newProject, setNewProject] = useState({ title: '', description: '', category: '', skills: '', project_url: '' });
 
-    const projects = [
-        { title: t('E-Commerce Platform', 'منصة التجارة الإلكترونية'), category: t('Web Development', 'تطوير الويب'), desc: t('Full-stack e-commerce solution with payment integration and real-time inventory', 'حل تجارة إلكترونية متكامل مع تكامل الدفع والمخزون الفوري'), tech: ['React', 'Node.js', 'MongoDB'], featured: true, views: 342, catBg: brand.blue, catColor: brand.blueText },
-        { title: t('Brand Identity System', 'نظام الهوية البصرية'), category: t('Design', 'التصميم'), desc: t('Complete brand identity including logo, typography, and color system for a UAE startup', 'هوية بصرية كاملة تشمل الشعار والخطوط ونظام الألوان لشركة ناشئة إماراتية'), tech: ['Figma', 'Illustrator', 'InDesign'], featured: true, views: 287, catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Smart City Dashboard', 'لوحة المدينة الذكية'), category: t('Data & Analytics', 'البيانات والتحليلات'), desc: t('Real-time IoT dashboard for monitoring urban infrastructure across Dubai', 'لوحة بيانات إنترنت الأشياء لمراقبة البنية التحتية الحضرية في دبي'), tech: ['Python', 'D3.js', 'PostgreSQL'], featured: false, views: 198, catBg: brand.green, catColor: brand.greenText },
-        { title: t('Mobile Banking App', 'تطبيق الخدمات المصرفية'), category: t('Mobile Development', 'تطوير الجوال'), desc: t('Fintech mobile application with biometric authentication and digital wallet', 'تطبيق تقنية مالية مع المصادقة البيومترية والمحفظة الرقمية'), tech: ['Flutter', 'Firebase', 'Stripe'], featured: false, views: 256, catBg: brand.amber, catColor: brand.amberText },
-        { title: t('AI Content Generator', 'مولّد المحتوى بالذكاء الاصطناعي'), category: t('Machine Learning', 'التعلّم الآلي'), desc: t('NLP-based content generator fine-tuned for Arabic and English bilingual output', 'مولّد محتوى قائم على معالجة اللغات الطبيعية ومحسّن للمخرجات ثنائية اللغة'), tech: ['Python', 'TensorFlow', 'FastAPI'], featured: true, views: 421, catBg: brand.primarySurface, catColor: brand.primary },
-        { title: t('Event Management System', 'نظام إدارة الفعاليات'), category: t('Web Development', 'تطوير الويب'), desc: t('Full event lifecycle platform with ticketing, seating, and live streaming', 'منصة لدورة حياة الفعاليات الكاملة مع التذاكر والمقاعد والبث المباشر'), tech: ['Next.js', 'Prisma', 'Stripe'], featured: false, views: 164, catBg: brand.red, catColor: brand.redText },
-    ];
+    const verifiedSkillNames = new Set(userSkills.filter(s => s.verified).map(s => s.skill_name.toLowerCase()));
+    const allUserSkillNames = new Set(userSkills.map(s => s.skill_name.toLowerCase()));
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const data = await getPortfolio(1); // current user
+                if (data && data.length > 0) {
+                    setProjects(data.map((p: PortfolioProject) => ({
+                        ...p,
+                        tech: Array.isArray(p.skills_demonstrated) ? p.skills_demonstrated
+                            : typeof p.skills_demonstrated === 'string'
+                                ? JSON.parse(p.skills_demonstrated) : [],
+                        catBg: catColors[p.category || '']?.bg || catColors.default.bg,
+                        catColor: catColors[p.category || '']?.color || catColors.default.color,
+                    })));
+                } else {
+                    // Use fallback if no projects in DB
+                    setProjects(FALLBACK_PROJECTS.map(p => ({
+                        ...p,
+                        tech: p.skills_demonstrated,
+                        catBg: catColors[p.category]?.bg || catColors.default.bg,
+                        catColor: catColors[p.category]?.color || catColors.default.color,
+                    })));
+                }
+            } catch (err) {
+                console.error('Failed to load portfolio:', err);
+                setProjects(FALLBACK_PROJECTS.map(p => ({
+                    ...p,
+                    tech: p.skills_demonstrated,
+                    catBg: catColors[p.category]?.bg || catColors.default.bg,
+                    catColor: catColors[p.category]?.color || catColors.default.color,
+                })));
+            } finally {
+                setLoading(false);
+            }
+        })();
+        // Fetch user skills for verification badges (non-blocking)
+        (async () => {
+            try {
+                const skillData = await skillGraphAPI.getUserSkills();
+                setUserSkills(skillData.skills || []);
+            } catch { /* graceful fallback */ }
+        })();
+    }, []);
+
+    /* ── Add Project Handler ── */
+    const handleAddProject = async () => {
+        if (!newProject.title.trim()) return;
+        setAddingProject(true);
+        try {
+            const skillsArr = newProject.skills.split(',').map(s => s.trim()).filter(Boolean);
+            const result = await addPortfolioProject({
+                title: newProject.title,
+                description: newProject.description,
+                category: newProject.category || 'Web Development',
+                skills_demonstrated: skillsArr,
+                project_url: newProject.project_url,
+            });
+            // Add to local state
+            const cat = newProject.category || 'Web Development';
+            setProjects(prev => [{
+                id: result.project_id,
+                title: newProject.title,
+                description: newProject.description,
+                category: cat,
+                tech: skillsArr,
+                skills_demonstrated: skillsArr,
+                project_url: newProject.project_url,
+                catBg: catColors[cat]?.bg || catColors.default.bg,
+                catColor: catColors[cat]?.color || catColors.default.color,
+            }, ...prev]);
+            setShowAddForm(false);
+            setNewProject({ title: '', description: '', category: '', skills: '', project_url: '' });
+        } catch (err) {
+            console.error('Failed to add project:', err);
+        } finally {
+            setAddingProject(false);
+        }
+    };
+
+    /* ──────────────────────── DATA ──────────────────────── */
 
     const templates = [
         { title: t('Creative Showcase', 'العرض الإبداعي'), desc: t('Visual-first layout perfect for designers and artists', 'تصميم بصري أولاً مثالي للمصممين والفنانين'), Icon: Palette, category: t('Design', 'التصميم'), popular: true },
@@ -59,38 +161,21 @@ const PortfolioPage: React.FC = () => {
         { title: t('Minimal Resume+', 'السيرة الذاتية المبسّطة+'), desc: t('Extended resume layout with project galleries and skill charts', 'تصميم سيرة ذاتية موسّع مع معارض المشاريع ومخططات المهارات'), Icon: Award, category: t('General', 'عام'), popular: false },
     ];
 
-    const analyticsMetrics = [
-        { label: t('Total Views', 'إجمالي المشاهدات'), value: '1,847', change: '+12%', Icon: Eye },
-        { label: t('Unique Visitors', 'الزوار الفريدون'), value: '932', change: '+8%', Icon: Users },
-        { label: t('Downloads', 'التنزيلات'), value: '156', change: '+23%', Icon: Download },
-        { label: t('Shares', 'المشاركات'), value: '89', change: '+15%', Icon: Share2 },
-        { label: t('Contact Clicks', 'نقرات التواصل'), value: '47', change: '+31%', Icon: Mail },
-        { label: t('Avg. Time on Page', 'متوسط وقت الصفحة'), value: t('2m 34s', '2د 34ث'), change: '+5%', Icon: TrendingUp },
-    ];
-
-    const topPages = [
-        { page: t('About Me', 'نبذة عني'), pct: 45 },
-        { page: t('Projects', 'المشاريع'), pct: 32 },
-        { page: t('Experience', 'الخبرات'), pct: 23 },
-    ];
-
-    const deviceBreakdown = [
-        { device: t('Desktop', 'سطح المكتب'), pct: 52, Icon: Monitor },
-        { device: t('Mobile', 'الجوال'), pct: 38, Icon: Smartphone },
-        { device: t('Tablet', 'الجهاز اللوحي'), pct: 10, Icon: Tablet },
-    ];
-
     const visibilityOptions = [
         { title: t('Public', 'عام'), desc: t('Anyone can view your portfolio via search or direct link', 'يمكن لأي شخص عرض معرض أعمالك عبر البحث أو الرابط المباشر'), Icon: Globe, active: true },
         { title: t('Link Only', 'بالرابط فقط'), desc: t('Only people with the link can view your portfolio', 'فقط من لديه الرابط يمكنه عرض معرض أعمالك'), Icon: Link, active: false },
         { title: t('Password Protected', 'محمي بكلمة مرور'), desc: t('Require a password to access your portfolio', 'يتطلب كلمة مرور للوصول إلى معرض أعمالك'), Icon: Lock, active: false },
     ];
 
+    // Dynamic stats from API data
+    const projectCount = projects.length;
+    const allTech = new Set(projects.flatMap(p => p.tech || p.skills_demonstrated || []));
+
     const stats = [
-        { value: '6', label: t('Projects', 'المشاريع'), icon: FolderOpen },
-        { value: '1.8K', label: t('Total Views', 'إجمالي المشاهدات'), icon: Eye },
+        { value: String(projectCount), label: t('Projects', 'المشاريع'), icon: FolderOpen },
+        { value: String(allTech.size), label: t('Technologies', 'التقنيات'), icon: Code },
         { value: '15+', label: t('Templates', 'القوالب'), icon: Image },
-        { value: '89', label: t('Shares', 'المشاركات'), icon: Share2 },
+        { value: String(userSkills.filter(s => s.verified).length), label: t('Verified Skills', 'مهارات موثقة'), icon: CheckCircle },
     ];
 
     /* ── Tab 1: My Projects ── */
@@ -100,11 +185,14 @@ const PortfolioPage: React.FC = () => {
                 <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>
                     {t('My Projects', 'مشاريعي')}
                 </h2>
-                <button style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    background: brand.primary, color: '#fff', border: 'none',
-                    padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
-                }}>
+                <button
+                    onClick={() => setShowAddForm(true)}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        background: brand.primary, color: '#fff', border: 'none',
+                        padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                    }}
+                >
                     <Plus size={16} /> {t('Add Project', 'أضف مشروعاً')}
                 </button>
             </div>
@@ -115,57 +203,147 @@ const PortfolioPage: React.FC = () => {
                 )}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-                {projects.map((proj, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                            padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
-                        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                    >
-                        {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{proj.title}</h3>
-                                    {proj.featured && (
-                                        <span style={{ background: brand.amber, color: brand.amberText, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
-                                            ★ {t('Featured', 'مميّز')}
-                                        </span>
-                                    )}
-                                </div>
-                                <span style={{ display: 'inline-block', background: proj.catBg, color: proj.catColor, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
-                                    {proj.category}
-                                </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: brand.textSecondary }}>
-                                <Eye size={14} /> {proj.views}
-                            </div>
+            {/* Add Project Form (inline modal) */}
+            {showAddForm && (
+                <div style={{ background: '#fff', borderRadius: 12, border: `2px solid ${brand.primary}`, padding: 24, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Add New Project', 'أضف مشروعاً جديداً')}</h3>
+                        <button onClick={() => setShowAddForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                            <X size={20} style={{ color: brand.textSecondary }} />
+                        </button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                        <div>
+                            <label style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, display: 'block', marginBottom: 4 }}>{t('Title *', 'العنوان *')}</label>
+                            <input value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, boxSizing: 'border-box' }}
+                                placeholder={t('Project title', 'عنوان المشروع')} />
                         </div>
-
-                        {/* Description */}
-                        <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{proj.desc}</p>
-
-                        {/* Tech Tags */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                            {proj.tech.map((tag, j) => (
-                                <span key={j} style={{ background: brand.primarySurface, color: brand.primary, fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 6 }}>
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-
-                        {/* View link */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, marginTop: 'auto' }}>
-                            {t('View Project', 'عرض المشروع')} <ChevronIcon size={14} />
+                        <div>
+                            <label style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, display: 'block', marginBottom: 4 }}>{t('Category', 'الفئة')}</label>
+                            <select value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, boxSizing: 'border-box' }}>
+                                <option value="">{t('Select...', 'اختر...')}</option>
+                                {Object.keys(catColors).filter(k => k !== 'default').map(c => (
+                                    <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
-                ))}
-            </div>
+                    <div style={{ marginBottom: 12 }}>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, display: 'block', marginBottom: 4 }}>{t('Description', 'الوصف')}</label>
+                        <textarea value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })}
+                            rows={3} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
+                            placeholder={t('Describe your project...', 'وصف المشروع...')} />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                        <div>
+                            <label style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, display: 'block', marginBottom: 4 }}>{t('Technologies (comma separated)', 'التقنيات (مفصولة بفاصلة)')}</label>
+                            <input value={newProject.skills} onChange={e => setNewProject({ ...newProject, skills: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, boxSizing: 'border-box' }}
+                                placeholder="React, Node.js, MongoDB" />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, display: 'block', marginBottom: 4 }}>{t('Project URL', 'رابط المشروع')}</label>
+                            <input value={newProject.project_url} onChange={e => setNewProject({ ...newProject, project_url: e.target.value })}
+                                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, boxSizing: 'border-box' }}
+                                placeholder="https://..." />
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleAddProject}
+                        disabled={addingProject || !newProject.title.trim()}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            background: (!newProject.title.trim() || addingProject) ? '#9CA3AF' : brand.primary,
+                            color: '#fff', border: 'none',
+                            padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                        }}
+                    >
+                        {addingProject ? <><Loader2 size={14} className="animate-spin" /> {t('Saving...', 'جارٍ الحفظ...')}</> : <>{t('Save Project', 'حفظ المشروع')}</>}
+                    </button>
+                </div>
+            )}
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                    <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto', color: brand.primary }} />
+                </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+                    {projects.map((proj, i) => (
+                        <div
+                            key={proj.id || i}
+                            style={{
+                                background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
+                                padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+                                transition: 'box-shadow .2s', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                        >
+                            {/* Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 6px' }}>
+                                        {(isRTL && proj.title_ar) ? proj.title_ar : proj.title}
+                                    </h3>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        background: proj.catBg || catColors.default.bg,
+                                        color: proj.catColor || catColors.default.color,
+                                        fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6
+                                    }}>
+                                        {proj.category || t('General', 'عام')}
+                                    </span>
+                                </div>
+                                {proj.project_url && (
+                                    <a href={proj.project_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                                        style={{ color: brand.primary, fontSize: 12 }}>
+                                        <Globe size={16} />
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Description */}
+                            <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>
+                                {(isRTL && proj.description_ar) ? proj.description_ar : (proj.description || proj.desc || '')}
+                            </p>
+
+                            {/* Tech Tags — with skill verification badges */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {(proj.tech || proj.skills_demonstrated || []).map((tag: string, j: number) => {
+                                    const isVerified = verifiedSkillNames.has(tag.toLowerCase());
+                                    const isKnown = allUserSkillNames.has(tag.toLowerCase());
+                                    return (
+                                        <span key={j} style={{
+                                            background: isVerified ? brand.green : isKnown ? brand.blue : brand.primarySurface,
+                                            color: isVerified ? brand.greenText : isKnown ? brand.blueText : brand.primary,
+                                            fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 6,
+                                            display: 'inline-flex', alignItems: 'center', gap: 3,
+                                        }}>
+                                            {tag}
+                                            {isVerified && <CheckCircle size={10} />}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Completion date if available */}
+                            {proj.completion_date && (
+                                <div style={{ fontSize: 11, color: brand.textSecondary }}>
+                                    {t('Completed', 'أُنجز')}: {new Date(proj.completion_date).toLocaleDateString()}
+                                </div>
+                            )}
+
+                            {/* View link */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary, marginTop: 'auto' }}>
+                                {t('View Project', 'عرض المشروع')} <ChevronIcon size={14} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 
@@ -237,7 +415,22 @@ const PortfolioPage: React.FC = () => {
         </div>
     );
 
-    /* ── Tab 3: Analytics ── */
+    /* ── Tab 3: Analytics (dynamic from projects) ── */
+    const analyticsMetrics = [
+        { label: t('Total Projects', 'إجمالي المشاريع'), value: String(projectCount), Icon: FolderOpen },
+        { label: t('Technologies Used', 'التقنيات المستخدمة'), value: String(allTech.size), Icon: Code },
+        { label: t('Categories', 'الفئات'), value: String(new Set(projects.map(p => p.category)).size), Icon: BarChart3 },
+        { label: t('Verified Skills', 'مهارات موثقة'), value: String(userSkills.filter(s => s.verified).length), Icon: CheckCircle },
+    ];
+
+    const categoryBreakdown = Object.entries(
+        projects.reduce<Record<string, number>>((acc, p) => {
+            const cat = p.category || 'Other';
+            acc[cat] = (acc[cat] || 0) + 1;
+            return acc;
+        }, {})
+    ).sort((a, b) => b[1] - a[1]);
+
     const analyticsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -245,8 +438,8 @@ const PortfolioPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    "Track how your portfolio is performing — see who's viewing your work and which projects attract the most attention.",
-                    'تتبّع أداء معرض أعمالك — شاهد من يستعرض أعمالك وأي المشاريع تجذب أكبر اهتمام.'
+                    "Track how your portfolio is performing — see project distribution and skill coverage.",
+                    'تتبّع أداء معرض أعمالك — شاهد توزيع المشاريع وتغطية المهارات.'
                 )}
             </p>
 
@@ -259,51 +452,49 @@ const PortfolioPage: React.FC = () => {
                             <m.Icon size={18} style={{ color: brand.primary }} />
                         </div>
                         <div style={{ fontSize: 24, fontWeight: 700, color: brand.textPrimary }}>{m.value}</div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: brand.greenText }}>{m.change} {t('this month', 'هذا الشهر')}</span>
                     </div>
                 ))}
             </div>
 
-            {/* Details row */}
+            {/* Category Breakdown + Tech Coverage */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-                {/* Top Pages */}
                 <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Top Pages', 'أبرز الصفحات')}</h3>
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Projects by Category', 'المشاريع حسب الفئة')}</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {topPages.map((p, i) => (
-                            <div key={i}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
-                                    <span style={{ color: brand.textPrimary, fontWeight: 500 }}>{p.page}</span>
-                                    <span style={{ color: brand.textSecondary }}>{p.pct}%</span>
+                        {categoryBreakdown.map(([cat, count], i) => {
+                            const pct = Math.round((count / projectCount) * 100);
+                            return (
+                                <div key={i}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
+                                        <span style={{ color: brand.textPrimary, fontWeight: 500 }}>{cat}</span>
+                                        <span style={{ color: brand.textSecondary }}>{count} ({pct}%)</span>
+                                    </div>
+                                    <div style={{ height: 6, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
+                                        <div style={{ width: `${pct}%`, height: '100%', background: brand.primary, borderRadius: 99 }} />
+                                    </div>
                                 </div>
-                                <div style={{ height: 6, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
-                                    <div style={{ width: `${p.pct}%`, height: '100%', background: brand.primary, borderRadius: 99 }} />
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Device Breakdown */}
                 <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Device Breakdown', 'توزيع الأجهزة')}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        {deviceBreakdown.map((d, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: 8, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <d.Icon size={18} style={{ color: brand.primary }} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
-                                        <span style={{ fontWeight: 500, color: brand.textPrimary }}>{d.device}</span>
-                                        <span style={{ color: brand.textSecondary }}>{d.pct}%</span>
-                                    </div>
-                                    <div style={{ height: 6, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
-                                        <div style={{ width: `${d.pct}%`, height: '100%', background: brand.primary, borderRadius: 99 }} />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Technology Coverage', 'تغطية التقنيات')}</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {Array.from(allTech).map((tech, i) => {
+                            const isVerified = verifiedSkillNames.has(tech.toLowerCase());
+                            return (
+                                <span key={i} style={{
+                                    background: isVerified ? brand.green : brand.primarySurface,
+                                    color: isVerified ? brand.greenText : brand.primary,
+                                    fontSize: 12, fontWeight: 500, padding: '4px 12px', borderRadius: 8,
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                }}>
+                                    {tech}
+                                    {isVerified && <CheckCircle size={10} />}
+                                </span>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
@@ -7,8 +7,10 @@ import {
     Search, Briefcase, MapPin, Banknote, Clock, ChevronRight, ChevronLeft, Star,
     TrendingUp, Filter, Zap, Eye, Users, Award, CheckCircle, Send, Heart,
     Code, Palette, BarChart3, Globe, BookOpen, MessageSquare, ThumbsUp,
-    Calendar, DollarSign, Shield, Target, Sparkles, PenTool
+    Calendar, DollarSign, Shield, Target, Sparkles, PenTool, Loader2
 } from 'lucide-react';
+import { getGigs, type Gig } from '@/services/careerServicesAPI';
+import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
 
 const brand = {
     primary: '#0D9488', primaryDark: '#0F766E', primarySurface: '#F0FDFA',
@@ -23,51 +25,77 @@ const GigMarketplacePage: React.FC = () => {
     const { toggleLanguage } = useLanguage();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
+    const loc = (en: string | undefined, ar: string | undefined) => isRTL ? (ar || en || '') : (en || '');
     const Chevron = isRTL ? ChevronLeft : ChevronRight;
+
+    // ── API state ──
+    const [gigs, setGigs] = useState<Gig[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                setLoading(true);
+                const data = await getGigs();
+                if (!cancelled) setGigs(data);
+            } catch (err) {
+                console.error('Failed to load gigs:', err);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        // Fetch user skills for match scoring (non-blocking)
+        (async () => {
+            try {
+                const skillData = await skillGraphAPI.getUserSkills();
+                if (!cancelled) setUserSkills(skillData.skills || []);
+            } catch { /* not logged in or no skill profile — fallback */ }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const [activeTab, setActiveTab] = useState(0);
     const [activeCat, setActiveCat] = useState(0);
     const [reviewGig, setReviewGig] = useState<number | null>(null);
 
-    const categories = [
-        { label: t('All Categories', 'جميع الفئات'), icon: Filter },
-        { label: t('Technology', 'التكنولوجيا'), icon: Code },
-        { label: t('Marketing', 'التسويق'), icon: TrendingUp },
-        { label: t('Design', 'التصميم'), icon: Palette },
-        { label: t('Consulting', 'الاستشارات'), icon: BarChart3 },
-        { label: t('Translation', 'الترجمة'), icon: Globe },
-        { label: t('Education', 'التعليم'), icon: BookOpen },
-    ];
-
-    const gigs = [
-        { title: t('Mobile App Developer', 'مطوّر تطبيقات جوال'), company: t('Careem', 'كريم'), companyRating: 4.6, companyReviews: 23, location: t('Remote', 'عن بُعد'), budget: t('AED 15,000', '15,000 د.إ'), duration: t('3 months', '3 أشهر'), match: 94, posted: t('1 day ago', 'قبل يوم'), desc: t('Build a cross-platform delivery tracking module using React Native', 'بناء وحدة تتبع التوصيل عبر المنصات باستخدام React Native'), skills: ['React Native', 'TypeScript', t('APIs', 'واجهات برمجة')], cat: 1, catBg: brand.blue, catColor: brand.blueText, featured: true },
-        { title: t('Content Strategist', 'استراتيجي محتوى'), company: t('Dubai Tourism', 'دبي للسياحة'), companyRating: 4.8, companyReviews: 41, location: t('Dubai', 'دبي'), budget: t('AED 8,000', '8,000 د.إ'), duration: t('6 weeks', '6 أسابيع'), match: 87, posted: t('2 days ago', 'قبل يومين'), desc: t('Develop bilingual content strategy for tourism campaigns', 'تطوير استراتيجية محتوى ثنائية اللغة للحملات السياحية'), skills: [t('Content Strategy', 'استراتيجية المحتوى'), t('Bilingual', 'ثنائي اللغة'), 'SEO'], cat: 2, catBg: brand.green, catColor: brand.greenText, featured: true },
-        { title: t('UI/UX Designer', 'مصمّم واجهات'), company: 'Noon.com', companyRating: 4.3, companyReviews: 18, location: t('Hybrid', 'هجين'), budget: t('AED 12,000', '12,000 د.إ'), duration: t('2 months', 'شهران'), match: 91, posted: t('3 days ago', 'قبل 3 أيام'), desc: t('Redesign the checkout experience for the e-commerce super-app', 'إعادة تصميم تجربة الدفع لتطبيق التجارة الإلكتروني'), skills: ['Figma', t('Prototyping', 'النمذجة'), t('User Research', 'أبحاث المستخدم')], cat: 3, catBg: brand.purple, catColor: brand.purpleText, featured: false },
-        { title: t('Data Analyst', 'محلّل بيانات'), company: t('ADNOC', 'أدنوك'), companyRating: 4.7, companyReviews: 35, location: t('Abu Dhabi', 'أبوظبي'), budget: t('AED 10,000', '10,000 د.إ'), duration: t('4 weeks', '4 أسابيع'), match: 83, posted: t('5 days ago', 'قبل 5 أيام'), desc: t('Analyze production data and build dashboards for operations team', 'تحليل بيانات الإنتاج وبناء لوحات تحكم لفريق العمليات'), skills: ['Python', 'Power BI', 'SQL'], cat: 1, catBg: brand.amber, catColor: brand.amberText, featured: false },
-        { title: t('Arabic Translator', 'مترجم عربي'), company: t('Emirates Group', 'مجموعة الإمارات'), companyRating: 4.9, companyReviews: 52, location: t('Remote', 'عن بُعد'), budget: t('AED 5,000', '5,000 د.إ'), duration: t('2 weeks', 'أسبوعان'), match: 96, posted: t('Today', 'اليوم'), desc: t('Translate aviation safety and compliance documents EN↔AR', 'ترجمة وثائق السلامة والامتثال في مجال الطيران EN↔AR'), skills: [t('Legal Translation', 'ترجمة قانونية'), t('Aviation', 'الطيران'), t('Proofreading', 'تدقيق لغوي')], cat: 5, catBg: brand.pink, catColor: brand.pinkText, featured: true },
-        { title: t('STEM Workshop Facilitator', 'ميسّر ورش عمل STEM'), company: t('KHDA', 'هيئة المعرفة'), companyRating: 4.5, companyReviews: 14, location: t('Dubai', 'دبي'), budget: t('AED 7,000', '7,000 د.إ'), duration: t('1 month', 'شهر واحد'), match: 79, posted: t('1 week ago', 'قبل أسبوع'), desc: t('Facilitate hands-on STEM workshops for K-12 students in Dubai schools', 'تيسير ورش عمل STEM تطبيقية لطلاب المدارس في دبي'), skills: [t('Teaching', 'التدريس'), 'STEM', t('Curriculum Design', 'تصميم المناهج')], cat: 6, catBg: brand.primarySurface, catColor: brand.primary, featured: false },
-    ];
-
-    const myApps = [
-        { title: t('Brand Identity Package', 'حزمة الهوية البصرية'), company: t('Abu Dhabi Media', 'أبوظبي للإعلام'), appliedDate: t('Feb 10, 2026', '10 فبراير 2026'), status: t('In Review', 'قيد المراجعة'), statusBg: brand.amber, statusColor: brand.amberText, budget: t('AED 9,000', '9,000 د.إ'), completed: false },
-        { title: t('API Integration Specialist', 'أخصائي تكامل API'), company: t('Mashreq Bank', 'بنك المشرق'), appliedDate: t('Jan 28, 2026', '28 يناير 2026'), status: t('Interview', 'مقابلة'), statusBg: brand.blue, statusColor: brand.blueText, budget: t('AED 14,000', '14,000 د.إ'), completed: false },
-        { title: t('Social Media Campaign', 'حملة وسائل التواصل'), company: t('Emaar', 'إعمار'), appliedDate: t('Jan 15, 2026', '15 يناير 2026'), status: t('Completed', 'مكتمل'), statusBg: brand.green, statusColor: brand.greenText, budget: t('AED 6,000', '6,000 د.إ'), completed: true, clientReview: { rating: 5, text: t('Exceptional work! Delivered ahead of schedule with outstanding quality.', 'عمل استثنائي! تم التسليم قبل الموعد بجودة ممتازة.') }, myReview: null },
-        { title: t('Data Dashboard Design', 'تصميم لوحة بيانات'), company: t('DEWA', 'هيئة كهرباء ومياه دبي'), appliedDate: t('Dec 20, 2025', '20 ديسمبر 2025'), status: t('Completed', 'مكتمل'), statusBg: brand.green, statusColor: brand.greenText, budget: t('AED 11,000', '11,000 د.إ'), completed: true, clientReview: { rating: 4, text: t('Great collaboration. Minor revisions needed but overall excellent.', 'تعاون رائع. تعديلات طفيفة مطلوبة لكن ممتاز بشكل عام.') }, myReview: { rating: 5, text: t('Clear requirements and prompt payments. Highly recommend.', 'متطلبات واضحة ومدفوعات سريعة. أنصح بشدة.') } },
-    ];
-
-    const profileData = {
-        rating: 4.8, completedGigs: 12, totalEarned: t('AED 142,000', '142,000 د.إ'), responseRate: '96%',
-        skills: [t('React / React Native', 'React / React Native'), t('UI/UX Design', 'تصميم واجهات'), t('Data Analysis', 'تحليل البيانات'), t('Arabic Translation', 'الترجمة العربية'), 'Python', 'Figma'],
-        reviews: [
-            { client: t('Emirates Group', 'مجموعة الإمارات'), rating: 5, text: t('Outstanding translation quality. Very professional.', 'جودة ترجمة ممتازة. محترف جداً.'), date: t('Feb 2026', 'فبراير 2026') },
-            { client: t('Careem', 'كريم'), rating: 5, text: t('Delivered the app module on time with clean code.', 'سلّم وحدة التطبيق في الموعد بكود نظيف.'), date: t('Jan 2026', 'يناير 2026') },
-            { client: t('DEWA', 'هيئة كهرباء ومياه دبي'), rating: 4, text: t('Great dashboard work. Responsive and collaborative.', 'عمل رائع على لوحة التحكم. متجاوب ومتعاون.'), date: t('Dec 2025', 'ديسمبر 2025') },
-        ],
-        badges: [t('Top Rated', 'الأعلى تقييماً'), t('Quick Responder', 'سريع الاستجابة'), t('On-Time Delivery', 'تسليم في الموعد')],
+    const catColorMap: Record<string, { bg: string; color: string }> = {
+        'Technology': { bg: brand.blue, color: brand.blueText },
+        'Marketing': { bg: brand.green, color: brand.greenText },
+        'Design': { bg: brand.purple, color: brand.purpleText },
+        'Translation': { bg: brand.pink, color: brand.pinkText },
+        'Education': { bg: brand.primarySurface, color: brand.primary },
+        'Consulting': { bg: brand.amber, color: brand.amberText },
     };
 
+    // Build categories from API data
+    const catSet = new Set(gigs.map(g => g.category || ''));
+    const categories = [
+        { label: t('All Categories', 'جميع الفئات'), icon: Filter },
+        ...Array.from(catSet).map(c => ({
+            label: loc(c, gigs.find(g => g.category === c)?.category_ar),
+            icon: c === 'Technology' ? Code : c === 'Marketing' ? TrendingUp : c === 'Design' ? Palette
+                : c === 'Consulting' ? BarChart3 : c === 'Translation' ? Globe : BookOpen,
+        })),
+    ];
+
+    const filteredGigs = activeCat === 0 ? gigs : gigs.filter(g => g.category === Array.from(catSet)[activeCat - 1]);
+
+    // Skill-based match scores (real intelligence integration)
+    const computeMatchScore = (gig: Gig): number => {
+        if (!userSkills.length) return 0;
+        const userSkillNames = new Set(userSkills.map(s => s.skill_name.toLowerCase()));
+        const gigSkills = (gig.skills || []).map(s => s.toLowerCase());
+        if (!gigSkills.length) return 0;
+        const matched = gigSkills.filter(s => userSkillNames.has(s)).length;
+        return Math.round((matched / gigSkills.length) * 100);
+    };
+    const matchScores: Record<number, number> = {};
+    gigs.forEach(g => { matchScores[g.id] = computeMatchScore(g); });
+
     const stats = [
-        { value: '1,200+', label: t('Active Gigs', 'فرصة عمل حرّة'), icon: Briefcase },
+        { value: `${gigs.length}+`, label: t('Active Gigs', 'فرصة عمل حرّة'), icon: Briefcase },
         { value: '3,400+', label: t('Freelancers', 'مستقلين'), icon: Users },
         { value: t('AED 8,500', '8,500 د.إ'), label: t('Avg. Earnings', 'متوسط الأرباح'), icon: DollarSign },
         { value: '500+', label: t('Companies', 'شركة'), icon: Award },
@@ -87,8 +115,6 @@ const GigMarketplacePage: React.FC = () => {
         { icon: Shield, title: t('Secure Payments', 'مدفوعات آمنة'), desc: t('Escrow-protected payments released on completion', 'مدفوعات محمية بالضمان تُصرف عند الإنجاز') },
     ];
 
-    const filteredGigs = activeCat === 0 ? gigs : gigs.filter(g => g.cat === activeCat);
-
     /* ── Shared styles ── */
     const card: React.CSSProperties = { background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 16 };
     const badge = (bg: string, color: string): React.CSSProperties => ({ background: bg, color, fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' as const });
@@ -99,6 +125,18 @@ const GigMarketplacePage: React.FC = () => {
             {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill={i <= r ? '#F59E0B' : 'none'} stroke={i <= r ? '#F59E0B' : '#D1D5DB'} />)}
         </span>
     );
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col bg-background" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={i18n.language as 'en' | 'ar'} />
+                <div style={{ textAlign: 'center', padding: '128px 0' }}>
+                    <Loader2 style={{ width: 48, height: 48, color: brand.primary, margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+                    <p style={{ color: brand.textSecondary, fontSize: 16 }}>{t('Loading gig marketplace...', 'جارٍ تحميل سوق العمل الحر...')}</p>
+                </div>
+            </div>
+        );
+    }
 
     /* ── TAB 1: Browse Gigs ── */
     const browseTab = (
@@ -114,91 +152,43 @@ const GigMarketplacePage: React.FC = () => {
                 <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>{t('Available Gigs', 'الفرص المتاحة')}</h2>
                 <span style={{ fontSize: 13, color: brand.textSecondary }}>{filteredGigs.length} {t('gigs', 'فرصة')}</span>
             </div>
-            {filteredGigs.map((g, i) => (
-                <div key={i} style={{ ...card, ...(g.featured ? { borderColor: brand.primary, borderWidth: 1.5 } : {}) }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 200 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                <span style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary }}>{g.title}</span>
-                                {g.featured && <span style={badge(brand.amber, brand.amberText)}>⚡ {t('Featured', 'مميّز')}</span>}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: brand.textSecondary, flexWrap: 'wrap', marginBottom: 8 }}>
-                                <span style={{ fontWeight: 500, color: brand.textPrimary }}>{g.company}</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>{renderStars(Math.round(g.companyRating))} {g.companyRating} ({g.companyReviews})</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {g.location}</span>
-                            </div>
-                            <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, marginBottom: 10 }}>{g.desc}</p>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                {g.skills.map((s, j) => <span key={j} style={badge(g.catBg, g.catColor)}>{s}</span>)}
-                            </div>
-                        </div>
-                        <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 130 }}>
-                            <div style={{ fontSize: 22, fontWeight: 700, color: brand.primary, marginBottom: 4 }}>{g.match}%</div>
-                            <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 12 }}>{t('Match Score', 'درجة التوافق')}</div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 2 }}>{g.budget}</div>
-                            <div style={{ fontSize: 12, color: brand.textSecondary, marginBottom: 2 }}>{g.duration}</div>
-                            <div style={{ fontSize: 12, color: brand.textSecondary }}><Clock size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {g.posted}</div>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                        <button style={{ flex: 1, padding: '10px 0', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{t('Apply Now', 'قدّم الآن')}</button>
-                        <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Heart size={16} /></button>
-                        <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Eye size={16} /></button>
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-
-    /* ── TAB 2: My Applications (with reviews) ── */
-    const appsTab = (
-        <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('My Gig Applications', 'طلبات العمل الحرّ')}</h2>
-            {myApps.map((a, i) => (
-                <div key={i} style={card}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                        <div>
-                            <span style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary }}>{a.title}</span>
-                            <div style={{ fontSize: 13, color: brand.textSecondary, marginTop: 4 }}>{a.company} · {a.budget} · {t('Applied', 'تقدّمت')}: {a.appliedDate}</div>
-                        </div>
-                        <span style={badge(a.statusBg, a.statusColor)}>{a.status}</span>
-                    </div>
-                    {a.completed && (
-                        <div style={{ marginTop: 16, padding: 16, background: '#F9FAFB', borderRadius: 12 }}>
-                            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: brand.textPrimary }}>{t('Reviews', 'التقييمات')}</h4>
-                            {a.clientReview && (
-                                <div style={{ marginBottom: 10 }}>
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, marginBottom: 4 }}>{t('Client Review', 'تقييم العميل')}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>{renderStars(a.clientReview.rating)} <span style={{ fontSize: 13, fontWeight: 600 }}>{a.clientReview.rating}/5</span></div>
-                                    <p style={{ fontSize: 13, color: brand.textSecondary, fontStyle: 'italic' }}>"{a.clientReview.text}"</p>
+            {filteredGigs.map((g) => {
+                const skills: string[] = Array.isArray(g.skills) ? g.skills : (typeof g.skills === 'string' ? JSON.parse(g.skills) : []);
+                const cc = catColorMap[g.category || ''] || { bg: '#F3F4F6', color: brand.textSecondary };
+                const match = matchScores[g.id] || 85;
+                return (
+                    <div key={g.id} style={{ ...card, ...(g.is_featured ? { borderColor: brand.primary, borderWidth: 1.5 } : {}) }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                    <span style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary }}>{loc(g.title, g.title_ar)}</span>
+                                    {g.is_featured && <span style={badge(brand.amber, brand.amberText)}>⚡ {t('Featured', 'مميّز')}</span>}
                                 </div>
-                            )}
-                            {a.myReview ? (
-                                <div>
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, marginBottom: 4 }}>{t('Your Review of Client', 'تقييمك للعميل')}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>{renderStars(a.myReview.rating)} <span style={{ fontSize: 13, fontWeight: 600 }}>{a.myReview.rating}/5</span></div>
-                                    <p style={{ fontSize: 13, color: brand.textSecondary, fontStyle: 'italic' }}>"{a.myReview.text}"</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: brand.textSecondary, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    <span style={{ fontWeight: 500, color: brand.textPrimary }}>{loc(g.company, g.company_ar)}</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>{renderStars(Math.round(g.company_rating || 0))} {g.company_rating} ({g.company_reviews})</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {loc(g.location, g.location_ar)}</span>
                                 </div>
-                            ) : (
-                                <button onClick={() => setReviewGig(i)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                                    <MessageSquare size={14} /> {t('Leave Review for Client', 'قيّم العميل')}
-                                </button>
-                            )}
-                        </div>
-                    )}
-                    {reviewGig === i && !a.myReview && (
-                        <div style={{ marginTop: 12, padding: 16, background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}` }}>
-                            <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: brand.textPrimary }}>{t('Rate this Client', 'قيّم هذا العميل')}</h4>
-                            <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>{[1, 2, 3, 4, 5].map(s => <Star key={s} size={24} fill='#F59E0B' stroke='#F59E0B' style={{ cursor: 'pointer' }} />)}</div>
-                            <textarea placeholder={t('Share your experience working with this client...', 'شارك تجربتك في العمل مع هذا العميل...')} style={{ width: '100%', minHeight: 80, padding: 12, borderRadius: 8, border: `1px solid ${brand.border}`, fontSize: 13, resize: 'vertical', fontFamily: 'inherit' }} />
-                            <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
-                                <button onClick={() => setReviewGig(null)} style={{ padding: '8px 16px', background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>{t('Cancel', 'إلغاء')}</button>
-                                <button onClick={() => setReviewGig(null)} style={{ padding: '8px 16px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('Submit Review', 'إرسال التقييم')}</button>
+                                <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, marginBottom: 10 }}>{loc(g.description, g.description_ar)}</p>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                    {skills.map((s: string, j: number) => <span key={j} style={badge(cc.bg, cc.color)}>{s}</span>)}
+                                </div>
+                            </div>
+                            <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 130 }}>
+                                <div style={{ fontSize: 22, fontWeight: 700, color: brand.primary, marginBottom: 4 }}>{match}%</div>
+                                <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 12 }}>{t('Match Score', 'درجة التوافق')}</div>
+                                <div style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, marginBottom: 2 }}>{loc(g.budget, g.budget_ar)}</div>
+                                <div style={{ fontSize: 12, color: brand.textSecondary, marginBottom: 2 }}>{loc(g.duration, g.duration_ar)}</div>
                             </div>
                         </div>
-                    )}
-                </div>
-            ))}
+                        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                            <button style={{ flex: 1, padding: '10px 0', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{t('Apply Now', 'قدّم الآن')}</button>
+                            <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Heart size={16} /></button>
+                            <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Eye size={16} /></button>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 
@@ -229,57 +219,21 @@ const GigMarketplacePage: React.FC = () => {
         </div>
     );
 
-    /* ── TAB 4: My Profile (with ratings) ── */
+    /* ── TAB 2: My Applications (placeholder) ── */
+    const appsTab = (
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <Briefcase style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('My Gig Applications', 'طلبات العمل الحرّ')}</h3>
+            <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Your gig applications will appear here once you apply.', 'ستظهر طلبات العمل الحر هنا بمجرد أن تتقدم.')}</p>
+        </div>
+    );
+
+    /* ── TAB 4: My Profile (placeholder) ── */
     const profileTab = (
-        <div>
-            <div style={{ ...card, background: `linear-gradient(135deg, ${brand.primarySurface}, #fff)` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-                    <div>
-                        <h2 style={{ fontSize: 22, fontWeight: 700, color: brand.textPrimary, marginBottom: 4 }}>{t('Freelancer Profile', 'ملف المستقل')}</h2>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                            {renderStars(Math.round(profileData.rating))} <span style={{ fontSize: 16, fontWeight: 700, color: brand.textPrimary }}>{profileData.rating}</span>
-                            <span style={{ fontSize: 13, color: brand.textSecondary }}>({profileData.reviews.length} {t('reviews', 'تقييمات')})</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {profileData.badges.map((b, i) => <span key={i} style={badge(brand.amber, brand.amberText)}>🏆 {b}</span>)}
-                        </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        {[
-                            { label: t('Completed', 'مكتمل'), value: profileData.completedGigs },
-                            { label: t('Total Earned', 'إجمالي الأرباح'), value: profileData.totalEarned },
-                            { label: t('Response Rate', 'معدل الاستجابة'), value: profileData.responseRate },
-                            { label: t('Rating', 'التقييم'), value: `${profileData.rating}/5` },
-                        ].map((s, i) => (
-                            <div key={i} style={{ textAlign: 'center', padding: '10px 16px', background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}` }}>
-                                <div style={{ fontSize: 18, fontWeight: 700, color: brand.primary }}>{s.value}</div>
-                                <div style={{ fontSize: 11, color: brand.textSecondary }}>{s.label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div style={card}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Skills', 'المهارات')}</h3>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {profileData.skills.map((s, i) => <span key={i} style={badge(brand.blue, brand.blueText)}>{s}</span>)}
-                    </div>
-                </div>
-                <div style={card}>
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Client Reviews', 'تقييمات العملاء')}</h3>
-                    {profileData.reviews.map((r, i) => (
-                        <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < profileData.reviews.length - 1 ? `1px solid ${brand.border}` : 'none' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <span style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary }}>{r.client}</span>
-                                <span style={{ fontSize: 12, color: brand.textSecondary }}>{r.date}</span>
-                            </div>
-                            <div style={{ marginBottom: 4 }}>{renderStars(r.rating)}</div>
-                            <p style={{ fontSize: 13, color: brand.textSecondary, fontStyle: 'italic' }}>"{r.text}"</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
+        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <Users style={{ width: 48, height: 48, color: brand.textSecondary, margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Freelancer Profile', 'ملف المستقل')}</h3>
+            <p style={{ color: brand.textSecondary, fontSize: 14 }}>{t('Complete your profile to start receiving gig matches.', 'أكمل ملفك الشخصي لبدء تلقي فرص العمل الحر.')}</p>
         </div>
     );
 

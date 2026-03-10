@@ -36,7 +36,7 @@ const HRDashboard = lazy(() => import('@/pages/HRDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const GrowthOperatorDashboard = lazy(() => import('@/pages/GrowthOperatorDashboard'));
 const ParentDashboardPage = lazy(() => import('@/pages/ParentDashboardPage'));
-const EmployerDashboard = lazy(() => import('@/pages/EmployerDashboard'));
+// EmployerDashboard removed — consolidated into HR Manager
 const EducatorDashboard = lazy(() => import('@/pages/EducatorDashboard'));
 const MentorDashboard = lazy(() => import('@/pages/MentorDashboard'));
 const RecruiterDashboard = lazy(() => import('@/pages/RecruiterDashboard'));
@@ -70,8 +70,7 @@ const AssessorDashboard = lazy(() => import('@/pages/AssessorDashboard'));
 const GovernmentDashboard = lazy(() => import('@/pages/GovernmentDashboard'));
 const ProfileStudioPage = lazy(() => import('@/pages/candidate/profile-studio/ProfileStudioPage').then(module => ({ default: module.ProfileStudioPage })));
 
-// Resume Builder
-const ResumeBuilderPage = lazy(() => import('@/pages/resume-builder'));
+// Resume Builder removed — consolidated into CV Builder
 // const EnhancedCVBuilderPage = lazy(() => import('@/pages/cv-builder/EnhancedCVBuilderPage'));
 // const SimpleCVBuilderPage = lazy(() => import('@/pages/cv-builder/SimpleCVBuilderPage'));
 const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
@@ -85,7 +84,7 @@ import LoginTestPage from './pages/LoginTestPage';
 const CVUploadPage = lazy(() => import('@/pages/cv-upload/CVUploadPage'));
 
 // Core Pages
-const IndustryExplorationPage = lazy(() => import('./pages/industry-exploration/IndustryExplorationPage'));
+// IndustryExplorationPage merged into CareerPlanningHub — redirect below
 /* Old CVBuilderPage import removed — /cv-builder-new now redirects to /cv-builder */
 /* Old AnalyticsDashboard import removed — replaced by AnalyticsPage3 */
 
@@ -133,6 +132,7 @@ const CommunityOperatorDashboard = lazy(() => import('@/pages/operator-dashboard
 const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboards/OperationsMonitoringCenter'));
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
+const CareerServicesOperatorDashboard = lazy(() => import('@/pages/CareerServicesOperatorDashboard'));
 const NotFound = lazy(() => import('@/pages/not-found'));
 const OurMission = lazy(() => import('@/pages/OurMission'));
 
@@ -522,6 +522,12 @@ const AppContent: React.FC = () => {
                 }
               />
 
+              {/* Employer Dashboard removed — redirect to HR Dashboard */}
+              <Route
+                path="/employer-dashboard"
+                element={<Navigate to="/hr-dashboard" replace />}
+              />
+
               {/* Resume Builder Routes */}
               <Route
                 path="/cv-builder"
@@ -532,13 +538,10 @@ const AppContent: React.FC = () => {
                 }
               />
 
+              {/* Resume Builder removed — redirect to CV Builder */}
               <Route
                 path="/resume-builder"
-                element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
-                    <ResumeBuilderPage />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/cv-builder" replace />}
               />
 
               {/* CV Upload Route */}
@@ -547,10 +550,10 @@ const AppContent: React.FC = () => {
                 element={<CVUploadPage />}
               />
 
-              {/* Core Pages Routes */}
+              {/* Industry Exploration merged into Career Planning Hub */}
               <Route
                 path="/industry-exploration"
-                element={<IndustryExplorationPage />}
+                element={<Navigate to="/career-planning-hub" replace />}
               />
 
               {/* Redirect old cv-builder-new to cv-builder */}
@@ -696,9 +699,10 @@ const AppContent: React.FC = () => {
                 element={<AssessmentsPage2 />}
               />
 
+              {/* Emiratization Tracker consolidated into Government Dashboard */}
               <Route
                 path="/emiratization-tracker"
-                element={<EmiratizationTrackerPage />}
+                element={<Navigate to="/government-dashboard?tab=compliance" replace />}
               />
 
               <Route
@@ -769,6 +773,14 @@ const AppContent: React.FC = () => {
               <Route
                 path="/operations-center"
                 element={<OperationsMonitoringCenter />}
+              />
+              <Route
+                path="/career-services-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['operator', 'growth_operator', 'growth_operator_company', 'administrator', 'admin']}>
+                    <CareerServicesOperatorDashboard />
+                  </ProtectedRoute>
+                }
               />
 
               {/* Public magic-link routes (accessible even when authenticated) */}

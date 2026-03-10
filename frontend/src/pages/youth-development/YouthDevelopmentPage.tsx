@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -41,14 +41,39 @@ const YouthDevelopmentPage2: React.FC = () => {
 
     /* ──────────────────────── DATA ──────────────────────── */
 
-    const programs = [
+    const fallbackPrograms = [
         { title: t('Future Leaders Initiative', 'مبادرة قادة المستقبل'), org: t('Federal Youth Authority', 'الهيئة الاتحادية للشباب'), duration: t('12 months', '12 شهراً'), ageGroup: '18–25', enrolled: 450, capacity: 500, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('Leadership', 'القيادة'), t('Mentorship', 'الإرشاد'), t('Policy', 'السياسات')], icon: '🏅', desc: t('Comprehensive program developing next-generation Emirati leaders with mentorship, project assignments, and international exposure.', 'برنامج شامل لتطوير الجيل القادم من القادة الإماراتيين من خلال الإرشاد والمهام المشروعية والتعرض الدولي.') },
         { title: t('Youth Innovation Bootcamp', 'معسكر الابتكار الشبابي'), org: t('Dubai Future Foundation', 'مؤسسة دبي للمستقبل'), duration: t('6 weeks', '6 أسابيع'), ageGroup: '16–22', enrolled: 180, capacity: 200, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('AI', 'الذكاء الاصطناعي'), t('Startups', 'الشركات الناشئة'), t('Innovation', 'الابتكار')], icon: '🚀', desc: t('Intensive bootcamp teaching design thinking, prototyping, and entrepreneurship — with seed funding for top projects.', 'معسكر تدريبي مكثف يُعلّم التفكير التصميمي والنماذج الأولية وريادة الأعمال — مع تمويل أولي لأفضل المشاريع.') },
-        { title: t('National Service Career Track', 'المسار المهني للخدمة الوطنية'), org: t('Ministry of Defence', 'وزارة الدفاع'), duration: t('18 months', '18 شهراً'), ageGroup: '18–30', enrolled: 1200, capacity: 1200, statusKey: 'Full' as const, statusLabel: t('Full', 'مكتمل'), tags: [t('Military', 'العسكرية'), t('Discipline', 'الانضباط'), t('Fitness', 'اللياقة')], icon: '🎖️', desc: t('Career-oriented national service combining military training with professional development and certification paths.', 'خدمة وطنية موجهة مهنياً تجمع بين التدريب العسكري والتطوير المهني ومسارات الشهادات.') },
-        { title: t('STEM Excellence Academy', 'أكاديمية التميز في العلوم والتكنولوجيا'), org: t('Ministry of Education', 'وزارة التربية والتعليم'), duration: t('9 months', '9 أشهر'), ageGroup: '15–18', enrolled: 320, capacity: 400, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('Science', 'العلوم'), t('Technology', 'التكنولوجيا'), t('Research', 'البحث')], icon: '🔬', desc: t('Advanced STEM program for high-achieving students — lab research, university prep, and international science olympiad participation.', 'برنامج متقدم في العلوم والتكنولوجيا للطلاب المتفوقين — أبحاث مختبرية والتحضير الجامعي والمشاركة في الأولمبياد العلمي الدولي.') },
-        { title: t('Emirati Heritage & Culture Program', 'برنامج التراث والثقافة الإماراتية'), org: t('Dubai Culture & Arts Authority', 'هيئة الثقافة والفنون في دبي'), duration: t('4 months', '4 أشهر'), ageGroup: '14–25', enrolled: 280, capacity: 350, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('Heritage', 'التراث'), t('Culture', 'الثقافة'), t('Arabic', 'العربية')], icon: '🏛️', desc: t('Deepening cultural identity through Emirati heritage studies, Arabic calligraphy, traditional crafts, and community projects.', 'تعميق الهوية الثقافية من خلال دراسات التراث الإماراتي والخط العربي والحرف التقليدية والمشاريع المجتمعية.') },
-        { title: t('Youth Entrepreneurship Lab', 'مختبر ريادة الأعمال الشبابي'), org: t('Khalifa Fund', 'صندوق خليفة'), duration: t('6 months', '6 أشهر'), ageGroup: '18–30', enrolled: 150, capacity: 200, statusKey: 'Open' as const, statusLabel: t('Open', 'مفتوح'), tags: [t('Business', 'الأعمال'), t('Funding', 'التمويل'), t('Pitch', 'العرض')], icon: '💡', desc: t('End-to-end startup program: ideation, business planning, mentorship, and up to AED 100K seed funding for qualifying ventures.', 'برنامج شامل للشركات الناشئة: التفكير وتخطيط الأعمال والإرشاد وتمويل أولي يصل إلى 100 ألف درهم للمشاريع المؤهلة.') },
     ];
+
+    const [programs, setPrograms] = useState(fallbackPrograms);
+
+    useEffect(() => {
+        const fetchPrograms = async () => {
+            try {
+                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+                const res = await fetch(`${API_BASE}/api/education/content/youth-programs`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const apiPrograms = (data.programs || []).map((p: any) => ({
+                        title: isRTL ? (p.title_ar || p.title) : p.title,
+                        org: isRTL ? (p.org_ar || p.org) : p.org,
+                        duration: isRTL ? (p.duration_ar || p.duration) : p.duration,
+                        ageGroup: p.age_group || '18–25',
+                        enrolled: p.enrolled || 0,
+                        capacity: p.capacity || 100,
+                        statusKey: (p.status === 'full' ? 'Full' : 'Open') as 'Open' | 'Full',
+                        statusLabel: p.status === 'full' ? t('Full', 'مكتمل') : t('Open', 'مفتوح'),
+                        tags: (() => { try { return JSON.parse(p.tags || '[]'); } catch { return []; } })(),
+                        icon: p.icon || '🎓',
+                        desc: isRTL ? (p.description_ar || p.description) : p.description,
+                    }));
+                    if (apiPrograms.length > 0) setPrograms(apiPrograms);
+                }
+            } catch (e) { console.error('Error fetching youth programs:', e); }
+        };
+        fetchPrograms();
+    }, [isRTL]);
 
     const leadershipPath = [
         { level: 1, title: t('Foundation', 'الأساسيات'), desc: t('Self-awareness, personal values, and basic leadership principles', 'الوعي الذاتي والقيم الشخصية ومبادئ القيادة الأساسية'), color: brand.blue, colorText: brand.blueText },

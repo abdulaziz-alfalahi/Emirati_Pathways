@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -8,6 +8,8 @@ import {
     MapPin, Globe, Award, Target, Video, Heart,
     CheckCircle, ArrowRight, ArrowLeft
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
+import { careerLifecycleAPI } from '@/services/intelligenceAPI';
 
 // Brand tokens
 const brand = {
@@ -39,20 +41,68 @@ const MentorshipPage: React.FC = () => {
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
+    // Intelligence API state
+    const [mentors, setMentors] = useState<any[]>([]);
+    const [liveStats, setLiveStats] = useState<any>(null);
+
+    // Fetch mentors and stats from backend
+    useEffect(() => {
+        let cancelled = false;
+        async function loadMentors() {
+            try {
+                const res = await restClient.get('/api/community-mentorship/mentors');
+                if (cancelled) return;
+                const d = res.data as any;
+                if (d?.mentors) {
+                    setMentors(d.mentors.map((m: any) => ({
+                        name: t(m.name, m.name_ar || m.name),
+                        title: t(m.title, m.title_ar || m.title),
+                        expertise: (m.expertise || []).map((e: string, i: number) =>
+                            t(e, (m.expertise_ar || [])[i] || e)
+                        ),
+                        rating: m.rating,
+                        sessions: m.sessions,
+                        location: t(m.location, m.location_ar || m.location),
+                        available: m.available,
+                        avatar: m.avatar,
+                    })));
+                }
+            } catch (e) {
+                console.warn('Mentors API not available, using static data', e);
+            }
+        }
+        async function loadStats() {
+            try {
+                const res = await restClient.get('/api/community-mentorship/mentorship-stats');
+                if (cancelled) return;
+                const d = res.data as any;
+                if (d?.stats) setLiveStats(d.stats);
+            } catch (e) {
+                console.warn('Mentorship stats API not available', e);
+            }
+        }
+        loadMentors();
+        loadStats();
+        return () => { cancelled = true; };
+    }, [isRTL]);
+
+    // Handler: request mentorship → logs career lifecycle milestone
+    const handleRequestMentorship = useCallback(async (mentorName: string) => {
+        try {
+            await careerLifecycleAPI.completeMilestone('find_mentor');
+            console.log(`✅ Mentorship requested with ${mentorName}`);
+        } catch (e) {
+            console.warn('Could not log mentorship request:', e);
+        }
+    }, []);
+
     /* ──────────────────────── DATA ──────────────────────── */
 
-    const mentors = [
-        { name: t('Dr. Fatima Al Mazrouei', 'د. فاطمة المزروعي'), title: t('VP of Engineering, DEWA Digital', 'نائبة رئيس الهندسة، ديوا الرقمية'), expertise: [t('Cloud Architecture', 'هندسة السحابة'), t('Team Leadership', 'قيادة الفرق'), t('Energy Tech', 'تكنولوجيا الطاقة')], rating: 4.9, sessions: 124, location: t('Dubai', 'دبي'), available: true, avatar: '👩‍💼' },
-        { name: t('Ahmed Al Dhaheri', 'أحمد الظاهري'), title: t('Director of Innovation, Dubai Holding', 'مدير الابتكار، دبي القابضة'), expertise: [t('Investment Strategy', 'استراتيجية الاستثمار'), t('Fintech', 'التكنولوجيا المالية'), t('Startup Growth', 'نمو الشركات الناشئة')], rating: 4.8, sessions: 98, location: t('Dubai', 'دبي'), available: true, avatar: '👨‍💼' },
-        { name: t('Sara Al Shamsi', 'سارة الشامسي'), title: t('Head of AI, Dubai Future Foundation', 'رئيسة الذكاء الاصطناعي، مؤسسة دبي للمستقبل'), expertise: [t('Artificial Intelligence', 'الذكاء الاصطناعي'), t('Data Science', 'علم البيانات'), t('Research', 'البحث العلمي')], rating: 4.9, sessions: 156, location: t('Dubai', 'دبي'), available: false, avatar: '👩‍🔬' },
-        { name: t('Khalid Al Falasi', 'خالد الفلاسي'), title: t('CTO, Emirates Airlines Group', 'كبير مسؤولي التكنولوجيا، مجموعة الإمارات'), expertise: [t('Aviation Tech', 'تكنولوجيا الطيران'), t('Digital Transformation', 'التحول الرقمي'), t('DevOps', 'DevOps')], rating: 4.7, sessions: 78, location: t('Dubai', 'دبي'), available: true, avatar: '👨‍✈️' },
-        { name: t('Mariam Al Ketbi', 'مريم الكتبي'), title: t('CEO, Dubai Smart Solutions', 'الرئيسة التنفيذية، حلول دبي الذكية'), expertise: [t('Smart Cities', 'المدن الذكية'), t('IoT', 'إنترنت الأشياء'), t('Project Management', 'إدارة المشاريع')], rating: 4.8, sessions: 112, location: t('Dubai', 'دبي'), available: true, avatar: '👩‍💻' },
-        { name: t('Omar Al Suwaidi', 'عمر السويدي'), title: t('Partner, PwC Middle East', 'شريك، PwC الشرق الأوسط'), expertise: [t('Management Consulting', 'الاستشارات الإدارية'), t('Finance', 'المالية'), t('Strategy', 'الاستراتيجية')], rating: 4.6, sessions: 64, location: t('Dubai', 'دبي'), available: true, avatar: '🧑‍💼' },
-    ];
+    // Static mentorship data (user-specific, not from API yet)
 
     const myMentorships = [
-        { mentor: t('Dr. Fatima Al Mazrouei', 'د. فاطمة المزروعي'), topic: t('Cloud Architecture Career Path', 'مسار مهنة هندسة السحابة'), status: t('Active', 'نشط') as const, nextSession: t('Wed, Feb 19 · 3:00 PM', 'الأربعاء 19 فبراير · 3:00 م'), totalSessions: 8, completed: 5, progress: 62 },
-        { mentor: t('Ahmed Al Dhaheri', 'أحمد الظاهري'), topic: t('Fintech Startup Guidance', 'إرشاد شركات التكنولوجيا المالية الناشئة'), status: t('Active', 'نشط') as const, nextSession: t('Thu, Feb 20 · 10:00 AM', 'الخميس 20 فبراير · 10:00 ص'), totalSessions: 6, completed: 2, progress: 33 },
+        { mentor: t('Dr. Fatima Al Mazrouei', 'د. فاطمة المزروعي'), topic: t('Cloud Architecture Career Path', 'مسار مهنة هندسة السحابة'), status: 'Active', statusLabel: t('Active', 'نشط'), nextSession: t('Wed, Feb 19 · 3:00 PM', 'الأربعاء 19 فبراير · 3:00 م'), totalSessions: 8, completed: 5, progress: 62 },
+        { mentor: t('Ahmed Al Dhaheri', 'أحمد الظاهري'), topic: t('Fintech Startup Guidance', 'إرشاد شركات التكنولوجيا المالية الناشئة'), status: 'Active', statusLabel: t('Active', 'نشط'), nextSession: t('Thu, Feb 20 · 10:00 AM', 'الخميس 20 فبراير · 10:00 ص'), totalSessions: 6, completed: 2, progress: 33 },
     ];
 
     const pastMentorships = [
@@ -69,11 +119,16 @@ const MentorshipPage: React.FC = () => {
         { title: t('UAE Career Development Framework', 'إطار التطوير المهني في الإمارات'), type: t('Guide', 'دليل'), readTime: t('15 min', '15 دقيقة'), icon: '🇦🇪' },
     ];
 
+    const totalMentors = liveStats?.total_mentors || mentors.length || 300;
+    const totalMentees = liveStats?.total_mentees || 800;
+    const totalSessions = liveStats?.total_sessions || 1500;
+    const avgRating = liveStats?.avg_rating || 4.8;
+
     const stats = [
-        { value: '300+', label: t('Active Mentors', 'مرشد نشط'), icon: UserCheck },
-        { value: '800+', label: t('Mentees', 'متدرب'), icon: Users },
-        { value: '1,500+', label: t('Sessions', 'جلسة'), icon: Calendar },
-        { value: '4.8/5', label: t('Avg Rating', 'متوسط التقييم'), icon: Star },
+        { value: `${totalMentors}+`, label: t('Active Mentors', 'مرشد نشط'), icon: UserCheck },
+        { value: `${totalMentees}+`, label: t('Mentees', 'متدرب'), icon: Users },
+        { value: totalSessions >= 1000 ? `${Math.round(totalSessions / 100) / 10}K+` : `${totalSessions}+`, label: t('Sessions', 'جلسة'), icon: Calendar },
+        { value: `${avgRating}/5`, label: t('Avg Rating', 'متوسط التقييم'), icon: Star },
     ];
 
     /* ── Tab 1: Find Mentors ── */
@@ -130,15 +185,19 @@ const MentorshipPage: React.FC = () => {
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {m.location}</span>
                         </div>
 
-                        <button style={{
-                            background: m.available ? brand.primary : 'transparent',
-                            color: m.available ? '#fff' : brand.primary,
-                            border: m.available ? 'none' : `1px solid ${brand.primary}`,
-                            padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                            marginTop: 'auto', width: '100%',
-                        }}>
+
+                        <button
+                            onClick={() => handleRequestMentorship(m.name)}
+                            style={{
+                                background: m.available ? brand.primary : 'transparent',
+                                color: m.available ? '#fff' : brand.primary,
+                                border: m.available ? 'none' : `1px solid ${brand.primary}`,
+                                padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                                marginTop: 'auto', width: '100%',
+                            }}>
                             {m.available ? t('Request Mentorship', 'طلب إرشاد') : t('Join Waitlist', 'انضم لقائمة الانتظار')}
                         </button>
+
                     </div>
                 ))}
             </div>
@@ -171,7 +230,7 @@ const MentorshipPage: React.FC = () => {
                                 </div>
                             </div>
                             <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
-                                {m.status}
+                                {m.statusLabel}
                             </span>
                         </div>
 

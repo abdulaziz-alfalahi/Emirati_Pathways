@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -7,6 +7,7 @@ import {
     Activity, Phone, ArrowRight, ArrowLeft, CheckCircle, Building,
     MapPin, Star, Clock
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
@@ -16,52 +17,55 @@ const RetireePage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    /* ──────────────────────── API DATA ──────────────────────── */
 
-    const pensionBenefits = [
-        { title: t('GPSSA Pension', 'معاش الهيئة العامة للمعاشات'), desc: t('General Pension and Social Security Authority — monthly pension based on years of service and final salary. Covers all UAE nationals in federal and private sectors.', 'الهيئة العامة للمعاشات والتأمينات الاجتماعية — معاش شهري بناءً على سنوات الخدمة والراتب الأخير. تشمل جميع المواطنين الإماراتيين في القطاعين الاتحادي والخاص.'), icon: '🏛️', provider: t('GPSSA', 'الهيئة العامة للمعاشات'), details: [t('Based on final salary × service years', 'بناءً على الراتب الأخير × سنوات الخدمة'), t('Minimum 20 years of service', 'حد أدنى 20 سنة خدمة'), t('Annual cost-of-living adjustments', 'تعديلات سنوية لتكاليف المعيشة'), t('24/7 digital portal access', 'وصول على مدار الساعة للبوابة الرقمية')] },
-        { title: t('Abu Dhabi Pension Fund (ADPF)', 'صندوق أبوظبي للتقاعد'), desc: t('Retirement benefits for Abu Dhabi government employees — comprehensive pension, gratuity, and end-of-service benefits.', 'مزايا تقاعد لموظفي حكومة أبوظبي — معاش شامل ومكافأة نهاية الخدمة.'), icon: '🏦', provider: t('ADPF', 'صندوق أبوظبي للتقاعد'), details: [t('Abu Dhabi government employees', 'موظفو حكومة أبوظبي'), t('Pension + gratuity combined', 'معاش + مكافأة مجمّعة'), t('Family pension for dependents', 'معاش عائلي للمعالين'), t('Medical insurance continuation', 'استمرار التأمين الطبي')] },
-        { title: t('Dubai Government Pension', 'معاش حكومة دبي'), desc: t('DGRFA manages Dubai government employee pensions — generous benefits including housing and family support.', 'تدير الهيئة العامة للتقاعد والتأمينات الاجتماعية في دبي معاشات موظفي الحكومة — مزايا سخية تشمل الإسكان ودعم الأسرة.'), icon: '🌆', provider: t('DGRFA', 'الهيئة العامة لتقاعد دبي'), details: [t('Dubai government employees', 'موظفو حكومة دبي'), t('Housing benefit continuation', 'استمرار مزايا الإسكان'), t("Children's education support", 'دعم تعليم الأبناء'), t('Special merit awards', 'جوائز الجدارة الخاصة')] },
-        { title: t('Private Sector End-of-Service', 'نهاية خدمة القطاع الخاص'), desc: t('End-of-service gratuity for private sector employees under UAE Labour Law — 21 days salary per year for first 5 years, 30 days per year thereafter.', 'مكافأة نهاية الخدمة لموظفي القطاع الخاص بموجب قانون العمل الإماراتي — 21 يوم راتب سنوياً لأول 5 سنوات، و30 يوماً سنوياً بعد ذلك.'), icon: '💼', provider: t('Ministry of Human Resources', 'وزارة الموارد البشرية'), details: [t('21 days/year (first 5 years)', '21 يوماً/سنة (أول 5 سنوات)'), t('30 days/year (after 5 years)', '30 يوماً/سنة (بعد 5 سنوات)'), t('Based on last basic salary', 'بناءً على آخر راتب أساسي'), t('Payable upon contract end', 'تُدفع عند انتهاء العقد')] },
-    ];
+    const [pensionBenefits, setPensionBenefits] = useState<any[]>([]);
+    const [healthcareServices, setHealthcare] = useState<any[]>([]);
+    const [engagementOpportunities, setEngagement] = useState<any[]>([]);
+    const [lifestylePerks, setPerks] = useState<any[]>([]);
+    const [serviceCentres, setServiceCentres] = useState<any[]>([]);
 
-    const healthcareServices = [
-        { title: t('Thiqa Health Insurance', 'تأمين ثقة الصحي'), provider: t('DAMAN / Abu Dhabi', 'ضمان / أبوظبي'), desc: t('Premium health insurance for retired UAE nationals in Abu Dhabi — covers outpatient, inpatient, dental, maternity, and chronic disease management.', 'تأمين صحي متميز للمتقاعدين الإماراتيين في أبوظبي — يشمل العيادات الخارجية والداخلية والأسنان والأمومة وإدارة الأمراض المزمنة.'), coverage: t('Comprehensive', 'شامل'), icon: '🏥' },
-        { title: t('Saada Card Benefits', 'مزايا بطاقة سعادة'), provider: t('Ministry of Community Development', 'وزارة تنمية المجتمع'), desc: t('Saada Card provides retirees with priority access to government healthcare, discounts at partner pharmacies, and wellness programme enrolment.', 'توفر بطاقة سعادة للمتقاعدين أولوية الوصول للرعاية الصحية الحكومية وخصومات في الصيدليات الشريكة والتسجيل في برامج الصحة.'), coverage: t('Government Services', 'الخدمات الحكومية'), icon: '💳' },
-        { title: t('Home Healthcare Programme', 'برنامج الرعاية الصحية المنزلية'), provider: t('DoH / SEHA', 'دائرة الصحة / صحة'), desc: t('In-home nursing, physiotherapy, and specialist visits for senior citizens who prefer care at home — covered under national insurance.', 'تمريض منزلي وعلاج طبيعي وزيارات متخصصة لكبار السن الذين يفضلون الرعاية في المنزل — مغطاة بالتأمين الوطني.'), coverage: t('Home-Based Care', 'رعاية منزلية'), icon: '🏠' },
-        { title: t('Mental Wellness Support', 'دعم الصحة النفسية'), provider: t('SEHA / Dubai Health', 'صحة / صحة دبي'), desc: t('Counselling, cognitive health programmes, and social wellbeing services designed specifically for retirees — combating isolation and maintaining mental sharpness.', 'إرشاد نفسي وبرامج صحة إدراكية وخدمات رفاهية اجتماعية مصممة خصيصاً للمتقاعدين — لمكافحة العزلة والحفاظ على الحدة الذهنية.'), coverage: t('Mental Health', 'الصحة النفسية'), icon: '🧠' },
-    ];
+    useEffect(() => {
+        restClient.get('/api/lifelong/retiree/pension-benefits').then(r => {
+            setPensionBenefits((r.data as any[]).map((b: any) => ({
+                title: t(b.title_en, b.title_ar), desc: t(b.desc_en, b.desc_ar),
+                icon: b.icon, provider: t(b.provider_en, b.provider_ar),
+                details: (b.details || []).map((d: any) => t(d.detail_en, d.detail_ar)),
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/retiree/healthcare').then(r => {
+            setHealthcare((r.data as any[]).map((h: any) => ({
+                title: t(h.title_en, h.title_ar), provider: t(h.provider_en, h.provider_ar),
+                desc: t(h.desc_en, h.desc_ar), coverage: t(h.coverage_en, h.coverage_ar), icon: h.icon,
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/retiree/engagement').then(r => {
+            setEngagement((r.data as any[]).map((e: any) => ({
+                title: t(e.title_en, e.title_ar), org: t(e.org_en, e.org_ar),
+                type: t(e.type_en, e.type_ar), desc: t(e.desc_en, e.desc_ar),
+                commitment: t(e.commitment_en, e.commitment_ar), spots: e.spots,
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/retiree/perks').then(r => {
+            const d = r.data as any;
+            if (d.perks) setPerks(d.perks.map((p: any) => ({
+                icon: p.icon, title: t(p.title_en, p.title_ar),
+                desc: t(p.desc_en, p.desc_ar), category: t(p.category_en, p.category_ar),
+            })));
+            if (d.service_centres) setServiceCentres(d.service_centres.map((c: any) => ({
+                city: t(c.city_en, c.city_ar), location: t(c.location_en, c.location_ar), phone: c.phone,
+            })));
+        }).catch(() => { });
+    }, [isRTL]);
 
     const mentoring = t('Mentoring', 'إرشاد');
     const advisory = t('Advisory', 'استشاري');
     const volunteering = t('Volunteering', 'تطوع');
     const consulting = t('Consulting', 'استشارات');
     const teaching = t('Teaching', 'تدريس');
-
-    const engagementOpportunities = [
-        { title: t('Weyak Mentorship Programme', 'برنامج وياك للإرشاد'), org: t('Ministry of Community Development', 'وزارة تنمية المجتمع'), type: mentoring, desc: t('Share your decades of professional experience with young Emiratis entering the workforce — structured mentoring sessions and workshops.', 'شارك عقوداً من خبرتك المهنية مع الشباب الإماراتي الداخل لسوق العمل — جلسات إرشاد وورش عمل منظمة.'), commitment: t('4–6 hrs/week', '4–6 ساعات/أسبوع'), spots: 50 },
-        { title: t('Majlis Advisory Council', 'مجلس المجالس الاستشاري'), org: t('Federal National Council', 'المجلس الوطني الاتحادي'), type: advisory, desc: t('Retired senior officials invited to serve on advisory councils for government policy review — leveraging your governance experience.', 'يُدعى كبار المسؤولين المتقاعدين للعمل في مجالس استشارية لمراجعة السياسات الحكومية — الاستفادة من خبرتك في الحوكمة.'), commitment: t('8 hrs/month', '8 ساعات/شهر'), spots: 20 },
-        { title: t('Heritage & Cultural Preservation', 'الحفاظ على التراث والثقافة'), org: t('Department of Culture & Tourism', 'دائرة الثقافة والسياحة'), type: volunteering, desc: t('Help preserve UAE oral history, traditional crafts, and cultural heritage through storytelling, documentation, and community workshops.', 'ساهم في الحفاظ على التاريخ الشفهي الإماراتي والحرف التقليدية والتراث الثقافي من خلال الرواية والتوثيق وورش العمل المجتمعية.'), commitment: t('3–5 hrs/week', '3–5 ساعات/أسبوع'), spots: 40 },
-        { title: t('Board Observer Programme', 'برنامج مراقب مجلس الإدارة'), org: t('Abu Dhabi Securities Exchange', 'سوق أبوظبي للأوراق المالية'), type: consulting, desc: t('Retired executives and directors can serve as board observers or non-executive directors for listed companies — governance expertise in demand.', 'يمكن للتنفيذيين والمديرين المتقاعدين العمل كمراقبين في مجالس الإدارة أو أعضاء غير تنفيذيين للشركات المدرجة — خبرة الحوكمة مطلوبة.'), commitment: t('Monthly meetings', 'اجتماعات شهرية'), spots: 15 },
-        { title: t('Entrepreneurship Support', 'دعم ريادة الأعمال'), org: t('Khalifa Fund', 'صندوق خليفة'), type: mentoring, desc: t('Guide young Emirati entrepreneurs through business planning, financial management, and industry connections — your experience is their advantage.', 'وجّه رواد الأعمال الإماراتيين الشباب في تخطيط الأعمال والإدارة المالية والعلاقات الصناعية — خبرتك هي ميزتهم.'), commitment: t('4 hrs/week', '4 ساعات/أسبوع'), spots: 30 },
-        { title: t('University Guest Lecturing', 'محاضرات جامعية استضافية'), org: t('UAE University / Zayed University', 'جامعة الإمارات / جامعة زايد'), type: teaching, desc: t('Share industry insights with the next generation — guest lecture series for final-year students in business, engineering, and public administration.', 'شارك رؤى صناعية مع الجيل القادم — سلسلة محاضرات لطلاب السنة الأخيرة في الأعمال والهندسة والإدارة العامة.'), commitment: t('Monthly lectures', 'محاضرات شهرية'), spots: 25 },
-    ];
-
-    const lifestylePerks = [
-        { icon: '✈️', title: t('Travel Discounts', 'خصومات السفر'), desc: t('Up to 30% off Emirates & Etihad flights, plus partner hotel rates across the GCC', 'خصم يصل إلى 30% على رحلات طيران الإمارات والاتحاد، مع أسعار فنادق شريكة في دول الخليج'), category: t('Travel', 'سفر') },
-        { icon: '🏊', title: t('Fitness & Recreation', 'اللياقة والترفيه'), desc: t('Free access to 50+ government fitness centres, swimming pools, and community sports facilities', 'دخول مجاني لأكثر من 50 مركز لياقة حكومياً ومسابح ومرافق رياضية مجتمعية'), category: t('Wellness', 'صحة') },
-        { icon: '📚', title: t('Lifelong Learning', 'التعلم مدى الحياة'), desc: t('Free university course auditing at UAE University, Zayed University, and Khalifa University', 'حضور مجاني لمحاضرات جامعية في جامعة الإمارات وجامعة زايد وجامعة خليفة'), category: t('Education', 'تعليم') },
-        { icon: '🛒', title: t('Retail Discounts', 'خصومات التجزئة'), desc: t('Saada Card and senior citizen discounts at 200+ retail partners and pharmacies', 'خصومات بطاقة سعادة وكبار السن في أكثر من 200 شريك تجزئة وصيدلية'), category: t('Shopping', 'تسوّق') },
-        { icon: '🎭', title: t('Cultural Access', 'الوصول الثقافي'), desc: t('Free or discounted entry to Louvre Abu Dhabi, cultural events, and national heritage sites', 'دخول مجاني أو مخفّض إلى لوفر أبوظبي والفعاليات الثقافية ومواقع التراث الوطني'), category: t('Culture', 'ثقافة') },
-        { icon: '🚗', title: t('Transport Benefits', 'مزايا النقل'), desc: t('Free RTA public transport in Dubai, subsidised taxi services, and priority parking', 'نقل عام مجاني من هيئة الطرق في دبي وخدمات تاكسي مدعومة وأولوية في المواقف'), category: t('Transport', 'نقل') },
-    ];
-
-    const serviceCentres = [
-        { city: t('Abu Dhabi', 'أبوظبي'), location: t('Al Bateen, GPSSA HQ', 'البطين، مقر الهيئة العامة للمعاشات'), phone: '800-2070' },
-        { city: t('Dubai', 'دبي'), location: t('Al Twar, DGRFA', 'الطوار، الهيئة العامة لتقاعد دبي'), phone: '800-DGRFA' },
-        { city: t('Sharjah', 'الشارقة'), location: t('Al Khan, SSD', 'الخان، دائرة الخدمات الاجتماعية'), phone: '06-5068888' },
-        { city: t('Al Ain', 'العين'), location: t('Zakher, GPSSA Branch', 'زاخر، فرع الهيئة العامة للمعاشات'), phone: '800-2070' },
-    ];
 
     /* Badge color helper */
     const badgeColor = (type: string) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import UserMenu from '@/components/layout/UserMenu';
@@ -10,11 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ParentAssessmentOverview } from '@/components/assessments/ParentAssessmentOverview';
+import { restClient } from '@/utils/api';
 import {
     Users, GraduationCap, Calendar, BookOpen, MapPin, Clock,
     ArrowRight, ArrowLeft, CheckCircle, TrendingUp, Award, Star, Heart,
     BarChart3, Lightbulb, Shield, Sparkles, ChevronRight, ChevronLeft,
-    Target, School, Trophy
+    Target, School, Trophy, Briefcase
 } from 'lucide-react';
 
 /* ────────────────────────── COMPONENT ──────────────────────────── */
@@ -29,13 +30,54 @@ const ParentDashboardPage: React.FC = () => {
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
     const [activeTab, setActiveTab] = useState('overview');
+    const [childApplications, setChildApplications] = useState<any[]>([]);
+    const [apiChildren, setApiChildren] = useState<any[] | null>(null);
+    const [apiLoading, setApiLoading] = useState(true);
+
+    useEffect(() => {
+        const loadApps = async () => {
+            try {
+                const resp = await restClient.get('/api/career-services/parent/child-applications?child_id=1');
+                setChildApplications(resp.data?.applications || []);
+            } catch { setChildApplications([]); }
+        };
+        loadApps();
+
+        // Load real children data from parent dashboard API
+        const loadDashboard = async () => {
+            try {
+                const resp = await restClient.get('/api/career-services/parent/dashboard');
+                if (resp.data?.success && resp.data?.children?.length > 0) {
+                    const kids = resp.data.children.map((c: any, i: number) => ({
+                        id: c.id || `child-${i + 1}`,
+                        name: t(`${c.first_name}`, c.arabic_name?.split(' ')[0] || c.first_name),
+                        age: c.age || 0,
+                        grade: c.grade || '',
+                        gpa: c.gpa || 0,
+                        attendance: c.attendance || 0,
+                        trend: 'up' as const,
+                        subjects: (c.subjects || []).map((s: any) => ({
+                            name: s.name || '',
+                            grade: s.grade || '',
+                            progress: Number(s.progress) || 0,
+                        })),
+                        activities: c.activities || [],
+                        campsEnrolled: c.campsEnrolled || 0,
+                    }));
+                    setApiChildren(kids);
+                }
+            } catch { /* fallback to hardcoded */ }
+            finally { setApiLoading(false); }
+        };
+        loadDashboard();
+    }, []);
 
     const firstName = user?.first_name || user?.full_name?.split(' ')[0] || t('Parent', 'ولي الأمر');
     const initial = firstName.charAt(0).toUpperCase();
 
     /* ─────────────────────────── DATA ─────────────────────────── */
 
-    const childrenData = [
+    const defaultChildren = [
         {
             id: 'child-1', name: t('Ahmed', 'أحمد'), age: 16, grade: '11',
             gpa: 3.8, attendance: 98, trend: 'up' as const,
@@ -61,6 +103,10 @@ const ParentDashboardPage: React.FC = () => {
             campsEnrolled: 1,
         },
     ];
+
+    // Use API data if available, otherwise hardcoded fallback
+    const childrenData = apiChildren || defaultChildren;
+
 
     const knowledgeCamps = [
         {
@@ -173,10 +219,10 @@ const ParentDashboardPage: React.FC = () => {
                             <span className="text-white font-bold text-xl">{initial}</span>
                         </div>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
+                            <h1 className="text-2xl sm:text-3xl font-dubai-bold text-foreground animate-in fade-in slide-in-from-left-4 duration-500">
                                 {t(`Welcome back, ${firstName}! 👋`, `مرحباً بعودتك، ${firstName}! 👋`)}
                             </h1>
-                            <p className="text-muted-foreground mt-1">
+                            <p className="text-muted-foreground mt-1 font-dubai-medium">
                                 {t("Monitor your children's education, activities, and growth", 'تابع تعليم أبنائك وأنشطتهم ونموهم')}
                             </p>
                         </div>
@@ -193,8 +239,8 @@ const ParentDashboardPage: React.FC = () => {
                                     <Users className="h-6 w-6 text-blue-600" />
                                 </div>
                                 <div className={isRTL ? 'mr-4' : 'ml-4'}>
-                                    <p className="text-sm font-medium text-muted-foreground">{t('Children', 'الأبناء')}</p>
-                                    <p className="text-2xl font-bold text-foreground">{childrenData.length}</p>
+                                    <p className="text-sm font-dubai-medium text-muted-foreground">{t('Children', 'الأبناء')}</p>
+                                    <p className="text-2xl font-dubai-bold text-foreground">{childrenData.length}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -208,8 +254,8 @@ const ParentDashboardPage: React.FC = () => {
                                     <CheckCircle className="h-6 w-6 text-emerald-600" />
                                 </div>
                                 <div className={isRTL ? 'mr-4' : 'ml-4'}>
-                                    <p className="text-sm font-medium text-muted-foreground">{t('Camp Enrolments', 'التسجيل في المعسكرات')}</p>
-                                    <p className="text-2xl font-bold text-foreground">{totalEnrolled}</p>
+                                    <p className="text-sm font-dubai-medium text-muted-foreground">{t('Camp Enrolments', 'التسجيل في المعسكرات')}</p>
+                                    <p className="text-2xl font-dubai-bold text-foreground">{totalEnrolled}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -223,8 +269,8 @@ const ParentDashboardPage: React.FC = () => {
                                     <Calendar className="h-6 w-6 text-purple-600" />
                                 </div>
                                 <div className={isRTL ? 'mr-4' : 'ml-4'}>
-                                    <p className="text-sm font-medium text-muted-foreground">{t('Upcoming Events', 'الفعاليات القادمة')}</p>
-                                    <p className="text-2xl font-bold text-foreground">{upcomingEvents.length}</p>
+                                    <p className="text-sm font-dubai-medium text-muted-foreground">{t('Upcoming Events', 'الفعاليات القادمة')}</p>
+                                    <p className="text-2xl font-dubai-bold text-foreground">{upcomingEvents.length}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -234,7 +280,7 @@ const ParentDashboardPage: React.FC = () => {
                     <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
                         <CardContent className="pt-6">
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-semibold text-lg">{t('Quick Actions', 'إجراءات سريعة')}</h3>
+                                <h3 className="font-dubai-bold text-lg">{t('Quick Actions', 'إجراءات سريعة')}</h3>
                                 <Sparkles className="h-6 w-6 opacity-80" />
                             </div>
                             <p className="text-teal-50 text-sm mb-4">{t("Browse programmes and track your children's progress.", 'تصفّح البرامج وتابع تقدّم أبنائك.')}</p>
@@ -255,6 +301,7 @@ const ParentDashboardPage: React.FC = () => {
                         <TabsTrigger value="camps" className="flex-1">{t('Knowledge Camps', 'المعسكرات المعرفية')}</TabsTrigger>
                         <TabsTrigger value="assessments" className="flex-1">{t('Assessments', 'التقييمات')}</TabsTrigger>
                         <TabsTrigger value="resources" className="flex-1">{t('Resources', 'الموارد')}</TabsTrigger>
+                        <TabsTrigger value="opportunities" className="flex-1">{t('Opportunities', 'الفرص')}</TabsTrigger>
                     </TabsList>
 
                     {/* ────── OVERVIEW TAB ────── */}
@@ -280,7 +327,7 @@ const ParentDashboardPage: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
-                                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                                        <TrendingUp className="h-3 w-3 me-1" />
                                                         {child.gpa} {t('GPA', 'المعدل')}
                                                     </Badge>
                                                 </div>
@@ -492,6 +539,57 @@ const ParentDashboardPage: React.FC = () => {
                                 </Link>
                             ))}
                         </div>
+                    </TabsContent>
+
+                    {/* ────── OPPORTUNITIES TAB ────── */}
+                    <TabsContent value="opportunities" className="space-y-6 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div>
+                            <h2 className="text-lg font-semibold">{t("Your Children's Applications", 'طلبات أبنائك')}</h2>
+                            <p className="text-sm text-muted-foreground">{t('Track internship, gig, and scholarship applications', 'تابع طلبات التدريب والعمل الحر والمنح')}</p>
+                        </div>
+                        {childApplications.length === 0 ? (
+                            <Card className="border-dashed border-2">
+                                <CardContent className="py-12 text-center">
+                                    <Briefcase className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-muted-foreground font-medium">{t('No applications yet', 'لا توجد طلبات بعد')}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{t("Your children's internship and scholarship applications will appear here", 'ستظهر طلبات التدريب والمنح لأبنائك هنا')}</p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="space-y-4">
+                                {childApplications.map((app: any, i: number) => (
+                                    <Card key={i} className="hover:shadow-md transition-shadow">
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Badge className={`text-[10px] ${app.type === 'internship' ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                            : app.type === 'gig' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            }`}>
+                                                            {app.type === 'internship' ? t('Internship', 'تدريب') : app.type === 'gig' ? t('Gig', 'عمل حر') : t('Scholarship', 'منحة')}
+                                                        </Badge>
+                                                    </div>
+                                                    <h3 className="font-semibold text-foreground">{app.title}</h3>
+                                                    <p className="text-sm text-muted-foreground">{app.company}</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{t('Applied', 'تقدم')}: {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : '—'}</p>
+                                                </div>
+                                                <div className="text-right space-y-1">
+                                                    <Badge className={`text-[10px] ${app.educator_status === 'approved' ? 'bg-green-50 text-green-700 border-green-200'
+                                                        : app.educator_status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200'
+                                                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                        }`}>
+                                                        {app.educator_status === 'approved' ? t('✓ Educator Approved', '✓ موافقة المعلم')
+                                                            : app.educator_status === 'rejected' ? t('✗ Educator Rejected', '✗ رفض المعلم')
+                                                                : t('⏳ Pending Review', '⏳ قيد المراجعة')}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </main>

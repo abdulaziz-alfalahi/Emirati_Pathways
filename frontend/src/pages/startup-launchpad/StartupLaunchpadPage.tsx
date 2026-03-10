@@ -1,13 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/context/EnhancedLanguageContext';
-import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
+import { getStartupPrograms, type StartupProgram } from '@/services/careerServicesAPI';
 import {
     Rocket, Building2, Banknote, Users, BookOpen, ChevronRight, ChevronLeft, Star,
     TrendingUp, CheckCircle, Target, Sparkles, Shield, Award, Heart,
     Lightbulb, MapPin, Calendar, Clock, DollarSign, BarChart3, Globe,
-    FileText, Download, ExternalLink, ArrowRight, Zap, Eye, Send, MessageSquare
+    FileText, Download, ExternalLink, ArrowRight, Zap, Eye, Send, MessageSquare,
+    Loader2
 } from 'lucide-react';
 
 const brand = {
@@ -19,38 +20,56 @@ const brand = {
     orange: '#FFF7ED', orangeText: '#C2410C',
 };
 
+/* ── Fallback programs (used when DB is empty) ── */
+const FALLBACK_PROGRAMS = [
+    { name: 'Khalifa Fund for Enterprise Development', name_ar: 'صندوق خليفة لتطوير المشاريع', description: 'Comprehensive support for Emirati entrepreneurs including financing, training, mentoring, and marketing assistance', description_ar: 'دعم شامل لرواد الأعمال الإماراتيين يشمل التمويل والتدريب والإرشاد والمساعدة التسويقية', location: 'Abu Dhabi', location_ar: 'أبوظبي', type: 'Accelerator', focus: ['All Sectors'], website: 'https://khalifafund.ae', _funding: 'Up to AED 3M', _duration: '12–24 months', _featured: true },
+    { name: 'Hub71', name_ar: 'Hub71', description: "Abu Dhabi's global tech ecosystem offering incentive packages, venture capital access, and a community of 200+ startups", description_ar: 'المنظومة التقنية العالمية في أبوظبي تقدم حزم حوافز ووصولاً لرأس المال الجريء ومجتمعاً يضم 200+ شركة ناشئة', location: 'Abu Dhabi', location_ar: 'أبوظبي', type: 'Incubator', focus: ['Technology'], website: 'https://hub71.com', _funding: 'Up to AED 2M incentives', _duration: '12 months', _featured: true },
+    { name: 'Dubai SME (Mohammed bin Rashid Establishment)', name_ar: 'مؤسسة محمد بن راشد لتنمية المشاريع', description: 'Support for SMEs in Dubai through business incubation, funding programs, market access, and regulatory assistance', description_ar: 'دعم المشاريع الصغيرة والمتوسطة في دبي من خلال الحضانة والتمويل والوصول للأسواق والمساعدة التنظيمية', location: 'Dubai', location_ar: 'دبي', type: 'Government', focus: ['All Sectors'], website: '#', _funding: 'Up to AED 500K', _duration: '6–18 months', _featured: false },
+    { name: 'Sharjah Entrepreneurship Center (Sheraa)', name_ar: 'مركز الشارقة لريادة الأعمال (شراع)', description: 'Startup accelerator and incubator offering mentorship, co-working spaces, and seed funding for early-stage ventures', description_ar: 'مسرّعة ومحتضنة أعمال تقدم الإرشاد ومساحات العمل المشتركة والتمويل الأولي للمشاريع الناشئة', location: 'Sharjah', location_ar: 'الشارقة', type: 'Accelerator', focus: ['Technology', 'Social Enterprise'], website: '#', _funding: 'Up to AED 300K', _duration: '3–6 months', _featured: false },
+    { name: 'ADIO Startup Program', name_ar: 'برنامج أديو للشركات الناشئة', description: 'Financial and non-financial incentives for innovative startups to establish and scale in Abu Dhabi', description_ar: 'حوافز مالية وغير مالية للشركات الناشئة المبتكرة للتأسيس والتوسع في أبوظبي', location: 'Abu Dhabi', location_ar: 'أبوظبي', type: 'Government', focus: ['FinTech', 'HealthTech', 'AgriTech'], website: '#', _funding: 'Varies by program', _duration: 'Ongoing', _featured: true },
+    { name: 'in5 Innovation Centers', name_ar: 'مراكز in5 للابتكار', description: 'Enabling platform for entrepreneurs through state-of-the-art facilities, mentoring, funding access, and networking in tech, media, and design', description_ar: 'منصة تمكينية لرواد الأعمال من خلال مرافق متطورة وإرشاد ووصول للتمويل والتواصل في التكنولوجيا والإعلام والتصميم', location: 'Dubai', location_ar: 'دبي', type: 'Incubator', focus: ['Tech', 'Media', 'Design'], website: '#', _funding: 'Subsidized workspace + grants', _duration: '12 months renewable', _featured: false },
+];
+
+const typeColorMap: Record<string, { bg: string; color: string }> = {
+    'Accelerator': { bg: brand.blue, color: brand.blueText },
+    'Incubator': { bg: brand.purple, color: brand.purpleText },
+    'Government': { bg: brand.green, color: brand.greenText },
+    'Fund': { bg: brand.amber, color: brand.amberText },
+};
+
 const StartupLaunchpadPage: React.FC = () => {
     const { i18n } = useTranslation();
-    const { toggleLanguage } = useLanguage();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
 
-    const [activeTab, setActiveTab] = useState(0);
+    /* ── State ── */
+    const [programs, setPrograms] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const stats = [
-        { value: '2,800+', label: t('Emirati Startups', 'شركة إماراتية ناشئة'), icon: Rocket },
-        { value: t('AED 5B+', '5 مليار+ د.إ'), label: t('Funding Available', 'تمويل متاح'), icon: DollarSign },
-        { value: '450+', label: t('Mentors', 'مرشدين'), icon: Users },
-        { value: '73%', label: t('Success Rate', 'نسبة النجاح'), icon: TrendingUp },
-    ];
+    useEffect(() => {
+        (async () => {
+            try {
+                const data = await getStartupPrograms();
+                if (data && data.length > 0) {
+                    setPrograms(data);
+                } else {
+                    setPrograms(FALLBACK_PROGRAMS as any[]);
+                }
+            } catch (err) {
+                console.error('Failed to load startup programs:', err);
+                setPrograms(FALLBACK_PROGRAMS as any[]);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
 
-    const tabs = [
-        t('Explore Programs', 'استكشف البرامج'),
-        t('My Journey', 'رحلتي'),
-        t('Funding & Grants', 'التمويل والمنح'),
-        t('Mentor Network', 'شبكة المرشدين'),
-        t('Resources', 'الموارد'),
-    ];
+    /* ── Shared styles ── */
+    const card: React.CSSProperties = { background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 16 };
+    const badgeStyle = (bg: string, color: string): React.CSSProperties => ({ background: bg, color, fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' as const });
+    const renderStars = (r: number) => <span style={{ display: 'inline-flex', gap: 2 }}>{[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill={i <= r ? '#F59E0B' : 'none'} stroke={i <= r ? '#F59E0B' : '#D1D5DB'} />)}</span>;
 
     /* ── DATA ── */
-    const programs = [
-        { name: t('Khalifa Fund for Enterprise Development', 'صندوق خليفة لتطوير المشاريع'), org: t('Khalifa Fund', 'صندوق خليفة'), desc: t('Comprehensive support for Emirati entrepreneurs including financing, training, mentoring, and marketing assistance', 'دعم شامل لرواد الأعمال الإماراتيين يشمل التمويل والتدريب والإرشاد والمساعدة التسويقية'), funding: t('Up to AED 3M', 'حتى 3 مليون د.إ'), duration: t('12–24 months', '12–24 شهراً'), location: t('Abu Dhabi', 'أبوظبي'), sector: t('All Sectors', 'جميع القطاعات'), status: t('Open', 'مفتوح'), statusBg: brand.green, statusColor: brand.greenText, featured: true, catBg: brand.blue, catColor: brand.blueText },
-        { name: 'Hub71', org: 'Hub71', desc: t('Abu Dhabi\'s global tech ecosystem offering incentive packages, venture capital access, and a community of 200+ startups', 'المنظومة التقنية العالمية في أبوظبي تقدم حزم حوافز ووصولاً لرأس المال الجريء ومجتمعاً يضم 200+ شركة ناشئة'), funding: t('Up to AED 2M incentives', 'حتى 2 مليون د.إ حوافز'), duration: t('12 months', '12 شهراً'), location: t('Abu Dhabi', 'أبوظبي'), sector: t('Technology', 'التكنولوجيا'), status: t('Open', 'مفتوح'), statusBg: brand.green, statusColor: brand.greenText, featured: true, catBg: brand.purple, catColor: brand.purpleText },
-        { name: t('Dubai SME (Mohammed bin Rashid Establishment)', 'مؤسسة محمد بن راشد لتنمية المشاريع'), org: t('Dubai SME', 'دبي للمشاريع'), desc: t('Support for SMEs in Dubai through business incubation, funding programs, market access, and regulatory assistance', 'دعم المشاريع الصغيرة والمتوسطة في دبي من خلال الحضانة والتمويل والوصول للأسواق والمساعدة التنظيمية'), funding: t('Up to AED 500K', 'حتى 500 ألف د.إ'), duration: t('6–18 months', '6–18 شهراً'), location: t('Dubai', 'دبي'), sector: t('All Sectors', 'جميع القطاعات'), status: t('Open', 'مفتوح'), statusBg: brand.green, statusColor: brand.greenText, featured: false, catBg: brand.amber, catColor: brand.amberText },
-        { name: t('Sharjah Entrepreneurship Center (Sheraa)', 'مركز الشارقة لريادة الأعمال (شراع)'), org: t('Sheraa', 'شراع'), desc: t('Startup accelerator and incubator offering mentorship, co-working spaces, and seed funding for early-stage ventures', 'مسرّعة ومحتضنة أعمال تقدم الإرشاد ومساحات العمل المشتركة والتمويل الأولي للمشاريع الناشئة'), funding: t('Up to AED 300K', 'حتى 300 ألف د.إ'), duration: t('3–6 months', '3–6 أشهر'), location: t('Sharjah', 'الشارقة'), sector: t('Technology & Social Enterprise', 'التكنولوجيا والمشاريع الاجتماعية'), status: t('Applications Open', 'التقديم مفتوح'), statusBg: brand.blue, statusColor: brand.blueText, featured: false, catBg: brand.green, catColor: brand.greenText },
-        { name: t('ADIO Startup Program', 'برنامج أديو للشركات الناشئة'), org: t('Abu Dhabi Investment Office', 'مكتب أبوظبي للاستثمار'), desc: t('Financial and non-financial incentives for innovative startups to establish and scale in Abu Dhabi', 'حوافز مالية وغير مالية للشركات الناشئة المبتكرة للتأسيس والتوسع في أبوظبي'), funding: t('Varies by program', 'يختلف حسب البرنامج'), duration: t('Ongoing', 'مستمر'), location: t('Abu Dhabi', 'أبوظبي'), sector: t('FinTech, HealthTech, AgriTech', 'التقنية المالية، الصحية، الزراعية'), status: t('Open', 'مفتوح'), statusBg: brand.green, statusColor: brand.greenText, featured: true, catBg: brand.pink, catColor: brand.pinkText },
-        { name: t('in5 Innovation Centers', 'مراكز in5 للابتكار'), org: t('TECOM Group', 'مجموعة تيكوم'), desc: t('Enabling platform for entrepreneurs through state-of-the-art facilities, mentoring, funding access, and networking in tech, media, and design', 'منصة تمكينية لرواد الأعمال من خلال مرافق متطورة وإرشاد ووصول للتمويل والتواصل في التكنولوجيا والإعلام والتصميم'), funding: t('Subsidized workspace + grants', 'مساحات مدعومة + منح'), duration: t('12 months renewable', '12 شهراً قابلة للتجديد'), location: t('Dubai', 'دبي'), sector: t('Tech, Media, Design', 'التكنولوجيا، الإعلام، التصميم'), status: t('Open', 'مفتوح'), statusBg: brand.green, statusColor: brand.greenText, featured: false, catBg: brand.orange, catColor: brand.orangeText },
-    ];
 
     const journeyStages = [
         { stage: t('Ideation', 'التفكير'), icon: Lightbulb, color: brand.blue, textColor: brand.blueText, desc: t('Validate your business idea, conduct market research, and define your value proposition', 'تحقق من فكرة مشروعك، أجرِ بحث السوق، وحدد عرض القيمة الخاص بك'), tasks: [{ text: t('Complete Business Idea Canvas', 'أكمل نموذج فكرة المشروع'), done: true }, { text: t('Market Size Research', 'بحث حجم السوق'), done: true }, { text: t('Competitor Analysis', 'تحليل المنافسين'), done: false }, { text: t('Customer Interviews (10+)', 'مقابلات العملاء (10+)'), done: false }] },
@@ -85,48 +104,75 @@ const StartupLaunchpadPage: React.FC = () => {
         { title: t('Market Entry: GCC Expansion', 'دخول السوق: التوسع الخليجي'), desc: t('Research report on expanding from UAE to Saudi Arabia, Bahrain, Qatar, and beyond', 'تقرير بحثي حول التوسع من الإمارات إلى السعودية والبحرين وقطر وما بعدها'), type: t('Report', 'تقرير'), icon: Globe, catBg: brand.pink, catColor: brand.pinkText },
     ];
 
-    /* ── Shared styles ── */
-    const card: React.CSSProperties = { background: '#fff', borderRadius: 16, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 16 };
-    const badgeStyle = (bg: string, color: string): React.CSSProperties => ({ background: bg, color, fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' as const });
-    const tabBtnStyle = (active: boolean): React.CSSProperties => ({ padding: '10px 20px', fontSize: 14, fontWeight: active ? 600 : 400, color: active ? brand.primary : brand.textSecondary, borderBottom: active ? `2px solid ${brand.primary}` : '2px solid transparent', cursor: 'pointer', background: 'none', border: 'none', borderBottomStyle: 'solid' as const });
-    const renderStars = (r: number) => <span style={{ display: 'inline-flex', gap: 2 }}>{[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill={i <= r ? '#F59E0B' : 'none'} stroke={i <= r ? '#F59E0B' : '#D1D5DB'} />)}</span>;
+    /* ── Dynamic Stats ── */
+    const uniqueLocations = new Set(programs.map(p => p.location || p.location_ar));
+    const stats = [
+        { value: String(programs.length), label: t('Programs', 'برنامج'), icon: Rocket },
+        { value: t('AED 5B+', '5 مليار+ د.إ'), label: t('Funding Available', 'تمويل متاح'), icon: DollarSign },
+        { value: String(uniqueLocations.size), label: t('Emirates', 'إمارات'), icon: MapPin },
+        { value: String(mentors.length), label: t('Mentors', 'مرشدين'), icon: Users },
+    ];
 
-    /* ── TAB 1: Explore Programs ── */
+    /* ── TAB 1: Explore Programs (API-driven) ── */
     const programsTab = (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary }}>{t('UAE Startup Programs', 'برامج الشركات الناشئة في الإمارات')}</h2>
                 <span style={{ fontSize: 13, color: brand.textSecondary }}>{programs.length} {t('programs', 'برنامج')}</span>
             </div>
-            {programs.map((p, i) => (
-                <div key={i} style={{ ...card, ...(p.featured ? { borderColor: brand.primary, borderWidth: 1.5 } : {}) }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 250 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <span style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary }}>{p.name}</span>
-                                {p.featured && <span style={badgeStyle(brand.amber, brand.amberText)}>⭐ {t('Top Program', 'برنامج مميّز')}</span>}
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                    <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto', color: brand.primary }} />
+                </div>
+            ) : programs.map((p, i) => {
+                const typeColors = typeColorMap[p.type || ''] || { bg: brand.primarySurface, color: brand.primary };
+                const focusList = Array.isArray(p.focus) ? p.focus : typeof p.focus === 'string' ? [p.focus] : [];
+                return (
+                    <div key={p.id || i} style={{ ...card, ...(p._featured ? { borderColor: brand.primary, borderWidth: 1.5 } : {}) }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                            <div style={{ flex: 1, minWidth: 250 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                    <span style={{ fontSize: 17, fontWeight: 600, color: brand.textPrimary }}>
+                                        {isRTL ? (p.name_ar || p.name) : p.name}
+                                    </span>
+                                    {p._featured && <span style={badgeStyle(brand.amber, brand.amberText)}>⭐ {t('Top Program', 'برنامج مميّز')}</span>}
+                                </div>
+                                <div style={{ display: 'flex', gap: 12, fontSize: 13, color: brand.textSecondary, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    {p.location && (
+                                        <span><MapPin size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> {isRTL ? (p.location_ar || p.location) : p.location}</span>
+                                    )}
+                                    {p._duration && <span><Clock size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> {p._duration}</span>}
+                                    {p.type && <span><Building2 size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> {p.type}</span>}
+                                </div>
+                                <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, marginBottom: 10 }}>
+                                    {isRTL ? (p.description_ar || p.description) : (p.description || '')}
+                                </p>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    {p.type && <span style={badgeStyle(typeColors.bg, typeColors.color)}>{p.type}</span>}
+                                    {focusList.map((f: string, j: number) => (
+                                        <span key={j} style={badgeStyle(brand.primarySurface, brand.primary)}>{f}</span>
+                                    ))}
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 12, fontSize: 13, color: brand.textSecondary, flexWrap: 'wrap', marginBottom: 8 }}>
-                                <span><Building2 size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> {p.org}</span>
-                                <span><MapPin size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> {p.location}</span>
-                                <span><Clock size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> {p.duration}</span>
+                            <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 130 }}>
+                                {p._funding && (
+                                    <>
+                                        <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 4 }}>{t('Funding', 'التمويل')}</div>
+                                        <div style={{ fontSize: 16, fontWeight: 700, color: brand.primary, marginBottom: 12 }}>{p._funding}</div>
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => p.website && window.open(p.website, '_blank')}
+                                    style={{ padding: '10px 20px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                                >
+                                    {t('Apply', 'قدّم')} <ExternalLink size={14} />
+                                </button>
                             </div>
-                            <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, marginBottom: 10 }}>{p.desc}</p>
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={badgeStyle(p.catBg, p.catColor)}>{p.sector}</span>
-                                <span style={badgeStyle(p.statusBg, p.statusColor)}>{p.status}</span>
-                            </div>
-                        </div>
-                        <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 130 }}>
-                            <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 4 }}>{t('Funding', 'التمويل')}</div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: brand.primary, marginBottom: 12 }}>{p.funding}</div>
-                            <button style={{ padding: '10px 20px', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {t('Apply', 'قدّم')} <ExternalLink size={14} />
-                            </button>
                         </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 
@@ -135,7 +181,6 @@ const StartupLaunchpadPage: React.FC = () => {
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>{t('Your Startup Journey', 'رحلتك الريادية')}</h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>{t('Track your progress through each stage of building your startup.', 'تابع تقدمك عبر كل مرحلة من مراحل بناء شركتك الناشئة.')}</p>
-            {/* Progress bar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 32, position: 'relative' }}>
                 {journeyStages.map((s, i) => {
                     const completedTasks = s.tasks.filter(t => t.done).length;
@@ -155,7 +200,6 @@ const StartupLaunchpadPage: React.FC = () => {
                     );
                 })}
             </div>
-            {/* Stage cards */}
             {journeyStages.map((s, i) => (
                 <div key={i} style={{ ...card, borderLeft: isRTL ? 'none' : `4px solid ${s.textColor}`, borderRight: isRTL ? `4px solid ${s.textColor}` : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -261,51 +305,27 @@ const StartupLaunchpadPage: React.FC = () => {
         </div>
     );
 
-    const tabContent = [programsTab, journeyTab, fundingTab, mentorTab, resourcesTab];
+    /* ── Tabs ── */
+    const tabs = [
+        { id: 'programs', label: t('Explore Programs', 'استكشف البرامج'), icon: <Rocket className="h-4 w-4" />, content: programsTab },
+        { id: 'journey', label: t('My Journey', 'رحلتي'), icon: <Target className="h-4 w-4" />, content: journeyTab },
+        { id: 'funding', label: t('Funding & Grants', 'التمويل والمنح'), icon: <DollarSign className="h-4 w-4" />, content: fundingTab },
+        { id: 'mentors', label: t('Mentor Network', 'شبكة المرشدين'), icon: <Users className="h-4 w-4" />, content: mentorTab },
+        { id: 'resources', label: t('Resources', 'الموارد'), icon: <BookOpen className="h-4 w-4" />, content: resourcesTab },
+    ];
 
-    /* ── RENDER ── */
     return (
-        <div className="min-h-screen flex flex-col bg-background" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={i18n.language as 'en' | 'ar'} />
-            <main className="flex-1" style={{ background: '#FAFBFC' }}>
-                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 16px' }} dir={isRTL ? 'rtl' : 'ltr'}>
-                    {/* Hero */}
-                    <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: brand.primarySurface, padding: '8px 20px', borderRadius: 20, marginBottom: 16 }}>
-                            <Rocket size={16} color={brand.primary} /> <span style={{ fontSize: 14, fontWeight: 600, color: brand.primary }}>{t('Startup Launchpad', 'منصة إطلاق المشاريع')}</span>
-                        </div>
-                        <h1 style={{ fontSize: 36, fontWeight: 800, color: brand.textPrimary, marginBottom: 8 }}>
-                            {t('Launch Your Startup in the UAE', 'أطلق شركتك الناشئة في الإمارات')}
-                        </h1>
-                        <p style={{ fontSize: 16, color: brand.textSecondary, maxWidth: 640, margin: '0 auto', lineHeight: 1.7 }}>
-                            {t('From idea to IPO — access UAE government programs, funding, mentors, and resources to build your dream venture.',
-                                'من الفكرة إلى الطرح العام — احصل على برامج حكومية إماراتية وتمويل ومرشدين وموارد لبناء مشروعك.')}
-                        </p>
-                    </div>
-
-                    {/* Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-                        {stats.map((s, i) => (
-                            <div key={i} style={{ ...card, textAlign: 'center', marginBottom: 0 }}>
-                                <s.icon size={24} color={brand.primary} style={{ marginBottom: 8 }} />
-                                <div style={{ fontSize: 24, fontWeight: 700, color: brand.textPrimary }}>{s.value}</div>
-                                <div style={{ fontSize: 13, color: brand.textSecondary }}>{s.label}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', borderBottom: `1px solid ${brand.border}`, marginBottom: 24, overflowX: 'auto' }}>
-                        {tabs.map((label, i) => (
-                            <button key={i} onClick={() => setActiveTab(i)} style={tabBtnStyle(activeTab === i)}>{label}</button>
-                        ))}
-                    </div>
-
-                    {/* Content */}
-                    {tabContent[activeTab]}
-                </div>
-            </main>
-        </div>
+        <EducationPathwayLayout
+            title={t('Startup Launchpad', 'منصة إطلاق المشاريع')}
+            description={t(
+                'From idea to IPO — access UAE government programs, funding, mentors, and resources to build your dream venture.',
+                'من الفكرة إلى الطرح العام — احصل على برامج حكومية إماراتية وتمويل ومرشدين وموارد لبناء مشروعك.'
+            )}
+            icon={<Rocket className="h-6 w-6" />}
+            stats={stats}
+            tabs={tabs}
+            defaultTab="programs"
+        />
     );
 };
 

@@ -27,7 +27,9 @@ import {
   ArrowRight,
   Lightbulb,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  BookOpen
 } from 'lucide-react';
 
 // Import your existing components
@@ -40,6 +42,7 @@ import CandidateOffers from '@/components/candidate/CandidateOffers';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { profileSnapshotAPI, type RecommendedJob, type ProfileSnapshot } from '@/services/intelligenceAPI';
 
 interface DashboardData {
   profile: {
@@ -113,6 +116,13 @@ const CandidateDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const location = useLocation();
 
+  // Intelligence data
+  const [recommendedJobs, setRecommendedJobs] = useState<RecommendedJob[]>([]);
+  const [aiInsight, setAiInsight] = useState<{ en: string; ar: string } | null>(null);
+  const [topGaps, setTopGaps] = useState<any[]>([]);
+  const [quickWins, setQuickWins] = useState<any[]>([]);
+  const [readinessScore, setReadinessScore] = useState<number>(0);
+
   // Bilingual helper
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
@@ -156,6 +166,34 @@ const CandidateDashboard: React.FC = () => {
     };
 
     fetchStats();
+  }, []);
+
+  // Fetch intelligence data (non-blocking — dashboard loads fast, intelligence fills in)
+  useEffect(() => {
+    const fetchIntelligence = async () => {
+      try {
+        const [snapshotResult, jobsResult] = await Promise.allSettled([
+          profileSnapshotAPI.getSnapshot(),
+          profileSnapshotAPI.getRecommendedJobs(),
+        ]);
+
+        if (snapshotResult.status === 'fulfilled') {
+          const snap = snapshotResult.value;
+          setAiInsight(snap.ai_insight);
+          setTopGaps(snap.gap_analysis?.top_gaps || []);
+          setQuickWins(snap.recommendations?.quick_wins || []);
+          setReadinessScore(snap.gap_analysis?.readiness_score || 0);
+        }
+
+        if (jobsResult.status === 'fulfilled') {
+          setRecommendedJobs(jobsResult.value.jobs || []);
+        }
+      } catch (err) {
+        console.error('Intelligence fetch error (non-critical):', err);
+      }
+    };
+
+    fetchIntelligence();
   }, []);
 
   const getActivityIcon = (type: string) => {
@@ -426,31 +464,29 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-3 space-y-3">
-                      {[
-                        { title: t('Senior Project Manager', 'مدير مشاريع أول'), company: t('Emirates Group', 'مجموعة الإمارات'), distance: t('12 km', '١٢ كم'), commute: t('25 min peak', '٢٥ د ذروة'), salary: t('AED 35k–45k', '35-45 ألف درهم'), match: 94, type: t('Full-time', 'دوام كامل') },
-                        { title: t('Cloud Infrastructure Architect', 'مهندس بنية سحابية'), company: t('Digital Dubai', 'دبي الرقمية'), distance: t('8 km', '٨ كم'), commute: t('18 min peak', '١٨ د ذروة'), salary: t('AED 40k–55k', '40-55 ألف درهم'), match: 89, type: t('Hybrid', 'هجين') },
-                        { title: t('Data Scientist', 'عالم بيانات'), company: t('Abu Dhabi Investment Authority', 'جهاز أبوظبي للاستثمار'), distance: t('45 km', '٤٥ كم'), commute: t('55 min peak', '٥٥ د ذروة'), salary: t('AED 30k–45k', '30-45 ألف درهم'), match: 86, type: t('Full-time', 'دوام كامل') },
-                      ].map((job, i) => (
+                      {(recommendedJobs.length > 0 ? recommendedJobs.slice(0, 3) : [
+                        { title: t('Senior Project Manager', 'مدير مشاريع أول'), company: t('Emirates Group', 'مجموعة الإمارات'), salary: t('AED 35k–45k', '35-45 ألف درهم'), match_score: 94, type: t('Full-time', 'دوام كامل'), location: 'Dubai', source: 'curated' as const },
+                      ]).map((job, i) => (
                         <div key={i} className="p-4 rounded-lg border border-slate-100 hover:border-teal-200 hover:shadow-sm transition-all cursor-pointer group">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0">
-                                {job.company.charAt(0)}
+                                {(job.company || '?').charAt(0)}
                               </div>
                               <div>
-                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{job.title}</p>
-                                <p className="text-xs text-slate-500">{job.company}</p>
+                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{isRTL && (job as any).title_ar ? (job as any).title_ar : job.title}</p>
+                                <p className="text-xs text-slate-500">{isRTL && (job as any).company_ar ? (job as any).company_ar : job.company}</p>
                                 <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
-                                  <span>📍 {job.distance}</span>
-                                  <span>🕐 {job.commute}</span>
+                                  <span>📍 {job.location || 'UAE'}</span>
                                   <span>💰 {job.salary}</span>
                                   <span>🏢 {job.type}</span>
+                                  {job.source === 'live' && <Badge className="bg-green-50 text-green-600 text-[9px] border-green-200">Live</Badge>}
                                 </div>
                               </div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                               <Badge className="bg-teal-50 text-teal-700 border border-teal-200 text-[11px] font-bold">
-                                ✦ {job.match}% {t('Match', 'تطابق')}
+                                ✦ {job.match_score}% {t('Match', 'تطابق')}
                               </Badge>
                               <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-7 px-3">
                                 {t('Apply Now', 'قدّم الآن')}
@@ -491,7 +527,7 @@ const CandidateDashboard: React.FC = () => {
 
                 {/* Right Sidebar — AI Career Insight + Upcoming Events */}
                 <div className="lg:col-span-3 space-y-6">
-                  {/* AI Career Insight */}
+                  {/* AI Career Insight — LIVE */}
                   <div className="bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl p-5 text-white shadow-lg">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -502,20 +538,97 @@ const CandidateDashboard: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-sm text-teal-50 leading-relaxed mb-4">
-                      {t(
-                        'Cloud computing skills are in high demand — consider an AWS certification to boost your profile and match with 30% more top-tier roles.',
-                        'مهارات الحوسبة السحابية مطلوبة بشدة — فكّر في شهادة AWS لتعزيز ملفك والتطابق مع 30٪ وظائف أكثر.'
-                      )}
+                      {aiInsight
+                        ? (isRTL ? aiInsight.ar : aiInsight.en)
+                        : t(
+                          'Upload your CV and complete your profile to get AI-powered job matches and personalized career recommendations.',
+                          'ارفع سيرتك الذاتية وأكمل ملفك للحصول على مطابقات وظيفية ذكية وتوصيات مهنية مخصصة.'
+                        )}
                     </p>
+                    {readinessScore > 0 && (
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex-1 bg-white/20 rounded-full h-2">
+                          <div className="bg-white rounded-full h-2 transition-all duration-1000" style={{ width: `${readinessScore}%` }} />
+                        </div>
+                        <span className="text-xs text-teal-100 font-bold">{readinessScore}%</span>
+                      </div>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
                       className="border-white/30 text-white hover:bg-white/10 hover:text-white text-xs rounded-lg w-full"
-                      onClick={() => navigate('/candidate/profile')}
+                      onClick={() => navigate('/career-advisory')}
                     >
-                      {t('Explore Courses', 'استكشف الدورات')}
+                      {t('Explore Recommendations', 'استكشف التوصيات')}
                     </Button>
                   </div>
+
+                  {/* Skill Gaps — LIVE */}
+                  {topGaps.length > 0 && (
+                    <Card className="bg-white border border-slate-200/80">
+                      <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                        <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                          <Zap className="h-4 w-4 text-amber-500" />
+                          {t('Skill Gaps', 'فجوات المهارات')}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-3 space-y-2">
+                        {topGaps.slice(0, 3).map((gap: any, i: number) => (
+                          <div key={i} className="p-2.5 rounded-lg border border-slate-100 hover:border-amber-200 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-slate-700">{gap.skill_name}</span>
+                              <Badge className={`text-[9px] ${gap.priority >= 0.7 ? 'bg-red-50 text-red-600 border-red-200' :
+                                  gap.priority >= 0.4 ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                    'bg-blue-50 text-blue-600 border-blue-200'
+                                }`}>
+                                {gap.priority >= 0.7 ? t('High Priority', 'أولوية عالية') :
+                                  gap.priority >= 0.4 ? t('Medium', 'متوسط') : t('Low', 'منخفض')}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                              <span>{gap.current_level || t('None', 'لا يوجد')}</span>
+                              <span>→</span>
+                              <span className="text-teal-600 font-medium">{gap.required_level}</span>
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs text-amber-700 border-amber-200 hover:bg-amber-50 mt-1"
+                          onClick={() => navigate('/career-advisory')}
+                        >
+                          {t('View Full Analysis →', 'عرض التحليل الكامل ←')}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Quick Win Recommendations — LIVE */}
+                  {quickWins.length > 0 && (
+                    <Card className="bg-white border border-slate-200/80">
+                      <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                        <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                          <BookOpen className="h-4 w-4 text-green-600" />
+                          {t('Quick Wins', 'إنجازات سريعة')}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-3 space-y-2">
+                        {quickWins.slice(0, 2).map((rec: any, i: number) => (
+                          <div key={i} className="p-2.5 rounded-lg border border-slate-100 hover:border-green-200 transition-colors cursor-pointer"
+                            onClick={() => rec.action_url && navigate(rec.action_url)}>
+                            <p className="text-xs font-medium text-slate-700">
+                              {isRTL && rec.title_ar ? rec.title_ar : rec.title}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className="text-[9px] bg-green-50 text-green-600 border-green-200">{rec.type}</Badge>
+                              <span className="text-[10px] text-slate-400">{rec.effort}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {/* Upcoming Events */}
                   <Card className="bg-white border border-slate-200/80">

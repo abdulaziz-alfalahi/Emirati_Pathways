@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { restClient } from '@/utils/api';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -249,6 +250,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   };
 
   const handleApply = async (jobId: string) => {
+    // Optimistic update — show "Applied" immediately
+    setJobs(prevJobs =>
+      prevJobs.map(job =>
+        job.id === jobId ? { ...job, hasApplied: true } : job
+      )
+    );
+
     try {
       const response = await restClient.post('/api/jobs/apply', {
         job_id: jobId,
@@ -257,28 +265,28 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       });
 
       if (response.data.success) {
-        // Update local state to show "Already Applied" immediately
-        setJobs(prevJobs =>
-          prevJobs.map(job =>
-            job.id === jobId ? { ...job, hasApplied: true } : job
-          )
-        );
         alert(t('Application submitted successfully!', 'تم تقديم الطلب بنجاح!'));
       } else {
+        // Rollback on failure
+        setJobs(prevJobs =>
+          prevJobs.map(job =>
+            job.id === jobId ? { ...job, hasApplied: false } : job
+          )
+        );
         alert(response.data.message || t('Application failed', 'فشل تقديم الطلب'));
       }
     } catch (error: any) {
       console.error('Error applying to job:', error);
-      // Check if it's a "already applied" error
       if (error.response?.data?.message?.includes('already applied')) {
-        // Update local state to reflect the already applied status
-        setJobs(prevJobs =>
-          prevJobs.map(job =>
-            job.id === jobId ? { ...job, hasApplied: true } : job
-          )
-        );
+        // Keep the optimistic state — user already applied
         alert(t('You have already applied for this job.', 'لقد قدمت بالفعل على هذه الوظيفة.'));
       } else {
+        // Rollback on network error
+        setJobs(prevJobs =>
+          prevJobs.map(job =>
+            job.id === jobId ? { ...job, hasApplied: false } : job
+          )
+        );
         alert(t('Failed to submit application. Please try again.', 'فشل تقديم الطلب. يرجى المحاولة مرة أخرى.'));
       }
     }
@@ -752,6 +760,26 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                               <div className="text-center p-2 bg-white rounded">
                                 <div className="text-lg font-bold text-teal-600">{job.matchBreakdown.d33_alignment || 0}/5</div>
                                 <div className="text-xs text-muted-foreground">D33</div>
+                              </div>
+                            </div>
+
+                            {/* Radar Chart — Visual Skill-Gap Comparison */}
+                            <div className="mt-3 flex justify-center">
+                              <div style={{ width: 280, height: 220 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={[
+                                    { axis: t('Skills', 'المهارات'), value: Math.round(((job.matchBreakdown.skills_match || 0) / 40) * 100) },
+                                    { axis: t('Experience', 'الخبرة'), value: Math.round(((job.matchBreakdown.experience_match || 0) / 25) * 100) },
+                                    { axis: t('Title', 'المسمى'), value: Math.round(((job.matchBreakdown.title_match || 0) / 20) * 100) },
+                                    { axis: t('Location', 'الموقع'), value: Math.round(((job.matchBreakdown.location_match || 0) / 10) * 100) },
+                                    { axis: 'D33', value: Math.round(((job.matchBreakdown.d33_alignment || 0) / 5) * 100) },
+                                  ]}>
+                                    <PolarGrid stroke="#E5E7EB" />
+                                    <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                                    <Radar name="Match" dataKey="value" stroke="#0D9488" fill="#0D9488" fillOpacity={0.25} strokeWidth={2} />
+                                  </RadarChart>
+                                </ResponsiveContainer>
                               </div>
                             </div>
 

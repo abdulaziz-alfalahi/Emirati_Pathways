@@ -207,16 +207,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (authService.isAuthenticated()) {
         const profile = await authService.getProfile();
         if (profile.success && profile.data) {
-          // Only update if data has changed to prevent infinite loops with storage listener
           const currentUserStr = localStorage.getItem('user');
-          const newUserStr = JSON.stringify(profile.data);
 
+          // Preserve locally-switched active role — the API always returns the
+          // "primary" role, but the user may have switched to a secondary role
+          // via switchRole().  We detect this by comparing the stored role with
+          // the API role and keeping the stored one when they differ.
+          let mergedData = profile.data;
+          if (currentUserStr) {
+            try {
+              const storedUser = JSON.parse(currentUserStr);
+              const apiRole = normalizeRole(profile.data.role || profile.data.user_type || '');
+              const storedRole = normalizeRole(storedUser.role || storedUser.user_type || '');
+
+              if (storedRole && storedRole !== apiRole) {
+                // User switched roles locally — preserve the active role
+                mergedData = {
+                  ...profile.data,
+                  role: storedUser.role,
+                  user_type: storedUser.user_type,
+                  roles: storedUser.roles,
+                  secondary_roles: storedUser.secondary_roles || profile.data.secondary_roles,
+                  user_metadata: {
+                    ...profile.data.user_metadata,
+                    roles: storedUser.roles,
+                    user_type: storedUser.user_type,
+                  }
+                };
+              }
+            } catch (_) { /* parse error — fall through to use API data */ }
+          }
+
+          const newUserStr = JSON.stringify(mergedData);
           if (currentUserStr !== newUserStr) {
-            setUserState(profile.data);
+            setUserState(mergedData);
             localStorage.setItem('user', newUserStr);
           } else if (!user) {
-            // If we have data but state is null (e.g. first load), set state
-            setUserState(profile.data);
+            setUserState(mergedData);
           }
         }
       }
@@ -225,9 +252,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // If the token is invalid (401), we must sign out to prevent loops and bad state
       if (error.message && error.message.includes('401')) {
         console.warn('Token expired or invalid during refresh, signing out...');
-        // Instead of calling signOut() which calls API again, just clear state and redirect
         setUserState(null);
         authService.clearAuth();
+        // Save current URL for deep-link preservation
+        const currentPath = window.location.pathname;
+        if (currentPath && currentPath !== '/auth' && currentPath !== '/') {
+          sessionStorage.setItem('returnUrl', currentPath);
+        }
         navigate('/auth');
       }
     }

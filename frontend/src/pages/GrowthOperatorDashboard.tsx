@@ -125,7 +125,7 @@ const recentActivity = [
 
 // ─── Component ───
 const GrowthOperatorDashboard: React.FC = () => {
-  const { language } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => language === 'ar' ? ar : en;
 
@@ -450,7 +450,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                 <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{company.hiresCount}</div>
                 <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Total Hires', 'إجمالي التوظيف')}</div>
               </div>
-              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: '#F8FAFC' }}>
+              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: colors.primaryLight }}>
                 <div style={{ fontSize: 20, fontWeight: 700, color: colors.primary }}>{company.emiratiHires}</div>
                 <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Emirati Hires', 'توظيف إماراتي')}</div>
               </div>
@@ -689,7 +689,7 @@ const GrowthOperatorDashboard: React.FC = () => {
   // ═══════ MAIN RENDER ═══════
   return (
     <div style={{ minHeight: '100vh', background: colors.bg, direction: isRTL ? 'rtl' : 'ltr' }}>
-      <HybridGovernmentNavFixed />
+      <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={language} />
 
       <main style={{ maxWidth: 1280, margin: '0 auto', padding: '100px 24px 40px' }}>
         {/* Header */}

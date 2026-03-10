@@ -10,6 +10,7 @@ import Interviews from '@/components/recruiter/Interviews';
 import OffersPage from '@/pages/recruiter/Offers';
 import Messages from '@/components/recruiter/Messages';
 import RecruiterInterviews from '@/components/recruiter/Interviews'; // Use standard component instead of page wrapper? 
+import RecruiterPostings from '@/components/recruiter/RecruiterPostings';
 import RecruiterAnalyticsPage from '@/pages/recruiter/Analytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,9 +98,10 @@ const RecruiterDashboard: React.FC = () => {
   };
   const userData = getUserData();
   // Use full_name first, then construct from first/last, then fallback to 'Recruiter'
-  const recruiterName = userData.full_name
+  const rawName = userData.full_name
     || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
-    || 'Recruiter';
+    || '';
+  const recruiterName = (rawName && rawName !== 'None None' && rawName !== 'None') ? rawName : 'Recruiter';
   const recruiterId = userData.id || '';
   const companyId = userData.company_id || '';
   const firstName = recruiterName.split(' ')[0];
@@ -138,7 +140,7 @@ const RecruiterDashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const response = await restClient.get('/api/recruiter/statistics/dashboard');
+      const response = await restClient.get('/api/recruiter/dashboard');
 
       if (response.data && response.data.success && response.data.data) {
         const apiData = response.data.data;
@@ -328,7 +330,7 @@ const RecruiterDashboard: React.FC = () => {
 
           {/* Tabs */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('overview')}>{b('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('jobs')}>{b('My Jobs', 'وظائفي')}</TabsTrigger>
               <TabsTrigger value="candidates" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('candidates')}>{b('Candidates', 'المرشحون')}</TabsTrigger>
@@ -342,6 +344,7 @@ const RecruiterDashboard: React.FC = () => {
                 )}
               </TabsTrigger>
               <TabsTrigger value="offers" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('offers')}>{b('Offers', 'العروض')}</TabsTrigger>
+              <TabsTrigger value="postings" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('postings')}>{b('Internships & Gigs', 'التدريب والعمل الحر')}</TabsTrigger>
             </TabsList>
 
             {/* ════════════════════════════════════════════════════════════
@@ -554,6 +557,11 @@ const RecruiterDashboard: React.FC = () => {
             {/* Offers & Approvals Tab */}
             <TabsContent value="offers" className="space-y-6">
               <OffersPage />
+            </TabsContent>
+
+            {/* Postings Tab */}
+            <TabsContent value="postings" className="space-y-6">
+              <RecruiterPostings />
             </TabsContent>
 
             {/* Messages Tab */}

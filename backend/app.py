@@ -386,6 +386,105 @@ try:
 except Exception as e:
     logger.error(f"Failed to register JD Upload routes: {e}")
 
+# 9. Intelligence Backbone Routes (Skill Graph, Recommendations, Career Lifecycle)
+try:
+    try:
+        from backend.intelligence_routes import intelligence_bp
+    except ImportError:
+        from intelligence_routes import intelligence_bp
+    app.register_blueprint(intelligence_bp)
+    logger.info("✅ Intelligence Backbone routes registered (Skill Graph, Recommendations, Career Lifecycle)")
+except Exception as e:
+    logger.error(f"Failed to register Intelligence routes: {e}")
+
+# 10. Education API Routes (Universities, Programs, Scholarships, LMS)
+try:
+    try:
+        from backend.education_api_routes import education_bp
+    except ImportError:
+        from education_api_routes import education_bp
+    app.register_blueprint(education_bp)
+    logger.info("✅ Education API routes registered (Universities, Programs, Scholarships, LMS)")
+except Exception as e:
+    logger.error(f"Failed to register Education routes: {e}")
+
+# 11. Career Services Routes (Internships, Gig Marketplace, Career Planning, Portfolio)
+try:
+    try:
+        from backend.career_services_routes import career_services_bp
+    except ImportError:
+        from career_services_routes import career_services_bp
+    app.register_blueprint(career_services_bp)
+    logger.info("✅ Career Services routes registered (Internships, Gigs, Portfolio, Financial Planning)")
+except Exception as e:
+    logger.error(f"Failed to register Career Services routes: {e}")
+
+# 12. Operations Monitoring Center Routes (Platform Stats)
+try:
+    try:
+        from backend.operations_routes import operations_bp
+    except ImportError:
+        from operations_routes import operations_bp
+    app.register_blueprint(operations_bp)
+    logger.info("✅ Operations Monitoring Center routes registered")
+except Exception as e:
+    logger.error(f"Failed to register Operations routes: {e}")
+
+# 13. Skills & Development Routes (Training, Courses, Assessments, Certifications)
+try:
+    try:
+        from backend.skills_development_routes import skills_dev_bp
+    except ImportError:
+        from skills_development_routes import skills_dev_bp
+    app.register_blueprint(skills_dev_bp)
+    logger.info("✅ Skills & Development routes registered (Training, Courses, Assessments, Certifications)")
+except Exception as e:
+    logger.error(f"Failed to register Skills & Development routes: {e}")
+
+# 14. Community & Mentorship Routes (Communities, Feed, Events, Mentors)
+try:
+    try:
+        from backend.community_mentorship_routes import community_mentorship_bp
+    except ImportError:
+        from community_mentorship_routes import community_mentorship_bp
+    app.register_blueprint(community_mentorship_bp)
+    logger.info("✅ Community & Mentorship routes registered (Communities, Feed, Events, Mentors)")
+except Exception as e:
+    logger.error(f"Failed to register Community & Mentorship routes: {e}")
+
+# 15. Mentor System Routes (Mentor Dashboard, Profiles, Matching)
+try:
+    try:
+        from backend.mentor_routes import mentor_bp
+    except ImportError:
+        from mentor_routes import mentor_bp
+    app.register_blueprint(mentor_bp)
+    logger.info("✅ Mentor System routes registered (Dashboard, Profiles, Matching)")
+except Exception as e:
+    logger.error(f"Failed to register Mentor routes: {e}")
+
+# 16. Lifelong Engagement Routes (National Service, Thought Leadership, Success Stories, Retiree)
+try:
+    try:
+        from backend.lifelong_engagement_routes import lifelong_engagement_bp
+    except ImportError:
+        from lifelong_engagement_routes import lifelong_engagement_bp
+    app.register_blueprint(lifelong_engagement_bp)
+    logger.info("✅ Lifelong Engagement routes registered (National Service, Thought Leadership, Success Stories, Retiree)")
+except Exception as e:
+    logger.error(f"Failed to register Lifelong Engagement routes: {e}")
+
+# 17. Intelligence Routes (Skill Graph, Recommendations, Gap Analysis, Career Lifecycle)
+try:
+    try:
+        from backend.intelligence_routes import intelligence_bp
+    except ImportError:
+        from intelligence_routes import intelligence_bp
+    app.register_blueprint(intelligence_bp)
+    logger.info("✅ Intelligence routes registered (Skill Graph, Recommendations, Gap Analysis, Career Lifecycle)")
+except Exception as e:
+    logger.error(f"Failed to register Intelligence routes: {e}")
+
 # =====================================================
 # LEGACY / DIRECT ENDPOINTS (Ported from unified_server)
 # =====================================================
@@ -2634,56 +2733,181 @@ def get_public_cv(cv_id):
 
 @app.route('/api/matching/cv/<cv_id>/top-vacancies', methods=['GET'])
 def match_cv_top_vacancies(cv_id: str):
-    """Return top-N matching vacancies for a specific CV."""
+    """Return top-N matching vacancies for a specific CV using real job_postings."""
     try:
-        limit = int(request.args.get('limit', 10))
+        limit = int(request.args.get('limit', 20))
+        search = request.args.get('search', '').strip()
+        location_filter = request.args.get('location', '').strip()
+        type_filter = request.args.get('type', '').strip()
+        experience_filter = request.args.get('experience', '').strip()
+
         cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
         if not cv:
             return jsonify({'success': False, 'message': 'CV not found'}), 404
 
         cvk = _collect_cv_keywords(dict(cv))
-        vacancies = execute_query("SELECT * FROM recruiter_vacancies ORDER BY created_at DESC") or []
-
-        scored = []
-        for v in vacancies:
-            vd = dict(v)
-            vk = _vacancy_keywords(vd)
-            score = _compute_match_score(cvk, vk)
-            vd['match_score'] = score
-            vd['snippet'] = (vd.get('description') or '')[:200]
-            scored.append(vd)
-
-        # Sort by score descending as requested (High to Low)
-        scored.sort(key=lambda x: (x['match_score'], x['id']), reverse=True)
-        return jsonify({'success': True, 'matches': scored[:limit]}), 200
+        return _match_and_return(cvk, limit, search, location_filter, type_filter, experience_filter)
     except Exception as e:
         logger.error(f"Match CV error: {str(e)}")
         return jsonify({'success': False, 'message': 'Matching failed'}), 500
 
+def _match_and_return(cvk, limit, search, location_filter, type_filter, experience_filter):
+    """Shared matching: score real job_postings against candidate keywords."""
+    # Build SQL filters
+    where_clauses = ["jp.status IN ('active', 'published', 'open')"]
+    params = []
+    if search:
+        where_clauses.append("(jp.title ILIKE %s OR jp.description ILIKE %s OR jp.department ILIKE %s)")
+        s = f"%{search}%"
+        params.extend([s, s, s])
+    if location_filter:
+        where_clauses.append("jp.location ILIKE %s")
+        params.append(f"%{location_filter}%")
+    if type_filter:
+        where_clauses.append("jp.employment_type ILIKE %s")
+        params.append(f"%{type_filter}%")
+    if experience_filter:
+        where_clauses.append("jp.experience_level ILIKE %s")
+        params.append(f"%{experience_filter}%")
+
+    where_sql = " AND ".join(where_clauses)
+    query = f"""
+        SELECT jp.id, jp.jd_id, jp.title, jp.description, jp.requirements,
+               jp.tags, jp.location, jp.department, jp.employment_type,
+               jp.experience_level, jp.salary_range_min, jp.salary_range_max,
+               jp.currency, jp.remote_option, jp.emiratization_target,
+               jp.created_at, jp.company_id,
+               COALESCE(c.name, 'N/A') as company_name
+        FROM job_postings jp
+        LEFT JOIN companies c ON jp.company_id::text = c.id::text
+        WHERE {where_sql}
+        ORDER BY jp.created_at DESC
+        LIMIT 200
+    """
+    jobs = execute_query(query, params) or []
+
+    scored = []
+    for j in jobs:
+        jd = dict(j)
+        vk = _vacancy_keywords(jd)
+        score = _compute_match_score(cvk, vk)
+
+        # Build salary range string
+        sal_min = jd.get('salary_range_min')
+        sal_max = jd.get('salary_range_max')
+        currency = jd.get('currency') or 'AED'
+        salary_range = ''
+        if sal_min and sal_max:
+            salary_range = f"{currency} {int(float(sal_min)):,} - {int(float(sal_max)):,}"
+        elif sal_min:
+            salary_range = f"{currency} {int(float(sal_min)):,}+"
+
+        # Extract required skills list from requirements JSON
+        req_raw = jd.get('requirements')
+        required_skills = []
+        if req_raw:
+            parsed = safe_json_load(req_raw, []) if isinstance(req_raw, str) else req_raw
+            if isinstance(parsed, list):
+                for r in parsed[:5]:
+                    if isinstance(r, str):
+                        required_skills.append(r)
+                    elif isinstance(r, dict):
+                        required_skills.append(r.get('description') or r.get('name') or '')
+            elif isinstance(parsed, dict):
+                for k, v in list(parsed.items())[:5]:
+                    required_skills.append(f"{k}: {v}" if not isinstance(v, (list, dict)) else k)
+
+        scored.append({
+            'id': str(jd.get('jd_id') or jd.get('id')),
+            'title': jd.get('title') or 'Untitled',
+            'company_name': jd.get('company_name') or 'N/A',
+            'location': jd.get('location') or 'UAE',
+            'salary_range': salary_range,
+            'employment_type': jd.get('employment_type') or 'Full-time',
+            'experience_level': jd.get('experience_level') or '',
+            'department': jd.get('department') or '',
+            'match_score': score,
+            'description': (jd.get('description') or '')[:300],
+            'snippet': (jd.get('description') or '')[:200],
+            'required_skills': json.dumps(required_skills),
+            'emiratization_target': jd.get('emiratization_target') or 0,
+            'remote_option': jd.get('remote_option') or False,
+            'created_at': jd['created_at'].isoformat() if hasattr(jd.get('created_at', ''), 'isoformat') else str(jd.get('created_at', '')),
+        })
+
+    scored.sort(key=lambda x: x['match_score'], reverse=True)
+    return jsonify({'success': True, 'matches': scored[:limit]}), 200
+
 @app.route('/api/matching/visible/top-vacancies', methods=['GET'])
+@jwt_required(optional=True)
 def match_visible_cv_top_vacancies():
-    """Return top-N matches for the user's visible CV."""
+    """Return top-N matches for the user's visible CV, or use candidate_skills as fallback."""
     try:
-        # For development: accept mock tokens
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
             user_id = 'mock_user_candidate'
         else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+            try:
+                user_id = get_jwt_identity()
+            except Exception:
+                user_id = None
+            if not user_id:
+                user_id = 'anonymous_user'
+
+        logger.info(f"Job matching request from user_id={user_id}")
 
         if user_id == 'mock_user_candidate':
             user_uuid = '550e8400-e29b-41d4-a716-446655440000'
         else:
             try:
                 uuid.UUID(str(user_id))
-                user_uuid = user_id
+                user_uuid = str(user_id)
             except ValueError:
                 user_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_id)))
-        # Ensure deterministic CV selection by ordering by updated_at AND id (tie-breaker)
-        cv = execute_query("SELECT * FROM user_cvs WHERE user_id = %s::uuid AND is_visible = TRUE ORDER BY updated_at DESC, id DESC LIMIT 1", (user_uuid,), fetch_one=True)
-        if not cv:
-            return jsonify({'success': False, 'message': 'No visible CV set'}), 404
-        return match_cv_top_vacancies(cv['id'])
+
+        limit = int(request.args.get('limit', 20))
+        search = request.args.get('search', '').strip()
+        location_filter = request.args.get('location', '').strip()
+        type_filter = request.args.get('type', '').strip()
+        experience_filter = request.args.get('experience', '').strip()
+
+        # Try to get visible CV first
+        cv = None
+        try:
+            cv = execute_query(
+                "SELECT * FROM user_cvs WHERE user_id = %s::uuid AND is_visible = TRUE ORDER BY updated_at DESC, id DESC LIMIT 1",
+                (user_uuid,), fetch_one=True
+            )
+        except Exception as cv_err:
+            logger.warning(f"CV lookup failed for user_uuid={user_uuid}: {cv_err}")
+
+        if cv:
+            cvk = _collect_cv_keywords(dict(cv))
+            logger.info(f"Using visible CV for matching, skills={len(cvk.get('skills', []))}")
+        else:
+            # Fallback: build keywords from candidate_skills + user profile
+            cvk = {'skills': set(), 'text': set(), 'location': ''}
+            try:
+                skills_rows = execute_query(
+                    "SELECT name FROM candidate_skills WHERE profile_id = (SELECT id FROM candidate_profiles WHERE user_id = %s LIMIT 1)",
+                    (str(user_id),)
+                ) or []
+                for s in skills_rows:
+                    cvk['skills'].add(s['name'].lower())
+                logger.info(f"Fallback skills from candidate_skills: {len(cvk['skills'])}")
+            except Exception as sk_err:
+                logger.warning(f"candidate_skills lookup failed: {sk_err}")
+            try:
+                user_row = execute_query(
+                    "SELECT full_name, preferred_location FROM users WHERE id = %s",
+                    (str(user_id),), fetch_one=True
+                )
+                if user_row:
+                    cvk['location'] = (user_row.get('preferred_location') or '').lower()
+            except Exception:
+                pass
+
+        return _match_and_return(cvk, limit, search, location_filter, type_filter, experience_filter)
     except Exception as e:
         logger.error(f"Match visible CV error: {str(e)}")
         traceback.print_exc()

@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Search, Target, Briefcase, MapPin, Banknote,
     Building2, Clock, ChevronRight, ChevronLeft, Heart, Send,
     TrendingUp, Star, Users, Award, Filter,
-    CheckCircle, BookmarkPlus, BarChart3, Zap, Eye
+    CheckCircle, BookmarkPlus, BarChart3, Zap, Eye, Loader2,
+    Navigation, Car, CalendarDays
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -38,16 +40,108 @@ const JobMatchingPage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    /* ──────────────────────── STATE ──────────────────────── */
 
-    const jobs = [
-        { title: t('Senior Product Manager', 'مدير منتجات أول'), company: t('Emirates Group', 'مجموعة الإمارات'), location: t('Dubai', 'دبي'), salary: t('AED 18,000–25,000', '18,000–25,000 د.إ'), type: t('Full-time', 'دوام كامل'), match: 95, posted: t('2 days ago', 'قبل يومين'), desc: t('Lead product development for next-generation aviation customer experience platforms', 'قيادة تطوير المنتجات لمنصات تجربة العملاء في مجال الطيران من الجيل القادم'), skills: [t('Product Strategy', 'استراتيجية المنتج'), t('Agile', 'أجايل'), t('Leadership', 'القيادة')], sector: t('Aviation', 'الطيران'), featured: true, catBg: brand.blue, catColor: brand.blueText },
-        { title: t('Digital Marketing Director', 'مدير التسويق الرقمي'), company: t('Dubai Tourism', 'دبي للسياحة'), location: t('Dubai', 'دبي'), salary: t('AED 15,000–22,000', '15,000–22,000 د.إ'), type: t('Full-time', 'دوام كامل'), match: 88, posted: t('1 day ago', 'قبل يوم'), desc: t("Drive digital marketing strategy for Dubai's tourism and hospitality sector", 'قيادة استراتيجية التسويق الرقمي لقطاع السياحة والضيافة في دبي'), skills: [t('Digital Marketing', 'التسويق الرقمي'), t('Strategy', 'الاستراتيجية'), t('Tourism', 'السياحة')], sector: t('Government', 'الحكومة'), featured: true, catBg: brand.green, catColor: brand.greenText },
-        { title: t('Data Engineer', 'مهندس بيانات'), company: t('Etisalat (e&)', 'اتصالات (e&)'), location: t('Abu Dhabi', 'أبوظبي'), salary: t('AED 20,000–28,000', '20,000–28,000 د.إ'), type: t('Full-time', 'دوام كامل'), match: 92, posted: t('3 days ago', 'قبل 3 أيام'), desc: t('Design and maintain data pipelines for telecom analytics and AI-powered services', 'تصميم وصيانة خطوط البيانات لتحليلات الاتصالات والخدمات المدعومة بالذكاء الاصطناعي'), skills: ['Python', 'Spark', t('Cloud', 'السحابة')], sector: t('Technology', 'التكنولوجيا'), featured: false, catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Financial Analyst', 'محلل مالي'), company: t('Mubadala Investment', 'مبادلة للاستثمار'), location: t('Abu Dhabi', 'أبوظبي'), salary: t('AED 16,000–23,000', '16,000–23,000 د.إ'), type: t('Full-time', 'دوام كامل'), match: 84, posted: t('5 days ago', 'قبل 5 أيام'), desc: t('Conduct financial analysis and valuation for strategic investment decisions in diversified portfolio', 'إجراء التحليل المالي والتقييم لقرارات الاستثمار الاستراتيجي في المحفظة المتنوعة'), skills: [t('Financial Modelling', 'النمذجة المالية'), t('Valuation', 'التقييم'), 'Excel'], sector: t('Investment', 'الاستثمار'), featured: false, catBg: brand.amber, catColor: brand.amberText },
-        { title: t('UX/UI Design Lead', 'قائد تصميم تجربة المستخدم'), company: t('Careem', 'كريم'), location: t('Dubai', 'دبي'), salary: t('AED 17,000–24,000', '17,000–24,000 د.إ'), type: t('Hybrid', 'هجين'), match: 90, posted: t('1 day ago', 'قبل يوم'), desc: t('Lead design systems and user experience strategy for the super-app ecosystem', 'قيادة أنظمة التصميم واستراتيجية تجربة المستخدم لمنظومة التطبيق الشامل'), skills: ['Figma', t('Design Systems', 'أنظمة التصميم'), t('User Research', 'أبحاث المستخدم')], sector: t('Technology', 'التكنولوجيا'), featured: true, catBg: brand.primarySurface, catColor: brand.primary },
-        { title: t('Sustainability Manager', 'مدير الاستدامة'), company: t('ADNOC', 'أدنوك'), location: t('Abu Dhabi', 'أبوظبي'), salary: t('AED 22,000–30,000', '22,000–30,000 د.إ'), type: t('Full-time', 'دوام كامل'), match: 78, posted: t('1 week ago', 'قبل أسبوع'), desc: t('Oversee environmental compliance and sustainability initiatives across operational units', 'الإشراف على الامتثال البيئي ومبادرات الاستدامة عبر الوحدات التشغيلية'), skills: ['ESG', t('Compliance', 'الامتثال'), t('Reporting', 'إعداد التقارير')], sector: t('Energy', 'الطاقة'), featured: false, catBg: brand.red, catColor: brand.redText },
+    const [jobs, setJobs] = useState<any[]>([]);
+    const [loadingJobs, setLoadingJobs] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeSector, setActiveSector] = useState(0); // 0 = All
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const colorPalette = [
+        { bg: brand.blue, color: brand.blueText },
+        { bg: brand.green, color: brand.greenText },
+        { bg: brand.purple, color: brand.purpleText },
+        { bg: brand.amber, color: brand.amberText },
+        { bg: brand.primarySurface, color: brand.primary },
+        { bg: brand.red, color: brand.redText },
     ];
+
+    const mapMatches = useCallback((jobs: any[]) => {
+        return jobs.map((v: any, i: number) => {
+            const palette = colorPalette[i % colorPalette.length];
+            // Extract skills from requirements array
+            const skills: string[] = [];
+            if (v.requirements && Array.isArray(v.requirements)) {
+                for (const r of v.requirements.slice(0, 3)) {
+                    if (typeof r === 'string') skills.push(r);
+                    else if (r?.description || r?.category) skills.push(r.description || r.category);
+                }
+            }
+            if (!skills.length && v.required_skills) {
+                try {
+                    const parsed = typeof v.required_skills === 'string' ? JSON.parse(v.required_skills) : v.required_skills;
+                    if (Array.isArray(parsed)) skills.push(...parsed.filter(Boolean).slice(0, 3));
+                } catch { /* ignore */ }
+            }
+            // Compute days since posting
+            const rawDate = v.postedDate || v.created_at;
+            let daysAgo = 0;
+            if (rawDate) {
+                daysAgo = Math.max(0, Math.floor((Date.now() - new Date(rawDate).getTime()) / 86400000));
+            }
+
+            return {
+                title: v.title || t('Job Opportunity', 'فرصة عمل'),
+                company: v.company || v.company_name || t('Employer', 'جهة توظيف'),
+                location: v.location || t('UAE', 'الإمارات'),
+                salary: v.salary || v.salary_range || '',
+                type: v.type || v.employment_type || t('Full-time', 'دوام كامل'),
+                match: Math.round(v.matchScore || v.match_score || 0),
+                posted: rawDate ? new Date(rawDate).toLocaleDateString() : '',
+                daysAgo,
+                desc: v.description?.substring(0, 200) || '',
+                skills: skills.length ? skills : [t('General', 'عام')],
+                sector: v.department || v.industry || t('Various', 'متنوع'),
+                featured: (v.matchScore || v.match_score || 0) >= 85,
+                catBg: palette.bg,
+                catColor: palette.color,
+                // Commute data from API
+                distanceKm: v.commute?.distance_km || v.distance_km || null,
+                commuteMin: v.commute?.time_mins || v.time_mins || null,
+                peakMin: v.commute?.peak_time_mins || v.peak_time_mins || null,
+            };
+        });
+    }, [isRTL]);
+
+    const fetchMatches = useCallback(async (search = '', sectorIdx = 0) => {
+        setLoadingJobs(true);
+        try {
+            const params: Record<string, string> = { use_ai: 'true' };
+            // Map sector chip index to a search keyword
+            const sectorKeys = ['', 'Technology', 'Banking', 'Government', 'Aviation', 'Energy', 'Real Estate', 'Healthcare'];
+            const sectorTerm = sectorIdx > 0 ? sectorKeys[sectorIdx] || '' : '';
+            const combinedSearch = [search, sectorTerm].filter(Boolean).join(' ').trim();
+            if (combinedSearch) params.search = combinedSearch;
+
+            const resp = await restClient.get('/api/candidate/job-matches', { params });
+            if (resp.data?.success && resp.data?.jobs?.length) {
+                setJobs(mapMatches(resp.data.jobs));
+            } else if (resp.data?.success && resp.data?.matches?.length) {
+                // Fallback if API returns matches instead of jobs
+                setJobs(mapMatches(resp.data.matches));
+            } else {
+                setJobs([]);
+            }
+        } catch (err) {
+            console.warn('Job matching API unavailable:', err);
+        } finally {
+            setLoadingJobs(false);
+        }
+    }, [mapMatches]);
+
+    // Single useEffect: initial fetch is immediate, subsequent changes are debounced
+    const isInitialMount = useRef(true);
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            fetchMatches(searchQuery, activeSector);
+            return;
+        }
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchMatches(searchQuery, activeSector), 400);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [searchQuery, activeSector]);
 
     const savedJobs = [
         { title: t('Cloud Solutions Architect', 'مهندس حلول سحابية'), company: t('Microsoft UAE', 'مايكروسوفت الإمارات'), location: t('Dubai', 'دبي'), salary: t('AED 25,000–35,000', '25,000–35,000 د.إ'), match: 91, savedDate: t('Feb 12, 2026', '12 فبراير 2026') },
@@ -101,16 +195,34 @@ const JobMatchingPage: React.FC = () => {
                 )}
             </p>
 
+            {/* Search bar */}
+            <div style={{ position: 'relative', marginBottom: 14 }}>
+                <Search size={16} style={{ position: 'absolute', top: 11, ...(isRTL ? { right: 12 } : { left: 12 }), color: brand.textSecondary }} />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder={t('Search jobs by title, company, or keyword...', 'ابحث عن وظائف بالعنوان أو الشركة أو الكلمة المفتاحية...')}
+                    style={{
+                        width: '100%', padding: '10px 14px', ...(isRTL ? { paddingRight: 38 } : { paddingLeft: 38 }),
+                        borderRadius: 10, border: `1px solid ${brand.border}`, fontSize: 13,
+                        outline: 'none', background: '#fff', direction: isRTL ? 'rtl' : 'ltr',
+                    }}
+                />
+            </div>
+
             {/* Filter chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {sectors.map((s, i) => (
                     <button
                         key={i}
+                        onClick={() => setActiveSector(i)}
                         style={{
-                            background: i === 0 ? brand.primarySurface : '#F3F4F6',
-                            color: i === 0 ? brand.primary : brand.textSecondary,
-                            border: `1px solid ${i === 0 ? brand.primary : brand.border}`,
+                            background: i === activeSector ? brand.primarySurface : '#F3F4F6',
+                            color: i === activeSector ? brand.primary : brand.textSecondary,
+                            border: `1px solid ${i === activeSector ? brand.primary : brand.border}`,
                             padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                            transition: 'all .15s',
                         }}
                     >
                         {s}
@@ -118,83 +230,157 @@ const JobMatchingPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* Job Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {jobs.map((job, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                            padding: 20, transition: 'box-shadow .2s', cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
-                        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                    >
-                        {/* Top row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{job.title}</h3>
-                                    <span style={{
-                                        background: job.match >= 90 ? brand.green : job.match >= 80 ? brand.blue : brand.amber,
-                                        color: job.match >= 90 ? brand.greenText : job.match >= 80 ? brand.blueText : brand.amberText,
-                                        fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
-                                    }}>
-                                        {job.match}% {t('Match', 'تطابق')}
-                                    </span>
-                                    {job.featured && (
-                                        <span style={{ background: brand.amber, color: brand.amberText, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
-                                            ★ {t('Featured', 'مميّز')}
+            {/* Loading / Empty / Job Cards */}
+            {loadingJobs ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+                    <Loader2 size={28} style={{ color: brand.primary, animation: 'spin 1s linear infinite' }} />
+                </div>
+            ) : jobs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: brand.textSecondary }}>
+                    <Briefcase size={48} style={{ margin: '0 auto 12px', opacity: .4 }} />
+                    <p>{t('No matching jobs found. Try adjusting your search or filters.', 'لم يتم العثور على وظائف مطابقة. حاول تعديل البحث أو الفلاتر.')}</p>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    {jobs.map((job, i) => (
+                        <div
+                            key={i}
+                            style={{
+                                background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
+                                padding: 20, transition: 'box-shadow .2s', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                        >
+                            {/* Top row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                                        <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{job.title}</h3>
+                                        <span style={{ position: 'relative', display: 'inline-block' }} className="match-tooltip-wrap">
+                                            <span style={{
+                                                background: job.match >= 90 ? brand.green : job.match >= 80 ? brand.blue : brand.amber,
+                                                color: job.match >= 90 ? brand.greenText : job.match >= 80 ? brand.blueText : brand.amberText,
+                                                fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
+                                                cursor: 'help',
+                                            }}>
+                                                {job.match}% {t('Match', 'تطابق')}
+                                            </span>
+                                            <span className="match-tooltip" style={{
+                                                display: 'none', position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)',
+                                                background: '#1E293B', color: '#fff', padding: '8px 12px', borderRadius: 8,
+                                                fontSize: 11, lineHeight: 1.5, whiteSpace: 'nowrap', zIndex: 100,
+                                                boxShadow: '0 4px 12px rgba(0,0,0,.15)',
+                                                pointerEvents: 'none',
+                                            }}>
+                                                <strong>{t('Why this match?', 'لماذا هذا التطابق؟')}</strong><br />
+                                                {job.skills.length > 0 && <>{t('Skills:', 'المهارات:')} {job.skills.slice(0, 2).join(', ')}<br /></>}
+                                                {t('Relevance:', 'الصلة:')} {job.match}% · {job.sector}
+                                            </span>
+                                            <style>{`.match-tooltip-wrap:hover .match-tooltip { display: block !important; }`}</style>
                                         </span>
-                                    )}
+                                        {job.featured && (
+                                            <span style={{ background: brand.amber, color: brand.amberText, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 99 }}>
+                                                ★ {t('Featured', 'مميّز')}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13, color: brand.textSecondary }}>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Building2 size={14} /> {job.company}</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={14} /> {job.location}</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={14} /> {job.salary}</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={14} /> {job.posted}</span>
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13, color: brand.textSecondary }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Building2 size={14} /> {job.company}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={14} /> {job.location}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={14} /> {job.salary}</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={14} /> {job.posted}</span>
-                                </div>
+                                <Heart size={20} style={{ color: brand.textSecondary, cursor: 'pointer', flexShrink: 0, ...(isRTL ? { marginRight: 12 } : { marginLeft: 12 }) }} />
                             </div>
-                            <Heart size={20} style={{ color: brand.textSecondary, cursor: 'pointer', flexShrink: 0, ...(isRTL ? { marginRight: 12 } : { marginLeft: 12 }) }} />
-                        </div>
 
-                        <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: '8px 0 12px' }}>{job.desc}</p>
+                            <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: '8px 0 10px' }}>{job.desc}</p>
 
-                        {/* Tags + Actions row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                <span style={{ background: job.catBg, color: job.catColor, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
-                                    {job.sector}
+                            {/* ── Match Criteria Insights ── */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12, padding: '8px 0', borderTop: `1px solid ${brand.border}`, borderBottom: `1px solid ${brand.border}` }}>
+                                {/* Relevance / Match */}
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6,
+                                    background: job.match >= 80 ? '#ECFDF5' : job.match >= 60 ? '#EFF6FF' : '#FFF7ED',
+                                    color: job.match >= 80 ? '#065F46' : job.match >= 60 ? '#1E40AF' : '#9A3412'
+                                }}>
+                                    <Target size={12} /> {t('Relevance', 'الصلة')}: {job.match}%
                                 </span>
-                                <span style={{ background: '#F3F4F6', color: brand.textSecondary, fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 6 }}>
-                                    {job.type}
-                                </span>
-                                {job.skills.map((sk, j) => (
-                                    <span key={j} style={{ background: brand.primarySurface, color: brand.primary, fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 4 }}>
-                                        {sk}
+
+                                {/* Distance */}
+                                {job.distanceKm != null && (
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6,
+                                        background: job.distanceKm <= 15 ? '#ECFDF5' : job.distanceKm <= 30 ? '#FFF7ED' : '#FEF2F2',
+                                        color: job.distanceKm <= 15 ? '#065F46' : job.distanceKm <= 30 ? '#9A3412' : '#991B1B'
+                                    }}>
+                                        <Navigation size={12} /> {job.distanceKm} {t('km', 'كم')}
                                     </span>
-                                ))}
+                                )}
+
+                                {/* Peak commute */}
+                                {job.peakMin != null && (
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6,
+                                        background: job.peakMin <= 30 ? '#ECFDF5' : job.peakMin <= 60 ? '#FFF7ED' : '#FEF2F2',
+                                        color: job.peakMin <= 30 ? '#065F46' : job.peakMin <= 60 ? '#9A3412' : '#991B1B'
+                                    }}>
+                                        <Car size={12} /> {t('Peak', 'الذروة')}: {job.peakMin} {t('min', 'د')}
+                                    </span>
+                                )}
+
+                                {/* Posting recency */}
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6,
+                                    background: job.daysAgo <= 3 ? '#ECFDF5' : job.daysAgo <= 14 ? '#FFF7ED' : '#F3F4F6',
+                                    color: job.daysAgo <= 3 ? '#065F46' : job.daysAgo <= 14 ? '#9A3412' : '#6B7280'
+                                }}>
+                                    <CalendarDays size={12} />
+                                    {job.daysAgo === 0
+                                        ? t('Today', 'اليوم')
+                                        : job.daysAgo === 1
+                                            ? t('Yesterday', 'أمس')
+                                            : `${job.daysAgo} ${t('days ago', 'يوم مضى')}`}
+                                </span>
                             </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                <button style={{
-                                    background: brand.primary, color: '#fff', border: 'none',
-                                    padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                }}>
-                                    <Send size={14} /> {t('Apply', 'قدّم')}
-                                </button>
-                                <button style={{
-                                    background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`,
-                                    padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                }}>
-                                    <Eye size={14} /> {t('View', 'عرض')}
-                                </button>
+
+                            {/* Tags + Actions row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                    <span style={{ background: job.catBg, color: job.catColor, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
+                                        {job.sector}
+                                    </span>
+                                    <span style={{ background: '#F3F4F6', color: brand.textSecondary, fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 6 }}>
+                                        {job.type}
+                                    </span>
+                                    {job.skills.map((sk, j) => (
+                                        <span key={j} style={{ background: brand.primarySurface, color: brand.primary, fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 4 }}>
+                                            {sk}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button style={{
+                                        background: brand.primary, color: '#fff', border: 'none',
+                                        padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                    }}>
+                                        <Send size={14} /> {t('Apply', 'قدّم')}
+                                    </button>
+                                    <button style={{
+                                        background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`,
+                                        padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                    }}>
+                                        <Eye size={14} /> {t('View', 'عرض')}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 

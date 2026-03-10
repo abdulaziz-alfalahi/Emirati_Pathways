@@ -27,7 +27,7 @@ const useNavItems = () => {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Portfolio', href: '/portfolio', icon: FileText },
-    { name: 'Resume Builder', href: '/resume-builder', icon: FileText },
+    { name: 'CV Builder', href: '/cv-builder', icon: FileText },
     { name: 'Career Journey', href: '/career-journey', icon: MapPin },
     { name: 'Knowledge Camps', href: '/knowledge-camps', icon: Calendar },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },

@@ -127,12 +127,11 @@ const ROUTE_PHASE_MAP: Record<string, Phase> = {
   '/lms': 'education',
 
   '/career-planning-hub': 'career',
-  '/industry-exploration': 'career',
   '/graduate-programs': 'career',
   '/internships': 'career',
   '/job-matching': 'career',
   '/career-advisory': 'career',
-  '/resume-builder': 'career',
+  '/cv-builder': 'career',
   '/portfolio': 'career',
   '/interview-preparation': 'career',
 
@@ -343,7 +342,7 @@ export const PhaseProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       // Career pages
       { title: 'Job Matching', phase: 'career', category: 'tool', url: '/job-matching' },
-      { title: 'Resume Builder', phase: 'career', category: 'tool', url: '/resume-builder' },
+      { title: 'CV Builder', phase: 'career', category: 'tool', url: '/cv-builder' },
 
       // Professional pages
       { title: 'Professional Certifications', phase: 'professional', category: 'certification', url: '/professional-certifications' },

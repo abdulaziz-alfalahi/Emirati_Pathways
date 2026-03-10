@@ -554,6 +554,55 @@ def list_mentors():
             'message': 'Failed to list mentors'
         }), 500
 
+# ═══════════════════════════════════════════
+# MENTORSHIP OPERATOR ENDPOINTS
+# ═══════════════════════════════════════════
+
+@mentor_bp.route('/operator/stats', methods=['GET'])
+def mentorship_operator_stats():
+    """Aggregate statistics for the Mentorship Operator Dashboard."""
+    try:
+        stats = mentor_system.get_mentor_statistics()
+        all_mentors = mentor_system.search_mentors({})
+
+        active_count = sum(1 for m in all_mentors if m.availability.status.value == 'available')
+        total_mentees = sum(m.total_mentees for m in all_mentors)
+        avg_rating = round(sum(m.rating for m in all_mentors if m.rating > 0) / max(len([m for m in all_mentors if m.rating > 0]), 1), 1)
+
+        # Build mentor list summary for the Mentors tab
+        mentor_list = []
+        for m in all_mentors:
+            mentor_list.append({
+                'name': m.full_name,
+                'expertise': [e.area.value.replace('_', ' ').title() for e in m.primary_expertise][:2],
+                'company': m.company,
+                'mentees': m.total_mentees,
+                'rating': m.rating,
+                'status': m.availability.status.value,
+                'sessions': len(m.testimonials)
+            })
+
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_mentors': len(all_mentors),
+                'active_mentors': active_count,
+                'total_mentee_pairs': total_mentees,
+                'average_rating': avg_rating,
+                'pending_matches': stats.get('pending_matches', 0),
+            },
+            'mentors': mentor_list,
+            'message': 'Mentorship operator stats retrieved successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting mentorship operator stats: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to get mentorship operator stats'
+        }), 500
+
 # Error handlers
 @mentor_bp.errorhandler(404)
 def not_found(error):

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -40,14 +40,12 @@ const BlockchainCredentialsPage: React.FC = () => {
 
     /* ──────────────────────── DATA ──────────────────────── */
 
-    const myCredentials = [
-        { title: t('Bachelor of Computer Science', 'بكالوريوس علوم الحاسوب'), issuer: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), date: t('Feb 2026', 'فبراير 2026'), txHash: '0x8c4b...f12e', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 28, badge: '🎓', primary: true },
-        { title: t('Higher Education Equivalency Certificate', 'شهادة معادلة التعليم العالي'), issuer: t('Ministry of Higher Education & Scientific Research (MOHESR)', 'وزارة التعليم العالي والبحث العلمي'), date: t('Jan 2026', 'يناير 2026'), txHash: '0x3e7d...a93c', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 22, badge: '📜', primary: true },
-        { title: t('UAE Teaching License', 'رخصة التدريس الإماراتية'), issuer: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), date: t('Dec 2025', 'ديسمبر 2025'), txHash: '0x5a1f...b74d', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 18, badge: '🏛️', primary: true },
-        { title: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), issuer: t('Amazon Web Services', 'خدمات أمازون السحابية'), date: t('Nov 2025', 'نوفمبر 2025'), txHash: '0x7f3a...e82d', network: 'Polygon', status: t('Verified', 'مُوثّقة') as const, verifications: 12, badge: '☁️', primary: false },
-        { title: t('Google Data Analytics Professional', 'محترف تحليلات البيانات من Google'), issuer: 'Google', date: t('Oct 2025', 'أكتوبر 2025'), txHash: '0x4b2c...a91f', network: 'Polygon', status: t('Verified', 'مُوثّقة') as const, verifications: 8, badge: '📊', primary: false },
-        { title: t('UAE Government Excellence Award', 'جائزة التميز الحكومي الإماراتية'), issuer: t('Federal Authority for Gov HR (FAHR)', 'الهيئة الاتحادية للموارد البشرية الحكومية'), date: t('Sep 2025', 'سبتمبر 2025'), txHash: '0x9d1e...c73b', network: 'Ethereum', status: t('Verified', 'مُوثّقة') as const, verifications: 15, badge: '🏅', primary: false },
+    const fallbackCredentials: Array<{ title: string; issuer: string; date: string; txHash: string; network: string; status: string; verifications: number; badge: string; primary: boolean }> = [
+        { title: t('Bachelor of Computer Science', 'بكالوريوس علوم الحاسوب'), issuer: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), date: t('Feb 2026', 'فبراير 2026'), txHash: '0x8c4b...f12e', network: 'Ethereum', status: t('Verified', 'مُوثّقة'), verifications: 28, badge: '🎓', primary: true },
+        { title: t('AWS Cloud Practitioner', 'ممارس AWS السحابي'), issuer: t('Amazon Web Services', 'خدمات أمازون السحابية'), date: t('Nov 2025', 'نوفمبر 2025'), txHash: '0x7f3a...e82d', network: 'Polygon', status: t('Verified', 'مُوثّقة'), verifications: 12, badge: '☁️', primary: false },
     ];
+
+    const [myCredentials, setMyCredentials] = useState(fallbackCredentials);
 
     const verificationLog = [
         { credential: t('Bachelor of Computer Science (MOE)', 'بكالوريوس علوم الحاسوب (وزارة التعليم)'), verifier: t('Emirates Group HR', 'الموارد البشرية لمجموعة الإمارات'), date: t('Feb 16, 2026', '16 فبراير 2026'), purpose: t('Job Application', 'طلب توظيف') },
@@ -59,16 +57,53 @@ const BlockchainCredentialsPage: React.FC = () => {
         { credential: t('Google Data Analytics', 'تحليلات بيانات Google'), verifier: t('Careem Engineering', 'هندسة كريم'), date: t('Feb 3, 2026', '3 فبراير 2026'), purpose: t('Job Application', 'طلب توظيف') },
     ];
 
-    const issuers = [
-        { name: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), credentials: 85, verified: 42000, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Primary' as const, tierLabel: t('Primary', 'رئيسي') },
-        { name: t('Ministry of Higher Education & Scientific Research (MOHESR)', 'وزارة التعليم العالي والبحث العلمي'), credentials: 62, verified: 31500, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Primary' as const, tierLabel: t('Primary', 'رئيسي') },
-        { name: t('Federal Authority for Gov HR (FAHR)', 'الهيئة الاتحادية للموارد البشرية الحكومية'), credentials: 28, verified: 15200, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Government' as const, tierLabel: t('Government', 'حكومي') },
-        { name: t('Knowledge & Human Development Authority (KHDA)', 'هيئة المعرفة والتنمية البشرية'), credentials: 22, verified: 9400, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Government' as const, tierLabel: t('Government', 'حكومي') },
-        { name: t('Dubai Education Council', 'مجلس دبي للتعليم'), credentials: 34, verified: 12800, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Government' as const, tierLabel: t('Government', 'حكومي') },
-        { name: t('Amazon Web Services', 'خدمات أمازون السحابية'), credentials: 45, verified: 12400, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry' as const, tierLabel: t('Industry', 'قطاعي') },
-        { name: 'Google', credentials: 32, verified: 9800, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry' as const, tierLabel: t('Industry', 'قطاعي') },
-        { name: 'Microsoft', credentials: 38, verified: 11200, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry' as const, tierLabel: t('Industry', 'قطاعي') },
+    const fallbackIssuers: Array<{ name: string; credentials: number; verified: number; network: string; region: string; tier: string; tierLabel: string }> = [
+        { name: t('Ministry of Education (MOE)', 'وزارة التربية والتعليم'), credentials: 85, verified: 42000, network: 'Ethereum', region: t('UAE', 'الإمارات'), tier: 'Primary', tierLabel: t('Primary', 'رئيسي') },
+        { name: t('Amazon Web Services', 'خدمات أمازون السحابية'), credentials: 45, verified: 12400, network: 'Polygon', region: t('Global', 'عالمي'), tier: 'Industry', tierLabel: t('Industry', 'قطاعي') },
     ];
+
+    const [issuers, setIssuers] = useState(fallbackIssuers);
+
+    useEffect(() => {
+        const fetchBlockchain = async () => {
+            try {
+                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+                const [credsRes, issuersRes] = await Promise.all([
+                    fetch(`${API_BASE}/api/education/blockchain/credentials`),
+                    fetch(`${API_BASE}/api/education/blockchain/issuers`),
+                ]);
+                if (credsRes.ok) {
+                    const data = await credsRes.json();
+                    const creds = (data.credentials || []).map((c: any) => ({
+                        title: isRTL ? (c.title_ar || c.title) : c.title,
+                        issuer: isRTL ? (c.issuer_ar || c.issuer) : c.issuer,
+                        date: isRTL ? (c.issue_date_ar || c.issue_date) : c.issue_date,
+                        txHash: c.tx_hash || '',
+                        network: c.network || 'Ethereum',
+                        status: t('Verified', 'مُوثّقة'),
+                        verifications: c.verifications || 0,
+                        badge: c.badge || '🎓',
+                        primary: c.is_primary || false,
+                    }));
+                    if (creds.length > 0) setMyCredentials(creds);
+                }
+                if (issuersRes.ok) {
+                    const data = await issuersRes.json();
+                    const iss = (data.issuers || []).map((i: any) => ({
+                        name: isRTL ? (i.name_ar || i.name) : i.name,
+                        credentials: i.credentials_count || 0,
+                        verified: i.total_verified || 0,
+                        network: i.network || 'Ethereum',
+                        region: isRTL ? (i.region_ar || i.region) : i.region,
+                        tier: (i.tier || 'Government') as string,
+                        tierLabel: isRTL ? (i.tier_label_ar || i.tier_label) : i.tier_label,
+                    }));
+                    if (iss.length > 0) setIssuers(iss);
+                }
+            } catch (e) { console.error('Error fetching blockchain data:', e); }
+        };
+        fetchBlockchain();
+    }, [isRTL]);
 
     const stats = [
         { value: '6', label: t('My Credentials', 'اعتماداتي'), icon: Award },

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -7,11 +7,7 @@ import {
     CheckCircle, Clock, Building, ArrowRight, ArrowLeft,
     Globe, MapPin, ExternalLink, Star
 } from 'lucide-react';
-import {
-    getServicePrograms, getSustainabilityOpportunities,
-    getNsraPartners, getRecentMilestones,
-    getSustainabilityImpact, getEnrolmentSteps
-} from './data';
+import { restClient } from '@/utils/api';
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
@@ -28,13 +24,56 @@ const NationalServicePage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-    // Build translated data
-    const servicePrograms = getServicePrograms(t);
-    const sustainabilityOpportunities = getSustainabilityOpportunities(t);
-    const nsraPartners = getNsraPartners(t);
-    const recentMilestones = getRecentMilestones(t);
-    const sustainabilityImpact = getSustainabilityImpact(t);
-    const enrolmentSteps = getEnrolmentSteps(t);
+    // API state
+    const [servicePrograms, setServicePrograms] = useState<any[]>([]);
+    const [sustainabilityOpportunities, setSustainabilityOpps] = useState<any[]>([]);
+    const [nsraPartners, setNsraPartners] = useState<any[]>([]);
+    const [recentMilestones, setRecentMilestones] = useState<any[]>([]);
+    const [sustainabilityImpact, setSustainabilityImpact] = useState<any[]>([]);
+    const [enrolmentSteps, setEnrolmentSteps] = useState<any[]>([]);
+
+    useEffect(() => {
+        restClient.get('/api/lifelong/national-service/programs').then(r => {
+            setServicePrograms((r.data as any[]).map((p: any) => ({
+                title: t(p.title_en, p.title_ar), org: t(p.org_en, p.org_ar),
+                duration: t(p.duration_en, p.duration_ar), icon: p.icon,
+                statusKey: p.status_key, statusLabel: t(p.status_label_en, p.status_label_ar),
+                spots: p.spots, desc: t(p.desc_en, p.desc_ar),
+                tags: isRTL ? p.tags_ar : p.tags_en,
+                highlights: isRTL ? p.highlights_ar : p.highlights_en,
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/national-service/opportunities').then(r => {
+            setSustainabilityOpps((r.data as any[]).map((o: any) => ({
+                title: t(o.title_en, o.title_ar), location: t(o.location_en, o.location_ar),
+                org: t(o.org_en, o.org_ar), type: t(o.type_en, o.type_ar),
+                sector: t(o.sector_en, o.sector_ar), desc: t(o.desc_en, o.desc_ar),
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/national-service/partners').then(r => {
+            setNsraPartners((r.data as any[]).map((p: any) => ({
+                name: t(p.name_en, p.name_ar), role: t(p.role_en, p.role_ar), logo: p.logo,
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/national-service/milestones').then(r => {
+            setRecentMilestones((r.data as any[]).map((m: any) => ({
+                event: t(m.event_en, m.event_ar), detail: t(m.detail_en, m.detail_ar), date: m.date,
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/national-service/stats').then(r => {
+            const d = r.data as any;
+            if (d.sustainability_impact) setSustainabilityImpact(d.sustainability_impact.map((m: any) => ({
+                value: t(m.value_en, m.value_ar), label: t(m.label_en, m.label_ar), icon: m.icon,
+            })));
+            if (d.enrolment_steps) setEnrolmentSteps(d.enrolment_steps.map((s: any) => ({
+                step: s.step, title: t(s.title_en, s.title_ar), desc: t(s.desc_en, s.desc_ar),
+            })));
+        }).catch(() => { });
+    }, [isRTL]);
 
     const stats = [
         { value: '45,000+', label: t('Citizens Served', 'مواطن خدموا'), icon: Users },

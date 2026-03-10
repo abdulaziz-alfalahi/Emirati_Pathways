@@ -95,8 +95,15 @@ const MockLogin: React.FC = () => {
         setUser(finalUser);
         console.log("✅ AuthContext updated with user:", finalUser.email);
 
-        const dashboardRoute = MockAuthService.getDashboardRoute(result.user.user_type);
-        navigate(dashboardRoute);
+        // Check for a saved return URL (deep-link preservation)
+        const returnUrl = sessionStorage.getItem('returnUrl');
+        if (returnUrl) {
+          sessionStorage.removeItem('returnUrl');
+          navigate(returnUrl);
+        } else {
+          const dashboardRoute = MockAuthService.getDashboardRoute(result.user.user_type);
+          navigate(dashboardRoute);
+        }
       } else {
         setError(result.error || 'Verification failed');
       }

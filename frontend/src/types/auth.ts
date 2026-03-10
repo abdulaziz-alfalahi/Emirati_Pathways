@@ -27,7 +27,12 @@ export type UserRole =
   | 'professional_dev_operator'
   | 'community_operator'
   | 'operations_monitor'
-  | 'operator'; // Alias for growth_operator (DB value)
+  | 'operator' // Alias for growth_operator (DB value)
+  // Persona Dashboard Roles
+  | 'employer'
+  | 'government'
+  | 'mentor'
+  | 'assessor';
 
 // Growth Operator Domain Types
 export type GrowthOperatorDomain =
@@ -179,6 +184,11 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'community_operator': '/community-operator-dashboard',
   'operations_monitor': '/operations-center',
   'operator': '/growth-operator-dashboard', // DB alias for growth_operator
+  // Persona Dashboard Routes
+  'employer': '/hr-dashboard', // Consolidated into HR Manager
+  'government': '/government-dashboard',
+  'mentor': '/mentor-dashboard',
+  'assessor': '/assessor-dashboard',
 };
 
 // Role Display Names
@@ -211,6 +221,11 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'community_operator': 'Community & Engagement Operator',
   'operations_monitor': 'Operations Monitoring Center',
   'operator': 'Growth Operator', // DB alias
+  // Persona Display Names
+  'employer': 'Employer',
+  'government': 'Government Official',
+  'mentor': 'Mentor',
+  'assessor': 'Assessor',
 };
 
 // Growth Operator Domain Configuration
@@ -288,6 +303,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'community_operator': ['manage_content', 'moderate_communities', 'manage_community_events', 'view_analytics'],
   'operations_monitor': ['view_operations_center', 'view_all_analytics', 'view_analytics'],
   'operator': ['view_analytics'], // DB alias for growth_operator
+  // Persona Permissions
+  'employer': ['manage_candidates', 'view_analytics', 'post_jobs', 'manage_positions'],
+  'government': ['view_all_analytics', 'view_analytics', 'generate_reports'],
+  'mentor': ['view_analytics', 'manage_profile'],
+  'assessor': ['view_analytics', 'manage_profile'],
 };
 
 export const normalizeRole = (role: string): UserRole | string => {

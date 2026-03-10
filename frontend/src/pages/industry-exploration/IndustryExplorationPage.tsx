@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -28,6 +28,8 @@ const brand = {
   purpleText: '#6B21A8',
 };
 
+const iconMap: Record<string, React.FC<any>> = { Cpu, Banknote, Lightbulb, Heart, Plane, ShoppingBag, Building2 };
+
 const IndustryExplorationPage: React.FC = () => {
 
   const { i18n } = useTranslation();
@@ -37,7 +39,7 @@ const IndustryExplorationPage: React.FC = () => {
 
   /* ──────────────────────── DATA ──────────────────────── */
 
-  const industries = [
+  const fallbackIndustries = [
     {
       id: 'technology',
       name: t('Technology & Innovation', 'التكنولوجيا والابتكار'),
@@ -175,6 +177,36 @@ const IndustryExplorationPage: React.FC = () => {
       sector: 'Hospitality',
     },
   ];
+
+  const [industries, setIndustries] = useState(fallbackIndustries);
+
+  useEffect(() => {
+    const fetchIndustries = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const res = await fetch(`${API_BASE}/api/education/content/industries`);
+        if (res.ok) {
+          const data = await res.json();
+          const apiIndustries = (data.industries || []).map((s: any) => ({
+            id: s.sector_id,
+            name: isRTL ? (s.name_ar || s.name) : s.name,
+            Icon: iconMap[s.icon] || Building2,
+            growth: s.growth,
+            jobs: s.jobs,
+            avgSalary: isRTL ? (s.avg_salary_ar || s.avg_salary) : s.avg_salary,
+            topCompanies: (() => { try { return JSON.parse(s.top_companies || '[]'); } catch { return []; } })(),
+            description: isRTL ? (s.description_ar || s.description) : s.description,
+            skills: (() => { try { return JSON.parse(s.skills || '[]'); } catch { return []; } })(),
+            locations: (() => { try { return JSON.parse(s.locations || '[]'); } catch { return []; } })(),
+            trending: s.trending || false,
+            sector: s.sector_tag || s.sector_id,
+          }));
+          if (apiIndustries.length > 0) setIndustries(apiIndustries);
+        }
+      } catch (e) { console.error('Error fetching industries:', e); }
+    };
+    fetchIndustries();
+  }, [isRTL]);
 
   const sectorFilters = [
     { key: 'All', label: t('All', 'الكل') },

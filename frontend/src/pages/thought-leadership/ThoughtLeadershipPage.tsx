@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -7,6 +7,7 @@ import {
     Lightbulb, Globe, Heart, TrendingUp, CheckCircle,
     ArrowRight, ArrowLeft, ExternalLink, Calendar
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 // Brand tokens
 const brand = {
@@ -37,104 +38,35 @@ const ThoughtLeadershipPage2: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    /* ──────────────────────── API DATA ──────────────────────── */
 
-    const leaders = [
-        {
-            id: 'zayed',
-            name: t('Sheikh Zayed bin Sultan Al Nahyan', 'الشيخ زايد بن سلطان آل نهيان'),
-            title: t('Founder of the UAE (1918–2004)', 'مؤسس الإمارات (1918–2004)'),
-            era: '1971–2004',
-            role: t('Founding Father & First President', 'الأب المؤسس والرئيس الأول'),
-            avatar: '🏛️',
-            theme: { bg: '#FFF7ED', accent: '#EA580C', light: '#FFEDD5' },
-            bio: t(
-                "The visionary who transformed seven desert emirates into a unified, modern nation. Sheikh Zayed's wisdom in governance, his commitment to education, and his belief in sharing wealth with all citizens created the foundation for the UAE's extraordinary rise.",
-                'الرؤيوي الذي حوّل سبع إمارات صحراوية إلى أمة موحدة وحديثة. حكمة الشيخ زايد في الحكم والتزامه بالتعليم وإيمانه بمشاركة الثروة مع جميع المواطنين أسّس لنهضة الإمارات الاستثنائية.'
-            ),
-            books: [
-                { title: t('Zayed: From Challenges to Union', 'زايد: من التحديات إلى الاتحاد'), author: t('Compiled by National Archives', 'إعداد الأرشيف الوطني'), year: '2005', desc: t('The definitive account of his journey from tribal leader to founding a modern nation-state.', 'السرد الشامل لرحلته من زعيم قبلي إلى مؤسس دولة حديثة.') },
-                { title: t('The Sayings of Sheikh Zayed', 'أقوال الشيخ زايد'), author: t('National Archives', 'الأرشيف الوطني'), year: '2004', desc: t('A collection of his most impactful quotes on governance, education, environment, and humanity.', 'مجموعة من أكثر أقواله تأثيراً في الحوكمة والتعليم والبيئة والإنسانية.') },
-                { title: t('Zayed and the Environment', 'زايد والبيئة'), author: t('Zayed International Foundation', 'مؤسسة زايد الدولية'), year: '2006', desc: t('His pioneering environmental vision — including desert greening, falcon conservation, and sustainable development.', 'رؤيته البيئية الرائدة — بما في ذلك تخضير الصحراء والحفاظ على الصقور والتنمية المستدامة.') },
-            ],
-            speeches: [
-                { title: t('On Unity', 'عن الوحدة'), quote: t('"A nation without a past has neither a present nor a future."', '"أمة بلا ماضٍ ليس لها حاضر ولا مستقبل."') },
-                { title: t('On Wealth', 'عن الثروة'), quote: t('"Wealth is not money. Wealth lies in men. This is where true power lies."', '"الثروة ليست المال. الثروة تكمن في الرجال. هنا تكمن القوة الحقيقية."') },
-                { title: t('On Education', 'عن التعليم'), quote: t('"The real asset of any advanced nation is its people, especially the educated ones."', '"الثروة الحقيقية لأي أمة متقدمة هي شعبها، وخاصة المتعلمين منهم."') },
-            ],
-        },
-        {
-            id: 'rashid',
-            name: t('Sheikh Rashid bin Saeed Al Maktoum', 'الشيخ راشد بن سعيد آل مكتوم'),
-            title: t('Builder of Dubai (1912–1990)', 'باني دبي (1912–1990)'),
-            era: '1958–1990',
-            role: t('Ruler of Dubai & UAE Vice President', 'حاكم دبي ونائب رئيس الدولة'),
-            avatar: '🌆',
-            theme: { bg: '#EFF6FF', accent: '#2563EB', light: '#DBEAFE' },
-            bio: t(
-                "The visionary trader who transformed Dubai from a small fishing and pearling village into a global trade hub. Sheikh Rashid built Port Rashid, Dubai Dry Docks, Jebel Ali Port, and the World Trade Centre — laying the infrastructure for Dubai's meteoric rise.",
-                'التاجر الرؤيوي الذي حوّل دبي من قرية صيد ولؤلؤ صغيرة إلى مركز تجاري عالمي. بنى الشيخ راشد ميناء راشد وأحواض دبي الجافة وميناء جبل علي ومركز التجارة العالمي — واضعاً البنية التحتية لنهضة دبي المذهلة.'
-            ),
-            books: [
-                { title: t('Rashid: The Son of Dubai', 'راشد: ابن دبي'), author: t('Graeme Wilson', 'غريم ويلسون'), year: '1999', desc: t('The authoritative biography tracing his transformation of Dubai from creek-side trading post to international city.', 'السيرة الذاتية الموثوقة التي تتتبع تحويله لدبي من مركز تجاري على الخور إلى مدينة عالمية.') },
-                { title: t('Father of Dubai', 'أبو دبي'), author: t('National Archives', 'الأرشيف الوطني'), year: '2003', desc: t('A photographic and narrative account of his infrastructure vision — ports, bridges, and the open-skies policy.', 'سرد فوتوغرافي وروائي لرؤيته في البنية التحتية — الموانئ والجسور وسياسة الأجواء المفتوحة.') },
-                { title: t("Dubai: Life and Times — Through the Lens of Noor Ali Rashid", 'دبي: الحياة والأزمنة — عبر عدسة نور علي راشد'), author: t('Noor Ali Rashid', 'نور علي راشد'), year: '2010', desc: t("Visual chronicle of Dubai's transformation under Sheikh Rashid's leadership, by his official photographer.", 'سجل بصري لتحول دبي في عهد الشيخ راشد، بعدسة مصوره الرسمي.') },
-            ],
-            speeches: [
-                { title: t('On Progress', 'عن التقدم'), quote: t('"My grandfather rode a camel, my father rode a camel, I drive a Mercedes, my son drives a Land Rover, his son will drive a Land Rover, but his son will ride a camel."', '"جدي ركب الجمل، وأبي ركب الجمل، وأنا أقود مرسيدس، وابني يقود لاند روفر، وابنه سيقود لاند روفر، لكن ابنه سيركب الجمل."') },
-                { title: t('On Trade', 'عن التجارة'), quote: t('"What is good for the merchants is good for Dubai."', '"ما هو جيد للتجار جيد لدبي."') },
-                { title: t('On Infrastructure', 'عن البنية التحتية'), quote: t('"Build the infrastructure and the people will come."', '"ابنِ البنية التحتية وسيأتي الناس."') },
-            ],
-        },
-        {
-            id: 'mbz',
-            name: t('Sheikh Mohamed bin Zayed Al Nahyan', 'الشيخ محمد بن زايد آل نهيان'),
-            title: t('President of the UAE', 'رئيس دولة الإمارات'),
-            era: t('2022–Present', '2022–الحاضر'),
-            role: t('President of the UAE & Ruler of Abu Dhabi', 'رئيس الدولة وحاكم أبوظبي'),
-            avatar: '🇦🇪',
-            theme: { bg: '#F0FDF4', accent: '#16A34A', light: '#DCFCE7' },
-            bio: t(
-                "Continuing his father's legacy, Sheikh Mohamed bin Zayed has steered the UAE toward energy diversification, advanced technology, food security, and global diplomacy. Under his leadership, the UAE hosted COP28, expanded its space programme, and deepened strategic international partnerships.",
-                'استكمالاً لإرث والده، قاد الشيخ محمد بن زايد الإمارات نحو تنويع الطاقة والتكنولوجيا المتقدمة والأمن الغذائي والدبلوماسية العالمية. في عهده استضافت الإمارات COP28 ووسّعت برنامجها الفضائي وعمّقت الشراكات الدولية الاستراتيجية.'
-            ),
-            books: [
-                { title: t('Mohamed bin Zayed: A New Day', 'محمد بن زايد: يوم جديد'), author: t('National Archives', 'الأرشيف الوطني'), year: '2019', desc: t('The story of his strategic vision for a post-oil UAE — investment in AI, renewable energy, and education reform.', 'قصة رؤيته الاستراتيجية لإمارات ما بعد النفط — الاستثمار في الذكاء الاصطناعي والطاقة المتجددة وإصلاح التعليم.') },
-                { title: t('The UAE Strategy Framework', 'الإطار الاستراتيجي للإمارات'), author: t('UAE Government Publications', 'منشورات حكومة الإمارات'), year: '2023', desc: t('Comprehensive documentation of national strategies under his presidency — from "We the UAE 2031" to energy transition.', 'توثيق شامل للاستراتيجيات الوطنية في عهده — من "نحن الإمارات 2031" إلى التحول في الطاقة.') },
-                { title: t('Leadership and Vision', 'القيادة والرؤية'), author: t('Emirates Centre for Strategic Studies', 'مركز الإمارات للدراسات الاستراتيجية'), year: '2021', desc: t('Analysis of his leadership philosophy: pragmatism, long-term thinking, and human capital investment.', 'تحليل فلسفته القيادية: البراغماتية والتفكير طويل الأمد والاستثمار في رأس المال البشري.') },
-            ],
-            speeches: [
-                { title: t('On the Future', 'عن المستقبل'), quote: t('"The UAE\'s greatest resource is its people, and our investment in them will outlast any other."', '"أعظم ثروة للإمارات هي شعبها، واستثمارنا فيهم سيبقى أطول من أي استثمار آخر."') },
-                { title: t('On Innovation', 'عن الابتكار'), quote: t('"We must prepare today for the world of tomorrow — innovation is not optional, it is essential."', '"يجب أن نستعد اليوم لعالم الغد — الابتكار ليس اختيارياً، بل ضروري."') },
-                { title: t('On Climate', 'عن المناخ'), quote: t('"Climate action is not a burden — it is an opportunity for economic growth and global leadership."', '"العمل المناخي ليس عبئاً — إنه فرصة للنمو الاقتصادي والقيادة العالمية."') },
-            ],
-        },
-        {
-            id: 'mbr',
-            name: t('Sheikh Mohammed bin Rashid Al Maktoum', 'الشيخ محمد بن راشد آل مكتوم'),
-            title: t('Vice President & Prime Minister of the UAE', 'نائب رئيس الدولة ورئيس مجلس الوزراء'),
-            era: t('2006–Present', '2006–الحاضر'),
-            role: t('Vice President, Prime Minister & Ruler of Dubai', 'نائب رئيس الدولة ورئيس مجلس الوزراء وحاكم دبي'),
-            avatar: '🏙️',
-            theme: { bg: '#FAF5FF', accent: '#9333EA', light: '#F3E8FF' },
-            bio: t(
-                "The driving force behind Dubai's global brand, Sheikh Mohammed bin Rashid is a prolific author, poet, and reformer. His visionary governance transformed Dubai into the world's most visited city and a global business capital. He authored multiple bestselling books on leadership and governance.",
-                'القوة الدافعة وراء العلامة العالمية لدبي، الشيخ محمد بن راشد مؤلف غزير الإنتاج وشاعر ومصلح. حوّلت حوكمته الرؤيوية دبي إلى أكثر مدن العالم زيارة وعاصمة أعمال عالمية. ألّف كتباً عديدة أصبحت من الأكثر مبيعاً في القيادة والحوكمة.'
-            ),
-            books: [
-                { title: t('My Vision: Challenges in the Race for Excellence', 'رؤيتي: التحديات في سباق التميز'), author: t('Sheikh Mohammed bin Rashid Al Maktoum', 'الشيخ محمد بن راشد آل مكتوم'), year: '2012', desc: t("His personal account of Dubai's journey and leadership principles — a bestseller translated into 20+ languages.", 'سرده الشخصي لرحلة دبي ومبادئ القيادة — كتاب من الأكثر مبيعاً تُرجم إلى أكثر من 20 لغة.') },
-                { title: t('Flashes of Thought', 'ومضات فكر'), author: t('Sheikh Mohammed bin Rashid Al Maktoum', 'الشيخ محمد بن راشد آل مكتوم'), year: '2013', desc: t('Collected wisdom on governance, innovation, and building a world-class nation — insights from decades of leadership.', 'حكمة مجمّعة في الحوكمة والابتكار وبناء أمة عالمية المستوى — رؤى من عقود من القيادة.') },
-                { title: t('Reflections on Happiness & Positivity', 'تأملات في السعادة والإيجابية'), author: t('Sheikh Mohammed bin Rashid Al Maktoum', 'الشيخ محمد بن راشد آل مكتوم'), year: '2017', desc: t("His philosophy on creating a happy society — the blueprint behind the UAE's Ministry of Happiness and national well-being strategy.", 'فلسفته في إنشاء مجتمع سعيد — المخطط وراء وزارة السعادة واستراتيجية الرفاهية الوطنية.') },
-                { title: t('The Race: The Story of the Arab Quest for Peace', 'قصتي: 50 قصة في خمسين عاماً'), author: t('Sheikh Mohammed bin Rashid Al Maktoum', 'الشيخ محمد بن راشد آل مكتوم'), year: '2007', desc: t("A masterwork of modern Arabic poetry reflecting on heritage, peace, and the Arab world's aspirations.", 'عمل شعري عربي حديث يتأمل في التراث والسلام وتطلعات العالم العربي.') },
-                { title: t('Spirit of the Union', 'روح الاتحاد'), author: t('Sheikh Mohammed bin Rashid Al Maktoum', 'الشيخ محمد بن راشد آل مكتوم'), year: '2011', desc: t("Poems celebrating the UAE's 40th National Day — themes of unity, heritage, and national pride.", "قصائد تحتفي باليوم الوطني الأربعين للإمارات — موضوعات الوحدة والتراث والفخر الوطني.") },
-            ],
-            speeches: [
-                { title: t('On Leadership', 'عن القيادة'), quote: t('"In a race, there is no room for stopping. You either win or you lose."', '"في السباق، لا مكان للتوقف. إما أن تفوز أو تخسر."') },
-                { title: t('On Government', 'عن الحكومة'), quote: t('"Government is not a business. It is a service. And service means putting people first."', '"الحكومة ليست عملاً تجارياً. إنها خدمة. والخدمة تعني وضع الناس أولاً."') },
-                { title: t('On Excellence', 'عن التميز'), quote: t('"The word \'impossible\' is not in the dictionary of leaders."', '"كلمة \'مستحيل\' ليست في قاموس القادة."') },
-            ],
-        },
-    ];
+    const [leaders, setLeaders] = useState<any[]>([]);
+
+    useEffect(() => {
+        restClient.get('/api/lifelong/thought-leadership/leaders').then(r => {
+            const data = (r.data as any[]).map((l: any) => ({
+                id: l.leader_id,
+                name: t(l.name_en, l.name_ar),
+                title: t(l.title_en, l.title_ar),
+                era: l.era,
+                role: t(l.role_en, l.role_ar),
+                avatar: l.avatar,
+                theme: { bg: l.theme_bg, accent: l.theme_accent, light: l.theme_light },
+                bio: t(l.bio_en, l.bio_ar),
+                books: (l.books || []).map((b: any) => ({
+                    title: t(b.title_en, b.title_ar),
+                    author: t(b.author_en, b.author_ar),
+                    year: b.year,
+                    desc: t(b.desc_en, b.desc_ar),
+                })),
+                speeches: (l.speeches || []).map((s: any) => ({
+                    title: t(s.title_en, s.title_ar),
+                    quote: t(s.quote_en, s.quote_ar),
+                })),
+            }));
+            setLeaders(data);
+        }).catch(() => { });
+    }, [isRTL]);
 
     const coreValues = [
         { icon: '🤝', title: t('Unity & Federation', 'الوحدة والاتحاد'), desc: t('Building a nation from seven diverse emirates — strength through solidarity', 'بناء أمة من سبع إمارات متنوعة — القوة من خلال التضامن') },

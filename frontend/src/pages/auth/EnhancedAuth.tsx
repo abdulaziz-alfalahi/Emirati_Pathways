@@ -257,10 +257,19 @@ const EnhancedAuthPage: React.FC = () => {
             navigate('/welcome', { replace: true });
           }, 1000);
         } else {
-          const dashboardRoute = await authService.getDashboardRoute();
-          setTimeout(() => {
-            navigate(dashboardRoute, { replace: true });
-          }, 1000);
+          // Check for a saved return URL (deep-link preservation)
+          const returnUrl = sessionStorage.getItem('returnUrl');
+          if (returnUrl) {
+            sessionStorage.removeItem('returnUrl');
+            setTimeout(() => {
+              navigate(returnUrl, { replace: true });
+            }, 1000);
+          } else {
+            const dashboardRoute = await authService.getDashboardRoute();
+            setTimeout(() => {
+              navigate(dashboardRoute, { replace: true });
+            }, 1000);
+          }
         }
       } else {
         setError(response.message || 'Invalid OTP');

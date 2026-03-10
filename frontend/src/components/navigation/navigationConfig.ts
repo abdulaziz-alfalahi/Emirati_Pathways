@@ -23,7 +23,8 @@ import {
   User,
   GitCompare,
   Zap,
-  Flag
+  Flag,
+  Settings
 } from 'lucide-react';
 
 export const navigationGroups: NavGroup[] = [
@@ -76,15 +77,9 @@ export const navigationGroups: NavGroup[] = [
     description: 'Professional growth and career opportunities',
     items: [
       {
-        name: 'Industry Exploration',
-        href: '/industry-exploration',
-        description: 'Discover UAE industry opportunities',
-        icon: Compass
-      },
-      {
         name: 'Career Planning Hub',
         href: '/career-planning-hub',
-        description: 'Comprehensive career development platform with journey planning, path comparison, and market insights',
+        description: 'Explore UAE industries, plan your career path, and access market insights and Emiratisation programs',
         icon: Compass
       },
       {
@@ -243,3 +238,29 @@ export const navigationGroups: NavGroup[] = [
   }
 ];
 
+// Operator-only nav group — shown via role-based filtering in HybridGovernmentNavFixed
+export const operationsNavGroup: NavGroup = {
+  id: 'operations',
+  name: 'Operations',
+  description: 'Operator dashboards and management tools',
+  items: [
+    {
+      name: 'Career Services',
+      href: '/career-services-dashboard',
+      description: 'Manage salary benchmarks, startups, internships & gigs',
+      icon: DollarSign
+    },
+    {
+      name: 'Growth Dashboard',
+      href: '/growth-operator-dashboard',
+      description: 'Operator dashboard for platform growth',
+      icon: BarChart3
+    },
+    {
+      name: 'Operations Center',
+      href: '/operations-center',
+      description: 'System monitoring and operations',
+      icon: Settings
+    }
+  ]
+};

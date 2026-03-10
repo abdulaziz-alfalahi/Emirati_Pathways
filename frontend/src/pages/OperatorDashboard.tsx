@@ -4,7 +4,9 @@ import GrowthTools from '@/components/admin/GrowthTools';
 import { GrowthOperations } from '@/components/admin/GrowthOperations';
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import Messages from '@/components/recruiter/Messages';
-import { LogOut, Rocket, UserPlus, MessageSquare } from 'lucide-react';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { Rocket, UserPlus, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -12,6 +14,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 const OperatorDashboard = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
+    const { language, toggleLanguage } = useLanguage();
+    const isRTL = language === 'ar';
+    const t = (en: string, ar: string) => isRTL ? ar : en;
 
     const handleLogout = async () => {
         await signOut();
@@ -41,68 +46,45 @@ const OperatorDashboard = () => {
     const initialTab = searchParams.get('tab') || defaultTab;
 
     return (
-        <div className="min-h-screen bg-background">
-            {/* Operator Header */}
-            <header className="bg-card border-b sticky top-0 z-10">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-teal-600 p-2 rounded-lg">
-                            <Rocket className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="font-bold text-lg text-slate-800">Emirati Pathway</h1>
-                            <p className="text-xs text-teal-600 font-medium tracking-wide">OPERATIONS CONSOLE</p>
-                        </div>
-                    </div>
+        <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+            <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={language} />
 
-                    <div className="flex items-center gap-4">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-medium text-slate-900">{user?.full_name}</p>
-                            <p className="text-xs text-slate-500 capitalize">{user?.role?.replace('_', ' ')}</p>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
-                            <LogOut className="h-5 w-5 text-slate-400 hover:text-red-500" />
-                        </Button>
-                    </div>
-                </div>
-            </header>
-
-            <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto px-4 py-8" style={{ paddingTop: 100 }}>
                 <div className="mb-8">
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-900">Growth Operations</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('Growth Operations', 'عمليات النمو')}</h2>
                     <p className="text-slate-500">
-                        {operatorType.isCompanyOps && "Manage company onboarding and verification."}
-                        {operatorType.isCandidateOps && "Manage candidate onboarding and support."}
-                        {operatorType.isMonitoringOps && "Monitor platform activity and metrics."}
-                        {!operatorType.isCompanyOps && !operatorType.isCandidateOps && !operatorType.isMonitoringOps && "Manage platform growth operations."}
+                        {operatorType.isCompanyOps && t('Manage company onboarding and verification.', 'إدارة تسجيل الشركات والتحقق منها.')}
+                        {operatorType.isCandidateOps && t('Manage candidate onboarding and support.', 'إدارة تسجيل المرشحين والدعم.')}
+                        {operatorType.isMonitoringOps && t('Monitor platform activity and metrics.', 'مراقبة نشاط المنصة والمقاييس.')}
+                        {!operatorType.isCompanyOps && !operatorType.isCandidateOps && !operatorType.isMonitoringOps && t('Manage platform growth operations.', 'إدارة عمليات نمو المنصة.')}
                     </p>
                 </div>
 
                 <Tabs defaultValue={initialTab} className="space-y-6">
                     <TabsList className="grid w-full grid-cols-5 max-w-[900px]">
                         {(operatorType.isLegacyOps || (!operatorType.isCompanyOps && !operatorType.isCandidateOps && !operatorType.isMonitoringOps)) && (
-                            <TabsTrigger value="ops">Campaigns</TabsTrigger>
+                            <TabsTrigger value="ops">{t('Campaigns', 'الحملات')}</TabsTrigger>
                         )}
 
                         {/* Company Ops View */}
                         {(operatorType.isCompanyOps || operatorType.isLegacyOps) && (
-                            <TabsTrigger value="company-onboarding">Company Onboarding</TabsTrigger>
+                            <TabsTrigger value="company-onboarding">{t('Company Onboarding', 'تسجيل الشركات')}</TabsTrigger>
                         )}
 
                         {/* Candidate Ops View */}
                         {(operatorType.isCandidateOps || operatorType.isLegacyOps) && (
-                            <TabsTrigger value="candidate-onboarding">Candidate Onboarding</TabsTrigger>
+                            <TabsTrigger value="candidate-onboarding">{t('Candidate Onboarding', 'تسجيل المرشحين')}</TabsTrigger>
                         )}
 
                         {/* Monitoring Ops View */}
                         {(operatorType.isMonitoringOps || operatorType.isLegacyOps) && (
-                            <TabsTrigger value="monitoring">Monitoring Center</TabsTrigger>
+                            <TabsTrigger value="monitoring">{t('Monitoring Center', 'مركز المراقبة')}</TabsTrigger>
                         )}
 
                         {/* Messages - always visible */}
                         <TabsTrigger value="messages">
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            Messages
+                            <MessageSquare className="h-4 w-4 me-1" />
+                            {t('Messages', 'الرسائل')}
                         </TabsTrigger>
                     </TabsList>
 
@@ -115,8 +97,8 @@ const OperatorDashboard = () => {
                     <TabsContent value="company-onboarding" className="space-y-4">
                         <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-semibold text-gray-900">Private Sector Companies Onboarding</h3>
-                                <Button>Invite Company</Button>
+                                <h3 className="text-lg font-semibold text-gray-900">{t('Private Sector Companies Onboarding', 'تسجيل شركات القطاع الخاص')}</h3>
+                                <Button>{t('Invite Company', 'دعوة شركة')}</Button>
                             </div>
                             <GrowthTools /> {/* Reusing GrowthTools for data imports/management as placeholder */}
                         </div>
@@ -125,7 +107,7 @@ const OperatorDashboard = () => {
                     {/* Candidate Onboarding Content */}
                     <TabsContent value="candidate-onboarding" className="space-y-4">
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">Candidate Onboarding Queue</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('Candidate Onboarding Queue', 'قائمة تسجيل المرشحين')}</h3>
                             <AdminRoleRequests />
                         </div>
                     </TabsContent>
@@ -133,18 +115,18 @@ const OperatorDashboard = () => {
                     {/* Monitoring Center Content */}
                     <TabsContent value="monitoring" className="space-y-4">
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">Monitoring Center</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('Monitoring Center', 'مركز المراقبة')}</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="p-4 bg-muted rounded border border-border">
-                                    <p className="text-sm text-slate-500">Active Sessions</p>
+                                    <p className="text-sm text-slate-500">{t('Active Sessions', 'الجلسات النشطة')}</p>
                                     <p className="text-3xl font-bold text-slate-900">1,248</p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded border border-slate-100">
-                                    <p className="text-sm text-slate-500">System Health</p>
+                                    <p className="text-sm text-slate-500">{t('System Health', 'صحة النظام')}</p>
                                     <p className="text-3xl font-bold text-green-600">99.9%</p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded border border-slate-100">
-                                    <p className="text-sm text-slate-500">Pending Alerts</p>
+                                    <p className="text-sm text-slate-500">{t('Pending Alerts', 'التنبيهات المعلقة')}</p>
                                     <p className="text-3xl font-bold text-amber-500">3</p>
                                 </div>
                             </div>

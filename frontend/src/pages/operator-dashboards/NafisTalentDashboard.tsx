@@ -212,7 +212,7 @@ const FilterMultiSelect: React.FC<{
 
 
 const NafisTalentDashboard: React.FC = () => {
-    const { language } = useLanguage();
+    const { language, toggleLanguage } = useLanguage();
     const isRTL = language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const [activeTab, setActiveTab] = useState('overview');
@@ -1005,7 +1005,7 @@ const NafisTalentDashboard: React.FC = () => {
 
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: brand.bg }}>
-            <HybridGovernmentNavFixed />
+            <HybridGovernmentNavFixed onLanguageToggle={toggleLanguage} currentLanguage={language} />
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '100px 24px 40px' }}>
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: brand.blueBg, padding: '6px 16px', borderRadius: 20, marginBottom: 12 }}>

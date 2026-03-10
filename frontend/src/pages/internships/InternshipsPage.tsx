@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
     Briefcase, Building2, MapPin, Clock, Calendar,
     ChevronRight, ChevronLeft, Bookmark, CheckCircle, Search,
     TrendingUp, Star, Users, Award, Shield,
-    GraduationCap, Banknote, Globe, Zap, Filter
+    GraduationCap, Banknote, Globe, Zap, Filter, Loader2
 } from 'lucide-react';
+import { getInternships, type Internship } from '@/services/careerServicesAPI';
+import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -36,33 +38,111 @@ const InternshipsPage: React.FC = () => {
     const { i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
+    const loc = (en: string | undefined, ar: string | undefined) => isRTL ? (ar || en || '') : (en || '');
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    // ── API state ──
+    const [internships, setInternships] = useState<Internship[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
 
-    const internships = [
-        { title: t('Software Engineering Intern', 'متدرب هندسة برمجيات'), company: t('Emirates NBD', 'الإمارات دبي الوطني'), location: t('Dubai', 'دبي'), duration: t('3 months', '3 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 5,000/mo', '5,000 د.إ/شهر'), sector: t('Banking & Finance', 'المصارف والتمويل'), deadline: t('Apr 15, 2026', '15 أبريل 2026'), desc: t('Work with the digital banking team on mobile app features and API development', 'العمل مع فريق الخدمات المصرفية الرقمية على ميزات التطبيق وتطوير واجهات البرمجة'), skills: ['React', 'Node.js', 'SQL'], catBg: brand.blue, catColor: brand.blueText },
-        { title: t('Marketing & Communications Intern', 'متدرب تسويق واتصالات'), company: t('Dubai Tourism', 'دبي للسياحة'), location: t('Dubai', 'دبي'), duration: t('6 months', '6 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 4,500/mo', '4,500 د.إ/شهر'), sector: t('Government', 'الحكومة'), deadline: t('Mar 30, 2026', '30 مارس 2026'), desc: t('Support digital marketing campaigns and social media strategy for tourism initiatives', 'دعم حملات التسويق الرقمي واستراتيجية وسائل التواصل لمبادرات السياحة'), skills: [t('Marketing', 'التسويق'), t('Content', 'المحتوى'), t('Analytics', 'التحليلات')], catBg: brand.green, catColor: brand.greenText },
-        { title: t('Data Science Intern', 'متدرب علم البيانات'), company: t('Etisalat (e&)', 'اتصالات (e&)'), location: t('Abu Dhabi', 'أبوظبي'), duration: t('4 months', '4 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 6,000/mo', '6,000 د.إ/شهر'), sector: t('Technology', 'التكنولوجيا'), deadline: t('Apr 1, 2026', '1 أبريل 2026'), desc: t('Develop ML models for customer analytics and network optimization projects', 'تطوير نماذج التعلم الآلي لتحليل العملاء ومشاريع تحسين الشبكة'), skills: ['Python', 'TensorFlow', 'SQL'], catBg: brand.purple, catColor: brand.purpleText },
-        { title: t('Architecture & Design Intern', 'متدرب هندسة معمارية وتصميم'), company: t('Emaar Properties', 'إعمار العقارية'), location: t('Dubai', 'دبي'), duration: t('3 months', '3 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 4,000/mo', '4,000 د.إ/شهر'), sector: t('Real Estate', 'العقارات'), deadline: t('May 1, 2026', '1 مايو 2026'), desc: t('Contribute to design concepts for upcoming mixed-use developments and community spaces', 'المساهمة في مفاهيم التصميم للمشاريع متعددة الاستخدامات والمساحات المجتمعية القادمة'), skills: ['AutoCAD', 'SketchUp', 'Revit'], catBg: brand.amber, catColor: brand.amberText },
-        { title: t('Sustainability & ESG Intern', 'متدرب الاستدامة والحوكمة البيئية'), company: t('ADNOC', 'أدنوك'), location: t('Abu Dhabi', 'أبوظبي'), duration: t('6 months', '6 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 7,000/mo', '7,000 د.إ/شهر'), sector: t('Energy & Oil', 'الطاقة والنفط'), deadline: t('Apr 20, 2026', '20 أبريل 2026'), desc: t('Support environmental impact assessments and sustainability reporting across operational units', 'دعم تقييمات الأثر البيئي وتقارير الاستدامة عبر الوحدات التشغيلية'), skills: [t('Sustainability', 'الاستدامة'), t('Data Analysis', 'تحليل البيانات'), t('Reporting', 'إعداد التقارير')], catBg: brand.primarySurface, catColor: brand.primary },
-        { title: t('Healthcare Innovation Intern', 'متدرب ابتكار الرعاية الصحية'), company: t('Cleveland Clinic Abu Dhabi', 'كليفلاند كلينك أبوظبي'), location: t('Abu Dhabi', 'أبوظبي'), duration: t('3 months', '3 أشهر'), type: t('Paid', 'مدفوع'), stipend: t('AED 4,500/mo', '4,500 د.إ/شهر'), sector: t('Healthcare', 'الرعاية الصحية'), deadline: t('Mar 25, 2026', '25 مارس 2026'), desc: t('Research and implement digital health tools for patient engagement and care coordination', 'بحث وتطبيق أدوات الصحة الرقمية لتفاعل المرضى وتنسيق الرعاية'), skills: [t('Research', 'البحث'), t('Health IT', 'تقنية المعلومات الصحية'), 'UX'], catBg: brand.red, catColor: brand.redText },
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                setLoading(true);
+                const data = await getInternships();
+                if (!cancelled) setInternships(data);
+            } catch (err) {
+                console.error('Failed to load internships:', err);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        // Fetch user skills for matching (non-blocking)
+        (async () => {
+            try {
+                const skillData = await skillGraphAPI.getUserSkills();
+                if (!cancelled) setUserSkills(skillData.skills || []);
+            } catch { /* not logged in or no skill profile — graceful fallback */ }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    // ── Skill-match scoring ──
+    const getMatchScore = (internship: Internship): number => {
+        if (!userSkills.length) return 0;
+        const userSkillNames = new Set(userSkills.map(s => s.skill_name.toLowerCase()));
+        const requiredSkills = (internship.skills || []).map(s => s.toLowerCase());
+        if (!requiredSkills.length) return 0;
+        const matched = requiredSkills.filter(s => userSkillNames.has(s)).length;
+        return Math.round((matched / requiredSkills.length) * 100);
+    };
+
+    const recommendedInternships = internships
+        .map(i => ({ ...i, matchScore: getMatchScore(i) }))
+        .filter(i => i.matchScore > 0)
+        .sort((a, b) => b.matchScore - a.matchScore);
+
+    // Build sector set from data
+    const sectorSet = new Set(internships.map(i => i.sector || ''));
+    const sectors = [
+        t('All Sectors', 'جميع القطاعات'),
+        ...Array.from(sectorSet),
     ];
+    const [activeSector, setActiveSector] = useState(0);
+
+    const filtered = activeSector === 0
+        ? internships
+        : internships.filter(i => i.sector === sectors[activeSector]);
+
+    const sectorColor = (sector: string) => {
+        const map: Record<string, { bg: string; color: string }> = {
+            'Banking & Finance': { bg: brand.blue, color: brand.blueText },
+            'Government': { bg: brand.green, color: brand.greenText },
+            'Technology': { bg: brand.purple, color: brand.purpleText },
+            'Real Estate': { bg: brand.amber, color: brand.amberText },
+            'Energy & Oil': { bg: brand.primarySurface, color: brand.primary },
+            'Healthcare': { bg: brand.red, color: brand.redText },
+        };
+        return map[sector] || { bg: '#F3F4F6', color: brand.textSecondary };
+    };
 
     const partnerCompanies = [
-        { name: t('Emirates NBD', 'الإمارات دبي الوطني'), sector: t('Banking', 'المصارف'), openings: 4, logo: '🏦' },
-        { name: t('Etisalat (e&)', 'اتصالات (e&)'), sector: t('Technology', 'التكنولوجيا'), openings: 6, logo: '📡' },
-        { name: t('ADNOC', 'أدنوك'), sector: t('Energy', 'الطاقة'), openings: 5, logo: '⛽' },
-        { name: t('Emaar Properties', 'إعمار العقارية'), sector: t('Real Estate', 'العقارات'), openings: 3, logo: '🏗️' },
-        { name: t('Dubai Tourism', 'دبي للسياحة'), sector: t('Government', 'الحكومة'), openings: 4, logo: '🏛️' },
-        { name: t('Mubadala', 'مبادلة'), sector: t('Investment', 'الاستثمار'), openings: 3, logo: '💼' },
+        ...new Map(internships.map(i => [i.company, {
+            name: loc(i.company, i.company_ar),
+            sector: loc(i.sector, i.sector_ar),
+            logo: i.company_logo || '🏢',
+        }])).values()
     ];
 
-    const applications = [
-        { title: t('Software Engineering Intern', 'متدرب هندسة برمجيات'), company: t('Emirates NBD', 'الإمارات دبي الوطني'), appliedDate: t('Feb 10, 2026', '10 فبراير 2026'), status: t('Under Review', 'قيد المراجعة'), statusColor: brand.amber, statusText: brand.amberText },
-        { title: t('Data Science Intern', 'متدرب علم البيانات'), company: t('Etisalat (e&)', 'اتصالات (e&)'), appliedDate: t('Feb 5, 2026', '5 فبراير 2026'), status: t('Interview Scheduled', 'مقابلة مجدولة'), statusColor: brand.green, statusText: brand.greenText },
-        { title: t('Marketing Intern', 'متدرب تسويق'), company: t('Dubai Tourism', 'دبي للسياحة'), appliedDate: t('Jan 28, 2026', '28 يناير 2026'), status: t('Under Review', 'قيد المراجعة'), statusColor: brand.amber, statusText: brand.amberText },
+    const stats = [
+        { value: `${internships.length}+`, label: t('Open Internships', 'تدريب متاح'), icon: Briefcase },
+        { value: `${partnerCompanies.length}+`, label: t('Partner Companies', 'شركة شريكة'), icon: Building2 },
+        { value: '1,200+', label: t('Placements', 'توظيف'), icon: Award },
+        { value: '72%', label: t('Full-time Conversion', 'التحويل لدوام كامل'), icon: TrendingUp },
     ];
+
+    // Loading state
+    if (loading) {
+        return (
+            <EducationPathwayLayout
+                title={t('Internships', 'التدريب العملي')}
+                description={t('Loading internship opportunities...', 'جارٍ تحميل فرص التدريب...')}
+                icon={<Briefcase className="h-6 w-6" />}
+                stats={[]}
+                tabs={[{
+                    id: 'loading', label: t('Loading', 'تحميل'), icon: <Loader2 className="h-4 w-4 animate-spin" />, content: (
+                        <div style={{ textAlign: 'center', padding: '64px 0' }}>
+                            <Loader2 style={{ width: 48, height: 48, color: brand.primary, margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+                            <p style={{ color: brand.textSecondary, fontSize: 16 }}>{t('Loading internships...', 'جارٍ تحميل التدريب...')}</p>
+                        </div>
+                    )
+                }]}
+                defaultTab="loading"
+            />
+        );
+    }
 
     const tips = [
         { title: t('Start Your Search Early', 'ابدأ البحث مبكراً'), desc: t('Begin looking for internships 3–6 months before your desired start date to maximize your options', 'ابدأ البحث عن التدريب قبل 3–6 أشهر من تاريخ البدء المطلوب لتعظيم خياراتك'), Icon: Calendar },
@@ -71,23 +151,6 @@ const InternshipsPage: React.FC = () => {
         { title: t('Build a Strong Online Profile', 'ابنِ ملفاً رقمياً قوياً'), desc: t('Keep your LinkedIn and portfolio up to date — UAE recruiters actively source interns online', 'حافظ على تحديث حسابك في لينكدإن ومعرض أعمالك — مسؤولو التوظيف في الإمارات يبحثون عن المتدربين إلكترونياً'), Icon: Globe },
         { title: t('Network at Industry Events', 'تواصل في الفعاليات المهنية'), desc: t('Attend meetups, conferences, and career expos across Dubai and Abu Dhabi', 'احضر اللقاءات والمؤتمرات ومعارض التوظيف في دبي وأبوظبي'), Icon: Users },
         { title: t('Follow Up Professionally', 'تابع بشكل مهني'), desc: t("Send a polite follow-up email 1–2 weeks after applying if you haven't heard back", 'أرسل بريداً إلكترونياً مهذباً للمتابعة بعد 1–2 أسبوع من التقديم إن لم تتلقَّ رداً'), Icon: CheckCircle },
-    ];
-
-    const sectors = [
-        t('All Sectors', 'جميع القطاعات'),
-        t('Banking & Finance', 'المصارف والتمويل'),
-        t('Technology', 'التكنولوجيا'),
-        t('Government', 'الحكومة'),
-        t('Energy & Oil', 'الطاقة والنفط'),
-        t('Real Estate', 'العقارات'),
-        t('Healthcare', 'الرعاية الصحية'),
-    ];
-
-    const stats = [
-        { value: '25+', label: t('Open Internships', 'تدريب متاح'), icon: Briefcase },
-        { value: '50+', label: t('Partner Companies', 'شركة شريكة'), icon: Building2 },
-        { value: '1,200+', label: t('Placements', 'توظيف'), icon: Award },
-        { value: '72%', label: t('Full-time Conversion', 'التحويل لدوام كامل'), icon: TrendingUp },
     ];
 
     /* ── Tab 1: Opportunities ── */
@@ -110,10 +173,11 @@ const InternshipsPage: React.FC = () => {
                 {sectors.map((s, i) => (
                     <button
                         key={i}
+                        onClick={() => setActiveSector(i)}
                         style={{
-                            background: i === 0 ? brand.primarySurface : '#F3F4F6',
-                            color: i === 0 ? brand.primary : brand.textSecondary,
-                            border: `1px solid ${i === 0 ? brand.primary : brand.border}`,
+                            background: activeSector === i ? brand.primarySurface : '#F3F4F6',
+                            color: activeSector === i ? brand.primary : brand.textSecondary,
+                            border: `1px solid ${activeSector === i ? brand.primary : brand.border}`,
                             padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer',
                         }}
                     >
@@ -122,122 +186,87 @@ const InternshipsPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* Listings */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-                {internships.map((item, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
-                            padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
-                            transition: 'box-shadow .2s', cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
-                        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                    >
-                        {/* Top row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{item.title}</h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: brand.textSecondary }}>
-                                    <Building2 size={14} /> {item.company}
-                                </div>
-                            </div>
-                            <Bookmark size={18} style={{ color: brand.textSecondary, cursor: 'pointer' }} />
-                        </div>
-
-                        <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>{item.desc}</p>
-
-                        {/* Meta */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: 12, color: brand.textSecondary }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {item.location}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} /> {item.duration}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={13} /> {item.stipend}</span>
-                        </div>
-
-                        {/* Tags */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                            <span style={{ background: item.catBg, color: item.catColor, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
-                                {item.sector}
-                            </span>
-                            <span style={{ background: brand.green, color: brand.greenText, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
-                                {item.type}
-                            </span>
-                        </div>
-
-                        {/* Skills */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                            {item.skills.map((sk, j) => (
-                                <span key={j} style={{ background: brand.primarySurface, color: brand.primary, fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 4 }}>
-                                    {sk}
-                                </span>
-                            ))}
-                        </div>
-
-                        {/* Footer */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <span style={{ fontSize: 11, color: brand.textSecondary }}><Calendar size={12} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />{t('Deadline:', 'الموعد النهائي:')} {item.deadline}</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
-                                {t('Apply', 'قدّم')} <ChevronIcon size={14} />
-                            </span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-
-    /* ── Tab 2: My Applications ── */
-    const applicationsTab = (
-        <div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-                {t('My Applications', 'طلباتي')}
-            </h2>
-            <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
-                {t(
-                    'Track and manage your submitted internship applications — see status updates and upcoming interview schedules.',
-                    'تتبّع وأدِر طلبات التدريب المقدّمة — اطّلع على تحديثات الحالة ومواعيد المقابلات القادمة.'
-                )}
+            <p style={{ fontSize: 13, color: brand.textSecondary, marginBottom: 16 }}>
+                {t(`Showing ${filtered.length} internship${filtered.length !== 1 ? 's' : ''}`, `عرض ${filtered.length} فرصة تدريب`)}
             </p>
 
-            {/* Application Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-                {applications.map((app, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
-                            <div style={{ width: 44, height: 44, borderRadius: 10, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Briefcase size={22} style={{ color: brand.primary }} />
+            {/* Listings */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+                {filtered.map((item) => {
+                    const sc = sectorColor(item.sector || '');
+                    const skills: string[] = Array.isArray(item.skills) ? item.skills : (typeof item.skills === 'string' ? JSON.parse(item.skills) : []);
+                    return (
+                        <div
+                            key={item.id}
+                            style={{
+                                background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`,
+                                padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+                                transition: 'box-shadow .2s', cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                        >
+                            {/* Top row */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <h3 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>
+                                        {loc(item.title, item.title_ar)}
+                                    </h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: brand.textSecondary }}>
+                                        <Building2 size={14} /> {loc(item.company, item.company_ar)}
+                                    </div>
+                                </div>
+                                <Bookmark size={18} style={{ color: brand.textSecondary, cursor: 'pointer' }} />
                             </div>
-                            <div>
-                                <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{app.title}</h4>
-                                <div style={{ fontSize: 12, color: brand.textSecondary }}>{app.company} · {t('Applied', 'تقدّم في')} {app.appliedDate}</div>
+
+                            <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, margin: 0 }}>
+                                {loc(item.description, item.description_ar)}
+                            </p>
+
+                            {/* Meta */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: 12, color: brand.textSecondary }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {loc(item.location, item.location_ar)}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} /> {loc(item.duration, item.duration_ar)}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={13} /> {loc(item.stipend, item.stipend_ar)}</span>
+                            </div>
+
+                            {/* Tags */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                <span style={{ background: sc.bg, color: sc.color, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
+                                    {loc(item.sector, item.sector_ar)}
+                                </span>
+                                <span style={{ background: brand.green, color: brand.greenText, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 6 }}>
+                                    {item.type === 'paid' ? t('Paid', 'مدفوع') : t('Unpaid', 'غير مدفوع')}
+                                </span>
+                            </div>
+
+                            {/* Skills */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {skills.map((sk: string, j: number) => (
+                                    <span key={j} style={{ background: brand.primarySurface, color: brand.primary, fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 4 }}>
+                                        {sk}
+                                    </span>
+                                ))}
+                            </div>
+
+                            {/* Footer */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                                <span style={{ fontSize: 11, color: brand.textSecondary }}>
+                                    <Calendar size={12} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />
+                                    {t('Deadline:', 'الموعد النهائي:')} {item.deadline ? new Date(item.deadline).toLocaleDateString(isRTL ? 'ar-AE' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
+                                    {t('Apply', 'قدّم')} <ChevronIcon size={14} />
+                                </span>
                             </div>
                         </div>
-                        <span style={{ background: app.statusColor, color: app.statusText, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 99, whiteSpace: 'nowrap' }}>
-                            {app.status}
-                        </span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Stats Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-                {[
-                    { label: t('Total Applications', 'إجمالي الطلبات'), value: '3', color: brand.primary },
-                    { label: t('Under Review', 'قيد المراجعة'), value: '2', color: brand.amberText },
-                    { label: t('Interviews Scheduled', 'مقابلات مجدولة'), value: '1', color: brand.greenText },
-                    { label: t('Offers Received', 'عروض مستلمة'), value: '0', color: brand.blueText },
-                ].map((stat, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18, textAlign: 'center' }}>
-                        <div style={{ fontSize: 28, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                        <span style={{ fontSize: 13, color: brand.textSecondary }}>{stat.label}</span>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
 
-    /* ── Tab 3: Partner Companies ── */
+    /* ── Tab 2: Partner Companies ── */
     const companiesTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -245,8 +274,8 @@ const InternshipsPage: React.FC = () => {
             </h2>
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
                 {t(
-                    'Explore 50+ partner organizations across the UAE that actively recruit interns — from government entities to private sector leaders.',
-                    'استكشف أكثر من 50 مؤسسة شريكة في الإمارات تستقطب المتدربين بنشاط — من الجهات الحكومية إلى رواد القطاع الخاص.'
+                    'Explore partner organizations across the UAE that actively recruit interns — from government entities to private sector leaders.',
+                    'استكشف المؤسسات الشريكة في الإمارات التي تستقطب المتدربين بنشاط — من الجهات الحكومية إلى رواد القطاع الخاص.'
                 )}
             </p>
 
@@ -275,7 +304,7 @@ const InternshipsPage: React.FC = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: `1px solid ${brand.border}` }}>
                             <span style={{ fontSize: 13, color: brand.textSecondary }}>
                                 <Briefcase size={14} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />
-                                {co.openings} {t('open positions', 'وظائف متاحة')}
+                                {internships.filter(int => int.company === co.name || int.company_ar === co.name).length} {t('open positions', 'وظائف متاحة')}
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
                                 {t('View', 'عرض')} <ChevronIcon size={14} />
@@ -287,7 +316,7 @@ const InternshipsPage: React.FC = () => {
         </div>
     );
 
-    /* ── Tab 4: Tips & Resources ── */
+    /* ── Tab 3: Tips & Resources ── */
     const tipsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -343,7 +372,6 @@ const InternshipsPage: React.FC = () => {
 
     const tabs = [
         { id: 'opportunities', label: t('Opportunities', 'الفرص'), icon: <Briefcase className="h-4 w-4" />, content: opportunitiesTab },
-        { id: 'applications', label: t('My Applications', 'طلباتي'), icon: <CheckCircle className="h-4 w-4" />, content: applicationsTab },
         { id: 'companies', label: t('Partner Companies', 'الشركات الشريكة'), icon: <Building2 className="h-4 w-4" />, content: companiesTab },
         { id: 'tips', label: t('Tips & Resources', 'نصائح ومصادر'), icon: <Star className="h-4 w-4" />, content: tipsTab },
     ];

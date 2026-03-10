@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
@@ -7,6 +7,7 @@ import {
     ArrowRight, ArrowLeft, CheckCircle, Globe, Rocket, Heart,
     Quote, MapPin, ExternalLink, Calendar
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
 
 // Brand tokens
 const brand = {
@@ -35,146 +36,32 @@ const ShareSuccessStoriesPage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-    /* ──────────────────────── DATA ──────────────────────── */
+    /* ──────────────────────── API DATA ──────────────────────── */
 
-    const successStories = [
-        {
-            name: t('H.E. Sarah Al Amiri', 'معالي سارة الأميري'),
-            role: t('Minister of State for Public Education & Advanced Technology', 'وزيرة دولة للتعليم العام والتكنولوجيا المتقدمة'),
-            prevRole: t('Deputy Project Manager, Emirates Mars Mission (Hope Probe)', 'نائبة مدير مشروع الإمارات لاستكشاف المريخ (مسبار الأمل)'),
-            company: t('Mohammed bin Rashid Space Centre → UAE Government', 'مركز محمد بن راشد للفضاء ← حكومة الإمارات'),
-            sector: t('Space & Technology', 'الفضاء والتكنولوجيا'),
-            location: t('Abu Dhabi', 'أبوظبي'),
-            avatar: '🚀',
-            theme: { bg: '#EFF6FF', accent: '#2563EB', light: '#DBEAFE' },
-            story: t(
-                "Sarah Al Amiri started as an engineer at the Mohammed bin Rashid Space Centre, rising to lead the science team for the Hope Probe — the UAE's Mars mission. At just 34, she became one of the youngest ministers in the world, championing STEM education and advanced technology for the next generation of Emiratis.",
-                'بدأت سارة الأميري كمهندسة في مركز محمد بن راشد للفضاء، لترتقي وتقود الفريق العلمي لمسبار الأمل — مهمة الإمارات إلى المريخ. في عمر 34 عاماً فقط، أصبحت من أصغر الوزراء في العالم، مناصرة لتعليم العلوم والتكنولوجيا المتقدمة للجيل القادم من الإماراتيين.'
-            ),
-            highlights: [t('Led science team for Mars Hope Probe', 'قادت الفريق العلمي لمسبار الأمل'), t('Youngest minister appointed at 34', 'أصغر وزيرة عُيّنت في سن 34'), t('Forbes 100 Most Powerful Women', 'فوربس أقوى 100 امرأة')],
-            quote: t('"We wanted to send a message that an Arab country can reach Mars, and young Emiratis can lead the way."', '"أردنا إرسال رسالة بأن دولة عربية يمكنها الوصول إلى المريخ، وأن الشباب الإماراتي يمكنه قيادة الطريق."'),
-        },
-        {
-            name: t('Mohamed Alabbar', 'محمد العبار'),
-            role: t('Founder & Managing Director', 'المؤسس والعضو المنتدب'),
-            prevRole: t('Former Director General, Dubai Department of Economic Development', 'المدير العام السابق لدائرة التنمية الاقتصادية في دبي'),
-            company: t('Emaar Properties', 'إعمار العقارية'),
-            sector: t('Real Estate & Retail', 'العقارات والتجزئة'),
-            location: t('Dubai', 'دبي'),
-            avatar: '🏗️',
-            theme: { bg: '#FFF7ED', accent: '#EA580C', light: '#FFEDD5' },
-            story: t(
-                "Mohamed Alabbar built Emaar Properties into one of the world's largest real estate developers, creating iconic landmarks including the Burj Khalifa and The Dubai Mall. He went on to launch Noon.com — the Middle East's homegrown e-commerce platform to compete with Amazon. His vision transformed Dubai's skyline and retail landscape.",
-                'بنى محمد العبار إعمار العقارية لتصبح واحدة من أكبر شركات التطوير العقاري في العالم، مبتكراً معالم بارزة تشمل برج خليفة ودبي مول. أطلق لاحقاً Noon.com — منصة التجارة الإلكترونية المحلية في الشرق الأوسط لمنافسة أمازون. حوّلت رؤيته أفق دبي ومشهد التجزئة.'
-            ),
-            highlights: [t("Built Burj Khalifa — world's tallest building", 'بنى برج خليفة — أطول مبنى في العالم'), t("Created The Dubai Mall — world's most visited", 'أنشأ دبي مول — الأكثر زيارة في العالم'), t('Launched Noon.com — regional e-commerce leader', 'أطلق Noon.com — رائد التجارة الإلكترونية الإقليمي')],
-            quote: t('"Think big. Start small. But most of all, start."', '"فكّر بشكل كبير. ابدأ صغيراً. لكن الأهم، ابدأ."'),
-        },
-        {
-            name: t('Raja Al Mazrouei', 'رجاء المزروعي'),
-            role: t('Executive Vice President', 'نائبة الرئيس التنفيذي'),
-            prevRole: t('FinTech Hive Director', 'مديرة FinTech Hive'),
-            company: t('DIFC (Dubai International Financial Centre)', 'مركز دبي المالي العالمي'),
-            sector: t('FinTech & Financial Services', 'التكنولوجيا المالية والخدمات المالية'),
-            location: t('Dubai', 'دبي'),
-            avatar: '💳',
-            theme: { bg: '#F0FDF4', accent: '#16A34A', light: '#DCFCE7' },
-            story: t(
-                "Raja Al Mazrouei pioneered the FinTech Hive at DIFC — the first and largest financial technology accelerator in the Middle East. Under her leadership, it became a launchpad for 200+ startups and attracted global partnerships. She was named one of Forbes' Most Powerful Arab Women in Business.",
-                'رائدة FinTech Hive في مركز دبي المالي العالمي — أول وأكبر مسرّعة للتكنولوجيا المالية في الشرق الأوسط. تحت قيادتها أصبحت منصة إطلاق لأكثر من 200 شركة ناشئة واستقطبت شراكات عالمية. اختيرت ضمن أقوى سيدات الأعمال العربيات في فوربس.'
-            ),
-            highlights: [t("Built MENA's first FinTech accelerator", 'بنت أول مسرّعة تكنولوجيا مالية في المنطقة'), t('Supported 200+ startup launches', 'دعمت إطلاق أكثر من 200 شركة ناشئة'), t('Forbes Most Powerful Arab Women in Business', 'فوربس أقوى سيدات الأعمال العربيات')],
-            quote: t('"FinTech is not about replacing banks — it\'s about making finance accessible to everyone."', '"التكنولوجيا المالية لا تتعلق باستبدال البنوك — بل بجعل التمويل متاحاً للجميع."'),
-        },
-        {
-            name: t('Khalaf Al Habtoor', 'خلف الحبتور'),
-            role: t('Founding Chairman', 'الرئيس المؤسس'),
-            prevRole: t('Started as a contractor in the 1970s', 'بدأ كمقاول في السبعينيات'),
-            company: t('Al Habtoor Group', 'مجموعة الحبتور'),
-            sector: t('Hospitality, Automotive & Construction', 'الضيافة والسيارات والبناء'),
-            location: t('Dubai', 'دبي'),
-            avatar: '🏨',
-            theme: { bg: '#FAF5FF', accent: '#9333EA', light: '#F3E8FF' },
-            story: t(
-                "Starting with a small contracting business in the 1970s, Khalaf Al Habtoor built one of the UAE's largest conglomerates spanning luxury hotels, automotive dealerships, and real estate. The Al Habtoor Group now operates 12 luxury hotels, is a major Mitsubishi distributor, and employs over 25,000 people. A true rags-to-riches Emirati story.",
-                'بدأ بعمل مقاولات صغير في السبعينيات، وبنى خلف الحبتور واحدة من أكبر التكتلات في الإمارات تشمل الفنادق الفاخرة ووكالات السيارات والعقارات. تدير مجموعة الحبتور الآن 12 فندقاً فاخراً وتوزع ميتسوبيشي وتوظف أكثر من 25,000 شخص. قصة نجاح إماراتية حقيقية.'
-            ),
-            highlights: [t('Built conglomerate from a single contracting firm', 'بنى تكتلاً من شركة مقاولات واحدة'), t('12 luxury hotels worldwide', '12 فندقاً فاخراً حول العالم'), t('Over 25,000 employees across sectors', 'أكثر من 25,000 موظف في قطاعات متعددة')],
-            quote: t('"I started with nothing but a dream and a determination to build something lasting for the UAE."', '"بدأت بلا شيء سوى حلم وعزيمة لبناء شيء دائم للإمارات."'),
-        },
-        {
-            name: t('Hussain Sajwani', 'حسين سجواني'),
-            role: t('Founder & Chairman', 'المؤسس والرئيس'),
-            prevRole: t('Started in catering & food services in the 1980s', 'بدأ في خدمات التموين والطعام في الثمانينيات'),
-            company: t('DAMAC Properties', 'داماك العقارية'),
-            sector: t('Real Estate & Luxury Development', 'العقارات والتطوير الفاخر'),
-            location: t('Dubai', 'دبي'),
-            avatar: '🏢',
-            theme: { bg: '#FEF2F2', accent: '#DC2626', light: '#FEE2E2' },
-            story: t(
-                "Hussain Sajwani started with a small catering business before founding DAMAC Properties in 2002 — now one of the largest private luxury real estate developers in the Middle East with projects in 10+ countries. Forbes estimates his net worth at over $4 billion, making him one of the wealthiest self-made Emiratis. DAMAC has delivered 43,000+ homes and built iconic branded residences with Versace, Fendi, and Trump.",
-                'بدأ حسين سجواني بعمل تموين صغير قبل تأسيس داماك العقارية في 2002 — الآن من أكبر شركات التطوير العقاري الفاخر الخاص في الشرق الأوسط بمشاريع في أكثر من 10 دول. تقدر فوربس ثروته بأكثر من 4 مليارات دولار. سلّمت داماك أكثر من 43,000 منزل وبنت مساكن فاخرة بعلامات فيرساتشي وفندي وترامب.'
-            ),
-            highlights: [t('Built DAMAC into a $4B+ real estate empire', 'بنى داماك إلى إمبراطورية عقارية بقيمة 4 مليارات دولار+'), t('43,000+ luxury homes delivered across 10+ countries', 'أكثر من 43,000 منزل فاخر في أكثر من 10 دول'), t('Partnered with Versace, Fendi, and Trump for branded residences', 'شراكة مع فيرساتشي وفندي وترامب للمساكن الفاخرة')],
-            quote: t('"I started from zero. Every dirham I made, I reinvested. That\'s how you build something that lasts."', '"بدأت من الصفر. كل درهم ربحته أعدت استثماره. هكذا تبني شيئاً يدوم."'),
-        },
-        {
-            name: t('Abdulla bin Sulayem', 'عبدالله بن سليم'),
-            role: t('Executive Chairman', 'الرئيس التنفيذي'),
-            prevRole: t('Former Director General, DMCC', 'المدير العام السابق لمركز دبي للسلع المتعددة'),
-            company: t('DMCC (Dubai Multi Commodities Centre)', 'مركز دبي للسلع المتعددة'),
-            sector: t('Commodities & Free Zones', 'السلع والمناطق الحرة'),
-            location: t('Dubai', 'دبي'),
-            avatar: '💎',
-            theme: { bg: '#FFFBEB', accent: '#D97706', light: '#FEF3C7' },
-            story: t(
-                "Abdulla bin Sulayem transformed DMCC from a small government initiative into the world's #1 Free Zone — six years running. Under his leadership, DMCC attracted 22,000+ companies from 170 nations and became the commercial backbone of Dubai's trade economy. He proved that Emiratis can build world-class business infrastructure.",
-                'حوّل عبدالله بن سليم مركز دبي للسلع المتعددة من مبادرة حكومية صغيرة إلى المنطقة الحرة رقم 1 في العالم — لست سنوات متتالية. استقطب تحت قيادته أكثر من 22,000 شركة من 170 دولة وأصبح العمود الفقري التجاري لاقتصاد دبي التجاري.'
-            ),
-            highlights: [t("Built world's #1 Free Zone (6 consecutive years)", 'بنى المنطقة الحرة الأولى عالمياً (6 سنوات متتالية)'), t('22,000+ registered companies', 'أكثر من 22,000 شركة مسجلة'), t('Attracts businesses from 170 nations', 'يستقطب أعمالاً من 170 دولة')],
-            quote: t('"Free zones are not just about tax benefits — they\'re about creating ecosystems where businesses flourish."', '"المناطق الحرة ليست فقط عن المزايا الضريبية — بل عن خلق بيئات تزدهر فيها الأعمال."'),
-        },
-        {
-            name: t('Noura Al Kaabi', 'نورة الكعبي'),
-            role: t('Former Minister of Culture & Youth', 'وزيرة الثقافة والشباب السابقة'),
-            prevRole: t('CEO, twofour54 (Abu Dhabi Media Zone)', 'الرئيسة التنفيذية لـ twofour54'),
-            company: t('twofour54 → UAE Government', 'twofour54 ← حكومة الإمارات'),
-            sector: t('Media & Creative Industries', 'الإعلام والصناعات الإبداعية'),
-            location: t('Abu Dhabi', 'أبوظبي'),
-            avatar: '🎬',
-            theme: { bg: '#FDF4FF', accent: '#A855F7', light: '#F3E8FF' },
-            story: t(
-                "Noura Al Kaabi built twofour54 into the Middle East's leading media free zone — attracting CNN, Sky News Arabia, and major film productions to Abu Dhabi. She later served as Minister of Culture and Youth, shaping the UAE's creative economy and positioning the country as a global content hub.",
-                'بنت نورة الكعبي twofour54 لتصبح المنطقة الإعلامية الحرة الرائدة في الشرق الأوسط — مستقطبة CNN وسكاي نيوز عربية وإنتاجات سينمائية كبرى إلى أبوظبي. شغلت لاحقاً منصب وزيرة الثقافة والشباب، مشكّلة الاقتصاد الإبداعي الإماراتي.'
-            ),
-            highlights: [t("Built MENA's leading media free zone", 'بنت المنطقة الإعلامية الحرة الرائدة في المنطقة'), t('Attracted CNN, Sky News to Abu Dhabi', 'استقطبت CNN وسكاي نيوز إلى أبوظبي'), t('Shaped UAE creative economy as Minister', 'شكّلت الاقتصاد الإبداعي الإماراتي كوزيرة')],
-            quote: t('"Culture is not a luxury — it is the soul of a nation\'s identity and its bridge to the world."', '"الثقافة ليست رفاهية — إنها روح هوية الأمة وجسرها إلى العالم."'),
-        },
-        {
-            name: t('Ahmed Bin Byat', 'أحمد بن بيات'),
-            role: t('Former Vice Chairman', 'نائب الرئيس السابق'),
-            prevRole: t('CEO, Dubai Holding', 'الرئيس التنفيذي لدبي القابضة'),
-            company: t('Dubai Holding', 'دبي القابضة'),
-            sector: t('Investment & Technology', 'الاستثمار والتكنولوجيا'),
-            location: t('Dubai', 'دبي'),
-            avatar: '🌐',
-            theme: { bg: '#ECFDF5', accent: '#059669', light: '#D1FAE5' },
-            story: t(
-                "Ahmed Bin Byat led Dubai Holding — the diversified conglomerate with over $30 billion in assets — through its expansion into technology, real estate, and hospitality. He was instrumental in launching du (Emirates Integrated Telecommunications), bringing telecom competition to the UAE and driving innovation in connectivity.",
-                'قاد أحمد بن بيات دبي القابضة — التكتل المتنوع بأصول تتجاوز 30 مليار دولار — خلال توسعها في التكنولوجيا والعقارات والضيافة. كان له دور محوري في إطلاق du (الإمارات للاتصالات المتكاملة)، جالباً المنافسة في قطاع الاتصالات الإماراتي.'
-            ),
-            highlights: [t('Led $30B+ Dubai Holding portfolio', 'قاد محفظة دبي القابضة بقيمة 30 مليار دولار+'), t('Launched du telecommunications', 'أطلق اتصالات du'), t('Pioneered UAE telecom competition', 'رائد المنافسة في قطاع الاتصالات الإماراتي')],
-            quote: t('"Competition drives innovation. When we launched du, we weren\'t just building a network — we were changing an industry."', '"المنافسة تدفع الابتكار. عندما أطلقنا du، لم نكن نبني شبكة فقط — كنا نغيّر صناعة."'),
-        },
-    ];
+    const [successStories, setSuccessStories] = useState<any[]>([]);
+    const [sectorBreakdown, setSectorBreakdown] = useState<any[]>([]);
 
-    const sectorBreakdown = [
-        { sector: t('Technology & Space', 'التكنولوجيا والفضاء'), count: 2, icon: '🚀', color: brand.blue, colorText: brand.blueText },
-        { sector: t('Real Estate & Construction', 'العقارات والبناء'), count: 2, icon: '🏗️', color: brand.amber, colorText: brand.amberText },
-        { sector: t('Finance & FinTech', 'المالية والتكنولوجيا المالية'), count: 2, icon: '💳', color: brand.green, colorText: brand.greenText },
-        { sector: t('Media & Creative', 'الإعلام والإبداع'), count: 1, icon: '🎬', color: brand.purple, colorText: brand.purpleText },
-        { sector: t('Trade & Free Zones', 'التجارة والمناطق الحرة'), count: 1, icon: '💎', color: '#FEF3C7', colorText: '#92400E' },
-    ];
+    useEffect(() => {
+        restClient.get('/api/lifelong/success-stories').then(r => {
+            setSuccessStories((r.data as any[]).map((s: any) => ({
+                name: t(s.name_en, s.name_ar), role: t(s.role_en, s.role_ar),
+                prevRole: t(s.prev_role_en, s.prev_role_ar), company: t(s.company_en, s.company_ar),
+                sector: t(s.sector_en, s.sector_ar), location: t(s.location_en, s.location_ar),
+                avatar: s.avatar, theme: { bg: s.theme_bg, accent: s.theme_accent, light: s.theme_light },
+                story: t(s.story_en, s.story_ar), quote: t(s.quote_en, s.quote_ar),
+                highlights: (s.highlights || []).map((h: any) => t(h.highlight_en, h.highlight_ar)),
+            })));
+        }).catch(() => { });
+
+        restClient.get('/api/lifelong/success-stories/stats').then(r => {
+            const d = r.data as any;
+            if (d.sectors) setSectorBreakdown(d.sectors.map((s: any) => ({
+                sector: t(s.sector_en, s.sector_ar), count: s.count, icon: s.icon,
+                color: s.color, colorText: s.color_text,
+            })));
+        }).catch(() => { });
+
+    }, [isRTL]);
 
     const stats = [
         { value: '8', label: t('Success Stories', 'قصة نجاح'), icon: Star },
@@ -279,22 +166,22 @@ const ShareSuccessStoriesPage: React.FC = () => {
 
             {/* Stories grouped by theme */}
             {[
-                { title: t('Builders & Developers', 'البنّاؤون والمطوّرون'), desc: t('Emiratis who built physical and digital infrastructure', 'إماراتيون بنوا البنية التحتية المادية والرقمية'), stories: [successStories[1], successStories[3], successStories[5]] },
-                { title: t('Innovators & Disruptors', 'المبتكرون والرواد'), desc: t('Emiratis who pioneered new industries and technologies', 'إماراتيون رائدون في صناعات وتقنيات جديدة'), stories: [successStories[0], successStories[2], successStories[7]] },
-                { title: t('Culture & Capital', 'الثقافة ورأس المال'), desc: t("Emiratis who shaped the nation's creative and investment landscape", 'إماراتيون شكّلوا المشهد الإبداعي والاستثماري للأمة'), stories: [successStories[6], successStories[4]] },
+                { title: t('Builders & Developers', 'البنّاؤون والمطوّرون'), desc: t('Emiratis who built physical and digital infrastructure', 'إماراتيون بنوا البنية التحتية المادية والرقمية'), stories: [successStories[1], successStories[3], successStories[5]].filter(Boolean) },
+                { title: t('Innovators & Disruptors', 'المبتكرون والرواد'), desc: t('Emiratis who pioneered new industries and technologies', 'إماراتيون رائدون في صناعات وتقنيات جديدة'), stories: [successStories[0], successStories[2], successStories[7]].filter(Boolean) },
+                { title: t('Culture & Capital', 'الثقافة ورأس المال'), desc: t("Emiratis who shaped the nation's creative and investment landscape", 'إماراتيون شكّلوا المشهد الإبداعي والاستثماري للأمة'), stories: [successStories[6], successStories[4]].filter(Boolean) },
             ].map((group, i) => (
                 <div key={i} style={{ marginBottom: 24 }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{group.title}</h3>
                     <p style={{ fontSize: 13, color: brand.textSecondary, margin: '0 0 12px' }}>{group.desc}</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
                         {group.stories.map((s, j) => (
-                            <div key={j} style={{ background: s.theme.bg, borderRadius: 10, padding: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                            <div key={j} style={{ background: s.theme?.bg || '#F9FAFB', borderRadius: 10, padding: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                                 <span style={{ fontSize: 28, flexShrink: 0 }}>{s.avatar}</span>
                                 <div>
                                     <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, margin: '0 0 2px' }}>{s.name}</h4>
-                                    <div style={{ fontSize: 11, color: s.theme.accent, fontWeight: 600 }}>{s.company}</div>
+                                    <div style={{ fontSize: 11, color: s.theme?.accent || brand.primary, fontWeight: 600 }}>{s.company}</div>
                                     <div style={{ fontSize: 12, color: brand.textSecondary, marginTop: 4, lineHeight: 1.4 }}>
-                                        {s.highlights[0]}
+                                        {s.highlights?.[0]}
                                     </div>
                                 </div>
                             </div>

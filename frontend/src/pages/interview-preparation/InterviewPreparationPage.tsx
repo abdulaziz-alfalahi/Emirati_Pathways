@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
+import { careerLifecycleAPI, skillGraphAPI, type CareerStage, type UserSkill } from '@/services/intelligenceAPI';
 import {
     MessageCircle, Video, BookOpen, Lightbulb, BarChart3,
     Play, Mic, Star, Clock, TrendingUp, Target, Award,
@@ -37,6 +38,40 @@ const InterviewPreparationPage: React.FC = () => {
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
+
+    // ── Intelligence: Career Stage + Skill Profile ──
+    const [careerStage, setCareerStage] = useState<CareerStage | null>(null);
+    const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const stage = await careerLifecycleAPI.getStage();
+                setCareerStage(stage);
+            } catch { /* graceful fallback */ }
+        })();
+        (async () => {
+            try {
+                const data = await skillGraphAPI.getUserSkills();
+                setUserSkills(data.skills || []);
+            } catch { /* graceful fallback */ }
+        })();
+    }, []);
+
+    // Personalized focus based on career stage
+    const getFocusAreas = (): { label: string; emphasis: string } => {
+        const stage = careerStage?.current_stage || '';
+        if (stage === 'student' || stage === 'intern')
+            return { label: t('Entry Level', 'مستوى مبتدئ'), emphasis: t('Focus on behavioral and situational questions', 'ركّز على الأسئلة السلوكية والمواقف') };
+        if (stage === 'mid_career')
+            return { label: t('Mid-Career', 'منتصف المسيرة'), emphasis: t('Balance technical depth and leadership scenarios', 'وازن بين العمق التقني وسيناريوهات القيادة') };
+        if (stage === 'senior' || stage === 'executive')
+            return { label: t('Senior/Executive', 'أقدم/تنفيذي'), emphasis: t('Focus on leadership, strategy, and cultural fit', 'ركّز على القيادة والاستراتيجية والتوافق الثقافي') };
+        return { label: t('All Levels', 'جميع المستويات'), emphasis: t('Comprehensive preparation across all question types', 'إعداد شامل عبر جميع أنواع الأسئلة') };
+    };
+
+    const strengthSkills = userSkills.filter(s => s.proficiency === 'advanced' || s.proficiency === 'expert').slice(0, 3);
+    const growthSkills = userSkills.filter(s => s.proficiency === 'novice' || s.proficiency === 'beginner').slice(0, 3);
 
     /* ──────────────────────── DATA ──────────────────────── */
 
@@ -105,6 +140,58 @@ const InterviewPreparationPage: React.FC = () => {
     /* ── Tab 1: Question Bank ── */
     const questionsTab = (
         <div>
+            {/* Intelligence: Personalized Interview Focus */}
+            {(careerStage || userSkills.length > 0) && (
+                <div style={{ background: brand.primarySurface, border: `1px solid ${brand.primary}22`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <Zap size={16} style={{ color: brand.primary }} />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>
+                            {t('Your Personalized Focus', 'تركيزك الشخصي')}
+                        </span>
+                        {careerStage && (
+                            <span style={{ background: brand.primary, color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6, marginLeft: 'auto' }}>
+                                {getFocusAreas().label}
+                            </span>
+                        )}
+                    </div>
+                    {careerStage && (
+                        <p style={{ fontSize: 13, color: brand.textSecondary, margin: '0 0 10px 0', lineHeight: 1.5 }}>
+                            {getFocusAreas().emphasis}
+                        </p>
+                    )}
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                        {strengthSkills.length > 0 && (
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: brand.greenText, marginBottom: 4 }}>
+                                    {t('Your Strengths', 'نقاط قوتك')}
+                                </div>
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                    {strengthSkills.map((s, i) => (
+                                        <span key={i} style={{ background: brand.green, color: brand.greenText, fontSize: 11, padding: '2px 8px', borderRadius: 6 }}>
+                                            {s.skill_name}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {growthSkills.length > 0 && (
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: 11, fontWeight: 600, color: brand.amberText, marginBottom: 4 }}>
+                                    {t('Areas to Prepare', 'مجالات للتحضير')}
+                                </div>
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                    {growthSkills.map((s, i) => (
+                                        <span key={i} style={{ background: brand.amber, color: brand.amberText, fontSize: 11, padding: '2px 8px', borderRadius: 6 }}>
+                                            {s.skill_name}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
                 {t('Interview Question Bank', 'بنك أسئلة المقابلات')}
             </h2>

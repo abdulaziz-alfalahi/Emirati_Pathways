@@ -71,15 +71,8 @@ const EmployerDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-      if (!token) return;
-
-      const response = await fetch('http://localhost:5001/api/employer/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+      const response = await fetch(`${API_BASE}/api/education/employer/dashboard`);
 
       if (response.ok) {
         const data = await response.json();
@@ -421,9 +414,9 @@ const EmployerDashboard = () => {
                     <div key={index} className="flex items-center p-4 bg-gray-50 rounded-lg">
                       <div className="flex-shrink-0">
                         <div className={`w-3 h-3 rounded-full ${activity.type === 'application' ? 'bg-blue-500' :
-                            activity.type === 'interview' ? 'bg-purple-500' :
-                              activity.type === 'hire' ? 'bg-green-500' :
-                                'bg-orange-500'
+                          activity.type === 'interview' ? 'bg-purple-500' :
+                            activity.type === 'hire' ? 'bg-green-500' :
+                              'bg-orange-500'
                           }`}></div>
                       </div>
                       <div className="ml-4 flex-1">

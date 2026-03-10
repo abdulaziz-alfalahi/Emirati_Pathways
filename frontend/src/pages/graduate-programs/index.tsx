@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { GraduationCap, Users, Building, Target, BookOpen, Award, Clock, MapPin, Star, ArrowRight, ArrowLeft, CheckCircle, Globe, Briefcase } from 'lucide-react';
@@ -14,6 +14,8 @@ const brand = {
   textSecondary: '#6B7280',
 };
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+
 const GraduateProgramsPage: React.FC = () => {
 
   const { i18n } = useTranslation();
@@ -21,153 +23,43 @@ const GraduateProgramsPage: React.FC = () => {
   const t = (en: string, ar: string) => isRTL ? ar : en;
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
 
-  // Graduate program data (translated)
-  const programs = [
-    {
-      id: '1',
-      title: t('MBA – Executive Leadership', 'ماجستير إدارة أعمال – القيادة التنفيذية'),
-      university: t('Mohammed Bin Rashid School of Government', 'كلية محمد بن راشد للإدارة الحكومية'),
-      location: t('Dubai, UAE', 'دبي، الإمارات'),
-      duration: t('18 months', '18 شهراً'),
-      type: 'Full-Time',
-      typeLabel: t('Full-Time', 'دوام كامل'),
-      tuition: t('AED 95,000', '95,000 د.إ'),
-      rating: 4.9,
-      enrolled: 45,
-      capacity: 50,
-      featured: true,
-      specializations: [
-        t('Strategic Management', 'الإدارة الاستراتيجية'),
-        t('Digital Transformation', 'التحول الرقمي'),
-        t('Government Innovation', 'الابتكار الحكومي'),
-      ],
-      highlights: [
-        t('AACSB Accredited', 'معتمد من AACSB'),
-        t('Industry Capstone', 'مشروع تطبيقي'),
-        t('C-Suite Mentorship', 'إرشاد من القيادات العليا'),
-      ],
-    },
-    {
-      id: '2',
-      title: t('MSc Data Science & AI', 'ماجستير علوم البيانات والذكاء الاصطناعي'),
-      university: t('Khalifa University', 'جامعة خليفة'),
-      location: t('Abu Dhabi, UAE', 'أبوظبي، الإمارات'),
-      duration: t('2 years', 'سنتان'),
-      type: 'Full-Time',
-      typeLabel: t('Full-Time', 'دوام كامل'),
-      tuition: t('AED 78,000', '78,000 د.إ'),
-      rating: 4.8,
-      enrolled: 60,
-      capacity: 70,
-      featured: true,
-      specializations: [
-        t('Machine Learning', 'التعلم الآلي'),
-        t('Natural Language Processing', 'معالجة اللغات الطبيعية'),
-        t('Computer Vision', 'الرؤية الحاسوبية'),
-      ],
-      highlights: [
-        t('Research Lab Access', 'الوصول لمختبرات البحث'),
-        t('Industry Partnerships', 'شراكات صناعية'),
-        t('Publication Support', 'دعم النشر العلمي'),
-      ],
-    },
-    {
-      id: '3',
-      title: t('MSc Engineering Management', 'ماجستير إدارة الهندسة'),
-      university: t('American University of Sharjah', 'الجامعة الأمريكية في الشارقة'),
-      location: t('Sharjah, UAE', 'الشارقة، الإمارات'),
-      duration: t('2 years', 'سنتان'),
-      type: 'Part-Time',
-      typeLabel: t('Part-Time', 'دوام جزئي'),
-      tuition: t('AED 72,000', '72,000 د.إ'),
-      rating: 4.7,
-      enrolled: 35,
-      capacity: 45,
-      featured: false,
-      specializations: [
-        t('Systems Engineering', 'هندسة النظم'),
-        t('Project Management', 'إدارة المشاريع'),
-        t('Quality Engineering', 'هندسة الجودة'),
-      ],
-      highlights: [
-        t('Flexible Schedule', 'جدول مرن'),
-        t('Industry Projects', 'مشاريع صناعية'),
-        t('Professional Network', 'شبكة مهنية'),
-      ],
-    },
-    {
-      id: '4',
-      title: t('Master of Public Administration', 'ماجستير الإدارة العامة'),
-      university: t('UAE University', 'جامعة الإمارات'),
-      location: t('Al Ain, UAE', 'العين، الإمارات'),
-      duration: t('2 years', 'سنتان'),
-      type: 'Full-Time',
-      typeLabel: t('Full-Time', 'دوام كامل'),
-      tuition: t('AED 55,000', '55,000 د.إ'),
-      rating: 4.6,
-      enrolled: 40,
-      capacity: 60,
-      featured: false,
-      specializations: [
-        t('Policy Analysis', 'تحليل السياسات'),
-        t('Urban Governance', 'الحوكمة الحضرية'),
-        t('Public Finance', 'المالية العامة'),
-      ],
-      highlights: [
-        t('Government Placements', 'تعيينات حكومية'),
-        t('Policy Lab Access', 'الوصول لمختبر السياسات'),
-        t('International Exchange', 'تبادل دولي'),
-      ],
-    },
-    {
-      id: '5',
-      title: t('PhD in Sustainable Energy', 'دكتوراه في الطاقة المستدامة'),
-      university: t('Masdar Institute – Khalifa University', 'معهد مصدر – جامعة خليفة'),
-      location: t('Abu Dhabi, UAE', 'أبوظبي، الإمارات'),
-      duration: t('3-4 years', '3-4 سنوات'),
-      type: 'Full-Time Research',
-      typeLabel: t('Full-Time Research', 'بحث بدوام كامل'),
-      tuition: t('Fully Funded', 'ممولة بالكامل'),
-      rating: 4.9,
-      enrolled: 15,
-      capacity: 20,
-      featured: true,
-      specializations: [
-        t('Solar Energy', 'الطاقة الشمسية'),
-        t('Energy Storage', 'تخزين الطاقة'),
-        t('Smart Grid Systems', 'أنظمة الشبكات الذكية'),
-      ],
-      highlights: [
-        t('Full Scholarship', 'منحة كاملة'),
-        t('Research Stipend', 'بدل بحثي'),
-        t('International Conference Travel', 'سفر لمؤتمرات دولية'),
-      ],
-    },
-    {
-      id: '6',
-      title: t('LLM – International Business Law', 'ماجستير القانون – قانون الأعمال الدولي'),
-      university: t('University of Sharjah', 'جامعة الشارقة'),
-      location: t('Sharjah, UAE', 'الشارقة، الإمارات'),
-      duration: t('18 months', '18 شهراً'),
-      type: 'Part-Time',
-      typeLabel: t('Part-Time', 'دوام جزئي'),
-      tuition: t('AED 65,000', '65,000 د.إ'),
-      rating: 4.5,
-      enrolled: 28,
-      capacity: 35,
-      featured: false,
-      specializations: [
-        t('Arbitration & Dispute Resolution', 'التحكيم وحل النزاعات'),
-        t('Corporate Governance', 'حوكمة الشركات'),
-        t('IP Law', 'قانون الملكية الفكرية'),
-      ],
-      highlights: [
-        t('Moot Court Competitions', 'مسابقات المحاكم الصورية'),
-        t('Dual Certification', 'شهادة مزدوجة'),
-        t('Legal Clinic', 'عيادة قانونية'),
-      ],
-    },
-  ];
+  const [programs, setPrograms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const resp = await fetch(`${API_BASE}/api/education/graduate-programs`);
+        if (!resp.ok) throw new Error('API error');
+        const data = await resp.json();
+        if (!cancelled) {
+          setPrograms((data.programs || []).map((p: any) => ({
+            id: String(p.id),
+            title: isRTL ? (p.title_ar || p.title) : p.title,
+            university: isRTL ? (p.university_ar || p.university) : p.university,
+            location: isRTL ? (p.location_ar || p.location) : p.location,
+            duration: isRTL ? (p.duration_ar || p.duration) : p.duration,
+            type: p.program_type || 'Full-Time',
+            typeLabel: isRTL ? (p.type_label_ar || p.type_label) : p.type_label,
+            tuition: isRTL ? (p.tuition_ar || p.tuition) : p.tuition,
+            rating: Number(p.rating) || 0,
+            enrolled: p.enrolled || 0,
+            capacity: p.capacity || 1,
+            featured: p.featured || false,
+            specializations: (isRTL ? p.specializations_ar : p.specializations) || [],
+            highlights: (isRTL ? p.highlights_ar : p.highlights) || [],
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to load graduate programs:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isRTL]);
 
   const generalRequirements = [
     t('UAE National or eligible resident', 'مواطن إماراتي أو مقيم مؤهل'),
@@ -201,7 +93,7 @@ const GraduateProgramsPage: React.FC = () => {
     const matchSearch = !searchQuery ||
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      p.specializations.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchType && matchSearch;
   });
 

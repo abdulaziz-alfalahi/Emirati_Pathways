@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
+import { restClient } from '@/utils/api';
 import {
     BarChart3, TrendingUp, Target, Award, Users,
     Clock, ChevronRight, ChevronLeft, Star, CheckCircle, Zap,
     Brain, BookOpen, Briefcase, ArrowUpRight, ArrowDownRight,
-    Calendar, Eye, FileText
+    Calendar, Eye, FileText, Loader2
 } from 'lucide-react';
 
 // Brand tokens (unified with Education Pathway)
@@ -29,6 +30,51 @@ const brand = {
     purpleText: '#6B21A8',
 };
 
+/* ────── Types ────── */
+interface AnalyticsData {
+    profile: { full_name?: string; email?: string; phone?: string; created_at?: string };
+    overview: {
+        profile_completeness: number;
+        total_applications: number;
+        job_applications: number;
+        internship_applications: number;
+        gig_applications: number;
+        interview_count: number;
+        interview_rate: number;
+        skills_count: number;
+        certifications_count: number;
+        portfolio_projects: number;
+        application_statuses: Record<string, number>;
+    };
+    skills: { name: string; level: number; demand: string }[];
+    certifications: any[];
+    goals: { title: string; title_ar?: string; progress: number; target: number; deadline?: string; status?: string }[];
+    recent_applications: any[];
+    experience_years: number;
+}
+
+/* ──────── Fallback data (used when API returns no real data) ──────── */
+const FALLBACK: AnalyticsData = {
+    profile: { full_name: 'Guest User' },
+    overview: {
+        profile_completeness: 25, total_applications: 0, job_applications: 0,
+        internship_applications: 0, gig_applications: 0, interview_count: 0,
+        interview_rate: 0, skills_count: 0, certifications_count: 0,
+        portfolio_projects: 0, application_statuses: {},
+    },
+    skills: [
+        { name: 'Project Management', level: 70, demand: 'High' },
+        { name: 'Data Analysis', level: 65, demand: 'Very High' },
+        { name: 'Cloud Computing', level: 55, demand: 'High' },
+        { name: 'Leadership', level: 80, demand: 'Medium' },
+        { name: 'Communication', level: 75, demand: 'High' },
+    ],
+    certifications: [],
+    goals: [],
+    recent_applications: [],
+    experience_years: 0,
+};
+
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const AnalyticsPage: React.FC = () => {
@@ -38,55 +84,39 @@ const AnalyticsPage: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
+    /* ── API State ── */
+    const [data, setData] = useState<AnalyticsData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await restClient.get('/api/career-services/analytics/candidate');
+                const d = res.data as AnalyticsData;
+                // If user has no skills data at all, merge fallback skills so the page isn't empty
+                if (!d.skills || d.skills.length === 0) d.skills = FALLBACK.skills;
+                setData(d);
+            } catch (err) {
+                console.error('Failed to load candidate analytics:', err);
+                setData(FALLBACK);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const d = data || FALLBACK;
+    const ov = d.overview;
+
     /* ──────────────────────── DATA ──────────────────────── */
 
     const overviewMetrics = [
-        { label: t('Profile Views', 'مشاهدات الملف'), value: '1,247', change: '+12%', up: true, Icon: Eye },
-        { label: t('Applications Sent', 'الطلبات المرسلة'), value: '18', change: '+3', up: true, Icon: FileText },
-        { label: t('Interview Rate', 'معدل المقابلات'), value: '33%', change: '+5%', up: true, Icon: Users },
-        { label: t('Avg. Match Score', 'متوسط درجة التوافق'), value: '87%', change: '+2%', up: true, Icon: Target },
-        { label: t('Skills Completed', 'المهارات المكتملة'), value: '12', change: '+2', up: true, Icon: Brain },
-        { label: t('Certifications', 'الشهادات'), value: '4', change: '+1', up: true, Icon: Award },
-    ];
-
-    const weeklyActivity = [
-        { day: t('Mon', 'الإثنين'), applications: 3, views: 42 },
-        { day: t('Tue', 'الثلاثاء'), applications: 1, views: 55 },
-        { day: t('Wed', 'الأربعاء'), applications: 2, views: 38 },
-        { day: t('Thu', 'الخميس'), applications: 4, views: 67 },
-        { day: t('Fri', 'الجمعة'), applications: 2, views: 51 },
-        { day: t('Sat', 'السبت'), applications: 0, views: 22 },
-        { day: t('Sun', 'الأحد'), applications: 1, views: 18 },
-    ];
-
-    const topSkills = [
-        { name: t('Project Management', 'إدارة المشاريع'), level: 92, demand: t('High', 'مرتفع'), demandKey: 'High' },
-        { name: t('Data Analysis', 'تحليل البيانات'), level: 85, demand: t('Very High', 'مرتفع جداً'), demandKey: 'Very High' },
-        { name: t('Cloud Architecture', 'هندسة السحابة'), level: 78, demand: t('High', 'مرتفع'), demandKey: 'High' },
-        { name: t('Leadership', 'القيادة'), level: 88, demand: t('Medium', 'متوسط'), demandKey: 'Medium' },
-        { name: t('Communication', 'التواصل'), level: 82, demand: t('High', 'مرتفع'), demandKey: 'High' },
-    ];
-
-    const careerMilestones = [
-        { title: t('Completed Leadership Assessment', 'أكمل تقييم القيادة'), date: t('Feb 15, 2026', '15 فبراير 2026'), type: t('Assessment', 'تقييم'), icon: '🏆' },
-        { title: t('Applied to Emirates Group', 'تقدّم لمجموعة الإمارات'), date: t('Feb 12, 2026', '12 فبراير 2026'), type: t('Application', 'طلب'), icon: '📨' },
-        { title: t('Earned Digital Literacy Badge', 'حصل على شارة الإلمام الرقمي'), date: t('Feb 10, 2026', '10 فبراير 2026'), type: t('Badge', 'شارة'), icon: '🎖️' },
-        { title: t('Portfolio viewed by 3 recruiters', 'شوهد الملف من قبل 3 موظِّفين'), date: t('Feb 8, 2026', '8 فبراير 2026'), type: t('Engagement', 'تفاعل'), icon: '👀' },
-        { title: t('Completed AWS Cloud Certification', 'أكمل شهادة AWS السحابية'), date: t('Feb 5, 2026', '5 فبراير 2026'), type: t('Certification', 'شهادة'), icon: '📜' },
-    ];
-
-    const goalProgress = [
-        { title: t('Complete 5 Assessments', 'أكمل 5 تقييمات'), current: 3, target: 5, deadline: t('Mar 2026', 'مارس 2026') },
-        { title: t('Apply to 20 Positions', 'تقدّم لـ 20 وظيفة'), current: 18, target: 20, deadline: t('Mar 2026', 'مارس 2026') },
-        { title: t('Earn 5 Certifications', 'احصل على 5 شهادات'), current: 4, target: 5, deadline: t('Apr 2026', 'أبريل 2026') },
-        { title: t('Reach 90% Match Score', 'حقّق 90% درجة توافق'), current: 87, target: 90, deadline: t('Mar 2026', 'مارس 2026') },
-    ];
-
-    const stats = [
-        { value: '87%', label: t('Match Score', 'درجة التوافق'), icon: Target },
-        { value: '1,247', label: t('Profile Views', 'مشاهدات الملف'), icon: Eye },
-        { value: '18', label: t('Applications', 'الطلبات'), icon: FileText },
-        { value: '33%', label: t('Interview Rate', 'معدل المقابلات'), icon: TrendingUp },
+        { label: t('Profile Score', 'نقاط الملف'), value: `${ov.profile_completeness}%`, change: ov.profile_completeness >= 50 ? `${ov.profile_completeness}%` : t('Low', 'منخفض'), up: ov.profile_completeness >= 50, Icon: Eye },
+        { label: t('Applications Sent', 'الطلبات المرسلة'), value: String(ov.total_applications), change: `${ov.job_applications} jobs`, up: ov.total_applications > 0, Icon: FileText },
+        { label: t('Interview Rate', 'معدل المقابلات'), value: `${ov.interview_rate}%`, change: `${ov.interview_count} total`, up: ov.interview_rate > 0, Icon: Users },
+        { label: t('Skills Tracked', 'المهارات المتابَعة'), value: String(ov.skills_count || d.skills.length), change: '', up: true, Icon: Brain },
+        { label: t('Certifications', 'الشهادات'), value: String(ov.certifications_count), change: '', up: ov.certifications_count > 0, Icon: Award },
+        { label: t('Portfolio Items', 'عناصر المحفظة'), value: String(ov.portfolio_projects), change: '', up: ov.portfolio_projects > 0, Icon: Target },
     ];
 
     /* ── Tab 1: Overview ── */
@@ -102,66 +132,101 @@ const AnalyticsPage: React.FC = () => {
                 )}
             </p>
 
-            {/* Metric Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14, marginBottom: 28 }}>
-                {overviewMetrics.map((m, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 8, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <m.Icon size={18} style={{ color: brand.primary }} />
-                            </div>
-                            <span style={{
-                                display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 600,
-                                color: m.up ? brand.greenText : brand.redText,
-                            }}>
-                                {m.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                {m.change}
-                            </span>
-                        </div>
-                        <div style={{ fontSize: 24, fontWeight: 700, color: brand.textPrimary }}>{m.value}</div>
-                        <span style={{ fontSize: 12, color: brand.textSecondary }}>{m.label}</span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Weekly Activity */}
-            <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 28 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 16px' }}>{t('Weekly Activity', 'النشاط الأسبوعي')}</h3>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 120 }}>
-                    {weeklyActivity.map((d, i) => {
-                        const maxViews = Math.max(...weeklyActivity.map(w => w.views));
-                        const barHeight = (d.views / maxViews) * 100;
-                        return (
-                            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                                <span style={{ fontSize: 10, color: brand.textSecondary }}>{d.views}</span>
-                                <div style={{ width: '100%', maxWidth: 40, height: `${barHeight}%`, background: brand.primary, borderRadius: '6px 6px 0 0', minHeight: 8, opacity: 0.7 + (barHeight / 300) }} />
-                                <span style={{ fontSize: 11, color: brand.textSecondary }}>{d.day}</span>
-                            </div>
-                        );
-                    })}
+            {loading && (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                    <Loader2 size={24} className="animate-spin" style={{ margin: '0 auto', color: brand.primary }} />
                 </div>
-            </div>
+            )}
 
-            {/* Recent Milestones */}
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Recent Milestones', 'الإنجازات الأخيرة')}</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {careerMilestones.map((m, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 20 }}>{m.icon}</span>
-                        <div style={{ flex: 1 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary }}>{m.title}</span>
-                            <div style={{ fontSize: 12, color: brand.textSecondary }}>{m.date}</div>
-                        </div>
-                        <span style={{ background: brand.primarySurface, color: brand.primary, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6 }}>
-                            {m.type}
-                        </span>
+            {!loading && (
+                <>
+                    {/* Metric Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14, marginBottom: 28 }}>
+                        {overviewMetrics.map((m, i) => (
+                            <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: 8, background: brand.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <m.Icon size={18} style={{ color: brand.primary }} />
+                                    </div>
+                                    {m.change && (
+                                        <span style={{
+                                            display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 600,
+                                            color: m.up ? brand.greenText : brand.redText,
+                                        }}>
+                                            {m.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                            {m.change}
+                                        </span>
+                                    )}
+                                </div>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: brand.textPrimary }}>{m.value}</div>
+                                <span style={{ fontSize: 12, color: brand.textSecondary }}>{m.label}</span>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+
+                    {/* Application Status Breakdown */}
+                    {Object.keys(ov.application_statuses).length > 0 && (
+                        <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 24, marginBottom: 28 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: '0 0 16px' }}>{t('Application Statuses', 'حالات الطلبات')}</h3>
+                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                {Object.entries(ov.application_statuses).map(([status, count]) => (
+                                    <div key={status} style={{
+                                        padding: '10px 16px', borderRadius: 10,
+                                        background: status === 'hired' ? brand.green : status.includes('interview') ? brand.blue : status === 'rejected' ? brand.red : brand.amber,
+                                        color: status === 'hired' ? brand.greenText : status.includes('interview') ? brand.blueText : status === 'rejected' ? brand.redText : brand.amberText,
+                                        fontSize: 13, fontWeight: 600,
+                                    }}>
+                                        {status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: {count}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Recent Applications */}
+                    {d.recent_applications.length > 0 && (
+                        <>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 12 }}>{t('Recent Applications', 'الطلبات الأخيرة')}</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {d.recent_applications.map((a: any, i: number) => (
+                                    <div key={i} style={{ background: '#fff', borderRadius: 10, border: `1px solid ${brand.border}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <span style={{ fontSize: 20 }}>📨</span>
+                                        <div style={{ flex: 1 }}>
+                                            <span style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary }}>{a.job_title || t('Job Application', 'طلب وظيفة')}</span>
+                                            <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                                {a.company && `${a.company} · `}{a.applied_at ? new Date(a.applied_at).toLocaleDateString() : ''}
+                                            </div>
+                                        </div>
+                                        <span style={{ background: brand.primarySurface, color: brand.primary, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6 }}>
+                                            {(a.status || 'applied').replace(/_/g, ' ')}
+                                        </span>
+                                        {a.match_score && (
+                                            <span style={{ background: brand.green, color: brand.greenText, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6 }}>
+                                                {a.match_score}% {t('match', 'تطابق')}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Empty state */}
+                    {ov.total_applications === 0 && d.recent_applications.length === 0 && (
+                        <div style={{ background: brand.primarySurface, borderRadius: 12, padding: 32, textAlign: 'center' }}>
+                            <FileText size={40} style={{ color: brand.primary, margin: '0 auto 12px', opacity: 0.5 }} />
+                            <p style={{ fontSize: 14, color: brand.textSecondary }}>
+                                {t('No applications yet. Start applying to jobs to see your analytics here!', 'لا توجد طلبات بعد. ابدأ بالتقديم على الوظائف لرؤية تحليلاتك هنا!')}
+                            </p>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 
     /* ── Tab 2: Skills Analytics ── */
+    const topSkills = d.skills.slice(0, 10);
     const skillsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -174,57 +239,100 @@ const AnalyticsPage: React.FC = () => {
                 )}
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
-                {topSkills.map((s, i) => (
-                    <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{s.name}</span>
-                                <span style={{
-                                    background: s.demandKey === 'Very High' ? brand.green : s.demandKey === 'High' ? brand.blue : brand.amber,
-                                    color: s.demandKey === 'Very High' ? brand.greenText : s.demandKey === 'High' ? brand.blueText : brand.amberText,
-                                    fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6,
-                                }}>
-                                    {s.demand} {t('Demand', 'طلب')}
-                                </span>
+            {topSkills.length === 0 ? (
+                <div style={{ background: brand.primarySurface, borderRadius: 12, padding: 32, textAlign: 'center' }}>
+                    <Brain size={40} style={{ color: brand.primary, margin: '0 auto 12px', opacity: 0.5 }} />
+                    <p style={{ fontSize: 14, color: brand.textSecondary }}>
+                        {t('Add skills to your profile to see analytics here.', 'أضف مهارات إلى ملفك الشخصي لرؤية تحليلاتك هنا.')}
+                    </p>
+                </div>
+            ) : (
+                <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
+                        {topSkills.map((s, i) => (
+                            <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 18 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{s.name}</span>
+                                        <span style={{
+                                            background: s.demand === 'Very High' ? brand.green : s.demand === 'High' ? brand.blue : brand.amber,
+                                            color: s.demand === 'Very High' ? brand.greenText : s.demand === 'High' ? brand.blueText : brand.amberText,
+                                            fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 6,
+                                        }}>
+                                            {s.demand === 'Very High' ? t('Very High Demand', 'طلب مرتفع جداً')
+                                                : s.demand === 'High' ? t('High Demand', 'طلب مرتفع')
+                                                    : t('Medium Demand', 'طلب متوسط')}
+                                        </span>
+                                    </div>
+                                    <span style={{ fontSize: 16, fontWeight: 700, color: s.level >= 85 ? brand.greenText : s.level >= 75 ? brand.primary : brand.amberText }}>
+                                        {s.level}%
+                                    </span>
+                                </div>
+                                <div style={{ height: 8, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
+                                    <div style={{
+                                        width: `${s.level}%`, height: '100%', borderRadius: 99,
+                                        background: s.level >= 85 ? '#22C55E' : s.level >= 75 ? brand.primary : '#F59E0B',
+                                    }} />
+                                </div>
                             </div>
-                            <span style={{ fontSize: 16, fontWeight: 700, color: s.level >= 85 ? brand.greenText : s.level >= 75 ? brand.primary : brand.amberText }}>
-                                {s.level}%
-                            </span>
+                        ))}
+                    </div>
+
+                    {/* Skill Insights */}
+                    <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                            <Zap size={20} style={{ color: brand.primary }} />
+                            <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Skill Insights', 'رؤى المهارات')}</h3>
                         </div>
-                        <div style={{ height: 8, background: '#F3F4F6', borderRadius: 99, overflow: 'hidden' }}>
-                            <div style={{
-                                width: `${s.level}%`, height: '100%', borderRadius: 99,
-                                background: s.level >= 85 ? '#22C55E' : s.level >= 75 ? brand.primary : '#F59E0B',
-                            }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {(() => {
+                                const insights: string[] = [];
+                                const veryHighDemand = topSkills.filter(s => s.demand === 'Very High');
+                                const lowSkills = topSkills.filter(s => s.level < 70);
+                                if (veryHighDemand.length > 0) {
+                                    insights.push(t(
+                                        `${veryHighDemand.map(s => s.name).join(', ')} — in very high demand across UAE companies. Consider advanced certifications.`,
+                                        `${veryHighDemand.map(s => s.name).join('، ')} — مطلوبة بشدة في شركات الإمارات. فكّر في الشهادات المتقدمة.`
+                                    ));
+                                }
+                                if (lowSkills.length > 0) {
+                                    insights.push(t(
+                                        `Boost ${lowSkills.map(s => s.name).join(', ')} by 10-20% to unlock more opportunities.`,
+                                        `حسّن ${lowSkills.map(s => s.name).join('، ')} بنسبة 10-20% لفتح المزيد من الفرص.`
+                                    ));
+                                }
+                                const highSkills = topSkills.filter(s => s.level >= 85);
+                                if (highSkills.length > 0) {
+                                    insights.push(t(
+                                        `Your ${highSkills.map(s => s.name).join(', ')} scores position you for senior roles.`,
+                                        `درجاتك في ${highSkills.map(s => s.name).join('، ')} تؤهّلك للأدوار القيادية.`
+                                    ));
+                                }
+                                if (insights.length === 0) {
+                                    insights.push(t('Keep building skills to unlock AI-powered insights.', 'استمر في بناء المهارات لفتح رؤى مدعومة بالذكاء الاصطناعي.'));
+                                }
+                                return insights.map((insight, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                        <CheckCircle size={14} style={{ color: brand.primary, marginTop: 2, flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5 }}>{insight}</span>
+                                    </div>
+                                ));
+                            })()}
                         </div>
                     </div>
-                ))}
-            </div>
-
-            {/* Skill Insights */}
-            <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                    <Zap size={20} style={{ color: brand.primary }} />
-                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Skill Insights', 'رؤى المهارات')}</h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[
-                        t('Data Analysis is in very high demand — consider advanced certifications', 'تحليل البيانات مطلوب بشدة — فكّر في الشهادات المتقدمة'),
-                        t('Your Project Management score positions you for PM roles in 85% of UAE companies', 'درجتك في إدارة المشاريع تؤهّلك لأدوار مدير مشروع في 85% من شركات الإمارات'),
-                        t('Cloud Architecture is trending upward — improving by 10% would unlock senior architect roles', 'هندسة السحابة في اتجاه تصاعدي — تحسين 10% سيفتح لك أدوار المهندس المعماري الأقدم'),
-                    ].map((insight, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <CheckCircle size={14} style={{ color: brand.primary, marginTop: 2, flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5 }}>{insight}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 
     /* ── Tab 3: Goals Progress ── */
+    const goalProgress = d.goals.length > 0 ? d.goals : [
+        { title: t('Complete 5 Assessments', 'أكمل 5 تقييمات'), progress: 3, target: 5, deadline: t('Mar 2026', 'مارس 2026') },
+        { title: t('Apply to 20 Positions', 'تقدّم لـ 20 وظيفة'), progress: ov.total_applications, target: 20, deadline: t('Mar 2026', 'مارس 2026') },
+        { title: t('Earn 5 Certifications', 'احصل على 5 شهادات'), progress: ov.certifications_count, target: 5, deadline: t('Apr 2026', 'أبريل 2026') },
+        { title: t('Reach 90% Profile Score', 'حقّق 90% نقاط الملف'), progress: ov.profile_completeness, target: 90, deadline: t('Mar 2026', 'مارس 2026') },
+    ];
+
     const goalsTab = (
         <div>
             <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
@@ -239,15 +347,19 @@ const AnalyticsPage: React.FC = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {goalProgress.map((g, i) => {
-                    const pct = Math.round((g.current / g.target) * 100);
+                    const current = g.progress ?? 0;
+                    const target = g.target ?? 1;
+                    const pct = Math.min(Math.round((current / target) * 100), 100);
                     return (
                         <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                                 <div>
-                                    <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>{g.title}</h4>
+                                    <h4 style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary, margin: '0 0 4px' }}>
+                                        {(isRTL && g.title_ar) ? g.title_ar : g.title}
+                                    </h4>
                                     <div style={{ display: 'flex', gap: 8, fontSize: 12, color: brand.textSecondary }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Calendar size={12} /> {g.deadline}</span>
-                                        <span>{g.current} / {g.target}</span>
+                                        {g.deadline && <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Calendar size={12} /> {g.deadline}</span>}
+                                        <span>{current} / {target}</span>
                                     </div>
                                 </div>
                                 <span style={{ fontSize: 16, fontWeight: 700, color: pct >= 80 ? brand.greenText : pct >= 50 ? brand.primary : brand.amberText }}>{pct}%</span>
@@ -277,10 +389,44 @@ const AnalyticsPage: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 28 }}>
                 {[
-                    { title: t('Application Success Rate', 'معدل نجاح الطلبات'), desc: t('Your 33% interview conversion is 8% above the UAE average — target 40% by refining your CV summary section', 'معدل تحويلك إلى المقابلات 33% أعلى بـ 8% من المتوسط الإماراتي — استهدف 40% بتحسين قسم ملخص السيرة الذاتية'), Icon: TrendingUp, stat: '33%', statBg: brand.green, statColor: brand.greenText },
-                    { title: t('Profile Visibility', 'ظهور الملف الشخصي'), desc: t('Your profile was viewed 1,247 times this month — 23% more than last month. Peak views are on weekdays between 9-11 AM', 'شوهد ملفك 1,247 مرة هذا الشهر — أكثر بـ 23% من الشهر الماضي. ذروة المشاهدات أيام الأسبوع بين 9-11 صباحاً'), Icon: Eye, stat: '+23%', statBg: brand.blue, statColor: brand.blueText },
-                    { title: t('Market Positioning', 'تموضع في السوق'), desc: t('Your skill set aligns with 47 active job postings in the UAE — focus on cloud certifications to unlock 12 more', 'مجموعة مهاراتك تتوافق مع 47 إعلان وظيفي نشط في الإمارات — ركّز على شهادات السحابة لفتح 12 وظيفة إضافية'), Icon: Briefcase, stat: t('47 matches', '47 تطابق'), statBg: brand.primarySurface, statColor: brand.primary },
-                    { title: t('Peer Comparison', 'مقارنة بالأقران'), desc: t('You rank in the top 15% of candidates in your experience bracket — your leadership score is pulling the average up', 'تحتل المرتبة ضمن أفضل 15% من المرشحين في فئة خبرتك — درجتك في القيادة ترفع المتوسط'), Icon: Users, stat: t('Top 15%', 'أفضل 15%'), statBg: brand.purple, statColor: brand.purpleText },
+                    {
+                        title: t('Application Success Rate', 'معدل نجاح الطلبات'),
+                        desc: ov.interview_rate > 0
+                            ? t(`Your ${ov.interview_rate}% interview conversion rate. Target 40% by refining your CV summary section.`, `معدل تحويلك إلى المقابلات ${ov.interview_rate}%. استهدف 40% بتحسين قسم ملخص السيرة الذاتية.`)
+                            : t('Start applying to jobs to track your interview conversion rate.', 'ابدأ بالتقديم على الوظائف لتتبع معدل تحويلك إلى المقابلات.'),
+                        Icon: TrendingUp,
+                        stat: `${ov.interview_rate}%`,
+                        statBg: ov.interview_rate > 20 ? brand.green : brand.amber,
+                        statColor: ov.interview_rate > 20 ? brand.greenText : brand.amberText,
+                    },
+                    {
+                        title: t('Profile Completeness', 'اكتمال الملف الشخصي'),
+                        desc: ov.profile_completeness >= 75
+                            ? t('Great job! Your profile is well-rounded. Keep it updated to stay competitive.', 'عمل رائع! ملفك الشخصي متكامل. حافظ على تحديثه لتبقى تنافسياً.')
+                            : t('Complete your profile — add skills, certifications, and portfolio projects to increase visibility.', 'أكمل ملفك — أضف مهارات وشهادات ومشاريع للمحفظة لزيادة الظهور.'),
+                        Icon: Eye,
+                        stat: `${ov.profile_completeness}%`,
+                        statBg: ov.profile_completeness >= 75 ? brand.green : brand.blue,
+                        statColor: ov.profile_completeness >= 75 ? brand.greenText : brand.blueText,
+                    },
+                    {
+                        title: t('Market Positioning', 'تموضع في السوق'),
+                        desc: t(`You have ${d.skills.length} tracked skills. Companies in the UAE value cloud, AI, and data analysis most highly right now.`, `لديك ${d.skills.length} مهارة متابَعة. تقدّر الشركات في الإمارات السحابة والذكاء الاصطناعي وتحليل البيانات حالياً.`),
+                        Icon: Briefcase,
+                        stat: `${d.skills.length} ${t('skills', 'مهارة')}`,
+                        statBg: brand.primarySurface,
+                        statColor: brand.primary,
+                    },
+                    {
+                        title: t('Career Activity', 'النشاط المهني'),
+                        desc: ov.total_applications > 0
+                            ? t(`${ov.total_applications} total applications across jobs, internships, and gigs. ${ov.interview_count} interviews secured.`, `${ov.total_applications} طلب إجمالي عبر الوظائف والتدريب والمشاريع. ${ov.interview_count} مقابلة تم تأمينها.`)
+                            : t('No applications yet. Explore jobs, internships, and gigs to start building your career pipeline.', 'لا توجد طلبات بعد. استكشف الوظائف والتدريب والمشاريع لبناء مسار حياتك المهنية.'),
+                        Icon: Users,
+                        stat: `${ov.total_applications}`,
+                        statBg: brand.purple,
+                        statColor: brand.purpleText,
+                    },
                 ].map((insight, i) => (
                     <div key={i} style={{ background: '#fff', borderRadius: 12, border: `1px solid ${brand.border}`, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -302,23 +448,27 @@ const AnalyticsPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* Recommendations summary */}
+            {/* Quick Wins */}
             <div style={{ background: brand.primarySurface, borderRadius: 12, border: `1px solid ${brand.primary}22`, padding: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <Star size={20} style={{ color: brand.primary }} />
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>{t('Quick Wins', 'مكاسب سريعة')}</h3>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[
-                        t('Add 2 more project case studies to your portfolio to boost recruiter engagement', 'أضف دراستَي حالة إضافيتين لمشاريعك في ملفك لتعزيز تفاعل الموظِّفين'),
-                        t('Complete the remaining AWS certification to reach your 5-cert goal', 'أكمل شهادة AWS المتبقية للوصول إلى هدف 5 شهادات'),
-                        t('Apply to 2 more positions this week to hit your monthly target', 'تقدّم لوظيفتين إضافيتين هذا الأسبوع لتحقيق هدفك الشهري'),
-                    ].map((item, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <CheckCircle size={14} style={{ color: brand.primary, marginTop: 2, flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5 }}>{item}</span>
-                        </div>
-                    ))}
+                    {(() => {
+                        const wins: string[] = [];
+                        if (ov.portfolio_projects < 3) wins.push(t('Add project case studies to your portfolio to boost recruiter engagement.', 'أضف دراسات حالة لمشاريعك في محفظتك لتعزيز تفاعل الموظِّفين.'));
+                        if (ov.certifications_count < 5) wins.push(t(`Earn ${5 - ov.certifications_count} more certifications to strengthen your profile.`, `احصل على ${5 - ov.certifications_count} شهادات إضافية لتقوية ملفك الشخصي.`));
+                        if (ov.total_applications < 20) wins.push(t(`Apply to ${20 - ov.total_applications} more positions to hit your monthly target.`, `تقدّم لـ ${20 - ov.total_applications} وظيفة إضافية لتحقيق هدفك الشهري.`));
+                        if (ov.profile_completeness < 100) wins.push(t('Complete all profile sections for maximum visibility to recruiters.', 'أكمل جميع أقسام الملف الشخصي لأقصى ظهور للموظِّفين.'));
+                        if (wins.length === 0) wins.push(t('You\'re on track! Keep applying and building your skills.', 'أنت على المسار الصحيح! استمر في التقديم وبناء مهاراتك.'));
+                        return wins.map((item, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                <CheckCircle size={14} style={{ color: brand.primary, marginTop: 2, flexShrink: 0 }} />
+                                <span style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5 }}>{item}</span>
+                            </div>
+                        ));
+                    })()}
                 </div>
             </div>
         </div>
@@ -331,6 +481,13 @@ const AnalyticsPage: React.FC = () => {
         { id: 'skills', label: t('Skills Analytics', 'تحليلات المهارات'), icon: <Brain className="h-4 w-4" />, content: skillsTab },
         { id: 'goals', label: t('Goals Progress', 'تقدّم الأهداف'), icon: <Target className="h-4 w-4" />, content: goalsTab },
         { id: 'insights', label: t('Career Insights', 'رؤى مهنية'), icon: <TrendingUp className="h-4 w-4" />, content: insightsTab },
+    ];
+
+    const stats = [
+        { value: `${ov.profile_completeness}%`, label: t('Profile Score', 'نقاط الملف'), icon: Target },
+        { value: String(ov.total_applications), label: t('Applications', 'الطلبات'), icon: FileText },
+        { value: `${ov.interview_rate}%`, label: t('Interview Rate', 'معدل المقابلات'), icon: TrendingUp },
+        { value: String(d.skills.length), label: t('Skills', 'المهارات'), icon: Brain },
     ];
 
     return (

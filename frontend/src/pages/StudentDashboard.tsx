@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import HybridGovernmentNav from "@/components/layout/HybridGovernmentNavFixed";
 import UserMenu from "@/components/layout/UserMenu";
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,8 @@ import { GraduationCap, Award, BookOpen, User, Calendar, ExternalLink } from "lu
 
 import { restClient } from '@/utils/api';
 
-// Mock API Call
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+
 const fetchStudentData = async () => {
     try {
         const response = await restClient.get('/api/student/dashboard/stats');
@@ -27,40 +29,63 @@ const fetchStudentData = async () => {
     }
 };
 
-const fetchPrograms = async (type: string) => {
-    try {
-        const response = await restClient.get(`/api/student/programs?type=${type}`);
-        return response.data.data;
-    } catch (e) {
-        return [];
-    }
-}
-
 export const StudentDashboard = () => {
     const { i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
+    const { language, toggleLanguage } = useLanguage();
 
     const [activeTab, setActiveTab] = useState("scholarships");
     const [stats, setStats] = useState<any>(null);
-    const [programs, setPrograms] = useState<any[]>([]);
+    const [scholarships, setScholarships] = useState<any[]>([]);
+    const [camps, setCamps] = useState<any[]>([]);
+    const [gradPrograms, setGradPrograms] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const load = async () => {
-            setLoading(true);
+        (async () => {
             const s = await fetchStudentData();
             setStats(s?.data || {});
-            const p = await fetchPrograms(activeTab === 'scholarships' ? 'scholarship' : 'camp');
-            setPrograms(p || []);
-            setLoading(false);
-        };
-        load();
+        })();
+    }, []);
+
+    // Fetch data for each tab independently from education APIs
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            setLoading(true);
+            try {
+                if (activeTab === 'scholarships') {
+                    const resp = await fetch(`${API_BASE}/api/education/scholarships`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (!cancelled) setScholarships(data.scholarships || []);
+                    }
+                } else if (activeTab === 'camps') {
+                    const resp = await fetch(`${API_BASE}/api/education/camps`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (!cancelled) setCamps(data.camps || []);
+                    }
+                } else if (activeTab === 'university') {
+                    const resp = await fetch(`${API_BASE}/api/education/graduate-programs`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (!cancelled) setGradPrograms(data.programs || []);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load tab data:', err);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
     }, [activeTab]);
 
     return (
-        <div className="min-h-screen bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-            <HybridGovernmentNav showAuthButtons={false} currentPage="dashboard" userRole="student" />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai" dir={isRTL ? 'rtl' : 'ltr'}>
+            <HybridGovernmentNav showAuthButtons={true} currentLanguage={language} onLanguageToggle={toggleLanguage} />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Welcome Section */}
@@ -116,28 +141,28 @@ export const StudentDashboard = () => {
 
                     <TabsContent value="scholarships" className="mt-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {programs.map((p: any) => (
+                            {scholarships.map((p: any) => (
                                 <Card key={p.id} className="bg-card hover:shadow-md transition-shadow">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <Badge variant="outline" className="mb-2">{p.type}</Badge>
-                                                <CardTitle className="text-xl">{p.title}</CardTitle>
-                                                <CardDescription>{p.provider}</CardDescription>
+                                                <Badge variant="outline" className="mb-2">{p.scholarship_type || p.type}</Badge>
+                                                <CardTitle className="text-xl">{isRTL ? (p.title_ar || p.title) : p.title}</CardTitle>
+                                                <CardDescription>{p.provider || p.institution}</CardDescription>
                                             </div>
-                                            <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-200">{p.amount}</Badge>
+                                            <Badge className="bg-teal-100 text-teal-800 hover:bg-teal-200">{p.amount || p.value}</Badge>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center text-sm text-gray-500 gap-4 mb-4">
-                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {t('Deadline:', 'الموعد النهائي:')} {p.deadline}</span>
-                                            <span className="flex items-center"><Award className="h-4 w-4 mr-1" /> {t('Min GPA:', 'الحد الأدنى للمعدل:')} {p.min_gpa}</span>
+                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {t('Deadline:', 'الموعد النهائي:')} {p.deadline || 'Open'}</span>
+                                            {p.min_gpa && <span className="flex items-center"><Award className="h-4 w-4 mr-1" /> {t('Min GPA:', 'الحد الأدنى للمعدل:')} {p.min_gpa}</span>}
                                         </div>
                                         <Button className="w-full">{t('Apply Now', 'قدّم الآن')}</Button>
                                     </CardContent>
                                 </Card>
                             ))}
-                            {programs.length === 0 && !loading && (
+                            {scholarships.length === 0 && !loading && (
                                 <p className="text-center text-gray-500 col-span-2 py-8">{t('No scholarships found matching your profile.', 'لم يتم العثور على منح دراسية تتوافق مع ملفك.')}</p>
                             )}
                         </div>
@@ -145,41 +170,63 @@ export const StudentDashboard = () => {
 
                     <TabsContent value="camps" className="mt-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {programs.map((p: any) => (
+                            {camps.map((p: any) => (
                                 <Card key={p.id} className="bg-card hover:shadow-md transition-shadow">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <Badge variant="secondary" className="mb-2">{p.age_group} {t('Years', 'سنة')}</Badge>
-                                                <CardTitle className="text-xl">{p.title}</CardTitle>
-                                                <CardDescription>{p.organizer}</CardDescription>
+                                                <CardTitle className="text-xl">{isRTL ? (p.title_ar || p.title) : p.title}</CardTitle>
+                                                <CardDescription>{p.organizer || p.category}</CardDescription>
                                             </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center text-sm text-gray-500 gap-4 mb-4">
-                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {p.date}</span>
+                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {p.duration}</span>
                                         </div>
                                         <p className="text-sm text-gray-600 mb-4 flex items-center"><ExternalLink className="h-3 w-3 mr-1" /> {p.location}</p>
                                         <Button variant="outline" className="w-full">{t('View Details', 'عرض التفاصيل')}</Button>
                                     </CardContent>
                                 </Card>
                             ))}
+                            {camps.length === 0 && !loading && (
+                                <p className="text-center text-gray-500 col-span-2 py-8">{t('No knowledge camps available.', 'لا توجد معسكرات معرفية متاحة.')}</p>
+                            )}
                         </div>
                     </TabsContent>
 
                     <TabsContent value="university" className="mt-6">
-                        <Card>
-                            <CardContent className="py-12 text-center text-gray-500">
-                                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <h3 className="text-lg font-medium mb-1">{t('University Programs Coming Soon', 'البرامج الجامعية قريباً')}</h3>
-                                <p>{t('We are partnering with top universities to bring you exclusive programs.', 'نحن نتشارك مع أفضل الجامعات لتقديم برامج حصرية لك.')}</p>
-                            </CardContent>
-                        </Card>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {gradPrograms.map((p: any) => (
+                                <Card key={p.id} className="bg-card hover:shadow-md transition-shadow">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <Badge variant="outline" className="mb-2">{p.program_type || p.type_label}</Badge>
+                                                <CardTitle className="text-xl">{isRTL ? (p.title_ar || p.title) : p.title}</CardTitle>
+                                                <CardDescription>{isRTL ? (p.university_ar || p.university) : p.university}</CardDescription>
+                                            </div>
+                                            {p.featured && <Badge className="bg-amber-100 text-amber-800">★</Badge>}
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center text-sm text-gray-500 gap-4 mb-4">
+                                            <span className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> {isRTL ? (p.duration_ar || p.duration) : p.duration}</span>
+                                            <span className="flex items-center"><Award className="h-4 w-4 mr-1" /> {isRTL ? (p.tuition_ar || p.tuition) : p.tuition}</span>
+                                        </div>
+                                        <Button className="w-full">{t('View Program', 'عرض البرنامج')}</Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                            {gradPrograms.length === 0 && !loading && (
+                                <p className="text-center text-gray-500 col-span-2 py-8">{t('No university programs available yet.', 'لا توجد برامج جامعية متاحة حالياً.')}</p>
+                            )}
+                        </div>
                     </TabsContent>
                 </Tabs>
             </main>
-        </div>
+        </div >
     );
 };
 

@@ -4,21 +4,92 @@ import {
     Activity, Users, Building2, GraduationCap, Briefcase,
     TrendingUp, BarChart3, Flag, Clock, CheckCircle,
     ArrowUp, ArrowDown, AlertTriangle, Globe, Zap,
-    UserCheck, Award, MessageSquare, Target, Monitor
+    UserCheck, Award, MessageSquare, Target, Monitor,
+    Video, CalendarCheck, CalendarClock, PlayCircle,
+    ThumbsUp, ThumbsDown, FileText, Loader2
 } from 'lucide-react';
+import { restClient } from '@/utils/api';
+
+interface OpsData {
+    platform_health: {
+        total_users: number;
+        registrations_today: number;
+        registrations_week: number;
+        uptime: string;
+        response_time: string;
+    };
+    talent_pipeline: {
+        total_candidates: number;
+        total_cvs: number;
+        total_applications: number;
+        applications_week: number;
+        placements: number;
+    };
+    employer_activity: {
+        total_companies: number;
+        active_vacancies: number;
+        total_jobs: number;
+        new_jobs_week: number;
+        total_offers: number;
+        offers_week: number;
+    };
+    interview_tracker: {
+        conducted_today: number;
+        conducted_week: number;
+        ongoing: number;
+        upcoming_today: number;
+        upcoming_week: number;
+        total: number;
+    };
+    shortlist_stats: {
+        shortlisted_week: number;
+        rejected_week: number;
+        shortlisted_total: number;
+        rejected_total: number;
+    };
+    emiratization: {
+        sectors: { name: string; total_jobs: number; target: number }[];
+    };
+    role_distribution: Record<string, number>;
+    live_feed: { text: string; time: string; type: string; relative: string }[];
+}
 
 const OperationsMonitoringCenter: React.FC = () => {
     const { language } = useLanguage();
     const isRTL = language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [data, setData] = useState<OpsData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const colors = {
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                setLoading(true);
+                const res = await restClient.get('/api/operations/stats');
+                if (res.data?.success && res.data?.data) {
+                    setData(res.data.data);
+                }
+            } catch (e: any) {
+                console.error('Operations stats error:', e);
+                setError(e.message || 'Failed to load');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+        // Auto-refresh every 30 seconds
+        const interval = setInterval(fetchStats, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const c = {
         bg: '#0B1120',
         cardBg: '#111B2E',
         cardBorder: '#1E2D4A',
@@ -34,306 +105,366 @@ const OperationsMonitoringCenter: React.FC = () => {
         purpleGlow: 'rgba(139, 92, 246, 0.15)',
         pink: '#EC4899',
         teal: '#14B8A6',
+        tealGlow: 'rgba(20, 184, 166, 0.15)',
+        orange: '#F97316',
+        orangeGlow: 'rgba(249, 115, 22, 0.15)',
         textPrimary: '#F1F5F9',
         textSecondary: '#94A3B8',
         textMuted: '#64748B',
     };
 
-    const platformHealth = {
-        activeUsers: 3842,
-        dailyRegistrations: 127,
-        uptime: '99.97%',
-        responseTime: '142ms',
-    };
-
-    const talentPipeline = [
-        { label: t('Total Candidates', 'إجمالي المرشحين'), value: '12,847', icon: Users, change: '+2.7%', up: true },
-        { label: t('CVs Created', 'السير الذاتية'), value: '9,215', icon: CheckCircle, change: '+3.1%', up: true },
-        { label: t('Applications', 'الطلبات'), value: '4,580', icon: Briefcase, change: '+5.2%', up: true },
-        { label: t('Placements', 'التوظيف'), value: '1,287', icon: Target, change: '+1.8%', up: true },
-    ];
-
-    const employerActivity = [
-        { label: t('Companies', 'الشركات'), value: '342', icon: Building2, change: '+12', up: true },
-        { label: t('Active Vacancies', 'الوظائف الشاغرة'), value: '1,856', icon: Briefcase, change: '+45', up: true },
-        { label: t('Interviews', 'المقابلات'), value: '234', icon: Clock, change: '+18', up: true },
-        { label: t('Offers Extended', 'العروض المقدمة'), value: '89', icon: Award, change: '+7', up: true },
-    ];
-
-    const educationMetrics = {
-        institutions: 142,
-        programs: 385,
-        enrollments: 28450,
-        scholarships: 2850,
-    };
-
-    const emiratizationData = {
-        nationalRate: '4.28%',
-        rateChange: '+0.15%',
-        compliantCompanies: 285,
-        nonCompliant: 57,
-        sectors: [
-            { name: t('Banking', 'المصارف'), rate: 42, target: 45 },
-            { name: t('Telecom', 'الاتصالات'), rate: 38, target: 40 },
-            { name: t('Insurance', 'التأمين'), rate: 35, target: 38 },
-            { name: t('Real Estate', 'العقارات'), rate: 28, target: 30 },
-            { name: t('Tech', 'التكنولوجيا'), rate: 15, target: 20 },
-        ],
-    };
-
-    const operatorPerformance = [
-        { name: t('Growth', 'النمو'), queue: 8, avgTime: '2.1h', icon: Building2, color: colors.green },
-        { name: t('Nafis', 'نافس'), queue: 15, avgTime: '1.4h', icon: Users, color: colors.accent },
-        { name: t('Education', 'التعليم'), queue: 5, avgTime: '3.2h', icon: GraduationCap, color: colors.purple },
-        { name: t('Prof Dev', 'التطوير'), queue: 12, avgTime: '2.8h', icon: Award, color: colors.teal },
-        { name: t('Community', 'المجتمع'), queue: 23, avgTime: '1.1h', icon: MessageSquare, color: colors.pink },
-    ];
-
-    const recentActivity = [
-        { text: t('287 new candidates onboarded via Nafis', 'تم استقطاب 287 مرشحاً جديداً عبر نافس'), time: '12m', type: 'talent' },
-        { text: t('ADNOC posted 15 new vacancies', 'نشرت أدنوك 15 وظيفة جديدة'), time: '28m', type: 'employer' },
-        { text: t('UAE University added AI program', 'أضافت جامعة الإمارات برنامج الذكاء الاصطناعي'), time: '1h', type: 'education' },
-        { text: t('Success story flagged for review', 'تم الإبلاغ عن قصة نجاح للمراجعة'), time: '2h', type: 'alert' },
-    ];
-
-    const MetricCard = ({ label, value, icon: Icon, change, up, color = colors.accent }: any) => (
-        <div style={{ background: colors.cardBg, borderRadius: 8, padding: '12px 14px', border: `1px solid ${colors.cardBorder}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+    const MetricCard = ({ label, value, icon: Icon, sub, color = c.accent }: any) => (
+        <div style={{ background: c.cardBg, borderRadius: 8, padding: '12px 14px', border: `1px solid ${c.cardBorder}`, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ background: `${color}20`, borderRadius: 6, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon size={16} color={color} />
             </div>
             <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: colors.textPrimary, letterSpacing: -0.5 }}>{value}</div>
+                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: c.textPrimary, letterSpacing: -0.5 }}>{value}</div>
             </div>
-            {change && (
-                <div style={{ fontSize: 11, color: up ? colors.green : colors.red, display: 'flex', alignItems: 'center', gap: 2, fontWeight: 600 }}>
-                    {up ? <ArrowUp size={10} /> : <ArrowDown size={10} />} {change}
+            {sub && (
+                <div style={{ fontSize: 11, color: c.textSecondary, textAlign: 'right' as const }}>
+                    {sub}
                 </div>
             )}
         </div>
     );
 
+    const BigStat = ({ label, value, icon: Icon, color = c.accent, sub, subColor }: any) => (
+        <div style={{ background: c.cardBg, borderRadius: 8, padding: 14, border: `1px solid ${c.cardBorder}`, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ background: `${color}20`, borderRadius: 8, padding: 8 }}>
+                <Icon size={20} color={color} />
+            </div>
+            <div>
+                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{label}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: c.textPrimary, fontFeatureSettings: '"tnum"' }}>{value}</div>
+            </div>
+            {sub && (
+                <div style={{ marginLeft: 'auto', textAlign: 'right' as const }}>
+                    <div style={{ fontSize: 11, color: c.textMuted }}>{sub.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: subColor || c.green }}>{sub.value}</div>
+                </div>
+            )}
+        </div>
+    );
+
+    const ph = data?.platform_health;
+    const tp = data?.talent_pipeline;
+    const ea = data?.employer_activity;
+    const it = data?.interview_tracker;
+    const ss = data?.shortlist_stats;
+
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{
-            minHeight: '100vh', background: colors.bg, overflow: 'hidden',
+            minHeight: '100vh', background: c.bg, overflow: 'auto',
             fontFamily: "'Inter', -apple-system, sans-serif"
         }}>
-            {/* Header Bar */}
+            {/* ─── Header Bar ─────────────────────────────────────────── */}
             <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 24px', borderBottom: `1px solid ${colors.cardBorder}`,
+                padding: '10px 24px', borderBottom: `1px solid ${c.cardBorder}`,
                 background: 'linear-gradient(180deg, #0F1729 0%, #0B1120 100%)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ background: colors.accentGlow, borderRadius: 8, padding: 6 }}>
-                        <Monitor size={20} color={colors.accent} />
+                    <div style={{ background: c.accentGlow, borderRadius: 8, padding: 6 }}>
+                        <Monitor size={20} color={c.accent} />
                     </div>
                     <div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: colors.textPrimary, letterSpacing: -0.3 }}>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: c.textPrimary, letterSpacing: -0.3 }}>
                             {t('Operations Monitoring Center', 'مركز مراقبة العمليات')}
                         </div>
-                        <div style={{ fontSize: 11, color: colors.textMuted }}>{t('EHRDC Platform Command Center', 'مركز قيادة منصة الهيئة')}</div>
+                        <div style={{ fontSize: 11, color: c.textMuted }}>{t('EHRDC Platform Command Center', 'مركز قيادة منصة الهيئة')}</div>
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors.green, boxShadow: `0 0 8px ${colors.green}` }} />
-                        <span style={{ fontSize: 12, color: colors.green, fontWeight: 600 }}>{t('ALL SYSTEMS OPERATIONAL', 'جميع الأنظمة تعمل')}</span>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.green, boxShadow: `0 0 8px ${c.green}` }} />
+                        <span style={{ fontSize: 12, color: c.green, fontWeight: 600 }}>{t('ALL SYSTEMS OPERATIONAL', 'جميع الأنظمة تعمل')}</span>
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 700, color: colors.textPrimary, fontFeatureSettings: '"tnum"', letterSpacing: 1 }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: c.textPrimary, fontFeatureSettings: '"tnum"', letterSpacing: 1 }}>
                         {currentTime.toLocaleTimeString('en-US', { hour12: false })}
                     </div>
-                    <div style={{ fontSize: 11, color: colors.textMuted }}>
+                    <div style={{ fontSize: 11, color: c.textMuted }}>
                         {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                 </div>
             </div>
 
-            {/* Main Grid */}
-            <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gridTemplateRows: 'auto auto auto', gap: 12, height: 'calc(100vh - 50px)' }}>
-
-                {/* Row 1: Platform Health (full width) */}
-                <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                    <div style={{ background: colors.cardBg, borderRadius: 8, padding: 14, border: `1px solid ${colors.cardBorder}`, display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ background: colors.greenGlow, borderRadius: 8, padding: 8 }}>
-                            <Activity size={20} color={colors.green} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Active Users', 'المستخدمون النشطون')}</div>
-                            <div style={{ fontSize: 28, fontWeight: 800, color: colors.textPrimary, fontFeatureSettings: '"tnum"' }}>{platformHealth.activeUsers.toLocaleString()}</div>
-                        </div>
-                        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                            <div style={{ fontSize: 11, color: colors.textMuted }}>{t('Peak today', 'ذروة اليوم')}</div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: colors.green }}>4,127</div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: colors.cardBg, borderRadius: 8, padding: 14, border: `1px solid ${colors.cardBorder}`, display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ background: colors.accentGlow, borderRadius: 8, padding: 8 }}>
-                            <UserCheck size={20} color={colors.accent} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Daily Registrations', 'التسجيلات اليومية')}</div>
-                            <div style={{ fontSize: 28, fontWeight: 800, color: colors.textPrimary, fontFeatureSettings: '"tnum"' }}>{platformHealth.dailyRegistrations}</div>
-                        </div>
-                        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                            <div style={{ fontSize: 11, color: colors.textMuted }}>{t('Monthly avg', 'المتوسط الشهري')}</div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: colors.accent }}>98</div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: colors.cardBg, borderRadius: 8, padding: 14, border: `1px solid ${colors.cardBorder}`, display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ background: colors.greenGlow, borderRadius: 8, padding: 8 }}>
-                            <Globe size={20} color={colors.green} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Uptime', 'التشغيل')}</div>
-                            <div style={{ fontSize: 28, fontWeight: 800, color: colors.green, fontFeatureSettings: '"tnum"' }}>{platformHealth.uptime}</div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: colors.cardBg, borderRadius: 8, padding: 14, border: `1px solid ${colors.cardBorder}`, display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ background: colors.purpleGlow, borderRadius: 8, padding: 8 }}>
-                            <Zap size={20} color={colors.purple} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Response Time', 'وقت الاستجابة')}</div>
-                            <div style={{ fontSize: 28, fontWeight: 800, color: colors.purple, fontFeatureSettings: '"tnum"' }}>{platformHealth.responseTime}</div>
-                        </div>
-                    </div>
+            {/* ─── Loading State ────────────────────────────────── */}
+            {loading && !data && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, gap: 12, color: c.textSecondary }}>
+                    <Loader2 size={24} className="animate-spin" />
+                    <span style={{ fontSize: 14 }}>{t('Loading live data...', 'جارٍ تحميل البيانات...')}</span>
                 </div>
+            )}
 
-                {/* Row 2: Talent Pipeline + Employer Activity */}
-                <div style={{ gridColumn: '1 / 3', background: colors.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${colors.cardBorder}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <Users size={16} color={colors.accent} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Talent Pipeline', 'خط الكوادر')}</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {talentPipeline.map((m, i) => (
-                            <MetricCard key={i} {...m} color={colors.accent} />
-                        ))}
-                    </div>
+            {error && !data && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, gap: 12, color: c.red }}>
+                    <AlertTriangle size={24} />
+                    <span style={{ fontSize: 14 }}>{error}</span>
                 </div>
+            )}
 
-                <div style={{ gridColumn: '3 / 5', background: colors.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${colors.cardBorder}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <Building2 size={16} color={colors.green} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Employer Activity', 'نشاط أصحاب العمل')}</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        {employerActivity.map((m, i) => (
-                            <MetricCard key={i} {...m} color={colors.green} />
-                        ))}
-                    </div>
-                </div>
+            {/* ─── Main Grid ──────────────────────────────────────── */}
+            {data && (
+                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
 
-                {/* Row 3: Emiratization + Operator Performance + Activity */}
-                <div style={{ background: colors.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${colors.cardBorder}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <Flag size={16} color={colors.yellow} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Emiratization', 'التوطين')}</span>
+                    {/* ROW 1: Platform Health (full width) */}
+                    <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                        <BigStat
+                            label={t('Total Users', 'إجمالي المستخدمين')}
+                            value={(ph?.total_users || 0).toLocaleString()}
+                            icon={Activity}
+                            color={c.green}
+                            sub={{ label: t('Today', 'اليوم'), value: `+${ph?.registrations_today || 0}` }}
+                            subColor={c.green}
+                        />
+                        <BigStat
+                            label={t('Registrations This Week', 'تسجيلات الأسبوع')}
+                            value={ph?.registrations_week || 0}
+                            icon={UserCheck}
+                            color={c.accent}
+                            sub={{ label: t('Today', 'اليوم'), value: `+${ph?.registrations_today || 0}` }}
+                            subColor={c.accent}
+                        />
+                        <BigStat
+                            label={t('Uptime', 'التشغيل')}
+                            value={ph?.uptime || '—'}
+                            icon={Globe}
+                            color={c.green}
+                        />
+                        <BigStat
+                            label={t('Response Time', 'وقت الاستجابة')}
+                            value={ph?.response_time || '—'}
+                            icon={Zap}
+                            color={c.purple}
+                        />
                     </div>
-                    <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                        <div style={{ fontSize: 36, fontWeight: 800, color: colors.yellow, fontFeatureSettings: '"tnum"' }}>{emiratizationData.nationalRate}</div>
-                        <div style={{ fontSize: 11, color: colors.green, fontWeight: 600 }}><ArrowUp size={10} /> {emiratizationData.rateChange}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 12 }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: colors.green }}>{emiratizationData.compliantCompanies}</div>
-                            <div style={{ fontSize: 10, color: colors.textMuted }}>{t('Compliant', 'ملتزمة')}</div>
+
+                    {/* ROW 2: Talent Pipeline + Employer Activity */}
+                    <div style={{ gridColumn: '1 / 3', background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                            <Users size={16} color={c.accent} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: c.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Talent Pipeline', 'خط الكوادر')}</span>
                         </div>
-                        <div style={{ width: 1, background: colors.cardBorder }} />
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: colors.red }}>{emiratizationData.nonCompliant}</div>
-                            <div style={{ fontSize: 10, color: colors.textMuted }}>{t('Non-Compliant', 'غير ملتزمة')}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            <MetricCard label={t('Candidates', 'المرشحون')} value={tp?.total_candidates || 0} icon={Users} color={c.accent} />
+                            <MetricCard label={t('CVs Created', 'السير الذاتية')} value={tp?.total_cvs || 0} icon={FileText} color={c.accent} />
+                            <MetricCard label={t('Applications', 'الطلبات')} value={tp?.total_applications || 0} icon={Briefcase} color={c.accent} sub={`+${tp?.applications_week || 0} this wk`} />
+                            <MetricCard label={t('Placements', 'التوظيف')} value={tp?.placements || 0} icon={Target} color={c.green} />
                         </div>
                     </div>
-                    {emiratizationData.sectors.map((s, i) => (
-                        <div key={i} style={{ marginBottom: 6 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3, color: colors.textSecondary }}>
-                                <span>{s.name}</span>
-                                <span style={{ fontWeight: 600, color: s.rate >= s.target ? colors.green : colors.yellow }}>{s.rate}%</span>
+
+                    <div style={{ gridColumn: '3 / 5', background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                            <Building2 size={16} color={c.green} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: c.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Employer Activity', 'نشاط أصحاب العمل')}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            <MetricCard label={t('Companies', 'الشركات')} value={ea?.total_companies || 0} icon={Building2} color={c.green} />
+                            <MetricCard label={t('Active Vacancies', 'الوظائف الشاغرة')} value={ea?.active_vacancies || 0} icon={Briefcase} color={c.green} sub={`+${ea?.new_jobs_week || 0} this wk`} />
+                            <MetricCard label={t('Offers Extended', 'العروض المقدمة')} value={ea?.total_offers || 0} icon={Award} color={c.green} sub={`+${ea?.offers_week || 0} this wk`} />
+                            <MetricCard label={t('Total Jobs', 'إجمالي الوظائف')} value={ea?.total_jobs || 0} icon={Briefcase} color={c.teal} />
+                        </div>
+                    </div>
+
+                    {/* ROW 3: Interview Tracker (NEW) + Shortlisted/Rejected (NEW) */}
+                    <div style={{ gridColumn: '1 / 3', background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                            <Video size={16} color={c.orange} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: c.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Interview Tracker', 'متتبع المقابلات')}</span>
+                            <span style={{ fontSize: 10, color: c.textMuted, marginLeft: 'auto' }}>{t('Total:', 'الإجمالي:')} {it?.total || 0}</span>
+                        </div>
+
+                        {/* Interview stats grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 12 }}>
+                            {/* Ongoing */}
+                            <div style={{
+                                background: `linear-gradient(135deg, ${c.orangeGlow}, transparent)`,
+                                border: `1px solid ${c.orange}40`, borderRadius: 8, padding: '14px 12px', textAlign: 'center'
+                            }}>
+                                <PlayCircle size={20} color={c.orange} style={{ margin: '0 auto 6px' }} />
+                                <div style={{ fontSize: 28, fontWeight: 800, color: c.orange, fontFeatureSettings: '"tnum"' }}>{it?.ongoing || 0}</div>
+                                <div style={{ fontSize: 10, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Ongoing Now', 'جارية الآن')}</div>
                             </div>
-                            <div style={{ height: 4, background: colors.cardBorder, borderRadius: 2, position: 'relative' }}>
-                                <div style={{ height: '100%', width: `${(s.rate / 50) * 100}%`, background: s.rate >= s.target ? colors.green : colors.yellow, borderRadius: 2, transition: 'width 1s ease' }} />
-                                <div style={{ position: 'absolute', left: `${(s.target / 50) * 100}%`, top: -2, width: 2, height: 8, background: colors.red, borderRadius: 1 }} />
+                            {/* Upcoming Today */}
+                            <div style={{
+                                background: `linear-gradient(135deg, ${c.accentGlow}, transparent)`,
+                                border: `1px solid ${c.accent}40`, borderRadius: 8, padding: '14px 12px', textAlign: 'center'
+                            }}>
+                                <CalendarClock size={20} color={c.accent} style={{ margin: '0 auto 6px' }} />
+                                <div style={{ fontSize: 28, fontWeight: 800, color: c.accent, fontFeatureSettings: '"tnum"' }}>{it?.upcoming_today || 0}</div>
+                                <div style={{ fontSize: 10, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Upcoming Today', 'القادمة اليوم')}</div>
+                            </div>
+                            {/* Conducted Today */}
+                            <div style={{
+                                background: `linear-gradient(135deg, ${c.greenGlow}, transparent)`,
+                                border: `1px solid ${c.green}40`, borderRadius: 8, padding: '14px 12px', textAlign: 'center'
+                            }}>
+                                <CalendarCheck size={20} color={c.green} style={{ margin: '0 auto 6px' }} />
+                                <div style={{ fontSize: 28, fontWeight: 800, color: c.green, fontFeatureSettings: '"tnum"' }}>{it?.conducted_today || 0}</div>
+                                <div style={{ fontSize: 10, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Conducted Today', 'تم اليوم')}</div>
                             </div>
                         </div>
-                    ))}
-                </div>
 
-                <div style={{ gridColumn: '2 / 4', background: colors.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${colors.cardBorder}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <BarChart3 size={16} color={colors.purple} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Operator Performance', 'أداء المشغلين')}</span>
+                        {/* Week summary bar */}
+                        <div style={{
+                            display: 'flex', gap: 12, padding: '10px 14px',
+                            background: `${c.cardBorder}80`, borderRadius: 6
+                        }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 10, color: c.textMuted, textTransform: 'uppercase', marginBottom: 2 }}>{t('Conducted This Week', 'تمت هذا الأسبوع')}</div>
+                                <div style={{ fontSize: 18, fontWeight: 700, color: c.green }}>{it?.conducted_week || 0}</div>
+                            </div>
+                            <div style={{ width: 1, background: c.cardBorder }} />
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 10, color: c.textMuted, textTransform: 'uppercase', marginBottom: 2 }}>{t('Upcoming This Week', 'القادمة هذا الأسبوع')}</div>
+                                <div style={{ fontSize: 18, fontWeight: 700, color: c.accent }}>{it?.upcoming_week || 0}</div>
+                            </div>
+                        </div>
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                                <th style={{ padding: '8px 6px', fontSize: 11, color: colors.textMuted, textAlign: isRTL ? 'right' : 'left', fontWeight: 600 }}>{t('Operator', 'المشغل')}</th>
-                                <th style={{ padding: '8px 6px', fontSize: 11, color: colors.textMuted, textAlign: 'center', fontWeight: 600 }}>{t('Queue', 'الانتظار')}</th>
-                                <th style={{ padding: '8px 6px', fontSize: 11, color: colors.textMuted, textAlign: 'center', fontWeight: 600 }}>{t('Avg Time', 'متوسط الوقت')}</th>
-                                <th style={{ padding: '8px 6px', fontSize: 11, color: colors.textMuted, textAlign: 'center', fontWeight: 600 }}>{t('Status', 'الحالة')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {operatorPerformance.map((op, i) => (
-                                <tr key={i} style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                                    <td style={{ padding: '10px 6px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <op.icon size={14} color={op.color} />
-                                            <span style={{ fontSize: 13, fontWeight: 600, color: colors.textPrimary }}>{op.name}</span>
+
+                    {/* Shortlisted & Rejected */}
+                    <div style={{ gridColumn: '3 / 5', background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                            <BarChart3 size={16} color={c.purple} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: c.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Screening Decisions', 'قرارات الفرز')}</span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                            {/* Shortlisted This Week */}
+                            <div style={{
+                                background: `linear-gradient(135deg, ${c.greenGlow}, transparent)`,
+                                border: `1px solid ${c.green}40`, borderRadius: 8, padding: '16px 14px', textAlign: 'center'
+                            }}>
+                                <ThumbsUp size={22} color={c.green} style={{ margin: '0 auto 8px' }} />
+                                <div style={{ fontSize: 32, fontWeight: 800, color: c.green, fontFeatureSettings: '"tnum"' }}>{ss?.shortlisted_week || 0}</div>
+                                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Shortlisted This Week', 'قائمة مختصرة هذا الأسبوع')}</div>
+                                <div style={{ fontSize: 10, color: c.textSecondary, marginTop: 4 }}>{t('Total:', 'الإجمالي:')} {ss?.shortlisted_total || 0}</div>
+                            </div>
+
+                            {/* Rejected This Week */}
+                            <div style={{
+                                background: `linear-gradient(135deg, ${c.redGlow}, transparent)`,
+                                border: `1px solid ${c.red}40`, borderRadius: 8, padding: '16px 14px', textAlign: 'center'
+                            }}>
+                                <ThumbsDown size={22} color={c.red} style={{ margin: '0 auto 8px' }} />
+                                <div style={{ fontSize: 32, fontWeight: 800, color: c.red, fontFeatureSettings: '"tnum"' }}>{ss?.rejected_week || 0}</div>
+                                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Rejected This Week', 'مرفوض هذا الأسبوع')}</div>
+                                <div style={{ fontSize: 10, color: c.textSecondary, marginTop: 4 }}>{t('Total:', 'الإجمالي:')} {ss?.rejected_total || 0}</div>
+                            </div>
+                        </div>
+
+                        {/* Conversion ratio bar */}
+                        {(ss?.shortlisted_total || 0) + (ss?.rejected_total || 0) > 0 && (() => {
+                            const total = (ss?.shortlisted_total || 0) + (ss?.rejected_total || 0);
+                            const ratio = Math.round(((ss?.shortlisted_total || 0) / total) * 100);
+                            return (
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: c.textSecondary, marginBottom: 4 }}>
+                                        <span>{t('Shortlist Rate', 'نسبة القائمة المختصرة')}</span>
+                                        <span style={{ fontWeight: 600, color: ratio >= 50 ? c.green : c.yellow }}>{ratio}%</span>
+                                    </div>
+                                    <div style={{ height: 6, background: c.cardBorder, borderRadius: 3, overflow: 'hidden', display: 'flex' }}>
+                                        <div style={{ width: `${ratio}%`, background: c.green, borderRadius: 3, transition: 'width 1s ease' }} />
+                                        <div style={{ width: `${100 - ratio}%`, background: c.red, transition: 'width 1s ease' }} />
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+
+                    {/* ROW 4: Emiratization + Live Feed */}
+                    <div style={{ gridColumn: '1 / 3', background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                            <Flag size={16} color={c.yellow} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: c.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Emiratization by Sector', 'التوطين حسب القطاع')}</span>
+                        </div>
+                        {data.emiratization.sectors.length > 0 ? (
+                            <div style={{ display: 'grid', gap: 8 }}>
+                                {data.emiratization.sectors.map((s, i) => (
+                                    <div key={i}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3, color: c.textSecondary }}>
+                                            <span>{s.name}</span>
+                                            <span style={{ display: 'flex', gap: 8 }}>
+                                                <span style={{ color: c.textMuted }}>{s.total_jobs} {t('jobs', 'وظيفة')}</span>
+                                                {s.target > 0 && <span style={{ fontWeight: 600, color: c.yellow }}>{t('target', 'الهدف')}: {s.target}%</span>}
+                                            </span>
                                         </div>
-                                    </td>
-                                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+                                        <div style={{ height: 4, background: c.cardBorder, borderRadius: 2 }}>
+                                            <div style={{
+                                                height: '100%',
+                                                width: `${Math.min((s.total_jobs / (data.emiratization.sectors[0]?.total_jobs || 1)) * 100, 100)}%`,
+                                                background: s.target > 0 ? c.yellow : c.accent,
+                                                borderRadius: 2, transition: 'width 1s ease'
+                                            }} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ color: c.textMuted, fontSize: 13, textAlign: 'center', padding: 20 }}>{t('No sector data', 'لا توجد بيانات قطاع')}</div>
+                        )}
+                    </div>
+
+                    {/* Live Feed */}
+                    <div style={{ gridColumn: '3 / 5', background: c.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${c.cardBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                            <Activity size={16} color={c.teal} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: c.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Live Feed', 'التحديثات المباشرة')}</span>
+                            <div style={{
+                                marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%',
+                                background: c.green, boxShadow: `0 0 6px ${c.green}`,
+                                animation: 'pulse 2s ease-in-out infinite'
+                            }} />
+                        </div>
+                        {data.live_feed.length > 0 ? (
+                            data.live_feed.map((item, i) => (
+                                <div key={i} style={{ padding: '8px 0', borderBottom: i < data.live_feed.length - 1 ? `1px solid ${c.cardBorder}` : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ fontSize: 12, color: c.textPrimary, lineHeight: 1.4, flex: 1 }}>
                                         <span style={{
-                                            fontSize: 13, fontWeight: 700, padding: '2px 10px', borderRadius: 10,
-                                            color: op.queue > 20 ? colors.red : op.queue > 10 ? colors.yellow : colors.green,
-                                            background: op.queue > 20 ? colors.redGlow : op.queue > 10 ? colors.yellowGlow : colors.greenGlow,
-                                        }}>{op.queue}</span>
-                                    </td>
-                                    <td style={{ padding: '10px 6px', textAlign: 'center', fontSize: 13, color: colors.textSecondary, fontFeatureSettings: '"tnum"' }}>{op.avgTime}</td>
-                                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
-                                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: op.queue > 20 ? colors.yellow : colors.green, margin: '0 auto', boxShadow: `0 0 6px ${op.queue > 20 ? colors.yellow : colors.green}` }} />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                            display: 'inline-block', width: 6, height: 6, borderRadius: '50%', marginRight: 8,
+                                            background: item.type === 'user' ? c.accent : item.type === 'job' ? c.green : item.type === 'application' ? c.purple : c.teal
+                                        }} />
+                                        {item.text}
+                                    </div>
+                                    <div style={{ fontSize: 10, color: c.textMuted, whiteSpace: 'nowrap', marginLeft: 12 }}>
+                                        {item.relative} {t('ago', 'مضت')}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div style={{ color: c.textMuted, fontSize: 13, textAlign: 'center', padding: 20 }}>{t('No recent activity', 'لا يوجد نشاط حديث')}</div>
+                        )}
 
-                <div style={{ background: colors.cardBg, borderRadius: 8, padding: 16, border: `1px solid ${colors.cardBorder}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <Activity size={16} color={colors.teal} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Live Feed', 'التحديثات')}</span>
-                    </div>
-                    {recentActivity.map((a, i) => (
-                        <div key={i} style={{ padding: '8px 0', borderBottom: i < recentActivity.length - 1 ? `1px solid ${colors.cardBorder}` : 'none' }}>
-                            <div style={{ fontSize: 12, color: colors.textPrimary, lineHeight: 1.4 }}>{a.text}</div>
-                            <div style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>{a.time} {t('ago', 'مضت')}</div>
-                        </div>
-                    ))}
-
-                    <div style={{ marginTop: 16 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                            <GraduationCap size={14} color={colors.purple} />
-                            <span style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase' }}>{t('Education', 'التعليم')}</span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                            <div style={{ background: `${colors.purple}15`, borderRadius: 6, padding: 8, textAlign: 'center' }}>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: colors.purple }}>{educationMetrics.institutions}</div>
-                                <div style={{ fontSize: 9, color: colors.textMuted }}>{t('Institutions', 'مؤسسة')}</div>
+                        {/* Role Distribution Mini */}
+                        {Object.keys(data.role_distribution).length > 0 && (
+                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${c.cardBorder}` }}>
+                                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>{t('Users by Role', 'المستخدمون حسب الدور')}</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                    {Object.entries(data.role_distribution).slice(0, 8).map(([role, cnt]) => (
+                                        <div key={role} style={{
+                                            fontSize: 11, padding: '3px 10px', borderRadius: 12,
+                                            background: `${c.accent}15`, color: c.textSecondary,
+                                            border: `1px solid ${c.cardBorder}`
+                                        }}>
+                                            {role.replace(/_/g, ' ')} <strong style={{ color: c.textPrimary }}>{cnt}</strong>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div style={{ background: `${colors.purple}15`, borderRadius: 6, padding: 8, textAlign: 'center' }}>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: colors.purple }}>{educationMetrics.programs}</div>
-                                <div style={{ fontSize: 9, color: colors.textMuted }}>{t('Programs', 'برنامج')}</div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
+
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.4; }
+                }
+            `}</style>
         </div>
     );
 };

@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe } from 'lucide-react';
-import { navigationGroups } from '@/components/navigation/navigationConfig';
+import { navigationGroups, operationsNavGroup } from '@/components/navigation/navigationConfig';
 import UserMenu from '@/components/layout/UserMenu';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { NotificationBell } from '@/components/notifications/NotificationSystem';
 import { AccessibilityToolbar } from '@/components/accessibility/AccessibilityToolbar';
+import { normalizeRole, getDashboardRoute, ROLE_DISPLAY_NAMES } from '@/types/auth';
+import { useNavigate } from 'react-router-dom';
 
 interface HybridGovernmentNavProps {
   showAuthButtons?: boolean;
@@ -25,14 +27,92 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleDropdownEnter = useCallback((groupId: string) => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setActiveDropdown(groupId);
+  }, []);
+
+  const handleDropdownLeave = useCallback(() => {
+    closeTimerRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+      closeTimerRef.current = null;
+    }, 150);
+  }, []);
 
   // Get authentication state
-  const { user, isAuthenticated } = useAuth();
+  const authContext = useAuth();
+  const { user, isAuthenticated } = authContext;
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
+  const navigate = useNavigate();
 
   // Get user role from authenticated user, fallback to prop
   const userRole = user?.role || propUserRole;
+
+  // ── Role-based nav filtering ──
+  // Define which nav items should be HIDDEN for each role category
+  const hiddenPathsByRole: Record<string, string[]> = {
+    // Government users: hide candidate-focused tools
+    government: [
+      '/analytics',        // candidate career analytics
+      '/cv-builder',       // candidate tool
+      '/portfolio',        // candidate tool
+      '/interview-preparation', // candidate tool
+      '/job-matching',     // candidate tool
+      '/gig-marketplace',  // candidate tool
+      '/internships',      // candidate tool
+      '/emiratization-tracker', // consolidated into gov dashboard
+    ],
+    // Recruiter / HR: hide gov-only and some candidate tools
+    recruiter: ['/emiratization-tracker'],
+    hr_recruiter: ['/emiratization-tracker'],
+    hr_manager: ['/emiratization-tracker'],
+    // Operators: similar to government
+    operator: [
+      '/analytics',
+      '/cv-builder',
+      '/portfolio',
+      '/interview-preparation',
+      '/emiratization-tracker',
+    ],
+    growth_operator_company: [
+      '/analytics',
+      '/cv-builder',
+      '/portfolio',
+      '/interview-preparation',
+      '/emiratization-tracker',
+    ],
+    growth_operator_candidate: [
+      '/analytics',
+      '/emiratization-tracker',
+    ],
+  };
+
+  const hiddenPaths = hiddenPathsByRole[userRole.toLowerCase()] || [];
+
+  // Determine if user is an operator/admin who should see the operations nav
+  const isOperatorRole = ['operator', 'growth_operator', 'growth_operator_company', 'growth_operator_candidate',
+    'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship',
+    'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin'
+  ].includes(userRole.toLowerCase());
+
+  // Filter nav groups — remove blocked items, then remove empty groups
+  const filteredNavigationGroups = useMemo(() => {
+    const baseGroups = isOperatorRole ? [...navigationGroups, operationsNavGroup] : navigationGroups;
+    if (!hiddenPaths.length) return baseGroups;
+    return baseGroups
+      .map(group => ({
+        ...group,
+        items: group.items.filter(item => !hiddenPaths.includes(item.href)),
+      }))
+      .filter(group => group.items.length > 0);
+  }, [userRole, hiddenPaths.length, isOperatorRole]);
 
   const groupKeyMap = useMemo(() => ({
     education: {
@@ -50,6 +130,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     lifelong: {
       name: 'nav_lifelong_engagement',
       desc: 'nav_lifelong_engagement_desc'
+    },
+    operations: {
+      name: 'Operations',
+      desc: 'Operator dashboards and management tools'
     }
   }), []);
 
@@ -197,14 +281,69 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               {isAuthenticated && user ? (
                 <div className="flex items-center space-x-4">
                   {userRole && (
-                    <div className="hidden sm:flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-[#006E6D] rounded-full"></div>
-                      <span className="text-sm text-slate-600">
-                        {(user?.full_name === 'New Member' || (user?.first_name === 'New' && user?.last_name === 'Member'))
-                          ? (isRTL ? 'عضو جديد' : 'New Member')
-                          : getRoleDisplayName(userRole)}
-                      </span>
-                    </div>
+                    (() => {
+                      // Compute available roles for switcher
+                      const rawRoles = [
+                        ...(user?.roles || []),
+                        user?.user_type,
+                        ...(user?.secondary_roles || [])
+                      ].filter(Boolean);
+                      const uniqueRoles = Array.from(new Set(
+                        rawRoles.map(r => normalizeRole(r as string))
+                      )).filter(Boolean) as string[];
+                      const hasMultipleRoles = uniqueRoles.length > 1;
+
+                      return (
+                        <div className="hidden sm:flex items-center relative">
+                          <div className="w-2 h-2 bg-[#006E6D] rounded-full mr-2"></div>
+                          {hasMultipleRoles ? (
+                            <>
+                              <button
+                                onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+                                className="flex items-center gap-1 text-sm text-slate-600 hover:text-[#006E6D] transition-colors cursor-pointer"
+                              >
+                                {getRoleDisplayName(userRole)}
+                                <ChevronDown className={`h-3 w-3 transition-transform ${roleSwitcherOpen ? 'rotate-180' : ''}`} />
+                              </button>
+                              {roleSwitcherOpen && (
+                                <div
+                                  className="absolute top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1 min-w-[180px]"
+                                  onMouseLeave={() => setRoleSwitcherOpen(false)}
+                                >
+                                  {uniqueRoles.map(role => (
+                                    <button
+                                      key={role}
+                                      onClick={async () => {
+                                        if (role !== userRole.toLowerCase()) {
+                                          await authContext.switchRole(role);
+                                          navigate(getDashboardRoute(role));
+                                        }
+                                        setRoleSwitcherOpen(false);
+                                      }}
+                                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${normalizeRole(userRole) === role
+                                          ? 'bg-[#F0F7F7] text-[#006E6D] font-medium'
+                                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        }`}
+                                    >
+                                      {getRoleDisplayName(role)}
+                                      {normalizeRole(userRole) === role && (
+                                        <span className="text-xs text-slate-400 ml-2">•</span>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-sm text-slate-600">
+                              {(user?.full_name === 'New Member' || (user?.first_name === 'New' && user?.last_name === 'Member'))
+                                ? (isRTL ? 'عضو جديد' : 'New Member')
+                                : getRoleDisplayName(userRole)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()
                   )}
                   <UserMenu />
                 </div>
@@ -234,12 +373,12 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
-            {navigationGroups.map((group) => (
+            {filteredNavigationGroups.map((group) => (
               <div
                 key={group.id}
                 className="relative"
-                onMouseEnter={() => setActiveDropdown(group.id)}
-                onMouseLeave={() => setActiveDropdown(null)}
+                onMouseEnter={() => handleDropdownEnter(group.id)}
+                onMouseLeave={handleDropdownLeave}
               >
                 <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium`}>
                   <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
@@ -307,7 +446,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 </button>
               </div>
 
-              {navigationGroups.map((group) => (
+              {filteredNavigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
                   <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
                     <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>

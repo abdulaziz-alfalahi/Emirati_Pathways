@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import Messages from '@/components/recruiter/Messages';
+import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
   ClipboardCheck,
   Users,
@@ -29,7 +31,7 @@ import {
   BarChart3,
   PieChart,
   Star,
-
+  Languages,
   Settings,
   Bell,
   Plus,
@@ -88,6 +90,10 @@ const AssessorDashboard: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const t = (en: string, ar: string) => isRTL ? ar : en;
+  const { language, toggleLanguage } = useLanguage();
   const [dashboardData, setDashboardData] = useState<AssessorData>({
     assessments: {
       totalAssessments: 0,
@@ -116,78 +122,52 @@ const AssessorDashboard: React.FC = () => {
     activity: []
   });
 
-  // Initialize with mock data
+  // Fetch from API, fall back to mock data
   React.useEffect(() => {
-    setMockData();
+    const fetchData = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const response = await fetch(`${API_BASE}/api/assessor/dashboard`);
+        if (response.ok) {
+          const data = await response.json();
+          setDashboardData({
+            assessments: data.assessments || dashboardData.assessments,
+            candidates: data.candidates || dashboardData.candidates,
+            performance: data.performance || dashboardData.performance,
+            specializations: data.specializations || dashboardData.specializations,
+            activity: data.activity || [],
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading assessor dashboard:', error);
+      }
+      // Fallback mock data
+      setDashboardData({
+        assessments: { totalAssessments: 1250, completedThisMonth: 89, pendingReview: 12, averageRating: 4.8 },
+        candidates: { totalCandidates: 856, passedAssessments: 672, failedAssessments: 184, awaitingResults: 45 },
+        performance: { accuracyRate: 96, averageCompletionTime: 45, qualityScore: 4.7, feedbackRating: 4.8 },
+        specializations: {
+          primaryAreas: ['Software Development', 'Project Management', 'Communication Skills', 'Technical Writing'],
+          certifications: ['Certified Professional Assessor', 'Technical Skills Evaluator', 'Soft Skills Assessment'],
+          yearsExperience: 8,
+          assessmentTypes: ['Technical Skills', 'Soft Skills', 'Leadership', 'Communication'],
+        },
+        activity: [
+          { id: 1, type: 'assessment_completed', title: 'Assessment Completed', description: 'Technical assessment for Senior Developer position at ADNOC Digital', timestamp: new Date().toISOString(), priority: 'high' },
+          { id: 2, type: 'candidate_passed', title: 'Candidate Assessment Passed', description: 'Ahmed Al Emirati successfully passed blockchain development assessment', timestamp: new Date(Date.now() - 86400000).toISOString(), priority: 'medium' },
+          { id: 3, type: 'quality_review', title: 'Quality Review Completed', description: 'Peer review completed for communication skills assessment framework', timestamp: new Date(Date.now() - 172800000).toISOString(), priority: 'medium' },
+          { id: 4, type: 'new_assignment', title: 'New Assessment Assignment', description: 'Assigned to evaluate leadership skills for Emirates NBD management role', timestamp: new Date(Date.now() - 259200000).toISOString(), priority: 'high' },
+        ],
+      });
+    };
+    fetchData();
   }, []);
 
-  const setMockData = () => {
-    setDashboardData({
-      assessments: {
-        totalAssessments: 1250,
-        completedThisMonth: 89,
-        pendingReview: 12,
-        averageRating: 4.8
-      },
-      candidates: {
-        totalCandidates: 856,
-        passedAssessments: 672,
-        failedAssessments: 184,
-        awaitingResults: 45
-      },
-      performance: {
-        accuracyRate: 96,
-        averageCompletionTime: 45,
-        qualityScore: 4.7,
-        feedbackRating: 4.8
-      },
-      specializations: {
-        primaryAreas: ['Software Development', 'Project Management', 'Communication Skills', 'Technical Writing'],
-        certifications: ['Certified Professional Assessor', 'Technical Skills Evaluator', 'Soft Skills Assessment'],
-        yearsExperience: 8,
-        assessmentTypes: ['Technical Skills', 'Soft Skills', 'Leadership', 'Communication']
-      },
-      activity: [
-        {
-          id: 1,
-          type: 'assessment_completed',
-          title: 'Assessment Completed',
-          description: 'Technical assessment for Senior Developer position at ADNOC Digital',
-          timestamp: new Date().toISOString(),
-          priority: 'high'
-        },
-        {
-          id: 2,
-          type: 'candidate_passed',
-          title: 'Candidate Assessment Passed',
-          description: 'Ahmed Al Emirati successfully passed blockchain development assessment',
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          priority: 'medium'
-        },
-        {
-          id: 3,
-          type: 'quality_review',
-          title: 'Quality Review Completed',
-          description: 'Peer review completed for communication skills assessment framework',
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
-          priority: 'medium'
-        },
-        {
-          id: 4,
-          type: 'new_assignment',
-          title: 'New Assessment Assignment',
-          description: 'Assigned to evaluate leadership skills for Emirates NBD management role',
-          timestamp: new Date(Date.now() - 259200000).toISOString(),
-          priority: 'high'
-        }
-      ]
-    });
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Navigation */}
-      <HybridGovernmentNavFixed showAuthButtons={true} />
+      <HybridGovernmentNavFixed showAuthButtons={true} onLanguageToggle={toggleLanguage} currentLanguage={language} />
 
 
 
@@ -199,22 +179,22 @@ const AssessorDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-dubai-bold text-slate-900 mb-2">
-                  Assessor Dashboard
+                  {t('Assessor Dashboard', 'لوحة تحكم المُقيّم')}
                 </h1>
                 <p className="text-slate-600 font-dubai-medium">
-                  Welcome back, Mariam Al Nuaimi - Certified Skills Assessment Specialist
+                  {t('Welcome back, Mariam Al Nuaimi - Certified Skills Assessment Specialist', 'مرحباً بعودتك، مريم النعيمي - أخصائية تقييم المهارات المعتمدة')}
                 </p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-3">
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-dubai-medium">
-                  Certified Assessor
+                  {t('Certified Assessor', 'مُقيّم معتمد')}
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-dubai-medium">
-                  Skills Expert
+                  {t('Skills Expert', 'خبير مهارات')}
                 </Badge>
                 <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
+                  <Settings className="h-4 w-4 me-2" />
+                  {t('Settings', 'الإعدادات')}
                 </Button>
               </div>
             </div>
@@ -224,20 +204,20 @@ const AssessorDashboard: React.FC = () => {
           <div className="mb-8">
             <div className="flex flex-wrap gap-4">
               <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                <ClipboardCheck className="h-4 w-4 mr-2" />
-                New Assessment
+                <ClipboardCheck className="h-4 w-4 me-2" />
+                {t('New Assessment', 'تقييم جديد')}
               </Button>
               <Button variant="outline" className="font-dubai-medium">
-                <Users className="h-4 w-4 mr-2" />
-                View Candidates
+                <Users className="h-4 w-4 me-2" />
+                {t('View Candidates', 'عرض المرشحين')}
               </Button>
               <Button variant="outline" className="font-dubai-medium">
-                <FileCheck className="h-4 w-4 mr-2" />
-                Review Results
+                <FileCheck className="h-4 w-4 me-2" />
+                {t('Review Results', 'مراجعة النتائج')}
               </Button>
               <Button variant="outline" className="font-dubai-medium">
-                <Download className="h-4 w-4 mr-2" />
-                Export Reports
+                <Download className="h-4 w-4 me-2" />
+                {t('Export Reports', 'تصدير التقارير')}
               </Button>
             </div>
           </div>
@@ -245,14 +225,14 @@ const AssessorDashboard: React.FC = () => {
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
-              <TabsTrigger value="overview" className="font-dubai-medium">Overview</TabsTrigger>
-              <TabsTrigger value="assessments" className="font-dubai-medium">Assessments</TabsTrigger>
-              <TabsTrigger value="candidates" className="font-dubai-medium">Candidates</TabsTrigger>
-              <TabsTrigger value="performance" className="font-dubai-medium">Performance</TabsTrigger>
-              <TabsTrigger value="tools" className="font-dubai-medium">Tools</TabsTrigger>
+              <TabsTrigger value="overview" className="font-dubai-medium">{t('Overview', 'نظرة عامة')}</TabsTrigger>
+              <TabsTrigger value="assessments" className="font-dubai-medium">{t('Assessments', 'التقييمات')}</TabsTrigger>
+              <TabsTrigger value="candidates" className="font-dubai-medium">{t('Candidates', 'المرشحين')}</TabsTrigger>
+              <TabsTrigger value="performance" className="font-dubai-medium">{t('Performance', 'الأداء')}</TabsTrigger>
+              <TabsTrigger value="tools" className="font-dubai-medium">{t('Tools', 'الأدوات')}</TabsTrigger>
               <TabsTrigger value="messages" className="font-dubai-medium">
                 <MessageSquare className="h-4 w-4 mr-1" />
-                Messages
+                {t('Messages', 'الرسائل')}
               </TabsTrigger>
             </TabsList>
 
@@ -262,46 +242,46 @@ const AssessorDashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Total Assessments</CardTitle>
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Total Assessments', 'إجمالي التقييمات')}</CardTitle>
                     <ClipboardCheck className="h-4 w-4 text-blue-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.assessments.totalAssessments}</div>
                     <p className="text-xs text-green-600 font-dubai-medium">
-                      {dashboardData.assessments.completedThisMonth} this month
+                      {dashboardData.assessments.completedThisMonth} {t('this month', 'هذا الشهر')}
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Pending Reviews</CardTitle>
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Pending Reviews', 'المراجعات المعلقة')}</CardTitle>
                     <AlertCircle className="h-4 w-4 text-orange-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.assessments.pendingReview}</div>
                     <p className="text-xs text-orange-600 font-dubai-medium">
-                      Require immediate attention
+                      {t('Require immediate attention', 'تتطلب اهتماماً فورياً')}
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Accuracy Rate</CardTitle>
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Accuracy Rate', 'نسبة الدقة')}</CardTitle>
                     <Target className="h-4 w-4 text-green-600" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.performance.accuracyRate}%</div>
                     <p className="text-xs text-green-600 font-dubai-medium">
-                      Above industry standard
+                      {t('Above industry standard', 'أعلى من المعيار الصناعي')}
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-dubai-medium text-slate-600">Quality Rating</CardTitle>
+                    <CardTitle className="text-sm font-dubai-medium text-slate-600">{t('Quality Rating', 'تقييم الجودة')}</CardTitle>
                     <Star className="h-4 w-4 text-yellow-600" />
                   </CardHeader>
                   <CardContent>
@@ -321,28 +301,28 @@ const AssessorDashboard: React.FC = () => {
               {/* Assessment Results Overview */}
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Assessment Results Overview</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{t('Assessment Results Overview', 'نظرة عامة على نتائج التقييم')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Summary of candidate assessment outcomes
+                    {t('Summary of candidate assessment outcomes', 'ملخص نتائج تقييم المرشحين')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
                       <div className="text-2xl font-dubai-bold text-blue-600">{dashboardData.candidates.totalCandidates}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Total Candidates</p>
+                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Total Candidates', 'إجمالي المرشحين')}</p>
                     </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
                       <div className="text-2xl font-dubai-bold text-green-600">{dashboardData.candidates.passedAssessments}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Passed Assessments</p>
+                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Passed Assessments', 'اجتازوا التقييم')}</p>
                     </div>
                     <div className="text-center p-4 bg-red-50 rounded-lg">
                       <div className="text-2xl font-dubai-bold text-red-600">{dashboardData.candidates.failedAssessments}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Failed Assessments</p>
+                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Failed Assessments', 'لم يجتازوا التقييم')}</p>
                     </div>
                     <div className="text-center p-4 bg-yellow-50 rounded-lg">
                       <div className="text-2xl font-dubai-bold text-yellow-600">{dashboardData.candidates.awaitingResults}</div>
-                      <p className="text-sm text-slate-600 font-dubai-medium">Awaiting Results</p>
+                      <p className="text-sm text-slate-600 font-dubai-medium">{t('Awaiting Results', 'بانتظار النتائج')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -352,19 +332,19 @@ const AssessorDashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-white shadow-sm">
                   <CardHeader>
-                    <CardTitle className="font-dubai-bold text-slate-900">Assessment Performance</CardTitle>
+                    <CardTitle className="font-dubai-bold text-slate-900">{t('Assessment Performance', 'أداء التقييم')}</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
-                      Your assessment quality and efficiency metrics
+                      {t('Your assessment quality and efficiency metrics', 'مقاييس جودة وكفاءة تقييماتك')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Average Completion Time</span>
-                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.performance.averageCompletionTime} min</span>
+                        <span className="text-sm font-dubai-medium text-slate-600">{t('Average Completion Time', 'متوسط وقت الإنجاز')}</span>
+                        <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.performance.averageCompletionTime} {t('min', 'دقيقة')}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Feedback Rating</span>
+                        <span className="text-sm font-dubai-medium text-slate-600">{t('Feedback Rating', 'تقييم التغذية الراجعة')}</span>
                         <div className="flex items-center space-x-2">
                           <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.performance.feedbackRating}</span>
                           <div className="flex">
@@ -378,7 +358,7 @@ const AssessorDashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-dubai-medium text-slate-600">Years of Experience</span>
+                        <span className="text-sm font-dubai-medium text-slate-600">{t('Years of Experience', 'سنوات الخبرة')}</span>
                         <span className="text-lg font-dubai-bold text-slate-900">{dashboardData.specializations.yearsExperience}+</span>
                       </div>
                     </div>
@@ -387,9 +367,9 @@ const AssessorDashboard: React.FC = () => {
 
                 <Card className="bg-white shadow-sm">
                   <CardHeader>
-                    <CardTitle className="font-dubai-bold text-slate-900">Specialization Areas</CardTitle>
+                    <CardTitle className="font-dubai-bold text-slate-900">{t('Specialization Areas', 'مجالات التخصص')}</CardTitle>
                     <CardDescription className="font-dubai-medium text-slate-600">
-                      Your primary assessment specializations
+                      {t('Your primary assessment specializations', 'تخصصاتك الأساسية في التقييم')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -397,7 +377,7 @@ const AssessorDashboard: React.FC = () => {
                       {dashboardData.specializations.primaryAreas.map((area, index) => (
                         <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded">
                           <span className="text-sm font-dubai-medium text-slate-700">{area}</span>
-                          <Badge variant="secondary" className="text-xs">Expert</Badge>
+                          <Badge variant="secondary" className="text-xs">{t('Expert', 'خبير')}</Badge>
                         </div>
                       ))}
                     </div>
@@ -408,16 +388,16 @@ const AssessorDashboard: React.FC = () => {
               {/* Recent Activity */}
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Recent Activity</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{t('Recent Activity', 'النشاط الأخير')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Latest updates from your assessment activities
+                    {t('Latest updates from your assessment activities', 'آخر التحديثات من أنشطة التقييم الخاصة بك')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {dashboardData.activity.length > 0 ? (
                       dashboardData.activity.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+                        <div key={activity.id} className={`flex items-start gap-3 p-3 bg-slate-50 rounded-lg ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
                           <div className="flex-shrink-0">
                             {activity.type === 'assessment_completed' && (
                               <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
@@ -456,7 +436,7 @@ const AssessorDashboard: React.FC = () => {
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-slate-500 font-dubai-medium">No recent activity</p>
+                      <p className="text-sm text-slate-500 font-dubai-medium">{t('No recent activity', 'لا يوجد نشاط حديث')}</p>
                     )}
                   </div>
                 </CardContent>
@@ -467,19 +447,19 @@ const AssessorDashboard: React.FC = () => {
             <TabsContent value="assessments" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Assessment Management</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{t('Assessment Management', 'إدارة التقييمات')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Create and manage skill assessments
+                    {t('Create and manage skill assessments', 'إنشاء وإدارة تقييمات المهارات')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-12">
                     <ClipboardCheck className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Assessment Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Create, conduct, and manage comprehensive skill assessments</p>
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Assessment Management', 'إدارة التقييمات')}</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Create, conduct, and manage comprehensive skill assessments', 'إنشاء وإجراء وإدارة تقييمات المهارات الشاملة')}</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Assessment
+                      <Plus className="h-4 w-4 me-2" />
+                      {t('Create New Assessment', 'إنشاء تقييم جديد')}
                     </Button>
                   </div>
                 </CardContent>
@@ -490,18 +470,18 @@ const AssessorDashboard: React.FC = () => {
             <TabsContent value="candidates" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Candidate Management</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{t('Candidate Management', 'إدارة المرشحين')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Track and manage candidate assessments
+                    {t('Track and manage candidate assessments', 'تتبع وإدارة تقييمات المرشحين')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-12">
                     <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Candidate Management</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Track candidate progress and assessment results</p>
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Candidate Management', 'إدارة المرشحين')}</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Track candidate progress and assessment results', 'تتبع تقدم المرشحين ونتائج التقييم')}</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      View All Candidates
+                      {t('View All Candidates', 'عرض جميع المرشحين')}
                     </Button>
                   </div>
                 </CardContent>
@@ -512,18 +492,18 @@ const AssessorDashboard: React.FC = () => {
             <TabsContent value="performance" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Performance Analytics</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{t('Performance Analytics', 'تحليلات الأداء')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Detailed performance metrics and insights
+                    {t('Detailed performance metrics and insights', 'مقاييس أداء مفصلة ورؤى')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-12">
                     <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Performance Analytics</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive analytics on assessment quality and efficiency</p>
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Performance Analytics', 'تحليلات الأداء')}</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Comprehensive analytics on assessment quality and efficiency', 'تحليلات شاملة لجودة وكفاءة التقييم')}</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      View Analytics Dashboard
+                      {t('View Analytics Dashboard', 'عرض لوحة التحليلات')}
                     </Button>
                   </div>
                 </CardContent>
@@ -534,18 +514,18 @@ const AssessorDashboard: React.FC = () => {
             <TabsContent value="tools" className="space-y-6">
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Assessment Tools & Resources</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">{t('Assessment Tools & Resources', 'أدوات وموارد التقييم')}</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Access assessment frameworks and evaluation tools
+                    {t('Access assessment frameworks and evaluation tools', 'الوصول إلى أطر التقييم وأدوات التقييم')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-12">
                     <BookOpen className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Assessment Tools</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Access evaluation frameworks, rubrics, and assessment templates</p>
+                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Assessment Tools', 'أدوات التقييم')}</h3>
+                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Access evaluation frameworks, rubrics, and assessment templates', 'الوصول إلى أطر التقييم والمعايير وقوالب التقييم')}</p>
                     <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      Browse Tools Library
+                      {t('Browse Tools Library', 'تصفح مكتبة الأدوات')}
                     </Button>
                   </div>
                 </CardContent>

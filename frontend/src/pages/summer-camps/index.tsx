@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { BookOpen, Users, Calendar, Trophy, MapPin, Clock, Star, ArrowRight, Search } from 'lucide-react';
@@ -16,51 +16,7 @@ const brand = {
   amberText: '#92400E',
 };
 
-// Mock camp data
-const mockCamps = [
-  {
-    id: '1', title: { en: 'Coding Bootcamp for Teens', ar: 'معسكر البرمجة للمراهقين' },
-    category: 'Technology', ageGroup: '14-18', location: 'Dubai Internet City',
-    duration: '4 weeks', price: 'AED 2,500', rating: 4.8, enrolled: 45, capacity: 60,
-    description: { en: 'Learn Python, JavaScript, and app development in this intensive knowledge camp.', ar: 'تعلم بايثون وجافاسكريبت وتطوير التطبيقات في هذا المعسكر المعرفي المكثف.' },
-    featured: true
-  },
-  {
-    id: '2', title: { en: 'Robotics & AI Camp', ar: 'معسكر الروبوتات والذكاء الاصطناعي' },
-    category: 'Technology', ageGroup: '10-16', location: 'Dubai Silicon Oasis',
-    duration: '3 weeks', price: 'AED 2,200', rating: 4.7, enrolled: 38, capacity: 50,
-    description: { en: 'Build and program robots using the latest AI technologies.', ar: 'ابنِ وبرمج الروبوتات باستخدام أحدث تقنيات الذكاء الاصطناعي.' },
-    featured: false
-  },
-  {
-    id: '3', title: { en: 'Creative Arts Workshop', ar: 'ورشة الفنون الإبداعية' },
-    category: 'Arts', ageGroup: '8-14', location: 'Dubai Media City',
-    duration: '2 weeks', price: 'AED 1,800', rating: 4.9, enrolled: 28, capacity: 30,
-    description: { en: 'Explore painting, sculpture, digital art and creative expression.', ar: 'استكشف الرسم والنحت والفن الرقمي والتعبير الإبداعي.' },
-    featured: true
-  },
-  {
-    id: '4', title: { en: 'Young Scientists Academy', ar: 'أكاديمية العلماء الصغار' },
-    category: 'Science', ageGroup: '10-16', location: 'DIFC',
-    duration: '3 weeks', price: 'AED 2,000', rating: 4.6, enrolled: 32, capacity: 40,
-    description: { en: 'Hands-on experiments in physics, chemistry, and biology.', ar: 'تجارب عملية في الفيزياء والكيمياء والأحياء.' },
-    featured: false
-  },
-  {
-    id: '5', title: { en: 'Leadership & Public Speaking', ar: 'القيادة والخطابة' },
-    category: 'Leadership', ageGroup: '14-18', location: 'Business Bay',
-    duration: '2 weeks', price: 'AED 1,500', rating: 4.5, enrolled: 20, capacity: 25,
-    description: { en: 'Develop leadership skills, public speaking, and confidence.', ar: 'طوّر مهارات القيادة والخطابة والثقة بالنفس.' },
-    featured: false
-  },
-  {
-    id: '6', title: { en: 'Sports Excellence Program', ar: 'برنامج التميز الرياضي' },
-    category: 'Sports', ageGroup: '6-9', location: 'Dubai Marina',
-    duration: '4 weeks', price: 'AED 1,900', rating: 4.7, enrolled: 52, capacity: 60,
-    description: { en: 'Multi-sport training including swimming, football, basketball, and athletics.', ar: 'تدريب رياضات متعددة تشمل السباحة وكرة القدم والسلة وألعاب القوى.' },
-    featured: true
-  },
-];
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
 
 const categories = [
   { id: 'All', en: 'All', ar: 'الكل' },
@@ -76,17 +32,53 @@ const SummerCampsPage: React.FC = () => {
   const lang = (i18n.language === 'ar' ? 'ar' : 'en') as 'en' | 'ar';
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [camps, setCamps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const resp = await fetch(`${API_BASE}/api/education/camps`);
+        if (!resp.ok) throw new Error('API error');
+        const data = await resp.json();
+        if (!cancelled) {
+          setCamps((data.camps || []).map((c: any) => ({
+            id: String(c.id),
+            title: { en: c.title || '', ar: c.title_ar || '' },
+            category: c.category || '',
+            ageGroup: c.age_group || '',
+            location: c.location || '',
+            duration: c.duration || '',
+            price: c.price || '',
+            rating: Number(c.rating) || 0,
+            enrolled: c.enrolled || 0,
+            capacity: c.capacity || 1,
+            description: { en: c.description || '', ar: c.description_ar || '' },
+            featured: c.featured || false,
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to load camps:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Inline bilingual helper — same pattern as SchoolProgramsPage
   const t = (en: string, ar: string) => lang === 'ar' ? ar : en;
 
-  const filtered = mockCamps.filter(camp => {
+  const filtered = camps.filter(camp => {
     const matchCat = selectedCategory === 'All' || camp.category === selectedCategory;
     const matchSearch = !searchQuery || camp.title[lang].toLowerCase().includes(searchQuery.toLowerCase())
       || camp.category.toLowerCase().includes(searchQuery.toLowerCase())
       || camp.location.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCat && matchSearch;
   });
+
 
   const stats = [
     { value: '+50', label: t('Knowledge Programs', 'برامج معرفية'), icon: BookOpen },

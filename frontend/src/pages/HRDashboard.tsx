@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { restClient } from '@/utils/api';
@@ -114,6 +115,7 @@ const HRDashboard: React.FC = () => {
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Get user data from localStorage for proper data isolation
   const getUserData = () => {
@@ -128,7 +130,9 @@ const HRDashboard: React.FC = () => {
   const userData = getUserData();
   const COMPANY_ID = userData.company_id || userData.profile_data?.companyId || '';
   const HR_MANAGER_ID = userData.id ? String(userData.id) : '';
-  const HR_MANAGER_NAME = userData.full_name || userData.first_name || 'HR Manager';
+  const HR_MANAGER_NAME = (userData.full_name && userData.full_name !== 'None None' && userData.full_name !== 'None')
+    ? userData.full_name
+    : (userData.first_name && userData.first_name !== 'None') ? userData.first_name : 'HR Manager';
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -142,6 +146,8 @@ const HRDashboard: React.FC = () => {
       }
     };
     fetchNotifications();
+    // Dismiss skeleton after first fetch completes
+    fetchNotifications().finally(() => setIsInitialLoad(false));
     // Poll every minute
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
@@ -362,6 +368,14 @@ const HRDashboard: React.FC = () => {
       recruitment: { ...prev.recruitment, successRate: 72 }
     }));
   };
+
+  if (isInitialLoad) {
+    return (
+      <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -759,8 +773,8 @@ const HRDashboard: React.FC = () => {
                             <TableRow key={index}>
                               <TableCell className="font-medium">
                                 <div>
-                                  <div className="font-dubai-bold">{candidate.first_name} {candidate.last_name}</div>
-                                  <div className="text-sm text-slate-500">{candidate.email}</div>
+                                  <div className="font-dubai-bold">{candidate.candidate_full_name || candidate.candidate_name || 'Unknown Candidate'}</div>
+                                  <div className="text-sm text-slate-500">{candidate.candidate_email || ''}</div>
                                 </div>
                               </TableCell>
                               <TableCell>{candidate.job_title}</TableCell>
@@ -1119,24 +1133,101 @@ const HRDashboard: React.FC = () => {
 
             {/* Analytics Tab */}
             <TabsContent value="analytics" className="space-y-6">
+              {/* Hiring Funnel */}
               <Card className="bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">Recruitment Analytics</CardTitle>
+                  <CardTitle className="font-dubai-bold text-slate-900">Hiring Funnel</CardTitle>
                   <CardDescription className="font-dubai-medium text-slate-600">
-                    Insights and metrics for data-driven decisions
+                    Candidate progression through recruitment stages
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12">
-                    <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">Advanced Analytics</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">Comprehensive recruitment analytics and insights</p>
-                    <Button
-                      className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium"
-                      onClick={() => navigate('/recruiter/analytics')}
-                    >
-                      View Analytics Dashboard
-                    </Button>
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Total Candidates', value: dashboardData.candidates.total, color: 'bg-teal-500' },
+                      { label: 'Active / Screening', value: dashboardData.candidates.active, color: 'bg-blue-500' },
+                      { label: 'Shortlisted', value: dashboardData.candidates.shortlisted, color: 'bg-amber-500' },
+                      { label: 'Interviewed', value: dashboardData.candidates.interviewed, color: 'bg-purple-500' },
+                      { label: 'Hired', value: dashboardData.candidates.hired, color: 'bg-green-500' },
+                    ].map((stage, idx) => {
+                      const percentage = dashboardData.candidates.total > 0
+                        ? Math.round((stage.value / dashboardData.candidates.total) * 100)
+                        : 0;
+                      return (
+                        <div key={idx} className="flex items-center gap-4">
+                          <div className="w-36 text-sm font-dubai-medium text-slate-700">{stage.label}</div>
+                          <div className="flex-1 bg-slate-100 rounded-full h-6 overflow-hidden">
+                            <div
+                              className={`${stage.color} h-full rounded-full transition-all duration-500 flex items-center justify-end pr-2`}
+                              style={{ width: `${Math.max(percentage, 2)}%` }}
+                            >
+                              {percentage > 10 && (
+                                <span className="text-xs text-white font-semibold">{percentage}%</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="w-16 text-right font-dubai-bold text-slate-900">{stage.value}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recruitment Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-white shadow-sm">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-4xl font-dubai-bold text-teal-600 mb-2">
+                      {dashboardData.recruitment.averageTimeToHire}d
+                    </div>
+                    <div className="text-sm font-dubai-medium text-slate-600">Avg. Time to Hire</div>
+                    <div className="text-xs text-slate-400 mt-1">Days from posting to offer</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-sm">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-4xl font-dubai-bold text-green-600 mb-2">
+                      {dashboardData.recruitment.successRate}%
+                    </div>
+                    <div className="text-sm font-dubai-medium text-slate-600">Success Rate</div>
+                    <div className="text-xs text-slate-400 mt-1">Offers accepted vs. total</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-sm">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-4xl font-dubai-bold text-blue-600 mb-2">
+                      {dashboardData.recruitment.candidateQuality}%
+                    </div>
+                    <div className="text-sm font-dubai-medium text-slate-600">Candidate Quality</div>
+                    <div className="text-xs text-slate-400 mt-1">Meeting qualifications score</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Positions Breakdown */}
+              <Card className="bg-white shadow-sm">
+                <CardHeader>
+                  <CardTitle className="font-dubai-bold text-slate-900">Positions Overview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-slate-50 rounded-xl">
+                      <div className="text-2xl font-dubai-bold text-slate-900">{dashboardData.positions.total}</div>
+                      <div className="text-xs text-slate-500 mt-1">Total Positions</div>
+                    </div>
+                    <div className="text-center p-4 bg-teal-50 rounded-xl">
+                      <div className="text-2xl font-dubai-bold text-teal-700">{dashboardData.positions.open}</div>
+                      <div className="text-xs text-teal-600 mt-1">Open / Active</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-xl">
+                      <div className="text-2xl font-dubai-bold text-green-700">{dashboardData.positions.filled}</div>
+                      <div className="text-xs text-green-600 mt-1">Filled</div>
+                    </div>
+                    <div className="text-center p-4 bg-amber-50 rounded-xl">
+                      <div className="text-2xl font-dubai-bold text-amber-700">{dashboardData.positions.pending}</div>
+                      <div className="text-xs text-amber-600 mt-1">Pending Review</div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

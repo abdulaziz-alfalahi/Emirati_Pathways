@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
-import { GraduationCap, Users, Building, Target, MapPin, Star, Clock, CheckCircle, ArrowRight, ArrowLeft, Award, Globe, BookOpen, Briefcase, ExternalLink } from 'lucide-react';
+import { GraduationCap, Users, Building, Target, MapPin, Star, Clock, CheckCircle, ArrowRight, ArrowLeft, Award, Globe, BookOpen, Briefcase, ExternalLink, Loader2 } from 'lucide-react';
+import { getPrograms, getUniversities, type UniversityProgram, type University } from '@/services/educationAPI';
 
 // Brand tokens
 const brand = {
@@ -20,329 +21,40 @@ const UniversityProgramsPage: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
   const ArrowIcon = isRTL ? ArrowLeft : ArrowRight;
+  /** Pick the localized value from an API record. */
+  const loc = (en: string | undefined, ar: string | undefined) => isRTL ? (ar || en || '') : (en || '');
 
-  // Program data (translated)
-  const programs = [
-    {
-      id: '1',
-      title: t('Computer Science & Engineering', 'علوم الحاسوب والهندسة'),
-      degree: t("Bachelor's", 'بكالوريوس'),
-      university: t('American University of Sharjah', 'الجامعة الأمريكية في الشارقة'),
-      location: t('Sharjah', 'الشارقة'),
-      duration: t('4 years', '4 سنوات'),
-      language: t('English', 'الإنجليزية'),
-      tuition: t('AED 65,000/yr', '65,000 د.إ/سنة'),
-      description: t(
-        'Comprehensive computer science program covering software engineering, AI, cybersecurity, and data science with hands-on industry projects.',
-        'برنامج شامل في علوم الحاسوب يغطي هندسة البرمجيات والذكاء الاصطناعي والأمن السيبراني وعلوم البيانات مع مشاريع عملية في الصناعة.'
-      ),
-      careerOutcomes: [
-        t('Software Engineer', 'مهندس برمجيات'),
-        t('Data Scientist', 'عالم بيانات'),
-        t('Cybersecurity Analyst', 'محلل أمن سيبراني'),
-        t('AI Engineer', 'مهندس ذكاء اصطناعي'),
-      ],
-      subjects: [
-        t('Programming', 'البرمجة'),
-        t('Data Structures', 'هياكل البيانات'),
-        t('Machine Learning', 'التعلم الآلي'),
-        t('Cybersecurity', 'الأمن السيبراني'),
-      ],
-      rating: 4.8,
-      enrolled: 1247,
-      capacity: 1400,
-      employmentRate: 96,
-      isPopular: true,
-      isNew: false,
-      scholarshipAvailable: true,
-      accreditation: ['ABET', t('UAE Ministry of Education', 'وزارة التربية والتعليم')],
-      category: 'Technology',
-      categoryLabel: t('Technology', 'تكنولوجيا'),
-    },
-    {
-      id: '2',
-      title: t('Medicine & Surgery', 'الطب والجراحة'),
-      degree: t("Bachelor's (MBBS)", 'بكالوريوس (MBBS)'),
-      university: t('UAE University', 'جامعة الإمارات'),
-      location: t('Al Ain', 'العين'),
-      duration: t('6 years', '6 سنوات'),
-      language: t('English', 'الإنجليزية'),
-      tuition: t('Free for UAE Nationals', 'مجاني للمواطنين الإماراتيين'),
-      description: t(
-        'Comprehensive medical education program preparing students for practice with clinical rotations in UAE hospitals and international centres.',
-        'برنامج تعليم طبي شامل يُعدّ الطلاب للممارسة مع تدريب سريري في مستشفيات الإمارات والمراكز الدولية.'
-      ),
-      careerOutcomes: [
-        t('General Practitioner', 'طبيب عام'),
-        t('Specialist Doctor', 'طبيب اختصاصي'),
-        t('Surgeon', 'جرّاح'),
-        t('Medical Researcher', 'باحث طبي'),
-      ],
-      subjects: [
-        t('Anatomy', 'التشريح'),
-        t('Physiology', 'علم وظائف الأعضاء'),
-        t('Pathology', 'علم الأمراض'),
-        t('Clinical Medicine', 'الطب السريري'),
-      ],
-      rating: 4.9,
-      enrolled: 856,
-      capacity: 900,
-      employmentRate: 98,
-      isPopular: true,
-      isNew: false,
-      scholarshipAvailable: true,
-      accreditation: ['LCME', t('UAE Ministry of Health', 'وزارة الصحة')],
-      category: 'Healthcare',
-      categoryLabel: t('Healthcare', 'رعاية صحية'),
-    },
-    {
-      id: '3',
-      title: t('Business Administration (MBA)', 'إدارة الأعمال (MBA)'),
-      degree: t("Master's", 'ماجستير'),
-      university: t('American University of Dubai', 'الجامعة الأمريكية في دبي'),
-      location: t('Dubai', 'دبي'),
-      duration: t('2 years', 'سنتان'),
-      language: t('English', 'الإنجليزية'),
-      tuition: t('AED 85,000/yr', '85,000 د.إ/سنة'),
-      description: t(
-        'Executive MBA for working professionals focusing on strategic management, leadership, and innovation in the Middle East business environment.',
-        'ماجستير إدارة أعمال تنفيذي للمهنيين العاملين يركز على الإدارة الاستراتيجية والقيادة والابتكار في بيئة الأعمال بالشرق الأوسط.'
-      ),
-      careerOutcomes: [
-        t('CEO/Executive', 'رئيس تنفيذي'),
-        t('Management Consultant', 'مستشار إداري'),
-        t('Business Development Manager', 'مدير تطوير أعمال'),
-        t('Entrepreneur', 'رائد أعمال'),
-      ],
-      subjects: [
-        t('Strategic Management', 'الإدارة الاستراتيجية'),
-        t('Financial Analysis', 'التحليل المالي'),
-        t('Marketing Strategy', 'استراتيجية التسويق'),
-        t('Leadership', 'القيادة'),
-      ],
-      rating: 4.7,
-      enrolled: 324,
-      capacity: 400,
-      employmentRate: 94,
-      isPopular: true,
-      isNew: false,
-      scholarshipAvailable: false,
-      accreditation: ['AACSB', t('UAE Ministry of Education', 'وزارة التربية والتعليم')],
-      category: 'Business',
-      categoryLabel: t('Business', 'أعمال'),
-    },
-    {
-      id: '4',
-      title: t('Renewable Energy Engineering', 'هندسة الطاقة المتجددة'),
-      degree: t("Bachelor's", 'بكالوريوس'),
-      university: t('Masdar Institute – Khalifa University', 'معهد مصدر – جامعة خليفة'),
-      location: t('Abu Dhabi', 'أبوظبي'),
-      duration: t('4 years', '4 سنوات'),
-      language: t('English', 'الإنجليزية'),
-      tuition: t('AED 45,000/yr', '45,000 د.إ/سنة'),
-      description: t(
-        'Cutting-edge engineering program on sustainable energy technologies, solar power systems, and environmental engineering aligned with D33 and Talent33.',
-        'برنامج هندسي متطور في تقنيات الطاقة المستدامة وأنظمة الطاقة الشمسية والهندسة البيئية متوافق مع D33 وTalent33.'
-      ),
-      careerOutcomes: [
-        t('Renewable Energy Engineer', 'مهندس طاقة متجددة'),
-        t('Solar System Designer', 'مصمم أنظمة شمسية'),
-        t('Environmental Consultant', 'مستشار بيئي'),
-        t('Sustainability Manager', 'مدير استدامة'),
-      ],
-      subjects: [
-        t('Solar Energy', 'الطاقة الشمسية'),
-        t('Wind Power', 'طاقة الرياح'),
-        t('Energy Storage', 'تخزين الطاقة'),
-        t('Sustainable Design', 'التصميم المستدام'),
-      ],
-      rating: 4.6,
-      enrolled: 567,
-      capacity: 650,
-      employmentRate: 92,
-      isPopular: false,
-      isNew: true,
-      scholarshipAvailable: true,
-      accreditation: ['ABET', t('UAE Ministry of Energy', 'وزارة الطاقة')],
-      category: 'Engineering',
-      categoryLabel: t('Engineering', 'هندسة'),
-    },
-    {
-      id: '5',
-      title: t('Arabic Language & Literature', 'اللغة العربية وآدابها'),
-      degree: t("Bachelor's", 'بكالوريوس'),
-      university: t('United Arab Emirates University', 'جامعة الإمارات العربية المتحدة'),
-      location: t('Al Ain', 'العين'),
-      duration: t('4 years', '4 سنوات'),
-      language: t('Arabic', 'العربية'),
-      tuition: t('Free for UAE Nationals', 'مجاني للمواطنين الإماراتيين'),
-      description: t(
-        'Arabic language and literature program preserving UAE cultural heritage while preparing students for careers in education, media, and cultural affairs.',
-        'برنامج اللغة العربية وآدابها للحفاظ على التراث الثقافي الإماراتي وإعداد الطلاب لمسيرة مهنية في التعليم والإعلام والشؤون الثقافية.'
-      ),
-      careerOutcomes: [
-        t('Arabic Teacher', 'مدرّس لغة عربية'),
-        t('Translator', 'مترجم'),
-        t('Journalist', 'صحفي'),
-        t('Cultural Affairs Officer', 'مسؤول شؤون ثقافية'),
-      ],
-      subjects: [
-        t('Classical Arabic', 'العربية الفصحى'),
-        t('Modern Arabic Literature', 'الأدب العربي الحديث'),
-        t('Poetry', 'الشعر'),
-        t('Linguistics', 'اللسانيات'),
-      ],
-      rating: 4.5,
-      enrolled: 423,
-      capacity: 500,
-      employmentRate: 89,
-      isPopular: false,
-      isNew: false,
-      scholarshipAvailable: true,
-      accreditation: [t('UAE Ministry of Education', 'وزارة التربية والتعليم'), t('Arab League Educational Organization', 'المنظمة العربية للتربية والثقافة والعلوم')],
-      category: 'Arts & Humanities',
-      categoryLabel: t('Arts & Humanities', 'فنون وعلوم إنسانية'),
-    },
-    {
-      id: '6',
-      title: t('Aviation Management', 'إدارة الطيران'),
-      degree: t("Bachelor's", 'بكالوريوس'),
-      university: t('Emirates Aviation University', 'جامعة الإمارات للطيران'),
-      location: t('Dubai', 'دبي'),
-      duration: t('4 years', '4 سنوات'),
-      language: t('English', 'الإنجليزية'),
-      tuition: t('AED 75,000/yr', '75,000 د.إ/سنة'),
-      description: t(
-        'Specialized aviation program covering airline operations, airport management, and safety, with partnerships with Emirates Airlines and Dubai Airports.',
-        'برنامج طيران متخصص يشمل عمليات شركات الطيران وإدارة المطارات والسلامة، بشراكة مع طيران الإمارات ومطارات دبي.'
-      ),
-      careerOutcomes: [
-        t('Airport Manager', 'مدير مطار'),
-        t('Airline Operations Manager', 'مدير عمليات شركة طيران'),
-        t('Aviation Safety Officer', 'مسؤول سلامة الطيران'),
-      ],
-      subjects: [
-        t('Aviation Operations', 'عمليات الطيران'),
-        t('Airport Management', 'إدارة المطارات'),
-        t('Aviation Safety', 'سلامة الطيران'),
-        t('Airline Economics', 'اقتصاديات الطيران'),
-      ],
-      rating: 4.4,
-      enrolled: 289,
-      capacity: 350,
-      employmentRate: 91,
-      isPopular: false,
-      isNew: false,
-      scholarshipAvailable: false,
-      accreditation: ['ICAO', t('UAE General Civil Aviation Authority', 'الهيئة العامة للطيران المدني')],
-      category: 'Aviation',
-      categoryLabel: t('Aviation', 'طيران'),
-    },
-  ];
+  // ── API-driven state ──
+  const [programs, setPrograms] = useState<UniversityProgram[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const universities = [
-    {
-      id: '1',
-      name: t('United Arab Emirates University', 'جامعة الإمارات العربية المتحدة'),
-      location: t('Al Ain', 'العين'),
-      type: 'Public',
-      typeLabel: t('Public', 'حكومية'),
-      established: 1976,
-      ranking: 1,
-      studentsCount: 14000,
-      programsCount: 85,
-      website: 'www.uaeu.ac.ae',
-      description: t(
-        "The UAE's flagship university, offering comprehensive programs across all disciplines with a focus on research and innovation.",
-        'الجامعة الرائدة في الإمارات، تقدم برامج شاملة في جميع التخصصات مع التركيز على البحث والابتكار.'
-      ),
-      specialties: [
-        t('Medicine', 'الطب'),
-        t('Engineering', 'الهندسة'),
-        t('Business', 'الأعمال'),
-        t('Education', 'التعليم'),
-        t('Agriculture', 'الزراعة'),
-      ],
-    },
-    {
-      id: '2',
-      name: t('American University of Sharjah', 'الجامعة الأمريكية في الشارقة'),
-      location: t('Sharjah', 'الشارقة'),
-      type: 'Private',
-      typeLabel: t('Private', 'خاصة'),
-      established: 1997,
-      ranking: 2,
-      studentsCount: 6000,
-      programsCount: 45,
-      website: 'www.aus.edu',
-      description: t(
-        'Leading private university offering American-style education with strong programs in engineering, business, and liberal arts.',
-        'جامعة خاصة رائدة تقدم تعليماً على النمط الأمريكي مع برامج قوية في الهندسة والأعمال والآداب.'
-      ),
-      specialties: [
-        t('Engineering', 'الهندسة'),
-        t('Computer Science', 'علوم الحاسوب'),
-        t('Business', 'الأعمال'),
-        t('Architecture', 'الهندسة المعمارية'),
-        t('Liberal Arts', 'الآداب'),
-      ],
-    },
-    {
-      id: '3',
-      name: t('Khalifa University', 'جامعة خليفة'),
-      location: t('Abu Dhabi', 'أبوظبي'),
-      type: 'Public',
-      typeLabel: t('Public', 'حكومية'),
-      established: 2007,
-      ranking: 3,
-      studentsCount: 3000,
-      programsCount: 35,
-      website: 'www.ku.ac.ae',
-      description: t(
-        'Research-intensive university focusing on science, engineering, and technology with world-class facilities.',
-        'جامعة بحثية مكثفة تركز على العلوم والهندسة والتكنولوجيا بمرافق عالمية المستوى.'
-      ),
-      specialties: [
-        t('Engineering', 'الهندسة'),
-        t('Science', 'العلوم'),
-        t('Medicine', 'الطب'),
-        t('Technology', 'التكنولوجيا'),
-        t('Research', 'البحث'),
-      ],
-    },
-    {
-      id: '4',
-      name: t('American University of Dubai', 'الجامعة الأمريكية في دبي'),
-      location: t('Dubai', 'دبي'),
-      type: 'Private',
-      typeLabel: t('Private', 'خاصة'),
-      established: 1995,
-      ranking: 4,
-      studentsCount: 2500,
-      programsCount: 25,
-      website: 'www.aud.edu',
-      description: t(
-        'Business-focused university with strong industry connections and practical learning approach.',
-        'جامعة تركز على الأعمال مع روابط صناعية قوية ونهج تعليمي عملي.'
-      ),
-      specialties: [
-        t('Business', 'الأعمال'),
-        t('Engineering', 'الهندسة'),
-        t('Communication', 'الإعلام'),
-        t('Design', 'التصميم'),
-        t('Information Technology', 'تقنية المعلومات'),
-      ],
-    },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const [progs, unis] = await Promise.all([getPrograms(), getUniversities()]);
+        if (!cancelled) {
+          setPrograms(progs);
+          setUniversities(unis);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err.message || 'Failed to load education data');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
+  // Build category filters from actual data
+  const categorySet = new Set(programs.map(p => p.category));
   const categoryFilters = [
     { key: 'All', label: t('All', 'الكل') },
-    { key: 'Technology', label: t('Technology', 'تكنولوجيا') },
-    { key: 'Healthcare', label: t('Healthcare', 'رعاية صحية') },
-    { key: 'Business', label: t('Business', 'أعمال') },
-    { key: 'Engineering', label: t('Engineering', 'هندسة') },
-    { key: 'Arts & Humanities', label: t('Arts & Humanities', 'فنون وعلوم إنسانية') },
-    { key: 'Aviation', label: t('Aviation', 'طيران') },
+    ...Array.from(categorySet).map(c => ({ key: c, label: t(c, programs.find(p => p.category === c)?.category_ar || c) })),
   ];
 
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -351,17 +63,17 @@ const UniversityProgramsPage: React.FC = () => {
   const filtered = programs.filter(p => {
     const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
     const matchSearch = !searchQuery ||
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.university.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.subjects.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      loc(p.title, p.title_ar).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      loc(p.university_name, p.university_name_ar).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.subjects || []).some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchCat && matchSearch;
   });
 
   const stats = [
-    { value: '50+', label: t('Universities & Colleges', 'الجامعات والكليات'), icon: Building },
-    { value: '200+', label: t('Degree Programs', 'البرامج الأكاديمية'), icon: GraduationCap },
+    { value: `${universities.length}+`, label: t('Universities & Colleges', 'الجامعات والكليات'), icon: Building },
+    { value: `${programs.length}+`, label: t('Degree Programs', 'البرامج الأكاديمية'), icon: GraduationCap },
     { value: '92%', label: t('Employment Rate', 'نسبة التوظيف'), icon: Target },
-    { value: '25,000+', label: t('Students Enrolled', 'طالب مسجّل'), icon: Users },
+    { value: `${programs.reduce((sum, p) => sum + (p.enrolled || 0), 0).toLocaleString()}+`, label: t('Students Enrolled', 'طالب مسجّل'), icon: Users },
   ];
 
   const getCategoryColor = (cat: string) => {
@@ -375,6 +87,27 @@ const UniversityProgramsPage: React.FC = () => {
     };
     return map[cat] || { bg: '#F3F4F6', color: brand.textSecondary };
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <EducationPathwayLayout
+        title={t('University Programs', 'البرامج الجامعية')}
+        description={t('Loading programs...', 'جارٍ تحميل البرامج...')}
+        icon={<GraduationCap className="h-12 w-12" style={{ color: '#0D9488' }} />}
+        stats={[]}
+        tabs={[{
+          id: 'loading', label: t('Loading', 'تحميل'), icon: <Loader2 className="h-4 w-4 animate-spin" />, content: (
+            <div style={{ textAlign: 'center', padding: '64px 0' }}>
+              <Loader2 style={{ width: 48, height: 48, color: brand.primary, margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+              <p style={{ color: brand.textSecondary, fontSize: 16 }}>{t('Loading university programs...', 'جارٍ تحميل البرامج الجامعية...')}</p>
+            </div>
+          )
+        }]}
+        defaultTab="loading"
+      />
+    );
+  }
 
   const tabs = [
     {
@@ -440,6 +173,9 @@ const UniversityProgramsPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 20 }}>
               {filtered.map(p => {
                 const catColor = getCategoryColor(p.category);
+                const degreeLabel = p.degree === 'bachelor' ? t("Bachelor's", 'بكالوريوس')
+                  : p.degree === 'master' ? t("Master's", 'ماجستير')
+                    : p.degree === 'doctorate' ? t('Doctorate', 'دكتوراه') : p.degree;
                 return (
                   <div
                     key={p.id}
@@ -460,7 +196,7 @@ const UniversityProgramsPage: React.FC = () => {
                     }}
                   >
                     {/* Accent bar */}
-                    <div style={{ height: 4, background: p.isPopular ? brand.primary : brand.border }} />
+                    <div style={{ height: 4, background: p.is_popular ? brand.primary : brand.border }} />
 
                     <div style={{ padding: 22 }}>
                       {/* Badges */}
@@ -469,13 +205,13 @@ const UniversityProgramsPage: React.FC = () => {
                           padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
                           background: catColor.bg, color: catColor.color,
                         }}>
-                          {p.categoryLabel}
+                          {loc(p.category, p.category_ar)}
                         </span>
                         <span style={{
                           padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
                           background: '#F3F4F6', color: brand.textSecondary,
                         }}>
-                          {p.degree}
+                          {degreeLabel}
                         </span>
                         <span style={{
                           padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
@@ -483,17 +219,17 @@ const UniversityProgramsPage: React.FC = () => {
                         }}>
                           {p.language}
                         </span>
-                        {p.isPopular && (
+                        {p.is_popular && (
                           <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, background: '#FEE2E2', color: '#991B1B' }}>
                             🔥 {t('Popular', 'رائج')}
                           </span>
                         )}
-                        {p.isNew && (
+                        {p.is_new && (
                           <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, background: '#DCFCE7', color: '#166534' }}>
                             ✨ {t('New', 'جديد')}
                           </span>
                         )}
-                        {p.scholarshipAvailable && (
+                        {p.scholarship_available && (
                           <span style={{ padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500, background: '#FEF3C7', color: '#92400E' }}>
                             💰 {t('Scholarship', 'منحة')}
                           </span>
@@ -502,22 +238,22 @@ const UniversityProgramsPage: React.FC = () => {
 
                       {/* Title */}
                       <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 4 }}>
-                        {p.title}
+                        {loc(p.title, p.title_ar)}
                       </h3>
 
                       {/* University & location */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <Building style={{ width: 14, height: 14, color: brand.textSecondary }} />
-                        <span style={{ fontSize: 14, color: brand.textSecondary }}>{p.university}</span>
+                        <span style={{ fontSize: 14, color: brand.textSecondary }}>{loc(p.university_name, p.university_name_ar)}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
                         <MapPin style={{ width: 14, height: 14, color: brand.textSecondary }} />
-                        <span style={{ fontSize: 14, color: brand.textSecondary }}>{p.location}، {t('UAE', 'الإمارات')}</span>
+                        <span style={{ fontSize: 14, color: brand.textSecondary }}>{p.university_location || ''}، {t('UAE', 'الإمارات')}</span>
                       </div>
 
                       {/* Description */}
                       <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>
-                        {p.description}
+                        {loc(p.description, p.description_ar)}
                       </p>
 
                       {/* Tuition, Duration, Employment row */}
@@ -537,7 +273,7 @@ const UniversityProgramsPage: React.FC = () => {
                         <div style={{ width: 1, background: brand.border }} />
                         <div style={{ flex: 1, padding: '12px 14px' }}>
                           <div style={{ fontSize: 11, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{t('Jobs', 'وظائف')}</div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#166534' }}>{p.employmentRate}%</div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#166534' }}>{p.employment_rate}%</div>
                         </div>
                       </div>
 
@@ -545,7 +281,7 @@ const UniversityProgramsPage: React.FC = () => {
                       <div style={{ marginBottom: 14 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{t('Key Subjects', 'المواد الرئيسية')}</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {p.subjects.map((s, i) => (
+                          {(p.subjects || []).map((s: string, i: number) => (
                             <span key={i} style={{
                               padding: '4px 10px', borderRadius: 10, fontSize: 12, fontWeight: 500,
                               background: '#F3F4F6', color: brand.textPrimary,
@@ -559,7 +295,7 @@ const UniversityProgramsPage: React.FC = () => {
                       {/* Career Outcomes */}
                       <div style={{ marginBottom: 14 }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {p.careerOutcomes.map((c, i) => (
+                          {(p.career_outcomes || []).map((c: string, i: number) => (
                             <span key={i} style={{
                               display: 'flex', alignItems: 'center', gap: 4,
                               fontSize: 12, color: brand.textSecondary,
@@ -575,7 +311,7 @@ const UniversityProgramsPage: React.FC = () => {
                       {/* Accreditation */}
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {p.accreditation.map((a, i) => (
+                          {(p.accreditation || []).map((a: string, i: number) => (
                             <span key={i} style={{
                               display: 'flex', alignItems: 'center', gap: 4,
                               fontSize: 12, color: '#166534',
@@ -591,13 +327,13 @@ const UniversityProgramsPage: React.FC = () => {
                       {/* Enrollment bar */}
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: brand.textSecondary, marginBottom: 4 }}>
-                          <span>{p.enrolled.toLocaleString(isRTL ? 'ar-AE' : 'en-US')} {t('enrolled', 'مسجّل')}</span>
-                          <span>{(p.capacity - p.enrolled).toLocaleString(isRTL ? 'ar-AE' : 'en-US')} {t('spots left', 'مقعد متاح')}</span>
+                          <span>{(p.enrolled || 0).toLocaleString(isRTL ? 'ar-AE' : 'en-US')} {t('enrolled', 'مسجّل')}</span>
+                          <span>{((p.capacity || 0) - (p.enrolled || 0)).toLocaleString(isRTL ? 'ar-AE' : 'en-US')} {t('spots left', 'مقعد متاح')}</span>
                         </div>
                         <div style={{ height: 4, borderRadius: 2, background: '#F3F4F6' }}>
                           <div style={{
                             height: '100%', borderRadius: 2, background: brand.primary,
-                            width: `${(p.enrolled / p.capacity) * 100}%`,
+                            width: `${p.capacity ? ((p.enrolled || 0) / p.capacity) * 100 : 0}%`,
                             transition: 'width 300ms',
                           }} />
                         </div>
@@ -655,7 +391,7 @@ const UniversityProgramsPage: React.FC = () => {
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 4 }}>{u.name}</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary, marginBottom: 4 }}>{loc(u.name, u.name_ar)}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <MapPin style={{ width: 14, height: 14, color: brand.textSecondary }} />
                       <span style={{ fontSize: 14, color: brand.textSecondary }}>{u.location} · {t('Est.', 'تأسست')} {u.established}</span>
@@ -663,15 +399,15 @@ const UniversityProgramsPage: React.FC = () => {
                   </div>
                   <span style={{
                     padding: '4px 10px', borderRadius: 12, fontSize: 12, fontWeight: 500,
-                    background: u.type === 'Public' ? '#DCFCE7' : '#DBEAFE',
-                    color: u.type === 'Public' ? '#166534' : '#1E40AF',
+                    background: u.type === 'public' ? '#DCFCE7' : '#DBEAFE',
+                    color: u.type === 'public' ? '#166534' : '#1E40AF',
                   }}>
-                    {u.typeLabel}
+                    {u.type === 'public' ? t('Public', 'حكومية') : t('Private', 'خاصة')}
                   </span>
                 </div>
 
                 <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 18 }}>
-                  {u.description}
+                  {loc(u.description, u.description_ar)}
                 </p>
 
                 {/* Stats row */}
@@ -685,12 +421,12 @@ const UniversityProgramsPage: React.FC = () => {
                   </div>
                   <div style={{ width: 1, background: brand.border }} />
                   <div style={{ flex: 1, padding: '12px 14px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: brand.primary }}>{u.studentsCount.toLocaleString(isRTL ? 'ar-AE' : 'en-US')}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: brand.primary }}>{(u.students_count || 0).toLocaleString(isRTL ? 'ar-AE' : 'en-US')}</div>
                     <div style={{ fontSize: 11, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Students', 'طلاب')}</div>
                   </div>
                   <div style={{ width: 1, background: brand.border }} />
                   <div style={{ flex: 1, padding: '12px 14px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: brand.primary }}>{u.programsCount}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: brand.primary }}>{u.programs_count}</div>
                     <div style={{ fontSize: 11, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('Programs', 'برامج')}</div>
                   </div>
                 </div>
@@ -699,7 +435,7 @@ const UniversityProgramsPage: React.FC = () => {
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{t('Specialties', 'التخصصات')}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {u.specialties.map((s, i) => (
+                    {(u.specialties || []).map((s: string, i: number) => (
                       <span key={i} style={{
                         padding: '4px 10px', borderRadius: 10, fontSize: 12, fontWeight: 500,
                         background: '#F3F4F6', color: brand.textPrimary,
