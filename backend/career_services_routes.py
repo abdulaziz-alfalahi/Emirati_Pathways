@@ -119,6 +119,288 @@ def apply_internship(internship_id):
         conn.close()
         return jsonify({"error": str(e)}), 500
 
+# ═══════════════════════════════════════════════════════════
+# INTERNSHIP APPLICANTS
+# ═══════════════════════════════════════════════════════════
+
+@career_services_bp.route('/internships/<int:internship_id>/applicants', methods=['GET'])
+@jwt_required(optional=True)
+def list_internship_applicants(internship_id):
+    """List applicants for a specific internship."""
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT ia.id as application_id, ia.user_id, ia.status, ia.applied_at,
+                   u.full_name, u.email, u.phone
+            FROM internship_applications ia
+            LEFT JOIN users u ON u.id = ia.user_id
+            WHERE ia.internship_id = %s
+            ORDER BY ia.applied_at DESC
+        """, (internship_id,))
+        applicants = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({"applicants": [dict(a) for a in applicants]}), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@career_services_bp.route('/internship-applications/<int:application_id>/status', methods=['PUT'])
+@jwt_required(optional=True)
+def update_internship_application_status(application_id):
+    """Update internship application status (accept/reject/shortlist)."""
+    data = request.get_json(silent=True) or {}
+    new_status = data.get('status', 'pending')
+    if new_status not in ('pending', 'accepted', 'rejected', 'shortlisted', 'withdrawn'):
+        return jsonify({"error": f"Invalid status: {new_status}"}), 400
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE internship_applications SET status = %s WHERE id = %s RETURNING id, status, user_id, internship_id",
+            (new_status, application_id)
+        )
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": "Application not found"}), 404
+        # Create notification for the candidate
+        try:
+            app_user_id = str(row[2])
+            internship_id = row[3]
+            # Get internship title
+            cur.execute("SELECT title FROM internships WHERE id = %s", (internship_id,))
+            title_row = cur.fetchone()
+            posting_title = title_row[0] if title_row else 'Internship'
+            status_labels = {'accepted': 'Accepted', 'rejected': 'Not Selected', 'shortlisted': 'Shortlisted'}
+            notif_title = f'Application {status_labels.get(new_status, new_status.title())}: {posting_title}'
+            notif_content = {
+                'accepted': f'Congratulations! Your application for "{posting_title}" has been accepted.',
+                'rejected': f'We appreciate your interest in "{posting_title}". Unfortunately, we have decided to move forward with other candidates.',
+                'shortlisted': f'Great news! You have been shortlisted for "{posting_title}". The recruiter may schedule an interview soon.',
+            }.get(new_status, f'Your application status for "{posting_title}" has been updated to {new_status}.')
+            import json as _json
+            cur.execute("""
+                INSERT INTO notifications (user_id, type, title, content, metadata)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (app_user_id, 'application_update', notif_title, notif_content,
+                  _json.dumps({'internship_id': internship_id, 'application_id': application_id, 'status': new_status})))
+        except Exception as notif_err:
+            import logging
+            logging.getLogger(__name__).warning(f'Failed to create notification: {notif_err}')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"application_id": row[0], "status": row[1]}), 200
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+# ═══════════════════════════════════════════════════════════
+# GIG APPLICANTS
+# ═══════════════════════════════════════════════════════════
+
+@career_services_bp.route('/gigs/<int:gig_id>/applicants', methods=['GET'])
+@jwt_required(optional=True)
+def list_gig_applicants(gig_id):
+    """List applicants for a specific gig."""
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT ga.id as application_id, ga.user_id, ga.status, ga.applied_at,
+                   u.full_name, u.email, u.phone
+            FROM gig_applications ga
+            LEFT JOIN users u ON u.id = ga.user_id
+            WHERE ga.gig_id = %s
+            ORDER BY ga.applied_at DESC
+        """, (gig_id,))
+        applicants = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify({"applicants": [dict(a) for a in applicants]}), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@career_services_bp.route('/gig-applications/<int:application_id>/status', methods=['PUT'])
+@jwt_required(optional=True)
+def update_gig_application_status(application_id):
+    """Update gig application status (accept/reject/shortlist)."""
+    data = request.get_json(silent=True) or {}
+    new_status = data.get('status', 'pending')
+    if new_status not in ('pending', 'accepted', 'rejected', 'shortlisted', 'withdrawn'):
+        return jsonify({"error": f"Invalid status: {new_status}"}), 400
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE gig_applications SET status = %s WHERE id = %s RETURNING id, status, user_id, gig_id",
+            (new_status, application_id)
+        )
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": "Application not found"}), 404
+        # Create notification for the candidate
+        try:
+            app_user_id = str(row[2])
+            gig_id = row[3]
+            cur.execute("SELECT title FROM gigs WHERE id = %s", (gig_id,))
+            title_row = cur.fetchone()
+            posting_title = title_row[0] if title_row else 'Gig'
+            status_labels = {'accepted': 'Accepted', 'rejected': 'Not Selected', 'shortlisted': 'Shortlisted'}
+            notif_title = f'Application {status_labels.get(new_status, new_status.title())}: {posting_title}'
+            notif_content = {
+                'accepted': f'Congratulations! Your application for "{posting_title}" has been accepted.',
+                'rejected': f'We appreciate your interest in "{posting_title}". Unfortunately, we have decided to move forward with other candidates.',
+                'shortlisted': f'Great news! You have been shortlisted for "{posting_title}". The recruiter may schedule an interview soon.',
+            }.get(new_status, f'Your application status for "{posting_title}" has been updated to {new_status}.')
+            import json as _json
+            cur.execute("""
+                INSERT INTO notifications (user_id, type, title, content, metadata)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (app_user_id, 'application_update', notif_title, notif_content,
+                  _json.dumps({'gig_id': gig_id, 'application_id': application_id, 'status': new_status})))
+        except Exception as notif_err:
+            import logging
+            logging.getLogger(__name__).warning(f'Failed to create notification: {notif_err}')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"application_id": row[0], "status": row[1]}), 200
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════
+# MY APPLICATIONS (candidate view)
+# ═══════════════════════════════════════════════════════════
+
+@career_services_bp.route('/my-applications', methods=['GET'])
+@jwt_required(optional=True)
+def get_my_applications():
+    """Return the current user's internship + gig applications."""
+    user_id = None
+    try:
+        user_id = get_jwt_identity()
+    except Exception:
+        pass
+    if not user_id:
+        user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Internship applications — with full posting details
+        cur.execute("""
+            SELECT ia.id as application_id, ia.status, ia.applied_at,
+                   i.title as job_title, i.company, i.location,
+                   i.description, i.duration, i.deadline, i.sector,
+                   i.stipend, i.type as internship_type, i.skills,
+                   'internship' as application_type
+            FROM internship_applications ia
+            LEFT JOIN internships i ON i.id = ia.internship_id
+            WHERE ia.user_id = %s
+            ORDER BY ia.applied_at DESC
+        """, (user_id,))
+        internship_apps = cur.fetchall()
+
+        # Gig applications — with full posting details
+        cur.execute("""
+            SELECT ga.id as application_id, ga.status, ga.applied_at,
+                   g.title as job_title, g.company, g.location,
+                   g.description, g.duration, g.budget, g.category,
+                   g.skills, g.posted_at,
+                   'gig' as application_type
+            FROM gig_applications ga
+            LEFT JOIN gigs g ON g.id = ga.gig_id
+            WHERE ga.user_id = %s
+            ORDER BY ga.applied_at DESC
+        """, (user_id,))
+        gig_apps = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        # Merge and format
+        all_apps = []
+        for a in list(internship_apps) + list(gig_apps):
+            d = dict(a)
+            # Parse skills (could be JSONB array or string)
+            skills_raw = d.get('skills', [])
+            if isinstance(skills_raw, str):
+                import json as _json2
+                try:
+                    skills_raw = _json2.loads(skills_raw)
+                except Exception:
+                    skills_raw = []
+
+            app_data = {
+                'application_id': d['application_id'],
+                'jobTitle': d.get('job_title', 'Unknown'),
+                'company': d.get('company', 'Unknown'),
+                'location': d.get('location', 'UAE'),
+                'appliedDate': d['applied_at'].isoformat() if d.get('applied_at') else None,
+                'status': _map_status(d.get('status', 'pending')),
+                'lastUpdate': d['applied_at'].isoformat() if d.get('applied_at') else None,
+                'application_type': d.get('application_type'),
+                'description': d.get('description', ''),
+                'duration': d.get('duration', ''),
+                'skills': skills_raw if isinstance(skills_raw, list) else [],
+            }
+
+            # Type-specific fields
+            if d.get('application_type') == 'internship':
+                app_data['deadline'] = d['deadline'].isoformat() if d.get('deadline') else None
+                app_data['sector'] = d.get('sector', '')
+                app_data['stipend'] = d.get('stipend', '')
+                app_data['internship_type'] = d.get('internship_type', '')
+            else:
+                app_data['budget'] = d.get('budget', '')
+                app_data['category'] = d.get('category', '')
+                app_data['posted_at'] = d['posted_at'].isoformat() if d.get('posted_at') else None
+
+            all_apps.append(app_data)
+
+        # Sort by applied date desc
+        all_apps.sort(key=lambda x: x.get('appliedDate') or '', reverse=True)
+        return jsonify({"success": True, "data": {"applications": all_apps}}), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+def _map_status(status):
+    """Map internship/gig statuses to Application Tracker statuses."""
+    mapping = {
+        'pending': 'pending',
+        'shortlisted': 'reviewed',
+        'accepted': 'offer',
+        'rejected': 'rejected',
+        'withdrawn': 'withdrawn',
+    }
+    return mapping.get(status, 'pending')
+
 
 # ═══════════════════════════════════════════════════════════
 # GIG MARKETPLACE

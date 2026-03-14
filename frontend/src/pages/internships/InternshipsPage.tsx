@@ -8,8 +8,10 @@ import {
     TrendingUp, Star, Users, Award, Shield,
     GraduationCap, Banknote, Globe, Zap, Filter, Loader2
 } from 'lucide-react';
-import { getInternships, type Internship } from '@/services/careerServicesAPI';
+import { getInternships, applyForInternship, type Internship } from '@/services/careerServicesAPI';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
+import { useAuth } from '@/context/AuthContext';
+import toast from 'react-hot-toast';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -45,6 +47,27 @@ const InternshipsPage: React.FC = () => {
     const [internships, setInternships] = useState<Internship[]>([]);
     const [loading, setLoading] = useState(true);
     const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
+    const [appliedIds, setAppliedIds] = useState<Set<number>>(new Set());
+    const [applyingId, setApplyingId] = useState<number | null>(null);
+    const { user } = useAuth();
+
+    const handleApply = async (internshipId: number) => {
+        if (appliedIds.has(internshipId)) {
+            toast(t('You have already applied for this internship', 'لقد تقدمت بالفعل لهذا التدريب'), { icon: 'ℹ️' });
+            return;
+        }
+        setApplyingId(internshipId);
+        try {
+            await applyForInternship(internshipId, user?.id ? Number(user.id) : undefined);
+            setAppliedIds(prev => new Set(prev).add(internshipId));
+            toast.success(t('Application submitted successfully!', 'تم إرسال الطلب بنجاح!'));
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || err?.message || 'Failed to apply';
+            toast.error(msg);
+        } finally {
+            setApplyingId(null);
+        }
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -161,6 +184,7 @@ const InternshipsPage: React.FC = () => {
                     {t('Internship Opportunities', 'فرص التدريب')}
                 </h2>
             </div>
+
             <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 20, lineHeight: 1.6 }}>
                 {t(
                     "Explore internships across UAE's top companies — filter by sector, location, and duration to find your ideal placement.",
@@ -225,9 +249,35 @@ const InternshipsPage: React.FC = () => {
 
                             {/* Meta */}
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: 12, color: brand.textSecondary }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {loc(item.location, item.location_ar)}</span>
+                                <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.location || '') + ', UAE')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ display: 'flex', alignItems: 'center', gap: 4, color: brand.primary, textDecoration: 'none', fontWeight: 500 }}
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <MapPin size={13} /> {loc(item.location, item.location_ar)}
+                                </a>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={13} /> {loc(item.duration, item.duration_ar)}</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Banknote size={13} /> {loc(item.stipend, item.stipend_ar)}</span>
+                            </div>
+
+                            {/* Location Map */}
+                            <div
+                                style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${brand.border}`, height: 120, cursor: 'pointer' }}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.location || '') + ', UAE')}`, '_blank');
+                                }}
+                            >
+                                <iframe
+                                    title={`Map - ${item.location}`}
+                                    width="100%"
+                                    height="120"
+                                    style={{ border: 0, pointerEvents: 'none' }}
+                                    loading="lazy"
+                                    src={`https://www.google.com/maps?q=${encodeURIComponent((item.location || '') + ', UAE')}&output=embed&z=12`}
+                                />
                             </div>
 
                             {/* Tags */}
@@ -255,9 +305,29 @@ const InternshipsPage: React.FC = () => {
                                     <Calendar size={12} style={{ display: 'inline', verticalAlign: '-2px', ...(isRTL ? { marginLeft: 4 } : { marginRight: 4 }) }} />
                                     {t('Deadline:', 'الموعد النهائي:')} {item.deadline ? new Date(item.deadline).toLocaleDateString(isRTL ? 'ar-AE' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                                 </span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: brand.primary }}>
-                                    {t('Apply', 'قدّم')} <ChevronIcon size={14} />
-                                </span>
+                                <button
+                                    data-has-handler="true"
+                                    onClick={(e) => { e.stopPropagation(); handleApply(item.id); }}
+                                    disabled={applyingId === item.id}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                        fontSize: 13, fontWeight: 600,
+                                        color: appliedIds.has(item.id) ? brand.greenText : brand.primary,
+                                        background: appliedIds.has(item.id) ? brand.green : brand.primarySurface,
+                                        border: `1px solid ${appliedIds.has(item.id) ? brand.greenText : brand.primary}33`,
+                                        padding: '6px 16px', borderRadius: 8,
+                                        cursor: applyingId === item.id ? 'wait' : 'pointer',
+                                        transition: 'all .15s',
+                                        opacity: applyingId === item.id ? 0.6 : 1,
+                                    }}
+                                >
+                                    {appliedIds.has(item.id)
+                                        ? <><CheckCircle size={14} /> {t('Applied', 'تم التقديم')}</>
+                                        : applyingId === item.id
+                                            ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> {t('Applying...', 'جارٍ التقديم...')}</>
+                                            : <>{t('Apply', 'قدّم')} <ChevronIcon size={14} /></>
+                                    }
+                                </button>
                             </div>
                         </div>
                     );

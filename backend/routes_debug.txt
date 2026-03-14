@@ -936,3 +936,201 @@ Sample Match Payload: {"candidate": {"candidate_id": 21, "user_id": 21, "first_n
 --- Request for JD jd_20260102_065919_d621fdcc ---
 
 --- Request for JD jd_20251231_111000_25a81e0e ---
+
+--- Request for JD jd_20251231_111000_25a81e0e ---
+
+--- Request for JD jd_20251231_111000_25a81e0e ---
+
+--- Request for JD jd_20251231_111000_25a81e0e ---
+
+--- Request for JD jd_20251231_111000_25a81e0e ---
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+
+--- Request for JD jd_20260102_065919_d621fdcc ---
+
+--- Request for JD jd_20260102_065919_d621fdcc ---
+
+--- Request for JD jd_20251128_004855_84b6e6da ---
+
+--- Request for JD 27cafa56-75b1-40b8-87dd-706835594852 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD cf1b3f16-e0f1-4684-a535-c2e89bd17d31 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 62.0, "score_breakdown": {"skills": 32.0, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["python5+ years of python experience", "postgresql", "", ""], "missing_skills": ["djangoexperience with django or flask"], "strengths": ["Strong skills match", "Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD cf1b3f16-e0f1-4684-a535-c2e89bd17d31 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 62.0, "score_breakdown": {"skills": 32.0, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["python5+ years of python experience", "postgresql", "", ""], "missing_skills": ["djangoexperience with django or flask"], "strengths": ["Strong skills match", "Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20260102_065919_d621fdcc ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 41.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "location": 10, "uae_national": 5}, "matching_skills": ["python", "react"], "missing_skills": ["django"], "strengths": ["Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20260102_065919_d621fdcc ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 41.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "location": 10, "uae_national": 5}, "matching_skills": ["python", "react"], "missing_skills": ["django"], "strengths": ["Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20260102_065919_d621fdcc ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 41.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "location": 10, "uae_national": 5}, "matching_skills": ["python", "react"], "missing_skills": ["django"], "strengths": ["Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20251231_111000_25a81e0e ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 15.0, "score_breakdown": {"skills": 0.0, "location": 10, "uae_national": 5}, "matching_skills": [], "missing_skills": ["[ai] relevant degree or equivalent experience", "[ai] strong communication skills"], "strengths": ["Located in same emirate", "UAE National"], "concerns": ["Limited skills match"], "distance_km": 6.7}
+
+--- Request for JD jd_20251231_111000_25a81e0e ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 15.0, "score_breakdown": {"skills": 0.0, "location": 10, "uae_national": 5}, "matching_skills": [], "missing_skills": ["[ai] relevant degree or equivalent experience", "[ai] strong communication skills"], "strengths": ["Located in same emirate", "UAE National"], "concerns": ["Limited skills match"], "distance_km": 6.7}
+
+--- Request for JD jd_20251230_205111_5f1e84b4 ---
+Applicants: 1
+Passive: 46
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 108, "user_id": 108, "first_name": "Test", "last_name": "Candidate EHRDC", "email": "u971528983000.0db9a6cc@emirati-pathway.temp", "phone": "+971528983000", "emirate": null, "nationality": "UAE", "is_uae_national": false, "education_level": null, "experience_years": 12, "current_position": null, "current_company": null, "employment_status": "applicant", "skills": ["Microsoft Office Suite", "Verbal & Written Communication", "Analytical & Problem-Solving Skills", "Project Management", "Team leadership"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": null, "longitude": null, "cv_url": null, "linkedin_url": null, "application_status": "under_review", "submitted_at": "2026-02-05 01:37:45.617341+04:00", "status": "under_review", "is_applicant": true, "application_date": "2026-02-05 01:37:45.617341+04:00", "distance_km": null}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": null}
+
+--- Request for JD jd_20251230_205111_5f1e84b4 ---
+Applicants: 1
+Passive: 46
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 108, "user_id": 108, "first_name": "Test", "last_name": "Candidate EHRDC", "email": "u971528983000.0db9a6cc@emirati-pathway.temp", "phone": "+971528983000", "emirate": null, "nationality": "UAE", "is_uae_national": false, "education_level": null, "experience_years": 12, "current_position": null, "current_company": null, "employment_status": "applicant", "skills": ["Microsoft Office Suite", "Verbal & Written Communication", "Analytical & Problem-Solving Skills", "Project Management", "Team leadership"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": null, "longitude": null, "cv_url": null, "linkedin_url": null, "application_status": "under_review", "submitted_at": "2026-02-05 01:37:45.617341+04:00", "status": "under_review", "is_applicant": true, "application_date": "2026-02-05 01:37:45.617341+04:00", "distance_km": null}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": null}
+
+--- Request for JD jd_20251230_205111_5f1e84b4 ---
+Applicants: 1
+Passive: 46
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 108, "user_id": 108, "first_name": "Test", "last_name": "Candidate EHRDC", "email": "u971528983000.0db9a6cc@emirati-pathway.temp", "phone": "+971528983000", "emirate": null, "nationality": "UAE", "is_uae_national": false, "education_level": null, "experience_years": 12, "current_position": null, "current_company": null, "employment_status": "applicant", "skills": ["Microsoft Office Suite", "Verbal & Written Communication", "Analytical & Problem-Solving Skills", "Project Management", "Team leadership"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": null, "longitude": null, "cv_url": null, "linkedin_url": null, "application_status": "under_review", "submitted_at": "2026-02-05 01:37:45.617341+04:00", "status": "under_review", "is_applicant": true, "application_date": "2026-02-05 01:37:45.617341+04:00", "distance_km": null}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": null}
+
+--- Request for JD jd_20251230_205111_5f1e84b4 ---
+Applicants: 1
+Passive: 46
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 108, "user_id": 108, "first_name": "Test", "last_name": "Candidate EHRDC", "full_name": "New Member", "email": "u971528983000.0db9a6cc@emirati-pathway.temp", "phone": "+971528983000", "emirate": null, "nationality": "UAE", "is_uae_national": false, "education_level": null, "experience_years": 12, "current_position": null, "current_company": null, "employment_status": "applicant", "skills": ["Microsoft Office Suite", "Verbal & Written Communication", "Analytical & Problem-Solving Skills", "Project Management", "Team leadership"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": null, "longitude": null, "cv_url": null, "linkedin_url": null, "application_status": "under_review", "submitted_at": "2026-02-05 01:37:45.617341+04:00", "status": "under_review", "is_applicant": true, "application_date": "2026-02-05 01:37:45.617341+04:00", "distance_km": null}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": null}
+
+--- Request for JD jd_20251230_205111_5f1e84b4 ---
+Applicants: 1
+Passive: 46
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 108, "user_id": 108, "first_name": "Test", "last_name": "Candidate EHRDC", "full_name": "New Member", "email": "u971528983000.0db9a6cc@emirati-pathway.temp", "phone": "+971528983000", "emirate": null, "nationality": "UAE", "is_uae_national": false, "education_level": null, "experience_years": 12, "current_position": null, "current_company": null, "employment_status": "applicant", "skills": ["Microsoft Office Suite", "Verbal & Written Communication", "Analytical & Problem-Solving Skills", "Project Management", "Team leadership"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": null, "longitude": null, "cv_url": null, "linkedin_url": null, "application_status": "under_review", "submitted_at": "2026-02-05 01:37:45.617341+04:00", "status": "under_review", "is_applicant": true, "application_date": "2026-02-05 01:37:45.617341+04:00", "distance_km": null}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": null}
+
+--- Request for JD jd_20251230_205111_5f1e84b4 ---
+Applicants: 1
+Passive: 46
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 108, "user_id": 108, "first_name": "Test", "last_name": "Candidate EHRDC", "full_name": "New Member", "email": "u971528983000.0db9a6cc@emirati-pathway.temp", "phone": "+971528983000", "emirate": null, "nationality": "UAE", "is_uae_national": false, "education_level": null, "experience_years": 12, "current_position": null, "current_company": null, "employment_status": "applicant", "skills": ["Microsoft Office Suite", "Verbal & Written Communication", "Analytical & Problem-Solving Skills", "Project Management", "Team leadership"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": null, "longitude": null, "cv_url": null, "linkedin_url": null, "application_status": "under_review", "submitted_at": "2026-02-05 01:37:45.617341+04:00", "status": "under_review", "is_applicant": true, "application_date": "2026-02-05 01:37:45.617341+04:00", "distance_km": null}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": null}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "full_name": "Ahmed Al Mansouri", "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "full_name": "Ahmed Al Mansouri", "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "full_name": "Ahmed Al Mansouri", "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 0.0, "score_breakdown": {}, "matching_skills": [], "missing_skills": [], "strengths": [], "concerns": ["Error during scoring"], "distance_km": 6.7}
+
+--- Request for JD cf1b3f16-e0f1-4684-a535-c2e89bd17d31 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "full_name": "Ahmed Al Mansouri", "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 62.0, "score_breakdown": {"skills": 32.0, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["python5+ years of python experience", "postgresql", "", ""], "missing_skills": ["djangoexperience with django or flask"], "strengths": ["Strong skills match", "Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20251120_001338_2bd9127c ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 19, "user_id": 19, "first_name": null, "last_name": null, "full_name": "Mohammed Al Hashimi", "email": "mohammed.alhashimi@email.ae", "phone": "+971-50-456-7890", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 4, "current_position": "Data Analyst", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "SQL", "Tableau", "Statistics", "Excel", "Power BI"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.259483634019293, "longitude": 55.24424607341665, "cv_url": null, "linkedin_url": null, "distance_km": 6.6}, "match_score": 56.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["strong proficiency in python, javascript, and react", "excellent problem"], "missing_skills": ["solving skills"], "strengths": ["Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.6}
+
+--- Request for JD jd_20251128_004855_84b6e6da ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 19, "user_id": 19, "first_name": null, "last_name": null, "full_name": "Mohammed Al Hashimi", "email": "mohammed.alhashimi@email.ae", "phone": "+971-50-456-7890", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 4, "current_position": "Data Analyst", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "SQL", "Tableau", "Statistics", "Excel", "Power BI"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.259483634019293, "longitude": 55.24424607341665, "cv_url": null, "linkedin_url": null, "distance_km": 6.6}, "match_score": 56.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["strong proficiency in python, javascript, and react", "excellent problem"], "missing_skills": ["solving skills"], "strengths": ["Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.6}
+
+--- Request for JD cf1b3f16-e0f1-4684-a535-c2e89bd17d31 ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 17, "user_id": 17, "first_name": null, "last_name": null, "full_name": "Ahmed Al Mansouri", "email": "ahmed.almansouri@email.ae", "phone": "+971-50-234-5678", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 6, "current_position": "Software Engineer", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "React", "AWS", "Docker", "PostgreSQL", "Kubernetes"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.224072198010575, "longitude": 55.2079306950643, "cv_url": null, "linkedin_url": null, "distance_km": 6.7}, "match_score": 62.0, "score_breakdown": {"skills": 32.0, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["python5+ years of python experience", "postgresql", "", ""], "missing_skills": ["djangoexperience with django or flask"], "strengths": ["Strong skills match", "Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.7}
+
+--- Request for JD jd_20251128_004855_84b6e6da ---
+Applicants: 0
+Passive: 47
+Total: 47
+Matches return count: 20
+Sample Match Payload: {"candidate": {"candidate_id": 19, "user_id": 19, "first_name": null, "last_name": null, "full_name": "Mohammed Al Hashimi", "email": "mohammed.alhashimi@email.ae", "phone": "+971-50-456-7890", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 4, "current_position": "Data Analyst", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "SQL", "Tableau", "Statistics", "Excel", "Power BI"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.259483634019293, "longitude": 55.24424607341665, "cv_url": null, "linkedin_url": null, "distance_km": 6.6}, "match_score": 56.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["strong proficiency in python, javascript, and react", "excellent problem"], "missing_skills": ["solving skills"], "strengths": ["Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.6}

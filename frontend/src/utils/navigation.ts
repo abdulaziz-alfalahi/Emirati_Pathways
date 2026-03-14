@@ -52,6 +52,15 @@ const ROLE_INTERVIEW_ROUTES: Record<string, string> = {
     job_seeker: '/candidate-dashboard?tab=interviews',
 };
 
+const ROLE_OFFER_ROUTES: Record<string, string> = {
+    recruiter: '/recruiter?tab=offers',
+    hr_recruiter: '/recruiter?tab=offers',
+    hr_manager: '/hr-dashboard?tab=offers',
+    hr: '/hr-dashboard?tab=offers',
+    candidate: '/candidate-dashboard?tab=applications',
+    job_seeker: '/candidate-dashboard?tab=applications',
+};
+
 /**
  * Returns the correct route for any notification type + user role.
  * Use this everywhere instead of duplicated if/else chains.
@@ -78,6 +87,10 @@ export function getNotificationRoute(
             return ROLE_APPLICATION_ROUTES[userRole] || '/dashboard#applications';
         case 'interview_scheduled':
             return ROLE_INTERVIEW_ROUTES[userRole] || '/candidate-dashboard?tab=interviews';
+        case 'offer_negotiation':
+        case 'offer_accepted':
+        case 'offer_declined':
+            return ROLE_OFFER_ROUTES[userRole] || '/recruiter?tab=offers';
         default:
             return fallbackLink || null;
     }

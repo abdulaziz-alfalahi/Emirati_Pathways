@@ -552,11 +552,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     }
     else if (isInterviewContext) {
       if (isRecruiter) {
-        if (metadata.interview_id) {
-          navigate(`/recruiter/interview-analytics/${metadata.interview_id}`);
-        } else {
-          navigate('/recruiter/interviews/details');
-        }
+        navigate('/recruiter?tab=interviews');
       } else if (isHRManager) {
         navigate('/hr-dashboard?tab=interviews');
       } else {

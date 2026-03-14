@@ -685,41 +685,50 @@ def match_candidates(jd_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
+        # First, look up the integer job_postings.id for this jd_id
+        # (job_applications.job_id is INTEGER referencing job_postings.id)
+        cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
+        jp_row = cur.fetchone()
+        job_posting_int_id = dict(jp_row)['id'] if jp_row else None
+        
         # 1. Fetch APPLICANTS (People who explicitly applied)
         # We need to map them to the same structure as generic candidates
-        cur.execute("""
-            SELECT 
-                u.id as candidate_id,
-                u.id as user_id,
-                u.first_name,
-                u.last_name,
-                u.email,
-                u.phone,
-                u.emirate,
-                u.nationality,
-                u.is_uae_national,
-                u.education_level,
-                u.experience_years,
-                u.job_title as current_position,
-                u.company as current_company,
-                'applicant' as employment_status, -- Special status for applicants
-                u.skills,
-                u.preferred_salary_min,
-                u.preferred_salary_max,
-                u.latitude,
-                u.longitude,
-                NULL as cv_url,
-                NULL as linkedin_url,
-                a.status as application_status,
-                a.submitted_at
-            FROM job_applications a
-            JOIN users u ON a.candidate_id = u.id::text
-            WHERE a.job_id = %s
-        """, (jd_id,))
-        applicants = [dict(c) for c in cur.fetchall()]
+        applicants = []
+        if job_posting_int_id:
+            cur.execute("""
+                SELECT 
+                    u.id as candidate_id,
+                    u.id as user_id,
+                    u.first_name,
+                    u.last_name,
+                    u.full_name,
+                    u.email,
+                    u.phone,
+                    u.emirate,
+                    u.nationality,
+                    u.is_uae_national,
+                    u.education_level,
+                    u.experience_years,
+                    u.job_title as current_position,
+                    u.company as current_company,
+                    'applicant' as employment_status, -- Special status for applicants
+                    u.skills,
+                    u.preferred_salary_min,
+                    u.preferred_salary_max,
+                    u.latitude,
+                    u.longitude,
+                    NULL as cv_url,
+                    NULL as linkedin_url,
+                    a.status as application_status,
+                    a.submitted_at
+                FROM job_applications a
+                JOIN users u ON a.candidate_id = u.id
+                WHERE a.job_id = %s
+            """, (job_posting_int_id,))
+            applicants = [dict(c) for c in cur.fetchall()]
         
-        # Get applicant IDs to exclude from general search
-        applicant_ids = [str(a['candidate_id']) for a in applicants]
+        # Get applicant IDs to exclude from general search (as integers)
+        applicant_ids = [int(a['candidate_id']) for a in applicants]
         
         # 2. Fetch PASSIVE MATCHES (General pool)
         # Build query based on employment status filter
@@ -729,6 +738,7 @@ def match_candidates(jd_id):
                 id as user_id,
                 first_name,
                 last_name,
+                full_name,
                 email,
                 phone,
                 emirate,
@@ -759,13 +769,15 @@ def match_candidates(jd_id):
             params.append(tuple(applicant_ids))
         
         # Add employment status filter if specified
-        if employment_status_filter:
-            if employment_status_filter.lower() == 'employed':
-                query += " AND employment_status IN ('employed', 'currently_employed')"
-            elif employment_status_filter.lower() == 'job_seeker':
-                query += " AND employment_status IN ('job_seeker', 'unemployed', 'actively_looking')"
-            elif employment_status_filter.lower() == 'open_to_opportunities':
-                query += " AND employment_status IN ('open_to_opportunities', 'passive', 'open')"
+        # Note: employment_status column does not exist on users table yet
+        # Skip this filter until the column is added
+        # if employment_status_filter:
+        #     if employment_status_filter.lower() == 'employed':
+        #         query += " AND employment_status IN ('employed', 'currently_employed')"
+        #     elif employment_status_filter.lower() == 'job_seeker':
+        #         query += " AND employment_status IN ('job_seeker', 'unemployed', 'actively_looking')"
+        #     elif employment_status_filter.lower() == 'open_to_opportunities':
+        #         query += " AND employment_status IN ('open_to_opportunities', 'passive', 'open')"
         
         query += " LIMIT 1000"  # Limit to reasonable number for matching
         

@@ -14,6 +14,7 @@ import {
   Eye
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { formatDateFromString } from '@/utils/dateFormat';
 
 interface RecentApplicant {
   application_id: string;
@@ -71,7 +72,7 @@ export const RecentApplicants: React.FC<RecentApplicantsProps> = ({ onViewAll, l
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return formatDateFromString(dateString);
   };
 
   // Get status badge

@@ -369,6 +369,21 @@ class InterviewSchedulingEngine:
             WHERE shortlist_id = %s
         """, (data['shortlist_id'],))
         
+        # Also update job_applications status to 'interview' so it shows in candidate's Application Tracker
+        try:
+            # jd_id maps to job_postings.jd_id; job_applications.job_id references job_postings.id
+            # Use ::text cast because candidate_id types differ between tables
+            cur.execute("""
+                UPDATE job_applications
+                SET status = 'interview'
+                WHERE candidate_id::text = %s::text
+                  AND job_id IN (SELECT id FROM job_postings WHERE jd_id = %s)
+                  AND status NOT IN ('withdrawn', 'rejected', 'interview')
+            """, (str(candidate_id), jd_id))
+            self.logger.info(f"Updated job_applications status to 'interview' for candidate {candidate_id}, jd_id {jd_id}")
+        except Exception as e:
+            self.logger.warning(f"Could not update job_applications status: {e}")
+        
         conn.commit()
 
         # Send Notification to Candidate
@@ -484,8 +499,8 @@ class InterviewSchedulingEngine:
             cur.execute("""
                 SELECT recruiter_id, scheduled_date, scheduled_time, duration_minutes
                 FROM interview_schedules
-                WHERE interview_id = %s
-            """, (interview_id,))
+                WHERE interview_id = %s OR id::text = %s
+            """, (interview_id, str(interview_id)))
             
             current = cur.fetchone()
             if not current:
@@ -527,10 +542,11 @@ class InterviewSchedulingEngine:
         set_clauses.append("updated_at = CURRENT_TIMESTAMP")
         params.append(interview_id)
         
+        params.append(str(interview_id))  # for the second OR condition
         query = f"""
             UPDATE interview_schedules
             SET {', '.join(set_clauses)}
-            WHERE interview_id = %s
+            WHERE interview_id = %s OR id::text = %s
         """
         
         cur.execute(query, params)
@@ -559,9 +575,9 @@ class InterviewSchedulingEngine:
                 cancellation_reason = %s,
                 cancelled_at = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE interview_id = %s
+            WHERE (interview_id = %s OR id::text = %s)
             AND status NOT IN ('completed', 'cancelled')
-        """, (reason, interview_id))
+        """, (reason, interview_id, str(interview_id)))
         
         if cur.rowcount == 0:
             return False, "Interview not found or already completed/cancelled"

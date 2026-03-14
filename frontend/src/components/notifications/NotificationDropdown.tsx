@@ -66,7 +66,11 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onCl
     onClose();
 
     const metadata = notification.metadata || {};
+    // Check metadata.notification_type first, then notification.type for specific actionable types
+    const rawType = notification.type || '';
+    const isActionableType = rawType.startsWith('offer_') || rawType.startsWith('interview_') || rawType.startsWith('application_');
     const notificationType = metadata.notification_type
+      || (isActionableType ? rawType : undefined)
       || (notification.type === 'info' && notification.link?.includes('/messages') ? 'new_message' : undefined);
 
     // Cross-role routing: switch role if notification targets a different role

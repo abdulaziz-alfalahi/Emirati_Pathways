@@ -12,8 +12,9 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import { Calendar, Video, Clock, Users, ExternalLink } from 'lucide-react';
+import { Calendar, Video, Clock, Users, BarChart3, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
+import InterviewAnalytics from '@/components/recruiter/interviews/InterviewAnalytics';
 
 interface InterviewSession {
     id: string;
@@ -30,16 +31,41 @@ interface InterviewSession {
 export const InterviewsTab: React.FC = () => {
     const [sessions, setSessions] = useState<InterviewSession[]>([]);
     const [loading, setLoading] = useState(true);
+    const [analyticsSession, setAnalyticsSession] = useState<InterviewSession | null>(null);
 
     const fetchSessions = async () => {
         try {
             setLoading(true);
-            const response = await restClient.get('/api/interviews/sessions/my?role=recruiter');
+            // Use the recruiter interviews endpoint which queries interview_schedules table
+            // This includes interviews where the user is recruiter OR an invited attendee
+            const response = await restClient.get('/api/recruiter/interviews/all');
             if (response.data.success) {
-                setSessions(response.data.data);
+                const interviews = response.data.interviews || response.data.data || [];
+                // Map fields to match InterviewSession interface
+                const mapped: InterviewSession[] = interviews.map((i: any) => ({
+                    id: i.meeting_link?.split('/').pop() || i.interview_id || i.id,
+                    title: i.interview_title || i.title || 'Interview',
+                    scheduled_at: i.scheduled_date && i.scheduled_time
+                        ? `${i.scheduled_date}T${i.scheduled_time}`
+                        : i.scheduled_at || '',
+                    status: i.status || 'scheduled',
+                    candidate_first_name: i.candidate_first_name || '',
+                    candidate_last_name: i.candidate_last_name || '',
+                    candidate_email: i.candidate_email || '',
+                    guest_token: i.guest_token || '',
+                    attendees: i.interviewers || i.attendees || [],
+                }));
+                setSessions(mapped);
             }
         } catch (err) {
             console.error("Failed to fetch interviews", err);
+            // Fallback: try the video-interview endpoint
+            try {
+                const fallbackRes = await restClient.get('/api/video-interview/sessions?role=recruiter');
+                if (fallbackRes.data?.success) {
+                    setSessions(fallbackRes.data.sessions || fallbackRes.data.data || []);
+                }
+            } catch { /* ignore fallback error */ }
         } finally {
             setLoading(false);
         }
@@ -63,6 +89,29 @@ export const InterviewsTab: React.FC = () => {
     const joinInterview = (sessionId: string) => {
         navigate(`/recruiter/video-interview/${sessionId}`);
     };
+
+    // Show analytics view inline
+    if (analyticsSession) {
+        return (
+            <Card className="bg-white shadow-sm">
+                <CardContent className="pt-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Button variant="ghost" size="sm" onClick={() => setAnalyticsSession(null)} className="text-ehrdc-teal hover:text-ehrdc-teal/80">
+                            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Interviews
+                        </Button>
+                        <h2 className="text-xl font-bold">Interview Analytics</h2>
+                        <Badge variant="outline">{analyticsSession.title || 'Interview'}</Badge>
+                        {analyticsSession.candidate_first_name && (
+                            <Badge variant="secondary">
+                                {analyticsSession.candidate_first_name} {analyticsSession.candidate_last_name}
+                            </Badge>
+                        )}
+                    </div>
+                    <InterviewAnalytics interviewId={analyticsSession.id} />
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="bg-white shadow-sm">
@@ -92,7 +141,7 @@ export const InterviewsTab: React.FC = () => {
                                 <TableHead>Date & Time</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Attendees</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -136,16 +185,27 @@ export const InterviewsTab: React.FC = () => {
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {session.status === 'scheduled' && (
+                                        <div className="flex items-center justify-end gap-2">
+                                            {session.status === 'scheduled' && (
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-teal-600 hover:bg-teal-700 text-white"
+                                                    onClick={() => joinInterview(session.id)}
+                                                >
+                                                    <Video className="h-4 w-4 mr-1" />
+                                                    Join
+                                                </Button>
+                                            )}
                                             <Button
                                                 size="sm"
-                                                className="bg-teal-600 hover:bg-teal-700 text-white"
-                                                onClick={() => joinInterview(session.id)}
+                                                variant="outline"
+                                                onClick={() => setAnalyticsSession(session)}
+                                                title="View Analytics"
                                             >
-                                                <Video className="h-4 w-4 mr-1" />
-                                                Join
+                                                <BarChart3 className="h-4 w-4 mr-1 text-purple-600" />
+                                                Analytics
                                             </Button>
-                                        )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}

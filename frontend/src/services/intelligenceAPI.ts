@@ -4,10 +4,10 @@
  * Connects to: /api/intelligence/*
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = ''; // Use relative URL through Vite proxy (backend on port 5005)
 
 function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     return {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

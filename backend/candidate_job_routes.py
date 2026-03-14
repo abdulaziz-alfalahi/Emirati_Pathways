@@ -1209,74 +1209,151 @@ def get_candidate_offers():
         
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # Get offers for this candidate that have been sent
-        query = """
-            SELECT 
-                o.id,
-                o.job_posting_id,
-                o.candidate_id,
-                o.recruiter_id,
-                o.status,
-                o.offer_data,
-                o.created_at,
-                o.updated_at,
-                jd.title as job_title,
-                jd.company as company_name,
-                jd.location as job_location,
-                r.first_name as recruiter_first_name,
-                r.last_name as recruiter_last_name,
-                r.email as recruiter_email
-            FROM offers o
-            LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
-            LEFT JOIN users r ON o.recruiter_id = r.id
-            WHERE o.candidate_id = %s
-              AND o.status IN ('sent', 'accepted', 'declined', 'negotiating')
-            ORDER BY o.created_at DESC
-        """
-        
-        # Try with integer candidate_id first
-        try:
-            cur.execute(query, (int(candidate_id),))
-        except (ValueError, TypeError):
-            # If candidate_id is a UUID, try different approach
-            cur.execute(query.replace('o.candidate_id = %s', 'o.candidate_id::text = %s'), (str(candidate_id),))
-        
-        results = cur.fetchall()
-        conn.close()
-        
         offers = []
-        for row in results:
-            offer = dict(row)
-            # Parse offer_data if it's a string
-            if offer.get('offer_data') and isinstance(offer['offer_data'], str):
-                try:
-                    offer['offer_data'] = json.loads(offer['offer_data'])
-                except:
-                    pass
+        seen_ids = set()
+        
+        # Primary source: job_offers table (where offers are actually created)
+        try:
+            job_offers_query = """
+                SELECT 
+                    jo.offer_id,
+                    jo.jd_id,
+                    jo.candidate_id,
+                    jo.recruiter_id,
+                    jo.position_title,
+                    jo.salary_amount,
+                    jo.salary_currency,
+                    jo.salary_period,
+                    jo.employment_type,
+                    jo.start_date,
+                    jo.expiry_date,
+                    jo.benefits,
+                    jo.status,
+                    jo.work_location,
+                    jo.notes,
+                    jo.probation_period_months,
+                    jo.candidate_response,
+                    jo.response_notes,
+                    jo.response_date,
+                    jo.negotiation_notes,
+                    jo.negotiation_status,
+                    jo.created_at,
+                    jo.updated_at,
+                    jp.title as job_title,
+                    jp.company_id as company_name,
+                    r.first_name as recruiter_first_name,
+                    r.last_name as recruiter_last_name,
+                    r.email as recruiter_email
+                FROM job_offers jo
+                LEFT JOIN job_postings jp ON jo.jd_id = jp.jd_id
+                LEFT JOIN users r ON jo.recruiter_id::text = r.id::text
+                WHERE jo.candidate_id::text = %s
+                ORDER BY jo.created_at DESC
+            """
+            cur.execute(job_offers_query, (str(candidate_id),))
+            job_offer_rows = cur.fetchall()
             
-            # Format the offer for frontend
-            offer_data = offer.get('offer_data') or {}
-            offers.append({
-                'id': str(offer.get('id')),
-                'job_posting_id': str(offer.get('job_posting_id')) if offer.get('job_posting_id') else None,
-                'job_title': offer.get('job_title') or offer_data.get('position_title', 'Position'),
-                'company_name': offer.get('company_name') or offer_data.get('company_name', 'Company'),
-                'job_location': offer.get('job_location') or offer_data.get('work_location', 'UAE'),
-                'status': offer.get('status'),
-                'salary_amount': offer_data.get('salary_amount', 0),
-                'salary_currency': offer_data.get('salary_currency', 'AED'),
-                'salary_period': offer_data.get('salary_period', 'monthly'),
-                'start_date': offer_data.get('start_date'),
-                'employment_type': offer_data.get('employment_type', 'full-time'),
-                'probation_period_months': offer_data.get('probation_period_months'),
-                'benefits': offer_data.get('benefits', {}),
-                'notes': offer_data.get('notes'),
-                'expiry_date': offer_data.get('expiry_date'),
-                'recruiter_name': f"{offer.get('recruiter_first_name', '')} {offer.get('recruiter_last_name', '')}".strip() or 'Recruiter',
-                'recruiter_email': offer.get('recruiter_email'),
-                'created_at': offer.get('created_at').isoformat() if offer.get('created_at') else None,
-                'updated_at': offer.get('updated_at').isoformat() if offer.get('updated_at') else None
-            })
+            for row in job_offer_rows:
+                offer_id = row.get('offer_id')
+                if offer_id in seen_ids:
+                    continue
+                seen_ids.add(offer_id)
+                
+                offers.append({
+                    'id': offer_id,
+                    'job_posting_id': row.get('jd_id'),
+                    'job_title': row.get('job_title') or row.get('position_title', 'Position'),
+                    'company_name': row.get('company_name') or 'Company',
+                    'job_location': row.get('work_location') or 'UAE',
+                    'status': row.get('status'),
+                    'salary_amount': float(row.get('salary_amount') or 0),
+                    'salary_currency': row.get('salary_currency') or 'AED',
+                    'salary_period': row.get('salary_period') or 'monthly',
+                    'start_date': str(row.get('start_date')) if row.get('start_date') else None,
+                    'employment_type': row.get('employment_type') or 'full-time',
+                    'probation_period_months': row.get('probation_period_months'),
+                    'benefits': row.get('benefits') or {},
+                    'notes': row.get('notes'),
+                    'candidate_response': row.get('candidate_response'),
+                    'response_notes': row.get('response_notes'),
+                    'negotiation_notes': row.get('negotiation_notes'),
+                    'negotiation_status': row.get('negotiation_status'),
+                    'expiry_date': str(row.get('expiry_date')) if row.get('expiry_date') else None,
+                    'recruiter_name': f"{row.get('recruiter_first_name', '')} {row.get('recruiter_last_name', '')}".strip() or 'Recruiter',
+                    'recruiter_email': row.get('recruiter_email'),
+                    'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
+                    'updated_at': row.get('updated_at').isoformat() if row.get('updated_at') else None
+                })
+        except Exception as jo_err:
+            logger.warning(f"job_offers query failed: {jo_err}")
+        
+        # Secondary source: offers table (UUID-based, for any offers created there)
+        try:
+            offers_query = """
+                SELECT 
+                    o.id,
+                    o.job_posting_id,
+                    o.candidate_id,
+                    o.recruiter_id,
+                    o.status,
+                    o.offer_data,
+                    o.created_at,
+                    o.updated_at,
+                    jd.title as job_title,
+                    jd.company as company_name,
+                    jd.location as job_location,
+                    r.first_name as recruiter_first_name,
+                    r.last_name as recruiter_last_name,
+                    r.email as recruiter_email
+                FROM offers o
+                LEFT JOIN job_descriptions jd ON o.job_posting_id::text = jd.id::text
+                LEFT JOIN users r ON o.recruiter_id = r.id
+                WHERE o.candidate_id = %s
+                ORDER BY o.created_at DESC
+            """
+            try:
+                cur.execute(offers_query, (int(candidate_id),))
+            except (ValueError, TypeError):
+                cur.execute(offers_query.replace('o.candidate_id = %s', 'o.candidate_id::text = %s'), (str(candidate_id),))
+            
+            for row in cur.fetchall():
+                offer_uuid = str(row.get('id'))
+                if offer_uuid in seen_ids:
+                    continue
+                seen_ids.add(offer_uuid)
+                
+                offer_data = row.get('offer_data') or {}
+                if isinstance(offer_data, str):
+                    try:
+                        offer_data = json.loads(offer_data)
+                    except:
+                        offer_data = {}
+                
+                offers.append({
+                    'id': offer_uuid,
+                    'job_posting_id': str(row.get('job_posting_id')) if row.get('job_posting_id') else None,
+                    'job_title': row.get('job_title') or offer_data.get('position_title', 'Position'),
+                    'company_name': row.get('company_name') or offer_data.get('company_name', 'Company'),
+                    'job_location': row.get('job_location') or offer_data.get('work_location', 'UAE'),
+                    'status': row.get('status'),
+                    'salary_amount': offer_data.get('salary_amount', 0),
+                    'salary_currency': offer_data.get('salary_currency', 'AED'),
+                    'salary_period': offer_data.get('salary_period', 'monthly'),
+                    'start_date': offer_data.get('start_date'),
+                    'employment_type': offer_data.get('employment_type', 'full-time'),
+                    'probation_period_months': offer_data.get('probation_period_months'),
+                    'benefits': offer_data.get('benefits', {}),
+                    'notes': offer_data.get('notes'),
+                    'expiry_date': offer_data.get('expiry_date'),
+                    'recruiter_name': f"{row.get('recruiter_first_name', '')} {row.get('recruiter_last_name', '')}".strip() or 'Recruiter',
+                    'recruiter_email': row.get('recruiter_email'),
+                    'created_at': row.get('created_at').isoformat() if row.get('created_at') else None,
+                    'updated_at': row.get('updated_at').isoformat() if row.get('updated_at') else None
+                })
+        except Exception as o_err:
+            logger.warning(f"offers table query failed: {o_err}")
+        
+        conn.close()
         
         logger.info(f"Found {len(offers)} offers for candidate {candidate_id}")
         
@@ -1405,14 +1482,38 @@ def respond_to_offer(offer_id):
         
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # First check if the offer exists and is in a valid state
-        cur.execute("""
-            SELECT id, status, candidate_id, recruiter_id, offer_data
-            FROM offers 
-            WHERE id = %s::uuid
-        """, (offer_id,))
+        offer = None
+        offer_source = None  # 'job_offers' or 'offers'
         
-        offer = cur.fetchone()
+        # Try job_offers table first (OFR-* IDs)
+        try:
+            cur.execute("""
+                SELECT offer_id as id, status, candidate_id, recruiter_id, 
+                       position_title, jd_id
+                FROM job_offers 
+                WHERE offer_id = %s
+            """, (offer_id,))
+            offer = cur.fetchone()
+            if offer:
+                offer_source = 'job_offers'
+        except Exception as e:
+            logger.warning(f"job_offers lookup failed: {e}")
+            conn.rollback()
+        
+        # Fallback to offers table (UUID IDs)
+        if not offer:
+            try:
+                cur.execute("""
+                    SELECT id, status, candidate_id, recruiter_id, offer_data
+                    FROM offers 
+                    WHERE id = %s::uuid
+                """, (offer_id,))
+                offer = cur.fetchone()
+                if offer:
+                    offer_source = 'offers'
+            except Exception as e:
+                logger.warning(f"offers table lookup failed: {e}")
+                conn.rollback()
         
         if not offer:
             conn.close()
@@ -1421,7 +1522,7 @@ def respond_to_offer(offer_id):
                 'message': 'Offer not found'
             }), 404
         
-        if offer.get('status') not in ['sent', 'negotiating']:
+        if offer.get('status') not in ['pending', 'sent', 'negotiating']:
             conn.close()
             return jsonify({
                 'success': False,
@@ -1439,46 +1540,67 @@ def respond_to_offer(offer_id):
             'responded_at': datetime.now().isoformat()
         }
         
-        cur.execute("""
-            UPDATE offers
-            SET status = %s,
-                updated_at = NOW(),
-                offer_data = offer_data || %s::jsonb
-            WHERE id = %s::uuid
-            RETURNING id
-        """, (
-            new_status,
-            json.dumps(response_meta),
-            offer_id
-        ))
-        
-        # Also sync the job_offers table if a matching row exists
-        cur.execute("""
-            UPDATE job_offers
-            SET candidate_response = %s,
-                response_date = CURRENT_TIMESTAMP,
-                response_notes = %s,
-                status = %s,
-                negotiation_status = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE offer_id = %s AND status IN ('sent', 'viewed', 'negotiating')
-        """, (
-            action if action != 'decline' else 'rejected',
-            message,
-            'rejected' if action == 'decline' else new_status,
-            'in_progress' if action == 'negotiate' else 'none',
-            offer_id
-        ))
+        # Update the appropriate table
+        if offer_source == 'job_offers':
+            cur.execute("""
+                UPDATE job_offers
+                SET candidate_response = %s,
+                    response_date = CURRENT_TIMESTAMP,
+                    response_notes = %s,
+                    status = %s,
+                    negotiation_status = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE offer_id = %s
+            """, (
+                action if action != 'decline' else 'rejected',
+                message,
+                'rejected' if action == 'decline' else new_status,
+                'in_progress' if action == 'negotiate' else 'none',
+                offer_id
+            ))
+        else:
+            cur.execute("""
+                UPDATE offers
+                SET status = %s,
+                    updated_at = NOW(),
+                    offer_data = offer_data || %s::jsonb
+                WHERE id = %s::uuid
+                RETURNING id
+            """, (
+                new_status,
+                json.dumps(response_meta),
+                offer_id
+            ))
+            # Also sync the job_offers table if a matching row exists
+            cur.execute("""
+                UPDATE job_offers
+                SET candidate_response = %s,
+                    response_date = CURRENT_TIMESTAMP,
+                    response_notes = %s,
+                    status = %s,
+                    negotiation_status = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE offer_id = %s AND status IN ('pending', 'sent', 'viewed', 'negotiating')
+            """, (
+                action if action != 'decline' else 'rejected',
+                message,
+                'rejected' if action == 'decline' else new_status,
+                'in_progress' if action == 'negotiate' else 'none',
+                offer_id
+            ))
         
         conn.commit()
         
         logger.info(f"Candidate responded to offer {offer_id}: {action}")
         
-        # Determine position title from offer_data
-        offer_data = offer.get('offer_data') or {}
-        if isinstance(offer_data, str):
-            offer_data = json.loads(offer_data)
-        position_title = offer_data.get('position_title') or offer_data.get('job_title') or 'a position'
+        # Determine position title from offer data
+        if offer_source == 'job_offers':
+            position_title = offer.get('position_title') or 'a position'
+        else:
+            offer_data = offer.get('offer_data') or {}
+            if isinstance(offer_data, str):
+                offer_data = json.loads(offer_data)
+            position_title = offer_data.get('position_title') or offer_data.get('job_title') or 'a position'
         
         # Send notification to recruiter
         recruiter_id = offer.get('recruiter_id')
@@ -1565,31 +1687,62 @@ def get_candidate_offer_stats():
         
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        query = """
-            SELECT 
-                COUNT(*) FILTER (WHERE status IN ('sent', 'accepted', 'declined', 'negotiating')) as total,
-                COUNT(*) FILTER (WHERE status = 'sent') as pending,
-                COUNT(*) FILTER (WHERE status = 'accepted') as accepted,
-                COUNT(*) FILTER (WHERE status = 'declined') as declined
-            FROM offers
-            WHERE candidate_id = %s
-        """
+        total = 0
+        pending = 0
+        accepted = 0
+        declined = 0
         
+        # Primary: job_offers table
         try:
-            cur.execute(query, (int(candidate_id),))
-        except (ValueError, TypeError):
-            cur.execute(query.replace('candidate_id = %s', 'candidate_id::text = %s'), (str(candidate_id),))
+            cur.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE status IN ('pending', 'sent')) as pending,
+                    COUNT(*) FILTER (WHERE status = 'accepted') as accepted,
+                    COUNT(*) FILTER (WHERE status IN ('declined', 'rejected')) as declined
+                FROM job_offers
+                WHERE candidate_id::text = %s
+            """, (str(candidate_id),))
+            row = cur.fetchone()
+            if row:
+                total += row.get('total', 0) or 0
+                pending += row.get('pending', 0) or 0
+                accepted += row.get('accepted', 0) or 0
+                declined += row.get('declined', 0) or 0
+        except Exception as e:
+            logger.warning(f"job_offers stats query failed: {e}")
+            conn.rollback()
         
-        result = cur.fetchone()
+        # Secondary: offers table
+        try:
+            cur.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE status IN ('pending', 'sent')) as pending,
+                    COUNT(*) FILTER (WHERE status = 'accepted') as accepted,
+                    COUNT(*) FILTER (WHERE status IN ('declined', 'rejected')) as declined
+                FROM offers
+                WHERE candidate_id = %s
+            """, (int(candidate_id),))
+            row2 = cur.fetchone()
+            if row2:
+                total += row2.get('total', 0) or 0
+                pending += row2.get('pending', 0) or 0
+                accepted += row2.get('accepted', 0) or 0
+                declined += row2.get('declined', 0) or 0
+        except Exception as e:
+            logger.warning(f"offers stats query failed: {e}")
+            conn.rollback()
+        
         conn.close()
         
         return jsonify({
             'success': True,
             'data': {
-                'total': result.get('total', 0) or 0,
-                'pending': result.get('pending', 0) or 0,
-                'accepted': result.get('accepted', 0) or 0,
-                'declined': result.get('declined', 0) or 0
+                'total': total,
+                'pending': pending,
+                'accepted': accepted,
+                'declined': declined
             }
         })
         

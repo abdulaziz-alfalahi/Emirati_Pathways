@@ -79,3 +79,57 @@ JD Requirements: {"skills": ["Communication", "Teamwork"]}
 Required Skills: ['skills']
 Candidate Skills: ['Data Analysis', 'SQL', 'Business Intelligence', 'Tableau', 'Python']
 Final Score for 22: 27.22 (AI: 27.22, Rule: 10.0)
+Match called at 2026-03-11 05:31:04.570677
+Candidates count: 5
+JD Title: Senior Python Backend Developer
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Django', 'PostgreSQL', 'AWS', 'Docker', 'REST APIs']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Django', 'PostgreSQL', 'AWS', 'REST APIs']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Django', 'PostgreSQL']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Flask']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Java', 'Angular', 'MySQL', 'Marketing']
+Match called at 2026-03-11 06:30:35.690340
+Candidates count: 5
+JD Title: Senior Python Backend Developer
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Django', 'PostgreSQL', 'AWS', 'Docker', 'REST APIs']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Django', 'PostgreSQL', 'AWS', 'REST APIs']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Django', 'PostgreSQL']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Python', 'Flask']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis', '5 years of backend development experience', "bachelor's degree in computer science or related field"]
+Candidate Skills: ['Java', 'Angular', 'MySQL', 'Marketing']
+Match called at 2026-03-11 06:38:39.187201
+Candidates count: 5
+JD Title: Senior Python Backend Developer
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis']
+Candidate Skills: ['Python', 'Django', 'PostgreSQL', 'AWS', 'Docker', 'REST APIs']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis']
+Candidate Skills: ['Python', 'Django', 'PostgreSQL', 'AWS', 'REST APIs']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis']
+Candidate Skills: ['Python', 'Django', 'PostgreSQL']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis']
+Candidate Skills: ['Python', 'Flask']
+JD Requirements: {"skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "REST APIs"], "experience": ["5 years of backend development experience"], "education": ["Bachelor's degree in Computer Science or related field"]}
+Required Skills: ['python', 'django', 'postgresql', 'aws', 'docker', 'rest apis']
+Candidate Skills: ['Java', 'Angular', 'MySQL', 'Marketing']

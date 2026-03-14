@@ -129,6 +129,122 @@ def process_realtime_analysis():
             'message': str(e)
         }), 500
 
+@video_interview_bp.route('/sessions/<session_id>/analyze-transcript', methods=['POST'])
+@jwt_required()
+def analyze_transcript():
+    """Analyze interview transcript text using Gemini AI.
+    
+    Receives transcript chunks from the browser's Web Speech API
+    and returns structured real-time analysis.
+    """
+    try:
+        user_id = get_jwt_identity()
+        session_id = request.view_args['session_id']
+        data = request.get_json()
+        
+        transcript = data.get('transcript', '').strip()
+        job_title = data.get('job_title', 'Unknown Position')
+        elapsed_minutes = data.get('elapsed_minutes', 0)
+        
+        if not transcript:
+            return jsonify({
+                'success': False,
+                'error': 'No transcript text provided'
+            }), 400
+        
+        logger.info(f"Analyzing transcript for session {session_id} ({len(transcript)} chars)")
+        
+        # Try Gemini analysis
+        import google.generativeai as genai
+        import os
+        
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'AI analysis not configured'
+            }), 503
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        
+        prompt = f"""You are an AI interview analyst. Analyze this interview transcript segment and provide structured scoring.
+
+CONTEXT:
+- Interview for: {job_title}
+- Elapsed time: {elapsed_minutes} minutes
+- Session: {session_id}
+
+TRANSCRIPT:
+\"\"\"{transcript}\"\"\"
+
+Analyze the transcript and respond with ONLY a valid JSON object (no markdown, no code fences):
+{{
+    "speech_quality": <0-100 integer score for clarity, articulation, grammar>,
+    "engagement": <0-100 integer score for enthusiasm, responsiveness, active participation>,
+    "confidence": <0-100 integer score for assertiveness, conviction, self-assurance>,
+    "sentiment": "<one of: Positive, Neutral, Confident, Enthusiastic, Thoughtful, Hesitant, Nervous>",
+    "sentiment_score": <0.0-1.0 float>,
+    "speaking_pace": "<one of: Natural, Measured, Slightly Fast, Well-Paced, Deliberate, Too Fast, Too Slow>",
+    "body_language": "<one of: Open & Relaxed, Attentive, Engaged, Slightly Nervous, Confident Posture, Guarded>",
+    "filler_word_count": <integer estimated count of um, uh, like, you know>,
+    "topics": ["<list of 3-5 key topics/skills detected>"],
+    "key_phrases": ["<list of 2-3 notable direct quotes or paraphrased key statements>"],
+    "overall_impression": "<1-2 sentence summary of candidate impression>"
+}}
+
+Be objective and base scores on the actual transcript content. Consider UAE professional context."""
+
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Clean response - remove markdown code fences if present
+        if response_text.startswith('```'):
+            lines = response_text.split('\n')
+            response_text = '\n'.join(lines[1:-1] if lines[-1].strip() == '```' else lines[1:])
+            response_text = response_text.strip()
+        
+        analysis = json.loads(response_text)
+        
+        logger.info(f"Gemini analysis complete for session {session_id}: quality={analysis.get('speech_quality')}")
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis
+        }), 200
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse Gemini response: {e}")
+        # Return heuristic fallback based on transcript content
+        word_count = len(transcript.split()) if transcript else 0
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'speech_quality': min(95, 70 + word_count // 5),
+                'engagement': min(95, 72 + word_count // 4),
+                'confidence': min(95, 68 + word_count // 6),
+                'sentiment': 'Neutral',
+                'sentiment_score': 0.6,
+                'speaking_pace': 'Natural',
+                'body_language': 'Attentive',
+                'filler_word_count': 0,
+                'topics': ['General Discussion'],
+                'key_phrases': [],
+                'overall_impression': 'Analysis in progress...'
+            },
+            'fallback': True
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error analyzing transcript: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to analyze transcript',
+            'message': str(e)
+        }), 500
+
 @video_interview_bp.route('/sessions/<session_id>/report', methods=['GET'])
 @jwt_required()
 def get_interview_report():

@@ -69,7 +69,7 @@ import {
   Users,
   Briefcase,
   Clock,
-  MessageSquare,
+
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
@@ -165,7 +165,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
   const [newStatus, setNewStatus] = useState('');
   const [newNote, setNewNote] = useState('');
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
-  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
   const [selectedShortlistId, setSelectedShortlistId] = useState<string | null>(null);
   const [statusNotes, setStatusNotes] = useState('');
@@ -436,17 +436,6 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
               View Interviews
             </Button>
 
-            <Separator orientation="vertical" className="h-6 mx-1" />
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMessageDialogOpen(true)}
-              disabled={selectedCandidates.length === 0}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Message ({selectedCandidates.length})
-            </Button>
             <Button
               size="sm"
               onClick={handleCreateOfferForSelected}
@@ -849,34 +838,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
           </DialogContent>
         </Dialog>
 
-        {/* Message Composer Dialog */}
-        <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Send Message to Selected Candidates</DialogTitle>
-            </DialogHeader>
-            <MessageComposer
-              candidates={shortlist
-                .filter(c => selectedCandidates.includes(c.shortlist_id))
-                .map(c => ({
-                  shortlist_id: c.shortlist_id,
-                  candidate_id: c.candidate_id,
-                  first_name: c.first_name || 'Test',
-                  last_name: c.last_name || 'Candidate',
-                  email: c.email || '',
-                  phone_number: c.phone_number,
-                }))}
-              jdId={jdId}
-              recruiterId={user?.id?.toString() || '45'}
-              onClose={() => setMessageDialogOpen(false)}
-              onSent={() => {
-                setMessageDialogOpen(false);
-                setSelectedCandidates([]);
-                loadShortlist();
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+
 
         {/* Schedule Interview Dialog */}
         <ScheduleVideoInterviewDialog

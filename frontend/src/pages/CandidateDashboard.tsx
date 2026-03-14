@@ -38,7 +38,6 @@ import JobMatches from '@/components/candidate/JobMatches';
 import ApplicationTracker from '@/components/candidate/ApplicationTracker';
 import Messages from '@/components/candidate/Messages';
 import CandidateInterviews from '@/components/candidate/Interviews';
-import CandidateOffers from '@/components/candidate/CandidateOffers';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
@@ -132,8 +131,13 @@ const CandidateDashboard: React.FC = () => {
     // Check for hash
     if (location.hash) {
       const tab = location.hash.replace('#', '');
-      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'offers', 'messages'].includes(tab)) {
+      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages'].includes(tab)) {
         setActiveTab(tab);
+        return;
+      }
+      // Redirect old 'offers' tab to 'applications'
+      if (tab === 'offers') {
+        setActiveTab('applications');
         return;
       }
     }
@@ -141,8 +145,10 @@ const CandidateDashboard: React.FC = () => {
     // Check for query param
     const searchParams = new URLSearchParams(location.search);
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'offers', 'messages'].includes(tab)) {
+    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages'].includes(tab)) {
       setActiveTab(tab);
+    } else if (tab === 'offers') {
+      setActiveTab('applications');
     }
   }, [location]);
 
@@ -311,7 +317,11 @@ const CandidateDashboard: React.FC = () => {
               <h1 className="text-2xl font-bold text-slate-900 animate-in fade-in slide-in-from-left-4 duration-500">
                 {dashboardData.profile.name === 'New Member'
                   ? t('Welcome!', '!مرحباً')
-                  : t(`Good morning, ${firstName}`, `صباح الخير، ${firstName}`)}
+                  : (() => {
+                    const hour = new Date().getHours();
+                    const greeting = hour < 12 ? t('Good morning', 'صباح الخير') : hour < 17 ? t('Good afternoon', 'مساء الخير') : t('Good evening', 'مساء الخير');
+                    return `${greeting}, ${firstName}`;
+                  })()}
               </h1>
               <div className="flex items-center gap-3 mt-1">
                 <p className="text-sm text-slate-500">
@@ -343,13 +353,12 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
+            <TabsList className="grid w-full grid-cols-6 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
               <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="profile" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
               <TabsTrigger value="applications" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Applications', 'الطلبات')}</TabsTrigger>
               <TabsTrigger value="interviews" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Interviews', 'المقابلات')}</TabsTrigger>
-              <TabsTrigger value="offers" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Offers', 'العروض')}</TabsTrigger>
               <TabsTrigger value="messages" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
                 {t('Messages', 'الرسائل')}
                 {unreadCount > 0 && (
@@ -693,10 +702,6 @@ const CandidateDashboard: React.FC = () => {
 
             <TabsContent value="interviews" className="space-y-6 mt-6">
               <CandidateInterviews />
-            </TabsContent>
-
-            <TabsContent value="offers" className="space-y-6 mt-6">
-              <CandidateOffers />
             </TabsContent>
 
             <TabsContent value="messages" className="space-y-6 mt-6">

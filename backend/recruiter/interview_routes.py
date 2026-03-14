@@ -245,8 +245,8 @@ def get_interview_details(interview_id):
                 cs.match_score as shortlist_match_score
             FROM interview_schedules i
             LEFT JOIN candidate_shortlist cs ON i.shortlist_id = cs.shortlist_id
-            WHERE i.interview_id = %s
-        """, (interview_id,))
+            WHERE i.interview_id = %s OR i.id::text = %s
+        """, (interview_id, str(interview_id)))
         
         interview = cur.fetchone()
         conn.close()
@@ -339,8 +339,8 @@ def cancel_interview(interview_id):
                             COALESCE(jp.title, 'Job Opportunity') as job_title
                         FROM interview_schedules i
                         LEFT JOIN job_postings jp ON i.jd_id = jp.jd_id::text
-                        WHERE i.interview_id = %s
-                    """, (interview_id,))
+                        WHERE i.interview_id = %s OR i.id::text = %s
+                    """, (interview_id, str(interview_id)))
                     context = cur.fetchone()
                 finally:
                     ctx_conn.close()
@@ -432,19 +432,53 @@ def reschedule_interview(interview_id):
                         'new_time', %s
                     )::jsonb
                 )
-                WHERE interview_id = %s
+                WHERE interview_id = %s OR id::text = %s
             """, (
                 datetime.now().isoformat(),
                 data['reason'],
                 data['scheduled_date'],
                 data['scheduled_time'],
-                interview_id
+                interview_id,
+                str(interview_id)
             ))
             conn.commit()
         
         conn.close()
         
         if success:
+            # Send reschedule notification to the candidate
+            try:
+                from services.communication_service import communication_service, NotificationType
+                
+                ctx_conn = get_db_connection()
+                try:
+                    cur = ctx_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                    cur.execute("""
+                        SELECT i.candidate_id, i.interview_title,
+                               COALESCE(jp.title, 'Job Opportunity') as job_title
+                        FROM interview_schedules i
+                        LEFT JOIN job_postings jp ON i.jd_id = jp.jd_id::text
+                        WHERE i.interview_id = %s OR i.id::text = %s
+                    """, (interview_id, str(interview_id)))
+                    context = cur.fetchone()
+                finally:
+                    ctx_conn.close()
+                
+                if context:
+                    communication_service.create_notification(
+                        user_id=str(context['candidate_id']),
+                        notification_type=NotificationType.INTERVIEW_RESCHEDULED,
+                        metadata={
+                            'interview_title': context.get('interview_title', 'Interview'),
+                            'job_title': context.get('job_title', 'Job Opportunity'),
+                            'new_date': data.get('scheduled_date', ''),
+                            'new_time': data.get('scheduled_time', ''),
+                        }
+                    )
+                    logger.info("Reschedule notification sent to candidate %s" % context['candidate_id'])
+            except Exception as notif_err:
+                logger.error("Failed to send reschedule notification: %s" % notif_err)
+            
             return jsonify({
                 'success': True,
                 'message': 'Interview rescheduled successfully'
@@ -569,8 +603,8 @@ def send_interview_reminder(interview_id):
         cur.execute("""
             SELECT i.*
             FROM interview_schedules i
-            WHERE i.interview_id = %s
-        """, (interview_id,))
+            WHERE i.interview_id = %s OR i.id::text = %s
+        """, (interview_id, str(interview_id)))
         
         interview = cur.fetchone()
         
@@ -587,8 +621,8 @@ def send_interview_reminder(interview_id):
             UPDATE interview_schedules
             SET reminder_sent = TRUE,
                 reminder_sent_at = CURRENT_TIMESTAMP
-            WHERE interview_id = %s
-        """, (interview_id,))
+            WHERE interview_id = %s OR id::text = %s
+        """, (interview_id, str(interview_id)))
         
         conn.commit()
         conn.close()

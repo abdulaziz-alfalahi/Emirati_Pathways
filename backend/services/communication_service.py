@@ -782,10 +782,18 @@ class CommunicationService:
                 params = [user_id]
                 
                 if role:
-                    # If role specified:
-                    # Show conversations matching the role OR where role is NULL (legacy/unspecified)
-                    query += " AND (role = %s OR role IS NULL)"
-                    params.append(role)
+                    # Map equivalent role names: frontend may send 'candidate' but DB stores 'job_seeker'
+                    role_variants = {
+                        'candidate': ['candidate', 'job_seeker', 'jobseeker'],
+                        'job_seeker': ['candidate', 'job_seeker', 'jobseeker'],
+                        'jobseeker': ['candidate', 'job_seeker', 'jobseeker'],
+                        'recruiter': ['recruiter', 'hr_manager'],
+                        'hr_manager': ['recruiter', 'hr_manager'],
+                    }
+                    roles_to_match = role_variants.get(role, [role])
+                    placeholders = ', '.join(['%s'] * len(roles_to_match))
+                    query += f" AND (role IN ({placeholders}) OR role IS NULL)"
+                    params.extend(roles_to_match)
                 
                 cur.execute(query, tuple(params))
                 rows = cur.fetchall()
@@ -806,8 +814,6 @@ class CommunicationService:
             logger.error(f"Error getting conversations: {e}")
             return []
         finally:
-            conn.close()
-
             conn.close()
             
     def archive_conversation_for_user(self, conversation_id: str, user_id: str) -> bool:

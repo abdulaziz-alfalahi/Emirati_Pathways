@@ -3,10 +3,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Send, Link as LinkIcon, Clock, CheckCircle, XCircle, AlertTriangle, X, User, Briefcase, DollarSign, Calendar, Gift } from 'lucide-react';
+import { Eye, Send, Link as LinkIcon, Clock, CheckCircle, XCircle, AlertTriangle, X, User, Briefcase, DollarSign, Calendar, Gift, MessageCircle, Download, Mail, UserCheck } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface ApprovalStats {
   total: number;
@@ -30,6 +33,11 @@ export default function OffersPage() {
   const [selectedOfferDetails, setSelectedOfferDetails] = useState<any>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showCounterForm, setShowCounterForm] = useState(false);
+  const [counterSalary, setCounterSalary] = useState('');
+  const [counterMessage, setCounterMessage] = useState('');
+  const [withdrawConfirm, setWithdrawConfirm] = useState(false);
 
   // Get user data from localStorage for data isolation
   const getUserData = () => {
@@ -48,54 +56,82 @@ export default function OffersPage() {
     try {
       setLoading(true);
       setError(null);
+      
+      const allOffers: any[] = [];
+      const seenIds = new Set<string>();
 
-      // CRITICAL: Block data loading when company_id is missing to prevent data leakage
-      if (!companyId) {
-        console.warn('No company_id found - skipping offers fetch to prevent data leakage');
-        setOffers([]);
-        setTotal(0);
-        setLoading(false);
-        return;
-      }
-
-      // Build company_id parameter for data isolation
-      const companyParam = `?company_id=${companyId}`;
-
-      // Try the recruiter offers endpoint first (queries both offers and job_offers tables)
+      // Primary: fetch from /api/recruiter/offers (queries job_offers table, filtered by JWT)
       try {
-        const res = await restClient.get(`/api/recruiter/offers/approvals/all${companyParam}`);
+        const res = await restClient.get('/api/recruiter/offers');
         if (res.data?.success && res.data?.data?.length > 0) {
-          // Transform approval data to offer format
-          const transformedOffers = res.data.data.map((item: any) => ({
-            id: item.offer_id || item.id,
-            job_posting_id: item.job_posting_id,
-            candidate_id: item.candidate_id,
-            status: item.status,
-            created_at: item.created_at || item.request_date,
-            job_title: item.position || item.job_title,
-            candidate_first_name: item.candidate_name?.split(' ')[0] || '',
-            candidate_last_name: item.candidate_name?.split(' ').slice(1).join(' ') || '',
-            offer_data: item.offer_data || {
-              salary: item.salary,
-              benefits: item.benefits
+          for (const item of res.data.data) {
+            const id = item.id || item.offer_id;
+            if (id && !seenIds.has(id)) {
+              seenIds.add(id);
+              allOffers.push({
+                id,
+                job_posting_id: item.jd_id || item.job_posting_id,
+                candidate_id: item.candidate_id,
+                status: item.status,
+                created_at: item.created_at || item.offer_date,
+                job_title: item.position_title || item.job_title,
+                candidate_first_name: item.candidate_first_name || item.candidate_name?.split(' ')[0] || '',
+                candidate_last_name: item.candidate_last_name || item.candidate_name?.split(' ').slice(1).join(' ') || '',
+                salary_amount: item.salary_amount,
+                salary_currency: item.salary_currency,
+                salary_period: item.salary_period,
+                employment_type: item.employment_type,
+                start_date: item.start_date,
+                expiry_date: item.expiry_date,
+                work_location: item.work_location,
+                benefits: item.benefits,
+                candidate_response: item.candidate_response,
+                response_notes: item.response_notes,
+                response_date: item.response_date,
+                negotiation_status: item.negotiation_status,
+                notes: item.notes,
+                probation_period_months: item.probation_period_months,
+                offer_data: item.offer_data || { salary: item.salary_amount, benefits: item.benefits }
+              });
             }
-          }));
-          setOffers(transformedOffers);
-          setTotal(transformedOffers.length);
-          return;
+          }
         }
       } catch (e) {
-        console.log('Recruiter approvals endpoint failed, trying HR offers endpoint');
+        console.log('Primary offers endpoint failed, trying fallback');
       }
 
-      // Fallback to HR offers endpoint (also needs company filter)
-      const res = await restClient.get(`/api/hr/offers/?limit=${pageSize}&offset=${(page - 1) * pageSize}&company_id=${companyId}`);
-      const json = res.data;
-      setOffers(json?.data?.offers || []);
-      setTotal(json?.data?.total_count || 0);
+      // Secondary: merge from approvals endpoint if company_id exists
+      if (companyId) {
+        try {
+          const res = await restClient.get(`/api/recruiter/offers/approvals/all?company_id=${companyId}`);
+          if (res.data?.success && res.data?.data?.length > 0) {
+            for (const item of res.data.data) {
+              const id = item.offer_id || item.id;
+              if (id && !seenIds.has(id)) {
+                seenIds.add(id);
+                allOffers.push({
+                  id,
+                  job_posting_id: item.job_posting_id,
+                  candidate_id: item.candidate_id,
+                  status: item.status,
+                  created_at: item.created_at || item.request_date,
+                  job_title: item.position || item.job_title,
+                  candidate_first_name: item.candidate_name?.split(' ')[0] || '',
+                  candidate_last_name: item.candidate_name?.split(' ').slice(1).join(' ') || '',
+                  offer_data: item.offer_data || { salary: item.salary, benefits: item.benefits }
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Approvals endpoint failed');
+        }
+      }
+
+      setOffers(allOffers);
+      setTotal(allOffers.length);
     } catch (e: any) {
       console.error('Failed to load offers:', e);
-      // Don't show error if we just have no offers
       setOffers([]);
       setTotal(0);
     } finally {
@@ -112,6 +148,63 @@ export default function OffersPage() {
     } catch (e) {
       console.error('Failed to load approval stats:', e);
     }
+  };
+
+  const handleRecruiterAction = async (action: 'accept' | 'counter' | 'withdraw' | 'hire' | 'rescind') => {
+    if (!selectedOfferDetails?.id) return;
+    try {
+      setActionLoading(true);
+      const payload: any = { action };
+      if (action === 'counter') {
+        payload.revised_salary = counterSalary || undefined;
+        payload.message = counterMessage;
+      }
+      if (action === 'withdraw') {
+        payload.message = counterMessage; // reuse for withdraw reason
+      }
+      const res = await restClient.post(`/api/recruiter/offers/${selectedOfferDetails.id}/respond`, payload);
+      if (res.data?.success) {
+        const toastMap: Record<string, { title: string; desc: string }> = {
+          accept: { title: 'Offer Accepted', desc: 'The candidate has been notified that you accepted the negotiation.' },
+          counter: { title: 'Counter Offer Sent', desc: 'The candidate has been notified with your revised offer.' },
+          withdraw: { title: 'Offer Withdrawn', desc: 'The candidate has been notified that the offer was withdrawn.' },
+          hire: { title: 'Candidate Hired! 🎉', desc: 'Congratulations! The candidate has been officially hired and notified.' },
+          rescind: { title: 'Offer Rescinded', desc: 'The candidate has been notified that the offer has been rescinded.' }
+        };
+        const msg = toastMap[action];
+        toast({ title: msg.title, description: msg.desc });
+        setDetailsDialogOpen(false);
+        setSelectedOfferDetails(null);
+        setShowCounterForm(false);
+        setCounterSalary('');
+        setCounterMessage('');
+        setWithdrawConfirm(false);
+        loadOffers();
+      } else {
+        throw new Error(res.data?.message || 'Action failed');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to perform action', variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDownloadLetter = async () => {
+    if (!selectedOfferDetails?.id) return;
+    try {
+      window.open(`/api/recruiter/offers/${selectedOfferDetails.id}/letter`, '_blank');
+      toast({ title: 'Offer Letter', description: 'Offer letter opened in a new tab. Use your browser\'s print/save feature to download.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to generate offer letter', variant: 'destructive' });
+    }
+  };
+
+  const handleMessageCandidate = () => {
+    const candidateId = selectedOfferDetails?.candidate_id;
+    setDetailsDialogOpen(false);
+    // Navigate to messages tab with candidate context
+    window.location.href = `/recruiter?tab=messages${candidateId ? `&recipientId=${candidateId}` : ''}`;
   };
 
   useEffect(() => {
@@ -181,9 +274,25 @@ export default function OffersPage() {
   const statusBadge = (status: string) => {
     const map: Record<string, { className: string; icon?: React.ReactNode }> = {
       draft: { className: 'bg-gray-100 text-gray-800 border-gray-200' },
+      pending: {
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: <Clock className="h-3 w-3 mr-1" />
+      },
       pending_approval: {
         className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
         icon: <Clock className="h-3 w-3 mr-1" />
+      },
+      withdrawn: {
+        className: 'bg-gray-100 text-gray-800 border-gray-200',
+        icon: <XCircle className="h-3 w-3 mr-1" />
+      },
+      hired: {
+        className: 'bg-teal-100 text-teal-800 border-teal-200',
+        icon: <UserCheck className="h-3 w-3 mr-1" />
+      },
+      rescinded: {
+        className: 'bg-red-100 text-red-800 border-red-200',
+        icon: <XCircle className="h-3 w-3 mr-1" />
       },
       approved: {
         className: 'bg-green-100 text-green-800 border-green-200',
@@ -198,7 +307,7 @@ export default function OffersPage() {
       declined: { className: 'bg-red-100 text-red-800 border-red-200' },
     };
     const config = map[status] || { className: 'bg-slate-100 text-slate-800 border-slate-200' };
-    const displayStatus = status === 'pending_approval' ? 'Pending Approval' : status;
+    const displayStatus = status === 'pending_approval' ? 'Pending Approval' : status === 'pending' ? 'Pending' : status === 'withdrawn' ? 'Withdrawn' : status === 'hired' ? 'Hired' : status === 'rescinded' ? 'Rescinded' : status;
 
     return (
       <Badge variant="outline" className={`${config.className} flex items-center`}>
@@ -232,7 +341,7 @@ export default function OffersPage() {
   // Filter offers based on active tab
   const filteredOffers = sortedOffers.filter(o => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'pending') return o.status === 'pending_approval';
+    if (activeTab === 'pending') return o.status === 'pending_approval' || o.status === 'pending';
     if (activeTab === 'approved') return o.status === 'approved';
     if (activeTab === 'rejected') return o.status === 'rejected';
     return true;
@@ -382,8 +491,16 @@ export default function OffersPage() {
                         try {
                           setDetailsLoading(true);
                           setDetailsDialogOpen(true);
-                          const res = await restClient.get(`/api/hr/offers/${o.id}`);
-                          setSelectedOfferDetails(res.data?.data || res.data);
+                          // The offer data is already loaded from the list; use it directly
+                          // Try to enrich from API if possible, but fall back to list data
+                          let details = o;
+                          try {
+                            const res = await restClient.get(`/api/hr/offers/${o.id}`);
+                            if (res.data?.data) details = { ...o, ...res.data.data };
+                          } catch {
+                            // API enrichment failed (e.g. OFR-* IDs), use list data as-is
+                          }
+                          setSelectedOfferDetails(details);
                         } catch (err: any) {
                           toast({ title: 'Error loading offer', description: err?.message || 'Failed to load offer details', variant: 'destructive' });
                           setDetailsDialogOpen(false);
@@ -411,7 +528,13 @@ export default function OffersPage() {
                       {o.status === 'rejected' && (
                         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
                           <XCircle className="h-3 w-3 mr-1" />
-                          Rejected by HR
+                          {o.candidate_response === 'rejected' || o.candidate_response === 'declined' ? 'Declined by Candidate' : 'Rejected by HR'}
+                        </Badge>
+                      )}
+                      {o.status === 'declined' && (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Declined by Candidate
                         </Badge>
                       )}
 
@@ -451,7 +574,15 @@ export default function OffersPage() {
         </CardContent>
       </Card>
       {/* Offer Details Dialog */}
-      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+      <Dialog open={detailsDialogOpen} onOpenChange={(open) => {
+          setDetailsDialogOpen(open);
+          if (!open) {
+            setShowCounterForm(false);
+            setWithdrawConfirm(false);
+            setCounterSalary('');
+            setCounterMessage('');
+          }
+        }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -519,9 +650,9 @@ export default function OffersPage() {
                       </p>
                     </div>
                   )}
-                  {selectedOfferDetails.offer_data?.responded_at && (
+                  {(selectedOfferDetails.offer_data?.responded_at || selectedOfferDetails.response_date) && (
                     <p className="text-xs text-slate-500 mt-2 pl-6">
-                      Responded: {new Date(selectedOfferDetails.offer_data.responded_at).toLocaleString()}
+                      Responded: {new Date(selectedOfferDetails.offer_data?.responded_at || selectedOfferDetails.response_date).toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -664,6 +795,219 @@ export default function OffersPage() {
             </div>
           ) : (
             <div className="text-center py-8 text-slate-500">No offer details available.</div>
+          )}
+
+          {/* Counter Offer Form */}
+          {showCounterForm && selectedOfferDetails && (
+            <div className="border-t pt-4 space-y-4">
+              <h4 className="font-semibold flex items-center gap-2 text-amber-800">
+                <MessageCircle className="h-4 w-4" />
+                Send Counter Offer
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm text-slate-500">Current Salary</Label>
+                  <p className="font-medium text-lg">
+                    {selectedOfferDetails.salary_amount
+                      ? `${Number(selectedOfferDetails.salary_amount).toLocaleString()} ${selectedOfferDetails.salary_currency || 'AED'}`
+                      : '-'}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="revised-salary" className="text-sm">Revised Salary (AED)</Label>
+                  <Input
+                    id="revised-salary"
+                    type="number"
+                    placeholder="e.g. 210000"
+                    value={counterSalary}
+                    onChange={(e) => setCounterSalary(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="counter-message" className="text-sm">Message to Candidate</Label>
+                <Textarea
+                  id="counter-message"
+                  placeholder="Explain your counter offer..."
+                  value={counterMessage}
+                  onChange={(e) => setCounterMessage(e.target.value)}
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setShowCounterForm(false); setCounterSalary(''); setCounterMessage(''); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  disabled={actionLoading || (!counterSalary && !counterMessage)}
+                  onClick={() => handleRecruiterAction('counter')}
+                >
+                  {actionLoading ? 'Sending...' : 'Send Counter Offer'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Withdraw Confirmation */}
+          {withdrawConfirm && selectedOfferDetails && (
+            <div className="border-t pt-4 space-y-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-800 font-medium text-sm">Are you sure you want to withdraw this offer?</p>
+                <p className="text-red-600 text-xs mt-1">This action cannot be undone. The candidate will be notified.</p>
+              </div>
+              <div>
+                <Label htmlFor="withdraw-reason" className="text-sm">Reason (optional)</Label>
+                <Textarea
+                  id="withdraw-reason"
+                  placeholder="Provide a reason for withdrawing..."
+                  value={counterMessage}
+                  onChange={(e) => setCounterMessage(e.target.value)}
+                  className="mt-1"
+                  rows={2}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setWithdrawConfirm(false); setCounterMessage(''); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={actionLoading}
+                  onClick={() => handleRecruiterAction('withdraw')}
+                >
+                  {actionLoading ? 'Withdrawing...' : 'Confirm Withdrawal'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons for Negotiating Offers */}
+          {selectedOfferDetails && (selectedOfferDetails.status === 'negotiating' || selectedOfferDetails.status === 'pending' || selectedOfferDetails.status === 'sent') && !showCounterForm && !withdrawConfirm && (
+            <DialogFooter className="border-t pt-4 flex-wrap gap-2">
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={actionLoading}
+                onClick={() => handleRecruiterAction('accept')}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {actionLoading ? 'Processing...' : 'Accept Negotiation'}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                disabled={actionLoading}
+                onClick={() => {
+                  setShowCounterForm(true);
+                  setWithdrawConfirm(false);
+                  setCounterSalary(selectedOfferDetails.salary_amount?.toString() || '');
+                }}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Counter Offer
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={actionLoading}
+                onClick={() => {
+                  setWithdrawConfirm(true);
+                  setShowCounterForm(false);
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Withdraw Offer
+              </Button>
+            </DialogFooter>
+          )}
+          {/* Action Buttons for Accepted Offers */}
+          {selectedOfferDetails && selectedOfferDetails.status === 'accepted' && !withdrawConfirm && (
+            <DialogFooter className="border-t pt-4 flex-wrap gap-2">
+              <Button
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={actionLoading}
+                onClick={() => handleRecruiterAction('hire')}
+              >
+                <UserCheck className="h-4 w-4 mr-2" />
+                {actionLoading ? 'Processing...' : 'Confirm Hire'}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                onClick={handleDownloadLetter}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Offer Letter
+              </Button>
+              <Button
+                variant="outline"
+                className="border-green-300 text-green-700 hover:bg-green-50"
+                onClick={handleMessageCandidate}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Message Candidate
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={actionLoading}
+                onClick={() => {
+                  setWithdrawConfirm(true);
+                  setShowCounterForm(false);
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Rescind Offer
+              </Button>
+            </DialogFooter>
+          )}
+
+          {/* Rescind Confirmation (reuse withdraw confirm UI) */}
+          {withdrawConfirm && selectedOfferDetails && selectedOfferDetails.status === 'accepted' && (
+            <div className="border-t pt-4 space-y-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-800 font-medium text-sm">Are you sure you want to rescind this accepted offer?</p>
+                <p className="text-red-600 text-xs mt-1">This action cannot be undone. The candidate will be notified.</p>
+              </div>
+              <div>
+                <Label htmlFor="rescind-reason" className="text-sm">Reason (optional)</Label>
+                <Textarea
+                  id="rescind-reason"
+                  placeholder="Provide a reason for rescinding..."
+                  value={counterMessage}
+                  onChange={(e) => setCounterMessage(e.target.value)}
+                  className="mt-1"
+                  rows={2}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setWithdrawConfirm(false); setCounterMessage(''); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={actionLoading}
+                  onClick={() => handleRecruiterAction('rescind')}
+                >
+                  {actionLoading ? 'Rescinding...' : 'Confirm Rescind'}
+                </Button>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

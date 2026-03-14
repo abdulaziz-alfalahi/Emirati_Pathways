@@ -31,6 +31,7 @@ import {
   Mail
 } from 'lucide-react';
 import { formatCurrency } from '@/utils/currency';
+import { formatDateFromString } from '@/utils/dateFormat';
 
 interface Offer {
   id: string;
@@ -50,6 +51,10 @@ interface Offer {
   expiry_date: string | null;
   recruiter_name: string;
   recruiter_email: string | null;
+  candidate_response: string | null;
+  response_notes: string | null;
+  negotiation_notes: string | null;
+  negotiation_status: string | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -66,6 +71,7 @@ export const CandidateOffers: React.FC = () => {
   const isRTL = i18n.language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [csOffers, setCsOffers] = useState<any[]>([]);
   const [stats, setStats] = useState<OfferStats>({ total: 0, pending: 0, accepted: 0, declined: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,17 +119,41 @@ export const CandidateOffers: React.FC = () => {
         }
       }
 
-      const [offersRes, statsRes] = await Promise.allSettled([
+      const [offersRes, statsRes, csRes] = await Promise.allSettled([
         restClient.get(`/api/candidate/offers${candidateId ? `?candidate_id=${candidateId}` : ''}`),
-        restClient.get(`/api/candidate/offers/stats${candidateId ? `?candidate_id=${candidateId}` : ''}`)
+        restClient.get(`/api/candidate/offers/stats${candidateId ? `?candidate_id=${candidateId}` : ''}`),
+        restClient.get('/api/career-services/my-applications')
       ]);
 
       if (offersRes.status === 'fulfilled' && offersRes.value.data?.success) {
         setOffers(offersRes.value.data.data || []);
       }
 
+      // Career services accepted offers (internships/gigs)
+      let csAccepted: any[] = [];
+      if (csRes.status === 'fulfilled' && csRes.value.data?.success) {
+        csAccepted = (csRes.value.data.data.applications || []).filter(
+          (a: any) => a.status === 'offer' || a.status === 'accepted'
+        );
+        setCsOffers(csAccepted);
+      }
+
       if (statsRes.status === 'fulfilled' && statsRes.value.data?.success) {
-        setStats(statsRes.value.data.data);
+        const s = statsRes.value.data.data;
+        // Add CS offers to the stats
+        setStats({
+          total: s.total + csAccepted.length,
+          pending: s.pending,
+          accepted: s.accepted + csAccepted.length,
+          declined: s.declined
+        });
+      } else {
+        // If stats endpoint fails, compute from CS offers alone
+        setStats(prev => ({
+          ...prev,
+          total: prev.total + csAccepted.length,
+          accepted: prev.accepted + csAccepted.length
+        }));
       }
     } catch (err) {
       setError(t('Failed to load offers', 'فشل تحميل العروض'));
@@ -186,12 +216,13 @@ export const CandidateOffers: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
+      pending: { color: 'bg-blue-100 text-blue-700', icon: <Clock className="h-3 w-3" />, label: t('Pending Response', 'بانتظار الرد') },
       sent: { color: 'bg-blue-100 text-blue-700', icon: <Clock className="h-3 w-3" />, label: t('Pending Response', 'بانتظار الرد') },
       accepted: { color: 'bg-green-100 text-green-700', icon: <CheckCircle className="h-3 w-3" />, label: t('Accepted', 'مقبول') },
       declined: { color: 'bg-red-100 text-red-700', icon: <XCircle className="h-3 w-3" />, label: t('Declined', 'مرفوض') },
       negotiating: { color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="h-3 w-3" />, label: t('Negotiating', 'جاري التفاوض') }
     };
-    const { color, icon, label } = config[status] || config.sent;
+    const { color, icon, label } = config[status] || config.pending;
     return (
       <Badge className={`${color} flex items-center gap-1`}>
         {icon}
@@ -218,7 +249,7 @@ export const CandidateOffers: React.FC = () => {
   };
 
   const filteredOffers = offers.filter(offer => {
-    if (activeTab === 'pending') return offer.status === 'sent' || offer.status === 'negotiating';
+    if (activeTab === 'pending') return offer.status === 'pending' || offer.status === 'sent' || offer.status === 'negotiating';
     if (activeTab === 'accepted') return offer.status === 'accepted';
     if (activeTab === 'declined') return offer.status === 'declined';
     return true;
@@ -381,7 +412,7 @@ export const CandidateOffers: React.FC = () => {
                               )}
                             </div>
                             <p className="text-xs text-gray-500">
-                              {t('Received:', 'استُلم في:')} {new Date(offer.created_at).toLocaleDateString()}
+                              {t('Received:', 'استُلم في:')} {formatDateFromString(offer.created_at)}
                               {offer.recruiter_name && ` • ${t('From:', 'من:')} ${offer.recruiter_name}`}
                             </p>
                             {offer.expiry_date && offer.status === 'sent' && (() => {
@@ -408,6 +439,58 @@ export const CandidateOffers: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Internship & Gig Offers */}
+      {csOffers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              {t('Internship & Gig Offers', 'عروض التدريب والعمل الحر')}
+            </CardTitle>
+            <CardDescription>
+              {t('Accepted internship and gig applications', 'طلبات التدريب والعمل الحر المقبولة')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {csOffers.map((app: any, idx: number) => (
+                <Card key={`cs-${idx}`} className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold">{app.jobTitle}</h3>
+                          <Badge className={app.application_type === 'internship' ? 'bg-teal-100 text-teal-800' : 'bg-purple-100 text-purple-800'}>
+                            {app.application_type === 'internship' ? t('Internship', 'تدريب') : t('Gig', 'عمل حر')}
+                          </Badge>
+                          <Badge className="bg-green-100 text-green-700 flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            {t('Accepted', 'مقبول')}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <Building className="h-4 w-4" />
+                            {app.company || 'Unknown'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {app.location || 'UAE'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {t('Applied:', 'تم التقديم:')} {formatDateFromString(app.appliedDate)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Offer Details Dialog */}
       <Dialog open={showOfferDialog} onOpenChange={setShowOfferDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh]">
@@ -425,7 +508,7 @@ export const CandidateOffers: React.FC = () => {
             <ScrollArea className="max-h-[60vh] pr-4">
               <div className="space-y-6 py-4">
                 {/* Status Banner */}
-                {selectedOffer.status === 'sent' && (
+                {(selectedOffer.status === 'pending' || selectedOffer.status === 'sent') && (
                   <Alert className="bg-blue-50 border-blue-200">
                     <Clock className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-blue-800">
@@ -434,7 +517,7 @@ export const CandidateOffers: React.FC = () => {
                   </Alert>
                 )}
                 {/* Expiry Warning */}
-                {selectedOffer.expiry_date && (selectedOffer.status === 'sent' || selectedOffer.status === 'negotiating') && (() => {
+                {selectedOffer.expiry_date && (selectedOffer.status === 'pending' || selectedOffer.status === 'sent' || selectedOffer.status === 'negotiating') && (() => {
                   const expiry = getExpiryInfo(selectedOffer.expiry_date);
                   if (!expiry) return null;
                   return expiry.urgent ? (
@@ -450,7 +533,7 @@ export const CandidateOffers: React.FC = () => {
                     <Alert className="bg-amber-50 border-amber-200">
                       <Clock className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-amber-800">
-                        {t(`This offer expires in ${expiry.days} days`, `ينتهي هذا العرض خلال ${expiry.days} يوم`)} ({new Date(selectedOffer.expiry_date!).toLocaleDateString()}).
+                        {t(`This offer expires in ${expiry.days} days`, `ينتهي هذا العرض خلال ${expiry.days} يوم`)} ({formatDateFromString(selectedOffer.expiry_date)}).
                       </AlertDescription>
                     </Alert>
                   );
@@ -460,6 +543,28 @@ export const CandidateOffers: React.FC = () => {
                     <PartyPopper className="h-4 w-4 text-green-600" />
                     <AlertDescription className="text-green-800">
                       {t('Congratulations! You have accepted this offer.', 'تهانينا! لقد قبلت هذا العرض.')}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {/* Counter Offer from Recruiter */}
+                {selectedOffer.status === 'negotiating' && (selectedOffer.negotiation_status === 'counter_offered' || selectedOffer.negotiation_notes) && (
+                  <Alert className="bg-amber-50 border-amber-200">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800">
+                      <span className="font-semibold block mb-1">{t('Counter Offer Received from Recruiter', 'تم استلام عرض مضاد من مسؤول التوظيف')}</span>
+                      {selectedOffer.negotiation_notes && (
+                        <p className="italic mt-1">"{selectedOffer.negotiation_notes}"</p>
+                      )}
+                      <p className="mt-2 text-sm">{t('Review the updated offer details below and respond.', 'راجع تفاصيل العرض المحدثة أدناه وقم بالرد.')}</p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {/* Negotiating status (no counter offer yet) */}
+                {selectedOffer.status === 'negotiating' && !selectedOffer.negotiation_notes && selectedOffer.negotiation_status !== 'counter_offered' && (
+                  <Alert className="bg-amber-50 border-amber-200">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800">
+                      {t('You have started negotiations for this offer. Awaiting the recruiter\'s response.', 'لقد بدأت المفاوضات بشأن هذا العرض. في انتظار رد مسؤول التوظيف.')}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -598,7 +703,7 @@ export const CandidateOffers: React.FC = () => {
                 {t('Message Recruiter', 'مراسلة مسؤول التوظيف')}
               </Button>
             )}
-            {(selectedOffer?.status === 'sent' || selectedOffer?.status === 'negotiating') && (
+            {(selectedOffer?.status === 'pending' || selectedOffer?.status === 'sent' || selectedOffer?.status === 'negotiating') && (
               <>
                 <Button
                   variant="destructive"

@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { useAuth } from '@/context/AuthContext';
+import { restClient } from '@/utils/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, BrainCircuit, Activity, TrendingUp, AlertTriangle, Smile, Frown, Meh } from 'lucide-react';
+import { ArrowLeft, BrainCircuit, Activity, TrendingUp, AlertTriangle, Smile, Frown, Meh, Mic, MicOff } from 'lucide-react';
 
 // ─── AI Analysis Types ────────────────────────────────────────────
 interface AnalysisData {
@@ -19,66 +20,190 @@ interface AnalysisData {
     speaking_pace: string;
     filler_word_count: number;
     key_phrases: string[];
+    overall_impression?: string;
 }
 
-// ─── AI Analysis Sidebar ──────────────────────────────────────────
+// ─── AI Analysis Sidebar (Web Speech API + Gemini) ────────────────
 const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
     const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
     const [history, setHistory] = useState<{ time: string; score: number }[]>([]);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isListening, setIsListening] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const [sttSupported, setSttSupported] = useState(true);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    
+    const recognitionRef = useRef<any>(null);
+    const transcriptRef = useRef('');
+    const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const startTimeRef = useRef(Date.now());
+    const retryCountRef = useRef(0);
+    const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const stoppedRef = useRef(false); // true = user/component explicitly stopped
 
+    // Initialize Web Speech API
     useEffect(() => {
-        // Start analysis simulation after a brief delay
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            console.warn('Web Speech API not supported in this browser');
+            setSttSupported(false);
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            console.log('🎙️ Speech recognition started');
+            retryCountRef.current = 0; // Reset on successful start
+            setIsListening(true);
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+            // Don't auto-restart if explicitly stopped or unmounted
+            if (stoppedRef.current || !recognitionRef.current) return;
+            
+            // Don't restart if too many consecutive failures
+            if (retryCountRef.current >= 5) {
+                console.warn('🎙️ Too many speech recognition failures, stopping retries');
+                return;
+            }
+
+            retryCountRef.current += 1;
+            // Delay restart by 3 seconds to avoid rapid loop
+            restartTimerRef.current = setTimeout(() => {
+                if (!stoppedRef.current && recognitionRef.current) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        // Already started or other error
+                    }
+                }
+            }, 3000);
+        };
+
+        recognition.onerror = (event: any) => {
+            if (event.error === 'not-allowed') {
+                console.warn('🎙️ Microphone access denied');
+                setSttSupported(false);
+                stoppedRef.current = true; // Don't retry
+            } else if (event.error === 'aborted') {
+                // Silently handle — often caused by component re-mount or mic conflict
+            } else if (event.error === 'no-speech') {
+                // Normal — no speech detected, recognition will auto-end and restart
+            } else {
+                console.warn('Speech recognition error:', event.error);
+            }
+        };
+
+        recognition.onresult = (event: any) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const result = event.results[i];
+                if (result.isFinal) {
+                    finalTranscript += result[0].transcript + ' ';
+                }
+            }
+
+            if (finalTranscript) {
+                transcriptRef.current += finalTranscript;
+                setTranscript(transcriptRef.current);
+            }
+        };
+
+        recognitionRef.current = recognition;
+        stoppedRef.current = false;
+
+        // Start listening after a short delay to let VideoRoom claim the mic first
         const startDelay = setTimeout(() => {
-            fetchAnalysis();
-            intervalRef.current = setInterval(fetchAnalysis, 4000);
+            try {
+                recognition.start();
+            } catch (e) {
+                console.warn('Failed to start speech recognition:', e);
+            }
         }, 2000);
 
+        // Set up analysis interval — send transcript to Gemini every 30 seconds
+        analysisIntervalRef.current = setInterval(() => {
+            if (transcriptRef.current.trim().length > 20) {
+                analyzeTranscript();
+            }
+        }, 30000);
+
+        // Also do an initial analysis after 15 seconds if there's content
+        const initialTimeout = setTimeout(() => {
+            if (transcriptRef.current.trim().length > 10) {
+                analyzeTranscript();
+            }
+        }, 15000);
+
         return () => {
+            stoppedRef.current = true;
             clearTimeout(startDelay);
-            if (intervalRef.current) clearInterval(intervalRef.current);
+            if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+            if (recognitionRef.current) {
+                try { recognition.stop(); } catch {}
+                recognitionRef.current = null;
+            }
+            if (analysisIntervalRef.current) {
+                clearInterval(analysisIntervalRef.current);
+            }
+            clearTimeout(initialTimeout);
         };
     }, [sessionId]);
 
-    const fetchAnalysis = () => {
-        const sentiments = ['Positive', 'Neutral', 'Confident', 'Enthusiastic', 'Thoughtful'];
-        const bodyLanguages = ['Open & Relaxed', 'Attentive', 'Engaged', 'Slightly Nervous', 'Confident Posture'];
-        const paces = ['Natural', 'Measured', 'Slightly Fast', 'Well-Paced', 'Deliberate'];
-        const topicPool = [
-            'Technical Skills', 'Leadership', 'Problem Solving', 'Team Collaboration',
-            'Project Management', 'Communication', 'Innovation', 'Domain Expertise',
-            'Cultural Fit', 'Career Goals', 'Adaptability', 'Strategic Thinking'
-        ];
-        const phrasePool = [
-            '"I led a team of..."', '"Our approach was..."', '"The key challenge..."',
-            '"I implemented..."', '"The results showed..."', '"I collaborated with..."',
-            '"My experience in..."', '"I\'m passionate about..."'
-        ];
+    const analyzeTranscript = useCallback(async () => {
+        const currentTranscript = transcriptRef.current.trim();
+        if (!currentTranscript || currentTranscript.length < 10 || isAnalyzing) return;
 
-        // Shuffle & pick random subsets
-        const shuffled = [...topicPool].sort(() => 0.5 - Math.random());
-        const shuffledPhrases = [...phrasePool].sort(() => 0.5 - Math.random());
+        setIsAnalyzing(true);
+        const elapsedMinutes = Math.round((Date.now() - startTimeRef.current) / 60000);
 
-        const newAnalysis: AnalysisData = {
-            speech_quality: 78 + Math.random() * 18,
-            sentiment: sentiments[Math.floor(Math.random() * sentiments.length)],
-            sentiment_score: 0.6 + Math.random() * 0.35,
-            engagement: 75 + Math.random() * 20,
-            confidence: 72 + Math.random() * 22,
-            topics: shuffled.slice(0, 3 + Math.floor(Math.random() * 2)),
-            body_language: bodyLanguages[Math.floor(Math.random() * bodyLanguages.length)],
-            speaking_pace: paces[Math.floor(Math.random() * paces.length)],
-            filler_word_count: Math.floor(Math.random() * 5),
-            key_phrases: shuffledPhrases.slice(0, 2),
-        };
+        try {
+            const response = await restClient.post(
+                `/api/video-interview/sessions/${sessionId}/analyze-transcript`,
+                {
+                    transcript: currentTranscript,
+                    job_title: 'Interview Position',
+                    elapsed_minutes: elapsedMinutes
+                }
+            );
 
-        setAnalysis(newAnalysis);
-        setHistory(prev => {
-            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const updated = [...prev, { time: now, score: Math.round((newAnalysis.speech_quality + newAnalysis.engagement + newAnalysis.confidence) / 3) }];
-            return updated.slice(-8); // Keep last 8 data points
-        });
-    };
+            if (response.data.success && response.data.analysis) {
+                const a = response.data.analysis;
+                const newAnalysis: AnalysisData = {
+                    speech_quality: a.speech_quality ?? 75,
+                    engagement: a.engagement ?? 75,
+                    confidence: a.confidence ?? 75,
+                    sentiment: a.sentiment ?? 'Neutral',
+                    sentiment_score: a.sentiment_score ?? 0.6,
+                    speaking_pace: a.speaking_pace ?? 'Natural',
+                    body_language: a.body_language ?? 'Attentive',
+                    filler_word_count: a.filler_word_count ?? 0,
+                    topics: a.topics ?? [],
+                    key_phrases: a.key_phrases ?? [],
+                    overall_impression: a.overall_impression,
+                };
+                setAnalysis(newAnalysis);
+
+                // Update score history
+                setHistory(prev => {
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const avgScore = Math.round((newAnalysis.speech_quality + newAnalysis.engagement + newAnalysis.confidence) / 3);
+                    const updated = [...prev, { time: now, score: avgScore }];
+                    return updated.slice(-8);
+                });
+            }
+        } catch (error) {
+            console.error('Analysis error:', error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [sessionId, isAnalyzing]);
 
     const getSentimentIcon = (sentiment: string) => {
         if (['Positive', 'Enthusiastic', 'Confident'].includes(sentiment)) return <Smile className="h-4 w-4 text-green-500" />;
@@ -103,9 +228,22 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
             {/* Main Metrics */}
             <Card className="bg-white/95 backdrop-blur-sm border-slate-200 shadow-sm">
                 <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                        <BrainCircuit className="h-5 w-5 text-purple-600" />
-                        Real-time AI Analysis
+                    <CardTitle className="flex items-center justify-between text-base">
+                        <div className="flex items-center gap-2">
+                            <BrainCircuit className="h-5 w-5 text-purple-600" />
+                            Real-time AI Analysis
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {isListening ? (
+                                <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 animate-pulse">
+                                    <Mic className="h-3 w-3 mr-1" /> Live
+                                </Badge>
+                            ) : (
+                                <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-500">
+                                    <MicOff className="h-3 w-3 mr-1" /> Off
+                                </Badge>
+                            )}
+                        </div>
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 px-4 pb-4">
@@ -116,7 +254,7 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-600">Speech Clarity</span>
                                     <span className={`font-semibold ${getScoreColor(analysis.speech_quality)}`}>
-                                        {analysis.speech_quality.toFixed(0)}%
+                                        {analysis.speech_quality}%
                                     </span>
                                 </div>
                                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -130,7 +268,7 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-600">Engagement</span>
                                     <span className={`font-semibold ${getScoreColor(analysis.engagement)}`}>
-                                        {analysis.engagement.toFixed(0)}%
+                                        {analysis.engagement}%
                                     </span>
                                 </div>
                                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -144,7 +282,7 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-600">Confidence</span>
                                     <span className={`font-semibold ${getScoreColor(analysis.confidence)}`}>
-                                        {analysis.confidence.toFixed(0)}%
+                                        {analysis.confidence}%
                                     </span>
                                 </div>
                                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -166,8 +304,24 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                         </>
                     ) : (
                         <div className="text-center py-8 text-slate-400">
-                            <Activity className="h-6 w-6 mx-auto mb-2 opacity-50 animate-pulse" />
-                            <p className="text-sm">Initializing AI analysis...</p>
+                            {!sttSupported ? (
+                                <>
+                                    <MicOff className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm">Speech recognition not supported.</p>
+                                    <p className="text-xs mt-1">Use Chrome or Edge for live analysis.</p>
+                                </>
+                            ) : isListening ? (
+                                <>
+                                    <Mic className="h-6 w-6 mx-auto mb-2 opacity-50 animate-pulse text-green-500" />
+                                    <p className="text-sm">Listening for speech...</p>
+                                    <p className="text-xs mt-1">Start speaking to see AI analysis</p>
+                                </>
+                            ) : (
+                                <>
+                                    <Activity className="h-6 w-6 mx-auto mb-2 opacity-50 animate-pulse" />
+                                    <p className="text-sm">Initializing AI analysis...</p>
+                                </>
+                            )}
                         </div>
                     )}
                 </CardContent>
@@ -198,6 +352,14 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                             <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-100">
                                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
                                 <span>{analysis.filler_word_count} filler words detected</span>
+                            </div>
+                        )}
+
+                        {/* Overall Impression */}
+                        {analysis.overall_impression && (
+                            <div className="p-2 bg-purple-50 rounded-md border border-purple-100 text-xs text-purple-800">
+                                <span className="font-semibold block mb-1">AI Impression</span>
+                                {analysis.overall_impression}
                             </div>
                         )}
 
@@ -254,13 +416,38 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                 </Card>
             )}
 
-            {/* Live indicator */}
-            {analysis && (
-                <div className="flex items-center gap-2 text-xs text-slate-500 px-1">
-                    <Activity className="h-3 w-3 animate-pulse text-green-500" />
-                    Analyzing in real-time...
-                </div>
+            {/* Live Transcript Mini-View */}
+            {transcript && (
+                <Card className="bg-white/95 backdrop-blur-sm border-slate-200 shadow-sm">
+                    <CardContent className="px-4 py-3">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Live Transcript</h4>
+                        <div className="max-h-20 overflow-y-auto text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                            {transcript.slice(-300)}
+                            {transcript.length > 300 && '...'}
+                        </div>
+                    </CardContent>
+                </Card>
             )}
+
+            {/* Status indicator */}
+            <div className="flex items-center gap-2 text-xs text-slate-500 px-1">
+                {isAnalyzing ? (
+                    <>
+                        <BrainCircuit className="h-3 w-3 animate-spin text-purple-500" />
+                        Analyzing with Gemini AI...
+                    </>
+                ) : analysis ? (
+                    <>
+                        <Activity className="h-3 w-3 animate-pulse text-green-500" />
+                        Powered by Gemini AI • Updates every 30s
+                    </>
+                ) : isListening ? (
+                    <>
+                        <Mic className="h-3 w-3 animate-pulse text-green-500" />
+                        Listening for speech...
+                    </>
+                ) : null}
+            </div>
         </div>
     );
 };

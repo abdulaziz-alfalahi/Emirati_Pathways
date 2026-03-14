@@ -337,21 +337,12 @@ const CandidateProfilePage: React.FC = () => {
                   <Badge variant={getActivityBadgeVariant(candidate.activity_status)} className="text-xs">
                     {candidate.activity_status}
                   </Badge>
-                  <span className="text-sm text-gray-600">
-                    Total Applications: {candidate.total_applications}
-                  </span>
+
                 </div>
               </div>
             </div>
 
-            <Button onClick={handleMessage} disabled={loading || creatingConversation}>
-              {creatingConversation ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <MessageSquare className="h-4 w-4 mr-2" />
-              )}
-              Message Candidate
-            </Button>
+            {/* Message button removed — available via Contact & Communication section below */}
           </div>
         </div>
       </div>

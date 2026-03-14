@@ -239,11 +239,35 @@ class AICandidateMatchingEngineFinal:
             }
             
             # Convert JD to format expected by matching engine
+            # Handle requirements that may be a dict or list
+            raw_reqs = jd_data.get('requirements', [])
+            if isinstance(raw_reqs, dict):
+                # Flatten dict values: {"skills": ["Python", "React"]} -> ["Python", "React"]
+                formatted_reqs = []
+                for key, values in raw_reqs.items():
+                    if isinstance(values, list):
+                        for item in values:
+                            formatted_reqs.append(str(item) if not isinstance(item, dict) else item.get('description', str(item)))
+                    elif isinstance(values, str):
+                        formatted_reqs.append(values)
+            else:
+                formatted_reqs = [req.get('description', '') if isinstance(req, dict) else str(req) for req in raw_reqs]
+            
+            raw_resps = jd_data.get('responsibilities', [])
+            if isinstance(raw_resps, dict):
+                formatted_resps = []
+                for key, values in raw_resps.items():
+                    if isinstance(values, list):
+                        for item in values:
+                            formatted_resps.append(str(item) if not isinstance(item, dict) else item.get('description', str(item)))
+            else:
+                formatted_resps = [resp.get('description', '') if isinstance(resp, dict) else str(resp) for resp in raw_resps]
+            
             jd_formatted = {
                 'title': jd_data.get('basic_info', {}).get('title', ''),
                 'description': jd_data.get('description', ''),
-                'requirements': [req.get('description', '') if isinstance(req, dict) else str(req) for req in jd_data.get('requirements', [])],
-                'responsibilities': [resp.get('description', '') for resp in jd_data.get('responsibilities', [])],
+                'requirements': formatted_reqs,
+                'responsibilities': formatted_resps,
                 'location': jd_data.get('basic_info', {}).get('emirate', ''),
                 'job_type': jd_data.get('basic_info', {}).get('job_type', ''),
                 'experience_required': self._extract_experience_requirement(jd_data)
@@ -316,14 +340,31 @@ class AICandidateMatchingEngineFinal:
             with open('debug_direct.txt', 'a') as f:
                 f.write(f"JD Requirements: {json.dumps(jd_requirements)}\n")
             
-            self.logger.info(f"JD Requirements count: {len(jd_requirements)}")
+            self.logger.info(f"JD Requirements count: {len(jd_requirements) if isinstance(jd_requirements, list) else 'dict'}")
             required_skills = []
-            for req in jd_requirements:
-                if isinstance(req, dict):
-                    if req.get('category') == 'skills':
-                        required_skills.append(req.get('description', '').lower())
-                elif isinstance(req, str):
-                    required_skills.append(req.lower())
+            
+            # Handle dict format: {"skills": ["Python", "React"], "experience": [...]}
+            if isinstance(jd_requirements, dict):
+                # Only extract actual skills for skill matching
+                # Experience and education are handled by their own scoring functions
+                skills_list = jd_requirements.get('skills', [])
+                if isinstance(skills_list, list):
+                    for item in skills_list:
+                        if isinstance(item, str):
+                            required_skills.append(item.lower())
+                        elif isinstance(item, dict):
+                            desc = item.get('description', item.get('name', ''))
+                            if desc:
+                                required_skills.append(desc.lower())
+                elif isinstance(skills_list, str):
+                    required_skills.append(skills_list.lower())
+            elif isinstance(jd_requirements, list):
+                for req in jd_requirements:
+                    if isinstance(req, dict):
+                        if req.get('category') == 'skills':
+                            required_skills.append(req.get('description', '').lower())
+                    elif isinstance(req, str):
+                        required_skills.append(req.lower())
             
             with open('debug_direct.txt', 'a') as f:
                 f.write(f"Required Skills: {required_skills}\n")
@@ -443,43 +484,61 @@ class AICandidateMatchingEngineFinal:
     
     def _extract_experience_requirement(self, jd_data: Dict[str, Any]) -> int:
         """Extract years of experience required from JD"""
+        import re
         requirements = jd_data.get('requirements', [])
-        for req in requirements:
-            desc = ''
-            if isinstance(req, dict):
-                if req.get('category') == 'experience':
-                    desc = req.get('description', '').lower()
-            elif isinstance(req, str):
-                desc = req.lower()
-            
-            if desc:
-                # Try to extract number of years
-                import re
-                match = re.search(r'(\d+)\s*(?:years?|yrs?)', desc)
-                if match:
-                    return int(match.group(1))
+        
+        # Flatten requirements to a list of strings
+        items = []
+        if isinstance(requirements, dict):
+            for key, values in requirements.items():
+                if isinstance(values, list):
+                    items.extend([str(v) for v in values])
+                elif isinstance(values, str):
+                    items.append(values)
+        elif isinstance(requirements, list):
+            for req in requirements:
+                if isinstance(req, dict):
+                    if req.get('category') == 'experience':
+                        items.append(req.get('description', ''))
+                elif isinstance(req, str):
+                    items.append(req)
+        
+        for desc in items:
+            match = re.search(r'(\d+)\s*(?:years?|yrs?)', desc.lower())
+            if match:
+                return int(match.group(1))
         return 0
     
     def _extract_education_requirement(self, jd_data: Dict[str, Any]) -> str:
         """Extract education requirement from JD"""
         requirements = jd_data.get('requirements', [])
-        for req in requirements:
-            desc = ''
-            if isinstance(req, dict):
-                if req.get('category') == 'education':
-                    desc = req.get('description', '').lower()
-            elif isinstance(req, str):
-                desc = req.lower()
-                
-            if desc:
-                if 'phd' in desc or 'doctorate' in desc:
-                    return 'phd'
-                elif 'master' in desc:
-                    return 'master'
-                elif 'bachelor' in desc:
-                    return 'bachelor'
-                elif 'diploma' in desc:
-                    return 'diploma'
+        
+        # Flatten requirements to a list of strings
+        items = []
+        if isinstance(requirements, dict):
+            for key, values in requirements.items():
+                if isinstance(values, list):
+                    items.extend([str(v) for v in values])
+                elif isinstance(values, str):
+                    items.append(values)
+        elif isinstance(requirements, list):
+            for req in requirements:
+                if isinstance(req, dict):
+                    if req.get('category') == 'education':
+                        items.append(req.get('description', ''))
+                elif isinstance(req, str):
+                    items.append(req)
+        
+        for desc in items:
+            desc_lower = desc.lower()
+            if 'phd' in desc_lower or 'doctorate' in desc_lower:
+                return 'phd'
+            elif 'master' in desc_lower:
+                return 'master'
+            elif 'bachelor' in desc_lower:
+                return 'bachelor'
+            elif 'diploma' in desc_lower:
+                return 'diploma'
         return ''
 
 

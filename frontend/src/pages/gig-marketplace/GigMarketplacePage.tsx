@@ -9,8 +9,10 @@ import {
     Code, Palette, BarChart3, Globe, BookOpen, MessageSquare, ThumbsUp,
     Calendar, DollarSign, Shield, Target, Sparkles, PenTool, Loader2
 } from 'lucide-react';
-import { getGigs, type Gig } from '@/services/careerServicesAPI';
+import { getGigs, applyForGig, type Gig } from '@/services/careerServicesAPI';
 import { skillGraphAPI, type UserSkill } from '@/services/intelligenceAPI';
+import { useAuth } from '@/context/AuthContext';
+import toast from 'react-hot-toast';
 
 const brand = {
     primary: '#0D9488', primaryDark: '#0F766E', primarySurface: '#F0FDFA',
@@ -32,6 +34,9 @@ const GigMarketplacePage: React.FC = () => {
     const [gigs, setGigs] = useState<Gig[]>([]);
     const [loading, setLoading] = useState(true);
     const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
+    const [appliedGigs, setAppliedGigs] = useState<Set<number>>(new Set());
+    const [applyingGigId, setApplyingGigId] = useState<number | null>(null);
+    const { user } = useAuth();
 
     useEffect(() => {
         let cancelled = false;
@@ -93,6 +98,28 @@ const GigMarketplacePage: React.FC = () => {
     };
     const matchScores: Record<number, number> = {};
     gigs.forEach(g => { matchScores[g.id] = computeMatchScore(g); });
+
+    const handleApplyGig = async (gigId: number) => {
+        if (appliedGigs.has(gigId)) {
+            toast(t('You already applied for this gig', 'لقد تقدمت لهذه الفرصة بالفعل'), { icon: 'ℹ️' });
+            return;
+        }
+        setApplyingGigId(gigId);
+        try {
+            await applyForGig(gigId, user?.id ? Number(user.id) : undefined);
+            setAppliedGigs(prev => new Set(prev).add(gigId));
+            toast.success(t('Application submitted!', 'تم تقديم الطلب!'));
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || '';
+            if (msg.includes('already')) {
+                setAppliedGigs(prev => new Set(prev).add(gigId));
+                toast(t('You already applied for this gig', 'لقد تقدمت لهذه الفرصة بالفعل'), { icon: 'ℹ️' });
+            } else {
+                toast.error(t('Failed to apply', 'فشل تقديم الطلب'));
+            }
+        }
+        setApplyingGigId(null);
+    };
 
     const stats = [
         { value: `${gigs.length}+`, label: t('Active Gigs', 'فرصة عمل حرّة'), icon: Briefcase },
@@ -167,11 +194,32 @@ const GigMarketplacePage: React.FC = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: brand.textSecondary, flexWrap: 'wrap', marginBottom: 8 }}>
                                     <span style={{ fontWeight: 500, color: brand.textPrimary }}>{loc(g.company, g.company_ar)}</span>
                                     <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>{renderStars(Math.round(g.company_rating || 0))} {g.company_rating} ({g.company_reviews})</span>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {loc(g.location, g.location_ar)}</span>
+                                    <a
+                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((g.location || '') + ', UAE')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ display: 'flex', alignItems: 'center', gap: 4, color: brand.primary, textDecoration: 'none', fontWeight: 500 }}
+                                    >
+                                        <MapPin size={13} /> {loc(g.location, g.location_ar)}
+                                    </a>
                                 </div>
                                 <p style={{ fontSize: 14, color: brand.textSecondary, lineHeight: 1.6, marginBottom: 10 }}>{loc(g.description, g.description_ar)}</p>
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                                     {skills.map((s: string, j: number) => <span key={j} style={badge(cc.bg, cc.color)}>{s}</span>)}
+                                </div>
+                                {/* Location Map */}
+                                <div
+                                    style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${brand.border}`, height: 100, cursor: 'pointer' }}
+                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((g.location || '') + ', UAE')}`, '_blank')}
+                                >
+                                    <iframe
+                                        title={`Map - ${g.location}`}
+                                        width="100%"
+                                        height="100"
+                                        style={{ border: 0, pointerEvents: 'none' }}
+                                        loading="lazy"
+                                        src={`https://www.google.com/maps?q=${encodeURIComponent((g.location || '') + ', UAE')}&output=embed&z=12`}
+                                    />
                                 </div>
                             </div>
                             <div style={{ textAlign: isRTL ? 'left' : 'right', minWidth: 130 }}>
@@ -182,7 +230,25 @@ const GigMarketplacePage: React.FC = () => {
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                            <button style={{ flex: 1, padding: '10px 0', background: brand.primary, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>{t('Apply Now', 'قدّم الآن')}</button>
+                            <button
+                                onClick={() => handleApplyGig(g.id)}
+                                disabled={applyingGigId === g.id || appliedGigs.has(g.id)}
+                                style={{
+                                    flex: 1, padding: '10px 0',
+                                    background: appliedGigs.has(g.id) ? '#6B7280' : brand.primary,
+                                    color: '#fff', border: 'none', borderRadius: 10,
+                                    fontWeight: 600, fontSize: 14,
+                                    cursor: appliedGigs.has(g.id) ? 'default' : 'pointer',
+                                    opacity: applyingGigId === g.id ? 0.7 : 1,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                                }}
+                            >
+                                {applyingGigId === g.id
+                                    ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> {t('Applying...', 'جارٍ التقديم...')}</>
+                                    : appliedGigs.has(g.id)
+                                        ? <><CheckCircle size={16} /> {t('Applied', 'تم التقديم')}</>
+                                        : t('Apply Now', 'قدّم الآن')}
+                            </button>
                             <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Heart size={16} /></button>
                             <button style={{ padding: '10px 16px', background: '#F9FAFB', color: brand.textSecondary, border: `1px solid ${brand.border}`, borderRadius: 10, cursor: 'pointer' }}><Eye size={16} /></button>
                         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +10,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { restClient } from '@/utils/api';
 import {
     Plus, Briefcase, Users, Eye, EyeOff, Pencil, Trash2, Loader2,
-    GraduationCap, Clock, MapPin, Building
+    GraduationCap, Clock, MapPin, Building, ChevronDown, ChevronUp,
+    CheckCircle, XCircle, Star, Mail, Phone, MessageSquare, Calendar, ExternalLink
 } from 'lucide-react';
+import LocationPicker from '@/components/common/LocationPicker';
 
 /* ─────────────── Types ─────────────── */
 interface Posting {
@@ -39,6 +42,8 @@ interface FormData {
     company_ar: string;
     location: string;
     location_ar: string;
+    latitude: number | null;
+    longitude: number | null;
     sector: string;
     duration: string;
     stipend: string;
@@ -52,7 +57,8 @@ interface FormData {
 
 const emptyForm: FormData = {
     title: '', title_ar: '', company: '', company_ar: '',
-    location: '', location_ar: '', sector: '', duration: '',
+    location: '', location_ar: '', latitude: null, longitude: null,
+    sector: '', duration: '',
     stipend: '', budget: '', description: '', description_ar: '',
     skills: '', type: 'Full-time', category: '',
 };
@@ -63,6 +69,7 @@ const RecruiterPostings: React.FC = () => {
     const isRTL = i18n.language === 'ar';
     const b = (en: string, ar: string) => isRTL ? ar : en;
     const { toast } = useToast();
+    const navigate = useNavigate();
 
     const [postings, setPostings] = useState<Posting[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,6 +79,10 @@ const RecruiterPostings: React.FC = () => {
     const [form, setForm] = useState<FormData>({ ...emptyForm });
     const [saving, setSaving] = useState(false);
     const [activeFilter, setActiveFilter] = useState<'all' | 'internship' | 'gig'>('all');
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [applicants, setApplicants] = useState<Record<string, any[]>>({});
+    const [loadingApplicants, setLoadingApplicants] = useState<string | null>(null);
+    const [updatingAppId, setUpdatingAppId] = useState<number | null>(null);
 
     // Load postings
     useEffect(() => { loadPostings(); }, []);
@@ -147,6 +158,8 @@ const RecruiterPostings: React.FC = () => {
             company_ar: posting.company_ar || '',
             location: posting.location || '',
             location_ar: '',
+            latitude: null,
+            longitude: null,
             sector: posting.sector || '',
             duration: posting.duration || '',
             stipend: posting.stipend || '',
@@ -171,6 +184,50 @@ const RecruiterPostings: React.FC = () => {
         } catch {
             toast({ title: b('Error', 'خطأ'), variant: 'destructive' });
         }
+    };
+
+    const toggleApplicants = async (posting: Posting) => {
+        const key = `${posting.posting_type}-${posting.id}`;
+        if (expandedId === key) {
+            setExpandedId(null);
+            return;
+        }
+        setExpandedId(key);
+        if (!applicants[key]) {
+            setLoadingApplicants(key);
+            try {
+                const endpoint = posting.posting_type === 'internship'
+                    ? `/api/career-services/internships/${posting.id}/applicants`
+                    : `/api/career-services/gigs/${posting.id}/applicants`;
+                const resp = await restClient.get(endpoint);
+                setApplicants(prev => ({ ...prev, [key]: resp.data?.applicants || [] }));
+            } catch {
+                setApplicants(prev => ({ ...prev, [key]: [] }));
+            }
+            setLoadingApplicants(null);
+        }
+    };
+
+    const updateApplicationStatus = async (applicationId: number, status: string, postingKey: string) => {
+        setUpdatingAppId(applicationId);
+        try {
+            const isGig = postingKey.startsWith('gig-');
+            const endpoint = isGig
+                ? `/api/career-services/gig-applications/${applicationId}/status`
+                : `/api/career-services/internship-applications/${applicationId}/status`;
+            await restClient.put(endpoint, { status });
+            // Update local state
+            setApplicants(prev => ({
+                ...prev,
+                [postingKey]: (prev[postingKey] || []).map(a =>
+                    a.application_id === applicationId ? { ...a, status } : a
+                )
+            }));
+            toast({ title: b('Updated', 'تم التحديث'), description: b(`Application ${status}`, `الطلب ${status}`) });
+        } catch {
+            toast({ title: b('Error', 'خطأ'), variant: 'destructive' });
+        }
+        setUpdatingAppId(null);
     };
 
     const filtered = activeFilter === 'all' ? postings : postings.filter(p => p.posting_type === activeFilter);
@@ -221,7 +278,49 @@ const RecruiterPostings: React.FC = () => {
                             </div>
                             <div>
                                 <label className="text-xs font-dubai-medium text-slate-500">{b('Location', 'الموقع')}</label>
-                                <Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+                                <div className="relative">
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 appearance-none cursor-pointer"
+                                        value={['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain', 'Al Ain', 'Remote', '100% Remote / Hybrid'].includes(form.location) ? form.location : (form.location ? '__custom__' : '')}
+                                        onChange={e => {
+                                            if (e.target.value === '__custom__') {
+                                                setForm(f => ({ ...f, location: '' }));
+                                            } else {
+                                                setForm(f => ({ ...f, location: e.target.value }));
+                                            }
+                                        }}
+                                    >
+                                        <option value="">{b('Select location...', 'اختر الموقع...')}</option>
+                                        <option value="Dubai">{b('Dubai', 'دبي')}</option>
+                                        <option value="Abu Dhabi">{b('Abu Dhabi', 'أبوظبي')}</option>
+                                        <option value="Sharjah">{b('Sharjah', 'الشارقة')}</option>
+                                        <option value="Ajman">{b('Ajman', 'عجمان')}</option>
+                                        <option value="Ras Al Khaimah">{b('Ras Al Khaimah', 'رأس الخيمة')}</option>
+                                        <option value="Fujairah">{b('Fujairah', 'الفجيرة')}</option>
+                                        <option value="Umm Al Quwain">{b('Umm Al Quwain', 'أم القيوين')}</option>
+                                        <option value="Al Ain">{b('Al Ain', 'العين')}</option>
+                                        <option value="Remote">{b('Remote', 'عن بُعد')}</option>
+                                        <option value="100% Remote / Hybrid">{b('100% Remote / Hybrid', 'عن بُعد / هجين')}</option>
+                                        <option value="__custom__">{b('Custom location...', 'موقع مخصص...')}</option>
+                                    </select>
+                                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-500 pointer-events-none" />
+                                </div>
+                                {/* Custom text input for custom location */}
+                                {!['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain', 'Al Ain', 'Remote', '100% Remote / Hybrid', ''].includes(form.location) && (
+                                    <Input className="mt-2" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={b('Enter custom location', 'أدخل الموقع المخصص')} />
+                                )}
+                                {/* Leaflet Map Picker */}
+                                {form.location && form.location !== 'Remote' && form.location !== '100% Remote / Hybrid' && (
+                                    <div className="mt-2">
+                                        <LocationPicker
+                                            lat={form.latitude || undefined}
+                                            lng={form.longitude || undefined}
+                                            onLocationSelect={(lat, lng) => setForm(f => ({ ...f, latitude: lat, longitude: lng }))}
+                                            label={b('Pin exact location on map', 'حدد الموقع على الخريطة')}
+                                            height="200px"
+                                        />
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="text-xs font-dubai-medium text-slate-500">{b('Duration', 'المدة')}</label>
@@ -315,7 +414,8 @@ const RecruiterPostings: React.FC = () => {
                             </thead>
                             <tbody>
                                 {filtered.map(p => (
-                                    <tr key={`${p.posting_type}-${p.id}`} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                    <React.Fragment key={`${p.posting_type}-${p.id}`}>
+                                    <tr className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                         <td className="px-5 py-3">
                                             <div className="font-dubai-medium text-slate-800">{isRTL ? (p.title_ar || p.title) : p.title}</div>
                                             <div className="text-xs text-slate-400 font-dubai flex items-center gap-1 mt-0.5">
@@ -331,9 +431,22 @@ const RecruiterPostings: React.FC = () => {
                                             <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {p.location}</span>
                                         </td>
                                         <td className="px-3 py-3 text-center">
-                                            <span className="inline-flex items-center gap-1 text-sm font-dubai-bold text-teal-700">
+                                            <button
+                                                onClick={() => toggleApplicants(p)}
+                                                className={`inline-flex items-center gap-1 text-sm font-dubai-bold px-2 py-1 rounded-lg transition-colors ${
+                                                    p.application_count > 0
+                                                        ? 'text-teal-700 bg-teal-50 hover:bg-teal-100 cursor-pointer'
+                                                        : 'text-slate-400 cursor-default'
+                                                }`}
+                                                disabled={p.application_count === 0}
+                                            >
                                                 <Users className="h-3.5 w-3.5" /> {p.application_count}
-                                            </span>
+                                                {p.application_count > 0 && (
+                                                    expandedId === `${p.posting_type}-${p.id}`
+                                                        ? <ChevronUp className="h-3 w-3" />
+                                                        : <ChevronDown className="h-3 w-3" />
+                                                )}
+                                            </button>
                                         </td>
                                         <td className="px-3 py-3 text-center">
                                             {p.is_active
@@ -342,6 +455,11 @@ const RecruiterPostings: React.FC = () => {
                                         </td>
                                         <td className="px-3 py-3 text-center">
                                             <div className="flex items-center justify-center gap-1">
+                                                {p.application_count > 0 && (
+                                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-teal-600 hover:text-teal-700 hover:bg-teal-50 font-dubai-medium" onClick={() => toggleApplicants(p)}>
+                                                        <Users className="h-3.5 w-3.5 mr-1" />{b('Applicants', 'المتقدمون')}
+                                                    </Button>
+                                                )}
                                                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-500 hover:text-teal-600" onClick={() => handleEdit(p)}>
                                                     <Pencil className="h-3.5 w-3.5" />
                                                 </Button>
@@ -353,6 +471,111 @@ const RecruiterPostings: React.FC = () => {
                                             </div>
                                         </td>
                                     </tr>
+                                    {/* Expandable Applicants Row */}
+                                    {expandedId === `${p.posting_type}-${p.id}` && (
+                                        <tr>
+                                            <td colSpan={6} className="px-5 py-4 bg-slate-50/80 border-b border-slate-100">
+                                                {loadingApplicants === `${p.posting_type}-${p.id}` ? (
+                                                    <div className="flex items-center justify-center py-4">
+                                                        <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+                                                        <span className="ml-2 text-sm text-slate-500 font-dubai">{b('Loading applicants...', 'جارٍ تحميل المتقدمين...')}</span>
+                                                    </div>
+                                                ) : (applicants[`${p.posting_type}-${p.id}`] || []).length === 0 ? (
+                                                    <p className="text-sm text-slate-500 font-dubai text-center py-4">{b('No applicants yet', 'لا يوجد متقدمون بعد')}</p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-xs font-dubai-bold text-slate-600 uppercase tracking-wider mb-3">
+                                                            {b('Applicants', 'المتقدمون')} ({(applicants[`${p.posting_type}-${p.id}`] || []).length})
+                                                        </h4>
+                                                        {(applicants[`${p.posting_type}-${p.id}`] || []).map((app: any) => (
+                                                            <div key={app.application_id} className="flex items-center justify-between bg-white rounded-lg border border-slate-200 px-4 py-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-xs font-bold text-teal-700 cursor-pointer hover:ring-2 hover:ring-teal-300 transition-all"
+                                                                        onClick={() => app.user_id && navigate(`/candidate-profile/${app.user_id}`)}
+                                                                        title={b('View Profile', 'عرض الملف الشخصي')}>
+                                                                        {(app.full_name || 'U').charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-sm font-dubai-medium text-slate-800 hover:text-teal-700 cursor-pointer hover:underline transition-colors"
+                                                                            onClick={() => app.user_id && navigate(`/candidate-profile/${app.user_id}`)}>
+                                                                            {app.full_name || b('Unknown User', 'مستخدم غير معروف')}
+                                                                        </p>
+                                                                        <div className="flex items-center gap-3 text-xs text-slate-400 font-dubai mt-0.5">
+                                                                            {app.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{app.email}</span>}
+                                                                            {app.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{app.phone}</span>}
+                                                                            {app.applied_at && <span>{b('Applied', 'تقدّم')} {new Date(app.applied_at).toLocaleDateString()}</span>}
+                                                                        </div>
+                                                                        {/* Quick Action Buttons */}
+                                                                        <div className="flex items-center gap-1.5 mt-2">
+                                                                            <Button size="sm" variant="outline" className="h-6 px-2 text-[11px] text-teal-700 border-teal-200 hover:bg-teal-50 font-dubai-medium gap-1"
+                                                                                onClick={() => app.user_id && navigate(`/candidate-profile/${app.user_id}`)}>
+                                                                                <ExternalLink className="h-3 w-3" />{b('View Profile', 'عرض الملف')}
+                                                                            </Button>
+                                                                            <Button size="sm" variant="outline" className="h-6 px-2 text-[11px] text-blue-700 border-blue-200 hover:bg-blue-50 font-dubai-medium gap-1"
+                                                                                onClick={() => navigate(`/recruiter/interviews/schedule?candidateId=${app.user_id}&candidateName=${encodeURIComponent(app.full_name || '')}&source=internship&internshipId=${p.id}`)}>
+                                                                                <Calendar className="h-3 w-3" />{b('Schedule Interview', 'جدولة مقابلة')}
+                                                                            </Button>
+                                                                            <Button size="sm" variant="outline" className="h-6 px-2 text-[11px] text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-dubai-medium gap-1"
+                                                                                onClick={() => navigate(`/recruiter?tab=messages`)}>
+                                                                                <MessageSquare className="h-3 w-3" />{b('Message', 'رسالة')}
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge className={`text-[10px] font-dubai-medium ${
+                                                                        app.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                        app.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-200' :
+                                                                        app.status === 'shortlisted' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                        'bg-amber-50 text-amber-700 border-amber-200'
+                                                                    }`}>
+                                                                        {app.status === 'accepted' ? b('Accepted', 'مقبول') :
+                                                                         app.status === 'rejected' ? b('Rejected', 'مرفوض') :
+                                                                         app.status === 'shortlisted' ? b('Shortlisted', 'مدرج') :
+                                                                         b('Pending', 'قيد الانتظار')}
+                                                                    </Badge>
+                                                                    {app.status === 'pending' && (
+                                                                        <div className="flex gap-1">
+                                                                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 font-dubai-medium"
+                                                                                onClick={() => updateApplicationStatus(app.application_id, 'shortlisted', `${p.posting_type}-${p.id}`)}
+                                                                                disabled={updatingAppId === app.application_id}>
+                                                                                <Star className="h-3 w-3 mr-1" />{b('Shortlist', 'إدراج')}
+                                                                            </Button>
+                                                                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-green-600 hover:bg-green-50 font-dubai-medium"
+                                                                                onClick={() => updateApplicationStatus(app.application_id, 'accepted', `${p.posting_type}-${p.id}`)}
+                                                                                disabled={updatingAppId === app.application_id}>
+                                                                                <CheckCircle className="h-3 w-3 mr-1" />{b('Accept', 'قبول')}
+                                                                            </Button>
+                                                                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-red-600 hover:bg-red-50 font-dubai-medium"
+                                                                                onClick={() => updateApplicationStatus(app.application_id, 'rejected', `${p.posting_type}-${p.id}`)}
+                                                                                disabled={updatingAppId === app.application_id}>
+                                                                                <XCircle className="h-3 w-3 mr-1" />{b('Reject', 'رفض')}
+                                                                            </Button>
+                                                                        </div>
+                                                                    )}
+                                                                    {app.status === 'shortlisted' && (
+                                                                        <div className="flex gap-1">
+                                                                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-green-600 hover:bg-green-50 font-dubai-medium"
+                                                                                onClick={() => updateApplicationStatus(app.application_id, 'accepted', `${p.posting_type}-${p.id}`)}
+                                                                                disabled={updatingAppId === app.application_id}>
+                                                                                <CheckCircle className="h-3 w-3 mr-1" />{b('Accept', 'قبول')}
+                                                                            </Button>
+                                                                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-red-600 hover:bg-red-50 font-dubai-medium"
+                                                                                onClick={() => updateApplicationStatus(app.application_id, 'rejected', `${p.posting_type}-${p.id}`)}
+                                                                                disabled={updatingAppId === app.application_id}>
+                                                                                <XCircle className="h-3 w-3 mr-1" />{b('Reject', 'رفض')}
+                                                                            </Button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>

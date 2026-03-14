@@ -150,6 +150,12 @@ const CandidateMatching = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'matching' | 'shortlist'>('matching');
 
+  // Advanced filter state
+  const [filterExperience, setFilterExperience] = useState('any');
+  const [filterEducation, setFilterEducation] = useState('any');
+  const [filterAvailability, setFilterAvailability] = useState('any');
+  const [appliedFilters, setAppliedFilters] = useState({ experience: 'any', education: 'any', availability: 'any' });
+
   // New state for Training and Mentorship Dialogs
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
   const [selectedCandidateForTraining, setSelectedCandidateForTraining] = useState<MatchingResult | null>(null);
@@ -257,14 +263,14 @@ const CandidateMatching = () => {
           candidate_id: match.candidate.candidate_id || match.candidate.user_id,
           candidate_name: (match.candidate.first_name && match.candidate.last_name)
             ? `${match.candidate.first_name} ${match.candidate.last_name}`
-            : 'Unknown Candidate',
+            : match.candidate.full_name || match.candidate.email?.split('@')[0] || `Candidate ${match.candidate.candidate_id}`,
           overall_score: Math.round(match.match_score || 0),
           skills_score: Math.round(match.score_breakdown?.skills || 0),
           experience_score: Math.round(match.score_breakdown?.experience || 0),
           education_score: Math.round(match.score_breakdown?.education || 0),
           location_score: Math.round(match.score_breakdown?.location || 0),
           language_score: 0, // Not currently in breakdown
-          recommendation: match.overall_score >= 80 ? 'Highly Recommended' : match.overall_score >= 60 ? 'Recommended' : 'Consider',
+          recommendation: (match.match_score || 0) >= 80 ? 'Highly Recommended' : (match.match_score || 0) >= 60 ? 'Recommended' : (match.match_score || 0) >= 40 ? 'Good Fit' : (match.match_score || 0) >= 25 ? 'Weak Match' : 'Poor Match',
           match_details: {
             skills: {
               matched: match.matching_skills || [],
@@ -292,7 +298,9 @@ const CandidateMatching = () => {
           },
           candidate_data: {
             personalInfo: {
-              name: `${match.candidate.first_name} ${match.candidate.last_name}`,
+              name: (match.candidate.first_name && match.candidate.last_name)
+                ? `${match.candidate.first_name} ${match.candidate.last_name}`
+                : match.candidate.full_name || match.candidate.email?.split('@')[0] || `Candidate ${match.candidate.candidate_id}`,
               email: match.candidate.email,
               phone: match.candidate.phone,
               location: match.candidate.emirate || 'Dubai',
@@ -338,9 +346,11 @@ const CandidateMatching = () => {
         // Store ALL candidates, filtering happens in render
         setCandidates(matchingCandidates);
 
+        const aboveThreshold = matchingCandidates.filter(c => c.overall_score >= matchThreshold).length;
+
         toast({
           title: 'Candidates Found',
-          description: `Found ${matchingCandidates.length} potential matches.`,
+          description: `Found ${aboveThreshold} matching candidate${aboveThreshold !== 1 ? 's' : ''} (${matchingCandidates.length} total reviewed).`,
         });
       } else {
         throw new Error('Failed to find matching candidates');
@@ -486,8 +496,12 @@ const CandidateMatching = () => {
         return 'text-green-600 bg-green-50 border-green-200';
       case 'recommended':
         return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'consider':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'good fit':
+        return 'text-teal-600 bg-teal-50 border-teal-200';
+      case 'weak match':
+        return 'text-orange-600 bg-orange-50 border-orange-200';
+      case 'poor match':
+        return 'text-red-600 bg-red-50 border-red-200';
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -518,10 +532,28 @@ const CandidateMatching = () => {
       // 2. For other modes, apply Threshold
       if (candidate.overall_score < matchThreshold) return false;
 
-      // 3. Apply Quality Filters
-      if (filterBy === 'excellent') return candidate.overall_score >= 80;
-      if (filterBy === 'good') return candidate.overall_score >= 60 && candidate.overall_score < 80;
-      if (filterBy === 'fair') return candidate.overall_score >= 40 && candidate.overall_score < 60;
+      // 3. Apply Quality Filters (reject if outside selected range, but don't return true early)
+      if (filterBy === 'excellent' && candidate.overall_score < 80) return false;
+      if (filterBy === 'good' && (candidate.overall_score < 60 || candidate.overall_score >= 80)) return false;
+      if (filterBy === 'fair' && (candidate.overall_score < 40 || candidate.overall_score >= 60)) return false;
+
+      // 4. Apply Advanced Filters (Experience, Education)
+      if (appliedFilters.experience !== 'any') {
+        const expYears = candidate.match_details?.experience?.years || 0;
+        switch (appliedFilters.experience) {
+          case '0-2': if (expYears > 2) return false; break;
+          case '3-5': if (expYears < 3 || expYears > 5) return false; break;
+          case '5-10': if (expYears < 5 || expYears > 10) return false; break;
+          case '10+': if (expYears < 10) return false; break;
+        }
+      }
+      if (appliedFilters.education !== 'any') {
+        const eduLevels: Record<string, number> = { 'high_school': 1, 'diploma': 2, 'bachelor': 3, 'master': 4, 'phd': 5 };
+        const candEdu = (candidate.match_details?.education?.level || '').toLowerCase().replace("'s", "").replace("bachelor's degree", "bachelor");
+        const candLevel = eduLevels[candEdu] || 0;
+        const reqLevel = eduLevels[appliedFilters.education] || 0;
+        if (candLevel < reqLevel) return false;
+      }
 
       return true;
     })
@@ -788,7 +820,7 @@ const CandidateMatching = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Years of Experience</label>
-                    <Select>
+                    <Select value={filterExperience} onValueChange={setFilterExperience}>
                       <SelectTrigger className="bg-white">
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
@@ -803,7 +835,7 @@ const CandidateMatching = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Education Level</label>
-                    <Select>
+                    <Select value={filterEducation} onValueChange={setFilterEducation}>
                       <SelectTrigger className="bg-white">
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
@@ -817,7 +849,7 @@ const CandidateMatching = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Availability</label>
-                    <Select>
+                    <Select value={filterAvailability} onValueChange={setFilterAvailability}>
                       <SelectTrigger className="bg-white">
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
@@ -830,8 +862,15 @@ const CandidateMatching = () => {
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <Button size="sm" variant="outline" className="mr-2">Reset</Button>
-                  <Button size="sm" className="bg-teal-600 text-white hover:bg-teal-700">Apply Filters</Button>
+                  <Button size="sm" variant="outline" className="mr-2" onClick={() => {
+                    setFilterExperience('any');
+                    setFilterEducation('any');
+                    setFilterAvailability('any');
+                    setAppliedFilters({ experience: 'any', education: 'any', availability: 'any' });
+                  }}>Reset</Button>
+                  <Button size="sm" className="bg-teal-600 text-white hover:bg-teal-700" onClick={() => {
+                    setAppliedFilters({ experience: filterExperience, education: filterEducation, availability: filterAvailability });
+                  }}>Apply Filters</Button>
                 </div>
               </div>
             )}

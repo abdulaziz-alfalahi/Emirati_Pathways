@@ -53,6 +53,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { restClient, healthApi, jobApi, type JobDescription } from '@/utils/api';
+import { formatDateFromString } from '@/utils/dateFormat';
 import { JobApplicantsView } from './JobApplicantsView';
 import { ShortlistManager } from './shortlist/ShortlistManager';
 
@@ -370,7 +371,7 @@ const JobDescriptionsList = () => {
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return formatDateFromString(dateString);
   };
 
   return (
@@ -447,7 +448,7 @@ const JobDescriptionsList = () => {
                           {job.created_at && (
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
-                              Posted {new Date(job.created_at).toLocaleDateString()}
+                              Posted {formatDateFromString(job.created_at)}
                             </div>
                           )}
                         </div>

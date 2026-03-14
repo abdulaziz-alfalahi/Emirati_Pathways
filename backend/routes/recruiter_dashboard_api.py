@@ -603,19 +603,453 @@ def get_candidate_details(candidate_id):
 @recruiter_dashboard_bp.route('/offers', methods=['GET'])
 @optional_auth
 def get_offers_list():
-    """Get list of offers"""
+    """Get list of offers for the recruiter"""
     try:
+        # Get recruiter ID from JWT
+        recruiter_id = None
+        try:
+            verify_jwt_in_request(optional=True)
+            recruiter_id = str(get_jwt_identity())
+        except:
+            pass
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': True, 'data': [], 'count': 0})
+        
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            query = """
+                SELECT 
+                    jo.offer_id as id,
+                    jo.jd_id,
+                    jo.candidate_id,
+                    jo.recruiter_id,
+                    jo.position_title,
+                    jo.salary_amount,
+                    jo.salary_currency,
+                    jo.salary_period,
+                    jo.employment_type,
+                    jo.start_date,
+                    jo.expiry_date,
+                    jo.benefits,
+                    jo.status,
+                    jo.candidate_response,
+                    jo.work_location,
+                    jo.notes,
+                    jo.response_notes,
+                    jo.response_date,
+                    jo.negotiation_status,
+                    jo.probation_period_months,
+                    jo.created_at,
+                    jo.updated_at,
+                    jo.offer_date,
+                    u.first_name as candidate_first_name,
+                    u.last_name as candidate_last_name,
+                    u.email as candidate_email,
+                    jp.title as job_title
+                FROM job_offers jo
+                LEFT JOIN users u ON jo.candidate_id::text = u.id::text
+                LEFT JOIN job_postings jp ON jo.jd_id = jp.jd_id
+            """
+            params = []
+            if recruiter_id:
+                query += " WHERE jo.recruiter_id::text = %s"
+                params.append(recruiter_id)
+            
+            query += " ORDER BY jo.created_at DESC"
+            
+            cur.execute(query, tuple(params) if params else None)
+            rows = cur.fetchall()
+        
+        conn.close()
+        
+        offers = []
+        for row in rows:
+            offer = dict(row)
+            # Format dates
+            for field in ['created_at', 'updated_at', 'offer_date']:
+                if offer.get(field) and hasattr(offer[field], 'isoformat'):
+                    offer[field] = offer[field].isoformat()
+            if offer.get('start_date'):
+                offer['start_date'] = str(offer['start_date'])
+            if offer.get('expiry_date'):
+                offer['expiry_date'] = str(offer['expiry_date'])
+            
+            # Build candidate_name
+            first = offer.pop('candidate_first_name', '') or ''
+            last = offer.pop('candidate_last_name', '') or ''
+            offer['candidate_name'] = f"{first} {last}".strip() or f"Candidate {offer.get('candidate_id', '')}"
+            offer['candidate_email'] = offer.pop('candidate_email', None)
+            
+            offers.append(offer)
+        
+        logger.info(f"Returning {len(offers)} offers for recruiter {recruiter_id}")
         return jsonify({
             'success': True,
-            'data': [
-                {'id': 'offer_001', 'candidate_id': 'c_001', 'candidate_name': 'Ahmed Al Maktoum', 'position': 'Software Engineer', 'salary': 30000, 'currency': 'AED', 'status': 'pending', 'created_at': '2025-01-20'},
-                {'id': 'offer_002', 'candidate_id': 'c_002', 'candidate_name': 'Fatima Al Nahyan', 'position': 'Product Manager', 'salary': 35000, 'currency': 'AED', 'status': 'accepted', 'created_at': '2025-01-18'}
-            ]
+            'data': offers,
+            'count': len(offers)
         })
     except Exception as e:
         logger.error(f"Failed to get offers: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
+
+@recruiter_dashboard_bp.route('/offers/<offer_id>/respond', methods=['POST'])
+@optional_auth
+def recruiter_respond_to_offer(offer_id):
+    """Recruiter responds to offer: accept, counter, withdraw, hire, or rescind"""
+    try:
+        data = request.get_json() or {}
+        action = data.get('action')  # 'accept', 'counter', 'withdraw', 'hire', 'rescind'
+        message = data.get('message', '')
+        revised_salary = data.get('revised_salary')
+
+        if action not in ['accept', 'counter', 'withdraw', 'hire', 'rescind']:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid action. Must be accept, counter, withdraw, hire, or rescind'
+            }), 400
+
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        offer = None
+        offer_source = None
+
+        # Try job_offers first (OFR-* IDs)
+        try:
+            cur.execute("""
+                SELECT offer_id as id, status, candidate_id, recruiter_id,
+                       position_title, salary_amount, salary_currency, jd_id
+                FROM job_offers WHERE offer_id = %s
+            """, (offer_id,))
+            offer = cur.fetchone()
+            if offer:
+                offer_source = 'job_offers'
+        except Exception as e:
+            logger.warning(f"job_offers lookup failed: {e}")
+            conn.rollback()
+
+        # Fallback to offers table
+        if not offer:
+            try:
+                cur.execute("""
+                    SELECT id, status, candidate_id, recruiter_id, offer_data
+                    FROM offers WHERE id = %s::uuid
+                """, (offer_id,))
+                offer = cur.fetchone()
+                if offer:
+                    offer_source = 'offers'
+            except Exception as e:
+                logger.warning(f"offers lookup failed: {e}")
+                conn.rollback()
+
+        if not offer:
+            conn.close()
+            return jsonify({'success': False, 'message': 'Offer not found'}), 404
+
+        valid_statuses = ['negotiating', 'pending', 'sent']
+        if action in ['hire', 'rescind']:
+            valid_statuses.append('accepted')
+        
+        if offer.get('status') not in valid_statuses:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': f"Cannot perform '{action}'. Current status is '{offer.get('status')}'"
+            }), 400
+
+        candidate_id = offer.get('candidate_id')
+        position_title = offer.get('position_title') or 'the position'
+
+        # Determine new status
+        if action == 'accept':
+            new_status = 'accepted'
+        elif action == 'withdraw':
+            new_status = 'withdrawn'
+        elif action == 'hire':
+            new_status = 'hired'
+        elif action == 'rescind':
+            new_status = 'rescinded'
+        else:
+            new_status = 'negotiating'
+
+        # Update the appropriate table
+        import json as json_mod
+        if offer_source == 'job_offers':
+            if action == 'counter':
+                update_parts = [
+                    "negotiation_status = 'counter_offered'",
+                    "negotiation_notes = %s",
+                    "updated_at = CURRENT_TIMESTAMP"
+                ]
+                params = [message]
+                if revised_salary:
+                    update_parts.append("salary_amount = %s")
+                    params.append(float(revised_salary))
+                params.append(offer_id)
+                cur.execute(f"""
+                    UPDATE job_offers
+                    SET {', '.join(update_parts)}
+                    WHERE offer_id = %s
+                """, tuple(params))
+            else:
+                cur.execute("""
+                    UPDATE job_offers
+                    SET status = %s,
+                        negotiation_notes = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE offer_id = %s
+                """, (new_status, message, offer_id))
+        else:
+            response_meta = {
+                'recruiter_response': action,
+                'recruiter_message': message,
+                'responded_at': datetime.now().isoformat()
+            }
+            if revised_salary:
+                response_meta['revised_salary'] = revised_salary
+            cur.execute("""
+                UPDATE offers
+                SET status = %s,
+                    updated_at = NOW(),
+                    offer_data = offer_data || %s::jsonb
+                WHERE id = %s::uuid
+            """, (new_status, json_mod.dumps(response_meta), offer_id))
+
+        # Send notification to candidate
+        if action == 'accept':
+            notif_title = 'Offer Accepted!'
+            notif_content = f'Great news! Your offer for {position_title} has been accepted by the recruiter.'
+            notif_type = 'offer_accepted'
+        elif action == 'counter':
+            salary_info = f" The revised salary is {int(float(revised_salary)):,} AED." if revised_salary else ""
+            notif_content = f'The recruiter has sent a counter-offer for {position_title}.{salary_info}'
+            if message:
+                notif_content += f' Message: "{message}"'
+            notif_title = 'Counter Offer Received'
+            notif_type = 'offer_negotiation'
+        elif action == 'hire':
+            notif_title = 'Congratulations! You Are Hired!'
+            notif_content = f'🎉 Great news! You have been officially hired for {position_title}. Welcome to the team!'
+            if message:
+                notif_content += f' Message from recruiter: "{message}"'
+            notif_type = 'offer_accepted'
+        elif action == 'rescind':
+            notif_title = 'Offer Rescinded'
+            notif_content = f'Unfortunately, the accepted offer for {position_title} has been rescinded by the recruiter.'
+            if message:
+                notif_content += f' Reason: "{message}"'
+            notif_type = 'offer_declined'
+        else:
+            notif_title = 'Offer Withdrawn'
+            notif_content = f'The offer for {position_title} has been withdrawn by the recruiter.'
+            if message:
+                notif_content += f' Reason: "{message}"'
+            notif_type = 'offer_declined'
+
+        try:
+            notif_metadata = json_mod.dumps({
+                'offer_id': offer_id,
+                'position_title': position_title,
+                'recruiter_action': action,
+                'recruiter_message': message,
+                'revised_salary': revised_salary,
+                'link': '/candidate-dashboard?tab=offers'
+            })
+            cur.execute("""
+                INSERT INTO notifications (user_id, type, title, content, metadata)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (str(candidate_id), notif_type, notif_title, notif_content, notif_metadata))
+        except Exception as notif_err:
+            logger.error(f"Failed to create candidate notification: {notif_err}")
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': f'Offer {action} successful',
+            'data': {
+                'offer_id': offer_id,
+                'status': new_status,
+                'action': action
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error in recruiter offer respond: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_dashboard_bp.route('/offers/<offer_id>/letter', methods=['GET'])
+@optional_auth
+def generate_offer_letter(offer_id):
+    """Generate a downloadable offer letter for an accepted/hired offer"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        cur.execute("""
+            SELECT jo.*, 
+                   u.first_name as candidate_first_name,
+                   u.last_name as candidate_last_name,
+                   u.email as candidate_email,
+                   r.first_name as recruiter_first_name,
+                   r.last_name as recruiter_last_name,
+                   jp.title as job_title,
+                   jp.company_id
+            FROM job_offers jo
+            LEFT JOIN users u ON jo.candidate_id::text = u.id::text
+            LEFT JOIN users r ON jo.recruiter_id::text = r.id::text
+            LEFT JOIN job_postings jp ON jo.jd_id = jp.jd_id
+            WHERE jo.offer_id = %s
+        """, (offer_id,))
+        offer = cur.fetchone()
+        conn.close()
+
+        if not offer:
+            return jsonify({'success': False, 'message': 'Offer not found'}), 404
+
+        candidate_name = f"{offer.get('candidate_first_name', '')} {offer.get('candidate_last_name', '')}".strip() or 'Candidate'
+        recruiter_name = f"{offer.get('recruiter_first_name', '')} {offer.get('recruiter_last_name', '')}".strip() or 'Recruiter'
+        position = offer.get('position_title') or offer.get('job_title') or 'Position'
+        salary = offer.get('salary_amount') or 0
+        currency = offer.get('salary_currency') or 'AED'
+        period = offer.get('salary_period') or 'annual'
+        start_date = str(offer.get('start_date')) if offer.get('start_date') else 'TBD'
+        employment_type = offer.get('employment_type') or 'Full-time'
+        probation = offer.get('probation_period_months') or 3
+        benefits = offer.get('benefits') or {}
+        today = datetime.now().strftime('%B %d, %Y')
+
+        benefits_html = ''
+        if benefits:
+            items = []
+            if benefits.get('health_insurance'):
+                items.append('Comprehensive health insurance coverage')
+            if benefits.get('annual_leave_days'):
+                items.append(f"{benefits['annual_leave_days']} days paid annual leave")
+            if benefits.get('housing_allowance') and float(benefits.get('housing_allowance', 0)) > 0:
+                items.append(f"Housing allowance: {int(float(benefits['housing_allowance'])):,} {currency}")
+            if benefits.get('transportation_allowance') and float(benefits.get('transportation_allowance', 0)) > 0:
+                items.append(f"Transportation allowance: {int(float(benefits['transportation_allowance'])):,} {currency}")
+            if benefits.get('flight_tickets'):
+                items.append(f"{benefits['flight_tickets']} annual flight tickets")
+            for b in (benefits.get('additional_benefits') or []):
+                items.append(b)
+            benefits_html = '\n'.join(f'<li>{item}</li>' for item in items)
+
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Offer Letter - {candidate_name}</title>
+<style>
+  body {{ font-family: 'Georgia', serif; line-height: 1.8; color: #333; max-width: 800px; margin: 40px auto; padding: 40px; }}
+  .header {{ text-align: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 30px; }}
+  .header h1 {{ color: #0d9488; font-size: 28px; margin: 0; }}
+  .header p {{ color: #666; font-size: 14px; margin: 5px 0; }}
+  .date {{ text-align: right; font-size: 14px; color: #666; margin-bottom: 20px; }}
+  h2 {{ color: #0d9488; font-size: 18px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }}
+  .details-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }}
+  .detail-item {{ padding: 8px 0; }}
+  .detail-label {{ font-weight: bold; color: #555; font-size: 13px; text-transform: uppercase; }}
+  .detail-value {{ font-size: 16px; }}
+  .salary {{ font-size: 24px; font-weight: bold; color: #0d9488; }}
+  ul {{ padding-left: 25px; }}
+  li {{ margin-bottom: 6px; }}
+  .signature {{ margin-top: 60px; }}
+  .signature-line {{ border-top: 1px solid #333; width: 250px; margin-top: 50px; padding-top: 5px; }}
+  .footer {{ margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; font-size: 12px; color: #999; text-align: center; }}
+  @media print {{ body {{ margin: 0; padding: 20px; }} }}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Dubai Human Development Platform</h1>
+  <p>UAE Nationals Career Development</p>
+  <p style="font-size:18px; margin-top:15px; font-weight:bold;">OFFICIAL OFFER LETTER</p>
+</div>
+
+<p class="date">{today}</p>
+
+<p>Dear <strong>{candidate_name}</strong>,</p>
+
+<p>We are pleased to extend this formal offer of employment for the position detailed below.
+We believe your skills and experience are an excellent match for this role and look forward to welcoming you to our team.</p>
+
+<h2>Position Details</h2>
+<div class="details-grid">
+  <div class="detail-item">
+    <div class="detail-label">Position</div>
+    <div class="detail-value">{position}</div>
+  </div>
+  <div class="detail-item">
+    <div class="detail-label">Employment Type</div>
+    <div class="detail-value">{employment_type}</div>
+  </div>
+  <div class="detail-item">
+    <div class="detail-label">Start Date</div>
+    <div class="detail-value">{start_date}</div>
+  </div>
+  <div class="detail-item">
+    <div class="detail-label">Probation Period</div>
+    <div class="detail-value">{probation} months</div>
+  </div>
+</div>
+
+<h2>Compensation</h2>
+<p class="salary">{int(float(salary)):,} {currency} <span style="font-size:14px;color:#666;">({period})</span></p>
+
+{'<h2>Benefits &amp; Perks</h2><ul>' + benefits_html + '</ul>' if benefits_html else ''}
+
+<h2>Terms &amp; Conditions</h2>
+<ul>
+  <li>This offer is contingent upon successful completion of background verification and medical examination.</li>
+  <li>The probation period is {probation} months, during which either party may terminate the employment with a notice period as per UAE Labour Law.</li>
+  <li>All employment terms are governed by UAE Federal Labour Law and applicable regulations.</li>
+</ul>
+
+<p>Please confirm your acceptance by signing below and returning this letter.</p>
+
+<div class="signature">
+  <p>Warm regards,</p>
+  <div class="signature-line">
+    <strong>{recruiter_name}</strong><br/>
+    <span style="font-size:13px; color:#666;">Hiring Manager</span>
+  </div>
+</div>
+
+<div style="margin-top:60px;">
+  <p><strong>Candidate Acceptance:</strong></p>
+  <div class="signature-line">
+    <strong>{candidate_name}</strong><br/>
+    <span style="font-size:13px; color:#666;">Date: ________________</span>
+  </div>
+</div>
+
+<div class="footer">
+  <p>This offer letter was generated by the Dubai Human Development Platform.<br/>
+  Offer Reference: {offer_id}</p>
+</div>
+</body>
+</html>"""
+
+        from flask import Response
+        response = Response(html, mimetype='text/html')
+        response.headers['Content-Disposition'] = f'attachment; filename="Offer_Letter_{candidate_name.replace(" ", "_")}_{offer_id}.html"'
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating offer letter: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @recruiter_dashboard_bp.route('/offers', methods=['POST'])
 @optional_auth
@@ -1226,77 +1660,91 @@ def create_offer_legacy():
         # Try to insert into the main offers table first (existing schema)
         offer_id = None
         try:
-            query = """
-                INSERT INTO offers 
-                (id, job_posting_id, candidate_id, recruiter_id, offer_data, status, expires_at, created_at, updated_at)
-                VALUES (uuid_generate_v4(), %s::uuid, %s, %s, %s::jsonb, %s, %s::timestamptz, NOW(), NOW())
-                RETURNING id
-            """
-            
-            result = execute_query(
-                query,
-                (jd_id, candidate_id, recruiter_id, json.dumps(offer_data), initial_status, expiry_date),
-                fetch_one=True
-            )
-            
-            if result:
-                offer_id = str(result.get('id'))
-                logger.info(f"Offer created in main offers table with ID: {offer_id}, status: {initial_status}")
+            # Check if jd_id is a valid UUID format before trying the offers table
+            import re
+            uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+            if jd_id and uuid_pattern.match(str(jd_id)):
+                query = """
+                    INSERT INTO offers 
+                    (id, job_posting_id, candidate_id, recruiter_id, offer_data, status, expires_at, created_at, updated_at)
+                    VALUES (uuid_generate_v4(), %s::uuid, %s, %s, %s::jsonb, %s, %s::timestamptz, NOW(), NOW())
+                    RETURNING id
+                """
                 
-                # Create approval request if approval is required
-                if requires_approval:
-                    try:
-                        # Create an approval request entry
-                        approval_query = """
-                            INSERT INTO offer_approval_requests 
-                            (id, offer_id, jd_id, candidate_id, recruiter_id, position_title, salary_amount, 
-                             salary_currency, status, requested_at, created_at)
-                            VALUES (uuid_generate_v4(), %s::uuid, %s::uuid, %s, %s, %s, %s, %s, 'pending', NOW(), NOW())
-                            RETURNING id
-                        """
-                        approval_result = execute_query(
-                            approval_query,
-                            (offer_id, jd_id, candidate_id, recruiter_id, position_title, salary_amount, currency),
-                            fetch_one=True
-                        )
-                        if approval_result:
-                            logger.info(f"Approval request created with ID: {approval_result.get('id')}")
-                    except Exception as approval_err:
-                        logger.warning(f"Failed to create approval request: {approval_err}")
-                        # Continue anyway - offer is created, approval can be added later
+                result = execute_query(
+                    query,
+                    (jd_id, candidate_id, recruiter_id, json.dumps(offer_data), initial_status, expiry_date),
+                    fetch_one=True
+                )
+                
+                if result:
+                    offer_id = str(result.get('id'))
+                    logger.info(f"Offer created in main offers table with ID: {offer_id}, status: {initial_status}")
+                    
+                    # Create approval request if approval is required
+                    if requires_approval:
+                        try:
+                            approval_query = """
+                                INSERT INTO offer_approval_requests 
+                                (id, offer_id, jd_id, candidate_id, recruiter_id, position_title, salary_amount, 
+                                 salary_currency, status, requested_at, created_at)
+                                VALUES (uuid_generate_v4(), %s::uuid, %s::uuid, %s, %s, %s, %s, %s, 'pending', NOW(), NOW())
+                                RETURNING id
+                            """
+                            approval_result = execute_query(
+                                approval_query,
+                                (offer_id, jd_id, candidate_id, recruiter_id, position_title, salary_amount, currency),
+                                fetch_one=True
+                            )
+                            if approval_result:
+                                logger.info(f"Approval request created with ID: {approval_result.get('id')}")
+                        except Exception as approval_err:
+                            logger.warning(f"Failed to create approval request: {approval_err}")
+            else:
+                logger.info(f"jd_id '{jd_id}' is not UUID format, skipping offers table insert")
         except Exception as main_err:
             logger.warning(f"Main offers table insert failed: {main_err}")
         
-        # Also insert into job_offers table as backup
+        # Also insert into job_offers table (uses varchar columns, more flexible)
         try:
+            import uuid as uuid_mod
+            generated_offer_id = f"OFR-{uuid_mod.uuid4().hex[:8].upper()}"
+            shortlist_id = data.get('shortlist_id', '')
+            
             query = """
                 INSERT INTO job_offers 
-                (job_id, candidate_id, recruiter_id, position_title, salary_offered, 
-                 currency, start_date, offer_expiry, benefits, notes, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending')
-                RETURNING id
+                (offer_id, jd_id, shortlist_id, candidate_id, recruiter_id, position_title, salary_amount, 
+                 salary_currency, salary_period, employment_type, start_date, expiry_date, 
+                 benefits, notes, status, probation_period_months, work_location, 
+                 created_by, offer_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, %s, NOW())
+                RETURNING offer_id
             """
             
-            # job_id might be UUID, try to handle it
-            job_id_int = None
-            if jd_id:
-                try:
-                    job_id_int = int(jd_id)
-                except (ValueError, TypeError):
-                    job_id_int = None
-            
-            backup_id = execute_query(
+            backup_result = execute_query(
                 query,
-                (job_id_int, candidate_id, recruiter_id, position_title, salary_amount,
-                 currency, start_date, expiry_date, benefits_str, notes),
-                return_id=True
+                (generated_offer_id, str(jd_id) if jd_id else None, str(shortlist_id),
+                 str(candidate_id), str(recruiter_id), 
+                 position_title, salary_amount, currency, 
+                 data.get('salary_period', 'monthly'),
+                 data.get('employment_type', 'full-time'),
+                 start_date, expiry_date, 
+                 benefits_str, notes,
+                 data.get('probation_period_months', 3),
+                 data.get('work_location', ''),
+                 str(recruiter_id)),
+                fetch_one=True
             )
             
-            if backup_id and not offer_id:
-                offer_id = str(backup_id)
+            if backup_result and not offer_id:
+                offer_id = str(backup_result.get('offer_id'))
                 logger.info(f"Offer created in job_offers table with ID: {offer_id}")
+            elif backup_result:
+                logger.info(f"Offer also saved to job_offers table with ID: {backup_result.get('offer_id')}")
         except Exception as backup_err:
             logger.warning(f"Backup job_offers table insert failed: {backup_err}")
+            import traceback
+            traceback.print_exc()
         
         if offer_id:
             return jsonify({
@@ -1778,16 +2226,24 @@ def approve_offer(approval_id):
                 SET status = 'approved',
                     updated_at = NOW()
                 WHERE id = %s::uuid
-                RETURNING id, position_title, job_title
+                RETURNING id, offer_data
             """
             offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
             
             if offer_result:
                 logger.info(f"Offer {offer_id} approved by HR Manager {approver_id}")
                 
-                # Use position_title from offer if not found in approval request
+                # Extract position_title from offer_data JSONB
+                offer_data = offer_result.get('offer_data') or {}
+                if isinstance(offer_data, str):
+                    try:
+                        offer_data = json.loads(offer_data)
+                    except:
+                        offer_data = {}
+                
+                # Use position_title from offer_data if not found in approval request
                 if not position_title:
-                    position_title = offer_result.get('position_title') or offer_result.get('job_title') or 'a position'
+                    position_title = offer_data.get('position_title') or offer_data.get('job_title') or 'a position'
                 
                 # If recruiter_id not found from approval request, try to get from offers table
                 if not recruiter_id:

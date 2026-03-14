@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
-
-
 import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorManagerEnhanced';
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
 import AdminInterviews from '@/components/admin/AdminInterviews';
@@ -16,27 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
-  Users,
-  Briefcase,
-  TrendingUp,
-  Shield,
-  Settings,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  BarChart3,
-  UserCheck,
-  FileText,
-  MessageSquare,
-  Activity,
-
-  Video,
-  ClipboardCopy,
-  RefreshCw,
-  UserPlus,
-
-  Send,
-  Mail
+  Users, Briefcase, TrendingUp, Shield, AlertTriangle, CheckCircle, Clock,
+  BarChart3, UserCheck, FileText, MessageSquare, Activity, Video, Loader2,
+  ClipboardCopy, RefreshCw, UserPlus, Send, Mail
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -45,21 +26,18 @@ const AdminDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const b = (en: string, ar: string) => isRTL ? ar : en;
 
   // Derive tab from URL or default to "overview"
   const activeTab = searchParams.get("tab") || "overview";
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Handler for UI tab changes
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value }, { replace: true });
   };
-
-  // Load data when tab changes based on URL
-  useEffect(() => {
-    if (activeTab === 'feedback') {
-      loadFeedbackList();
-    }
-  }, [activeTab]);
   const [dashboardData, setDashboardData] = useState({
     platform: {
       totalUsers: 0,
@@ -178,6 +156,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Load feedback when tab changes
   useEffect(() => {
     if (activeTab === 'feedback') {
       loadFeedbackList();
@@ -262,6 +241,8 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error loading admin dashboard data:', error);
       setMockData();
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -332,7 +313,20 @@ const AdminDashboard = () => {
     });
   };
 
-
+  // Loading spinner on initial mount
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
+        <HybridGovernmentNavFixed showAuthButtons={true} />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+            <p className="text-sm text-slate-500 font-dubai-medium">{b('Loading dashboard...', 'جارٍ تحميل لوحة التحكم...')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai">
@@ -344,23 +338,20 @@ const AdminDashboard = () => {
         <div className="min-h-screen bg-background">
           {/* Header */}
           <div className="bg-card border-b">
-            <div className="container mx-auto px-4 py-6">
+            <div className="container mx-auto px-4 py-6" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <div className="flex justify-between items-center">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground">
-                    System Administration
+                    {b('System Administration', 'إدارة النظام')}
                   </h1>
                   <p className="text-muted-foreground mt-1">
-                    Welcome back, {getUserDisplayName()}
+                    {b('Welcome back', 'مرحباً بعودتك')}, {getUserDisplayName()}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
                   <Badge variant="secondary" className="bg-ehrdc-teal/10 text-ehrdc-teal">
-                    Administrator
+                    {b('Administrator', 'مسؤول النظام')}
                   </Badge>
-                  <Button variant="outline" onClick={handleLogout}>
-                    Sign Out
-                  </Button>
                 </div>
               </div>
             </div>
@@ -368,34 +359,31 @@ const AdminDashboard = () => {
 
           <div className="container mx-auto px-4 py-8">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-              <TabsList className="flex flex-wrap gap-1 h-auto p-1">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="users">User Management</TabsTrigger>
-
-                <TabsTrigger value="operators" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Growth Operators
+              <TabsList className="grid w-full grid-cols-9 gap-1 h-auto p-1 bg-muted/50 rounded-xl">
+                <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Overview', 'نظرة عامة')}</TabsTrigger>
+                <TabsTrigger value="users" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Users', 'المستخدمون')}</TabsTrigger>
+                <TabsTrigger value="operators" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {b('Operators', 'المشغلون')}
                 </TabsTrigger>
-
-                <TabsTrigger value="interviews" className="flex items-center gap-2">
-                  <Video className="h-4 w-4" />
-                  Interviews
+                <TabsTrigger value="interviews" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Video className="h-3.5 w-3.5" />
+                  {b('Interviews', 'المقابلات')}
                 </TabsTrigger>
-                <TabsTrigger value="feedback" className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Feedback
+                <TabsTrigger value="feedback" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  {b('Feedback', 'الملاحظات')}
                 </TabsTrigger>
-                <TabsTrigger value="messaging" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Messaging
+                <TabsTrigger value="messaging" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Mail className="h-3.5 w-3.5" />
+                  {b('Messaging', 'الرسائل')}
                 </TabsTrigger>
-                <TabsTrigger value="requests" className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Requests
+                <TabsTrigger value="requests" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <UserPlus className="h-3.5 w-3.5" />
+                  {b('Requests', 'الطلبات')}
                 </TabsTrigger>
-
-                <TabsTrigger value="system">System Health</TabsTrigger>
-                <TabsTrigger value="security">Security</TabsTrigger>
+                <TabsTrigger value="system" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('System', 'النظام')}</TabsTrigger>
+                <TabsTrigger value="security" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Security', 'الأمان')}</TabsTrigger>
               </TabsList>
 
               {/* Overview Tab */}
@@ -423,7 +411,7 @@ const AdminDashboard = () => {
                     <CardContent>
                       <div className="text-2xl font-bold">{dashboardData.platform.activeUsers.toLocaleString()}</div>
                       <p className="text-xs text-muted-foreground">
-                        {Math.round((dashboardData.platform.activeUsers / dashboardData.platform.totalUsers) * 100)}% of total users
+                        {dashboardData.platform.totalUsers > 0 ? Math.round((dashboardData.platform.activeUsers / dashboardData.platform.totalUsers) * 100) : 0}% {b('of total users', 'من إجمالي المستخدمين')}
                       </p>
                     </CardContent>
                   </Card>
@@ -462,7 +450,7 @@ const AdminDashboard = () => {
                     <CardContent>
                       <div className="text-2xl font-bold">{dashboardData.platform.successfulMatches.toLocaleString()}</div>
                       <p className="text-xs text-muted-foreground">
-                        {Math.round((dashboardData.platform.successfulMatches / dashboardData.platform.totalApplications) * 100)}% success rate
+                        {dashboardData.platform.totalApplications > 0 ? Math.round((dashboardData.platform.successfulMatches / dashboardData.platform.totalApplications) * 100) : 0}% {b('success rate', 'معدل النجاح')}
                       </p>
                     </CardContent>
                   </Card>
@@ -802,15 +790,10 @@ ${JSON.stringify(item.metadata, null, 2)}
                 <UserManagerEnhanced />
               </TabsContent>
 
-              {/* Roles Tab */}
-
-
               {/* Growth Operators Tab */}
               <TabsContent value="operators" className="space-y-6">
                 <GrowthOperatorManagerEnhanced />
               </TabsContent>
-
-
 
               {/* Interviews Tab */}
               <TabsContent value="interviews" className="space-y-6">
@@ -837,60 +820,43 @@ ${JSON.stringify(item.metadata, null, 2)}
               <TabsContent value="system" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>System Health Monitoring</CardTitle>
+                    <CardTitle>{b('System Health Monitoring', 'مراقبة صحة النظام')}</CardTitle>
                     <CardDescription>
-                      Monitor system performance and health metrics
+                      {b('Monitor system performance and health metrics', 'مراقبة أداء النظام ومقاييس الصحة')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">CPU Usage</CardTitle>
+                          <CardTitle className="text-sm">{b('CPU Usage', 'استخدام المعالج')}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-green-600">{dashboardData.system?.cpu_percent || 0}%</div>
+                          <div className={`text-2xl font-bold ${(dashboardData.system?.cpu_percent || 0) > 80 ? 'text-red-600' : (dashboardData.system?.cpu_percent || 0) > 60 ? 'text-yellow-600' : 'text-green-600'}`}>{dashboardData.system?.cpu_percent || 0}%</div>
                           <Progress value={dashboardData.system?.cpu_percent || 0} className="w-full mt-2" />
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Memory Usage</CardTitle>
+                          <CardTitle className="text-sm">{b('Memory Usage', 'استخدام الذاكرة')}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-yellow-600">{dashboardData.system?.memory_percent || 0}%</div>
+                          <div className={`text-2xl font-bold ${(dashboardData.system?.memory_percent || 0) > 80 ? 'text-red-600' : (dashboardData.system?.memory_percent || 0) > 60 ? 'text-yellow-600' : 'text-green-600'}`}>{dashboardData.system?.memory_percent || 0}%</div>
                           <Progress value={dashboardData.system?.memory_percent || 0} className="w-full mt-2" />
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Disk Usage</CardTitle>
+                          <CardTitle className="text-sm">{b('Disk Usage', 'استخدام القرص')}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-bold text-blue-600">{dashboardData.system?.disk_percent || 0}%</div>
+                          <div className={`text-2xl font-bold ${(dashboardData.system?.disk_percent || 0) > 80 ? 'text-red-600' : 'text-blue-600'}`}>{dashboardData.system?.disk_percent || 0}%</div>
                           <Progress value={dashboardData.system?.disk_percent || 0} className="w-full mt-2" />
-                          <p className="text-xs text-gray-500 mt-1">{dashboardData.system?.disk_free || 0} GB free of {dashboardData.system?.disk_total || 0} GB</p>
+                          <p className="text-xs text-gray-500 mt-1">{dashboardData.system?.disk_free || 0} GB {b('free of', 'حر من')} {dashboardData.system?.disk_total || 0} GB</p>
                         </CardContent>
                       </Card>
-
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Network I/O</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-purple-600">12%</div>
-                          <Progress value={12} className="w-full mt-2" />
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    <div className="text-center py-8">
-                      <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">System Monitoring</h3>
-                      <p className="text-gray-500 mb-4">Real-time system performance monitoring</p>
-                      <Button>View Detailed Metrics</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -900,9 +866,9 @@ ${JSON.stringify(item.metadata, null, 2)}
               <TabsContent value="security" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Security Management</CardTitle>
+                    <CardTitle>{b('Security Management', 'إدارة الأمان')}</CardTitle>
                     <CardDescription>
-                      Live security metrics from platform data
+                      {b('Live security metrics from platform data', 'مقاييس الأمان الحية من بيانات المنصة')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -911,7 +877,7 @@ ${JSON.stringify(item.metadata, null, 2)}
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg flex items-center">
                             <Shield className="h-5 w-5 mr-2" />
-                            Security Score
+                            {b('Security Score', 'درجة الأمان')}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -919,7 +885,7 @@ ${JSON.stringify(item.metadata, null, 2)}
                             {securityData.security_score}/100
                           </div>
                           <p className="text-sm text-gray-600">
-                            {securityData.security_score >= 80 ? 'Excellent security posture' : securityData.security_score >= 50 ? 'Moderate — review recommendations' : 'Needs attention'}
+                            {securityData.security_score >= 80 ? b('Excellent security posture', 'وضع أمني ممتاز') : securityData.security_score >= 50 ? b('Moderate — review recommendations', 'متوسط — راجع التوصيات') : b('Needs attention', 'يحتاج اهتمام')}
                           </p>
                           <Progress value={securityData.security_score} className="w-full mt-2" />
                         </CardContent>
@@ -927,37 +893,37 @@ ${JSON.stringify(item.metadata, null, 2)}
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Failed Logins</CardTitle>
+                          <CardTitle className="text-lg">{b('Failed Logins', 'تسجيلات فاشلة')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className={`text-3xl font-bold ${securityData.failed_logins_24h > 10 ? 'text-red-600' : 'text-yellow-600'}`}>
                             {securityData.failed_logins_24h}
                           </div>
-                          <p className="text-sm text-gray-600">Last 24 hours</p>
+                          <p className="text-sm text-gray-600">{b('Last 24 hours', 'آخر 24 ساعة')}</p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Active Sessions</CardTitle>
+                          <CardTitle className="text-lg">{b('Active Sessions', 'جلسات نشطة')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="text-3xl font-bold text-blue-600">
                             {securityData.active_sessions.toLocaleString()}
                           </div>
-                          <p className="text-sm text-gray-600">Logged in last 24h</p>
+                          <p className="text-sm text-gray-600">{b('Logged in last 24h', 'سجلوا دخول خلال 24 ساعة')}</p>
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">Verified Users</CardTitle>
+                          <CardTitle className="text-lg">{b('Verified Users', 'مستخدمون موثقون')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="text-3xl font-bold text-teal-600">
                             {securityData.verified_users_pct}%
                           </div>
-                          <p className="text-sm text-gray-600">Phone-verified accounts</p>
+                          <p className="text-sm text-gray-600">{b('Phone-verified accounts', 'حسابات موثقة بالهاتف')}</p>
                           <Progress value={securityData.verified_users_pct} className="w-full mt-2" />
                         </CardContent>
                       </Card>

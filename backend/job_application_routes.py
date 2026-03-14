@@ -119,7 +119,71 @@ def apply_for_job():
         
         conn.commit()
         
-        logger.info(f"✅ Job application submitted: {application_id} for user {current_user_id}, job {job_id}")
+        logger.info(f"Job application submitted: {application_id} for user {current_user_id}, job {job_id}")
+        
+        # --- Create notification for the recruiter ---
+        try:
+            cur2 = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            # Find recruiter who posted the job and the job title
+            cur2.execute("""
+                SELECT jp.title, jp.recruiter_id, jp.company_id
+                FROM job_postings jp
+                WHERE jp.jd_id = %s OR jp.id::text = %s
+                LIMIT 1
+            """, (str(job_id), str(job_id)))
+            job_row = cur2.fetchone()
+            
+            recruiter_id = None
+            job_title = 'a position'
+            
+            if job_row:
+                job_title = job_row.get('title') or 'a position'
+                raw_recruiter = job_row.get('recruiter_id')
+                
+                # recruiter_id might be '0' or empty for seed data
+                if raw_recruiter and str(raw_recruiter) not in ('0', '', 'None'):
+                    recruiter_id = str(raw_recruiter)
+                
+                # Fallback: find any recruiter user
+                if not recruiter_id:
+                    cur2.execute("SELECT id FROM users WHERE role = 'recruiter' LIMIT 1")
+                    any_rec = cur2.fetchone()
+                    if any_rec:
+                        recruiter_id = str(any_rec['id'])
+            
+            if recruiter_id:
+                # Get candidate name
+                cand_query = "SELECT COALESCE(full_name, email, 'A candidate') as name FROM users WHERE id::text = %s"
+                cur2.execute(cand_query, (str(current_user_id),))
+                cand_row = cur2.fetchone()
+                candidate_name = cand_row['name'] if cand_row else 'A candidate'
+                
+                # Insert notification for recruiter
+                cur2.execute("""
+                    INSERT INTO notifications (user_id, type, title, content, metadata, is_read, created_at)
+                    VALUES (%s, %s, %s, %s, %s, FALSE, NOW())
+                """, (
+                    recruiter_id,
+                    'application_submitted',
+                    'New Application: %s' % job_title,
+                    '%s applied for %s' % (candidate_name, job_title),
+                    json.dumps({
+                        'application_id': application_id,
+                        'job_id': str(job_id),
+                        'candidate_id': str(current_user_id),
+                        'candidate_name': candidate_name,
+                        'job_title': job_title,
+                        'priority': 'high'
+                    })
+                ))
+                conn.commit()
+                logger.info("Notification created for recruiter %s: %s applied for %s" % (recruiter_id, candidate_name, job_title))
+            else:
+                logger.warning("Could not find any recruiter for job %s - no notification created" % job_id)
+        except Exception as notif_err:
+            logger.warning("Failed to create recruiter notification (non-critical): %s" % notif_err)
+            import traceback
+            logger.warning(traceback.format_exc())
         
         return jsonify({
             'success': True,
@@ -166,7 +230,7 @@ def get_user_applications():
                 a.submitted_at,
                 a.last_updated
             FROM job_applications a
-            LEFT JOIN job_postings j ON a.job_id = j.jd_id::text
+            LEFT JOIN job_postings j ON a.job_id = j.id
             LEFT JOIN companies c ON j.company_id::text = c.id::text
             WHERE a.candidate_id = %s
             ORDER BY a.submitted_at DESC

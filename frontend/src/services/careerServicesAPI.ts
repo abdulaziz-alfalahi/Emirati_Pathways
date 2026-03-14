@@ -1,11 +1,10 @@
 /**
  * Career Services API — Frontend service
  * Typed functions for internships, gigs, career plans, salary benchmarks, portfolio, startups.
+ * Uses restClient (axios) which automatically handles proxy and auth token injection.
  */
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL
-    ? `${import.meta.env.VITE_API_BASE_URL}/api/career-services`
-    : 'http://127.0.0.1:5005/api/career-services');
+import { restClient } from '@/utils/api';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -102,32 +101,22 @@ export async function getInternships(filters?: {
     location?: string;
     search?: string;
 }): Promise<Internship[]> {
-    const params = new URLSearchParams();
-    if (filters?.sector) params.set('sector', filters.sector);
-    if (filters?.location) params.set('location', filters.location);
-    if (filters?.search) params.set('search', filters.search);
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    const resp = await fetch(`${API_BASE}/internships${qs}`);
-    if (!resp.ok) throw new Error(`Failed to fetch internships: ${resp.status}`);
-    const data = await resp.json();
-    return data.internships || [];
+    const params: Record<string, string> = {};
+    if (filters?.sector) params.sector = filters.sector;
+    if (filters?.location) params.location = filters.location;
+    if (filters?.search) params.search = filters.search;
+    const resp = await restClient.get('/api/career-services/internships', { params });
+    return resp.data?.internships || [];
 }
 
 export async function getInternship(id: number): Promise<Internship> {
-    const resp = await fetch(`${API_BASE}/internships/${id}`);
-    if (!resp.ok) throw new Error(`Failed to fetch internship: ${resp.status}`);
-    return resp.json();
+    const resp = await restClient.get(`/api/career-services/internships/${id}`);
+    return resp.data;
 }
 
 export async function applyForInternship(internshipId: number, userId?: number): Promise<{ application_id: number; status: string }> {
-    const token = localStorage.getItem('token') || '';
-    const resp = await fetch(`${API_BASE}/internships/${internshipId}/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ user_id: userId }),
-    });
-    if (!resp.ok) throw new Error(`Failed to apply: ${resp.status}`);
-    return resp.json();
+    const resp = await restClient.post(`/api/career-services/internships/${internshipId}/apply`, { user_id: userId });
+    return resp.data;
 }
 
 // ─── Gig Marketplace ────────────────────────────────────
@@ -137,32 +126,22 @@ export async function getGigs(filters?: {
     search?: string;
     featured?: boolean;
 }): Promise<Gig[]> {
-    const params = new URLSearchParams();
-    if (filters?.category) params.set('category', filters.category);
-    if (filters?.search) params.set('search', filters.search);
-    if (filters?.featured) params.set('featured', 'true');
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    const resp = await fetch(`${API_BASE}/gigs${qs}`);
-    if (!resp.ok) throw new Error(`Failed to fetch gigs: ${resp.status}`);
-    const data = await resp.json();
-    return data.gigs || [];
+    const params: Record<string, string> = {};
+    if (filters?.category) params.category = filters.category;
+    if (filters?.search) params.search = filters.search;
+    if (filters?.featured) params.featured = 'true';
+    const resp = await restClient.get('/api/career-services/gigs', { params });
+    return resp.data?.gigs || [];
 }
 
 export async function getGig(id: number): Promise<Gig> {
-    const resp = await fetch(`${API_BASE}/gigs/${id}`);
-    if (!resp.ok) throw new Error(`Failed to fetch gig: ${resp.status}`);
-    return resp.json();
+    const resp = await restClient.get(`/api/career-services/gigs/${id}`);
+    return resp.data;
 }
 
 export async function applyForGig(gigId: number, userId?: number): Promise<{ application_id: number; status: string }> {
-    const token = localStorage.getItem('token') || '';
-    const resp = await fetch(`${API_BASE}/gigs/${gigId}/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ user_id: userId }),
-    });
-    if (!resp.ok) throw new Error(`Failed to apply: ${resp.status}`);
-    return resp.json();
+    const resp = await restClient.post(`/api/career-services/gigs/${gigId}/apply`, { user_id: userId });
+    return resp.data;
 }
 
 // ─── Salary Benchmarks ──────────────────────────────────
@@ -172,42 +151,29 @@ export async function getSalaryBenchmarks(filters?: {
     industry?: string;
     experience?: string;
 }): Promise<SalaryBenchmark[]> {
-    const params = new URLSearchParams();
-    if (filters?.role) params.set('role', filters.role);
-    if (filters?.industry) params.set('industry', filters.industry);
-    if (filters?.experience) params.set('experience', filters.experience);
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    const resp = await fetch(`${API_BASE}/salary-benchmarks${qs}`);
-    if (!resp.ok) throw new Error(`Failed to fetch benchmarks: ${resp.status}`);
-    const data = await resp.json();
-    return data.benchmarks || [];
+    const params: Record<string, string> = {};
+    if (filters?.role) params.role = filters.role;
+    if (filters?.industry) params.industry = filters.industry;
+    if (filters?.experience) params.experience = filters.experience;
+    const resp = await restClient.get('/api/career-services/salary-benchmarks', { params });
+    return resp.data?.benchmarks || [];
 }
 
 // ─── Portfolio ──────────────────────────────────────────
 
 export async function getPortfolio(userId: number): Promise<PortfolioProject[]> {
-    const resp = await fetch(`${API_BASE}/portfolio/${userId}`);
-    if (!resp.ok) throw new Error(`Failed to fetch portfolio: ${resp.status}`);
-    const data = await resp.json();
-    return data.projects || [];
+    const resp = await restClient.get(`/api/career-services/portfolio/${userId}`);
+    return resp.data?.projects || [];
 }
 
 export async function addPortfolioProject(project: Partial<PortfolioProject>): Promise<{ project_id: number }> {
-    const token = localStorage.getItem('token') || '';
-    const resp = await fetch(`${API_BASE}/portfolio/projects`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(project),
-    });
-    if (!resp.ok) throw new Error(`Failed to add project: ${resp.status}`);
-    return resp.json();
+    const resp = await restClient.post('/api/career-services/portfolio/projects', project);
+    return resp.data;
 }
 
 // ─── Startup Launchpad ──────────────────────────────────
 
 export async function getStartupPrograms(): Promise<StartupProgram[]> {
-    const resp = await fetch(`${API_BASE}/startups`);
-    if (!resp.ok) throw new Error(`Failed to fetch startups: ${resp.status}`);
-    const data = await resp.json();
-    return data.programs || [];
+    const resp = await restClient.get('/api/career-services/startups');
+    return resp.data?.programs || [];
 }

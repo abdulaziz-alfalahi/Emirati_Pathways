@@ -63,11 +63,25 @@ export function ScheduleVideoInterviewDialog({
 
     const fetchJobs = async () => {
         try {
-            const response = await restClient.get('/api/hr/jobs?limit=100&status=all');
-            if (response.data.success) {
-                const jobsData = response.data.data?.job_postings || response.data.data || [];
-                setJobs(Array.isArray(jobsData) ? jobsData : []);
+            // Primary: recruiter's own JD list endpoint
+            let jobsData: any[] = [];
+            try {
+                const response = await restClient.get('/api/recruiter/jd/list');
+                const raw = response.data?.data || response.data;
+                jobsData = raw?.job_descriptions || raw?.jobs || (Array.isArray(raw) ? raw : []);
+            } catch (jdError: any) {
+                console.warn("Recruiter JD list failed, trying HR endpoint:", jdError.message);
+                // Fallback: HR jobs endpoint (works for HR-role recruiters)
+                try {
+                    const hrResponse = await restClient.get('/api/hr/jobs?limit=100&status=all');
+                    if (hrResponse.data.success) {
+                        jobsData = hrResponse.data.data?.job_postings || hrResponse.data.data || [];
+                    }
+                } catch (hrError) {
+                    console.error("HR jobs endpoint also failed:", hrError);
+                }
             }
+            setJobs(Array.isArray(jobsData) ? jobsData : []);
         } catch (error) {
             console.error("Error fetching jobs:", error);
         }

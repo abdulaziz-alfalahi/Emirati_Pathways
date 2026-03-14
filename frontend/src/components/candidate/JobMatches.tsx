@@ -32,6 +32,7 @@ import {
   Coins
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatDateFromString } from '@/utils/dateFormat';
 
 interface MatchBreakdown {
   skills_match?: number;
@@ -696,7 +697,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4" />
-                            <span>{new Date(job.postedDate).toLocaleDateString()}</span>
+                            <span>{formatDateFromString(job.postedDate)}</span>
                           </div>
                         </div>
                         <Badge className={getTypeColor(job.type)}>

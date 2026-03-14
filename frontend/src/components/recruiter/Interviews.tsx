@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from "@/components/ui/label";
-import { Video, Calendar, Clock, Loader2, FileVideo, Sparkles, X, MoreVertical, Edit } from 'lucide-react';
+import { Video, Calendar, Clock, Loader2, FileVideo, Sparkles, X, MoreVertical, Edit, BarChart3, ArrowLeft } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import InterviewAnalytics from './interviews/InterviewAnalytics';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -28,6 +29,7 @@ export default function RecruiterInterviews() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSession, setActiveSession] = useState<any>(null); // If set, show VideoRoom
   const [isAnalysisLoading, setIsAnalysisLoading] = useState<string | null>(null);
+  const [analyticsSession, setAnalyticsSession] = useState<any>(null);
 
   // Schedule Dialog
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -52,40 +54,11 @@ export default function RecruiterInterviews() {
 
   const fetchSessions = async () => {
     try {
-      // Fetch both video-interview sessions and scheduled interviews in parallel
-      const [videoRes, scheduledRes] = await Promise.all([
-        restClient.get('/api/video-interview/sessions?role=recruiter').catch(() => ({ data: { success: false } })),
-        restClient.get('/api/recruiter/interviews/all').catch(() => ({ data: { success: false } })),
-      ]);
-
-      const videoSessions = videoRes.data?.success ? (videoRes.data.sessions || []) : [];
-
-      // Normalize scheduled interviews to match video session card shape
-      const scheduledInterviews = scheduledRes.data?.success
-        ? (scheduledRes.data.interviews || []).map((interview: any) => ({
-          id: interview.id || interview.interview_id,
-          title: interview.title || `${interview.interview_type || 'Interview'}`,
-          job_title: interview.jd_id ? `JD: ${interview.jd_id.slice(0, 8)}...` : '',
-          candidate_first_name: interview.candidate_first_name || '',
-          candidate_last_name: interview.candidate_last_name || '',
-          scheduled_time: interview.scheduled_date
-            ? `${interview.scheduled_date}T${interview.scheduled_time || '00:00:00'}`
-            : interview.scheduled_at,
-          status: interview.status || 'scheduled',
-          duration_minutes: interview.duration_minutes || 60,
-          interview_type: interview.interview_type || 'video',
-          source: 'scheduled',
-        }))
-        : [];
-
-      // Merge, deduplicating by id
-      const existingIds = new Set(videoSessions.map((s: any) => s.id));
-      const merged = [
-        ...videoSessions,
-        ...scheduledInterviews.filter((s: any) => !existingIds.has(s.id)),
-      ];
-
-      setSessions(merged);
+      // Single endpoint already queries both interview_sessions AND interview_schedules tables
+      const res = await restClient.get('/api/video-interview/sessions?role=recruiter');
+      if (res.data?.success) {
+        setSessions(res.data.sessions || []);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -189,6 +162,21 @@ export default function RecruiterInterviews() {
     }
   };
 
+  if (analyticsSession) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setAnalyticsSession(null)} className="text-ehrdc-teal hover:text-ehrdc-teal/80">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Interviews
+          </Button>
+          <h2 className="text-xl font-bold">Interview Analytics</h2>
+          <Badge variant="outline">{analyticsSession.title || 'Interview'}</Badge>
+        </div>
+        <InterviewAnalytics interviewId={analyticsSession.id} />
+      </div>
+    );
+  }
+
   if (activeSession) {
     return (
       <div className="h-[calc(100vh-100px)]">
@@ -290,6 +278,16 @@ export default function RecruiterInterviews() {
                         </Button>
                       )}
 
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10"
+                        title="View Analytics"
+                        onClick={() => setAnalyticsSession(session)}
+                      >
+                        <BarChart3 className="h-4 w-4 text-purple-600" />
+                      </Button>
+
                       {/* Actions Menu */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -300,6 +298,9 @@ export default function RecruiterInterviews() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setAnalyticsSession(session)}>
+                            <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openRescheduleDialog(session)}>
                             <Edit className="mr-2 h-4 w-4" /> Reschedule
                           </DropdownMenuItem>
