@@ -18,6 +18,7 @@ import psycopg2.extras
 from .jd_builder_engine import get_jd_builder_engine
 from .ai_candidate_matching_final import get_ai_matching_engine_final as get_ai_matching_engine
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,17 +33,7 @@ jd_bp = Blueprint('jd_routes_v2', __name__, url_prefix='/api/recruiter/jd')
 jd_engine = get_jd_builder_engine()
 ai_matching = get_ai_matching_engine()
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 
 def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:

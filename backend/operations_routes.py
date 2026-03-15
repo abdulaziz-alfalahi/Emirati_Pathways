@@ -6,23 +6,16 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta, date
 import logging
-import psycopg2
 from psycopg2.extras import RealDictCursor
+from backend.db import get_db_connection
 
 logger = logging.getLogger(__name__)
 
 operations_bp = Blueprint('operations', __name__, url_prefix='/api/operations')
 
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password'
-}
-
 
 def get_db():
-    conn = psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
+    conn = get_db_connection()
     return conn
 
 

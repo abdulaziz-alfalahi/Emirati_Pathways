@@ -10,19 +10,12 @@ import psycopg2.extras
 import logging
 import os
 import json
+from backend.db import get_db_connection
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 hr_candidate_bp = Blueprint('hr_candidate', __name__, url_prefix='/api/hr/candidates')
-
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
 
 # REMOVED: search_candidates was dead code — shadowed by
 # REMOVED: hr_dashboard_api.search_candidates (registered first via blueprint).
@@ -35,7 +28,7 @@ def get_candidate_profile_hr(candidate_id):
     Get full candidate profile for HR view
     """
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:

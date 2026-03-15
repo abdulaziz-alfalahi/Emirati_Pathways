@@ -9,25 +9,16 @@ import psycopg2
 import psycopg2.extras
 import logging
 from datetime import datetime
-import os
 import uuid
 import json
+from backend.db import get_db_connection
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 hr_approval_bp = Blueprint("hr_approval", __name__, url_prefix="/api/hr/approvals")
 
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "database": os.getenv("DB_NAME", "emirati_journey"),
-    "user": os.getenv("DB_USER", "emirati_user"),
-    "password": os.getenv("DB_PASSWORD", "emirati_secure_password"),
-}
 
-
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
 
 
 def _company_for_resource(cursor, resource_type: str, resource_id: str):

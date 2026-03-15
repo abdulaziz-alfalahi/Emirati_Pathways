@@ -8,7 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 import psycopg2
 import psycopg2.extras
 import logging
-import os
+from backend.db import get_db_connection
 from datetime import datetime
 import json
 
@@ -25,21 +25,9 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 interview_bp = Blueprint('recruiter_interviews', __name__)
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
-
 # Initialize interview engine
 interview_engine = InterviewSchedulingEngine()
 
-
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 
 def serialize_interview(interview: dict) -> dict:

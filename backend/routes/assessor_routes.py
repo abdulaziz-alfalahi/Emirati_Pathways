@@ -12,6 +12,7 @@ import logging
 from backend.assessment_planning_system import AssessmentPlanningSystem, AssessmentTemplate, Assessment, CompetencyModel
 from backend.competency_validation_framework import CompetencyValidationFramework
 from backend.auth.auth_manager import require_role
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,10 +20,6 @@ logger = logging.getLogger(__name__)
 
 # Create Blueprint
 assessor_bp = Blueprint('assessor', __name__, url_prefix='/api/assessor')
-
-def get_db_connection():
-    """Get database connection string from app config"""
-    return current_app.config.get('DATABASE_URL', 'postgresql://localhost/emirati_platform')
 
 # Assessment Template Routes
 

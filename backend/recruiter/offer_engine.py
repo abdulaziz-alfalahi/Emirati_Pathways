@@ -10,21 +10,11 @@ import secrets
 from datetime import datetime, timedelta
 import logging
 import requests
-import os
+from backend.db import get_db_connection
 
 logger = logging.getLogger(__name__)
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', 'Passw0rd')
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 def update_shortlist_status_from_offer(shortlist_id, status, notes=''):
     """

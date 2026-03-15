@@ -98,7 +98,7 @@ const MentorDashboard: React.FC = () => {
     activity: []
   });
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+  const API_BASE = import.meta.env.VITE_API_URL || '';
 
   // Get authenticated user info
   const getUserInfo = () => {

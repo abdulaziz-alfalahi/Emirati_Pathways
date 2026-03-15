@@ -12,6 +12,7 @@ import psycopg2.extras
 import os
 from datetime import datetime
 import json
+from backend.db import DB_CONFIG
 
 app = Flask(__name__)
 
@@ -19,20 +20,11 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 
-# Database configuration
-DATABASE_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password',
-    'port': 5432
-}
-
 def get_db():
     """Get database connection"""
     if 'db' not in g:
         try:
-            g.db = psycopg2.connect(**DATABASE_CONFIG)
+            g.db = psycopg2.connect(**DB_CONFIG)
         except psycopg2.Error as e:
             print(f"Database connection error: {e}")
             return None
@@ -482,5 +474,5 @@ def health_check():
 
 if __name__ == '__main__':
     print("Starting School Programs API Server...")
-    print(f"Database: {DATABASE_CONFIG['database']} on {DATABASE_CONFIG['host']}")
+    print(f"Database: {DB_CONFIG['database']} on {DB_CONFIG['host']}")
     app.run(debug=True, host='0.0.0.0', port=5001)

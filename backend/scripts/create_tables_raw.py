@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(project_root, 'backend', '.env'))
 
-def get_db_connection():
-    db_url = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/emirati_journey')
-    return psycopg2.connect(db_url)
+from backend.db import get_db_connection
 
 SQL_COMMANDS = [
     "DROP TABLE IF EXISTS candidate_certifications CASCADE;",

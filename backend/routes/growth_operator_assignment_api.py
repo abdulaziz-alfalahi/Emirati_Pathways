@@ -11,8 +11,9 @@ import json
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 from functools import wraps
+
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,15 +21,6 @@ logger = logging.getLogger(__name__)
 
 # Create Blueprint
 growth_operator_assignment_bp = Blueprint('growth_operator_assignment_api', __name__, url_prefix='/api/admin/growth-operators')
-
-# Database configuration
-DATABASE_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
 
 # Valid Growth Operator Domains
 VALID_DOMAINS = ['candidate', 'company', 'education', 'assessment', 'mentorship', 'community']
@@ -72,14 +64,6 @@ DOMAIN_METADATA = {
         'permissions': ['moderate_communities', 'manage_community_events', 'view_analytics']
     }
 }
-
-def get_db_connection():
-    """Get database connection"""
-    try:
-        return psycopg2.connect(**DATABASE_CONFIG)
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
     """Execute a database query with error handling"""

@@ -16,7 +16,7 @@ const brand = {
     pinkBg: '#FCE7F3', pinkText: '#DB2777',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const CommunityOperatorDashboard: React.FC = () => {
     const { language, toggleLanguage } = useLanguage();

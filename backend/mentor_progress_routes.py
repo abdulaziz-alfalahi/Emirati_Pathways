@@ -14,6 +14,7 @@ from mentor_progress_tracker import (
 )
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from backend.db import get_db_connection, DB_CONFIG
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,23 +23,10 @@ logger = logging.getLogger(__name__)
 # Create Blueprint
 mentor_progress_bp = Blueprint('mentor_progress', __name__, url_prefix='/api/mentor/progress')
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password',
-    'port': 5432
-}
-
-def get_database_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
-
 def get_user_role(user_id):
     """Get user role from database"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT role FROM users WHERE id = %s", (user_id,))
                 result = cursor.fetchone()
@@ -50,7 +38,7 @@ def get_user_role(user_id):
 def get_mentorship_id(mentor_user_id, mentee_user_id):
     """Get mentorship ID from mentor and mentee user IDs"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
                     SELECT mm.id FROM mentorship_matching mm
@@ -68,7 +56,7 @@ def get_mentorship_id(mentor_user_id, mentee_user_id):
 def get_user_mentorships(user_id, user_role):
     """Get mentorships for a user"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 if user_role == 'mentor':
                     cursor.execute("""
@@ -163,7 +151,7 @@ def create_mentorship_plan():
             }), 400
         
         # Get mentor profile ID
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT id FROM mentor_profiles WHERE user_id = %s", (current_user_id,))
                 mentor_result = cursor.fetchone()

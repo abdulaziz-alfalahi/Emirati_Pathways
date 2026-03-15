@@ -15,7 +15,7 @@ const brand = {
     indigoBg: '#E0E7FF', indigoText: '#4F46E5',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const MentorshipOperatorDashboard: React.FC = () => {
     const { language, toggleLanguage } = useLanguage();

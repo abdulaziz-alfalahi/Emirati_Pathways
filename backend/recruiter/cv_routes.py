@@ -11,23 +11,13 @@ from backend.cv_parser import CVParser
 import traceback # Added for debugging
 
 from flask_cors import CORS
+from backend.db import get_db_connection
 
 cv_bp = Blueprint('cv_routes', __name__, url_prefix='/api/cv')
 CORS(cv_bp)
 
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
-
-
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
 
 def get_current_user_id():
     """

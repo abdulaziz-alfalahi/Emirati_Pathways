@@ -7,20 +7,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
-import os
+from backend.db import get_db_connection
 import csv
 import io
 import json
 
-def get_db_connection():
-    """Create database connection"""
-    return psycopg2.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=os.getenv('DB_PORT', '5432'),
-        database=os.getenv('DB_NAME', 'emirati_pathways'),
-        user=os.getenv('DB_USER', 'postgres'),
-        password=os.getenv('DB_PASSWORD', 'postgres')
-    )
+
 
 def generate_recruitment_pipeline_report(
     recruiter_id: Optional[str] = None,

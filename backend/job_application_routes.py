@@ -8,7 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_req
 import logging
 from datetime import datetime
 import uuid
-import os
+from backend.db import get_db_connection
 import psycopg2
 import psycopg2.extras
 import json
@@ -19,15 +19,6 @@ logger = logging.getLogger(__name__)
 
 # Create blueprint
 job_application_bp = Blueprint('job_application', __name__, url_prefix='/api/jobs')
-
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
 
 # Mock user ID for development
 MOCK_USER_ID = '00000000-0000-0000-0000-000000000001'
@@ -56,13 +47,6 @@ def get_user_id_from_request():
     
     return None
 
-def get_db_connection():
-    """Get database connection"""
-    try:
-        return psycopg2.connect(**DB_CONFIG)
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
 
 @job_application_bp.route('/apply', methods=['POST'])
 def apply_for_job():

@@ -8,11 +8,12 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 import psycopg2
 import psycopg2.extras
-import os
 import logging
 from datetime import datetime
 import json
 import uuid as uuidlib
+
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,14 +21,6 @@ logger = logging.getLogger(__name__)
 
 # Create blueprint
 candidate_job_bp = Blueprint('candidate_job_bp', __name__, url_prefix='/api/candidate')
-
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
 # Import AI matching service (Legacy)
 # Import AI matching service (Legacy)
@@ -49,15 +42,6 @@ try:
 except ImportError as e:
     ENHANCED_MATCHING_AVAILABLE = False
     logger.error(f"❌ Enhanced Matching Engine not available: {e}")
-
-
-def get_db_connection():
-    """Get database connection"""
-    try:
-        return psycopg2.connect(**DB_CONFIG)
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
 
 
 def get_candidate_cv(user_id):

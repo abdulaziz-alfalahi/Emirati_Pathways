@@ -66,26 +66,37 @@ class CompetencyModel:
 class AssessmentPlanningSystem:
     """Core system for assessment planning and management"""
     
-    def __init__(self, db_connection_string: str):
-        self.db_connection_string = db_connection_string
-        self.connection = None
+    def __init__(self, db_connection_or_string):
+        if isinstance(db_connection_or_string, str):
+            self.db_connection_string = db_connection_or_string
+            self.connection = None
+            self._owns_connection = True
+        else:
+            # Accept a pre-existing psycopg2 connection
+            self.db_connection_string = None
+            self.connection = db_connection_or_string
+            self._owns_connection = False
         
     def connect_db(self):
-        """Establish database connection"""
+        """Establish database connection (no-op if connection already provided)"""
+        if self.connection is not None:
+            return
         try:
             self.connection = psycopg2.connect(
                 self.db_connection_string,
                 cursor_factory=RealDictCursor
             )
+            self._owns_connection = True
             logger.info("Database connection established")
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
             raise
     
     def close_db(self):
-        """Close database connection"""
-        if self.connection:
+        """Close database connection (only if we created it)"""
+        if self.connection and self._owns_connection:
             self.connection.close()
+            self.connection = None
             logger.info("Database connection closed")
     
     def generate_assessment_code(self) -> str:
@@ -705,10 +716,10 @@ class AssessmentPlanningSystem:
             }
 
 # Health check function
-def health_check(db_connection_string: str) -> Dict[str, Any]:
+def health_check(db_connection_or_string) -> Dict[str, Any]:
     """Check system health and database connectivity"""
     try:
-        system = AssessmentPlanningSystem(db_connection_string)
+        system = AssessmentPlanningSystem(db_connection_or_string)
         system.connect_db()
         
         with system.connection.cursor() as cursor:

@@ -354,8 +354,22 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                 isOpen={requestDialog.isOpen}
                 role={requestDialog.role}
                 onClose={() => setRequestDialog({ ...requestDialog, isOpen: false })}
-                onRequestSubmitted={() => {
-                    toast({ title: "Request Pending", description: "Admin will review your request." });
+                onRequestSubmitted={async () => {
+                    // Refresh roles to pick up auto-approved roles (e.g., Job Seeker)
+                    try {
+                        const { data } = await restClient.get('/api/auth/roles');
+                        if (data.success) {
+                            const allRoles = [data.data.role, ...(data.data.secondary_roles || [])].filter(Boolean);
+                            setPossessedRoles(allRoles);
+                            setCurrentUser(prev => ({
+                                ...prev,
+                                primaryRole: data.data.role || 'Job Seeker',
+                                secondaryRoles: data.data.secondary_roles || []
+                            }));
+                        }
+                    } catch (e) {
+                        console.error('Failed to refresh roles after request', e);
+                    }
                 }}
             />
         </Card>

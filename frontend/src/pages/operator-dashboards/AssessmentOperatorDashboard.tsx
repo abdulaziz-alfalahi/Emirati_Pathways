@@ -16,7 +16,7 @@ const brand = {
     amberBg: '#FEF3C7', amberText: '#D97706',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const AssessmentOperatorDashboard: React.FC = () => {
     const { language, toggleLanguage } = useLanguage();

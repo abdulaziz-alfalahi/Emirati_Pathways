@@ -5,22 +5,10 @@ import psycopg2
 import psycopg2.extras
 import os
 
+from backend.db import get_db_connection
+
 student_bp = Blueprint('student_bp', __name__)
 logger = logging.getLogger(__name__)
-
-def get_db_connection():
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            port=os.getenv('DB_PORT', '5432'),
-            database=os.getenv('DB_NAME', 'emirati_journey'),
-            user=os.getenv('DB_USER', 'emirati_user'),
-            password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
-        )
-        return conn
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
 

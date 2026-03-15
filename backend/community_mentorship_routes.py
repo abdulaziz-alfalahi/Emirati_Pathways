@@ -7,23 +7,15 @@ from flask import Blueprint, jsonify, request
 import psycopg2
 import psycopg2.extras
 import logging
-import os
 import json
+from backend.db import get_db_connection
 
 logger = logging.getLogger(__name__)
 
 community_mentorship_bp = Blueprint('community_mentorship', __name__, url_prefix='/api/community-mentorship')
 
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
-
 def _get_conn():
-    return psycopg2.connect(**DB_CONFIG)
+    return get_db_connection()
 
 def _safe_json(val):
     """Parse JSONB value safely."""

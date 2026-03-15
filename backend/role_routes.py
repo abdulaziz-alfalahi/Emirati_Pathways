@@ -2,24 +2,78 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import psycopg2
 import psycopg2.extras
-import os
 import uuid
 import json
 import logging
 from backend.notification_system import NotificationType, NotificationPriority
+from backend.db import get_db_connection
 
 # Define Blueprint
 role_bp = Blueprint('role_management', __name__, url_prefix='/api/roles')
 logger = logging.getLogger(__name__)
 
-def get_db_connection():
-    return psycopg2.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
-        database=os.getenv('DB_NAME', 'emirati_journey'),
-        user=os.getenv('DB_USER', 'emirati_user'),
-        password=os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-        port=os.getenv('DB_PORT', 5432)
-    )
+# ─── Role → Operator Approval Mapping ──────────────────────────────────
+# Maps each requestable role to the operator role(s) that should review it.
+# Requests are routed to users with these roles (primary or secondary).
+ROLE_OPERATOR_MAP = {
+    'Job Seeker':       None,  # Auto-approved
+    'Student':          ['growth_operator_education', 'education_operator'],
+    'Educator':         ['growth_operator_education', 'education_operator'],
+    'HR/Recruiter':     ['growth_operator_company', 'growth_operator'],
+    'HR Recruiter':     ['growth_operator_company', 'growth_operator'],
+    'Recruiter':        ['growth_operator_company', 'growth_operator'],
+    'HR Manager':       ['growth_operator_company', 'growth_operator'],
+    'Mentor':           ['growth_operator_mentorship'],
+    'Assessor':         ['growth_operator_assessment'],
+    'Guardian':         ['admin', 'administrator'],
+    'Growth Operator':  ['admin', 'administrator'],
+}
+
+
+
+@role_bp.route('/institutions/search', methods=['GET'])
+def search_institutions():
+    """Search schools and universities for the Guardian role request form."""
+    conn = None
+    try:
+        level = request.args.get('level', '')  # 'school' or 'university'
+        query_str = request.args.get('q', '').strip()
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        results = []
+
+        if level != 'university':
+            # Search schools table
+            sql = "SELECT id, name_en AS name, name_ar, location, 'school' AS type FROM schools WHERE is_active = true"
+            params = []
+            if query_str:
+                sql += " AND (name_en ILIKE %s OR name_ar ILIKE %s)"
+                params.extend([f'%{query_str}%', f'%{query_str}%'])
+            sql += " ORDER BY name_en LIMIT 50"
+            cur.execute(sql, params)
+            results.extend(cur.fetchall())
+
+        if level != 'school':
+            # Search universities table
+            sql = "SELECT id, name, name_ar, location, 'university' AS type FROM universities WHERE is_active = true"
+            params = []
+            if query_str:
+                sql += " AND (name ILIKE %s OR name_ar ILIKE %s)"
+                params.extend([f'%{query_str}%', f'%{query_str}%'])
+            sql += " ORDER BY name LIMIT 50"
+            cur.execute(sql, params)
+            results.extend(cur.fetchall())
+
+        return jsonify({'success': True, 'data': results}), 200
+
+    except Exception as e:
+        logger.error(f"Institution search failed: {e}")
+        return jsonify({'success': True, 'data': []}), 200  # Graceful fallback
+    finally:
+        if conn: conn.close()
+
 
 @role_bp.route('/request', methods=['POST'])
 @jwt_required()
@@ -33,12 +87,13 @@ def submit_role_request():
         requested_role = data.get('role')
         documents = data.get('documents', {})
         notes = data.get('notes', '')
+        role_fields = data.get('role_fields', {})
         
         if not requested_role:
             return jsonify({'success': False, 'message': 'Role is required'}), 400
             
         # Allowed roles to request
-        allowed_roles = ['HR/Recruiter', 'HR Recruiter', 'Recruiter', 'HR Manager', 'Educator', 'Mentor', 'Assessor', 'Job Seeker', 'Student', 'Growth Operator']
+        allowed_roles = list(ROLE_OPERATOR_MAP.keys())
         if requested_role not in allowed_roles:
              return jsonify({'success': False, 'message': 'Invalid role requested'}), 400
 
@@ -46,7 +101,7 @@ def submit_role_request():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Check if user already has this role (primary or secondary)
-        cur.execute("SELECT first_name, last_name, email, role, secondary_roles FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT full_name, email, role, secondary_roles FROM users WHERE id = %s", (user_id,))
         user_data = cur.fetchone()
         
         if not user_data:
@@ -56,6 +111,23 @@ def submit_role_request():
         if requested_role in current_roles:
              return jsonify({'success': False, 'message': 'You already have this role'}), 400
 
+        # ─── Auto-approve Job Seeker ───
+        if ROLE_OPERATOR_MAP.get(requested_role) is None:
+            # Directly add to secondary_roles without creating a request
+            cur.execute("""
+                UPDATE users 
+                SET secondary_roles = array_append(COALESCE(secondary_roles, '{}'), %s)
+                WHERE id = %s AND (secondary_roles IS NULL OR NOT (%s = ANY(secondary_roles)))
+            """, (requested_role, user_id, requested_role))
+            conn.commit()
+            
+            logger.info(f"Auto-approved role '{requested_role}' for user {user_id}")
+            return jsonify({
+                'success': True, 
+                'message': f'{requested_role} role has been added to your account.',
+                'data': {'auto_approved': True}
+            }), 200
+
         # Check for pending request
         cur.execute("""
             SELECT id FROM role_requests 
@@ -64,6 +136,11 @@ def submit_role_request():
         
         if cur.fetchone():
             return jsonify({'success': False, 'message': 'You already have a pending request for this role'}), 409
+
+        # Merge role_fields into documents JSON for storage
+        combined_documents = {**documents}
+        if role_fields:
+            combined_documents['role_fields'] = role_fields
             
         # Create Request
         req_id = str(uuid.uuid4())
@@ -71,23 +148,31 @@ def submit_role_request():
             INSERT INTO role_requests (id, user_id, requested_role, status, documents, admin_notes)
             VALUES (%s, %s, %s, 'pending', %s, %s)
             RETURNING id
-        """, (req_id, user_id, requested_role, json.dumps(documents), notes))
+        """, (req_id, user_id, requested_role, json.dumps(combined_documents), notes))
         
         conn.commit()
         
-        # --- Send Notifications to Admins and Operators ---
+        # ─── Send Notifications to the Correct Operator ───
         try:
-            # Find users with administrative privileges
-            cur.execute("""
-                SELECT id FROM users 
-                WHERE role IN ('admin', 'administrator', 'growth_operator')
-                   OR 'admin' = ANY(secondary_roles)
-                   OR 'administrator' = ANY(secondary_roles)
-                   OR 'growth_operator' = ANY(secondary_roles)
-            """)
+            operator_roles = ROLE_OPERATOR_MAP.get(requested_role, ['admin', 'administrator'])
+            
+            # Build a dynamic WHERE clause to find the right operator users
+            role_conditions = []
+            params = []
+            for op_role in operator_roles:
+                role_conditions.append("role = %s")
+                role_conditions.append("%s = ANY(secondary_roles)")
+                params.extend([op_role, op_role])
+            
+            # Always include admin as fallback
+            if 'admin' not in operator_roles and 'administrator' not in operator_roles:
+                role_conditions.append("role IN ('admin', 'administrator')")
+            
+            where_clause = " OR ".join(role_conditions)
+            cur.execute(f"SELECT id FROM users WHERE {where_clause}", params)
             recipients = cur.fetchall()
             
-            requester_name = f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip() or user_data.get('email')
+            requester_name = user_data.get('full_name', '') or user_data.get('email')
             
             if hasattr(current_app, 'notification_system') and current_app.notification_system:
                 for recipient in recipients:
@@ -101,11 +186,12 @@ def submit_role_request():
                             'request_id': req_id,
                             'requester_id': user_id,
                             'role': requested_role,
-                            'link': '/admin/roles'  # Deep link if supported
+                            'operator_targets': operator_roles,
+                            'link': '/admin-dashboard?tab=requests'
                         },
                         priority=NotificationPriority.HIGH
                     )
-                logger.info(f"Role request notifications sent to {len(recipients)} admins/operators")
+                logger.info(f"Role request notifications sent to {len(recipients)} operators (targets: {operator_roles})")
             else:
                 logger.warning("Notification system not initialized, skipping notifications")
                 
@@ -182,7 +268,7 @@ def get_all_requests():
              return jsonify({'success': False, 'message': 'Permission denied'}), 403
         
         cur.execute("""
-            SELECT r.*, u.first_name, u.last_name, u.email
+            SELECT r.*, u.full_name, u.email
             FROM role_requests r
             JOIN users u ON r.user_id = u.id
             WHERE r.status = 'pending'
@@ -307,8 +393,184 @@ def action_request(request_id):
         
     except Exception as e:
         logger.error(f"Action request failed: {e}")
-        # conn.rollback() # Context manager handles? No, need manual rollback if creating transaction manually
         if conn: conn.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
     finally:
         if conn: conn.close()
+
+
+# ─── Operator Endpoints ────────────────────────────────────────────────
+# These endpoints allow operators (not just admins) to see and act on
+# role requests that are routed to their domain.
+
+def _get_operator_managed_roles(operator_role):
+    """Return the set of requested roles this operator can manage."""
+    managed = set()
+    for requested_role, targets in ROLE_OPERATOR_MAP.items():
+        if targets is None:
+            continue  # Auto-approved
+        if operator_role in targets:
+            managed.add(requested_role)
+    return managed
+
+
+@role_bp.route('/operator/requests', methods=['GET'])
+@jwt_required()
+def get_operator_requests():
+    """Operator: Get pending requests routed to this operator's domain."""
+    conn = None
+    try:
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Get operator's role
+        cur.execute("SELECT role, secondary_roles FROM users WHERE id = %s", (current_user_id,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Collect all operator roles (primary + secondary)
+        all_roles = [user['role']] + (user['secondary_roles'] or [])
+        
+        # Find which requested roles this operator can manage
+        managed_roles = set()
+        for r in all_roles:
+            managed_roles |= _get_operator_managed_roles(r)
+        
+        # Admin/administrator can see ALL requests
+        if 'admin' in all_roles or 'administrator' in all_roles:
+            cur.execute("""
+                SELECT r.*, u.full_name, u.email
+                FROM role_requests r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.status = 'pending'
+                ORDER BY r.created_at DESC
+            """)
+        elif managed_roles:
+            placeholders = ','.join(['%s'] * len(managed_roles))
+            cur.execute(f"""
+                SELECT r.*, u.full_name, u.email
+                FROM role_requests r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.status = 'pending' AND r.requested_role IN ({placeholders})
+                ORDER BY r.created_at DESC
+            """, list(managed_roles))
+        else:
+            return jsonify({'success': True, 'data': []}), 200
+        
+        requests = cur.fetchall()
+        
+        # Serialize timestamps
+        for req in requests:
+            if req.get('created_at'):
+                req['created_at'] = str(req['created_at'])
+            if req.get('updated_at'):
+                req['updated_at'] = str(req['updated_at'])
+        
+        return jsonify({'success': True, 'data': requests}), 200
+        
+    except Exception as e:
+        logger.error(f"Operator get requests failed: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conn: conn.close()
+
+
+@role_bp.route('/operator/request/<request_id>/action', methods=['PUT'])
+@jwt_required()
+def operator_action_request(request_id):
+    """Operator: Approve or Reject a request in their domain."""
+    conn = None
+    try:
+        data = request.get_json()
+        action = data.get('action')  # 'approve' or 'reject'
+        notes = data.get('notes', '')
+        
+        if action not in ['approve', 'reject']:
+            return jsonify({'success': False, 'message': 'Invalid action'}), 400
+        
+        current_user_id = get_jwt_identity()
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Verify operator identity and permissions
+        cur.execute("SELECT role, secondary_roles FROM users WHERE id = %s", (current_user_id,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        all_roles = [user['role']] + (user['secondary_roles'] or [])
+        managed_roles = set()
+        for r in all_roles:
+            managed_roles |= _get_operator_managed_roles(r)
+        
+        # Admin can manage anything
+        is_admin = 'admin' in all_roles or 'administrator' in all_roles
+        
+        # Get request details
+        cur.execute("SELECT user_id, requested_role, status FROM role_requests WHERE id = %s", (request_id,))
+        req = cur.fetchone()
+        if not req:
+            return jsonify({'success': False, 'message': 'Request not found'}), 404
+        if req['status'] != 'pending':
+            return jsonify({'success': False, 'message': 'Request is not pending'}), 400
+        
+        # Verify this operator can manage this role type
+        if not is_admin and req['requested_role'] not in managed_roles:
+            return jsonify({'success': False, 'message': 'You are not authorized to manage this role type'}), 403
+        
+        new_status = 'approved' if action == 'approve' else 'rejected'
+        
+        # Update Request Status
+        cur.execute("""
+            UPDATE role_requests 
+            SET status = %s, admin_notes = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (new_status, notes, request_id))
+        
+        # If Approved, ADD role to user's secondary_roles
+        if action == 'approve':
+            user_id = req['user_id']
+            role_to_add = req['requested_role']
+            cur.execute("""
+                UPDATE users 
+                SET secondary_roles = array_append(COALESCE(secondary_roles, '{}'), %s)
+                WHERE id = %s AND (secondary_roles IS NULL OR NOT (%s = ANY(secondary_roles)))
+            """, (role_to_add, user_id, role_to_add))
+        
+        conn.commit()
+        
+        # Notify candidate
+        try:
+            if hasattr(current_app, 'notification_system') and current_app.notification_system:
+                candidate_id = str(req['user_id'])
+                role_name = req['requested_role']
+                if new_status == 'approved':
+                    title, message = "Role Request Approved", f"Your request for '{role_name}' has been approved."
+                    priority = NotificationPriority.HIGH
+                else:
+                    title = "Role Request Rejected"
+                    message = f"Your request for '{role_name}' has been rejected."
+                    if notes: message += f" Reason: {notes}"
+                    priority = NotificationPriority.MEDIUM
+                
+                current_app.notification_system.send_notification(
+                    user_id=candidate_id,
+                    notification_type=NotificationType.ROLE_DECISION,
+                    title=title, message=message,
+                    data={'request_id': request_id, 'role': role_name, 'status': new_status},
+                    priority=priority
+                )
+        except Exception as notify_err:
+            logger.error(f"Failed to notify candidate: {notify_err}")
+        
+        return jsonify({'success': True, 'message': f'Request {new_status}'}), 200
+        
+    except Exception as e:
+        logger.error(f"Operator action request failed: {e}")
+        if conn: conn.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conn: conn.close()
+

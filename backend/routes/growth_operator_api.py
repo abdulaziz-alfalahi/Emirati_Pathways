@@ -12,7 +12,7 @@ import json
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
+from backend.db import get_db_connection
 from functools import wraps
 
 # Configure logging
@@ -22,22 +22,7 @@ logger = logging.getLogger(__name__)
 # Create Blueprint
 growth_operator_bp = Blueprint('growth_operator_api', __name__, url_prefix='/api/growth-operator')
 
-# Database configuration
-DATABASE_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
 
-def get_db_connection():
-    """Get database connection"""
-    try:
-        return psycopg2.connect(**DATABASE_CONFIG)
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True):
     """Execute a database query with error handling"""

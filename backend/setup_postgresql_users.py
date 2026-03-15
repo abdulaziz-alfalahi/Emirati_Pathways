@@ -12,35 +12,11 @@ from datetime import datetime
 import os
 import uuid
 
+from backend.db import get_db_connection
+
 def hash_password(password):
     """Hash password using bcrypt (matching the auth manager)"""
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-def get_db_connection():
-    """Get PostgreSQL database connection"""
-    # Default PostgreSQL connection parameters
-    # Adjust these based on your PostgreSQL setup
-    db_config = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': os.getenv('DB_PORT', '5432'),
-        'database': os.getenv('DB_NAME', 'emirati_platform'),
-        'user': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD', 'password')
-    }
-    
-    try:
-        conn = psycopg2.connect(**db_config)
-        return conn
-    except psycopg2.Error as e:
-        print(f"❌ Database connection error: {e}")
-        print("\n🔧 Please check your PostgreSQL configuration:")
-        print(f"   Host: {db_config['host']}")
-        print(f"   Port: {db_config['port']}")
-        print(f"   Database: {db_config['database']}")
-        print(f"   User: {db_config['user']}")
-        print("\n💡 You can set environment variables:")
-        print("   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD")
-        raise
 
 def setup_database():
     """Create database tables and insert test users"""

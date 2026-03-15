@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from models.feedback import Feedback
 import logging
 import json
-import os
+from backend.db import get_db_connection
 import psycopg2
 import psycopg2.extras
 from services.communication_service import communication_service, NotificationType
@@ -11,18 +11,7 @@ from services.communication_service import communication_service, NotificationTy
 feedback_bp = Blueprint('feedback_bp', __name__)
 logger = logging.getLogger(__name__)
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 def emit_notification_event(user_id, notification):
     """Refactor: Emit socket event if internal socketio is available"""

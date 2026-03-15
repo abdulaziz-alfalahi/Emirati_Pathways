@@ -729,6 +729,35 @@ def get_role_permissions(role: str) -> list:
             'manage_growth',
             'view_analytics'
         ],
+        'growth_operator_education': [
+            'view_dashboard',
+            'roles.approve_requests',
+            'manage_institutions',
+            'manage_programs',
+            'onboard_education',
+            'view_analytics'
+        ],
+        'growth_operator_company': [
+            'view_dashboard',
+            'roles.approve_requests',
+            'manage_companies',
+            'onboard_employers',
+            'view_analytics'
+        ],
+        'growth_operator_mentorship': [
+            'view_dashboard',
+            'roles.approve_requests',
+            'manage_mentorship',
+            'onboard_mentors',
+            'view_analytics'
+        ],
+        'growth_operator_assessment': [
+            'view_dashboard',
+            'roles.approve_requests',
+            'manage_assessments',
+            'onboard_assessors',
+            'view_analytics'
+        ],
         'admin': [
             'view_dashboard',
             'manage_users',
@@ -755,6 +784,7 @@ def get_role_permissions(role: str) -> list:
         ],
         'education_operator': [
             'view_dashboard',
+            'roles.approve_requests',
             'manage_institutions',
             'manage_programs',
             'onboard_education',

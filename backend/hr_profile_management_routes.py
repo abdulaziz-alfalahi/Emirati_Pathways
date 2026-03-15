@@ -10,8 +10,8 @@ import psycopg2.extras
 import logging
 from datetime import datetime
 import uuid
-import os
 import json
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,17 +20,7 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 hr_profile_bp = Blueprint('hr_profile', __name__, url_prefix='/api/hr')
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 @hr_profile_bp.route('/health', methods=['GET'])
 def health_check():

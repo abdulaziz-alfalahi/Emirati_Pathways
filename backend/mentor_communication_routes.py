@@ -14,6 +14,7 @@ from mentor_communication_system import (
 )
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from backend.db import get_db_connection, DB_CONFIG
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,23 +23,10 @@ logger = logging.getLogger(__name__)
 # Create Blueprint
 mentor_communication_bp = Blueprint('mentor_communication', __name__, url_prefix='/api/mentor/communication')
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password',
-    'port': 5432
-}
-
-def get_database_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
-
 def get_user_role(user_id):
     """Get user role from database"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT role FROM users WHERE id = %s", (user_id,))
                 result = cursor.fetchone()

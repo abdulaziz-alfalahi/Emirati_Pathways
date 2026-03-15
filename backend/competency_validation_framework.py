@@ -60,9 +60,16 @@ class ValidationCriteria:
 class CompetencyValidationFramework:
     """Core framework for competency validation and assessment"""
     
-    def __init__(self, db_connection_string: str):
-        self.db_connection_string = db_connection_string
-        self.connection = None
+    def __init__(self, db_connection_or_string):
+        if isinstance(db_connection_or_string, str):
+            self.db_connection_string = db_connection_or_string
+            self.connection = None
+            self._owns_connection = True
+        else:
+            # Accept a pre-existing psycopg2 connection
+            self.db_connection_string = None
+            self.connection = db_connection_or_string
+            self._owns_connection = False
         
         # Scoring weights for different assessment methods
         self.method_weights = {
@@ -84,21 +91,25 @@ class CompetencyValidationFramework:
         }
     
     def connect_db(self):
-        """Establish database connection"""
+        """Establish database connection (no-op if connection already provided)"""
+        if self.connection is not None:
+            return
         try:
             self.connection = psycopg2.connect(
                 self.db_connection_string,
                 cursor_factory=RealDictCursor
             )
+            self._owns_connection = True
             logger.info("Database connection established for competency validation")
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
             raise
     
     def close_db(self):
-        """Close database connection"""
-        if self.connection:
+        """Close database connection (only if we created it)"""
+        if self.connection and self._owns_connection:
             self.connection.close()
+            self.connection = None
             logger.info("Database connection closed")
     
     def validate_competency(self, assessment_id: int, competency_id: int, 
@@ -615,10 +626,10 @@ class CompetencyValidationFramework:
             }
 
 # Health check function
-def health_check(db_connection_string: str) -> Dict[str, Any]:
+def health_check(db_connection_or_string) -> Dict[str, Any]:
     """Check competency validation framework health"""
     try:
-        framework = CompetencyValidationFramework(db_connection_string)
+        framework = CompetencyValidationFramework(db_connection_or_string)
         framework.connect_db()
         
         with framework.connection.cursor() as cursor:

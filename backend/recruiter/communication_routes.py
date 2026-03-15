@@ -7,7 +7,7 @@ from flask import Blueprint, request, jsonify
 import psycopg2
 import psycopg2.extras
 import logging
-import os
+from backend.db import get_db_connection
 from datetime import datetime
 import json
 import uuid
@@ -25,21 +25,9 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 communication_bp = Blueprint('recruiter_communication', __name__)
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
-
 # Initialize communication engine
 comm_engine = CommunicationEngine()
 
-
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 
 @communication_bp.route('/health', methods=['GET'])

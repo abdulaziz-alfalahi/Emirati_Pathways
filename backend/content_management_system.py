@@ -77,7 +77,7 @@ class ContentManagementSystem:
         try:
             self.connection = psycopg2.connect(
                 host=self.db_config.get('host', 'localhost'),
-                database=self.db_config.get('database', 'emirati_platform'),
+                database=self.db_config.get('database', 'emirati_journey'),
                 user=self.db_config.get('user', 'postgres'),
                 password=self.db_config.get('password', ''),
                 port=self.db_config.get('port', 5432)

@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import uuid
 import os
 import json
+from backend.db import get_db_connection
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 import mimetypes
@@ -23,22 +24,10 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 enhanced_job_application_bp = Blueprint('enhanced_job_application', __name__, url_prefix='/api/jobs')
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
-
 # File upload configuration
 UPLOAD_FOLDER = '/home/ubuntu/emirati-platform/uploads/applications'
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 def allowed_file(filename):
     """Check if file extension is allowed"""

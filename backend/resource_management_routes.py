@@ -12,6 +12,7 @@ import json
 from datetime import datetime
 import logging
 from resource_management_system import ResourceManagementSystem
+from backend.db import DB_CONFIG
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,15 +20,6 @@ logger = logging.getLogger(__name__)
 
 # Create Blueprint
 resource_management_bp = Blueprint('resource_management', __name__, url_prefix='/api/resources')
-
-# Database configuration
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password',
-    'port': 5432
-}
 
 # Initialize Resource Management System
 resource_system = ResourceManagementSystem(DB_CONFIG)

@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import uuid
 import os
 import json
+from backend.db import get_db_connection
 import re
 from werkzeug.utils import secure_filename
 
@@ -22,17 +23,7 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 hr_job_posting_bp = Blueprint('hr_job_posting', __name__, url_prefix='/api/hr/jobs')
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 class UAEComplianceChecker:
     """UAE Labor Law and Emiratization Compliance Checker"""

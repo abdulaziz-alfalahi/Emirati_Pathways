@@ -11,7 +11,7 @@ import logging
 import traceback
 from datetime import datetime, timedelta
 import uuid
-import os
+from backend.db import get_db_connection
 import json
 import re
 from typing import Dict, List, Any
@@ -23,17 +23,7 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 hr_candidate_search_bp = Blueprint('hr_candidate_search', __name__, url_prefix='/api/hr/candidates')
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 class CandidateSearchEngine:
     """Advanced candidate search and filtering engine"""

@@ -11,7 +11,7 @@ import { GraduationCap, Award, BookOpen, User, Calendar, ExternalLink } from "lu
 
 import { restClient } from '@/utils/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const fetchStudentData = async () => {
     try {

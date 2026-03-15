@@ -16,7 +16,7 @@ const brand = {
   amberText: '#92400E',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const categories = [
   { id: 'All', en: 'All', ar: 'الكل' },

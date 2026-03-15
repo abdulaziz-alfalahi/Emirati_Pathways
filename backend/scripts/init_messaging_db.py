@@ -10,14 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')
 from dotenv import load_dotenv
 load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '../.env')))
 
-def get_db_connection():
-    return psycopg2.connect(
-        dbname=os.getenv('DB_NAME', 'emirati_journey'),
-        user=os.getenv('DB_USER', 'emirati_user'),
-        password=os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=os.getenv('DB_PORT', 5432)
-    )
+from backend.db import get_db_connection
 
 def init_messaging_schema():
     conn = get_db_connection()

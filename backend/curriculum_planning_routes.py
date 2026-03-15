@@ -12,6 +12,7 @@ from datetime import datetime, date
 import json
 import logging
 
+from backend.db import get_db_connection
 from curriculum_planning_system import CurriculumPlanningSystem
 
 # Configure logging
@@ -20,21 +21,6 @@ logger = logging.getLogger(__name__)
 
 # Create Blueprint
 curriculum_planning_bp = Blueprint('curriculum_planning', __name__, url_prefix='/api/curriculum')
-
-def get_db_connection():
-    """Get database connection"""
-    try:
-        connection = psycopg2.connect(
-            host="localhost",
-            database="emirati_journey",
-            user="emirati_user",
-            password="emirati_secure_password",
-            port="5432"
-        )
-        return connection
-    except Exception as e:
-        logger.error(f"Database connection error: {str(e)}")
-        return None
 
 @curriculum_planning_bp.route('/health', methods=['GET'])
 def health_check():

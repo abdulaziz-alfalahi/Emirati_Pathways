@@ -11,10 +11,11 @@ import json
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 import uuid
 from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
+
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,23 +23,6 @@ logger = logging.getLogger(__name__)
 
 # Create Blueprint
 recruiter_dashboard_bp = Blueprint('recruiter_dashboard_api', __name__, url_prefix='/api/recruiter')
-
-# Database configuration
-DATABASE_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
-    'port': int(os.getenv('DB_PORT', 5432))
-}
-
-def get_db_connection():
-    """Get database connection"""
-    try:
-        return psycopg2.connect(**DATABASE_CONFIG)
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
     """Execute a database query with error handling"""

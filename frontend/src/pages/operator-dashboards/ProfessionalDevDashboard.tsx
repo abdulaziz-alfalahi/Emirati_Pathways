@@ -16,7 +16,7 @@ const brand = {
     tealBg: '#CCFBF1', tealText: '#0D9488',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const ProfessionalDevDashboard: React.FC = () => {
     const { language, toggleLanguage } = useLanguage();

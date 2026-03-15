@@ -3,7 +3,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
     GraduationCap, Building2, BookOpen, Users, Settings, Search,
-    Clock, AlertTriangle, TrendingUp, Plus, Eye
+    Clock, AlertTriangle, TrendingUp, Plus, Eye, UserCheck, UserX, FileText, CheckCircle, XCircle
 } from 'lucide-react';
 
 const brand = {
@@ -15,7 +15,12 @@ const brand = {
     purpleBg: '#F3E8FF', purpleText: '#7C3AED',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token');
+    return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : {};
+};
 
 const EducationOperatorDashboard: React.FC = () => {
     const { language, toggleLanguage } = useLanguage();
@@ -27,6 +32,8 @@ const EducationOperatorDashboard: React.FC = () => {
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [pendingPrograms, setPendingPrograms] = useState<any[]>([]);
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
+    const [roleRequests, setRoleRequests] = useState<any[]>([]);
+    const [actioningId, setActioningId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -50,6 +57,9 @@ const EducationOperatorDashboard: React.FC = () => {
                 } else if (activeTab === 'enrollment') {
                     const resp = await fetch(`${API_BASE}/api/education/operator/enrollments/recent`);
                     if (resp.ok && !cancelled) { const d = await resp.json(); setRecentEnrollments(d.enrollments || []); }
+                } else if (activeTab === 'requests') {
+                    const resp = await fetch(`${API_BASE}/api/roles/operator/requests`, { headers: getAuthHeaders() });
+                    if (resp.ok && !cancelled) { const d = await resp.json(); setRoleRequests(d.data || []); }
                 }
             } catch (err) { console.error('Edu operator fetch error:', err); }
             finally { if (!cancelled) setLoading(false); }
@@ -62,6 +72,7 @@ const EducationOperatorDashboard: React.FC = () => {
         { id: 'institutions', label: t('Institutions', 'المؤسسات'), icon: Building2 },
         { id: 'programs', label: t('Programs', 'البرامج'), icon: BookOpen },
         { id: 'enrollment', label: t('Enrollment', 'التسجيل'), icon: Users },
+        { id: 'requests', label: t('Requests', 'الطلبات'), icon: FileText, badge: roleRequests.length || undefined },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
 
@@ -209,6 +220,116 @@ const EducationOperatorDashboard: React.FC = () => {
         </div>
     );
 
+    const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
+        setActioningId(requestId);
+        try {
+            const resp = await fetch(`${API_BASE}/api/roles/operator/request/${requestId}/action`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ action }),
+            });
+            if (resp.ok) {
+                // Remove from list
+                setRoleRequests(prev => prev.filter(r => String(r.id) !== String(requestId)));
+            }
+        } catch (err) {
+            console.error('Request action failed:', err);
+        } finally {
+            setActioningId(null);
+        }
+    };
+
+    const renderRoleRequests = () => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ background: brand.cardBg, borderRadius: 12, padding: 24, border: `1px solid ${brand.border}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                    <FileText size={18} color={brand.purpleText} />
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, margin: 0 }}>
+                        {t('Pending Role Requests', 'طلبات الأدوار المعلقة')}
+                    </h3>
+                    {roleRequests.length > 0 && (
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: brand.yellowBg, color: brand.yellowText }}>
+                            {roleRequests.length}
+                        </span>
+                    )}
+                </div>
+
+                {roleRequests.length === 0 && !loading && (
+                    <div style={{ textAlign: 'center', padding: 40, color: brand.textSecondary }}>
+                        <UserCheck size={40} color={brand.border} style={{ marginBottom: 12 }} />
+                        <div style={{ fontSize: 14 }}>{t('No pending requests at this time', 'لا توجد طلبات معلقة في الوقت الحالي')}</div>
+                    </div>
+                )}
+
+                {roleRequests.map((req: any, i: number) => {
+                    // Parse structured notes to extract role fields
+                    const noteLines = (req.notes || '').split('\n');
+                    const isActioning = actioningId === String(req.id);
+
+                    return (
+                        <div key={req.id || i} style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                            padding: '16px 0',
+                            borderBottom: i < roleRequests.length - 1 ? `1px solid ${brand.border}` : 'none',
+                        }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                    <span style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>
+                                        {req.full_name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || req.email}
+                                    </span>
+                                    <span style={{
+                                        fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20,
+                                        background: brand.purpleBg, color: brand.purpleText,
+                                    }}>
+                                        → {req.requested_role}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: 12, color: brand.textSecondary, marginBottom: 4 }}>
+                                    {req.email} • {t('Submitted', 'قُدّم')}: {req.created_at?.split(' ')[0] || req.created_at?.split('T')[0]}
+                                </div>
+                                {/* Show key fields from notes */}
+                                <div style={{ fontSize: 12, color: brand.textSecondary, background: '#F9FAFB', borderRadius: 6, padding: '8px 12px', marginTop: 8 }}>
+                                    {noteLines.slice(0, 4).map((line: string, j: number) => (
+                                        <div key={j} style={{ marginBottom: 2 }}>{line}</div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
+                                <button
+                                    disabled={isActioning}
+                                    onClick={() => handleRequestAction(String(req.id), 'approve')}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                        padding: '8px 16px', borderRadius: 8, border: 'none',
+                                        background: brand.greenBg, color: brand.greenText,
+                                        fontSize: 13, fontWeight: 600, cursor: isActioning ? 'wait' : 'pointer',
+                                        opacity: isActioning ? 0.6 : 1,
+                                    }}
+                                >
+                                    <CheckCircle size={14} /> {t('Approve', 'موافقة')}
+                                </button>
+                                <button
+                                    disabled={isActioning}
+                                    onClick={() => handleRequestAction(String(req.id), 'reject')}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                        padding: '8px 16px', borderRadius: 8,
+                                        border: `1px solid ${brand.border}`, background: 'white',
+                                        color: '#EF4444',
+                                        fontSize: 13, fontWeight: 600, cursor: isActioning ? 'wait' : 'pointer',
+                                        opacity: isActioning ? 0.6 : 1,
+                                    }}
+                                >
+                                    <XCircle size={14} /> {t('Reject', 'رفض')}
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
     const renderSettings = () => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {[
@@ -248,6 +369,11 @@ const EducationOperatorDashboard: React.FC = () => {
                             color: activeTab === tab.id ? 'white' : brand.textSecondary, transition: 'all 0.2s ease'
                         }}>
                             <tab.icon size={15} /> {tab.label}
+                            {(tab as any).badge && (
+                                <span style={{ fontSize: 10, fontWeight: 700, background: '#EF4444', color: 'white', borderRadius: 10, padding: '1px 6px', marginLeft: 4 }}>
+                                    {(tab as any).badge}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -256,6 +382,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 {!loading && activeTab === 'institutions' && renderInstitutions()}
                 {!loading && activeTab === 'programs' && renderPrograms()}
                 {!loading && activeTab === 'enrollment' && renderEnrollment()}
+                {!loading && activeTab === 'requests' && renderRoleRequests()}
                 {!loading && activeTab === 'settings' && renderSettings()}
             </div>
         </div>

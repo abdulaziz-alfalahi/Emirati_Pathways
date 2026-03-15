@@ -7,24 +7,17 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 import logging
-import psycopg2
 from psycopg2.extras import RealDictCursor
 import json
+from backend.db import get_db_connection
 
 logger = logging.getLogger(__name__)
 
 skills_dev_bp = Blueprint('skills_development', __name__, url_prefix='/api/skills-development')
 
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password'
-}
-
 
 def get_db():
-    return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
+    return get_db_connection()
 
 
 def safe_int(val):

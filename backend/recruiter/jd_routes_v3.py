@@ -7,7 +7,7 @@ from flask import Blueprint, request, jsonify
 import json
 import logging
 from typing import Dict, List, Optional, Any
-import os
+from backend.db import get_db_connection
 import psycopg2
 import psycopg2.extras
 
@@ -33,17 +33,7 @@ def log_request_info():
 jd_engine = get_jd_builder_engine()
 ai_matching = get_ai_matching_engine()
 
-# Database configuration
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'emirati_journey'),
-    'user': os.getenv('DB_USER', 'emirati_user'),
-    'password': os.getenv('DB_PASSWORD', 'emirati_secure_password')
-}
 
-def get_db_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
 
 def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
     """Retrieve JD from database and convert to JD engine format"""

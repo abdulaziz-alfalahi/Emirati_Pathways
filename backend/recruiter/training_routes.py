@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from backend.db import get_db_connection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -10,19 +11,6 @@ logger = logging.getLogger(__name__)
 
 training_bp = Blueprint('training_recommendations', __name__, url_prefix='/api/recruiter/training')
 
-def get_db_connection():
-    try:
-        connection = psycopg2.connect(
-            host="localhost",
-            database="emirati_journey",
-            user="emirati_user",
-            password="emirati_secure_password",
-            port="5432"
-        )
-        return connection
-    except Exception as e:
-        logger.error(f"Database connection error: {str(e)}")
-        return None
 
 @training_bp.route('/recommend', methods=['POST'])
 @jwt_required()

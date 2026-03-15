@@ -13,6 +13,7 @@ import os
 import uuid
 import json
 import secrets
+from backend.db import get_db_connection
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,16 +22,7 @@ hr_offer_bp = Blueprint("hr_offer", __name__, url_prefix="/api/hr/offers")
 print("!!! DEBUG: LOADING NEW HR_OFFER_ROUTES (SQL FIX APPLIED) !!!")
 public_offer_bp = Blueprint("public_offer", __name__, url_prefix="/api/offers")
 
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "database": os.getenv("DB_NAME", "emirati_journey"),
-    "user": os.getenv("DB_USER", "emirati_user"),
-    "password": os.getenv("DB_PASSWORD", "emirati_secure_password"),
-}
 
-
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
 
 
 def _verify_job_ownership(cursor, user_id: int, job_posting_id: str) -> bool:

@@ -11,6 +11,7 @@ from datetime import datetime
 from mentor_matching_engine import MentorMatchingEngine
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from backend.db import get_db_connection, DB_CONFIG
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,23 +20,10 @@ logger = logging.getLogger(__name__)
 # Create Blueprint
 mentor_matching_bp = Blueprint('mentor_matching', __name__, url_prefix='/api/mentor/matching')
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'emirati_journey',
-    'user': 'emirati_user',
-    'password': 'emirati_secure_password',
-    'port': 5432
-}
-
-def get_database_connection():
-    """Get database connection"""
-    return psycopg2.connect(**DB_CONFIG)
-
 def get_user_role(user_id):
     """Get user role from database"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT role FROM users WHERE id = %s", (user_id,))
                 result = cursor.fetchone()
@@ -349,7 +337,7 @@ def get_matching_analytics():
 def get_mentor_details(mentor_id):
     """Get mentor details from database"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT mp.*, u.full_name, u.email, u.emirate
@@ -381,7 +369,7 @@ def get_mentor_details(mentor_id):
 def get_potential_mentees(mentor_user_id, limit):
     """Get potential mentees for a mentor"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT cp.*, u.full_name, u.email, u.emirate
@@ -422,7 +410,7 @@ def get_potential_mentees(mentor_user_id, limit):
 def check_existing_request(sender_id, receiver_id):
     """Check if mentoring request already exists"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT * FROM mentorship_requests 
@@ -440,7 +428,7 @@ def check_existing_request(sender_id, receiver_id):
 def create_mentoring_request(sender_id, receiver_id, message, request_type):
     """Create a new mentoring request"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO mentorship_requests 
@@ -460,7 +448,7 @@ def create_mentoring_request(sender_id, receiver_id, message, request_type):
 def get_user_mentoring_requests(user_id, request_type, status):
     """Get mentoring requests for a user"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # Build query based on request type
                 if request_type == 'sent':
@@ -515,7 +503,7 @@ def get_user_mentoring_requests(user_id, request_type, status):
 def update_request_status(request_id, user_id, response, message):
     """Update mentoring request status"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 status = 'accepted' if response == 'accept' else 'rejected'
                 
@@ -535,7 +523,7 @@ def update_request_status(request_id, user_id, response, message):
 def create_mentorship_relationship(request_id):
     """Create mentorship relationship after request acceptance"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 # Get request details
                 cursor.execute("""
@@ -597,7 +585,7 @@ def create_mentorship_relationship(request_id):
 def get_mentor_profile_by_user_id(user_id):
     """Get mentor profile by user ID"""
     try:
-        with get_database_connection() as conn:
+        with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
                     SELECT * FROM mentor_profiles WHERE user_id = %s
