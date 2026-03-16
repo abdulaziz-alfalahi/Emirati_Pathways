@@ -127,19 +127,33 @@ def require_admin_auth(f):
     """Decorator to require admin authentication."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Mock authentication - in production, integrate with your auth system
-        auth_header = request.headers.get('Authorization')
-        user_email = request.headers.get('X-User-Email', 'admin@emiratijourney.ae')
-        user_roles = request.headers.get('X-User-Roles', 'platform_administrator').split(',')
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({
+                'success': False,
+                'error': 'Authentication required. Provide a valid Bearer token.'
+            }), 401
+
+        # Note: This standalone server does not share the main app's JWT config.
+        # In production, use the main app.py server which has full JWT verification.
+        # For now, reject requests without explicit admin role header (no default).
+        user_email = request.headers.get('X-User-Email')
+        user_roles_header = request.headers.get('X-User-Roles')
         
-        # Check if user has admin role
-        if not any(role.strip() in ADMIN_ROLES for role in user_roles):
+        if not user_email or not user_roles_header:
+            return jsonify({
+                'success': False,
+                'error': 'Missing authentication context.'
+            }), 401
+
+        user_roles = [r.strip() for r in user_roles_header.split(',')]
+        
+        if not any(role in ADMIN_ROLES for role in user_roles):
             return jsonify({
                 'success': False,
                 'error': 'Insufficient privileges. Admin access required.'
             }), 403
         
-        # Add user info to request context
         request.admin_user = {
             'email': user_email,
             'roles': user_roles
@@ -731,5 +745,5 @@ if __name__ == '__main__':
     logger.info(f"\n🔑 Supported Providers: {', '.join(PROVIDER_TEMPLATES.keys())}")
     logger.info(f"👥 Admin Roles: {', '.join(ADMIN_ROLES)}")
     
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    app.run(host='0.0.0.0', port=5002, debug=os.getenv('FLASK_ENV', 'production') != 'production')
 

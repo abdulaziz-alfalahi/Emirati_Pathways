@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
       // So we only need to specify the candidate
       const response = await messagingService.createConversation({
         participants: [candidate.id],  // Candidate will be added as participant
-        title: `${candidate.first_name} ${candidate.last_name}`
+        title: getDisplayName(candidate)
       });
 
       onClose(); // Close dialog before navigating
@@ -253,7 +254,7 @@ const SourceCandidatesDialog: React.FC<SourceCandidatesDialogProps> = ({ open, o
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-lg">
-                          {candidate.first_name} {candidate.last_name}
+                          {getDisplayName(candidate)}
                         </h4>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">

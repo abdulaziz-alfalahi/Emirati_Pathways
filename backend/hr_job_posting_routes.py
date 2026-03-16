@@ -13,6 +13,7 @@ import uuid
 import os
 import json
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 import re
 from werkzeug.utils import secure_filename
 
@@ -361,7 +362,7 @@ def get_job_postings():
                     jp.applications_count,
                     jp.views_count,
                     COALESCE(c.name, jp.company_id, 'Unknown Company') as company_name,
-                    COALESCE(u.first_name || ' ' || u.last_name, 'Unknown') as created_by_name,
+                    {user_display_name('created_by_name')},
                     COALESCE(app_counts.application_count, 0) as application_count,
                     COALESCE(app_counts.new_applications, 0) as new_applications
                 FROM job_postings jp
@@ -879,11 +880,11 @@ def get_job_posting(job_id):
         
         try:
             # Get job posting with company verification
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     jp.*,
                     c.name as company_name,
-                    u.first_name || ' ' || u.last_name as created_by_name,
+                    {user_display_name('created_by_name')},
                     COUNT(ja.id) as application_count
                 FROM job_postings jp
                 LEFT JOIN companies c ON jp.company_id::text = c.id::text
@@ -891,7 +892,7 @@ def get_job_posting(job_id):
                 LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
                 LEFT JOIN job_applications ja ON jp.id::text = ja.job_id::text
                 WHERE jp.id = %s AND hp.user_id = %s
-                GROUP BY jp.id, c.name, u.first_name, u.last_name
+                GROUP BY jp.id, c.name, u.full_name, u.first_name, u.last_name, u.email
             """, (job_id, current_user_id))
             
             job = cursor.fetchone()
@@ -1491,10 +1492,10 @@ def get_job_templates():
         
         try:
             # Get company templates and public templates
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT 
                     jt.*,
-                    u.first_name || ' ' || u.last_name as created_by_name,
+                    {user_display_name('created_by_name')},
                     CASE WHEN jt.company_id = hp.company_id THEN 'company' ELSE 'public' END as template_source
                 FROM job_templates jt
                 LEFT JOIN users u ON jt.created_by = u.id

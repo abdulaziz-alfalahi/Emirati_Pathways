@@ -3,11 +3,12 @@
  * Frontend client for the platform intelligence backbone.
  * Connects to: /api/intelligence/*
  */
+import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_BASE = ''; // Use relative URL through Vite proxy (backend on port 5005)
 
 function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('access_token');
+    const token = getAuthToken();
     return {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

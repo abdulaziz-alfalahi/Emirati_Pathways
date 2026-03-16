@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,7 +126,7 @@ const CandidateProfilePage: React.FC = () => {
       const formData = new FormData();
       formData.append('photo', file);
 
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       const response = await fetch('/api/profile/candidate/photo', {
         method: 'POST',
@@ -165,7 +167,7 @@ const CandidateProfilePage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       if (!token) {
         setError('Authentication required. Please log in again.');
         setLoading(false);
@@ -204,7 +206,7 @@ const CandidateProfilePage: React.FC = () => {
       // Create conversation with candidate
       const conversationResponse = await messagingService.createConversation({
         participants: [candidate.id.toString()],
-        title: `${candidate.first_name} ${candidate.last_name}`
+        title: getDisplayName(candidate)
       });
 
       if (conversationResponse.success && conversationResponse.data) {
@@ -296,7 +298,7 @@ const CandidateProfilePage: React.FC = () => {
                   {candidate?.profile_photo_url ? (
                     <img
                       src={candidate.profile_photo_url}
-                      alt={`${candidate.first_name} ${candidate.last_name}`}
+                      alt={getDisplayName(candidate)}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -328,7 +330,7 @@ const CandidateProfilePage: React.FC = () => {
 
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {candidate.first_name} {candidate.last_name}
+                  {getDisplayName(candidate)}
                 </h1>
                 <div className="flex items-center gap-2 mt-1">
                   {candidate.is_uae_national && (

@@ -9,6 +9,7 @@ import psycopg2
 import psycopg2.extras
 import logging
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 from datetime import datetime
 import json
 
@@ -74,10 +75,11 @@ def get_all_recruiter_interviews():
 
         # Get all interviews where this user is the recruiter OR is listed as an interviewer/attendee
         # interviewers JSONB can store IDs as integers [121] or strings ["121"], so check both
-        cur.execute("""
+        cur.execute(f"""
             SELECT i.*,
                    u.first_name as candidate_first_name,
                    u.last_name as candidate_last_name,
+                   {user_display_name('candidate_display_name')},
                    u.email as candidate_email
             FROM interview_schedules i
             LEFT JOIN users u ON CAST(i.candidate_id AS INTEGER) = u.id

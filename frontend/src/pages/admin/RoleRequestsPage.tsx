@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -117,7 +118,7 @@ const RoleRequestsPage: React.FC = () => {
                                                 </span>
                                             </div>
                                             <h3 className="text-lg font-semibold">
-                                                {req.first_name} {req.last_name}
+                                                {getDisplayName(req)}
                                             </h3>
                                             <p className="text-sm text-gray-600">{req.email}</p>
                                         </div>

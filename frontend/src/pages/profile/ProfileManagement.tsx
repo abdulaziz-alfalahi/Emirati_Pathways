@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import HybridGovernmentNav from '@/components/layout/HybridGovernmentNav';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
   User,
   Building,
@@ -127,7 +128,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
 
         // Basic Mapping (Shared)
         const baseData = {
-          name: `${apiData.first_name || ''} ${apiData.last_name || ''}`.trim() || 'User',
+          name: getDisplayName(apiData),
           email: apiData.email || '',
           phone: personalInfo.phone || apiData.phone || '',
           location: personalInfo.location || apiData.location || '',
@@ -395,7 +396,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                 )}
                 <div>
                   <CardTitle className="text-2xl">
-                    {currentUser.firstName} {currentUser.lastName}
+                    {`${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'User'}
                   </CardTitle>
                   <CardDescription className="text-lg">
                     {displayRole} • {currentUser.email}

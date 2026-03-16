@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { getAuthToken } from '@/utils/tokenUtils';
 import {
   Card,
   CardContent,
@@ -53,7 +54,7 @@ const ProfileSummary: React.FC<ProfileSummaryProps> = ({ refreshCounter }) => {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       if (!token) return;
       const res = await fetch('/api/auth/profile', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -78,7 +79,7 @@ const ProfileSummary: React.FC<ProfileSummaryProps> = ({ refreshCounter }) => {
     formData.append('photo', file);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const res = await fetch('/api/profile/candidate/photo', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },

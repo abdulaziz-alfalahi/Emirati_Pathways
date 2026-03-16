@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
 /**
  * @fileoverview Growth Tools Component
  * 
@@ -239,7 +240,7 @@ export default function GrowthTools() {
         setCheckingDuplicates(true);
         let existingRowsCount = 0;
         try {
-            const token = localStorage.getItem('token');
+            const token = getAuthToken();
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
             const response = await restClient.post(`/api/growth/check-companies`, {
                 companies: Array.from(uniqueCompanyNames)
@@ -334,7 +335,7 @@ export default function GrowthTools() {
         formData.append('file', filteredFile);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = getAuthToken();
             const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
 
             const response = await restClient.post(`/api/growth/import`, formData, {

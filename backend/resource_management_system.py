@@ -14,6 +14,7 @@ import uuid
 from dataclasses import dataclass
 from enum import Enum
 import logging
+from backend.user_helpers import user_display_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -186,9 +187,9 @@ class ResourceManagementSystem:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
             # Build dynamic search query
-            base_query = """
+            base_query = f"""
                 SELECT er.*, 
-                       u.first_name || ' ' || u.last_name as creator_name,
+                       {user_display_name('creator_name')},
                        COALESCE(ur.is_favorite, false) as is_user_favorite,
                        COALESCE(ur.personal_rating, 0) as user_rating
                 FROM educational_resources er
@@ -303,9 +304,9 @@ class ResourceManagementSystem:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
             # Get resource details with user-specific information
-            query = """
+            query = f"""
                 SELECT er.*, 
-                       u.first_name || ' ' || u.last_name as creator_name,
+                       {user_display_name('creator_name')},
                        u.email as creator_email,
                        COALESCE(ur.is_favorite, false) as is_user_favorite,
                        COALESCE(ur.personal_rating, 0) as user_rating,
@@ -341,8 +342,8 @@ class ResourceManagementSystem:
             resource['categories'] = categories
             
             # Get recent reviews
-            cursor.execute("""
-                SELECT rr.*, u.first_name || ' ' || u.last_name as reviewer_name
+            cursor.execute(f"""
+                SELECT rr.*, {user_display_name('reviewer_name')}
                 FROM resource_reviews rr
                 JOIN users u ON rr.reviewer_id = u.id
                 WHERE rr.resource_id = %s AND rr.is_approved = true
@@ -824,8 +825,8 @@ class ResourceManagementSystem:
             conn = self.get_connection()
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
-            cursor.execute("""
-                SELECT er.*, u.first_name || ' ' || u.last_name as creator_name
+            cursor.execute(f"""
+                SELECT er.*, {user_display_name('creator_name')}
                 FROM educational_resources er
                 LEFT JOIN users u ON er.created_by = u.id
                 WHERE er.featured = true AND er.approval_status = 'approved'

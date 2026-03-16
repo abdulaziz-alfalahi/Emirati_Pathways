@@ -12,6 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { restClient } from '@/utils/api';
+import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { useToast } from '@/components/ui/use-toast';
@@ -132,17 +133,11 @@ const AdminInterviews = () => {
     };
 
     const getCandidateDisplay = (session: Session) => {
-        if (session.candidate_first_name || session.candidate_last_name) {
-            return `${session.candidate_first_name || ''} ${session.candidate_last_name || ''}`.trim();
-        }
-        return session.candidate_name || 'Unknown Candidate';
+        return getPrefixedDisplayName(session, 'candidate_', 'Unknown Candidate');
     };
 
     const getRecruiterDisplay = (session: Session) => {
-        if (session.recruiter_first_name || session.recruiter_last_name) {
-            return `${session.recruiter_first_name || ''} ${session.recruiter_last_name || ''}`.trim();
-        }
-        return session.recruiter_name || 'Unknown Recruiter';
+        return getPrefixedDisplayName(session, 'recruiter_', 'Unknown Recruiter');
     };
 
     const copyShareLink = (session: Session) => {

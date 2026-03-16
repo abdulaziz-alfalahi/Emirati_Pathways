@@ -34,6 +34,7 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 
 interface Candidate {
   shortlist_id: string;
@@ -181,7 +182,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                 {candidates.map((candidate) => (
                   <ListItem key={candidate.shortlist_id}>
                     <ListItemText
-                      primary={`${candidate.first_name} ${candidate.last_name}`}
+                      primary={getDisplayName(candidate)}
                       secondary={
                         <>
                           {candidate.email && <div>{candidate.email}</div>}

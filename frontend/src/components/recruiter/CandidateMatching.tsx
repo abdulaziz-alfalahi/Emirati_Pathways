@@ -47,6 +47,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { jobApi, shortlistApi, restClient, type JobDescription } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useAuth } from '@/context/AuthContext';
 // import { useMockAuth } from '@/context/MockAuthContext';
 import TrainingRecommendationsDialog from './TrainingRecommendationsDialog';
@@ -261,9 +262,7 @@ const CandidateMatching = () => {
         // Map response to MatchingResult format
         const matchingCandidates: MatchingResult[] = response.data.top_matches.map((match: any) => ({
           candidate_id: match.candidate.candidate_id || match.candidate.user_id,
-          candidate_name: (match.candidate.first_name && match.candidate.last_name)
-            ? `${match.candidate.first_name} ${match.candidate.last_name}`
-            : match.candidate.full_name || match.candidate.email?.split('@')[0] || `Candidate ${match.candidate.candidate_id}`,
+          candidate_name: getDisplayName(match.candidate, `Candidate ${match.candidate.candidate_id}`),
           overall_score: Math.round(match.match_score || 0),
           skills_score: Math.round(match.score_breakdown?.skills || 0),
           experience_score: Math.round(match.score_breakdown?.experience || 0),
@@ -298,9 +297,7 @@ const CandidateMatching = () => {
           },
           candidate_data: {
             personalInfo: {
-              name: (match.candidate.first_name && match.candidate.last_name)
-                ? `${match.candidate.first_name} ${match.candidate.last_name}`
-                : match.candidate.full_name || match.candidate.email?.split('@')[0] || `Candidate ${match.candidate.candidate_id}`,
+              name: getDisplayName(match.candidate, `Candidate ${match.candidate.candidate_id}`),
               email: match.candidate.email,
               phone: match.candidate.phone,
               location: match.candidate.emirate || 'Dubai',

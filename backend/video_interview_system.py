@@ -15,6 +15,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import google.generativeai as genai
 from dataclasses import dataclass
+from backend.user_helpers import user_display_name
 import uuid
 import base64
 import hashlib
@@ -292,10 +293,12 @@ class VideoInterviewEngine:
             with self.get_db_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     # Get session details
-                    cur.execute("""
+                    cur.execute(f"""
                         SELECT vis.*, ja.job_id, j.title as job_title,
                                u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
-                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name
+                               {user_display_name('candidate_display_name', 'u1')},
+                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
+                               {user_display_name('interviewer_display_name', 'u2')}
                         FROM video_interview_sessions vis
                         JOIN job_applications ja ON vis.application_id = ja.id
                         JOIN jobs j ON ja.job_id = j.id

@@ -37,6 +37,7 @@ import {
   CardGiftcard as CardGiftcardIcon,
 } from '@mui/icons-material';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 
 interface JobOffer {
   offer_id: string;
@@ -305,9 +306,7 @@ const OfferDetailsDialog: React.FC<OfferDetailsDialogProps> = ({
                   CANDIDATE INFORMATION
                 </Typography>
                 <Typography variant="h6">
-                  {currentOffer.first_name && currentOffer.last_name
-                    ? `${currentOffer.first_name} ${currentOffer.last_name}`
-                    : currentOffer.candidate_id}
+                  {getDisplayName(currentOffer, currentOffer.candidate_id)}
                 </Typography>
                 {currentOffer.email && (
                   <Typography variant="body2" color="textSecondary">

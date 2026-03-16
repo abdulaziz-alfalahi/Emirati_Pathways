@@ -53,6 +53,7 @@ import {
   ROLE_DASHBOARD_MAP,
   UserRole
 } from '@/types/auth';
+import { getAuthToken, clearAuthTokens } from '@/utils/tokenUtils';
 
 // Available roles with metadata
 export const AVAILABLE_ROLES = [
@@ -254,7 +255,7 @@ class AuthService {
 
   async logout(): Promise<{ success: boolean; message: string }> {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       const response = await fetch(`${this.API_BASE_URL}/auth/logout`, {
         method: 'POST',
@@ -265,8 +266,7 @@ class AuthService {
       });
 
       // Clear local storage regardless of response
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      clearAuthTokens();
       localStorage.removeItem('user');
 
       if (!response.ok) {
@@ -278,8 +278,7 @@ class AuthService {
     } catch (error) {
       console.error('AuthService: Logout error:', error);
       // Still clear local storage even if API call fails
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      clearAuthTokens();
       localStorage.removeItem('user');
       throw error;
     }
@@ -287,7 +286,7 @@ class AuthService {
 
   async getProfile(): Promise<any> {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       if (!token) {
         throw new Error('No access token found');
@@ -315,7 +314,7 @@ class AuthService {
 
   async getUserRoles(): Promise<UserRolesResponse> {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       if (!token) {
         throw new Error('No access token found');
@@ -342,7 +341,7 @@ class AuthService {
   }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('access_token');
+    const token = getAuthToken();
     const user = this.getUser();
     // Both token and user data must be present for authenticated state
     return !!(token && user);
@@ -359,18 +358,17 @@ class AuthService {
       console.error('AuthService: Error parsing user data:', error);
       // Clear invalid data
       localStorage.removeItem('user');
-      localStorage.removeItem('access_token');
+      clearAuthTokens();
       return null;
     }
   }
 
   getToken(): string | null {
-    return localStorage.getItem('access_token');
+    return getAuthToken();
   }
 
   clearAuth(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearAuthTokens();
     localStorage.removeItem('user');
   }
 
@@ -407,7 +405,7 @@ class AuthService {
       }
 
       // Only try API if we have a valid token and are authenticated
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       if (token && this.isAuthenticated()) {
         try {
           const response = await this.getUserRoles();
@@ -427,7 +425,7 @@ class AuthService {
       console.error('Error getting user role:', error);
       // Clear invalid data on error
       localStorage.removeItem('user');
-      localStorage.removeItem('access_token');
+      clearAuthTokens();
       return null;
     }
   }
@@ -515,7 +513,7 @@ class AuthService {
    */
   async updateUserRoles(primaryRole: string, secondaryRoles: string[] = [], metadata: any = {}): Promise<any> {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
 
       if (!token) {
         throw new Error('No access token found');

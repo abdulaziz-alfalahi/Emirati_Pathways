@@ -1,5 +1,6 @@
 
 import axios from 'axios';
+import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
 
@@ -20,7 +21,7 @@ export const educatorService = {
     createScholarship: async (data: ScholarshipData) => {
         try {
             // Get token from localStorage (assuming authService stores it there)
-            const token = localStorage.getItem('token');
+            const token = getAuthToken();
             const response = await axios.post(`${API_URL}/api/educator/scholarships`, data, {
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -217,14 +218,14 @@ const CandidateMatchingResults: React.FC<CandidateMatchingResultsProps> = ({
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${match.candidate.first_name} ${match.candidate.last_name}`} />
+                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${getDisplayName(match.candidate)}`} />
                           <AvatarFallback>
                             {getInitials(match.candidate.first_name, match.candidate.last_name)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h3 className="font-semibold text-lg">
-                            {match.candidate.first_name} {match.candidate.last_name}
+                            {getDisplayName(match.candidate)}
                             {match.candidate.is_uae_national && (
                               <Badge variant="outline" className="ml-2">
                                 UAE National

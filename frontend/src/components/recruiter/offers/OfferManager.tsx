@@ -34,6 +34,7 @@ import {
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 
 interface JobOffer {
   offer_id: string;
@@ -355,9 +356,7 @@ const OfferManager: React.FC<OfferManagerProps> = ({ jdId, onClose }) => {
                   <TableRow key={offer.offer_id} hover>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">
-                        {offer.first_name && offer.last_name
-                          ? `${offer.first_name} ${offer.last_name}`
-                          : offer.candidate_id}
+                        {getDisplayName(offer, offer.candidate_id)}
                       </Typography>
                       {offer.email && (
                         <Typography variant="caption" color="textSecondary">

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Eye, Download } from 'lucide-react';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -59,7 +60,7 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
     const response = await fetch('/api/cv/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${getAuthToken()}`
       },
       body: formData
     });
@@ -77,7 +78,7 @@ const CVUploadComponent: React.FC<CVUploadComponentProps> = ({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${getAuthToken()}`
       },
       body: JSON.stringify({ cv_text: text })
     });

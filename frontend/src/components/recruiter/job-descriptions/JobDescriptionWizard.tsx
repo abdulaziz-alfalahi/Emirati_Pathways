@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import toast from 'react-hot-toast';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
   Select,
   SelectContent,
@@ -1474,7 +1475,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-semibold">
-                        {match.candidate.first_name} {match.candidate.last_name}
+                        {getDisplayName(match.candidate)}
                       </h4>
                       <p className="text-sm text-muted-foreground">
                         {match.candidate.current_position || 'Position not specified'}

@@ -16,6 +16,7 @@ from functools import wraps
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, get_jwt
 
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -602,7 +603,7 @@ def get_offers_list():
             return jsonify({'success': True, 'data': [], 'count': 0})
         
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            query = """
+            query = f"""
                 SELECT 
                     jo.offer_id as id,
                     jo.jd_id,
@@ -629,6 +630,7 @@ def get_offers_list():
                     jo.offer_date,
                     u.first_name as candidate_first_name,
                     u.last_name as candidate_last_name,
+                    {user_display_name('candidate_display_name')},
                     u.email as candidate_email,
                     jp.title as job_title
                 FROM job_offers jo
@@ -662,7 +664,7 @@ def get_offers_list():
             # Build candidate_name
             first = offer.pop('candidate_first_name', '') or ''
             last = offer.pop('candidate_last_name', '') or ''
-            offer['candidate_name'] = f"{first} {last}".strip() or f"Candidate {offer.get('candidate_id', '')}"
+            offer['candidate_name'] = offer.pop('candidate_display_name', None) or f"{first} {last}".strip() or f"Candidate {offer.get('candidate_id', '')}"
             offer['candidate_email'] = offer.pop('candidate_email', None)
             
             offers.append(offer)
@@ -880,13 +882,15 @@ def generate_offer_letter(offer_id):
 
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        cur.execute("""
+        cur.execute(f"""
             SELECT jo.*, 
                    u.first_name as candidate_first_name,
                    u.last_name as candidate_last_name,
+                   {user_display_name('candidate_display_name')},
                    u.email as candidate_email,
                    r.first_name as recruiter_first_name,
                    r.last_name as recruiter_last_name,
+                   {user_display_name('recruiter_display_name', 'r')},
                    jp.title as job_title,
                    jp.company_id
             FROM job_offers jo
@@ -901,8 +905,8 @@ def generate_offer_letter(offer_id):
         if not offer:
             return jsonify({'success': False, 'message': 'Offer not found'}), 404
 
-        candidate_name = f"{offer.get('candidate_first_name', '')} {offer.get('candidate_last_name', '')}".strip() or 'Candidate'
-        recruiter_name = f"{offer.get('recruiter_first_name', '')} {offer.get('recruiter_last_name', '')}".strip() or 'Recruiter'
+        candidate_name = offer.get('candidate_display_name') or f"{offer.get('candidate_first_name', '')} {offer.get('candidate_last_name', '')}".strip() or 'Candidate'
+        recruiter_name = offer.get('recruiter_display_name') or f"{offer.get('recruiter_first_name', '')} {offer.get('recruiter_last_name', '')}".strip() or 'Recruiter'
         position = offer.get('position_title') or offer.get('job_title') or 'Position'
         salary = offer.get('salary_amount') or 0
         currency = offer.get('salary_currency') or 'AED'
@@ -1614,10 +1618,10 @@ def create_offer_legacy():
         recruiter_name = data.get('recruiter_name', '')
         if not recruiter_name and recruiter_id:
             try:
-                user_query = "SELECT first_name, last_name FROM users WHERE id = %s"
+                user_query = f"SELECT first_name, last_name, {user_display_name('display_name')} FROM users WHERE id = %s"
                 user_result = execute_query(user_query, (recruiter_id,), fetch_one=True)
                 if user_result:
-                    recruiter_name = f"{user_result.get('first_name', '')} {user_result.get('last_name', '')}".strip()
+                    recruiter_name = user_result.get('display_name') or f"{user_result.get('first_name', '')} {user_result.get('last_name', '')}".strip()
             except Exception as e:
                 logger.warning(f"Failed to lookup recruiter name: {e}")
         

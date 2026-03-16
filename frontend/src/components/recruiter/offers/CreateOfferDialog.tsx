@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import LocationPicker from '../../common/LocationPicker'; // Adjust path if needed, assuming common is in components/common
 import { restClient } from '../../../utils/api';
+import { getDisplayName } from '../../../utils/nameUtils';
 
 interface CreateOfferDialogProps {
   open: boolean;
@@ -195,7 +196,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
         shortlist_id: selectedCandidate.shortlist_id,
         candidate_id: selectedCandidate.candidate_id,
         recruiter_id: user?.id || 21, // Get from auth context
-        recruiter_name: user?.full_name || user?.first_name ? `${user?.first_name || ''} ${user?.last_name || ''}`.trim() : 'Recruiter', // Store recruiter name for display
+        recruiter_name: getDisplayName(user, 'Recruiter'), // Store recruiter name for display
         position_title: positionTitle,
         salary_amount: parseFloat(salaryAmount),
         salary_currency: salaryCurrency,
@@ -246,7 +247,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               <Autocomplete
                 options={candidates}
                 getOptionLabel={(option) =>
-                  `${option.first_name} ${option.last_name} - ${option.current_job_title} (Match: ${option.match_score}%)`
+                  `${getDisplayName(option)} - ${option.current_job_title} (Match: ${option.match_score}%)`
                 }
                 value={selectedCandidate}
                 onChange={(_, newValue) => setSelectedCandidate(newValue)}
@@ -274,7 +275,7 @@ const CreateOfferDialog: React.FC<CreateOfferDialogProps> = ({
               <Grid item xs={12}>
                 <Alert severity="info">
                   <Typography variant="body2">
-                    <strong>Selected:</strong> {selectedCandidate.first_name} {selectedCandidate.last_name}
+                    <strong>Selected:</strong> {getDisplayName(selectedCandidate)}
                   </Typography>
                   <Typography variant="body2">
                     <strong>Email:</strong> {selectedCandidate.email}

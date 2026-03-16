@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -121,7 +122,7 @@ const AdminRoleRequests: React.FC = () => {
                                             </span>
                                         </div>
                                         <h3 className="text-lg font-semibold">
-                                            {req.first_name} {req.last_name}
+                                            {getDisplayName(req)}
                                         </h3>
                                         <p className="text-sm text-gray-600 mb-3">{req.email}</p>
 
@@ -158,8 +159,7 @@ const AdminRoleRequests: React.FC = () => {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => {
-                                                const fullName = `${req.first_name} ${req.last_name}`;
-                                                navigate(`/admin-dashboard?tab=messaging&userId=${req.user_id}&userName=${encodeURIComponent(fullName)}`);
+                                                navigate(`/admin-dashboard?tab=messaging&userId=${req.user_id}&userName=${encodeURIComponent(getDisplayName(req))}`);
                                             }}
                                             className="w-full"
                                         >

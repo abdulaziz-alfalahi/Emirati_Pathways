@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api/v2/profile` : '/api/v2/profile';
 
@@ -70,7 +71,7 @@ export interface EducationEntry {
 }
 
 const getHeaders = () => {
-    const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+    const token = getAuthToken();
     return {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -119,7 +120,7 @@ export const profileService = {
         const formData = new FormData();
         formData.append('cv_file', file);
 
-        const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+        const token = getAuthToken();
         const headers = {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'

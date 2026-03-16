@@ -1,4 +1,5 @@
 import React from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
   Mail,
   Phone,
@@ -67,7 +68,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       {/* Header with UAE Government styling */}
       <div className="text-center border-b-2 border-blue-600 pb-4 mb-4">
         <h1 className="text-2xl font-bold text-blue-900 mb-1">
-          {sampleData.personalInfo.firstName} {sampleData.personalInfo.lastName}
+          {getDisplayName(sampleData.personalInfo)}
         </h1>
         <div className="text-sm text-gray-600 space-y-1">
           <div className="flex items-center justify-center space-x-4">
@@ -171,7 +172,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       {/* Modern Tech Header */}
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-6 mb-6 shadow-md">
         <h1 className="text-2xl font-bold mb-2 tracking-wide">
-          {sampleData.personalInfo.firstName} {sampleData.personalInfo.lastName}
+          {getDisplayName(sampleData.personalInfo)}
         </h1>
         <div className="text-sm opacity-95 space-y-1 font-medium">
           <div className="flex items-center gap-4">
@@ -278,7 +279,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       {/* Executive Header */}
       <div className="border-b-4 border-green-600 pb-4 mb-4">
         <h1 className="text-2xl font-bold text-green-900 mb-1">
-          {sampleData.personalInfo.firstName} {sampleData.personalInfo.lastName}
+          {getDisplayName(sampleData.personalInfo)}
         </h1>
         <div className="text-sm text-gray-600 grid grid-cols-2 gap-2">
           <div className="flex items-center">

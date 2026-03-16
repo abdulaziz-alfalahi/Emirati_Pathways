@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import ComplianceTab from '@/components/government/ComplianceTab';
 import NafisTab from '@/components/government/NafisTab';
 import {
@@ -103,9 +104,7 @@ const GovernmentDashboard: React.FC = () => {
     }
   };
   const userData = getUserData();
-  const userName = userData.full_name
-    || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
-    || b('Government Representative', 'ممثل حكومي');
+  const userName = getDisplayName(userData, b('Government Representative', 'ممثل حكومي'));
   const firstName = userName.split(' ')[0];
 
   // ── Tab Navigation ─────────────────────────────────────────────

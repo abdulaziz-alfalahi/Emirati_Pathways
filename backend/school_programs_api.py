@@ -475,4 +475,4 @@ def health_check():
 if __name__ == '__main__':
     print("Starting School Programs API Server...")
     print(f"Database: {DB_CONFIG['database']} on {DB_CONFIG['host']}")
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=os.getenv('FLASK_ENV', 'production') != 'production', host='0.0.0.0', port=5001)

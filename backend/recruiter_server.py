@@ -355,4 +355,4 @@ if __name__ == "__main__":
     flask_app = create_app()
     port = int(os.getenv("PORT", "5005"))
     logger.info(f"Recruiter services running on http://0.0.0.0:{port}")
-    flask_app.run(host="0.0.0.0", port=port, debug=True, threaded=True)
+    flask_app.run(host="0.0.0.0", port=port, debug=os.getenv('FLASK_ENV', 'production') != 'production', threaded=True)

@@ -14,6 +14,7 @@ import uuid
 import json
 import secrets
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -117,6 +118,7 @@ def list_offers():
             cursor.execute(
                 f"""
                 SELECT o.*, u.first_name AS candidate_first_name, u.last_name AS candidate_last_name,
+                       {user_display_name('candidate_display_name')},
                        jp.title AS job_title
                 FROM offers o
                 INNER JOIN job_postings jp ON o.job_posting_id::text = jp.jd_id::text
@@ -290,8 +292,9 @@ def get_offer(offer_id):
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             cursor.execute(
-                """
-                SELECT o.*, jp.company_id, jp.title AS job_title, u.first_name AS candidate_first_name, u.last_name AS candidate_last_name
+                f"""
+                SELECT o.*, jp.company_id, jp.title AS job_title, u.first_name AS candidate_first_name, u.last_name AS candidate_last_name,
+                       {user_display_name('candidate_display_name')}
                 FROM offers o
                 INNER JOIN job_postings jp ON o.job_posting_id::text = jp.jd_id::text
                 LEFT JOIN users u ON o.candidate_id::text = u.id::text

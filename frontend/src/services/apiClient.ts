@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAuthToken } from '@/utils/tokenUtils';
 
 // Determine Base URL
 // Priority: Vite Env Var -> Default Localhost
@@ -7,9 +8,7 @@ const API_URL = `${BASE_URL}/api`;
 
 // Create logic to handle tokens
 const getToken = () => {
-    return localStorage.getItem('accessToken') ||
-        localStorage.getItem('access_token') ||
-        localStorage.getItem('auth_token');
+    return getAuthToken();
 };
 
 const apiClient = axios.create({

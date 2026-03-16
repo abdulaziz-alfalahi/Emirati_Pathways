@@ -72,6 +72,7 @@ import {
 
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getDisplayName, getPrefixedDisplayName } from '@/utils/nameUtils';
 import { useAuth } from '@/context/AuthContext';
 
 interface ShortlistedCandidate {
@@ -551,7 +552,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                           </div>
                           <div>
                             <p className="font-medium">
-                              {candidate.first_name || 'Test'} {candidate.last_name || 'Candidate'}
+                              {getDisplayName(candidate, 'Candidate')}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {candidate.years_of_experience || 0} yrs exp · ID: {candidate.shortlist_id}
@@ -930,7 +931,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             preselectedCandidate={{
               shortlist_id: selectedCandidateForOffer.shortlist_id,
               candidate_id: selectedCandidateForOffer.candidate_id,
-              name: `${selectedCandidateForOffer.first_name} ${selectedCandidateForOffer.last_name}`,
+              name: getDisplayName(selectedCandidateForOffer),
               email: selectedCandidateForOffer.email,
             }}
             onOfferCreated={() => {
@@ -963,7 +964,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                   {interviews.map((interview: any) => (
                     <TableRow key={interview.interview_id}>
                       <TableCell className="font-medium">
-                        {interview.candidate_first_name} {interview.candidate_last_name}
+                        {getPrefixedDisplayName(interview, 'candidate_')}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{interview.interview_type}</Badge>
@@ -1085,7 +1086,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
             <DialogHeader>
               <DialogTitle>Cancel Interview</DialogTitle>
               <DialogDescription>
-                Cancel the interview with {interviewToCancel?.candidate_first_name} {interviewToCancel?.candidate_last_name}?
+                Cancel the interview with {getPrefixedDisplayName(interviewToCancel, 'candidate_')}?
               </DialogDescription>
             </DialogHeader>
             <Input
@@ -1146,7 +1147,7 @@ export const ShortlistManager: React.FC<ShortlistManagerProps> = ({ jdId, onClos
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Name</p>
-                        <p className="font-medium">{selectedCandidateDetails.first_name} {selectedCandidateDetails.last_name}</p>
+                        <p className="font-medium">{getDisplayName(selectedCandidateDetails)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Email</p>

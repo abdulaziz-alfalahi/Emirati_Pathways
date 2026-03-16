@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -117,7 +118,7 @@ const MentorDashboard: React.FC = () => {
       try {
         const userId = userInfo?.id || userInfo?.user_id || '';
         if (!userId) return;
-        const token = localStorage.getItem('token') || '';
+        const token = getAuthToken() || '';
         const resp = await fetch(`${API_BASE}/api/mentor/dashboard/${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });

@@ -21,6 +21,7 @@ except ImportError:
     NotificationType = None
 
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -861,7 +862,7 @@ def upload_recording_chunk(session_id):
 def get_all_sessions_admin():
     """Get all interview sessions for admin view"""
     try:
-        query = """
+        query = f"""
             SELECT 
                 s.id,
                 s.candidate_id,
@@ -878,9 +879,11 @@ def get_all_sessions_admin():
                 c.email as candidate_email,
                 c.first_name as candidate_first_name,
                 c.last_name as candidate_last_name,
+                {user_display_name('candidate_display_name', 'c')},
                 r.username as recruiter_name,
                 r.first_name as recruiter_first_name,
                 r.last_name as recruiter_last_name,
+                {user_display_name('recruiter_display_name', 'r')},
                 j.title as job_title,
                 j.company as company_name
             FROM interview_sessions s

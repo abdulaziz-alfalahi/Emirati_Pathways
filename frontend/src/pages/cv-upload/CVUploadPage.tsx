@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { useTranslation } from 'react-i18next';
 import { 
   Upload, 
@@ -141,7 +142,7 @@ const CVUploadPage: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/cv/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${getAuthToken()}`
         },
         body: formData
       });

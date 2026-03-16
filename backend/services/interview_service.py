@@ -9,6 +9,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import google.generativeai as genai
 import secrets
+from backend.user_helpers import user_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -123,9 +124,10 @@ class InterviewService:
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT s.*, 
-                           u_rec.first_name as recruiter_first_name, u_rec.last_name as recruiter_last_name
+                           u_rec.first_name as recruiter_first_name, u_rec.last_name as recruiter_last_name,
+                           {user_display_name('recruiter_display_name', 'u_rec')}
                     FROM interview_sessions s
                     LEFT JOIN users u_rec ON s.recruiter_id = u_rec.id
                     WHERE s.guest_token = %s
@@ -181,10 +183,11 @@ class InterviewService:
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 if role == 'recruiter':
-                    cur.execute("""
+                    cur.execute(f"""
                         SELECT s.*, 
                                u.first_name as candidate_first_name, 
                                u.last_name as candidate_last_name,
+                               {user_display_name('candidate_display_name')},
                                u.email as candidate_email
                         FROM interview_sessions s
                         LEFT JOIN users u ON s.candidate_id = u.id::text
@@ -192,10 +195,11 @@ class InterviewService:
                         ORDER BY s.scheduled_at DESC
                     """, (user_id,))
                 else:
-                    cur.execute("""
+                    cur.execute(f"""
                         SELECT s.*, 
                                u.first_name as recruiter_first_name, 
                                u.last_name as recruiter_last_name,
+                               {user_display_name('recruiter_display_name')},
                                u.email as recruiter_email
                         FROM interview_sessions s
                         LEFT JOIN users u ON s.recruiter_id = u.id
@@ -213,10 +217,12 @@ class InterviewService:
         conn = self._get_db_connection()
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT s.*, 
                            u_rec.first_name as recruiter_first_name, u_rec.last_name as recruiter_last_name,
-                           u_can.first_name as candidate_first_name, u_can.last_name as candidate_last_name
+                           {user_display_name('recruiter_display_name', 'u_rec')},
+                           u_can.first_name as candidate_first_name, u_can.last_name as candidate_last_name,
+                           {user_display_name('candidate_display_name', 'u_can')}
                     FROM interview_sessions s
                     LEFT JOIN users u_rec ON s.recruiter_id = u_rec.id
                     LEFT JOIN users u_can ON s.candidate_id::text = u_can.id::text 

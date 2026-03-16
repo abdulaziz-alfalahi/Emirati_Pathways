@@ -8,6 +8,7 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import { getAuthToken as getToken, clearAuthTokens } from '@/utils/tokenUtils';
 
 // ============================================================================
 // BASIC TYPES (to avoid import issues)
@@ -303,7 +304,7 @@ export class EnhancedAnalyticsService {
 
   private getAuthToken(): string | null {
     try {
-      return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      return getToken();
     } catch (error) {
       this.log('Error getting auth token', error, 'error');
       return null;
@@ -339,7 +340,7 @@ export class EnhancedAnalyticsService {
 
   public clearAuthToken(): void {
     try {
-      localStorage.removeItem('auth_token');
+      clearAuthTokens();
       sessionStorage.removeItem('auth_token');
       this.log('Auth token cleared');
     } catch (error) {

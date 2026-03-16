@@ -11,6 +11,7 @@ import json
 import logging
 from typing import Dict, List, Optional, Any
 import uuid
+from backend.user_helpers import user_display_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -157,9 +158,9 @@ class CurriculumPlanningSystem:
         """Get curriculum templates for an educator"""
         try:
             with self.db_connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                base_query = """
+                base_query = f"""
                     SELECT ct.*, 
-                           u.first_name || ' ' || u.last_name as creator_name,
+                           {user_display_name('creator_name')},
                            COUNT(c.id) as usage_count
                     FROM curriculum_templates ct
                     LEFT JOIN users u ON ct.created_by = u.id
@@ -534,9 +535,9 @@ class CurriculumPlanningSystem:
         """Get curriculum resources with filtering"""
         try:
             with self.db_connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                base_query = """
+                base_query = f"""
                     SELECT cr.*,
-                           u.first_name || ' ' || u.last_name as creator_name,
+                           {user_display_name('creator_name')},
                            AVG(cru.effectiveness_rating) as avg_effectiveness,
                            COUNT(cru.id) as usage_count
                     FROM curriculum_resources cr

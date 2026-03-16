@@ -24,7 +24,7 @@ def create_otp_table():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS otp_interactions (
                 phone VARCHAR(50) PRIMARY KEY,
-                otp_code VARCHAR(10) NOT NULL,
+                otp_code VARCHAR(128) NOT NULL,
                 expires_at TIMESTAMP NOT NULL,
                 attempts INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

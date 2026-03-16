@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
     Dialog,
     DialogContent,
@@ -81,7 +82,7 @@ const NewConversationDialog: React.FC<NewConversationDialogProps> = ({ open, onC
             // Create conversation
             const response = await messagingService.createConversation({
                 participants: [candidate.id],
-                title: `${candidate.first_name} ${candidate.last_name}`,
+                title: getDisplayName(candidate),
             });
 
             if (response.success && response.data) {
@@ -150,7 +151,7 @@ const NewConversationDialog: React.FC<NewConversationDialogProps> = ({ open, onC
                                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                             >
                                 <div className="flex flex-col">
-                                    <span className="font-medium">{candidate.first_name} {candidate.last_name}</span>
+                                    <span className="font-medium">{getDisplayName(candidate)}</span>
                                     <span className="text-xs text-gray-500">{candidate.current_position || 'Candidate'}</span>
                                 </div>
                                 <Button

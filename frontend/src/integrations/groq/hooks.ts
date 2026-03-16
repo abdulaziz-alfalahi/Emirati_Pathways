@@ -119,29 +119,13 @@ export const useConversationHistory = () => {
   };
 };
 
-// Hook for API key management
+// Hook for AI config — API keys are handled server-side, no client storage needed
 export const useGroqConfig = () => {
-  const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem('groq_api_key') || '';
-  });
-
-  const updateApiKey = useCallback((newApiKey: string) => {
-    setApiKey(newApiKey);
-    localStorage.setItem('groq_api_key', newApiKey);
-  }, []);
-
-  const clearApiKey = useCallback(() => {
-    setApiKey('');
-    localStorage.removeItem('groq_api_key');
-  }, []);
-
-  const isConfigured = Boolean(apiKey || import.meta.env.VITE_GROQ_API_KEY);
-
   return {
-    apiKey,
-    updateApiKey,
-    clearApiKey,
-    isConfigured,
+    apiKey: 'API_HANDLED_BY_SERVER',
+    updateApiKey: (_newApiKey: string) => { /* no-op: keys managed server-side */ },
+    clearApiKey: () => { /* no-op */ },
+    isConfigured: true,
   };
 };
 

@@ -16,6 +16,7 @@ import {
     Plus
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useToast } from '@/hooks/use-toast';
 
 // Define Interfaces
@@ -222,7 +223,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                         )}
                         <div>
                             <CardTitle className="text-2xl">
-                                {currentUser.firstName} {currentUser.lastName}
+                                {getDisplayName(currentUser)}
                             </CardTitle>
                             <CardDescription className="text-lg">
                                 {roleConfig.label} • {currentUser.email}

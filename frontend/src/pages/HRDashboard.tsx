@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import DashboardSkeleton from '@/components/ui/DashboardSkeleton';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { restClient } from '@/utils/api';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { TeamManagementTab } from '@/components/hr/TeamManagementTab';
 import { ApprovalWorkflow } from '@/components/hr/ApprovalWorkflow';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -156,7 +158,7 @@ const HRDashboard: React.FC = () => {
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const token = localStorage.getItem('access_token');
+        const token = getAuthToken();
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
         const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`);
         if (response.data.success) {
@@ -169,7 +171,7 @@ const HRDashboard: React.FC = () => {
 
     const fetchJobs = async () => {
       try {
-        const token = localStorage.getItem('access_token');
+        const token = getAuthToken();
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
         const response = await restClient.get(`/api/hr/jobs?limit=5`);
         if (response.data.success) {
@@ -201,7 +203,7 @@ const HRDashboard: React.FC = () => {
   const handleRemoveCandidate = async (jobId: string, candidateId: string) => {
     if (!confirm('Are you sure you want to remove this candidate from the shortlist?')) return;
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
       await restClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`);
       // Refresh list
@@ -216,7 +218,7 @@ const HRDashboard: React.FC = () => {
   const handleDeleteJob = async (jobId: string) => {
     if (!confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) return;
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
       const response = await restClient.delete(`/api/recruiter/jd/${jobId}`);
 
@@ -234,7 +236,7 @@ const HRDashboard: React.FC = () => {
   const handleSendMessage = async () => {
     if (!selectedCandidate || !messageContent) return;
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
       await restClient.post(`/api/communication/messages`, {
         recipient_id: selectedCandidate.candidate_id,
@@ -253,7 +255,7 @@ const HRDashboard: React.FC = () => {
   const handleScheduleInterview = async () => {
     if (!selectedCandidate || !interviewDate || !interviewTitle) return;
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
 
       // Look up application_id if available, otherwise might fail if strict
@@ -301,7 +303,7 @@ const HRDashboard: React.FC = () => {
   // Fetch real data from backend
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
       const headers = { Authorization: `Bearer ${token}` };
 
@@ -817,7 +819,7 @@ const HRDashboard: React.FC = () => {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Message Candidate</DialogTitle>
-                        <DialogDescription>Send a direct message to {selectedCandidate?.first_name} {selectedCandidate?.last_name}.</DialogDescription>
+                        <DialogDescription>Send a direct message to {getDisplayName(selectedCandidate)}.</DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <Textarea placeholder="Type your message here..." value={messageContent} onChange={(e) => setMessageContent(e.target.value)} />
@@ -879,7 +881,7 @@ const HRDashboard: React.FC = () => {
                     <DialogContent className="max-w-4xl h-[80vh]">
                       <DialogHeader>
                         <DialogTitle>AI Candidate Analysis</DialogTitle>
-                        <DialogDescription>Comprehensive profile analysis for {selectedCandidate?.first_name} {selectedCandidate?.last_name}</DialogDescription>
+                        <DialogDescription>Comprehensive profile analysis for {getDisplayName(selectedCandidate)}</DialogDescription>
                       </DialogHeader>
                       <ScrollArea className="h-full pr-4">
                         <div className="space-y-6">
@@ -1109,7 +1111,7 @@ const HRDashboard: React.FC = () => {
                             variant="link"
                             onClick={async () => {
                               try {
-                                const token = localStorage.getItem('access_token');
+                                const token = getAuthToken();
                                 const headers = { Authorization: `Bearer ${token}` };
                                 const response = await restClient.get(`/api/hr/jobs?limit=50`, { headers });
                                 if (response.data.success) {

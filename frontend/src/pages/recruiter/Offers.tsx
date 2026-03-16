@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, Send, Link as LinkIcon, Clock, CheckCircle, XCircle, AlertTriangle, X, User, Briefcase, DollarSign, Calendar, Gift, MessageCircle, Download, Mail, UserCheck } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -328,8 +329,8 @@ export default function OffersPage() {
       return String(a.job_title || '').localeCompare(String(b.job_title || '')) * dir;
     }
     if (sortBy === 'candidate') {
-      const na = `${a.candidate_first_name || ''} ${a.candidate_last_name || ''}`;
-      const nb = `${b.candidate_first_name || ''} ${b.candidate_last_name || ''}`;
+      const na = getPrefixedDisplayName(a, 'candidate_');
+      const nb = getPrefixedDisplayName(b, 'candidate_');
       return na.localeCompare(nb) * dir;
     }
     if (sortBy === 'status') {
@@ -483,7 +484,7 @@ export default function OffersPage() {
                   <tr key={o.id} className="border-b hover:bg-muted/50">
                     <td className="p-3 text-xs font-mono">{String(o.id).substring(0, 8)}...</td>
                     <td className="p-3">{o.job_title || o.position_title || '-'}</td>
-                    <td className="p-3">{o.candidate_first_name} {o.candidate_last_name}</td>
+                    <td className="p-3">{getPrefixedDisplayName(o, 'candidate_')}</td>
                     <td className="p-3">{statusBadge(o.status)}</td>
                     <td className="p-3">{o.created_at ? new Date(o.created_at).toLocaleDateString() : '-'}</td>
                     <td className="p-3 space-x-2 whitespace-nowrap">
@@ -607,9 +608,7 @@ export default function OffersPage() {
                   <span className="text-sm font-medium text-slate-500">CANDIDATE</span>
                 </div>
                 <p className="text-lg font-semibold">
-                  {selectedOfferDetails.candidate_first_name || selectedOfferDetails.first_name || ''}{' '}
-                  {selectedOfferDetails.candidate_last_name || selectedOfferDetails.last_name || ''}
-                  {!selectedOfferDetails.candidate_first_name && !selectedOfferDetails.first_name && (
+                  {getPrefixedDisplayName(selectedOfferDetails, 'candidate_', '') || getPrefixedDisplayName(selectedOfferDetails, '', '') || (
                     <span className="text-slate-400">Candidate #{selectedOfferDetails.candidate_id}</span>
                   )}
                 </p>

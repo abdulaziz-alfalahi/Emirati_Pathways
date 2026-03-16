@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -361,7 +362,7 @@ const StudentTracking: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">
-                            {student.firstName} {student.lastName}
+                            {getDisplayName(student)}
                           </p>
                           <p className="text-sm text-gray-600">{student.arabicName}</p>
                           <p className="text-xs text-gray-500">
@@ -414,7 +415,7 @@ const StudentTracking: React.FC = () => {
                         <User className="h-8 w-8 text-blue-600" />
                       </div>
                       <h3 className="font-semibold text-lg">
-                        {selectedStudent.firstName} {selectedStudent.lastName}
+                        {getDisplayName(selectedStudent)}
                       </h3>
                       <p className="text-gray-600">{selectedStudent.arabicName}</p>
                     </div>

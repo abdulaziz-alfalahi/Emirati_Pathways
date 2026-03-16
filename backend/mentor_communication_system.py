@@ -12,6 +12,7 @@ from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import logging
+from backend.user_helpers import user_display_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -279,7 +280,7 @@ class MentorCommunicationSystem:
                         SELECT c.*, 
                                m.content as last_message_content,
                                m.sent_at as last_message_time,
-                               u.first_name || ' ' || u.last_name as other_participant_name
+                               {user_display_name('other_participant_name')}
                         FROM conversations c
                         LEFT JOIN messages m ON c.id = m.conversation_id 
                             AND m.sent_at = c.last_message_at
@@ -321,9 +322,9 @@ class MentorCommunicationSystem:
         try:
             with self.get_database_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                    cursor.execute("""
+                    cursor.execute(f"""
                         SELECT m.*, 
-                               u.first_name || ' ' || u.last_name as sender_name
+                               {user_display_name('sender_name')}
                         FROM messages m
                         JOIN users u ON m.sender_id = u.id
                         WHERE m.conversation_id = %s
@@ -568,11 +569,11 @@ class MentorCommunicationSystem:
             with self.get_database_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                     # Get session details
-                    cursor.execute("""
+                    cursor.execute(f"""
                         SELECT ms.*, 
                                mp.user_id as mentor_user_id,
-                               u_mentor.first_name || ' ' || u_mentor.last_name as mentor_name,
-                               u_mentee.first_name || ' ' || u_mentee.last_name as mentee_name
+                               {user_display_name('mentor_name', 'u_mentor')},
+                               {user_display_name('mentee_name', 'u_mentee')}
                         FROM mentorship_sessions ms
                         JOIN mentor_profiles mp ON ms.mentor_id = mp.id
                         JOIN users u_mentor ON mp.user_id = u_mentor.id
@@ -806,7 +807,7 @@ class MentorCommunicationSystem:
                     
                     cursor.execute(f"""
                         SELECT m.*, 
-                               u.first_name || ' ' || u.last_name as sender_name
+                               {user_display_name('sender_name')}
                         FROM messages m
                         JOIN users u ON m.sender_id = u.id
                         {where_clause}

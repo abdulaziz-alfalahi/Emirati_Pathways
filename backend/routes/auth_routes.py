@@ -8,6 +8,8 @@ import psycopg2
 import psycopg2.extras
 import uuid
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dataclasses import fields
 
 from backend.auth.auth_manager_fixed import AuthenticationManager
@@ -30,7 +32,18 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+# --- Rate Limiter ---
+# Uses in-memory storage by default. To use Redis, set REDIS_URL in .env.
+_storage_uri = os.getenv('REDIS_URL') or 'memory://'
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=_storage_uri,
+    default_limits=['30 per minute'],
+    strategy='fixed-window',
+)
+
 @auth_bp.route('/register', methods=['POST'])
+@limiter.limit('5 per minute')
 def register():
     """
     Register a new UAE National user
@@ -80,6 +93,7 @@ def register():
         }), 500
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     """
     Authenticate user login
@@ -130,6 +144,7 @@ def login():
         }), 500
 
 @auth_bp.route('/verify-email', methods=['POST'])
+@limiter.limit('10 per minute')
 def verify_email():
     """
     Verify user email address
@@ -163,6 +178,7 @@ def verify_email():
         }), 500
 
 @auth_bp.route('/verify-phone', methods=['POST'])
+@limiter.limit('10 per minute')
 def verify_phone():
     """
     Verify user phone number

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -130,18 +132,7 @@ const RecruiterDashboard = () => {
     loadDashboardData();
   }, [isAuthenticated, navigate]);
 
-  const getUserDisplayName = () => {
-    if (!user) return 'Recruiter';
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
-    if (user.user_metadata?.name) return user.user_metadata.name;
-    if (user.full_name) return user.full_name;
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-    if (user.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-    return 'Recruiter';
-  };
+  const getUserDisplayName = () => getDisplayName(user, 'Recruiter');
 
   const handleLogout = async () => {
     try {
@@ -155,7 +146,7 @@ const RecruiterDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = getAuthToken();
       if (!token) { setMockData(); return; }
 
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/recruiter/dashboard`, {

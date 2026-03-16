@@ -42,6 +42,7 @@ import {
   Settings
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { cvStorageService } from '@/services/cvStorageService';
 import { profileService, CandidateProfile } from '@/services/profile/profileService';
 
@@ -247,7 +248,7 @@ const CVProfile: React.FC = () => {
     formData.append('photo', file);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const res = await fetch('/api/profile/candidate/photo', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },

@@ -282,12 +282,13 @@ def run_app():
     socketio = app.notification_system.get_socketio()
     
     # Run with SocketIO
+    is_debug = os.getenv('FLASK_ENV', 'production') != 'production'
     socketio.run(
         app,
         host='0.0.0.0',
         port=5000,
-        debug=True,
-        allow_unsafe_werkzeug=True
+        debug=is_debug,
+        allow_unsafe_werkzeug=is_debug
     )
 
 if __name__ == '__main__':

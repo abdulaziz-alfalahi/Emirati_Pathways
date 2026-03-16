@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { normalizeRole } from '@/types/auth'; // Import normalization helper
 import { authService } from '@/services/authService';
@@ -58,6 +58,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshingRef = useRef(false);
   const navigate = useNavigate();
 
   // Check if user is authenticated
@@ -203,6 +204,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const refreshUser = async () => {
+    // Prevent concurrent refresh calls from stacking up
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
     try {
       if (authService.isAuthenticated()) {
         const profile = await authService.getProfile();
@@ -239,12 +243,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
 
           const newUserStr = JSON.stringify(mergedData);
+          // Only update state if actual data changed (compare via localStorage)
           if (currentUserStr !== newUserStr) {
             setUserState(mergedData);
             localStorage.setItem('user', newUserStr);
-          } else if (!user) {
-            setUserState(mergedData);
           }
+          // Note: removed the `else if (!user)` branch that used stale closure
+          // causing infinite re-renders.  If localStorage already has the user
+          // but React state is still null, initializeAuth handles that path.
         }
       }
     } catch (error: any) {
@@ -261,6 +267,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         navigate('/auth');
       }
+    } finally {
+      refreshingRef.current = false;
     }
   };
 

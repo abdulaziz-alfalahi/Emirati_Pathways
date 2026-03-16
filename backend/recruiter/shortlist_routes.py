@@ -8,6 +8,7 @@ import psycopg2
 import psycopg2.extras
 import logging
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 from datetime import datetime
 import json
 
@@ -186,6 +187,7 @@ def get_shortlist(jd_id):
                 0 as match_score, 
                 u.first_name,
                 u.last_name,
+                COALESCE(u.display_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.full_name) as display_name,
                 u.email,
                 i.interview_id,
                 i.feedback as interview_feedback,

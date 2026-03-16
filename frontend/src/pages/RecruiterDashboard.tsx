@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import {
   Target,
   Briefcase,
@@ -97,10 +98,8 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
   const userData = getUserData();
-  // Use full_name first, then construct from first/last, then fallback to 'Recruiter'
-  const rawName = userData.full_name
-    || `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
-    || '';
+  // Use getDisplayName utility for consistent name resolution
+  const rawName = getDisplayName(userData, '');
   const recruiterName = (rawName && rawName !== 'None None' && rawName !== 'None') ? rawName : 'Recruiter';
   const recruiterId = userData.id || '';
   const companyId = userData.company_id || '';

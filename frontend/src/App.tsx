@@ -147,6 +147,7 @@ import OperatorDashboard from './pages/OperatorDashboard';
 import './index.css';
 
 import { useAuth } from '@/context/AuthContext';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { NotificationProvider } from '@/components/notifications/NotificationSystem';
 import ConnectionBanner from '@/components/notifications/ConnectionBanner';
 
@@ -171,7 +172,7 @@ const AppContent: React.FC = () => {
     }
   }, [i18n.language]);
 
-  const token = localStorage.getItem('access_token') || '';
+  const token = getAuthToken() || '';
 
   return (
     <div className="App min-h-screen bg-background">

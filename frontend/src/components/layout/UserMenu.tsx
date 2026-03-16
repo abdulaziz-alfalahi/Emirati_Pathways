@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -103,14 +104,9 @@ const UserMenu: React.FC = () => {
   };
 
   const getInitials = () => {
-    // Try different name sources
-    const fullName = user.full_name ||
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null);
-
-    if (fullName) {
-      return fullName
+    const displayName = getDisplayName(user);
+    if (displayName && displayName !== 'User') {
+      return displayName
         .split(' ')
         .map((name: string) => name[0])
         .join('')
@@ -121,11 +117,7 @@ const UserMenu: React.FC = () => {
   };
 
   const getUserDisplayName = () => {
-    return user.full_name ||
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : null) ||
-      t('User', 'مستخدم');
+    return getDisplayName(user, t('User', 'مستخدم'));
   };
 
   const getCurrentRole = () => {

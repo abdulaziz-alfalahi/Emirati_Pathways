@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, time
 import uuid
 import json
 from backend.db import get_db_connection, DB_CONFIG
+from backend.user_helpers import user_display_name
 from typing import Dict, List, Any, Optional
 import calendar
 
@@ -316,10 +317,10 @@ def get_interviews():
                     i.*,
                     jp.title as job_title,
                     c.name as company_name,
-                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
+                    {user_display_name('candidate_name', 'u_candidate')},
                     u_candidate.email as candidate_email,
                     u_candidate.phone as candidate_phone,
-                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name,
+                    {user_display_name('interviewer_name', 'u_interviewer')},
                     ja.application_status
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
@@ -416,7 +417,7 @@ def schedule_interview():
                     ja.*,
                     jp.title as job_title,
                     jp.company_id,
-                    u.first_name || ' ' || u.last_name as candidate_name,
+                    {user_display_name('candidate_name')},
                     u.email as candidate_email
                 FROM job_applications ja
                 INNER JOIN job_postings jp ON ja.job_id = jp.id::text
@@ -573,13 +574,13 @@ def get_interview_details(interview_id):
                     i.*,
                     jp.title as job_title,
                     c.name as company_name,
-                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
+                    {user_display_name('candidate_name', 'u_candidate')},
                     u_candidate.email as candidate_email,
                     u_candidate.phone as candidate_phone,
-                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name,
+                    {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email,
                     ja.application_status,
-                    u_created.first_name || ' ' || u_created.last_name as created_by_name
+                    {user_display_name('created_by_name', 'u_created')}
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
                 LEFT JOIN companies c ON jp.company_id = c.id
@@ -619,7 +620,7 @@ def get_interview_details(interview_id):
             cursor.execute("""
                 SELECT 
                     if_.*,
-                    u.first_name || ' ' || u.last_name as feedback_by_name
+                    {user_display_name('feedback_by_name')}
                 FROM interview_feedback if_
                 LEFT JOIN users u ON if_.feedback_by = u.id
                 WHERE if_.interview_id = %s
@@ -692,7 +693,7 @@ def reschedule_interview(interview_id):
                 SELECT 
                     i.*,
                     jp.title as job_title,
-                    u.first_name || ' ' || u.last_name as candidate_name
+                    {user_display_name('candidate_name')}
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
                 LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
@@ -800,7 +801,7 @@ def cancel_interview(interview_id):
                 SELECT 
                     i.*,
                     jp.title as job_title,
-                    u.first_name || ' ' || u.last_name as candidate_name
+                    {user_display_name('candidate_name')}
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
                 LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
@@ -1077,8 +1078,8 @@ def get_interview_calendar():
                 SELECT 
                     i.*,
                     jp.title as job_title,
-                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
-                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name
+                    {user_display_name('candidate_name', 'u_candidate')},
+                    {user_display_name('interviewer_name', 'u_interviewer')}
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
                 LEFT JOIN hr_profiles hp ON jp.company_id = hp.company_id
@@ -1145,9 +1146,9 @@ def download_interview_ics(interview_id):
                 """
                 SELECT 
                     i.*, jp.title as job_title,
-                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
+                    {user_display_name('candidate_name', 'u_candidate')},
                     u_candidate.email as candidate_email,
-                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name,
+                    {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id
@@ -1182,9 +1183,9 @@ def send_interview_invites(interview_id):
                 """
                 SELECT 
                     i.*, jp.title as job_title,
-                    u_candidate.first_name || ' ' || u_candidate.last_name as candidate_name,
+                    {user_display_name('candidate_name', 'u_candidate')},
                     u_candidate.email as candidate_email,
-                    u_interviewer.first_name || ' ' || u_interviewer.last_name as interviewer_name,
+                    {user_display_name('interviewer_name', 'u_interviewer')},
                     u_interviewer.email as interviewer_email
                 FROM interviews i
                 LEFT JOIN job_postings jp ON i.job_posting_id = jp.id

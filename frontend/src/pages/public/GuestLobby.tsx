@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Video, Calendar, Clock, Loader2, User, AlertCircle } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { toast } from 'sonner';
 
@@ -102,7 +103,7 @@ export default function GuestLobby() {
                             {session.title || "Interview Session"}
                         </CardTitle>
                         <CardDescription>
-                            Hosted by {session.recruiter_first_name} {session.recruiter_last_name}
+                            Hosted by {getPrefixedDisplayName(session, 'recruiter_', 'Recruiter')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6 pt-6">
@@ -117,7 +118,7 @@ export default function GuestLobby() {
                             </div>
                             <div className="flex items-center justify-between text-slate-700">
                                 <span className="flex items-center"><User className="h-4 w-4 mr-2" /> For</span>
-                                <span className="font-medium">{session.candidate_first_name ? `${session.candidate_first_name} ${session.candidate_last_name}` : "Invited Guest"}</span>
+                                <span className="font-medium">{getPrefixedDisplayName(session, 'candidate_', 'Invited Guest')}</span>
                             </div>
                         </div>
 

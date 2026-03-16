@@ -8,6 +8,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { getAuthToken } from '../utils/tokenUtils';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext'; // Adjust import path as needed
 import { useRole } from './RoleContext'; // Adjust import path as needed
@@ -435,7 +436,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
   
   // Set up authentication token
   useEffect(() => {
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    const token = getAuthToken();
     if (token) {
       enhancedAnalyticsService.setAuthToken(token);
     }

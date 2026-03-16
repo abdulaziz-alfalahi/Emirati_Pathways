@@ -1,4 +1,5 @@
 import React from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
@@ -27,7 +28,7 @@ const ActiveVacancies: React.FC = () => {
   }
 
   // Check if the user is authenticated (allow mock tokens)
-  const hasToken = localStorage.getItem('access_token') || localStorage.getItem('accessToken');
+  const hasToken = getAuthToken();
   const isMockToken = hasToken?.startsWith('mock_token_');
 
   if (!user && !isMockToken) {

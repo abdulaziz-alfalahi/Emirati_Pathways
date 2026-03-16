@@ -1,5 +1,6 @@
 // Messaging Service for Emirati Journey Platform
 // Handles all messaging and communication API calls to the backend
+import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
 
@@ -63,7 +64,7 @@ export interface MessagingResponse {
 
 class MessagingService {
   private getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('access_token');
+    const token = getAuthToken();
     return {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -414,7 +415,7 @@ class MessagingService {
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = localStorage.getItem('access_token');
+      const token = getAuthToken();
       const headers: HeadersInit = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;

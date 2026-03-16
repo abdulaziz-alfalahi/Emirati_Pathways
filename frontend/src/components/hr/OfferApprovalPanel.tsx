@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { restClient } from '@/utils/api';
+import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import { useToast } from '@/hooks/use-toast';
 import {
   CheckCircle,
@@ -344,7 +345,7 @@ export const OfferApprovalPanel: React.FC = () => {
                         <User className="h-4 w-4 text-gray-400" />
                         <div>
                           <p className="font-medium">
-                            {approval.candidate_first_name} {approval.candidate_last_name}
+                            {getPrefixedDisplayName(approval, 'candidate_')}
                           </p>
                           <p className="text-xs text-gray-500">{approval.candidate_email}</p>
                         </div>
@@ -356,7 +357,7 @@ export const OfferApprovalPanel: React.FC = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {approval.recruiter_first_name} {approval.recruiter_last_name}
+                      {getPrefixedDisplayName(approval, 'recruiter_')}
                     </TableCell>
                     <TableCell>
                       {approval.requested_at ? new Date(approval.requested_at).toLocaleDateString() : '-'}
@@ -428,7 +429,7 @@ export const OfferApprovalPanel: React.FC = () => {
                 <TableRow key={approval.approval_id}>
                   <TableCell className="font-medium">{approval.position_title || approval.job_title || 'N/A'}</TableCell>
                   <TableCell>
-                    {approval.candidate_first_name} {approval.candidate_last_name}
+                    {getPrefixedDisplayName(approval, 'candidate_')}
                   </TableCell>
                   <TableCell>
                     {formatCurrency(approval.salary_amount, approval.salary_currency)}
@@ -490,7 +491,7 @@ export const OfferApprovalPanel: React.FC = () => {
                       Candidate
                     </h3>
                     <p className="font-medium text-lg">
-                      {selectedApproval.candidate_first_name} {selectedApproval.candidate_last_name}
+                      {getPrefixedDisplayName(selectedApproval, 'candidate_')}
                     </p>
                     <p className="text-sm text-gray-600">{selectedApproval.candidate_email}</p>
                   </div>
@@ -500,9 +501,7 @@ export const OfferApprovalPanel: React.FC = () => {
                       Requested By (Recruiter)
                     </h3>
                     <p className="font-medium text-lg">
-                      {selectedApproval.recruiter_first_name && selectedApproval.recruiter_last_name
-                        ? `${selectedApproval.recruiter_first_name} ${selectedApproval.recruiter_last_name}`
-                        : selectedApproval.offer_data?.recruiter_name || 'Recruiter'}
+                      {getPrefixedDisplayName(selectedApproval, 'recruiter_', '') || selectedApproval.offer_data?.recruiter_name || 'Recruiter'}
                     </p>
                     <p className="text-sm text-gray-600">
                       {selectedApproval.requested_at ? new Date(selectedApproval.requested_at).toLocaleString() : '-'}

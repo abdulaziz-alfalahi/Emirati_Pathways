@@ -19,6 +19,7 @@ from .jd_builder_engine import get_jd_builder_engine
 from .ai_candidate_matching_final import get_ai_matching_engine_final as get_ai_matching_engine
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from backend.db import get_db_connection
+from backend.user_helpers import user_display_name
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -693,6 +694,7 @@ def match_candidates(jd_id):
                     u.first_name,
                     u.last_name,
                     u.full_name,
+                    COALESCE(u.display_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.full_name) as display_name,
                     u.email,
                     u.phone,
                     u.emirate,
@@ -730,6 +732,7 @@ def match_candidates(jd_id):
                 first_name,
                 last_name,
                 full_name,
+                COALESCE(display_name, NULLIF(CONCAT_WS(' ', first_name, last_name), ''), full_name) as display_name,
                 email,
                 phone,
                 emirate,
@@ -1003,6 +1006,7 @@ def get_shortlist(jd_id):
                     sc.updated_at,
                     u.first_name,
                     u.last_name,
+                    COALESCE(u.display_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.full_name) as display_name,
                     u.email
                 FROM shortlisted_candidates sc
                 JOIN job_postings jp ON sc.job_id = jp.id

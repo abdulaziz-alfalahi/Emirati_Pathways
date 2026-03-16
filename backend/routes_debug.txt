@@ -1134,3 +1134,11 @@ Passive: 47
 Total: 47
 Matches return count: 20
 Sample Match Payload: {"candidate": {"candidate_id": 19, "user_id": 19, "first_name": null, "last_name": null, "full_name": "Mohammed Al Hashimi", "email": "mohammed.alhashimi@email.ae", "phone": "+971-50-456-7890", "emirate": "Dubai", "nationality": "UAE", "is_uae_national": true, "education_level": "Bachelor", "experience_years": 4, "current_position": "Data Analyst", "current_company": null, "employment_status": "open_to_opportunities", "skills": ["Python", "SQL", "Tableau", "Statistics", "Excel", "Power BI"], "preferred_salary_min": null, "preferred_salary_max": null, "latitude": 25.259483634019293, "longitude": 55.24424607341665, "cv_url": null, "linkedin_url": null, "distance_km": 6.6}, "match_score": 56.666666666666664, "score_breakdown": {"skills": 26.666666666666664, "education": 15, "location": 10, "uae_national": 5}, "matching_skills": ["strong proficiency in python, javascript, and react", "excellent problem"], "missing_skills": ["solving skills"], "strengths": ["Meets education requirements", "Located in same emirate", "UAE National"], "concerns": [], "distance_km": 6.6}
+
+--- Request for JD jd_20251212_101707_596dbdbc ---
+
+--- Request for JD jd_20251212_101428_1b1e9ed2 ---
+
+--- Request for JD jd_20251212_101104_0d9fb33a ---
+
+--- Request for JD jd_20251128_004855_84b6e6da ---

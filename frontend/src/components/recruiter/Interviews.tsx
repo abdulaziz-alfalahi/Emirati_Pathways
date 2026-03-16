@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from "@/components/ui/label";
 import { Video, Calendar, Clock, Loader2, FileVideo, Sparkles, X, MoreVertical, Edit, BarChart3, ArrowLeft } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import InterviewAnalytics from './interviews/InterviewAnalytics';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { toast } from 'sonner';
@@ -245,7 +246,7 @@ export default function RecruiterInterviews() {
                     <div>
                       <CardTitle className="text-lg">{session.title || `Interview`}</CardTitle>
                       <div className="text-sm font-medium text-slate-700 mb-1">{session.job_title}</div>
-                      <div className="text-xs text-slate-500 mb-2">Candidate: {session.candidate_first_name} {session.candidate_last_name}</div>
+                      <div className="text-xs text-slate-500 mb-2">Candidate: {getPrefixedDisplayName(session, 'candidate_')}</div>
                       <CardDescription className="flex items-center mt-1">
                         <Calendar className="h-3 w-3 mr-1" />
                         {new Date(session.scheduled_time || session.scheduled_at).toLocaleString()}

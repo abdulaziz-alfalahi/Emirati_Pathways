@@ -20,4 +20,4 @@ def test_disconnect():
 
 if __name__ == '__main__':
     print("Starting Simple Socket Server on 5004...")
-    socketio.run(app, host='0.0.0.0', port=5004, debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=5004, debug=os.getenv('FLASK_ENV', 'production') != 'production', allow_unsafe_werkzeug=os.getenv('FLASK_ENV', 'production') != 'production')

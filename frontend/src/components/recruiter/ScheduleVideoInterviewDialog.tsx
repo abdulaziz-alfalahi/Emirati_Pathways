@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import {
@@ -161,7 +162,7 @@ export function ScheduleVideoInterviewDialog({
                             setFormData(prev => ({
                                 ...prev,
                                 candidateId: String(match.shortlist_id),
-                                candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
+                                candidateName: getDisplayName(match, '')
                             }));
                         }
                     } else if (initialCandidateId) {
@@ -173,7 +174,7 @@ export function ScheduleVideoInterviewDialog({
                             setFormData(prev => ({
                                 ...prev,
                                 candidateId: targetShortlistId,
-                                candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
+                                candidateName: getDisplayName(match, '')
                             }));
                         } else {
                             toast.info("Preparing candidate for interview...");
@@ -185,7 +186,7 @@ export function ScheduleVideoInterviewDialog({
                                 setFormData(prev => ({
                                     ...prev,
                                     candidateId: targetShortlistId,
-                                    candidateName: newMatch ? `${newMatch.first_name || ''} ${newMatch.last_name || ''}`.trim() : ""
+                                    candidateName: newMatch ? getDisplayName(newMatch, '') : ""
                                 }));
                             } else {
                                 toast.error("Could not add candidate to shortlist. Please try manually.");
@@ -209,7 +210,7 @@ export function ScheduleVideoInterviewDialog({
             if (formData.candidateId) {
                 const c = candidates.find(c => String(c.shortlist_id) === String(formData.candidateId));
                 if (c) {
-                    setFormData(prev => ({ ...prev, candidateName: `${c.first_name || ''} ${c.last_name || ''}`.trim() }));
+                    setFormData(prev => ({ ...prev, candidateName: getDisplayName(c, '') }));
                 }
             } else if (initialCandidateId) {
                 const match = candidates.find((c: any) => c.candidate_id === initialCandidateId || c.shortlist_id === initialCandidateId);
@@ -217,9 +218,9 @@ export function ScheduleVideoInterviewDialog({
                     setFormData(prev => ({
                         ...prev,
                         candidateId: match.shortlist_id,
-                        candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
+                        candidateName: getDisplayName(match, '')
                     }));
-                    toast.success(`Candidate ${match.first_name} ${match.last_name} selected`);
+                    toast.success(`Candidate ${getDisplayName(match)} selected`);
                 }
             }
         }
@@ -237,7 +238,7 @@ export function ScheduleVideoInterviewDialog({
                 setFormData(prev => ({
                     ...prev,
                     candidateId: match.shortlist_id,
-                    candidateName: `${match.first_name || ''} ${match.last_name || ''}`.trim()
+                    candidateName: getDisplayName(match, '')
                 }));
             } else {
                 toast.info("Adding candidate to job shortlist...");
@@ -249,7 +250,7 @@ export function ScheduleVideoInterviewDialog({
                         setFormData(prev => ({
                             ...prev,
                             candidateId: newShortlistId,
-                            candidateName: `${newMatch.first_name || ''} ${newMatch.last_name || ''}`.trim()
+                            candidateName: getDisplayName(newMatch, '')
                         }));
                         toast.success("Candidate added and selected");
                     }
@@ -388,7 +389,7 @@ export function ScheduleVideoInterviewDialog({
                             <SelectContent>
                                 {candidates.map(c => (
                                     <SelectItem key={c.shortlist_id} value={String(c.shortlist_id)}>
-                                        {c.first_name} {c.last_name} {c.match_score ? `(Match: ${c.match_score}%)` : ''}
+                                        {getDisplayName(c)} {c.match_score ? `(Match: ${c.match_score}%)` : ''}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { restClient } from '@/utils/api';
+import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -103,7 +104,7 @@ export const InterviewsTab: React.FC = () => {
                         <Badge variant="outline">{analyticsSession.title || 'Interview'}</Badge>
                         {analyticsSession.candidate_first_name && (
                             <Badge variant="secondary">
-                                {analyticsSession.candidate_first_name} {analyticsSession.candidate_last_name}
+                                {getPrefixedDisplayName(analyticsSession, 'candidate_')}
                             </Badge>
                         )}
                     </div>
@@ -152,7 +153,7 @@ export const InterviewsTab: React.FC = () => {
                                     </TableCell>
                                     <TableCell>
                                         <div>
-                                            <div className="font-dubai-bold">{session.candidate_first_name} {session.candidate_last_name}</div>
+                                            <div className="font-dubai-bold">{getPrefixedDisplayName(session, 'candidate_')}</div>
                                             <div className="text-xs text-slate-500">{session.candidate_email}</div>
                                         </div>
                                     </TableCell>

@@ -2,6 +2,7 @@
  * Education API Service — connects frontend to /api/education backend
  * Covers: universities, programs, scholarships, LMS courses, user progress
  */
+import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL
     ? `${import.meta.env.VITE_API_BASE_URL}/api/education`
@@ -117,7 +118,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
-    const token = localStorage.getItem('token') || '';
+    const token = getAuthToken() || '';
     return apiFetch<T>(path, {
         ...options,
         headers: {

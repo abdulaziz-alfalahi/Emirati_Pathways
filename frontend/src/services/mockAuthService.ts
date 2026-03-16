@@ -2,6 +2,7 @@
  * Mock Authentication Service for Development
  * Provides realistic Mobile OTP flow for testing
  */
+import { clearAuthTokens } from '@/utils/tokenUtils';
 
 export interface MockUser {
   id: string;
@@ -279,9 +280,7 @@ export class MockAuthService {
   static logout() {
     this.currentUser = null;
     localStorage.removeItem(this.STORAGE_KEY);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('auth_token');
+    clearAuthTokens();
     localStorage.removeItem('user');
   }
 

@@ -106,7 +106,7 @@ def create_test_student():
                 expires_at = EXCLUDED.expires_at, 
                 attempts = 0
         """, (phone, otp_code, expires_at))
-        print(f"✅ OTP set to {otp_code} for {phone}")
+        print(f"✅ OTP set for {phone} (code redacted from logs)")
 
         cursor.close()
         conn.close()

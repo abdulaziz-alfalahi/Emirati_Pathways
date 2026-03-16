@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -228,7 +229,7 @@ export default function RecruiterCandidatesPage() {
                     {results.map((c) => (
                       <tr key={c.id} className="border-b hover:bg-muted/50">
                         <td className="p-3 text-xs">{c.id}</td>
-                        <td className="p-3">{c.first_name} {c.last_name}</td>
+                        <td className="p-3">{getDisplayName(c)}</td>
                         <td className="p-3">{c.emirate}</td>
                         <td className="p-3">{c.education_level}</td>
                         <td className="p-3">{c.experience_years}</td>
@@ -320,7 +321,7 @@ export default function RecruiterCandidatesPage() {
                       return rows.map((m) => (
                         <tr key={m.candidate_id} className="border-b hover:bg-muted/50">
                           <td className="p-3 text-xs">{m.candidate_id}</td>
-                          <td className="p-3">{m.first_name || ''} {m.last_name || ''}</td>
+                          <td className="p-3">{getDisplayName(m)}</td>
                           <td className="p-3">{m.match_score?.match_percentage ?? '-'}</td>
                           <td className="p-3">{m.match_score?.match_level ?? '-'}</td>
                           <td className="p-3">

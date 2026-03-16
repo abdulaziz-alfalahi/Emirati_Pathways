@@ -8,9 +8,9 @@ import re
 import json
 import bcrypt
 import secrets
+import hashlib
 import logging
 import uuid
-from datetime import datetime, timedelta
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, Optional, List
 import psycopg2
@@ -21,6 +21,12 @@ from twilio.base.exceptions import TwilioRestException
 
 class AuthenticationManager:
     """Fixed authentication manager matching actual database schema"""
+    
+    # --- Account lockout settings ---
+    MAX_FAILED_ATTEMPTS = 5
+    LOCKOUT_DURATION_MINUTES = 15
+    # In-memory tracker: {email: {'count': int, 'locked_until': datetime | None}}
+    _failed_login_tracker: Dict[str, Dict] = {}
     
     def __init__(self, redis_client=None):
         # Setup logging
@@ -92,10 +98,22 @@ class AuthenticationManager:
             if not user.get('is_active', False):
                 return False, "Account is not active. Please contact support.", None
             
+            # Check if account is locked out
+            lockout_info = self._failed_login_tracker.get(email, {})
+            locked_until = lockout_info.get('locked_until')
+            if locked_until and datetime.utcnow() < locked_until:
+                remaining = int((locked_until - datetime.utcnow()).total_seconds() / 60) + 1
+                self.logger.warning(f"Login blocked for locked account: {email}")
+                return False, f"Account temporarily locked due to too many failed attempts. Try again in {remaining} minute(s).", None
+            
             # Verify password
             if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
                 self._increment_failed_attempts(email)
-                return False, "Invalid email or password", None
+                tracker = self._failed_login_tracker.get(email, {})
+                remaining_attempts = self.MAX_FAILED_ATTEMPTS - tracker.get('count', 0)
+                if remaining_attempts <= 0:
+                    return False, f"Account temporarily locked due to too many failed attempts. Try again in {self.LOCKOUT_DURATION_MINUTES} minutes.", None
+                return False, f"Invalid email or password. {remaining_attempts} attempt(s) remaining.", None
             
             # Reset failed attempts on successful login
             self._reset_failed_attempts(email)
@@ -237,12 +255,27 @@ class AuthenticationManager:
             return None
     
     def _increment_failed_attempts(self, email: str):
-        """Increment failed login attempts (simplified implementation)"""
-        self.logger.warning(f"Failed login attempt for: {email}")
+        """Track failed login attempts and lock account after threshold"""
+        tracker = self._failed_login_tracker.get(email, {'count': 0, 'locked_until': None})
+        
+        # If a previous lockout has expired, reset the counter
+        if tracker.get('locked_until') and datetime.utcnow() >= tracker['locked_until']:
+            tracker = {'count': 0, 'locked_until': None}
+        
+        tracker['count'] = tracker.get('count', 0) + 1
+        self.logger.warning(f"Failed login attempt #{tracker['count']} for: {email}")
+        
+        if tracker['count'] >= self.MAX_FAILED_ATTEMPTS:
+            tracker['locked_until'] = datetime.utcnow() + timedelta(minutes=self.LOCKOUT_DURATION_MINUTES)
+            self.logger.warning(f"Account locked for {email} until {tracker['locked_until']}")
+        
+        self._failed_login_tracker[email] = tracker
     
     def _reset_failed_attempts(self, email: str):
-        """Reset failed login attempts (simplified implementation)"""
-        self.logger.info(f"Reset failed attempts for: {email}")
+        """Clear failed login attempts on successful login"""
+        if email in self._failed_login_tracker:
+            del self._failed_login_tracker[email]
+            self.logger.info(f"Reset failed attempts for: {email}")
     
     def _update_last_login(self, user_id: str):
         """Update user's last login timestamp"""
@@ -430,10 +463,11 @@ class AuthenticationManager:
                 '+971509998903',  # Assessor (Mariam Al Dhaheri)
                 '+971509998904',  # Operator (Sultan Al Nuaimi)
             ]
-            is_magic = phone.endswith('1234567') or phone in magic_numbers
+            is_dev = os.getenv('FLASK_ENV', 'production') != 'production'
+            is_magic = is_dev and (phone.endswith('1234567') or phone in magic_numbers)
             
             if is_magic:
-                self.logger.info(f"Magic OTP requested for {phone}")
+                self.logger.info(f"Magic OTP requested for {phone} (dev mode)")
                 otp_code = '123456'
             else:
                 # Generate 6-digit secure random code
@@ -441,16 +475,25 @@ class AuthenticationManager:
             
             expires_at = datetime.now() + timedelta(minutes=10)
             
+            # Hash the OTP before storing (plaintext is only sent to user)
+            otp_hash = hashlib.sha256(otp_code.encode('utf-8')).hexdigest()
+            
             conn = self._get_db_connection()
             cursor = conn.cursor()
             
-            # Upsert into otp_interactions
+            # Ensure column is wide enough for hashes (idempotent migration)
+            try:
+                cursor.execute("ALTER TABLE otp_interactions ALTER COLUMN otp_code TYPE VARCHAR(128)")
+            except Exception:
+                conn.rollback()  # column may already be wide enough
+            
+            # Upsert into otp_interactions (store hash, not plaintext)
             cursor.execute("""
                 INSERT INTO otp_interactions (phone, otp_code, expires_at, created_at)
                 VALUES (%s, %s, %s, NOW())
                 ON CONFLICT (phone) 
                 DO UPDATE SET otp_code = EXCLUDED.otp_code, expires_at = EXCLUDED.expires_at, attempts = 0
-            """, (phone, otp_code, expires_at))
+            """, (phone, otp_hash, expires_at))
             
             conn.commit()
             cursor.close()
@@ -496,10 +539,14 @@ class AuthenticationManager:
                      self.logger.error(f"Twilio Generic Error: {e}")
                      self.logger.warning("Falling back to OTP simulation due to generic error")
 
-            # Fallback / Simulation
-            # For Real Numbers: Log it (Simulate SMS)
-            self.logger.info(f"SMS SIMULATION: OTP for {phone} is {otp_code}")
-            print(f"SMS SIMULATION: OTP for {phone} is {otp_code}") # Print to stdout for user visibility
+            # Redact OTP from logs — only show last 2 digits as a hint in dev mode
+            if os.getenv('FLASK_ENV', 'production') != 'production':
+                otp_hint = f"****{otp_code[-2:]}"
+                self.logger.info(f"SMS SIMULATION: OTP for {phone} is {otp_hint} (dev mode)")
+                print(f"SMS SIMULATION: OTP for {phone} is {otp_hint} (dev mode)")
+            else:
+                self.logger.info(f"SMS SIMULATION: OTP sent to {phone} (code redacted)")
+                print(f"SMS SIMULATION: OTP sent to {phone} (code redacted)")
             
             # If we had credentials but failed, we warn the user in the message
             if twilio_sid and twilio_token:
@@ -551,8 +598,9 @@ class AuthenticationManager:
                 '+971509998903',  # Assessor (Mariam Al Dhaheri)
                 '+971509998904',  # Operator (Sultan Al Nuaimi)
             ]
-            if code == '123456' and (phone.endswith('1234567') or phone in magic_numbers):
-                 print("DEBUG: Magic OTP match!", flush=True)
+            is_dev = os.getenv('FLASK_ENV', 'production') != 'production'
+            if is_dev and code == '123456' and (phone.endswith('1234567') or phone in magic_numbers):
+                 self.logger.info(f"Magic OTP match for {phone} (dev mode)")
                  return True, "Phone verified successfully (Magic)"
             print("DEBUG: Not magic OTP, accessing DB...", flush=True)
             conn = self._get_db_connection()
@@ -580,8 +628,9 @@ class AuthenticationManager:
                 conn.close()
                 return False, "OTP expired"
             
-            # Check Match
-            if code != stored_otp:
+            # Check Match (hash the user's input and compare to stored hash)
+            submitted_hash = hashlib.sha256(code.encode('utf-8')).hexdigest()
+            if submitted_hash != stored_otp:
                 # Increment attempts
                 cursor.execute("UPDATE otp_interactions SET attempts = attempts + 1 WHERE phone = %s", (phone,))
                 conn.commit()

@@ -28,6 +28,7 @@ import {
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 
 interface JobOffer {
   offer_id: string;
@@ -213,9 +214,7 @@ const NegotiationDialog: React.FC<NegotiationDialogProps> = ({
           </Typography>
           <Typography variant="h6">{offer.position_title}</Typography>
           <Typography variant="body2" color="textSecondary" gutterBottom>
-            {offer.first_name && offer.last_name
-              ? `${offer.first_name} ${offer.last_name}`
-              : 'Candidate'}
+            {getDisplayName(offer, 'Candidate')}
           </Typography>
           <Box display="flex" alignItems="center" gap={1} mt={1}>
             <AttachMoneyIcon color="primary" />

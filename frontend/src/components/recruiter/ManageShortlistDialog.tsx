@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -40,7 +41,7 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
   const loadJobDescriptions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('auth_token');
+      const token = getAuthToken();
 
       const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/list', {
         headers: {

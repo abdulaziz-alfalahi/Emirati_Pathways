@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getAuthToken } from '@/utils/tokenUtils';
+import { getDisplayName } from '@/utils/nameUtils';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
@@ -18,7 +20,7 @@ const brand = {
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const getAuthHeaders = () => {
-    const token = localStorage.getItem('access_token');
+    const token = getAuthToken();
     return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : {};
 };
 
@@ -34,6 +36,7 @@ const EducationOperatorDashboard: React.FC = () => {
     const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
     const [roleRequests, setRoleRequests] = useState<any[]>([]);
     const [actioningId, setActioningId] = useState<string | null>(null);
+    const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -229,8 +232,8 @@ const EducationOperatorDashboard: React.FC = () => {
                 body: JSON.stringify({ action }),
             });
             if (resp.ok) {
-                // Remove from list
                 setRoleRequests(prev => prev.filter(r => String(r.id) !== String(requestId)));
+                setExpandedRequestId(null);
             }
         } catch (err) {
             console.error('Request action failed:', err);
@@ -262,67 +265,141 @@ const EducationOperatorDashboard: React.FC = () => {
                 )}
 
                 {roleRequests.map((req: any, i: number) => {
-                    // Parse structured notes to extract role fields
-                    const noteLines = (req.notes || '').split('\n');
+                    const isExpanded = expandedRequestId === String(req.id);
                     const isActioning = actioningId === String(req.id);
+                    const noteLines = (req.admin_notes || req.notes || '').split('\n').filter((l: string) => l.trim());
+                    // Parse documents/role_fields from JSON
+                    let documents: Record<string, any> = {};
+                    try {
+                        documents = typeof req.documents === 'string' ? JSON.parse(req.documents) : (req.documents || {});
+                    } catch { /* ignore */ }
+                    const roleFields = documents.role_fields || {};
+                    const hasDetails = noteLines.length > 0 || Object.keys(roleFields).length > 0;
 
                     return (
                         <div key={req.id || i} style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                            padding: '16px 0',
-                            borderBottom: i < roleRequests.length - 1 ? `1px solid ${brand.border}` : 'none',
+                            borderRadius: 10,
+                            border: isExpanded ? `2px solid ${brand.accent}` : `1px solid ${brand.border}`,
+                            marginBottom: i < roleRequests.length - 1 ? 12 : 0,
+                            background: isExpanded ? '#FAFAFF' : 'white',
+                            transition: 'all 0.2s ease',
+                            overflow: 'hidden',
                         }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                    <span style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>
-                                        {req.full_name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || req.email}
-                                    </span>
-                                    <span style={{
-                                        fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20,
-                                        background: brand.purpleBg, color: brand.purpleText,
-                                    }}>
-                                        → {req.requested_role}
-                                    </span>
+                            {/* Clickable Header Row */}
+                            <div
+                                onClick={() => setExpandedRequestId(isExpanded ? null : String(req.id))}
+                                style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '16px 20px',
+                                    cursor: 'pointer',
+                                    userSelect: 'none',
+                                }}
+                                onMouseEnter={(e) => { if (!isExpanded) (e.currentTarget as HTMLDivElement).style.background = '#F9FAFB'; }}
+                                onMouseLeave={(e) => { if (!isExpanded) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            >
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                        <span style={{ fontSize: 15, fontWeight: 600, color: brand.textPrimary }}>
+                                            {getDisplayName(req, req.email)}
+                                        </span>
+                                        <span style={{
+                                            fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20,
+                                            background: brand.purpleBg, color: brand.purpleText,
+                                        }}>
+                                            → {req.requested_role}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                                        {req.email} • {t('Submitted', 'قُدّم')}: {req.created_at?.split(' ')[0] || req.created_at?.split('T')[0]}
+                                    </div>
                                 </div>
-                                <div style={{ fontSize: 12, color: brand.textSecondary, marginBottom: 4 }}>
-                                    {req.email} • {t('Submitted', 'قُدّم')}: {req.created_at?.split(' ')[0] || req.created_at?.split('T')[0]}
-                                </div>
-                                {/* Show key fields from notes */}
-                                <div style={{ fontSize: 12, color: brand.textSecondary, background: '#F9FAFB', borderRadius: 6, padding: '8px 12px', marginTop: 8 }}>
-                                    {noteLines.slice(0, 4).map((line: string, j: number) => (
-                                        <div key={j} style={{ marginBottom: 2 }}>{line}</div>
-                                    ))}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <span style={{ fontSize: 12, color: brand.textSecondary }}>
+                                        {isExpanded ? t('Hide Details', 'إخفاء التفاصيل') : t('View Details', 'عرض التفاصيل')}
+                                    </span>
+                                    <Eye size={16} color={brand.primary} style={{ transform: isExpanded ? 'rotate(0deg)' : 'none', transition: 'transform 0.2s' }} />
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
-                                <button
-                                    disabled={isActioning}
-                                    onClick={() => handleRequestAction(String(req.id), 'approve')}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 4,
-                                        padding: '8px 16px', borderRadius: 8, border: 'none',
-                                        background: brand.greenBg, color: brand.greenText,
-                                        fontSize: 13, fontWeight: 600, cursor: isActioning ? 'wait' : 'pointer',
-                                        opacity: isActioning ? 0.6 : 1,
-                                    }}
-                                >
-                                    <CheckCircle size={14} /> {t('Approve', 'موافقة')}
-                                </button>
-                                <button
-                                    disabled={isActioning}
-                                    onClick={() => handleRequestAction(String(req.id), 'reject')}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 4,
-                                        padding: '8px 16px', borderRadius: 8,
-                                        border: `1px solid ${brand.border}`, background: 'white',
-                                        color: '#EF4444',
-                                        fontSize: 13, fontWeight: 600, cursor: isActioning ? 'wait' : 'pointer',
-                                        opacity: isActioning ? 0.6 : 1,
-                                    }}
-                                >
-                                    <XCircle size={14} /> {t('Reject', 'رفض')}
-                                </button>
-                            </div>
+
+                            {/* Expandable Detail Panel */}
+                            {isExpanded && (
+                                <div style={{
+                                    padding: '0 20px 20px',
+                                    borderTop: `1px solid ${brand.border}`,
+                                    animation: 'fadeIn 0.2s ease',
+                                }}>
+                                    {/* Role-specific fields */}
+                                    {Object.keys(roleFields).length > 0 && (
+                                        <div style={{ marginTop: 16, marginBottom: 16 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary, marginBottom: 10 }}>
+                                                {t('Application Details', 'تفاصيل الطلب')}
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#F9FAFB', borderRadius: 8, padding: 16 }}>
+                                                {Object.entries(roleFields).map(([key, value]: [string, any]) => (
+                                                    <div key={key}>
+                                                        <div style={{ fontSize: 11, color: brand.textSecondary, marginBottom: 2, textTransform: 'capitalize' }}>
+                                                            {key.replace(/_/g, ' ')}
+                                                        </div>
+                                                        <div style={{ fontSize: 13, fontWeight: 500, color: brand.textPrimary }}>{String(value) || '—'}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Notes */}
+                                    {noteLines.length > 0 && (
+                                        <div style={{ marginTop: Object.keys(roleFields).length > 0 ? 0 : 16, marginBottom: 16 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
+                                                {t('Applicant Notes', 'ملاحظات المتقدم')}
+                                            </div>
+                                            <div style={{ fontSize: 13, color: brand.textSecondary, background: '#F9FAFB', borderRadius: 8, padding: 14, lineHeight: 1.6 }}>
+                                                {noteLines.map((line: string, j: number) => (
+                                                    <div key={j} style={{ marginBottom: 4 }}>{line}</div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* No extra details */}
+                                    {!hasDetails && (
+                                        <div style={{ marginTop: 16, marginBottom: 16, fontSize: 13, color: brand.textSecondary, fontStyle: 'italic' }}>
+                                            {t('No additional details were submitted with this request.', 'لم يتم تقديم تفاصيل إضافية مع هذا الطلب.')}
+                                        </div>
+                                    )}
+
+                                    {/* Action Buttons */}
+                                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 12, borderTop: `1px solid ${brand.border}` }}>
+                                        <button
+                                            disabled={isActioning}
+                                            onClick={(e) => { e.stopPropagation(); handleRequestAction(String(req.id), 'reject'); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 6,
+                                                padding: '10px 24px', borderRadius: 8,
+                                                border: `1px solid ${brand.border}`, background: 'white',
+                                                color: '#EF4444',
+                                                fontSize: 14, fontWeight: 600, cursor: isActioning ? 'wait' : 'pointer',
+                                                opacity: isActioning ? 0.6 : 1,
+                                            }}
+                                        >
+                                            <XCircle size={16} /> {t('Reject', 'رفض')}
+                                        </button>
+                                        <button
+                                            disabled={isActioning}
+                                            onClick={(e) => { e.stopPropagation(); handleRequestAction(String(req.id), 'approve'); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 6,
+                                                padding: '10px 24px', borderRadius: 8, border: 'none',
+                                                background: brand.primary, color: 'white',
+                                                fontSize: 14, fontWeight: 600, cursor: isActioning ? 'wait' : 'pointer',
+                                                opacity: isActioning ? 0.6 : 1,
+                                            }}
+                                        >
+                                            <CheckCircle size={16} /> {t('Approve', 'موافقة')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     );
                 })}

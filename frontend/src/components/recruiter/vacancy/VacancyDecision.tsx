@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { recruiterService, Candidate } from "@/services/recruiterService";
+import { getDisplayName } from '@/utils/nameUtils';
 
 interface VacancyDecisionProps {
     job: any;
@@ -126,7 +127,7 @@ export const VacancyDecision: React.FC<VacancyDecisionProps> = ({ job }) => {
                                         <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{candidate.first_name?.charAt(0) || candidate.name?.charAt(0) || '?'}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <h4 className="font-semibold text-gray-900">{candidate.name || `${candidate.first_name} ${candidate.last_name}`}</h4>
+                                        <h4 className="font-semibold text-gray-900">{getDisplayName(candidate)}</h4>
                                         <div className="flex items-center gap-2 text-sm text-gray-500">
                                             <Badge variant={candidate.match > 90 ? "default" : "secondary"} className="text-xs">
                                                 {candidate.match}% Match

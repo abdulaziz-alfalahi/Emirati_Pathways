@@ -4,6 +4,7 @@ import {
   Application,
   ScholarshipWithApplications
 } from "@/types/scholarships";
+import { getAuthToken } from '@/utils/tokenUtils';
 
 // ── Flask backend API ──
 const API_BASE = (import.meta.env.VITE_API_BASE_URL
@@ -79,7 +80,7 @@ export const getScholarships = async (filters?: ScholarshipFilters): Promise<Sch
  */
 export const applyForScholarship = async (scholarshipId: string, userId: string): Promise<Application> => {
   try {
-    const token = localStorage.getItem('token') || '';
+    const token = getAuthToken() || '';
     const resp = await fetch(`${API_BASE}/scholarships/${scholarshipId}/apply`, {
       method: 'POST',
       headers: {
@@ -118,7 +119,7 @@ export const applyForScholarship = async (scholarshipId: string, userId: string)
  */
 export const getUserApplications = async (userId: string): Promise<Application[]> => {
   try {
-    const token = localStorage.getItem('token') || '';
+    const token = getAuthToken() || '';
     const resp = await fetch(`${API_BASE}/my-progress`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -163,7 +164,7 @@ export const getScholarshipsWithApplicationCounts = async (_providerId: string):
  */
 export const getApplicationsByScholarship = async (scholarshipId: string): Promise<Application[]> => {
   try {
-    const token = localStorage.getItem('token') || '';
+    const token = getAuthToken() || '';
     const resp = await fetch(`${API_BASE}/scholarships/${scholarshipId}/applications`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -196,7 +197,7 @@ export const updateApplicationStatus = async (
   notes?: string
 ): Promise<boolean> => {
   try {
-    const token = localStorage.getItem('token') || '';
+    const token = getAuthToken() || '';
     const resp = await fetch(`${API_BASE}/scholarships/applications/${applicationId}/status`, {
       method: 'PUT',
       headers: {
@@ -217,7 +218,7 @@ export const updateApplicationStatus = async (
  */
 export const createScholarship = async (scholarshipData: Partial<Scholarship>): Promise<Scholarship> => {
   try {
-    const token = localStorage.getItem('token') || '';
+    const token = getAuthToken() || '';
     const resp = await fetch(`${API_BASE}/scholarships`, {
       method: 'POST',
       headers: {

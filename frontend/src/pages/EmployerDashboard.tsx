@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
+import { getDisplayName } from '@/utils/nameUtils';
 
 const EmployerDashboard = () => {
   const { user, signOut, isAuthenticated } = useAuth();
@@ -40,21 +41,7 @@ const EmployerDashboard = () => {
   }, [isAuthenticated, navigate]);
 
   // Get user display name
-  const getUserDisplayName = () => {
-    if (!user) return 'Recruiter';
-
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
-    if (user.user_metadata?.name) return user.user_metadata.name;
-    if (user.full_name) return user.full_name;
-    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
-
-    if (user.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-
-    return 'Recruiter';
-  };
+  const getUserDisplayName = () => getDisplayName(user, 'Recruiter');
 
   // Logout functionality
   const handleLogout = async () => {

@@ -34,7 +34,7 @@ from backend.job_application_routes import job_application_bp
 
 
 
-# Initialize SocketIO (Lazy init to avoid conflicts)
+# Initialize SocketIO (Lazy init - cors_allowed_origins set after CORS config below)
 socketio = SocketIO(cors_allowed_origins="*", async_mode='threading', logger=True, engineio_logger=True)
 
 # ... (Previous JWT/CORS config)
@@ -218,14 +218,17 @@ app = Flask(__name__)
 socketio.init_app(app)
 
 # JWT Configuration
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+_jwt_secret = os.getenv('JWT_SECRET_KEY')
+if not _jwt_secret:
+    raise RuntimeError("FATAL: JWT_SECRET_KEY environment variable is required. Set it in .env or your deployment environment.")
+app.config['JWT_SECRET_KEY'] = _jwt_secret
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 # Initialize JWT Manager
 jwt = JWTManager(app)
 
-# CORS Configuration (allow localhost, env-defined, and ngrok domains)
+# CORS Configuration (allow localhost, env-defined, and optionally ngrok domains)
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
 allowed_origin_list = [o for o in (x.strip() for x in allowed_origins_env.split(',')) if o]
 
@@ -233,20 +236,27 @@ cors_origins = [
     # Local development
     "http://localhost:8081",
     "http://localhost:3000",
-    "http://localhost:8081",
-    "http://localhost:3000",
     "http://localhost:8089",
     "http://localhost:5173",  # Default Vite port
-    # Common dev wildcard domains (Flask-CORS supports regex strings)
-    r"https?://.*\.ngrok\.io",
-    r"https?://.*\.ngrok\.app",
-    r"https?://.*\.ngrok-free\.app",
-    r"https?://.*\.ngrok-free\.dev", # Added dev TLD
-    "https://archdiocesan-complimentarily-marianna.ngrok-free.dev",
 ]
 
-# Include any user-provided origins via ALLOWED_ORIGINS
+# Only allow ngrok wildcard domains in NON-production environments
+if os.getenv('FLASK_ENV', 'production') != 'production':
+    cors_origins.extend([
+        r"https?://.*\.ngrok\.io",
+        r"https?://.*\.ngrok\.app",
+        r"https?://.*\.ngrok-free\.app",
+        r"https?://.*\.ngrok-free\.dev",
+    ])
+    logger.info("CORS: Ngrok wildcard origins ENABLED (non-production mode)")
+else:
+    logger.info("CORS: Ngrok wildcard origins DISABLED (production mode)")
+
+# Include any user-provided origins via ALLOWED_ORIGINS (works in all environments)
 cors_origins.extend(allowed_origin_list)
+
+# Update SocketIO CORS to match (instead of '*')
+socketio.cors_allowed_origins = cors_origins
 
 CORS(app, resources={
     r"/api/*": {
@@ -844,27 +854,68 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def require_admin_auth(f):
-    """Decorator to require admin authentication."""
+    """Decorator to require admin authentication via JWT verification."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Mock authentication - in production, integrate with your auth system
-        auth_header = request.headers.get('Authorization')
-        user_email = request.headers.get('X-User-Email', 'admin@emiratijourney.ae')
-        user_roles = request.headers.get('X-User-Roles', 'platform_administrator').split(',')
-        
-        # Check if user has admin role
-        if not any(role.strip() in ADMIN_ROLES for role in user_roles):
+        # 1. Extract Bearer token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
             return jsonify({
                 'success': False,
-                'error': 'Insufficient privileges. Admin access required.'
-            }), 403
-        
-        # Add user info to request context
+                'error': 'Authentication required. Provide a valid Bearer token.'
+            }), 401
+
+        token = auth_header.replace('Bearer ', '', 1)
+
+        # 2. Decode and verify JWT (checks signature + expiry)
+        try:
+            from flask_jwt_extended import decode_token
+            decoded = decode_token(token)
+            user_id = decoded.get('sub')
+            if not user_id:
+                return jsonify({
+                    'success': False,
+                    'error': 'Invalid token: missing identity.'
+                }), 401
+        except Exception as e:
+            logger.warning(f"Admin auth token verification failed: {e}")
+            return jsonify({
+                'success': False,
+                'error': 'Invalid or expired token.'
+            }), 401
+
+        # 3. Look up the user's REAL role from the database — never trust client headers
+        try:
+            user_row = execute_query(
+                "SELECT id, email, role FROM users WHERE id = %s",
+                (user_id,), fetch_one=True
+            )
+            if not user_row:
+                return jsonify({
+                    'success': False,
+                    'error': 'User not found.'
+                }), 401
+
+            user_role = (user_row.get('role') or '').strip()
+            if user_role not in ADMIN_ROLES:
+                return jsonify({
+                    'success': False,
+                    'error': 'Insufficient privileges. Admin access required.'
+                }), 403
+        except Exception as e:
+            logger.error(f"Admin auth DB lookup failed: {e}")
+            return jsonify({
+                'success': False,
+                'error': 'Authentication service error.'
+            }), 500
+
+        # 4. Attach verified admin user info to the request context
         request.admin_user = {
-            'email': user_email,
-            'roles': user_roles
+            'email': user_row.get('email', 'unknown'),
+            'roles': [user_role],
+            'user_id': user_id
         }
-        
+
         return f(*args, **kwargs)
     return decorated_function
 
@@ -3783,4 +3834,5 @@ if __name__ == '__main__':
 
     # Run the unified Flask app with SocketIO support (Critical for WebRTC signaling)
     # allow_unsafe_werkzeug=True is often needed for dev servers in threaded mode
-    socketio.run(app, host='0.0.0.0', port=port, debug=True, allow_unsafe_werkzeug=True)
+    is_debug = os.getenv('FLASK_ENV', 'production') != 'production'
+    socketio.run(app, host='0.0.0.0', port=port, debug=is_debug, allow_unsafe_werkzeug=is_debug)

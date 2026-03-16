@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Users, MessageSquare, Loader2, UserPlus } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { getDisplayName } from '@/utils/nameUtils';
 
 interface TeamMember {
     id: string;
@@ -70,7 +71,7 @@ export function CandidateDiscussionModal({
                 const members = response.data.members.map((m: any) => ({
                     id: m.id || m.user_id,
                     user_id: m.user_id || m.id,
-                    name: m.name || `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email,
+                    name: getDisplayName(m, m.email),
                     email: m.email,
                     role: m.role || 'recruiter'
                 }));

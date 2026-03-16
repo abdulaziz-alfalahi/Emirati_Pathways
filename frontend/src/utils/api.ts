@@ -1,6 +1,7 @@
 // src/utils/api.ts
 import axios, { type AxiosInstance } from 'axios'
 import type { CV } from '@/types/cv'
+import { getAuthToken, clearAuthTokens } from '@/utils/tokenUtils'
 
 /**
  * Base URLs (configure via Vite env):
@@ -27,7 +28,7 @@ export const restClient: AxiosInstance = axios.create({
 // Add request interceptor to inject token
 // Request interceptor to inject token
 restClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -82,8 +83,7 @@ restClient.interceptors.response.use(
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
         // Clear auth and redirect
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        clearAuthTokens();
         localStorage.removeItem('user');
 
         // Dispatch storage event so other tabs/components know

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getDisplayName } from '@/utils/nameUtils';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -249,7 +250,7 @@ export default function JobDetailsPage() {
                     )}
                     {shortlist.map((s) => (
                       <tr key={s.candidate_id} className="border-b hover:bg-slate-50">
-                        <td className="p-3">{s.first_name || ''} {s.last_name || ''} (#{s.candidate_id})</td>
+                        <td className="p-3">{getDisplayName(s)} (#{s.candidate_id})</td>
                         <td className="p-3">{s.education_level || '-'}</td>
                         <td className="p-3">{s.experience_years ?? '-'}</td>
                         <td className="p-3">{s.notes || '-'}</td>
@@ -286,7 +287,7 @@ export default function JobDetailsPage() {
                     )}
                     {matches.map((m) => (
                       <tr key={m.candidate_id} className="border-b hover:bg-slate-50">
-                        <td className="p-3">{m.first_name || ''} {m.last_name || ''} (#{m.candidate_id})</td>
+                        <td className="p-3">{getDisplayName(m)} (#{m.candidate_id})</td>
                         <td className="p-3">{m.match_score?.match_percentage ?? '-'}</td>
                         <td className="p-3">{m.match_score?.match_level ?? '-'}</td>
                         <td className="p-3">
