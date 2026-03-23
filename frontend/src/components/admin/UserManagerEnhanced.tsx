@@ -301,11 +301,18 @@ const getRoleColor = (role: string): string => {
     'growth_operator_company': 'bg-green-100 text-green-800 border-green-200',
     'growth_operator_candidate': 'bg-teal-100 text-teal-800 border-teal-200',
     'growth_operator_monitoring': 'bg-blue-100 text-blue-800 border-blue-200',
-    'candidate': 'bg-cyan-100 text-cyan-800 border-cyan-200',
     'job_seeker': 'bg-cyan-100 text-cyan-800 border-cyan-200',
     'mentor': 'bg-orange-100 text-orange-800 border-orange-200',
     'educator': 'bg-teal-100 text-teal-800 border-teal-200',
-    'assessor': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    'assessor': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'advisor': 'bg-sky-100 text-sky-800 border-sky-200',
+    'coach': 'bg-violet-100 text-violet-800 border-violet-200',
+    'internship_coordinator': 'bg-amber-100 text-amber-800 border-amber-200',
+    'training_center_rep': 'bg-lime-100 text-lime-800 border-lime-200',
+    'call_center_agent': 'bg-rose-100 text-rose-800 border-rose-200',
+    'government': 'bg-slate-100 text-slate-800 border-slate-200',
+    'parent': 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
+    'student': 'bg-cyan-100 text-cyan-800 border-cyan-200'
   };
   return colors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
@@ -868,7 +875,7 @@ const UserManagerEnhanced: React.FC = () => {
       'Hessa Al Mansoori', 'Sultan Al Dhaheri', 'Mariam Al Zaabi'
     ];
 
-    const roles = ['candidate', 'recruiter', 'hr_manager', 'growth_operator', 'platform_administrator'];
+    const roles = ['candidate', 'recruiter', 'hr_manager', 'growth_operator', 'platform_administrator', 'advisor', 'coach', 'internship_coordinator', 'training_center_rep', 'call_center_agent'];
     const departments = ['Engineering', 'HR', 'Marketing', 'Operations', 'Finance'];
 
     return names.map((name, i) => ({
@@ -928,6 +935,22 @@ const UserManagerEnhanced: React.FC = () => {
     { id: 'growth_operator_mentorship', name: 'growth_operator_mentorship', display_name: 'Mentorship Operator', description: 'Mentorship programs', permissions: ['onboard_mentors', 'manage_mentorship_programs', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
     { id: 'growth_operator_community', name: 'growth_operator_community', display_name: 'Community Operator', description: 'Community management', permissions: ['moderate_communities', 'manage_community_events', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
     { id: 'growth_operator_monitoring', name: 'growth_operator_monitoring', display_name: 'Monitoring Center Operator', description: 'Monitor platform operations', permissions: ['view_operations_center', 'view_all_analytics', 'view_analytics'], is_system: true, user_count: 0, category: 'Growth Operators' },
+    // Persona Roles
+    { id: 'job_seeker', name: 'job_seeker', display_name: 'Job Seeker', description: 'UAE national seeking employment', permissions: ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'recruiter', name: 'recruiter', display_name: 'Recruiter', description: 'Private sector recruiter', permissions: ['post_jobs', 'screen_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'hr_manager', name: 'hr_manager', display_name: 'HR Manager', description: 'Company HR manager', permissions: ['post_jobs', 'screen_candidates', 'manage_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'mentor', name: 'mentor', display_name: 'Mentor', description: 'Career mentor for UAE nationals', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'assessor', name: 'assessor', display_name: 'Assessor', description: 'Skills assessor', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'educator', name: 'educator', display_name: 'Educator', description: 'Academic educator', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'parent', name: 'parent', display_name: 'Parent / Guardian', description: 'Parent or guardian of a student', permissions: ['view_dashboard'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'government', name: 'government', display_name: 'Government Official', description: 'Government entity representative', permissions: ['view_dashboard', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'student', name: 'student', display_name: 'Student', description: 'School or university student', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
+    // Phase 2-4 New Roles
+    { id: 'advisor', name: 'advisor', display_name: 'Academic Advisor', description: 'Academic pathway advisor for students and job seekers', permissions: ['view_dashboard', 'manage_profile', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
+    { id: 'coach', name: 'coach', display_name: 'Career Coach', description: 'Professional career coach providing 1-on-1 coaching', permissions: ['view_dashboard', 'manage_profile', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
+    { id: 'internship_coordinator', name: 'internship_coordinator', display_name: 'Internship Coordinator', description: 'Manages internship programs and student placements', permissions: ['view_dashboard', 'manage_profile', 'manage_candidates', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
+    { id: 'training_center_rep', name: 'training_center_rep', display_name: 'Training Center Representative', description: 'Manages training center programs and enrollments', permissions: ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
+    { id: 'call_center_agent', name: 'call_center_agent', display_name: 'Call Center Agent', description: 'Handles support tickets and user inquiries', permissions: ['view_dashboard', 'view_users', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },
   ];
 
   // ============================================

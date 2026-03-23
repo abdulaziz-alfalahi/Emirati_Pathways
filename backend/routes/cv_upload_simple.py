@@ -37,9 +37,18 @@ cv_upload_bp = Blueprint('cv_upload', __name__, url_prefix='/api/cv')
 # Configuration
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = {'pdf', 'docx', 'doc', 'txt'}
-# Create uploads directory relative to backend folder
+# Create uploads directory relative to backend folder (fallback for local storage)
 UPLOAD_FOLDER = Path('uploads/cv_uploads')
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+
+# Storage abstraction (supports local + S3)
+try:
+    from backend.services.storage import storage as _storage
+except ImportError:
+    try:
+        from services.storage import storage as _storage
+    except ImportError:
+        _storage = None
 
 # Initialize Parser
 cv_parser = CVParser()
@@ -120,10 +129,21 @@ def upload_cv():
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_filename = f"{user_id}_{timestamp}_{filename}"
-        file_path = UPLOAD_FOLDER / safe_filename
-        
-        file.save(str(file_path))
-        logger.info(f"File saved: {file_path}")
+        # Save file via storage service (S3 or local)
+        if _storage:
+            storage_key = _storage.save_upload(file, 'cv_uploads', safe_filename)
+            logger.info(f"File saved via storage service: {storage_key}")
+            # Also save locally for parser if using S3
+            if _storage.storage_type == 's3':
+                file_path = UPLOAD_FOLDER / safe_filename
+                file.seek(0)
+                file.save(str(file_path))
+            else:
+                file_path = Path(_storage.local_path(f'cv_uploads/{safe_filename}'))
+        else:
+            file_path = UPLOAD_FOLDER / safe_filename
+            file.save(str(file_path))
+            logger.info(f"File saved: {file_path}")
         
         # REAL PARSING Logic (Replaces Mock)
         try:

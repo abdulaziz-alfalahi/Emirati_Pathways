@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 growth_operator_assignment_bp = Blueprint('growth_operator_assignment_api', __name__, url_prefix='/api/admin/growth-operators')
 
 # Valid Growth Operator Domains
-VALID_DOMAINS = ['candidate', 'company', 'education', 'assessment', 'mentorship', 'community']
+VALID_DOMAINS = ['candidate', 'company', 'education', 'assessment', 'mentorship', 'community', 'monitoring']
 
 # Domain metadata
 DOMAIN_METADATA = {
@@ -62,6 +62,12 @@ DOMAIN_METADATA = {
         'description': 'Moderate communities and manage events',
         'icon': 'MessageCircle',
         'permissions': ['moderate_communities', 'manage_community_events', 'view_analytics']
+    },
+    'monitoring': {
+        'label': 'Monitoring Operations',
+        'description': 'Monitor platform operations and performance metrics',
+        'icon': 'Activity',
+        'permissions': ['view_monitoring', 'manage_alerts', 'view_analytics']
     }
 }
 
@@ -272,10 +278,38 @@ def list_growth_operators():
             """
             assignments = execute_query(assignments_query, (op['id'],))
             
+            assignment_domains = set(a['domain'] for a in (assignments or []))
+            
+            # Only fall back to role/secondary_roles derivation if NO assignments exist
+            # Once an admin has saved assignments, the table is the source of truth
+            if assignment_domains:
+                all_domains = list(assignment_domains)
+            else:
+                # Derive domains from user's primary role and secondary_roles as fallback
+                role_domains = set()
+                user_role = op.get('role', '')
+                if user_role.startswith('growth_operator_'):
+                    derived_domain = user_role.replace('growth_operator_', '')
+                    if derived_domain in VALID_DOMAINS:
+                        role_domains.add(derived_domain)
+                
+                # Check secondary_roles for additional growth operator roles
+                secondary_roles_query = """
+                    SELECT secondary_roles FROM users WHERE id = %s
+                """
+                sr_result = execute_query(secondary_roles_query, (op['id'],), fetch_one=True)
+                if sr_result and sr_result.get('secondary_roles'):
+                    for sr in sr_result['secondary_roles']:
+                        if isinstance(sr, str) and sr.startswith('growth_operator_'):
+                            derived = sr.replace('growth_operator_', '')
+                            if derived:
+                                role_domains.add(derived)
+                
+                all_domains = list(role_domains)
+            
             # Filter by domain if specified
             if domain:
-                has_domain = any(a['domain'] == domain for a in (assignments or []))
-                if not has_domain:
+                if domain not in all_domains:
                     continue
             
             # Serialize datetime fields to ISO strings for JSON compatibility
@@ -293,11 +327,26 @@ def list_growth_operators():
                     sa[key] = value.isoformat() if isinstance(value, datetime) else value
                 serialized_assignments.append(sa)
             
+            # If no table assignments, add synthetic ones from derived domains
+            if not assignment_domains:
+                user_role = op.get('role', '')
+                for rd in all_domains:
+                    serialized_assignments.append({
+                        'domain': rd,
+                        'is_primary': (rd == user_role.replace('growth_operator_', '')),
+                        'is_active': True,
+                        'created_at': op_data.get('created_at', '')
+                    })
+            
             result.append({
                 **op_data,
-                'domains': [a['domain'] for a in (assignments or [])],
+                'domains': all_domains,
                 'assignments': serialized_assignments,
-                'primaryDomain': next((a['domain'] for a in (assignments or []) if a.get('is_primary')), None)
+                'primaryDomain': next(
+                    (a['domain'] for a in (assignments or []) if a.get('is_primary')),
+                    # Fallback: derive from primary role
+                    op.get('role', '').replace('growth_operator_', '') if op.get('role', '').startswith('growth_operator_') else None
+                )
             })
         
         # Get total count
@@ -428,6 +477,8 @@ def assign_domains(user_id):
         notes = data.get('notes', '')
         assigned_by = data.get('assigned_by', 1)  # Should come from auth
         
+        logger.info(f"assign_domains called: user_id={user_id}, domains={domains}, primary={primary_domain}")
+        
         # Validate domains
         invalid_domains = [d for d in domains if d not in VALID_DOMAINS]
         if invalid_domains:
@@ -436,7 +487,7 @@ def assign_domains(user_id):
                 'message': f'Invalid domains: {invalid_domains}. Valid domains are: {VALID_DOMAINS}'
             }), 400
         
-        # Verify user exists and is a growth operator
+        # Verify user exists
         user_query = "SELECT id, role FROM users WHERE id = %s"
         user = execute_query(user_query, (user_id,), fetch_one=True)
         
@@ -455,6 +506,34 @@ def assign_domains(user_id):
         
         try:
             with conn.cursor() as cursor:
+                # Ensure the assignments table exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS growth_operator_assignments (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL,
+                        domain VARCHAR(50) NOT NULL,
+                        assigned_by INTEGER,
+                        is_primary BOOLEAN DEFAULT FALSE,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        notes TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, domain)
+                    )
+                """)
+                
+                # Also ensure the activity log table exists
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS growth_operator_activity_log (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER NOT NULL,
+                        domain VARCHAR(50),
+                        action VARCHAR(100),
+                        details JSONB,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
                 # Deactivate all existing assignments
                 cursor.execute("""
                     UPDATE growth_operator_assignments 
@@ -479,26 +558,40 @@ def assign_domains(user_id):
                             updated_at = CURRENT_TIMESTAMP
                     """, (user_id, domain, assigned_by, is_primary, notes))
                 
-                # Update user role based on domains
-                if len(domains) == 1:
-                    new_role = f"growth_operator_{domains[0]}"
-                elif len(domains) > 1 and primary_domain:
-                    new_role = f"growth_operator_{primary_domain}"
-                else:
-                    new_role = "growth_operator"
+                # Update secondary_roles to match the new domain assignments
+                # This keeps the users table in sync with the assignments table
+                new_secondary_roles = [f"growth_operator_{d}" for d in domains]
+                try:
+                    cursor.execute("SAVEPOINT update_secondary_roles")
+                    cursor.execute("""
+                        UPDATE users SET secondary_roles = %s::text[]
+                        WHERE id = %s
+                    """, (new_secondary_roles, user_id))
+                    cursor.execute("RELEASE SAVEPOINT update_secondary_roles")
+                    logger.info(f"Updated secondary_roles for user {user_id}: {new_secondary_roles}")
+                except Exception as sr_err:
+                    logger.warning(f"Could not update secondary_roles: {sr_err}")
+                    try:
+                        cursor.execute("ROLLBACK TO SAVEPOINT update_secondary_roles")
+                    except Exception:
+                        pass
                 
-                cursor.execute("""
-                    UPDATE users SET role = %s, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                """, (new_role, user_id))
-                
-                # Log the assignment
-                cursor.execute("""
-                    INSERT INTO growth_operator_activity_log 
-                    (user_id, domain, action, details)
-                    VALUES (%s, %s, 'domain_assignment', %s)
-                """, (user_id, primary_domain or (domains[0] if domains else None), 
-                      json.dumps({'domains': domains, 'assigned_by': assigned_by})))
+                # Log the assignment (non-critical)
+                try:
+                    cursor.execute("SAVEPOINT activity_log")
+                    cursor.execute("""
+                        INSERT INTO growth_operator_activity_log 
+                        (user_id, domain, action, details)
+                        VALUES (%s, %s, 'domain_assignment', %s)
+                    """, (user_id, primary_domain or (domains[0] if domains else None), 
+                          json.dumps({'domains': domains, 'assigned_by': assigned_by})))
+                    cursor.execute("RELEASE SAVEPOINT activity_log")
+                except Exception as log_err:
+                    logger.warning(f"Could not log assignment: {log_err}")
+                    try:
+                        cursor.execute("ROLLBACK TO SAVEPOINT activity_log")
+                    except Exception:
+                        pass
                 
                 conn.commit()
                 

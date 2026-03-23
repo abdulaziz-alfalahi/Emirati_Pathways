@@ -29,7 +29,8 @@ import {
   Clock,
   ChevronRight,
   Zap,
-  BookOpen
+  BookOpen,
+  Building2
 } from 'lucide-react';
 
 // Import your existing components
@@ -41,6 +42,7 @@ import CandidateInterviews from '@/components/candidate/Interviews';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { useAuth } from '@/context/AuthContext';
 import { profileSnapshotAPI, type RecommendedJob, type ProfileSnapshot } from '@/services/intelligenceAPI';
 
 interface DashboardData {
@@ -92,10 +94,14 @@ const CircularProgress: React.FC<{ value: number; size?: number; strokeWidth?: n
   );
 };
 
+// Lazy-load MyCompanyView so it only loads when the tab is shown
+const MyCompanyView = React.lazy(() => import('@/pages/workspace/MyCompanyView'));
+
 const CandidateDashboard: React.FC = () => {
   const { i18n } = useTranslation();
   const { language, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     profile: {
@@ -131,7 +137,7 @@ const CandidateDashboard: React.FC = () => {
     // Check for hash
     if (location.hash) {
       const tab = location.hash.replace('#', '');
-      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages'].includes(tab)) {
+      if (['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages', 'company'].includes(tab)) {
         setActiveTab(tab);
         return;
       }
@@ -145,7 +151,7 @@ const CandidateDashboard: React.FC = () => {
     // Check for query param
     const searchParams = new URLSearchParams(location.search);
     const tab = searchParams.get('tab');
-    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages'].includes(tab)) {
+    if (tab && ['overview', 'profile', 'jobs', 'applications', 'interviews', 'messages', 'company'].includes(tab)) {
       setActiveTab(tab);
     } else if (tab === 'offers') {
       setActiveTab('applications');
@@ -353,7 +359,7 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className="grid w-full grid-cols-6 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
+            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
               <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="profile" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
@@ -366,6 +372,10 @@ const CandidateDashboard: React.FC = () => {
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="company" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
+                <Building2 className="h-3.5 w-3.5" style={{ marginInlineEnd: 4 }} />
+                {t('My Company', 'شركتي')}
               </TabsTrigger>
             </TabsList>
 
@@ -706,6 +716,16 @@ const CandidateDashboard: React.FC = () => {
 
             <TabsContent value="messages" className="space-y-6 mt-6">
               <Messages />
+            </TabsContent>
+
+            <TabsContent value="company" className="space-y-6 mt-6">
+              <React.Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                </div>
+              }>
+                <MyCompanyView />
+              </React.Suspense>
             </TabsContent>
           </Tabs>
         </div>

@@ -1,24 +1,21 @@
-FROM node:20
+# =========================================
+# Dubai Human Development Platform — Frontend
+# Multi-stage build: Node build → Nginx serve
+# =========================================
 
+# Stage 1: Build the React app
+FROM node:18-alpine AS build
 WORKDIR /app
-
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-
-# Complete nuclear clean
-RUN rm -rf node_modules package-lock.json
-RUN npm cache clean --force
-
-# Install dependencies
-RUN npm install --force
-
-# Nuclear esbuild fix
-RUN npm uninstall esbuild
-RUN npm install esbuild@0.21.5 --force
-RUN npm rebuild
-
+COPY package*.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
 
-EXPOSE 3000
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]
+# Stage 2: Serve static files via Nginx
+FROM nginx:stable-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
 
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost/health || exit 1

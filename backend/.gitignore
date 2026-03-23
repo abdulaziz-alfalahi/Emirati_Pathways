@@ -1,9 +1,11 @@
-# Environment files
+# Environment files with secrets
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.template
+!.env.production
 
 # API Keys and Secrets
 *.key
@@ -18,3 +20,35 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+
+# Virtual environments
+.venv/
+venv/
+venv311/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Debug output
+debug_*.txt
+debug_*.log
+server_*.txt
+server_*.log
+matching_debug.log
+*_output.txt
+*_result.txt
+*_results.json
+audit_output*.txt
+counts.log
+counts_output.txt
+
+# Archived development files
+archived/
+debug_output/
+test_output/
+
+# Large generated files
+route_dump.txt
+routes_debug.txt
+grep_results.txt

@@ -753,24 +753,31 @@ def upload_photo():
                 'message': 'No file selected'
             }), 400
             
-        # Secure filename and save
+        # Secure filename and create unique name
         filename = secure_filename(file.filename)
-        # Create unique filename
         filename = f"profile_{current_user_id}_{uuid.uuid4().hex[:8]}_{filename}"
-        
-        # Ensure upload directory exists - Use absolute path relative to this file
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        upload_dir = os.path.join(current_dir, 'uploads', 'profile_photos')
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        file_path = os.path.join(upload_dir, filename)
-        file.save(file_path)
-        
-        # Generate URL (Assuming static file serving is set up for /uploads)
-        # For now, we'll store the relative path or full URL depending on setup
-        # Let's assume a simplified static serve for now: /static/uploads/profile_photos/filename
-        # Or better yet, we return the relative path that the frontend can prefix
-        photo_url = f"/uploads/profile_photos/{filename}"
+
+        # Save via storage service
+        try:
+            from backend.services.storage import storage as _storage
+        except ImportError:
+            try:
+                from services.storage import storage as _storage
+            except ImportError:
+                _storage = None
+
+        if _storage:
+            storage_key = _storage.save_upload(file, 'profile_photos', filename)
+            photo_url = _storage.get_url(f'profile_photos/{filename}')
+            logger.info(f"Photo saved via storage service: {storage_key}")
+        else:
+            # Fallback to direct filesystem
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            upload_dir = os.path.join(current_dir, 'uploads', 'profile_photos')
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = os.path.join(upload_dir, filename)
+            file.save(file_path)
+            photo_url = f"/uploads/profile_photos/{filename}"
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

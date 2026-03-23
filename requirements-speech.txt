@@ -1,0 +1,22 @@
+# =============================================================================
+# IBM Granite 4.0 1B Speech — GPU-Optimized Dependencies
+# Install: pip install -r requirements-speech.txt
+# =============================================================================
+
+# --- Core ML ---
+transformers>=4.52.1
+torch>=2.3.0
+torchaudio>=2.3.0
+accelerate>=0.30
+huggingface-hub>=0.23
+soundfile>=0.12
+numpy>=1.26
+
+# --- Server ---
+fastapi>=0.111
+uvicorn[standard]>=0.30
+websockets>=12.0
+
+# --- Utilities ---
+pydantic>=2.7
+python-dotenv>=1.0

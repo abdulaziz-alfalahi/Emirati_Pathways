@@ -54,8 +54,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     const userRoleNormalized = normalizeRole(userRole || '');
 
+    // Administrators can access any route
+    const adminRoles = ['administrator', 'admin', 'super_admin', 'platform_administrator'];
+    const isAdmin = adminRoles.includes(userRoleNormalized) ||
+      (user.roles && user.roles.some(r => adminRoles.includes(normalizeRole(r))));
+
     // Check match
-    const hasPermission = allowedRoles.some(allowed => {
+    const hasPermission = isAdmin || allowedRoles.some(allowed => {
       const allowedNorm = normalizeRole(allowed);
       return allowedNorm === userRoleNormalized ||
         (user.roles && user.roles.some(r => normalizeRole(r) === allowedNorm));

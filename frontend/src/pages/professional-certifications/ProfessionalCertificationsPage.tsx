@@ -48,7 +48,7 @@ const LEVEL_STYLES: Record<string, { bg: string; color: string }> = {
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
-const ProfessionalCertificationsPage: React.FC = () => {
+const ProfessionalCertificationsPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
     const { i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
@@ -330,6 +330,7 @@ const ProfessionalCertificationsPage: React.FC = () => {
             stats={stats}
             tabs={tabs}
             defaultTab="available"
+            embedded={embedded}
         />
     );
 };

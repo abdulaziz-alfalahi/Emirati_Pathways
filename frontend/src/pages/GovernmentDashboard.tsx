@@ -12,6 +12,8 @@ import { restClient } from '@/utils/api';
 import { getDisplayName } from '@/utils/nameUtils';
 import ComplianceTab from '@/components/government/ComplianceTab';
 import NafisTab from '@/components/government/NafisTab';
+import MegaProjectsTab from '@/components/government/MegaProjectsTab';
+import CareerEventsTab from '@/components/government/CareerEventsTab';
 import {
   Target,
   TrendingUp,
@@ -361,12 +363,14 @@ const GovernmentDashboard: React.FC = () => {
 
           {/* ─── Tabs ─── */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <TabsList className="grid w-full grid-cols-9 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('overview')}>{b('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="compliance" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('compliance')}>{b('Compliance', 'الامتثال')}</TabsTrigger>
               <TabsTrigger value="sectors" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('sectors')}>{b('Sectors', 'القطاعات')}</TabsTrigger>
               <TabsTrigger value="nafis" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('nafis')}>{b('Nafis', 'نافس')}</TabsTrigger>
               <TabsTrigger value="initiatives" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('initiatives')}>{b('Initiatives', 'المبادرات')}</TabsTrigger>
+              <TabsTrigger value="mega-projects" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('mega-projects')}>{b('Mega Projects', 'المشاريع الكبرى')}</TabsTrigger>
+              <TabsTrigger value="career-events" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('career-events')}>{b('Career Events', 'الفعاليات المهنية')}</TabsTrigger>
               <TabsTrigger value="workforce" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('workforce')}>{b('Workforce', 'القوى العاملة')}</TabsTrigger>
               <TabsTrigger value="reports" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('reports')}>{b('Reports', 'التقارير')}</TabsTrigger>
             </TabsList>
@@ -742,6 +746,16 @@ const GovernmentDashboard: React.FC = () => {
             {/* ═══════════════════════════ NAFIS TAB ═══════════════════════════ */}
             <TabsContent value="nafis">
               <NafisTab isRTL={isRTL} b={b} />
+            </TabsContent>
+
+            {/* ═══════════════════════════ MEGA PROJECTS TAB ═══════════════════════════ */}
+            <TabsContent value="mega-projects">
+              <MegaProjectsTab isRTL={isRTL} b={b} />
+            </TabsContent>
+
+            {/* ═══════════════════════════ CAREER EVENTS TAB ═══════════════════════════ */}
+            <TabsContent value="career-events">
+              <CareerEventsTab isRTL={isRTL} b={b} />
             </TabsContent>
 
           </Tabs>

@@ -187,7 +187,7 @@ def get_shortlist(jd_id):
                 0 as match_score, 
                 u.first_name,
                 u.last_name,
-                COALESCE(u.display_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.full_name) as display_name,
+                COALESCE(u.full_name, NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), u.email) as display_name,
                 u.email,
                 i.interview_id,
                 i.feedback as interview_feedback,

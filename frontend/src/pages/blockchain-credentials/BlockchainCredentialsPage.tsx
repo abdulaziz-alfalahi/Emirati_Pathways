@@ -31,7 +31,7 @@ const brand = {
 
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
-const BlockchainCredentialsPage: React.FC = () => {
+const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
 
     const { i18n } = useTranslation();
     const isRTL = i18n.language === 'ar';
@@ -345,6 +345,7 @@ const BlockchainCredentialsPage: React.FC = () => {
             stats={stats}
             tabs={tabs}
             defaultTab="credentials"
+            embedded={embedded}
         />
     );
 };

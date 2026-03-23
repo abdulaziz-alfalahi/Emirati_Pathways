@@ -617,9 +617,9 @@ def get_user_roles():
         roles_data = {
             'user_id': str(user_data['id']),
             'email': user_data['email'],
-            'role': user_data.get('role', 'candidate'),
-            'user_type': user_data.get('role', 'candidate'),
-            'permissions': get_role_permissions(user_data.get('role', 'candidate')),
+            'role': user_data.get('role', 'job_seeker'),
+            'user_type': user_data.get('role', 'job_seeker'),
+            'permissions': get_role_permissions(user_data.get('role', 'job_seeker')),
             'secondary_roles': user_data.get('secondary_roles', []),
             'is_active': user_data.get('is_active', True),
             'is_verified': user_data.get('is_verified', False)
@@ -685,7 +685,7 @@ def update_user_roles():
 def get_role_permissions(role: str) -> list:
     """Get permissions for a given role"""
     role_permissions = {
-        'candidate': [
+        'job_seeker': [
             'view_dashboard',
             'upload_cv',
             'apply_jobs',
@@ -837,7 +837,7 @@ def get_role_permissions(role: str) -> list:
         ]
     }
     
-    return role_permissions.get(role, role_permissions['candidate'])
+    return role_permissions.get(role, role_permissions['job_seeker'])
 
 # Error handlers
 @auth_bp.errorhandler(400)

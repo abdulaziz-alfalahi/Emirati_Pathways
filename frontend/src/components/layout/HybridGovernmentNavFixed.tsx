@@ -155,6 +155,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       'educational_institution': 'Educational Institution',
       'government_entity': 'Government Entity',
       'private_sector': 'Private Sector',
+      'advisor': 'Academic Advisor',
+      'coach': 'Career Coach',
+      'internship_coordinator': 'Internship Coordinator',
+      'training_center_rep': 'Training Center',
+      'call_center_agent': 'Call Center Agent',
     };
     const roleMapAr: Record<string, string> = {
       'candidate': 'باحث عن عمل',
@@ -172,6 +177,11 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       'educational_institution': 'مؤسسة تعليمية',
       'government_entity': 'جهة حكومية',
       'private_sector': 'قطاع خاص',
+      'advisor': 'مستشار أكاديمي',
+      'coach': 'مدرب مهني',
+      'internship_coordinator': 'منسق تدريب عملي',
+      'training_center_rep': 'مركز تدريب',
+      'call_center_agent': 'موظف مركز اتصال',
     };
     const roleMap = isRTL ? roleMapAr : roleMapEn;
     return roleMap[role.toLowerCase()] || role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -185,6 +195,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     '/graduate-programs': { name: 'nav_item_graduate_programs', desc: 'nav_item_graduate_programs_desc' },
     '/lms': { name: 'nav_item_learning_management_system', desc: 'nav_item_learning_management_system_desc' },
     '/industry-exploration': { name: 'nav_item_industry_exploration', desc: 'nav_item_industry_exploration_desc' },
+    '/career-hub': { name: 'nav_item_career_hub', desc: 'nav_item_career_hub_desc' },
     '/career-planning-hub': { name: 'nav_item_career_planning_hub', desc: 'nav_item_career_planning_hub_desc' },
     '/financial-planning': { name: 'nav_item_financial_planning', desc: 'nav_item_financial_planning_desc' },
     '/cv-builder': { name: 'nav_item_cv_builder', desc: 'nav_item_cv_builder_desc' },
@@ -196,6 +207,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     '/startup-launchpad': { name: 'nav_item_startup_launchpad', desc: 'nav_item_startup_launchpad_desc' },
     '/career-advisory': { name: 'nav_item_career_advisory', desc: 'nav_item_career_advisory_desc' },
     '/assessments': { name: 'nav_item_assessments', desc: 'nav_item_assessments_desc' },
+    '/credentials': { name: 'nav_item_credentials', desc: 'nav_item_credentials_desc' },
     '/emiratization-tracker': { name: 'nav_item_emiratization_tracker', desc: 'nav_item_emiratization_tracker_desc' },
     '/analytics': { name: 'nav_item_analytics', desc: 'nav_item_analytics_desc' },
     '/digital-skills-development': { name: 'nav_item_digital_skills', desc: 'nav_item_digital_skills_desc' },
@@ -208,7 +220,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     '/national-service': { name: 'nav_item_national_service', desc: 'nav_item_national_service_desc' },
     '/thought-leadership': { name: 'nav_item_thought_leadership', desc: 'nav_item_thought_leadership_desc' },
     '/share-success-stories': { name: 'nav_item_success_stories', desc: 'nav_item_success_stories_desc' },
-    '/retiree': { name: 'nav_item_retiree_services', desc: 'nav_item_retiree_services_desc' }
+    '/retiree': { name: 'nav_item_retiree_services', desc: 'nav_item_retiree_services_desc' },
+    '/career-simulator': { name: 'nav_item_career_simulator', desc: 'nav_item_career_simulator_desc' },
+    '/career-passport': { name: 'nav_item_career_passport', desc: 'nav_item_career_passport_desc' },
+    '/interactive-map': { name: 'nav_item_interactive_map', desc: 'nav_item_interactive_map_desc' }
   };
 
   return (

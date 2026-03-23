@@ -1,0 +1,106 @@
+# ===========================================================
+# Dubai Human Development Platform — Docker Compose
+# Full stack: Frontend (Nginx) + Backend (Gunicorn) + PostgreSQL + Redis
+# ===========================================================
+#
+# Usage:
+#   docker compose up -d              # Start all services
+#   docker compose logs -f backend    # Watch backend logs
+#   docker compose down               # Stop all services
+#
+# First-time setup:
+#   1. Copy backend/.env.template to backend/.env and fill in secrets
+#   2. Run: docker compose up -d
+#   3. Run DB seed: docker compose exec backend python setup_database.py
+#
+
+services:
+  # --- PostgreSQL Database ---
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: emirati_journey
+      POSTGRES_USER: ${DB_USER:-emirati_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-emirati_user} -d emirati_journey"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - platform
+
+  # --- Redis Cache & Message Queue ---
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - platform
+
+  # --- Flask Backend (Gunicorn + gevent) ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-emirati_user}:${DB_PASSWORD}@db:5432/emirati_journey
+      DB_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      USE_REDIS: "true"
+    ports:
+      - "5005:5005"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - upload_data:/app/uploads
+    networks:
+      - platform
+
+  # --- React Frontend (Nginx) ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - platform
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  upload_data:
+    driver: local
+
+networks:
+  platform:
+    driver: bridge

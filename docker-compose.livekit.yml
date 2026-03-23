@@ -1,0 +1,159 @@
+# =============================================================================
+# LiveKit Interview Insight & Compliance — Docker Compose
+#
+# Services:
+#   livekit-server  — WebRTC SFU (:7880)
+#   livekit-egress  — Headless Chrome recorder → S3
+#   minio           — S3-compatible encrypted object storage (:9000/:9001)
+#   agent-worker    — LiveKit Agent + Granite ASR (:8002)
+#   egress-webhook  — Recording lifecycle webhook receiver (:8003)
+#
+# Usage:
+#   docker compose -f docker-compose.livekit.yml up -d
+# =============================================================================
+
+services:
+
+  # ─── LiveKit SFU Server ──────────────────────────────────────────────
+  livekit-server:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml
+    ports:
+      - "7880:7880"   # WebSocket + HTTP
+      - "7881:7881"   # TCP TURN
+      - "7882:7882/udp"  # UDP (WebRTC/ICE)
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    environment:
+      - LIVEKIT_KEYS=devkey:secret
+    restart: unless-stopped
+    networks:
+      - lk-net
+
+  # ─── LiveKit Egress (Recording) ─────────────────────────────────────
+  livekit-egress:
+    image: livekit/egress:latest
+    environment:
+      - EGRESS_CONFIG_FILE=/etc/egress.yaml
+      # LiveKit connection
+      - LIVEKIT_URL=ws://livekit-server:7880
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+      # S3 upload (MinIO)
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin123
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - egress-tmp:/tmp/egress
+    depends_on:
+      - livekit-server
+      - minio
+    restart: unless-stopped
+    networks:
+      - lk-net
+    cap_add:
+      - SYS_ADMIN   # Required for headless Chrome
+
+  # ─── MinIO (S3-Compatible Object Storage) ───────────────────────────
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO Console UI
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+      # AES-256 Server-Side Encryption (SSE-S3)
+      - MINIO_KMS_AUTO_ENCRYPTION=on
+      - MINIO_KMS_SECRET_KEY=emirati-key-1:MjJhZmI4N2QzNjc4NWZjNmMyMTcxMzg4YjlmMmFhNTc=
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - lk-net
+
+  # ─── MinIO Bucket Init ──────────────────────────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin123;
+      mc mb --ignore-existing local/interview-recordings;
+      mc anonymous set none local/interview-recordings;
+      mc encrypt set sse-s3 local/interview-recordings;
+      echo 'Bucket ready with SSE-S3 encryption';
+      "
+    networks:
+      - lk-net
+
+  # ─── Agent Worker (Granite ASR) ─────────────────────────────────────
+  agent-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    ports:
+      - "8002:8002"
+    environment:
+      - LIVEKIT_URL=ws://livekit-server:7880
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+      - GRANITE_SPEECH_URL=http://localhost:8001  # Granite sidecar
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=interview-recordings
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin123
+      - DATABASE_URL=postgresql://emirati_user:emirati_secure_password@host.docker.internal:5432/emirati_journey
+      - WEBHOOK_URL=http://egress-webhook:8003/webhook/egress
+    depends_on:
+      - livekit-server
+      - minio
+    restart: unless-stopped
+    networks:
+      - lk-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # ─── Egress Webhook Receiver ────────────────────────────────────────
+  egress-webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    ports:
+      - "8003:8003"
+    environment:
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+      - DATABASE_URL=postgresql://emirati_user:emirati_secure_password@host.docker.internal:5432/emirati_journey
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=interview-recordings
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin123
+    depends_on:
+      - livekit-server
+    restart: unless-stopped
+    networks:
+      - lk-net
+
+volumes:
+  minio-data:
+    driver: local
+  egress-tmp:
+    driver: local
+
+networks:
+  lk-net:
+    driver: bridge

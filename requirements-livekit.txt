@@ -1,0 +1,37 @@
+# =============================================================================
+# LiveKit Interview Module — Python Dependencies
+# =============================================================================
+
+# --- LiveKit ---
+livekit-api>=0.7
+livekit-agents>=0.12
+livekit-plugins-silero>=0.7     # VAD (Voice Activity Detection)
+
+# --- AI/ML (Granite ASR) ---
+transformers>=4.52.1
+torch>=2.3.0
+torchaudio>=2.3.0
+accelerate>=0.30
+soundfile>=0.12
+numpy>=1.26
+
+# --- Server ---
+fastapi>=0.111
+uvicorn[standard]>=0.30
+
+# --- Database ---
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+alembic>=1.13
+
+# --- Storage ---
+boto3>=1.34
+
+# --- Crypto ---
+cryptography>=42.0
+
+# --- Utilities ---
+pydantic>=2.7
+pydantic-settings>=2.2
+python-dotenv>=1.0
+httpx>=0.27

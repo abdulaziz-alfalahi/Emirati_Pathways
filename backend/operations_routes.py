@@ -35,7 +35,7 @@ def get_operations_stats():
     """
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         now = datetime.utcnow()
         today = date.today()
         week_start = today - timedelta(days=today.weekday())  # Monday

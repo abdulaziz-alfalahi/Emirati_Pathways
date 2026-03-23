@@ -1,0 +1,62 @@
+# Virtual environments
+.venv/
+venv/
+venv311/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs and debug output
+*.log
+*.txt
+debug_*
+check_*
+inspect_*
+investigate_*
+fix_*
+test_*
+reproduce_*
+diagnose_*
+
+# Environment files
+.env
+.env.local
+
+# Development artifacts
+archived_development_files/
+archived/
+debug_output/
+test_output/
+
+# Data and backups
+*.db
+*.sqlite
+*.sqlite3
+matching_debug.log
+
+# Large files not needed in image
+*.docx
+*.pdf
+*.csv
+cv.docx
+cv.pdf
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# SQL migration files (applied at deploy time, not baked into image)
+# Uncomment if you run migrations separately:
+# *.sql
+
+# Documentation
+*.md
+
+# Node (backend shouldn't have this, but just in case)
+node_modules/
+package-lock.json

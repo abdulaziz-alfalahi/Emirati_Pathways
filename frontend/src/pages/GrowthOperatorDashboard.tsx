@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import NafisVacancyImport from '@/components/growth-operator/NafisVacancyImport';
 import Messages from '@/components/recruiter/Messages';
+import { restClient } from '@/utils/api';
 import {
   Building2, Plus, Search, Filter, Mail, Phone, MapPin, Globe,
   Users, Briefcase, CheckCircle, Clock, AlertTriangle, Eye, Edit,
@@ -125,6 +126,7 @@ const recentActivity = [
 
 // ─── Component ───
 const GrowthOperatorDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => language === 'ar' ? ar : en;
@@ -190,6 +192,7 @@ const GrowthOperatorDashboard: React.FC = () => {
     { key: 'overview', label: t('Overview', 'نظرة عامة'), icon: BarChart3 },
     { key: 'onboarding', label: t('Company Onboarding', 'إلحاق الشركات'), icon: Plus },
     { key: 'partnerships', label: t('Employer Partnerships', 'شراكات أصحاب العمل'), icon: Handshake },
+    { key: 'workspaces', label: t('Workspaces', 'مساحات العمل'), icon: ShieldCheck },
     { key: 'emiratization', label: t('Jobs & Emiratization', 'الوظائف والتوطين'), icon: Flag },
     { key: 'nafis', label: t('NAFIS Import', 'استيراد نافس'), icon: Upload },
     { key: 'reports', label: t('Reports', 'التقارير'), icon: PieChart },
@@ -686,6 +689,194 @@ const GrowthOperatorDashboard: React.FC = () => {
     );
   };
 
+  // ═══════ WORKSPACES TAB ═══════
+  const WorkspacesTab = () => {
+    const [workspaces, setWorkspaces] = useState<any[]>([]);
+    const [allCompanies, setAllCompanies] = useState<any[]>([]);
+    const [wsLoading, setWsLoading] = useState(true);
+    const [showProvisionModal, setShowProvisionModal] = useState(false);
+    const [provisionCompanyId, setProvisionCompanyId] = useState('');
+    const [provisioning, setProvisioning] = useState(false);
+    const [wsSearch, setWsSearch] = useState('');
+
+    useEffect(() => {
+      async function load() {
+        try {
+          const [wsRes, compRes] = await Promise.allSettled([
+            restClient.get('/api/workspace/list'),
+            restClient.get('/api/growth-operator/companies'),
+          ]);
+          if (wsRes.status === 'fulfilled') setWorkspaces((wsRes.value as any).data.workspaces || []);
+          if (compRes.status === 'fulfilled') {
+            const comps = (compRes.value as any).data.companies || (compRes.value as any).data || [];
+            setAllCompanies(Array.isArray(comps) ? comps : []);
+          }
+        } catch (err) { console.error(err); }
+        finally { setWsLoading(false); }
+      }
+      load();
+    }, []);
+
+    const handleProvision = async () => {
+      if (!provisionCompanyId) return;
+      setProvisioning(true);
+      try {
+        await restClient.post('/api/workspace/provision', { company_id: provisionCompanyId });
+        // Reload workspaces
+        const res = await restClient.get('/api/workspace/list');
+        setWorkspaces((res as any).data.workspaces || []);
+        setShowProvisionModal(false); setProvisionCompanyId('');
+      } catch (err) { console.error('Provision error:', err); }
+      finally { setProvisioning(false); }
+    };
+
+    const unprovisionedCompanies = allCompanies.filter(
+      c => !workspaces.some(w => w.id === c.id || w.id === c.company_id)
+    );
+
+    const filteredWorkspaces = workspaces.filter(w =>
+      !wsSearch || w.company_name?.toLowerCase().includes(wsSearch.toLowerCase())
+    );
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* KPI Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <KPICard icon={ShieldCheck} label={t('Provisioned Workspaces', 'مساحات عمل مفعلة')} value={workspaces.length} color={colors.primary} />
+          <KPICard icon={Users} label={t('Total Workspace Employees', 'إجمالي موظفي مساحات العمل')} value={workspaces.reduce((s: number, w: any) => s + (w.employee_count || 0), 0)} color={colors.blueText} />
+          <KPICard icon={Building} label={t('Companies Ready', 'شركات جاهزة')} value={unprovisionedCompanies.length} color={colors.yellowText} subtext={t('Not yet provisioned', 'لم يتم تفعيلها بعد')} />
+        </div>
+
+        {/* Toolbar */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+            <input
+              value={wsSearch} onChange={e => setWsSearch(e.target.value)}
+              placeholder={t('Search workspaces...', 'البحث في مساحات العمل...')}
+              style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}
+            />
+          </div>
+          <button
+            onClick={() => setShowProvisionModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10,
+              background: colors.primary, color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+            }}
+          >
+            <Plus size={16} />
+            {t('Provision Workspace', 'تفعيل مساحة عمل')}
+          </button>
+        </div>
+
+        {/* Workspace Cards */}
+        {wsLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+            <RefreshCw size={24} color={colors.primary} className="animate-spin" />
+          </div>
+        ) : filteredWorkspaces.length === 0 ? (
+          <div style={{ background: colors.card, borderRadius: 16, padding: 60, textAlign: 'center', border: `1px solid ${colors.border}` }}>
+            <ShieldCheck size={48} color={colors.textSecondary} style={{ opacity: 0.3 }} />
+            <p style={{ marginTop: 16, color: colors.textSecondary }}>{t('No workspaces provisioned yet', 'لم يتم تفعيل مساحات عمل بعد')}</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {filteredWorkspaces.map((ws: any) => (
+              <div key={ws.id} style={{
+                background: colors.card, borderRadius: 14, padding: 20,
+                border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', gap: 16,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'border-color 0.2s',
+              }}
+                onClick={() => navigate(`/workspace/${ws.id}/dashboard`)}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = colors.primary)}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = colors.border)}
+              >
+                <div style={{ padding: 12, borderRadius: 12, background: colors.primaryLight, flexShrink: 0 }}>
+                  <Building2 size={22} color={colors.primary} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: colors.text }}>{ws.company_name}</div>
+                  <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                    {ws.industry || t('No industry', 'لا يوجد قطاع')}
+                    {ws.workspace_slug && <span> · /{ws.workspace_slug}</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexShrink: 0 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: colors.primary }}>{ws.employee_count || 0}</div>
+                    <div style={{ fontSize: 11, color: colors.textSecondary }}>{t('Employees', 'موظفين')}</div>
+                  </div>
+                  {ws.admin_name && (
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{ws.admin_name}</div>
+                      <div style={{ fontSize: 11, color: colors.textSecondary }}>{t('Admin', 'المسؤول')}</div>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: colors.textSecondary }}>
+                    {ws.provisioned_at ? new Date(ws.provisioned_at).toLocaleDateString() : ''}
+                  </div>
+                  <ChevronRight size={18} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Provision Modal */}
+        {showProvisionModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: colors.card, borderRadius: 20, padding: 32, maxWidth: 500, width: '90%' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
+                {t('Provision Workspace', 'تفعيل مساحة عمل')}
+              </h2>
+              <p style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 20 }}>
+                {t('Select a company to enable their workspace with employee management and resource assignment capabilities.', 'اختر شركة لتفعيل مساحة عملها مع إمكانيات إدارة الموظفين وتعيين الموارد.')}
+              </p>
+
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>
+                {t('Company', 'الشركة')}
+              </label>
+              <select
+                value={provisionCompanyId}
+                onChange={e => setProvisionCompanyId(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, background: '#F8FAFC', marginBottom: 20 }}
+              >
+                <option value="">{t('Select a company...', 'اختر شركة...')}</option>
+                {unprovisionedCompanies.map((c: any) => (
+                  <option key={c.id || c.company_id} value={c.id || c.company_id}>
+                    {c.company_name || c.name} — {c.industry || t('No industry', 'لا يوجد قطاع')}
+                  </option>
+                ))}
+              </select>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button
+                  onClick={() => { setShowProvisionModal(false); setProvisionCompanyId(''); }}
+                  style={{ padding: '10px 24px', borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.card, cursor: 'pointer', fontSize: 14, color: colors.textSecondary }}
+                >
+                  {t('Cancel', 'إلغاء')}
+                </button>
+                <button
+                  onClick={handleProvision}
+                  disabled={!provisionCompanyId || provisioning}
+                  style={{
+                    padding: '10px 24px', borderRadius: 10, border: 'none', background: colors.primary,
+                    color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                    opacity: (!provisionCompanyId || provisioning) ? 0.5 : 1,
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  {provisioning ? <RefreshCw size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                  {provisioning ? t('Provisioning...', 'جاري التفعيل...') : t('Provision', 'تفعيل')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ═══════ MAIN RENDER ═══════
   return (
     <div style={{ minHeight: '100vh', background: colors.bg, direction: isRTL ? 'rtl' : 'ltr' }}>
@@ -740,6 +931,7 @@ const GrowthOperatorDashboard: React.FC = () => {
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'onboarding' && renderOnboarding()}
         {activeTab === 'partnerships' && renderPartnerships()}
+        {activeTab === 'workspaces' && <WorkspacesTab />}
         {activeTab === 'emiratization' && renderEmiratization()}
         {activeTab === 'nafis' && <NafisVacancyImport t={t} isRTL={isRTL} />}
         {activeTab === 'reports' && renderReports()}

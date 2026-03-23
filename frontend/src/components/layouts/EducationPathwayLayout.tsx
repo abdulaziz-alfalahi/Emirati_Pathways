@@ -43,6 +43,8 @@ export interface EducationPathwayLayoutProps {
   actionButtonHref?: string;
   onActionClick?: () => void;
   academicYear?: string;
+  /** When true, skip platform nav header and breadcrumbs (for embedding inside wrapper pages) */
+  embedded?: boolean;
 }
 
 /* ── Helper: derive breadcrumb label from route path ── */
@@ -63,7 +65,8 @@ export const EducationPathwayLayout: React.FC<EducationPathwayLayoutProps> = ({
   actionButtonText,
   actionButtonHref,
   onActionClick,
-  academicYear
+  academicYear,
+  embedded = false,
 }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [tabFade, setTabFade] = useState(true);
@@ -142,16 +145,19 @@ export const EducationPathwayLayout: React.FC<EducationPathwayLayoutProps> = ({
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-      {/* Same header as home page */}
-      <HybridGovernmentNavFixed
-        onLanguageToggle={() => i18n.changeLanguage(i18n.language === 'ar' ? 'en' : 'ar')}
-        currentLanguage={i18n.language as 'en' | 'ar'}
-      />
+    <div className={embedded ? '' : 'min-h-screen flex flex-col bg-background'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+      {/* Platform header — skip when embedded inside a wrapper page */}
+      {!embedded && (
+        <HybridGovernmentNavFixed
+          onLanguageToggle={() => i18n.changeLanguage(i18n.language === 'ar' ? 'en' : 'ar')}
+          currentLanguage={i18n.language as 'en' | 'ar'}
+        />
+      )}
 
-      <main className="flex-1" style={{ background: brand.bg }}>
+      <main className={embedded ? '' : 'flex-1'} style={{ background: embedded ? 'transparent' : brand.bg }}>
 
-        {/* ── Breadcrumb Navigation ── */}
+        {/* ── Breadcrumb Navigation — skip when embedded ── */}
+        {!embedded && (
         <nav style={{ background: '#fff', borderBottom: `1px solid ${brand.border}` }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Link to="/" style={{
@@ -171,6 +177,7 @@ export const EducationPathwayLayout: React.FC<EducationPathwayLayoutProps> = ({
             </span>
           </div>
         </nav>
+        )}
 
         {/* ── Hero Section ── */}
         <section style={{ background: '#fff', borderBottom: `1px solid ${brand.border}` }}>

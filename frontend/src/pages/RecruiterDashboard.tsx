@@ -40,7 +40,8 @@ import {
   CheckSquare,
   Star,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Building2
 } from 'lucide-react';
 import EmiratizationROICalculatorDialog from '@/components/recruiter/EmiratizationROICalculatorDialog';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
@@ -324,6 +325,12 @@ const RecruiterDashboard: React.FC = () => {
                 <Calculator className="h-4 w-4" />
                 {b('ROI Calculator', 'حاسبة العائد')}
               </Button>
+              {companyId && (
+                <Button variant="outline" className="font-dubai-medium bg-white hover:bg-teal-50 text-teal-700 border-teal-200 flex items-center gap-2" style={{ direction: isRTL ? 'rtl' : 'ltr' }} onClick={() => navigate(`/workspace/${companyId}/dashboard`)}>
+                  <Building2 className="h-4 w-4" />
+                  {b('Company Workspace', 'مساحة عمل الشركة')}
+                </Button>
+              )}
             </div>
           </div>
 

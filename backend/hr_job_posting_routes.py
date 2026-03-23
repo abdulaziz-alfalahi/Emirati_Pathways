@@ -763,11 +763,25 @@ def upload_job_document(job_id):
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
 
-            uploads_dir = _uploads_dir()
             filename = secure_filename(file.filename)
             stored_name = f"{uuid.uuid4().hex}_{filename}"
-            storage_path = os.path.join(uploads_dir, stored_name)
-            file.save(storage_path)
+
+            # Save via storage service
+            try:
+                from backend.services.storage import storage as _file_storage
+            except ImportError:
+                try:
+                    from services.storage import storage as _file_storage
+                except ImportError:
+                    _file_storage = None
+
+            if _file_storage:
+                storage_key = _file_storage.save_upload(file, 'job_documents', stored_name)
+                storage_path = storage_key
+            else:
+                uploads_dir = _uploads_dir()
+                storage_path = os.path.join(uploads_dir, stored_name)
+                file.save(storage_path)
 
             cursor.execute(
                 """

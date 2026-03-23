@@ -49,7 +49,8 @@ import {
   Trash2,
   Mail,
   MapPin,
-  BrainCircuit
+  BrainCircuit,
+  Building2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -442,6 +443,16 @@ const HRDashboard: React.FC = () => {
                 <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {b('Export Reports', 'تصدير التقارير')}
               </Button>
+              {COMPANY_ID && (
+                <Button
+                  variant="outline"
+                  className="font-dubai-medium bg-white hover:bg-teal-50 text-teal-700 border-teal-200"
+                  onClick={() => navigate(`/workspace/${COMPANY_ID}/dashboard`)}
+                >
+                  <Building2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {b('Company Workspace', 'مساحة عمل الشركة')}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -605,6 +616,13 @@ const HRDashboard: React.FC = () => {
                         <Building className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-purple-500`} />
                         {b('View MOHRE Portal', 'عرض بوابة الوزارة')}
                       </Button>
+                      {COMPANY_ID && (
+                        <Button variant="outline" className={`w-full ${isRTL ? 'justify-end flex-row-reverse' : 'justify-start'} text-sm h-10 font-dubai-medium hover:bg-teal-50 hover:text-teal-700 border-teal-200`}
+                          onClick={() => navigate(`/workspace/${COMPANY_ID}/dashboard`)}>
+                          <Building2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-teal-600`} />
+                          {b('Company Workspace', 'مساحة عمل الشركة')}
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 </div>

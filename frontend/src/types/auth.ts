@@ -32,7 +32,13 @@ export type UserRole =
   | 'employer'
   | 'government'
   | 'mentor'
-  | 'assessor';
+  | 'assessor'
+  // Phase 2-4 New Roles
+  | 'advisor'
+  | 'coach'
+  | 'internship_coordinator'
+  | 'training_center_rep'
+  | 'call_center_agent';
 
 // Growth Operator Domain Types
 export type GrowthOperatorDomain =
@@ -189,6 +195,12 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'government': '/government-dashboard',
   'mentor': '/mentor-dashboard',
   'assessor': '/assessor-dashboard',
+  // Phase 2-4 New Role Routes
+  'advisor': '/advisor-dashboard',
+  'coach': '/coach-dashboard',
+  'internship_coordinator': '/internship-coordinator-dashboard',
+  'training_center_rep': '/training-center-dashboard',
+  'call_center_agent': '/call-center-dashboard',
 };
 
 // Role Display Names
@@ -226,6 +238,12 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'government': 'Government Official',
   'mentor': 'Mentor',
   'assessor': 'Assessor',
+  // Phase 2-4 Display Names
+  'advisor': 'Academic Advisor',
+  'coach': 'Career Coach',
+  'internship_coordinator': 'Internship Coordinator',
+  'training_center_rep': 'Training Center Representative',
+  'call_center_agent': 'Call Center Agent',
 };
 
 // Growth Operator Domain Configuration
@@ -308,6 +326,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'government': ['view_all_analytics', 'view_analytics', 'generate_reports'],
   'mentor': ['view_analytics', 'manage_profile'],
   'assessor': ['view_analytics', 'manage_profile'],
+  // Phase 2-4 Permissions
+  'advisor': ['view_analytics', 'manage_profile'],
+  'coach': ['view_analytics', 'manage_profile'],
+  'internship_coordinator': ['view_analytics', 'manage_profile'],
+  'training_center_rep': ['view_analytics', 'manage_profile'],
+  'call_center_agent': ['view_analytics', 'manage_profile'],
 };
 
 export const normalizeRole = (role: string): UserRole | string => {

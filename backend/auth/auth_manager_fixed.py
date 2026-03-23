@@ -16,8 +16,14 @@ from typing import Dict, Any, Tuple, Optional, List
 import psycopg2
 import psycopg2.extras
 from flask_jwt_extended import create_access_token, create_refresh_token
-from twilio.rest import Client
-from twilio.base.exceptions import TwilioRestException
+try:
+    from twilio.rest import Client
+    from twilio.base.exceptions import TwilioRestException
+    _TWILIO_AVAILABLE = True
+except ImportError:
+    Client = None  # type: ignore
+    TwilioRestException = Exception  # type: ignore
+    _TWILIO_AVAILABLE = False
 
 class AuthenticationManager:
     """Fixed authentication manager matching actual database schema"""
@@ -452,8 +458,12 @@ class AuthenticationManager:
                 '+971509998893',  # Growth Operator - Mentorship
                 '+971509998894',  # Growth Operator - Community
                 '+971550000010',  # Test Student
-                '+971550000010',  # Test Student
-                '+971550000011',  # Test Educator
+                '+971550000011',  # Test Advisor
+                '+971550000012',  # Test Coach
+                '+971550000013',  # Test Internship Coordinator
+                '+971550000014',  # Test Training Center Rep
+                '+971550000015',  # Test Call Center Agent
+                '+971550000016',  # Test Educator
                 '+971500001001',  # Test Team Chat - HR Manager 1
                 '+971500001002',  # Test Team Chat - Recruiter 1
                 '+971500001003',  # Test Team Chat - Recruiter 2
@@ -587,8 +597,12 @@ class AuthenticationManager:
                 '+971509998893',  # Growth Operator - Mentorship
                 '+971509998894',  # Growth Operator - Community
                 '+971550000010',  # Test Student
-                '+971550000010',  # Test Student
-                '+971550000011',  # Test Educator
+                '+971550000011',  # Test Advisor
+                '+971550000012',  # Test Coach
+                '+971550000013',  # Test Internship Coordinator
+                '+971550000014',  # Test Training Center Rep
+                '+971550000015',  # Test Call Center Agent
+                '+971550000016',  # Test Educator
                 '+971500001001',  # Test Team Chat - HR Manager 1
                 '+971500001002',  # Test Team Chat - Recruiter 1
                 '+971500001003',  # Test Team Chat - Recruiter 2

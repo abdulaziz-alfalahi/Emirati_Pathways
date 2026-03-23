@@ -6,6 +6,7 @@ Revolutionary AI-powered video interview system endpoints
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
+import requests as http_requests
 from backend.video_interview_system import video_interview_engine, InterviewStatus, InterviewType
 from datetime import datetime
 import json
@@ -134,8 +135,10 @@ def process_realtime_analysis():
 def analyze_transcript():
     """Analyze interview transcript text using Gemini AI.
     
-    Receives transcript chunks from the browser's Web Speech API
-    and returns structured real-time analysis.
+    Receives transcript chunks from:
+      - Browser's Web Speech API (legacy, backward-compatible)
+      - IBM Granite 4.0 1B Speech Server (preferred, via WebSocket sidecar)
+    Returns structured real-time analysis.
     """
     try:
         user_id = get_jwt_identity()
@@ -536,10 +539,46 @@ def system_check():
             'message': str(e)
         }), 500
 
+@video_interview_bp.route('/speech/config', methods=['POST'])
+@jwt_required()
+def proxy_speech_config():
+    """Proxy keyword/config updates to the Granite Speech sidecar."""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        if not session_id:
+            return jsonify({'success': False, 'error': 'session_id required'}), 400
+
+        granite_url = video_interview_engine.granite_speech_url
+        resp = http_requests.post(
+            f"{granite_url}/sessions/{session_id}/keywords",
+            json=data,
+            timeout=5,
+        )
+        return jsonify(resp.json()), resp.status_code
+
+    except http_requests.RequestException as e:
+        logger.warning(f"Granite sidecar unreachable: {e}")
+        return jsonify({'success': False, 'error': 'Speech server unreachable'}), 503
+    except Exception as e:
+        logger.error(f"Error proxying speech config: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # Health check endpoint
 @video_interview_bp.route('/health', methods=['GET'])
 def health_check():
     """Health check for video interview service"""
+    # Check Granite speech sidecar
+    granite_status = 'unavailable'
+    try:
+        granite_url = video_interview_engine.granite_speech_url
+        resp = http_requests.get(f"{granite_url}/health", timeout=2)
+        if resp.status_code == 200:
+            granite_status = 'operational'
+    except Exception:
+        pass
+
     return jsonify({
         'success': True,
         'service': 'Video Interview System',
@@ -547,11 +586,18 @@ def health_check():
         'timestamp': datetime.now().isoformat(),
         'features': [
             'WebRTC Video Conferencing',
-            'Real-time AI Analysis',
+            'Real-time AI Analysis (Gemini + Granite Speech)',
+            'Streaming ASR via IBM Granite 4.0 1B',
+            'Keyword-Biased Transcription',
+            'Speaker Diarization',
             'Secure Recording Storage',
             'Quality Assurance',
-            'Bias Detection'
+            'Bias Detection',
         ],
-        'ai_engine': 'Gemini 2.5 Pro',
-        'version': '1.0.0'
+        'ai_engines': {
+            'transcript_analysis': 'Gemini 2.0 Flash',
+            'speech_to_text': 'IBM Granite 4.0 1B Speech',
+        },
+        'granite_speech_server': granite_status,
+        'version': '2.0.0'
     }), 200

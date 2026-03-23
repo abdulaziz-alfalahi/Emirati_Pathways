@@ -199,7 +199,9 @@ class AdministratorSystem:
             norm_map.update({
                 'HR/Recruiter': 'recruiter',
                 'HR Manager': 'hr_manager',
-                'Job Seeker': 'candidate'
+                'Job Seeker': 'job_seeker',
+                'candidate': 'job_seeker',   # Legacy: normalize 'candidate' → 'job_seeker'
+                'Candidate': 'job_seeker',
             })
             
             system_slugs = {r['name'] for r in system_roles}
@@ -232,6 +234,29 @@ class AdministratorSystem:
                             norm_role = raw_role
                             
                         final_roles.add(norm_role)
+                    
+                    # 3. For growth operators, override with assignments table (source of truth)
+                    #    This ensures Operators tab and Users tab show consistent data
+                    user_id = user.get('id')
+                    has_go_roles = any(r and r.startswith('growth_operator_') for r in final_roles)
+                    if has_go_roles and user_id:
+                        try:
+                            # Check if this user has EVER been managed via the Operators tab
+                            all_assignments = self._execute_query(
+                                "SELECT domain, is_active FROM growth_operator_assignments WHERE user_id = %s",
+                                (user_id,)
+                            )
+                            if all_assignments:
+                                # User has been managed via Operators tab — use assignments as source of truth
+                                active_domains = [a['domain'] for a in all_assignments if a.get('is_active')]
+                                # Remove all old growth_operator_* roles
+                                final_roles = {r for r in final_roles if not (r and r.startswith('growth_operator_'))}
+                                # Add back only the active ones from the assignments table
+                                for domain in active_domains:
+                                    final_roles.add(f"growth_operator_{domain}")
+                            # else: no records at all — keep the secondary_roles-derived roles as fallback
+                        except Exception as go_err:
+                            logger.warning(f"Could not check growth_operator_assignments for user {user_id}: {go_err}")
                     
                     # Store as list
                     user['roles'] = list(final_roles)
@@ -528,7 +553,7 @@ class AdministratorSystem:
                 raise Exception("User not found")
 
             # Update the primary role on the users table (first role becomes primary)
-            primary_role = roles[0] if roles else 'candidate'
+            primary_role = roles[0] if roles else 'job_seeker'
             update_role_query = """
                 UPDATE users 
                 SET role = %s, secondary_roles = %s, updated_at = CURRENT_TIMESTAMP

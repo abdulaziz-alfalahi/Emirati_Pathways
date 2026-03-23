@@ -115,7 +115,11 @@ const InternshipsPage = lazy(() => import('@/pages/internships/InternshipsPage')
 const CareerAdvisoryPage = lazy(() => import('@/pages/career-advisory/CareerAdvisoryPage'));
 const GigMarketplacePage = lazy(() => import('@/pages/gig-marketplace/GigMarketplacePage'));
 const StartupLaunchpadPage = lazy(() => import('@/pages/startup-launchpad/StartupLaunchpadPage'));
+const CareerPathwaySimulator = lazy(() => import('@/pages/career-simulator/CareerPathwaySimulator'));
+const CareerPassportPage = lazy(() => import('@/pages/career-passport/CareerPassportPage'));
+const InteractiveMapPage = lazy(() => import('@/pages/interactive-map/InteractiveMapPage'));
 const EmiratizationTrackerPage = lazy(() => import('@/pages/emiratization-tracker/EmiratizationTrackerPage'));
+const CredentialsCenterPage = lazy(() => import('@/pages/credentials/CredentialsCenterPage'));
 const AssessmentsPage2 = lazy(() => import('@/pages/assessments/AssessmentsPage'));
 const ProfessionalCertificationsPage = lazy(() => import('@/pages/professional-certifications/ProfessionalCertificationsPage'));
 const BlockchainCredentialsPage = lazy(() => import('@/pages/blockchain-credentials/BlockchainCredentialsPage'));
@@ -133,6 +137,26 @@ const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboard
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
 const CareerServicesOperatorDashboard = lazy(() => import('@/pages/CareerServicesOperatorDashboard'));
+// Phase 2-4 New Role Dashboards
+const AdvisorDashboard = lazy(() => import('@/pages/AdvisorDashboard'));
+const CoachDashboard = lazy(() => import('@/pages/CoachDashboard'));
+const InternshipCoordinatorDashboard = lazy(() => import('@/pages/InternshipCoordinatorDashboard'));
+const TrainingCenterDashboard = lazy(() => import('@/pages/TrainingCenterDashboard'));
+const CallCenterDashboard = lazy(() => import('@/pages/CallCenterDashboard'));
+// Company Workspace (Multi-Tenant)
+const WorkspaceLayout = lazy(() => import('@/pages/workspace/WorkspaceLayout'));
+const WorkspaceDashboard = lazy(() => import('@/pages/workspace/WorkspaceDashboard'));
+const EmployeeManagerPage = lazy(() => import('@/pages/workspace/EmployeeManager'));
+const ResourceAssignmentPage = lazy(() => import('@/pages/workspace/ResourceAssignment'));
+const WorkspaceJobsPage = lazy(() => import('@/pages/workspace/WorkspaceJobs'));
+const WorkspaceSettingsPage = lazy(() => import('@/pages/workspace/WorkspaceSettings'));
+const MyCompanyView = lazy(() => import('@/pages/workspace/MyCompanyView'));
+const EmiratiComplianceDashboard = lazy(() => import('@/pages/workspace/EmiratiComplianceDashboard'));
+const DocumentCenter = lazy(() => import('@/pages/workspace/DocumentCenter'));
+const CSVManager = lazy(() => import('@/pages/workspace/CSVManager'));
+const EngagementAnalytics = lazy(() => import('@/pages/workspace/EngagementAnalytics'));
+const MentorReportsPage = lazy(() => import('@/pages/workspace/MentorReports'));
+const ResourceVault = lazy(() => import('@/pages/workspace/ResourceVault'));
 const NotFound = lazy(() => import('@/pages/not-found'));
 const OurMission = lazy(() => import('@/pages/OurMission'));
 
@@ -154,7 +178,7 @@ import ConnectionBanner from '@/components/notifications/ConnectionBanner';
 // App Content Component with bilingual support
 const AppContent: React.FC = () => {
   const { i18n } = useTranslation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     // Set initial language and direction
@@ -173,6 +197,13 @@ const AppContent: React.FC = () => {
   }, [i18n.language]);
 
   const token = getAuthToken() || '';
+
+  // Show loading spinner while auth state is being resolved
+  // This prevents the unauthenticated catch-all redirect from firing
+  // before the stored JWT token is loaded from localStorage
+  if (isLoading) {
+    return <DashboardLoading />;
+  }
 
   return (
     <div className="App min-h-screen bg-background">
@@ -495,6 +526,24 @@ const AppContent: React.FC = () => {
               />
 
               <Route
+                path="/advisor-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['advisor', 'admin', 'administrator']}>
+                    <AdvisorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/coach-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['coach', 'admin', 'administrator']}>
+                    <CoachDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
                 path="/guardian-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={['parent', 'guardian']}>
@@ -517,7 +566,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/government-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['government']}>
+                  <ProtectedRoute allowedRoles={['government', 'administrator']}>
                     <GovernmentDashboard />
                   </ProtectedRoute>
                 }
@@ -645,14 +694,37 @@ const AppContent: React.FC = () => {
                 element={<DigitalSkillsPage2 />}
               />
 
+              {/* Digital Skills Development → merged into Training */}
               <Route
                 path="/digital-skills-development"
-                element={<DigitalSkillsPage2 />}
+                element={<Navigate to="/training" replace />}
+              />
+
+              {/* ── IA Consolidation: Career Hub (merged Career Planning + Advisory + Simulator) ── */}
+              <Route
+                path="/career-hub"
+                element={<CareerPlanningHub />}
+              />
+              <Route
+                path="/career-planning-hub"
+                element={<Navigate to="/career-hub" replace />}
               />
 
               <Route
-                path="/career-planning-hub"
-                element={<CareerPlanningHub />}
+                path="/career-simulator"
+                element={<Navigate to="/career-hub" replace />}
+              />
+
+              <Route
+                path="/career-advisory"
+                element={<Navigate to="/career-hub" replace />}
+              />
+
+              {/* Career Passport → redirect to Credentials Center */}
+
+              <Route
+                path="/interactive-map"
+                element={<InteractiveMapPage />}
               />
 
               <Route
@@ -690,9 +762,12 @@ const AppContent: React.FC = () => {
                 element={<StartupLaunchpadPage />}
               />
 
+              {/* Career Advisory redirected to Career Hub (IA consolidation) */}
+
+              {/* ── IA Consolidation: Credentials Center (3→1 tabs) ── */}
               <Route
-                path="/career-advisory"
-                element={<CareerAdvisoryPage />}
+                path="/credentials"
+                element={<CredentialsCenterPage />}
               />
 
               <Route
@@ -706,14 +781,18 @@ const AppContent: React.FC = () => {
                 element={<Navigate to="/government-dashboard?tab=compliance" replace />}
               />
 
+              {/* Credential sub-pages → redirect to Credentials Center tabs */}
               <Route
                 path="/professional-certifications"
-                element={<ProfessionalCertificationsPage />}
+                element={<Navigate to="/credentials?tab=certifications" replace />}
               />
-
               <Route
                 path="/blockchain-credentials"
-                element={<BlockchainCredentialsPage />}
+                element={<Navigate to="/credentials?tab=blockchain" replace />}
+              />
+              <Route
+                path="/career-passport"
+                element={<Navigate to="/credentials?tab=passport" replace />}
               />
 
               <Route
@@ -731,14 +810,14 @@ const AppContent: React.FC = () => {
                 element={<NationalServicePage />}
               />
 
+              {/* Thought Leadership & Success Stories → merged into Communities (IA consolidation) */}
               <Route
                 path="/thought-leadership"
-                element={<ThoughtLeadershipPage />}
+                element={<Navigate to="/communities" replace />}
               />
-
               <Route
                 path="/share-success-stories"
-                element={<ShareSuccessStoriesPage />}
+                element={<Navigate to="/communities" replace />}
               />
 
               <Route
@@ -783,6 +862,56 @@ const AppContent: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+
+              <Route
+                path="/internship-coordinator-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['internship_coordinator', 'admin', 'administrator']}>
+                    <InternshipCoordinatorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/training-center-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['training_center_rep', 'admin', 'administrator']}>
+                    <TrainingCenterDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/call-center-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['call_center_agent', 'admin', 'administrator']}>
+                    <CallCenterDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Company Workspace Routes (Multi-Tenant) */}
+              <Route
+                path="/workspace/:companyId"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter', 'hr_manager', 'hr', 'hr_recruiter', 'growth_operator', 'growth_operator_company', 'admin', 'administrator', 'job_seeker', 'candidate', 'seeker', 'employee']}>
+                    <WorkspaceLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<WorkspaceDashboard />} />
+                <Route path="employees" element={<EmployeeManagerPage />} />
+                <Route path="resources" element={<ResourceAssignmentPage />} />
+                <Route path="jobs" element={<WorkspaceJobsPage />} />
+                <Route path="settings" element={<WorkspaceSettingsPage />} />
+                <Route path="emiratisation" element={<EmiratiComplianceDashboard />} />
+                <Route path="documents" element={<DocumentCenter />} />
+                <Route path="csv-import" element={<CSVManager />} />
+                <Route path="analytics" element={<EngagementAnalytics />} />
+                <Route path="mentor-reports" element={<MentorReportsPage />} />
+                <Route path="vault" element={<ResourceVault />} />
+              </Route>
 
               {/* Public magic-link routes (accessible even when authenticated) */}
               <Route path="/register/:token" element={<SeekerOnboardingWizard />} />

@@ -169,6 +169,15 @@ const DOMAIN_CONFIG: Record<string, {
     label: 'Community Operations',
     description: 'Moderate communities and manage events',
     kpis: ['Community Members', 'Events Hosted', 'Engagement Rate']
+  },
+  monitoring: {
+    icon: <Activity className="h-5 w-5" />,
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50',
+    borderColor: 'border-indigo-200',
+    label: 'Monitoring Operations',
+    description: 'Monitor platform operations and performance metrics',
+    kpis: ['System Health', 'Response Times', 'Error Rates']
   }
 };
 

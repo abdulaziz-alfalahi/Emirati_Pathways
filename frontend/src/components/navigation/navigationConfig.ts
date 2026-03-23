@@ -24,7 +24,10 @@ import {
   GitCompare,
   Zap,
   Flag,
-  Settings
+  Settings,
+  Map,
+  Stamp,
+  Route
 } from 'lucide-react';
 
 export const navigationGroups: NavGroup[] = [
@@ -68,30 +71,30 @@ export const navigationGroups: NavGroup[] = [
         href: '/lms',
         description: 'Online learning platform',
         icon: Monitor
+      },
+      {
+        name: 'Youth Development',
+        href: '/youth-development',
+        description: 'Programs for youth empowerment and early career exposure',
+        icon: Users
       }
     ]
   },
   {
     id: 'career',
     name: 'Career Entry',
-    description: 'Professional growth and career opportunities',
+    description: 'Career planning, job discovery, and entry tools',
     items: [
       {
-        name: 'Career Planning Hub',
-        href: '/career-planning-hub',
-        description: 'Explore UAE industries, plan your career path, and access market insights and Emiratisation programs',
+        name: 'Career Hub',
+        href: '/career-hub',
+        description: 'Plan your career path, get advisory guidance, and simulate career trajectories',
         icon: Compass
-      },
-      {
-        name: 'Financial Planning',
-        href: '/financial-planning',
-        description: 'Comprehensive financial wellness and planning tools',
-        icon: DollarSign
       },
       {
         name: 'CV Builder',
         href: '/cv-builder',
-        description: 'Create professional CVs tailored for the UAE job market',
+        description: 'Create professional CVs tailored for the Dubai job market',
         icon: FileText
       },
       {
@@ -101,9 +104,15 @@ export const navigationGroups: NavGroup[] = [
         icon: User
       },
       {
+        name: 'Job Matching',
+        href: '/job-matching',
+        description: 'Find opportunities that match your skills',
+        icon: Search
+      },
+      {
         name: 'Interview Preparation',
         href: '/interview-preparation',
-        description: 'Prepare for job interviews',
+        description: 'Prepare for job interviews with AI-powered coaching',
         icon: Users
       },
       {
@@ -111,12 +120,6 @@ export const navigationGroups: NavGroup[] = [
         href: '/internships',
         description: 'Professional internship opportunities',
         icon: Briefcase
-      },
-      {
-        name: 'Job Matching',
-        href: '/job-matching',
-        description: 'Find opportunities that match your skills',
-        icon: Search
       },
       {
         name: 'Gig Marketplace',
@@ -127,27 +130,21 @@ export const navigationGroups: NavGroup[] = [
       {
         name: 'Startup Launchpad',
         href: '/startup-launchpad',
-        description: 'Launch your startup with UAE government programs and funding',
+        description: 'Launch your startup with Dubai government programs and funding',
         icon: Lightbulb
-      },
-      {
-        name: 'Career Advisory',
-        href: '/career-advisory',
-        description: 'Professional career guidance',
-        icon: UserCheck
       }
     ]
   },
   {
     id: 'professional',
     name: 'Professional Growth',
-    description: 'Skill development and training programs',
+    description: 'Skill development, credentials, and career advancement',
     items: [
       {
-        name: 'Emiratization Tracker',
-        href: '/emiratization-tracker',
-        description: 'Track Emiratization rates, compliance, and Nafis programs',
-        icon: Flag
+        name: 'Training & Digital Skills',
+        href: '/training',
+        description: 'Professional training programs and digital literacy courses',
+        icon: BookOpen
       },
       {
         name: 'Assessments',
@@ -156,83 +153,59 @@ export const navigationGroups: NavGroup[] = [
         icon: CheckSquare
       },
       {
-        name: 'Analytics',
-        href: '/analytics',
-        description: 'View insights and analytics',
-        icon: BarChart3
-      },
-      {
-        name: 'Digital Skills Development',
-        href: '/digital-skills-development',
-        description: 'Technology and digital literacy programs',
-        icon: Lightbulb
-      },
-      {
-        name: 'Training Programs',
-        href: '/training',
-        description: 'Professional skill training',
-        icon: BookOpen
-      },
-      {
-        name: 'Professional Certifications',
-        href: '/professional-certifications',
-        description: 'Industry-recognized certifications',
+        name: 'Credentials',
+        href: '/credentials',
+        description: 'Professional certifications, blockchain-verified credentials, and career passport',
         icon: Award
-      },
-      {
-        name: 'Blockchain Credentials',
-        href: '/blockchain-credentials',
-        description: 'Digital credential verification',
-        icon: Shield
       },
       {
         name: 'Mentorship',
         href: '/mentorship',
-        description: 'Connect with experienced mentors',
+        description: 'Connect with experienced mentors for career guidance',
         icon: Heart
       },
       {
         name: 'Communities',
         href: '/communities',
-        description: 'Join professional communities',
+        description: 'Join professional communities, read thought leadership, and share success stories',
         icon: Users
+      },
+      {
+        name: 'Analytics',
+        href: '/analytics',
+        description: 'View personal career insights and analytics',
+        icon: BarChart3
+      },
+      {
+        name: 'Financial Planning',
+        href: '/financial-planning',
+        description: 'Comprehensive financial wellness and planning tools',
+        icon: DollarSign
       }
     ]
   },
   {
     id: 'lifelong',
     name: 'Lifelong Engagement',
-    description: 'Community engagement and continuous learning',
+    description: 'National service, alumni networks, and post-career opportunities',
     items: [
-      {
-        name: 'Youth Development',
-        href: '/youth-development',
-        description: 'Programs for youth empowerment',
-        icon: Users
-      },
       {
         name: 'National Service',
         href: '/national-service',
-        description: 'National service opportunities',
+        description: 'National service opportunities and civic engagement',
         icon: Building2
-      },
-      {
-        name: 'Thought Leadership',
-        href: '/thought-leadership',
-        description: 'Industry insights and expert perspectives',
-        icon: Lightbulb
-      },
-      {
-        name: 'Success Stories',
-        href: '/share-success-stories',
-        description: 'Share your achievements and inspire others',
-        icon: Trophy
       },
       {
         name: 'Retiree Services',
         href: '/retiree',
         description: 'Post-career opportunities and retirement benefits',
         icon: Users
+      },
+      {
+        name: 'Interactive Map',
+        href: '/interactive-map',
+        description: 'Explore jobs, training, and services across all Dubai districts',
+        icon: Map
       }
     ]
   }
