@@ -161,7 +161,33 @@ debug_*.py
 fix_*.py
 check_*.py
 inspect_*.py
+investigate_*.py
+reproduce_*.py
+diagnose_*.py
+
+# Debug Output Files
+*_output.txt
+*_result.txt
+*_results.json
+debug_*.txt
+debug_*.log
+server_*.log
+server_*.txt
+matching_debug.log
+audit_output*.txt
+counts.log
+
+# Archived development scripts
+/archived/
+/backend/archived/
+backend/debug_output/
+backend/test_output/
 
 # Uploads
 uploads/
+
+# Keep template env files (override the *.env exclusion above)
+!.env.template
+!.env.example
+!.env.production
 

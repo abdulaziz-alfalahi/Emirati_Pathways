@@ -1,5 +1,0 @@
-FAIL
-FAIL Step 1: Role Migration
-PASS Step 2: Shortlist Consolidation
-FAIL Step 3: Offer Consolidation
-FAIL Step 4: Deprecate 85 Empty Tables

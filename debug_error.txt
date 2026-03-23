@@ -1,4 +1,0 @@
-OUTER_ERROR: operator does not exist: uuid = text
-LINE 7: ...      JOIN job_applications ja ON vis.application_id = ja.id
-                                                                ^
-HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
