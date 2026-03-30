@@ -397,7 +397,42 @@ def get_profile():
         
         # Synchronize essential identity fields
         if user_data:
-            profile_data['secondary_roles'] = user_data.get('secondary_roles') or []
+            raw_secondary = user_data.get('secondary_roles') or []
+            
+            # Cross-reference growth_operator_* roles against the authoritative
+            # growth_operator_assignments table.  The Operators tab may deactivate
+            # domain assignments without updating the secondary_roles column,
+            # causing stale roles to appear in the role-switcher.
+            has_go_roles = any(
+                r and r.startswith('growth_operator_') for r in raw_secondary
+            ) or (user_data.get('role') or '').startswith('growth_operator_')
+            
+            if has_go_roles:
+                try:
+                    go_conn = psycopg2.connect(
+                        host=os.getenv('DB_HOST', 'localhost'),
+                        port=os.getenv('DB_PORT', '5432'),
+                        database=os.getenv('DB_NAME', 'emirati_journey'),
+                        user=os.getenv('DB_USER', 'emirati_user'),
+                        password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
+                    )
+                    go_cur = go_conn.cursor()
+                    go_cur.execute(
+                        "SELECT domain FROM growth_operator_assignments WHERE user_id = %s AND is_active = true",
+                        (user_id,)
+                    )
+                    active_domains = [row[0] for row in go_cur.fetchall()]
+                    go_conn.close()
+                    
+                    if active_domains:
+                        # Keep non-growth-operator roles, replace GO roles with active assignments
+                        non_go = [r for r in raw_secondary if not r.startswith('growth_operator_')]
+                        go_from_assignments = [f"growth_operator_{d}" for d in active_domains]
+                        raw_secondary = non_go + go_from_assignments
+                except Exception as go_err:
+                    logger.warning(f"Could not cross-ref growth_operator_assignments for profile: {go_err}")
+            
+            profile_data['secondary_roles'] = raw_secondary
             profile_data['id'] = user_data.get('id')
             profile_data['user_id'] = user_data.get('id')
             profile_data['role'] = user_data.get('role')

@@ -22,7 +22,7 @@ export interface MockUser {
 
 // Pre-defined users for testing
 export const TEST_USERS: Record<string, MockUser> = {
-  '+971501234567': {
+  '+971511234567': {
     id: '1',
     email: 'khalid.almazrouei@email.ae',
     first_name: 'Khalid',
@@ -30,7 +30,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     full_name: 'Khalid Al Mazrouei',
     user_type: 'candidate',
     role: 'candidate',
-    phone: '+971501234567',
+    phone: '+971511234567',
     emirate: 'Dubai',
     nationality: 'UAE',
     is_verified: true,
@@ -41,7 +41,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     },
     avatar: 'KAM'
   },
-  '+971502345678': {
+  '+971512345678': {
     id: '2',
     email: 'zara.saeed@company.ae',
     first_name: 'Zara',
@@ -49,7 +49,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     full_name: 'Zara Saeed',
     user_type: 'hr_manager',
     role: 'hr_manager',
-    phone: '+971502345678',
+    phone: '+971512345678',
     emirate: 'Abu Dhabi',
     nationality: 'UAE',
     is_verified: true,
@@ -59,7 +59,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     },
     avatar: 'ZSA'
   },
-  '+971503456789': {
+  '+971513456789': {
     id: '3',
     email: 'omar.alrashid@recruitment.ae',
     first_name: 'Omar',
@@ -67,7 +67,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     full_name: 'Omar Al Rashid',
     user_type: 'hr_recruiter', // Updated to match backend
     role: 'hr_recruiter', // Updated to match backend
-    phone: '+971503456789',
+    phone: '+971513456789',
     emirate: 'Sharjah',
     nationality: 'UAE',
     is_verified: true,
@@ -76,7 +76,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     },
     avatar: 'OAR'
   },
-  '+971507890123': {
+  '+971517890123': {
     id: '7',
     email: 'admin@emiratijourney.ae',
     first_name: 'System',
@@ -84,7 +84,7 @@ export const TEST_USERS: Record<string, MockUser> = {
     full_name: 'System Administrator',
     user_type: 'admin',
     role: 'admin',
-    phone: '+971507890123',
+    phone: '+971517890123',
     emirate: 'Dubai',
     nationality: 'UAE',
     is_verified: true,
@@ -93,15 +93,15 @@ export const TEST_USERS: Record<string, MockUser> = {
     },
     avatar: 'ADM'
   },
-  '+971509998888': {
+  '+971519998888': {
     id: '8',
     email: 'ops@emiratijourney.ae',
     first_name: 'Growth',
     last_name: 'Operator',
     full_name: 'Growth Operator',
-    user_type: 'operator',
-    role: 'operator',
-    phone: '+971509998888',
+    user_type: 'growth_operator_company',
+    role: 'growth_operator_company',
+    phone: '+971519998888',
     emirate: 'Dubai',
     nationality: 'UAE',
     is_verified: true,

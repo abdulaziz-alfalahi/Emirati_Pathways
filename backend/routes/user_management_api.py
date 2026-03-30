@@ -31,7 +31,7 @@ VALID_ROLES = [
     'job_seeker',
     'recruiter', 'hr_manager',
     'mentor', 'educator', 'student', 'guardian', 'assessor',
-    'retiree', 'operator',
+    'retiree',
     'growth_operator_candidate', 'growth_operator_company',
     'growth_operator_education', 'growth_operator_assessment',
     'growth_operator_mentorship', 'growth_operator_community',

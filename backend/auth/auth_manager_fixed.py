@@ -443,35 +443,37 @@ class AuthenticationManager:
                 phone = '+971' + phone
             
             magic_numbers = [
-                '+971500000000', # HR Manager
-                '+971502345678', # HR Manager (Zara Saeed)
-                '+971503456789', # HR Recruiter
-                '+971501234567', # Candidate
-                '+971507890123', # Admin
-                '+971509999999', # Administrator
-                '+971 50 123 4567', # Candidate (formatted)
-                '+971509998888',  # Growth Operator (legacy)
-                '+971509998889',  # Growth Operator - Candidate
-                '+971509998890',  # Growth Operator - Company
-                '+971509998891',  # Growth Operator - Education
-                '+971509998892',  # Growth Operator - Assessment
-                '+971509998893',  # Growth Operator - Mentorship
-                '+971509998894',  # Growth Operator - Community
-                '+971550000010',  # Test Student
-                '+971550000011',  # Test Advisor
-                '+971550000012',  # Test Coach
-                '+971550000013',  # Test Internship Coordinator
-                '+971550000014',  # Test Training Center Rep
-                '+971550000015',  # Test Call Center Agent
-                '+971550000016',  # Test Educator
-                '+971500001001',  # Test Team Chat - HR Manager 1
-                '+971500001002',  # Test Team Chat - Recruiter 1
-                '+971500001003',  # Test Team Chat - Recruiter 2
-                '+971500001004',  # Test Parent User
-                '+971509998901',  # Government (Fatima Al Shamsi)
-                '+971509998902',  # Mentor (Omar Al Hashimi)
-                '+971509998903',  # Assessor (Mariam Al Dhaheri)
-                '+971509998904',  # Operator (Sultan Al Nuaimi)
+                '+971510000000', # Recruiter (Dev)
+                '+971512345678', # Recruiter (Zara Saeed)
+                '+971513456789', # HR Recruiter
+                '+971511234567', # Candidate (Khalid)
+                '+971517890123', # Admin
+                '+971519999999', # Administrator
+                '+97151 123 4567', # Candidate (formatted)
+                '+971519998888',  # Growth Operator (legacy)
+                '+971519998889',  # Growth Operator - Candidate
+                '+971519998890',  # Growth Operator - Company
+                '+971519998891',  # Growth Operator - Education
+                '+971519998892',  # Growth Operator - Assessment
+                '+971519998893',  # Growth Operator - Mentorship
+                '+971519998894',  # Growth Operator - Community
+                '+971510000010',  # Test Student
+                '+971510000011',  # Test Advisor
+                '+971510000012',  # Test Coach
+                '+971510000013',  # Test Internship Coordinator
+                '+971510000014',  # Test Training Center Rep
+                '+971510000015',  # Test Call Center Agent
+                '+971510000016',  # Test Educator
+                '+971510001001',  # Test Team Chat - HR Manager 1
+                '+971510001002',  # Test Team Chat - Recruiter 1
+                '+971510001003',  # Test Team Chat - Recruiter 2
+                '+971510001004',  # Test Parent User
+                '+971519998901',  # Government (Fatima Al Shamsi)
+                '+971519998902',  # Mentor (Omar Al Hashimi)
+                '+971519998903',  # Assessor (Mariam Al Dhaheri)
+                '+971519998904',  # Monitoring Operator (Sultan Al Nuaimi)
+                '+971510000017',  # Retiree (Mohammed Al Suwaidi)
+                '+971510000018',  # Entrepreneur (Hamad Al Ketbi)
             ]
             is_dev = os.getenv('FLASK_ENV', 'production') != 'production'
             is_magic = is_dev and (phone.endswith('1234567') or phone in magic_numbers)
@@ -582,35 +584,37 @@ class AuthenticationManager:
 
             # 1. Check Magic Bypass (Hardcoded Safety Net)
             magic_numbers = [
-                '+971500000000', # HR Manager
-                '+971502345678', # HR Manager (Zara Saeed)
-                '+971503456789', # HR Recruiter
-                '+971501234567', # Candidate
-                '+971507890123', # Admin
-                '+971509999999', # Administrator
-                '+971 50 123 4567', # Candidate (formatted)
-                '+971509998888',  # Growth Operator (legacy)
-                '+971509998889',  # Growth Operator - Candidate
-                '+971509998890',  # Growth Operator - Company
-                '+971509998891',  # Growth Operator - Education
-                '+971509998892',  # Growth Operator - Assessment
-                '+971509998893',  # Growth Operator - Mentorship
-                '+971509998894',  # Growth Operator - Community
-                '+971550000010',  # Test Student
-                '+971550000011',  # Test Advisor
-                '+971550000012',  # Test Coach
-                '+971550000013',  # Test Internship Coordinator
-                '+971550000014',  # Test Training Center Rep
-                '+971550000015',  # Test Call Center Agent
-                '+971550000016',  # Test Educator
-                '+971500001001',  # Test Team Chat - HR Manager 1
-                '+971500001002',  # Test Team Chat - Recruiter 1
-                '+971500001003',  # Test Team Chat - Recruiter 2
-                '+971500001004',  # Test Parent User
-                '+971509998901',  # Government (Fatima Al Shamsi)
-                '+971509998902',  # Mentor (Omar Al Hashimi)
-                '+971509998903',  # Assessor (Mariam Al Dhaheri)
-                '+971509998904',  # Operator (Sultan Al Nuaimi)
+                '+971510000000', # Recruiter (Dev)
+                '+971512345678', # Recruiter (Zara Saeed)
+                '+971513456789', # HR Recruiter
+                '+971511234567', # Candidate (Khalid)
+                '+971517890123', # Admin
+                '+971519999999', # Administrator
+                '+97151 123 4567', # Candidate (formatted)
+                '+971519998888',  # Growth Operator (legacy)
+                '+971519998889',  # Growth Operator - Candidate
+                '+971519998890',  # Growth Operator - Company
+                '+971519998891',  # Growth Operator - Education
+                '+971519998892',  # Growth Operator - Assessment
+                '+971519998893',  # Growth Operator - Mentorship
+                '+971519998894',  # Growth Operator - Community
+                '+971510000010',  # Test Student
+                '+971510000011',  # Test Advisor
+                '+971510000012',  # Test Coach
+                '+971510000013',  # Test Internship Coordinator
+                '+971510000014',  # Test Training Center Rep
+                '+971510000015',  # Test Call Center Agent
+                '+971510000016',  # Test Educator
+                '+971510001001',  # Test Team Chat - HR Manager 1
+                '+971510001002',  # Test Team Chat - Recruiter 1
+                '+971510001003',  # Test Team Chat - Recruiter 2
+                '+971510001004',  # Test Parent User
+                '+971519998901',  # Government (Fatima Al Shamsi)
+                '+971519998902',  # Mentor (Omar Al Hashimi)
+                '+971519998903',  # Assessor (Mariam Al Dhaheri)
+                '+971519998904',  # Monitoring Operator (Sultan Al Nuaimi)
+                '+971510000017',  # Retiree (Mohammed Al Suwaidi)
+                '+971510000018',  # Entrepreneur (Hamad Al Ketbi)
             ]
             is_dev = os.getenv('FLASK_ENV', 'production') != 'production'
             if is_dev and code == '123456' and (phone.endswith('1234567') or phone in magic_numbers):

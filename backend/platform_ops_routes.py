@@ -75,6 +75,93 @@ def ensure_tables(conn):
     """)
     conn.commit(); cur.close()
 
+def seed_sample_data(conn):
+    """Seed sample tickets, messages, and KB articles for demo."""
+    cur = conn.cursor()
+    # Check if already seeded
+    cur.execute("SELECT COUNT(*) FROM support_tickets")
+    if cur.fetchone()[0] > 0:
+        cur.close(); return
+    # Get some user IDs for realistic data
+    cur.execute("SELECT id FROM users LIMIT 10")
+    user_ids = [r[0] for r in cur.fetchall()]
+    if not user_ids:
+        cur.close(); return
+    uid = lambda i: user_ids[i % len(user_ids)]
+
+    # Sample tickets
+    tickets = [
+        (uid(0), 'Cannot access CV Builder', 'User reports blank page when navigating to CV Builder. Cleared cache, issue persists.', 'technical', 'urgent', 'open', 'phone'),
+        (uid(1), 'Nafis salary support not reflected', 'User completed Nafis registration 3 weeks ago but salary support is not showing in their dashboard.', 'nafis', 'high', 'open', 'phone'),
+        (uid(2), 'Job application status unknown', 'Applied to 4 positions 2 weeks ago, all still showing "Under Review". User wants update.', 'jobs', 'medium', 'in_progress', 'whatsapp'),
+        (uid(3), 'Password reset not working', 'OTP not arriving on WhatsApp. User tried 5 times. Phone number verified as correct.', 'account', 'high', 'open', 'phone'),
+        (uid(4), 'Training certificate not appearing', 'Completed "Digital Marketing Fundamentals" course but certificate not in profile.', 'training', 'medium', 'in_progress', 'email'),
+        (uid(5), 'Request for employer partnership info', 'HR manager from ADNOC wants info on employer partnership program and onboarding process.', 'employer', 'low', 'open', 'email'),
+        (uid(6), 'Interview scheduling conflict', 'Received two interview invitations for the same time slot. Needs to reschedule one.', 'jobs', 'high', 'in_progress', 'whatsapp'),
+        (uid(0), 'Profile data incorrect after update', 'Updated phone number and education, but old data still displays. Possible sync issue.', 'account', 'medium', 'resolved', 'in_app'),
+        (uid(1), 'Mentorship program enrollment', 'User wants to enroll in the mentorship program but cannot find the registration page.', 'general', 'low', 'resolved', 'phone'),
+        (uid(2), 'Assessment results not loading', 'Skills assessment completed yesterday but results page shows spinner indefinitely.', 'technical', 'urgent', 'open', 'phone'),
+        (uid(3), 'Emiratization target question', 'Company HR asking how emiratization targets are calculated on the compliance dashboard.', 'employer', 'low', 'resolved', 'email'),
+        (uid(4), 'Cannot upload documents', 'File upload fails with "413 Request Entity Too Large" error for a 15MB certificate scan.', 'technical', 'medium', 'open', 'whatsapp'),
+    ]
+    for t in tickets:
+        cur.execute("""INSERT INTO support_tickets (user_id, subject, description, category, priority, status, source,
+            created_at) VALUES (%s,%s,%s,%s,%s,%s,%s, NOW() - interval '1 day' * (random()*14)::int)""", t)
+    conn.commit()
+
+    # Sample messages for first few tickets
+    cur.execute("SELECT id FROM support_tickets ORDER BY id LIMIT 5")
+    tids = [r[0] for r in cur.fetchall()]
+    messages = [
+        (tids[0], uid(0), 'Hi, I cannot open the CV Builder page. It just shows a blank white screen.', False),
+        (tids[0], uid(8 % len(user_ids)), 'Thank you for reporting. Can you tell me which browser you are using?', False),
+        (tids[0], uid(0), 'Google Chrome, latest version.', False),
+        (tids[0], uid(8 % len(user_ids)), 'Internal: Checked logs — 500 error on /api/cv-builder/templates. Escalating to dev team.', True),
+        (tids[1], uid(1), 'I registered for Nafis 3 weeks ago and my employer confirmed it. But I see nothing on my dashboard.', False),
+        (tids[1], uid(8 % len(user_ids)), 'Let me check your Nafis integration status. Can you provide your Nafis reference number?', False),
+        (tids[2], uid(2), 'I applied to Senior Analyst at ADNOC, Marketing Lead at Emaar, and two others. No updates at all.', False),
+        (tids[2], uid(8 % len(user_ids)), 'I can see your applications. ADNOC has shortlisted you — you should receive an interview invite within 48 hours. The others are still in review.', False),
+        (tids[3], uid(3), 'My WhatsApp is +971511234505 but I never receive the OTP code.', False),
+        (tids[3], uid(8 % len(user_ids)), 'I have verified your number in our system. Let me trigger a test OTP now.', False),
+    ]
+    for m in messages:
+        cur.execute("INSERT INTO ticket_messages (ticket_id, sender_id, message, is_internal_note) VALUES (%s,%s,%s,%s)", m)
+    conn.commit()
+
+    # Knowledge base articles
+    kb_articles = [
+        ('How to Reset User Password', 'كيفية إعادة تعيين كلمة مرور المستخدم',
+         'Step 1: Ask user to go to /auth page.\nStep 2: Click "Forgot Password" or request a new OTP.\nStep 3: If OTP does not arrive, verify the phone number in the admin panel.\nStep 4: If the issue persists, escalate to the technical team with the user ID.',
+         'الخطوة 1: اطلب من المستخدم الذهاب إلى صفحة /auth.\nالخطوة 2: النقر على "نسيت كلمة المرور" أو طلب رمز OTP جديد.\nالخطوة 3: إذا لم يصل الرمز، تحقق من رقم الهاتف في لوحة الإدارة.',
+         'account', '["password", "otp", "login", "authentication"]'),
+        ('Nafis Program — Common Questions', 'برنامج نافس — أسئلة شائعة',
+         'Q: How long does Nafis registration take?\nA: Usually 5-7 business days after employer confirmation.\n\nQ: Where can users see their Nafis status?\nA: Dashboard > My Benefits > Nafis Support section.\n\nQ: What if the salary support amount is wrong?\nA: Direct the user to contact Nafis directly at 800-NAFIS or escalate via the employer portal.',
+         'س: كم يستغرق تسجيل نافس؟\nج: عادة 5-7 أيام عمل بعد تأكيد صاحب العمل.\n\nس: أين يمكن للمستخدمين رؤية حالة نافس؟\nج: لوحة التحكم > مزاياي > قسم دعم نافس.',
+         'nafis', '["nafis", "salary", "support", "benefits"]'),
+        ('CV Builder Troubleshooting', 'استكشاف أخطاء منشئ السيرة الذاتية',
+         'Common issues:\n1. Blank page: Clear browser cache and try incognito mode.\n2. Template not loading: Check if user has selected a template first.\n3. PDF download fails: Ensure popup blocker is disabled.\n4. Data not saving: Check network connectivity.\n\nIf none of these work, collect browser console errors and escalate to dev.',
+         'المشاكل الشائعة:\n1. صفحة فارغة: امسح ذاكرة التخزين المؤقت وجرب وضع التصفح المتخفي.\n2. القالب لا يتحمل: تحقق من أن المستخدم قد اختار قالبًا أولاً.',
+         'technical', '["cv", "builder", "pdf", "template"]'),
+        ('Job Application Status Guide', 'دليل حالة طلب التوظيف',
+         'Application statuses explained:\n- Submitted: Application received, pending initial screening.\n- Under Review: HR is evaluating the application.\n- Shortlisted: Candidate selected for interview.\n- Interview Scheduled: Interview date confirmed.\n- Offered: Job offer extended.\n- Rejected: Application not successful.\n\nNote: Average review time is 7-14 business days.',
+         'شرح حالات الطلب:\n- مرسل: تم استلام الطلب، في انتظار الفحص الأولي.\n- قيد المراجعة: يقوم قسم الموارد البشرية بتقييم الطلب.',
+         'jobs', '["application", "status", "interview", "hiring"]'),
+        ('Employer Partnership Onboarding', 'استقطاب شراكات أصحاب العمل',
+         'To onboard a new employer:\n1. Direct them to the Growth Operator who manages company onboarding.\n2. Provide the magic link process: HR manager receives an SMS with a unique onboarding link.\n3. Required docs: Trade license, company profile, HR contact details.\n4. Timeline: Onboarding typically completes within 3 business days.',
+         'لاستقطاب صاحب عمل جديد:\n1. وجههم إلى مشغل النمو الذي يدير استقطاب الشركات.\n2. قدم عملية الرابط السحري.',
+         'employer', '["employer", "onboarding", "partnership", "company"]'),
+        ('Platform Navigation Help', 'مساعدة في التنقل في المنصة',
+         'Key pages for candidates:\n- /dashboard — Main candidate dashboard\n- /jobs — Job listings and search\n- /cv-builder — Create and manage CVs\n- /training — Available training programs\n- /assessments — Skills assessments\n\nFor employers:\n- /recruiter-dashboard — Recruiter workspace\n- /recruiter/jobs — Manage job postings',
+         'الصفحات الرئيسية للمرشحين:\n- /dashboard — لوحة تحكم المرشح الرئيسية\n- /jobs — قوائم الوظائف والبحث',
+         'general', '["navigation", "pages", "urls", "help"]'),
+    ]
+    for a in kb_articles:
+        cur.execute("""INSERT INTO knowledge_base_articles (title_en, title_ar, body_en, body_ar, category, tags)
+            VALUES (%s,%s,%s,%s,%s,%s::jsonb)""", a)
+    conn.commit()
+    cur.close()
+    logger.info("Seeded call center sample data")
+
 _init = False
 @platform_ops_bp.before_request
 def init():
@@ -82,8 +169,12 @@ def init():
     if _init: return
     conn = get_db()
     if conn:
-        try: ensure_tables(conn); _init = True
-        except: pass
+        try:
+            ensure_tables(conn)
+            seed_sample_data(conn)
+            _init = True
+        except Exception as e:
+            logger.error(f"Init error: {e}")
         finally: conn.close()
 
 

@@ -369,7 +369,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
   const totalCompanies = careerEvents.reduce((sum, e) => sum + e.companies.length, 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ─── Summary Cards ─── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -381,8 +381,8 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
         ].map((stat, i) => (
           <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
             <CardContent className="pt-5 pb-4 px-5">
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
                   <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
                   <p className="text-xs text-slate-400 mt-0.5 font-dubai-medium">{stat.sub}</p>
@@ -407,13 +407,13 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
             <div className="cursor-pointer" onClick={() => setExpandedEvent(isExpanded ? null : event.id)}>
               <div className={`h-2 bg-gradient-to-r ${event.gradient}`} />
               <CardHeader className="pb-3">
-                <div className={`flex items-start justify-between gap-4 ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-start gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
                     <div className={`p-3 rounded-xl bg-gradient-to-br ${event.gradient} text-white shadow-lg`}>
                       <EventIcon className="h-6 w-6" />
                     </div>
-                    <div className={isRTL ? 'text-right' : 'text-left'}>
-                      <div className={`flex items-center gap-2 mb-1 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <CardTitle className="text-lg font-dubai-bold text-slate-900">
                           {isRTL ? event.nameAr : event.name}
                         </CardTitle>
@@ -423,14 +423,14 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
                       <CardDescription className="font-dubai-medium text-slate-500 text-sm max-w-2xl">
                         {isRTL ? event.descriptionAr : event.description}
                       </CardDescription>
-                      <div className={`flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap">
                         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {isRTL ? event.dateRangeAr : event.dateRange}</span>
                         <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {isRTL ? event.venueAr : event.venue}</span>
                         <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {isRTL ? event.organizerAr : event.organizer}</span>
                       </div>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="flex items-center gap-3">
                     <div className="hidden md:flex items-center gap-2">
                       <div className={`px-3 py-1.5 rounded-lg ${event.accentBg} ${event.accentColor} text-xs font-dubai-bold`}>
                         {event.totalJobs.toLocaleString()} {b('jobs', 'وظيفة')}
@@ -452,8 +452,8 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
               <CardContent className="pt-0 pb-6 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
 
                 {/* Registration Progress */}
-                <div className="mx-1 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="mx-1 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-dubai-bold text-blue-800">{b('Candidate Registration', 'تسجيل المرشحين')}</span>
                     <span className="text-sm font-dubai-bold text-blue-700">{event.registeredCandidates.toLocaleString()} / {event.expectedAttendance.toLocaleString()}</span>
                   </div>
@@ -465,8 +465,8 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
 
                 {/* Outcomes (for completed events) */}
                 {event.outcomes && (
-                  <div className="mx-1" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                    <h3 className={`text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="mx-1">
+                    <h3 className="text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-green-600" />
                       {b('Event Outcomes', 'نتائج الفعالية')}
                     </h3>
@@ -485,7 +485,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
                     </div>
                     {/* Placement rate */}
                     <div className="mt-3 p-3 rounded-lg bg-green-50 border border-green-100">
-                      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="flex items-center justify-between">
                         <span className="text-xs font-dubai-bold text-green-800">{b('Placement Rate', 'نسبة التوظيف')}</span>
                         <span className="text-sm font-dubai-bold text-green-700">
                           {Math.round((event.outcomes.placements / event.outcomes.candidatesAttended) * 100)}%
@@ -496,24 +496,24 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
                 )}
 
                 {/* Participating Companies */}
-                <div className="mx-1" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <h3 className={`text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="mx-1">
+                  <h3 className="text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-slate-500" />
                     {b('Participating Companies', 'الشركات المشاركة')} ({event.companies.length})
                   </h3>
                   <div className="space-y-2">
                     {event.companies.map((company, i) => (
-                      <div key={i} className="p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all flex items-center justify-between" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div key={i} className="p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all flex items-center justify-between">
+                        <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                             <Building2 className="h-4 w-4 text-slate-500" />
                           </div>
-                          <div className={isRTL ? 'text-right' : 'text-left'}>
+                          <div>
                             <p className="text-sm font-dubai-bold text-slate-800">{isRTL ? company.nameAr : company.name}</p>
                             <p className="text-[10px] text-slate-400 font-dubai-medium">{isRTL ? company.sectorAr : company.sector}</p>
                           </div>
                         </div>
-                        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex items-center gap-3">
                           <div className="text-right">
                             <p className="text-xs font-dubai-bold text-slate-700">{company.jobsOffered} {b('jobs', 'وظيفة')}</p>
                             <p className="text-[10px] text-slate-400 font-dubai-medium">{company.emiratizationContribution}% {b('Emiratization', 'توطين')}</p>
@@ -536,9 +536,9 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
       {/* ─── Templates Section ─── */}
       <Card className="bg-white border border-dashed border-slate-300">
         <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-          <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className={`font-dubai-bold text-slate-900 text-base flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <CardTitle className="font-dubai-bold text-slate-900 text-base flex items-center gap-2">
                 <Plus className="h-4 w-4 text-emerald-600" />
                 {b('Event Templates', 'قوالب الفعاليات')}
               </CardTitle>
@@ -553,7 +553,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {eventTemplates.map((template, i) => {
               const TemplateIcon = template.icon;
               return (
@@ -584,7 +584,7 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
       {/* ─── User-Created Events ─── */}
       {createdEvents.length > 0 && (
         <div className="space-y-4">
-          <h3 className={`text-sm font-dubai-bold text-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+          <h3 className="text-sm font-dubai-bold text-slate-800 flex items-center gap-2">
             <CalendarCheck className="h-4 w-4 text-emerald-600" />
             {b('Your Custom Events', 'فعالياتك المخصصة')}
           </h3>
@@ -592,20 +592,20 @@ const CareerEventsTab: React.FC<CareerEventsTabProps> = ({ isRTL, b }) => {
             <Card key={ce.id} className="bg-white border border-emerald-200 overflow-hidden">
               <div className="h-2 bg-gradient-to-r from-emerald-400 to-teal-500" />
               <CardHeader className="pb-3">
-                <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-start gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg">
                       <Sparkles className="h-6 w-6" />
                     </div>
-                    <div className={isRTL ? 'text-right' : 'text-left'}>
-                      <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
                         <CardTitle className="text-lg font-dubai-bold text-slate-900">{ce.name}</CardTitle>
                         <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium">
                           <Clock className="h-3 w-3 mr-1 inline" />{b('Draft', 'مسودة')}
                         </Badge>
                       </div>
                       {ce.description && <CardDescription className="font-dubai-medium text-slate-500 text-sm">{ce.description}</CardDescription>}
-                      <div className={`flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap">
                         {ce.date && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {ce.date}</span>}
                         {ce.venue && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {ce.venue}</span>}
                         {ce.type && <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" /> {ce.type}</span>}

@@ -362,7 +362,7 @@ const GovernmentDashboard: React.FC = () => {
           </div>
 
           {/* ─── Tabs ─── */}
-          <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+          <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
             <TabsList className="grid w-full grid-cols-9 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('overview')}>{b('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="compliance" className="font-dubai-medium data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none rounded-lg text-sm" onClick={() => handleTabChange('compliance')}>{b('Compliance', 'الامتثال')}</TabsTrigger>

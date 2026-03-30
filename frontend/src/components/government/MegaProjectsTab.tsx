@@ -364,7 +364,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
   const activeSearches = allProjects.reduce((sum, p) => sum + p.talentProfiles.filter(tp => tp.urgency === 'critical').length, 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ─── Summary Cards ─── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -376,8 +376,8 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
         ].map((stat, i) => (
           <Card key={i} className={`bg-white border ${stat.border} hover:shadow-md transition-all duration-200 group`}>
             <CardContent className="pt-5 pb-4 px-5">
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={isRTL ? 'text-right' : 'text-left'}>
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 font-dubai-medium">{stat.label}</p>
                   <p className="text-3xl font-dubai-bold text-slate-900">{stat.value}</p>
                   <p className="text-xs text-slate-400 mt-0.5 font-dubai-medium">{stat.sub}</p>
@@ -406,13 +406,13 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
             >
               <div className={`h-2 bg-gradient-to-r ${project.gradient}`} />
               <CardHeader className="pb-3">
-                <div className={`flex items-start justify-between gap-4 ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-start gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
                     <div className={`p-3 rounded-xl bg-gradient-to-br ${project.gradient} text-white shadow-lg shadow-${project.gradient.split('-')[1]}-500/20`}>
                       <ProjectIcon className="h-6 w-6" />
                     </div>
-                    <div className={isRTL ? 'text-right' : 'text-left'}>
-                      <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
                         <CardTitle className="text-lg font-dubai-bold text-slate-900">
                           {isRTL ? project.nameAr : project.name}
                         </CardTitle>
@@ -421,14 +421,14 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                       <CardDescription className="font-dubai-medium text-slate-500 text-sm max-w-2xl">
                         {isRTL ? project.descriptionAr : project.description}
                       </CardDescription>
-                      <div className={`flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap">
                         <span className="flex items-center gap-1"><Banknote className="h-3 w-3" /> {isRTL ? project.budgetAr : project.budget}</span>
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {isRTL ? project.timelineAr : project.timeline}</span>
                         <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {isRTL ? project.locationAr : project.location}</span>
                       </div>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="flex items-center gap-3">
                     {/* KPI pills */}
                     <div className="hidden md:flex items-center gap-2">
                       <div className={`px-3 py-1.5 rounded-lg ${project.accentBg} ${project.accentColor} text-xs font-dubai-bold`}>
@@ -451,8 +451,8 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
               <CardContent className="pt-0 pb-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
 
                 {/* Initiative Banner */}
-                <div className={`mx-1 p-3 rounded-xl ${project.accentBg} border ${project.borderColor}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`mx-1 p-3 rounded-xl ${project.accentBg} border ${project.borderColor}`}>
+                  <div className="flex items-center gap-2">
                     <Star className={`h-4 w-4 ${project.accentColor}`} />
                     <span className={`text-sm font-dubai-bold ${project.accentColor}`}>
                       {b('Linked Initiative', 'المبادرة المرتبطة')}: {isRTL ? project.initiativeAr : project.initiative}
@@ -461,8 +461,8 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                 </div>
 
                 {/* Emiratization Progress */}
-                <div className="mx-1 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="mx-1 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-dubai-bold text-emerald-800">{b('Emiratization Progress', 'تقدم التوطين')}</span>
                     <span className="text-sm font-dubai-bold text-emerald-700">{project.currentEmiratization}% / {project.emiratizationTarget}%</span>
                   </div>
@@ -480,8 +480,8 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                 </div>
 
                 {/* Project Stages Timeline */}
-                <div className="mx-1" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <h3 className={`text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="mx-1">
+                  <h3 className="text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2">
                     <Clock className="h-4 w-4 text-slate-500" />
                     {b('Project Stages & Talent Pipeline', 'مراحل المشروع وخط أنابيب المواهب')}
                   </h3>
@@ -494,7 +494,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                             ? 'border-green-200 bg-green-50/30'
                             : 'border-slate-100 bg-slate-50/30'
                       }`}>
-                        <div className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex items-center gap-2 mb-2">
                           <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${getStageIcon(stage.status)}`} />
                           <span className="text-xs font-dubai-bold text-slate-700">{isRTL ? stage.nameAr : stage.name}</span>
                         </div>
@@ -520,20 +520,20 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                 </div>
 
                 {/* Required Talent Profiles */}
-                <div className="mx-1" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <h3 className={`text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="mx-1">
+                  <h3 className="text-sm font-dubai-bold text-slate-800 mb-3 flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-slate-500" />
                     {b('Required Talent Profiles', 'ملفات المواهب المطلوبة')}
                   </h3>
                   <div className="space-y-3">
                     {project.talentProfiles.map((profile, i) => (
                       <div key={i} className="p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
-                        <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
                             <h4 className="text-sm font-dubai-bold text-slate-800">{isRTL ? profile.roleAr : profile.role}</h4>
                             {getUrgencyBadge(profile.urgency, b)}
                           </div>
-                          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <div className="flex items-center gap-3">
                             <span className="text-xs text-slate-500 font-dubai-medium">
                               {profile.headcount.toLocaleString()} {b('positions', 'وظيفة')} · {profile.emiratizationTarget}% {b('Emirati', 'توطين')}
                             </span>
@@ -546,7 +546,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
                             </Button>
                           </div>
                         </div>
-                        <div className={`flex items-center gap-2 flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex items-center gap-2 flex-wrap">
                           {profile.skills.map((skill, si) => (
                             <Badge key={si} variant="secondary" className="text-[10px] font-dubai-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
                               {skill}
@@ -567,9 +567,9 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
       {/* ─── Templates Section ─── */}
       <Card className="bg-white border border-dashed border-slate-300">
         <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
-          <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+          <div className="flex items-center justify-between">
             <div>
-              <CardTitle className={`font-dubai-bold text-slate-900 text-base flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <CardTitle className="font-dubai-bold text-slate-900 text-base flex items-center gap-2">
                 <Plus className="h-4 w-4 text-emerald-600" />
                 {b('Mega Project Templates', 'قوالب المشاريع الكبرى')}
               </CardTitle>
@@ -584,7 +584,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {projectTemplates.map((template, i) => {
               const TemplateIcon = template.icon;
               return (
@@ -615,7 +615,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
       {/* ─── User-Created Projects ─── */}
       {createdProjects.length > 0 && (
         <div className="space-y-4">
-          <h3 className={`text-sm font-dubai-bold text-slate-800 flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+          <h3 className="text-sm font-dubai-bold text-slate-800 flex items-center gap-2">
             <FileEdit className="h-4 w-4 text-emerald-600" />
             {b('Your Custom Projects', 'مشاريعك المخصصة')}
           </h3>
@@ -623,20 +623,20 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
             <Card key={cp.id} className="bg-white border border-emerald-200 overflow-hidden">
               <div className="h-2 bg-gradient-to-r from-emerald-400 to-teal-500" />
               <CardHeader className="pb-3">
-                <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : ''}`} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                  <div className={`flex items-start gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg">
                       <Sparkles className="h-6 w-6" />
                     </div>
-                    <div className={isRTL ? 'text-right' : 'text-left'}>
-                      <div className={`flex items-center gap-2 mb-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
                         <CardTitle className="text-lg font-dubai-bold text-slate-900">{cp.name}</CardTitle>
                         <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-dubai-medium">
                           <Clock className="h-3 w-3 mr-1 inline" />{b('Draft', 'مسودة')}
                         </Badge>
                       </div>
                       {cp.description && <CardDescription className="font-dubai-medium text-slate-500 text-sm">{cp.description}</CardDescription>}
-                      <div className={`flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-slate-400 font-dubai-medium flex-wrap">
                         {cp.budget && <span className="flex items-center gap-1"><Banknote className="h-3 w-3" /> {cp.budget}</span>}
                         {cp.timeline && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {cp.timeline}</span>}
                         {cp.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {cp.location}</span>}
@@ -653,7 +653,7 @@ const MegaProjectsTab: React.FC<MegaProjectsTabProps> = ({ isRTL, b }) => {
               </CardHeader>
               {cp.stages.length > 0 && (
                 <CardContent className="pt-0 pb-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {cp.stages.map((stage, si) => (
                       <div key={si} className="p-3 rounded-lg border border-slate-100 bg-slate-50/50">
                         <div className="flex items-center gap-2">

@@ -226,16 +226,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
               if (storedRole && storedRole !== apiRole) {
                 // User switched roles locally — preserve the active role
+                // BUT always use the API's secondary_roles (authoritative source)
+                // An admin may have removed a role since last login
+                const apiSecondaryRoles = profile.data.secondary_roles || [];
+                const apiAllRoles = [
+                  apiRole,
+                  ...apiSecondaryRoles.map((r: string) => normalizeRole(r))
+                ];
+
+                // Only preserve the stored role if it's still valid per backend
+                const storedRoleStillValid = apiAllRoles.includes(storedRole);
+
                 mergedData = {
                   ...profile.data,
-                  role: storedUser.role,
-                  user_type: storedUser.user_type,
-                  roles: storedUser.roles,
-                  secondary_roles: storedUser.secondary_roles || profile.data.secondary_roles,
+                  role: storedRoleStillValid ? storedUser.role : profile.data.role,
+                  user_type: storedRoleStillValid ? storedUser.user_type : profile.data.user_type,
+                  roles: storedRoleStillValid ? storedUser.roles : undefined,
+                  secondary_roles: apiSecondaryRoles, // Always from API
                   user_metadata: {
                     ...profile.data.user_metadata,
-                    roles: storedUser.roles,
-                    user_type: storedUser.user_type,
+                    roles: storedRoleStillValid ? storedUser.roles : undefined,
+                    user_type: storedRoleStillValid ? storedUser.user_type : profile.data.user_type,
                   }
                 };
               }
