@@ -533,39 +533,117 @@ class CVParser:
             return ""
 
     def _create_parsing_prompt(self, text: str) -> str:
-        return f"""
-        You are an AI Resume Parsert customized for the UAE Job Market.
-        Extract JSON data from this CV.
-        
-        CRITICAL EXTRACTION RULES:
-        1. **Dates**: MUST be "YYYY-MM-DD" or null. 
-           - If currently working, set `end_date` to null. DO NOT use "Present" or "Current".
-           - When parsing durations (e.g., "5 years"), do NOT guess dates. Only extract explicit dates.
-           - If day is unknown, use "01" (e.g. "2022-05" -> "2022-05-01").
-           - If month is unknown, use "01" (e.g. "2022" -> "2022-01-01").
-        2. **Summary**: Maximum 30 words. Consolidate into 2 concise sentences. Be extremely brief.
-        3. **Name**: The Name is almost always the very first line of the document. Extract `full_name` strictly.
-        4. **Education/Experience**: strictly extract start/end dates.
-        5. **Skills**: Extract ALL technical and soft skills found. Categorize them properly.
+        return f"""You are an expert AI Resume Parser built for the UAE job market and Emirati workforce.
+Extract structured JSON from this CV/resume. Follow every rule precisely.
 
-        Text:
-        {text[:15000]} 
+═══════════════════════════════════════════
+LANGUAGE & ENCODING
+═══════════════════════════════════════════
+- The CV may be in English, Arabic, or bilingual. Extract ALL content regardless of language.
+- For Arabic names, transliterate to Latin script in `full_name` AND keep the original in `full_name_ar`.
+- If the CV is entirely in Arabic, still return field keys in English with Arabic values.
 
-        Output JSON format:
+═══════════════════════════════════════════
+EXTRACTION RULES
+═══════════════════════════════════════════
+1. **Name**: Almost always the very first line. Extract `full_name` strictly. Split into `first_name` and `last_name`.
+2. **Dates**: MUST be "YYYY-MM-DD" or null.
+   - Currently working → `end_date`: null, `is_current`: true. NEVER use "Present" or "Current".
+   - Day unknown → use "01". Month unknown → use "01". (e.g., "2022" → "2022-01-01")
+   - Durations like "5 years" → do NOT guess dates. Leave as null and note in description.
+3. **Summary**: Maximum 2 sentences, 30 words. Be extremely concise.
+4. **Skills**: Extract ALL technical and soft skills. Categorize each as "Technical", "Soft", "Language", or "Domain".
+   - Include proficiency level: "Beginner", "Intermediate", "Advanced", or "Expert".
+5. **Experience**: Extract company, position, dates, location, and a description of responsibilities.
+   - Also extract key `achievements` as a separate array of strings per role.
+6. **Education**: Extract institution, degree, field_of_study, dates, and GPA if mentioned.
+7. **Phone**: UAE numbers use formats like +971-50-XXX-XXXX or 05XXXXXXXX. Normalize to include country code.
+8. **Projects**: Extract any personal, academic, or professional projects mentioned.
+9. **Certifications**: Include issuer and date obtained if available.
+
+═══════════════════════════════════════════
+UAE NATIONAL QUALIFICATIONS FRAMEWORK (NQF)
+═══════════════════════════════════════════
+Map each education entry to the UAE NQF level. Use this mapping:
+- Level 1: Certificate — basic vocational
+- Level 2: Certificate — skilled vocational
+- Level 3: Certificate — advanced vocational / High School Diploma
+- Level 4: Certificate — post-secondary vocational
+- Level 5: Diploma / Associate Degree
+- Level 6: Advanced Diploma / Higher Diploma
+- Level 7: Bachelor's Degree
+- Level 8: Postgraduate Diploma / Bachelor's Honours
+- Level 9: Master's Degree / MBA / EMBA
+- Level 10: Doctoral Degree (PhD / DBA)
+
+Set `nqf_level` as an integer (1-10) on each education entry. If unclear, estimate from the degree name.
+Also set `highest_nqf_level` at the top level as the maximum across all education entries.
+
+═══════════════════════════════════════════
+CV TEXT
+═══════════════════════════════════════════
+{text[:20000]}
+
+═══════════════════════════════════════════
+OUTPUT (return ONLY this JSON, no markdown, no explanation)
+═══════════════════════════════════════════
+{{
+    "personal_info": {{
+        "full_name": "Abdulaziz Al Falahi",
+        "full_name_ar": "عبدالعزيز الفلاحي",
+        "first_name": "Abdulaziz",
+        "last_name": "Al Falahi",
+        "email": "user@example.com",
+        "phone": "+971501234567",
+        "nationality": "UAE National",
+        "location": "Dubai, UAE",
+        "address": "Dubai, UAE",
+        "linkedin": "",
+        "emirates_id": ""
+    }},
+    "professional_summary": "Concise 2-sentence summary here.",
+    "highest_nqf_level": 7,
+    "total_experience_years": 5,
+    "skills": [
+        {{ "name": "Python", "level": "Advanced", "category": "Technical" }},
+        {{ "name": "Leadership", "level": "Expert", "category": "Soft" }},
+        {{ "name": "Arabic", "level": "Native", "category": "Language" }}
+    ],
+    "experience": [
         {{
-            "personal_info": {{ "full_name": "John Doe", "first_name": "", "last_name": "", "email": "", "phone": "", "nationality": "", "location": "" }},
-            "professional_summary": "Motivated software engineer with 5 years exp...",
-            "skills": [ {{ "name": "Python", "level": "Intermediate", "category": "Technical" }} ],
-            "experience": [ 
-                {{ "company": "Tech Corp", "position": "Senior Dev", "start_date": "2020-01-01", "end_date": null, "description": "Led team...", "is_current": true }}
-            ],
-            "education": [ 
-                {{ "institution": "UAE University", "degree": "BS CS", "start_date": "2015-09-01", "end_date": "2019-06-01" }} 
-            ],
-            "languages": [],
-            "certifications": []
+            "company": "Emirates NBD",
+            "position": "Senior Developer",
+            "start_date": "2020-01-01",
+            "end_date": null,
+            "is_current": true,
+            "location": "Dubai, UAE",
+            "description": "Led development of digital banking platform.",
+            "achievements": ["Increased platform uptime to 99.9%", "Managed team of 8 engineers"]
         }}
-        """
+    ],
+    "education": [
+        {{
+            "institution": "Khalifa University",
+            "degree": "Bachelor of Science",
+            "field_of_study": "Computer Science",
+            "start_date": "2015-09-01",
+            "end_date": "2019-06-01",
+            "gpa": "3.8",
+            "nqf_level": 7
+        }}
+    ],
+    "certifications": [
+        {{ "name": "AWS Solutions Architect", "issuer": "Amazon", "date": "2023-03-01" }}
+    ],
+    "languages": [
+        {{ "language": "Arabic", "proficiency": "Native" }},
+        {{ "language": "English", "proficiency": "Fluent" }}
+    ],
+    "projects": [
+        {{ "name": "Smart City Dashboard", "description": "Real-time analytics platform", "technologies": ["React", "Python", "AWS"] }}
+    ],
+    "volunteer_work": []
+}}"""
 
     def _parse_gemini_response(self, response_text: str) -> Dict[str, Any]:
         try:
