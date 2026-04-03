@@ -38,7 +38,8 @@ export type UserRole =
   | 'coach'
   | 'internship_coordinator'
   | 'training_center_rep'
-  | 'call_center_agent';
+  | 'call_center_agent'
+  | 'retiree';
 
 // Growth Operator Domain Types
 export type GrowthOperatorDomain =
@@ -201,6 +202,7 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'internship_coordinator': '/internship-coordinator-dashboard',
   'training_center_rep': '/training-center-dashboard',
   'call_center_agent': '/call-center-dashboard',
+  'retiree': '/candidate-dashboard',
 };
 
 // Role Display Names
@@ -244,6 +246,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   'internship_coordinator': 'Internship Coordinator',
   'training_center_rep': 'Training Center Representative',
   'call_center_agent': 'Call Center Agent',
+  'retiree': 'Retiree',
 };
 
 // Growth Operator Domain Configuration
@@ -332,6 +335,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   'internship_coordinator': ['view_analytics', 'manage_profile'],
   'training_center_rep': ['view_analytics', 'manage_profile'],
   'call_center_agent': ['view_analytics', 'manage_profile'],
+  'retiree': ['view_jobs', 'apply_jobs', 'manage_profile', 'upload_cv'],
 };
 
 export const normalizeRole = (role: string): UserRole | string => {

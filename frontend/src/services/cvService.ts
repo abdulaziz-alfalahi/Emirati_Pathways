@@ -281,6 +281,70 @@ class CVService {
       };
     }
   }
+
+  /**
+   * Get the latest/active CV for the current user
+   */
+  async getLatestCV(): Promise<CVParseResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cv/data`, {
+        method: 'GET',
+        headers: authService.getAuthHeaders(),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Get latest CV error:', error);
+      return {
+        success: false,
+        message: 'Network error occurred while fetching latest CV',
+      };
+    }
+  }
+
+  /**
+   * Delete a CV
+   */
+  async deleteCV(cvId: string): Promise<CVParseResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cv/${cvId}`, {
+        method: 'DELETE',
+        headers: authService.getAuthHeaders(),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Delete CV error:', error);
+      return {
+        success: false,
+        message: 'Network error occurred while deleting CV',
+      };
+    }
+  }
+
+  /**
+   * Update CV visibility (only one CV can be visible at a time)
+   */
+  async updateCVVisibility(cvId: string, isVisible: boolean): Promise<CVParseResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cv/${cvId}/visible`, {
+        method: 'PUT',
+        headers: authService.getAuthHeaders(),
+        body: JSON.stringify({ is_visible: isVisible }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Update CV visibility error:', error);
+      return {
+        success: false,
+        message: 'Network error occurred while updating CV visibility',
+      };
+    }
+  }
 }
 
 // Export singleton instance

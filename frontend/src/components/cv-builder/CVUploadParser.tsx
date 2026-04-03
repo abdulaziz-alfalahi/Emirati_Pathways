@@ -126,9 +126,18 @@ const CVUploadParser: React.FC<CVUploadParserProps> = ({ onParsedData, className
         : '/api/cv/upload';
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('cv_file', file);
 
-      const response = await fetch(apiUrl, { method: 'POST', body: formData });
+      // Get auth token
+      let authHeaders: Record<string, string> = {};
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`;
+        }
+      } catch { /* localStorage may not be available */ }
+
+      const response = await fetch(apiUrl, { method: 'POST', headers: authHeaders, body: formData });
 
       await progressPromise;
 

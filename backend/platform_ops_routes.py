@@ -14,12 +14,58 @@ import psycopg2, psycopg2.extras, os, json, logging, random
 logger = logging.getLogger(__name__)
 platform_ops_bp = Blueprint('platform_ops', __name__, url_prefix='/api/platform-ops')
 
+
 def get_db():
     try:
         return psycopg2.connect(os.getenv('DATABASE_URL',
             'postgresql://emirati_user:emirati_secure_password@127.0.0.1:5432/emirati_journey'))
     except Exception as e:
         logger.error(f"DB error: {e}"); return None
+
+
+def _create_notification(user_id, title, content, notif_type='system_announcement', metadata=None):
+    """Insert a notification into the DB and emit a socket event so the bell updates."""
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            INSERT INTO notifications (user_id, type, title, content, metadata)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, created_at
+        """, (str(user_id), notif_type, title, content, json.dumps(metadata or {})))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        # Emit real-time socket event
+        try:
+            from flask import current_app
+            sio = current_app.extensions.get('socketio')
+            if not sio:
+                from app import socketio as sio
+            if sio:
+                sio.emit('new_notification', {
+                    'user_id': str(user_id),
+                    'notification': {
+                        'id': str(row['id']),
+                        'type': notif_type,
+                        'title': title,
+                        'content': content,
+                        'metadata': metadata or {},
+                        'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                        'read': False,
+                        'priority': (metadata or {}).get('priority', 'medium'),
+                    }
+                })
+        except Exception as se:
+            logger.warning(f"Socket emit for notification failed: {se}")
+    except Exception as e:
+        try: conn.rollback(); conn.close()
+        except: pass
+        logger.warning(f"Failed to create notification for user {user_id}: {e}")
 
 def ensure_tables(conn):
     cur = conn.cursor()
@@ -69,9 +115,26 @@ def ensure_tables(conn):
             created_by INTEGER REFERENCES users(id),
             created_at TIMESTAMP DEFAULT NOW()
         );
+        CREATE TABLE IF NOT EXISTS live_chat_sessions (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id),
+            agent_id INTEGER REFERENCES users(id),
+            conversation_id VARCHAR(200),
+            status VARCHAR(20) DEFAULT 'waiting',
+            category VARCHAR(50) DEFAULT 'general',
+            initial_message TEXT DEFAULT '',
+            started_at TIMESTAMP DEFAULT NOW(),
+            accepted_at TIMESTAMP,
+            ended_at TIMESTAMP,
+            ended_by VARCHAR(20) DEFAULT '',
+            ticket_id INTEGER REFERENCES support_tickets(id),
+            rating INTEGER DEFAULT 0
+        );
         CREATE INDEX IF NOT EXISTS idx_tickets_status ON support_tickets(status);
         CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON support_tickets(assigned_to);
         CREATE INDEX IF NOT EXISTS idx_content_status ON content_submissions(status);
+        CREATE INDEX IF NOT EXISTS idx_live_chat_status ON live_chat_sessions(status);
+        CREATE INDEX IF NOT EXISTS idx_live_chat_agent ON live_chat_sessions(agent_id);
     """)
     conn.commit(); cur.close()
 
@@ -369,15 +432,40 @@ def update_ticket(ticket_id):
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         fields, params = [], []
         for f in ['status', 'priority', 'assigned_to', 'escalated_to', 'category']:
             if f in data: fields.append(f"{f} = %s"); params.append(data[f])
         if data.get('status') == 'resolved': fields.append("resolved_at = NOW()")
-        if not fields: return jsonify({"error": "No fields"}), 400
+        if not fields:
+            cur.close(); conn.close()
+            return jsonify({"error": "No fields"}), 400
         params.append(ticket_id)
-        cur.execute(f"UPDATE support_tickets SET {', '.join(fields)} WHERE id = %s", params)
-        conn.commit(); cur.close(); conn.close()
+        cur.execute(f"UPDATE support_tickets SET {', '.join(fields)} WHERE id = %s RETURNING *", params)
+        updated_ticket = cur.fetchone()
+        conn.commit()
+
+        # ── Notification: tell ticket owner about status change ──
+        new_status = data.get('status')
+        if updated_ticket and new_status and updated_ticket.get('user_id'):
+            status_labels = {
+                'resolved': ('Ticket Resolved', f'Your support ticket #{ticket_id} has been resolved. If the issue persists, you can reopen it.'),
+                'in_progress': ('Ticket In Progress', f'Your support ticket #{ticket_id} is now being worked on by our team.'),
+                'escalated': ('Ticket Escalated', f'Your support ticket #{ticket_id} has been escalated to a senior specialist for further review.'),
+                'closed': ('Ticket Closed', f'Your support ticket #{ticket_id} has been closed.'),
+            }
+            if new_status in status_labels:
+                title, content = status_labels[new_status]
+                _create_notification(
+                    updated_ticket['user_id'],
+                    title,
+                    content,
+                    metadata={'type': 'ticket_status_update', 'ticket_id': ticket_id,
+                              'new_status': new_status, 'priority': 'high',
+                              'link': '/candidate-dashboard?tab=messages'}
+                )
+
+        cur.close(); conn.close()
         return jsonify({"status": "updated"}), 200
     except Exception as e:
         conn.rollback(); conn.close()
@@ -499,3 +587,373 @@ def ticket_analytics():
         }), 200
     except Exception as e:
         conn.close(); return jsonify({"error": str(e)}), 500
+
+
+# ═══════ LIVE CHAT ═══════
+
+@platform_ops_bp.route('/live-chat/start', methods=['POST'])
+@jwt_required(optional=True)
+def start_live_chat():
+    """User initiates a live chat session."""
+    user_id = None
+    try: user_id = get_jwt_identity()
+    except: pass
+    data = request.get_json(silent=True) or {}
+    if not user_id:
+        user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    category = data.get('category', 'general')
+    initial_message = data.get('message', '')
+
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Find an available agent (round-robin: agent with fewest active chats)
+        cur.execute("""
+            SELECT u.id, u.full_name FROM users u
+            WHERE u.user_type = 'call_center_agent' OR u.role = 'call_center_agent'
+            ORDER BY (
+                SELECT COUNT(*) FROM live_chat_sessions lcs
+                WHERE lcs.agent_id = u.id AND lcs.status = 'active'
+            ) ASC
+            LIMIT 1
+        """)
+        agent_row = cur.fetchone()
+
+        agent_id = agent_row['id'] if agent_row else None
+        agent_name = agent_row['full_name'] if agent_row else None
+        status = 'waiting'  # even if agent found, wait for accept
+
+        # Create the conversation via the communication_service if available
+        conversation_id = None
+        if agent_id:
+            try:
+                from services.communication_service import communication_service
+                conv = communication_service.create_conversation(
+                    participants=[str(user_id), str(agent_id)],
+                    title=f"Live Chat - {category}",
+                    participant_roles={str(user_id): 'user', str(agent_id): 'call_center_agent'}
+                )
+                conversation_id = str(conv.id) if conv else None
+            except Exception as ce:
+                logger.warning(f"Could not create conversation via service: {ce}")
+                conversation_id = f"livechat_{user_id}_{agent_id}_{int(__import__('time').time())}"
+        else:
+            conversation_id = f"livechat_{user_id}_unassigned_{int(__import__('time').time())}"
+
+        cur.execute("""
+            INSERT INTO live_chat_sessions (user_id, agent_id, conversation_id, status, category, initial_message)
+            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, started_at
+        """, (user_id, agent_id, conversation_id, status, category, initial_message))
+        row = cur.fetchone()
+        session_id = row['id']
+        started_at = row['started_at'].isoformat() if row.get('started_at') else None
+        conn.commit()
+
+        # Get user name for the agent notification
+        cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
+        user_row = cur.fetchone()
+        user_name = user_row['full_name'] if user_row else 'User'
+
+        cur.close(); conn.close()
+
+        # Emit socket event to alert agents
+        try:
+            from flask import current_app
+            sio = current_app.extensions.get('socketio')
+            if not sio:
+                from app import socketio as sio
+            if sio:
+                sio.emit('live_chat_queue_update', {
+                    'session_id': session_id,
+                    'user_id': user_id,
+                    'user_name': user_name,
+                    'category': category,
+                    'message': initial_message,
+                    'started_at': started_at,
+                    'agent_id': agent_id,
+                })
+        except Exception as se:
+            logger.warning(f"Socket emit failed: {se}")
+
+        # ── Notification: alert agent about new chat request ──
+        if agent_id:
+            _create_notification(
+                agent_id,
+                f'New Live Chat from {user_name}',
+                f'{user_name} needs help with: {category}. "{initial_message[:80]}"' if initial_message else f'{user_name} started a live chat ({category})',
+                metadata={'type': 'live_chat_request', 'session_id': session_id, 'priority': 'high',
+                          'link': '/call-center-dashboard?tab=live-chats'}
+            )
+
+        return jsonify({
+            "session_id": session_id,
+            "conversation_id": conversation_id,
+            "status": status,
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "started_at": started_at,
+        }), 201
+    except Exception as e:
+        conn.rollback(); conn.close()
+        logger.error(f"Live chat start error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@platform_ops_bp.route('/live-chat/session/<int:session_id>', methods=['GET'])
+@jwt_required(optional=True)
+def get_live_chat_session(session_id):
+    """Get details of a live chat session."""
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT lcs.*, u.full_name as user_name, a.full_name as agent_name
+            FROM live_chat_sessions lcs
+            LEFT JOIN users u ON u.id = lcs.user_id
+            LEFT JOIN users a ON a.id = lcs.agent_id
+            WHERE lcs.id = %s
+        """, (session_id,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+        if not row:
+            return jsonify({"error": "Session not found"}), 404
+        d = dict(row)
+        for k in ('started_at', 'accepted_at', 'ended_at'):
+            if d.get(k): d[k] = d[k].isoformat()
+        return jsonify(d), 200
+    except Exception as e:
+        conn.close(); return jsonify({"error": str(e)}), 500
+
+
+@platform_ops_bp.route('/live-chat/session/<int:session_id>/accept', methods=['PUT'])
+@jwt_required(optional=True)
+def accept_live_chat(session_id):
+    """Agent accepts a waiting live chat session."""
+    agent_id = None
+    try: agent_id = get_jwt_identity()
+    except: pass
+    data = request.get_json(silent=True) or {}
+    if not agent_id:
+        agent_id = data.get('agent_id')
+
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM live_chat_sessions WHERE id = %s", (session_id,))
+        session = cur.fetchone()
+        if not session:
+            cur.close(); conn.close()
+            return jsonify({"error": "Session not found"}), 404
+        if session['status'] != 'waiting':
+            cur.close(); conn.close()
+            return jsonify({"error": "Session is not in waiting status"}), 400
+
+        # If no conversation yet (or needs re-creation with this agent):
+        conversation_id = session.get('conversation_id')
+        if not conversation_id or 'unassigned' in str(conversation_id):
+            try:
+                from services.communication_service import communication_service
+                conv = communication_service.create_conversation(
+                    participants=[str(session['user_id']), str(agent_id)],
+                    title=f"Live Chat - {session.get('category', 'general')}",
+                    participant_roles={str(session['user_id']): 'user', str(agent_id): 'call_center_agent'}
+                )
+                conversation_id = str(conv.id) if conv else conversation_id
+            except Exception as ce:
+                logger.warning(f"Could not create conversation: {ce}")
+
+        cur.execute("""
+            UPDATE live_chat_sessions
+            SET status = 'active', agent_id = %s, accepted_at = NOW(), conversation_id = %s
+            WHERE id = %s
+        """, (agent_id, conversation_id, session_id))
+        conn.commit()
+
+        # Get agent name
+        cur.execute("SELECT full_name FROM users WHERE id = %s", (agent_id,))
+        agent_row = cur.fetchone()
+        agent_name = agent_row['full_name'] if agent_row else 'Agent'
+
+        cur.close(); conn.close()
+
+        # Emit to both parties
+        try:
+            from flask import current_app
+            sio = current_app.extensions.get('socketio')
+            if not sio:
+                from app import socketio as sio
+            if sio:
+                sio.emit('live_chat_assigned', {
+                    'session_id': session_id,
+                    'agent_id': agent_id,
+                    'agent_name': agent_name,
+                    'conversation_id': conversation_id,
+                    'user_id': session['user_id'],
+                })
+        except Exception as se:
+            logger.warning(f"Socket emit failed: {se}")
+
+        # ── Notification: tell user their chat was accepted ──
+        _create_notification(
+            session['user_id'],
+            f'Agent {agent_name} joined your chat',
+            f'Your support request has been accepted. {agent_name} is now assisting you.',
+            metadata={'type': 'live_chat_accepted', 'session_id': session_id, 'agent_name': agent_name,
+                      'link': '/candidate-dashboard?tab=messages'}
+        )
+
+        return jsonify({
+            "status": "active",
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "conversation_id": conversation_id,
+        }), 200
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@platform_ops_bp.route('/live-chat/session/<int:session_id>/end', methods=['PUT'])
+@jwt_required(optional=True)
+def end_live_chat(session_id):
+    """End a live chat session."""
+    user_id = None
+    try: user_id = get_jwt_identity()
+    except: pass
+    data = request.get_json(silent=True) or {}
+    ended_by = data.get('ended_by', 'user')
+    rating = data.get('rating', 0)
+    create_ticket = data.get('create_ticket', False)
+
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT * FROM live_chat_sessions WHERE id = %s", (session_id,))
+        session = cur.fetchone()
+        if not session:
+            cur.close(); conn.close()
+            return jsonify({"error": "Session not found"}), 404
+
+        ticket_id = None
+        if create_ticket:
+            cur.execute("""
+                INSERT INTO support_tickets (user_id, created_by_agent, subject, description, category, source, status)
+                VALUES (%s, %s, %s, %s, %s, 'live_chat', 'open') RETURNING id
+            """, (
+                session['user_id'], session.get('agent_id'),
+                f"Live Chat Follow-up - {session.get('category', 'general')}",
+                session.get('initial_message', ''),
+                session.get('category', 'general'),
+            ))
+            ticket_id = cur.fetchone()['id']
+
+        cur.execute("""
+            UPDATE live_chat_sessions
+            SET status = 'ended', ended_at = NOW(), ended_by = %s, rating = %s, ticket_id = %s
+            WHERE id = %s
+        """, (ended_by, rating, ticket_id, session_id))
+        conn.commit()
+        cur.close(); conn.close()
+
+        # Emit end event
+        try:
+            from flask import current_app
+            sio = current_app.extensions.get('socketio')
+            if not sio:
+                from app import socketio as sio
+            if sio:
+                sio.emit('live_chat_ended', {
+                    'session_id': session_id,
+                    'ended_by': ended_by,
+                    'user_id': session['user_id'],
+                    'agent_id': session.get('agent_id'),
+                    'ticket_id': ticket_id,
+                })
+        except Exception as se:
+            logger.warning(f"Socket emit failed: {se}")
+
+        # ── Notification: tell user chat ended (+ ticket if created) ──
+        if ticket_id:
+            _create_notification(
+                session['user_id'],
+                f'Support Ticket #{ticket_id} Created',
+                f'Your live chat has ended and a follow-up ticket #{ticket_id} has been created. You can track its progress in your dashboard.',
+                metadata={'type': 'ticket_created', 'ticket_id': ticket_id, 'session_id': session_id, 'priority': 'high',
+                          'link': '/candidate-dashboard?tab=messages'}
+            )
+        else:
+            _create_notification(
+                session['user_id'],
+                'Live Chat Ended',
+                'Your support chat session has ended. If you need further help, you can start a new chat anytime.',
+                metadata={'type': 'live_chat_ended', 'session_id': session_id,
+                          'link': '/candidate-dashboard?tab=messages'}
+            )
+
+        return jsonify({"status": "ended", "ticket_id": ticket_id}), 200
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@platform_ops_bp.route('/live-chat/agent/sessions', methods=['GET'])
+@jwt_required(optional=True)
+def agent_live_chats():
+    """Get all live chat sessions for the call center (waiting + active)."""
+    status_filter = request.args.get('status')  # 'waiting', 'active', 'ended'
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        sql = """
+            SELECT lcs.*, u.full_name as user_name, a.full_name as agent_name
+            FROM live_chat_sessions lcs
+            LEFT JOIN users u ON u.id = lcs.user_id
+            LEFT JOIN users a ON a.id = lcs.agent_id
+            WHERE 1=1
+        """
+        params = []
+        if status_filter:
+            sql += " AND lcs.status = %s"
+            params.append(status_filter)
+        else:
+            sql += " AND lcs.status IN ('waiting', 'active')"
+        sql += " ORDER BY CASE lcs.status WHEN 'waiting' THEN 1 WHEN 'active' THEN 2 ELSE 3 END, lcs.started_at ASC"
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        sessions = []
+        for r in rows:
+            d = dict(r)
+            for k in ('started_at', 'accepted_at', 'ended_at'):
+                if d.get(k): d[k] = d[k].isoformat()
+            sessions.append(d)
+        return jsonify({"sessions": sessions, "total": len(sessions)}), 200
+    except Exception as e:
+        conn.close(); return jsonify({"error": str(e)}), 500
+
+
+@platform_ops_bp.route('/live-chat/session/<int:session_id>/rate', methods=['PUT'])
+@jwt_required(optional=True)
+def rate_live_chat(session_id):
+    """Rate a completed live chat session."""
+    data = request.get_json(silent=True) or {}
+    rating = data.get('rating', 0)
+    conn = get_db()
+    if not conn: return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE live_chat_sessions SET rating = %s WHERE id = %s", (rating, session_id))
+        conn.commit(); cur.close(); conn.close()
+        return jsonify({"status": "rated", "rating": rating}), 200
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"error": str(e)}), 500

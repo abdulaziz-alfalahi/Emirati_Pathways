@@ -1,6 +1,13 @@
 """
-Simplified CV Upload Routes - Enhanced with Mock-Bypass (Real Parsing)
-This replaces the Mock implementation to ensuring DB population works.
+Simplified CV Upload Routes - DEPRECATED
+==========================================
+⚠️ This module is DEPRECATED. All CV routes have been consolidated into
+   routes/enhanced_cv_routes.py (enhanced_cv_bp).
+
+Do NOT register this blueprint alongside enhanced_cv_bp — they share
+the same url_prefix (/api/cv) and will cause route collisions.
+
+This file is kept for reference only. Remove in a future cleanup pass.
 """
 import os
 import json

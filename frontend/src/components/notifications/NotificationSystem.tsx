@@ -522,9 +522,11 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       'assessor': '/assessor-dashboard',
       'growth_operator': '/growth-operator-dashboard',
       'operator': '/operator-dashboard',
+      'call_center_agent': '/call-center-dashboard',
     };
     const operatorDashboard = operatorDashboardMap[userRole];
     const isOperator = !!operatorDashboard;
+    const isCallCenter = userRole === 'call_center_agent';
     // Default to isCandidate if not any other known role
     const isCandidate = !isRecruiter && !isHRManager && !isAdmin && !isOperator;
 
@@ -538,6 +540,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       const convParam = conversationId ? `&conversationId=${conversationId}` : '';
       if (isAdmin) {
         navigate(`/admin-dashboard?tab=messaging${conversationId ? `&conversation=${conversationId}` : ''}`);
+      } else if (isCallCenter) {
+        navigate('/call-center-dashboard?tab=live-chats');
       } else if (isCandidate) {
         navigate(`/candidate-dashboard?tab=messages${conversationId ? `&conversation=${conversationId}` : ''}`);
       } else if (isHRManager) {
@@ -578,6 +582,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     // Fallback for System Announcements without explicit link (e.g. legacy feedback)
     else if (type === 'system_announcement') {
       const isFeedback = (metadata.type === 'bug' || metadata.type === 'feature' || metadata.title?.toLowerCase().includes('feedback') || metadata.title?.toLowerCase().includes('issue resolved'));
+      const isLiveChatRelated = metadata.type === 'live_chat_request' || metadata.type === 'live_chat_accepted' ||
+        metadata.type === 'live_chat_ended' || metadata.type === 'ticket_created' || metadata.type === 'ticket_status_update' ||
+        text.includes('live chat') || text.includes('ticket');
 
       if (isFeedback) {
         if (user?.role === 'admin' || user?.role === 'administrator') {
@@ -589,6 +596,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
           if (isHRManager) basePath = '/hr-dashboard';
 
           navigate(`${basePath}?action=feedback_history`);
+        }
+      } else if (isLiveChatRelated) {
+        // Route to the user's appropriate dashboard
+        if (isCallCenter) {
+          navigate('/call-center-dashboard?tab=live-chats');
+        } else {
+          navigate('/candidate-dashboard?tab=messages');
         }
       }
     }

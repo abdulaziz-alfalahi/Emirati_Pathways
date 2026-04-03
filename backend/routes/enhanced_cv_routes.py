@@ -57,28 +57,23 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_normalized_user_id(identity):
-    """
-    Normalize user identity to a consistent UUID string.
-    Matches logic in profile_routes_v2.py and cv_routes.py to ensure data consistency.
-    """
-    if not identity:
-        return None
-        
-    if isinstance(identity, dict):
-        identity = identity.get('id')
-    
-    identity_str = str(identity).strip()
-    
-    # Legacy Integer ID Support
-    if identity_str.isdigit():
-        return identity_str
-    
+    """Normalize user identity — delegates to shared utility."""
     try:
-        # Check if already valid UUID
-        return str(uuid.UUID(identity_str))
-    except ValueError:
-        # If not, hash strictly using DNS namespace
-        return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+        from utils.user_id import get_normalized_user_id as _normalize
+        return _normalize(identity)
+    except ImportError:
+        # Inline fallback if utils not found
+        if not identity:
+            return None
+        if isinstance(identity, dict):
+            identity = identity.get('id')
+        identity_str = str(identity).strip()
+        if identity_str.isdigit():
+            return identity_str
+        try:
+            return str(uuid.UUID(identity_str))
+        except ValueError:
+            return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
 
 def get_user_id_from_token():
     """Extract user ID from JWT token (simplified)"""
@@ -490,8 +485,12 @@ def update_cv_visibility(cv_id):
 
 @enhanced_cv_bp.route('/debug-stats', methods=['GET'])
 def get_debug_stats():
-    """Get storage stats with debug records"""
+    """Get storage stats with debug records (admin only)"""
     try:
+        # Gate behind admin role
+        user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
         stats = cv_storage_manager.get_storage_stats()
         return jsonify(stats), 200
     except Exception as e:
@@ -500,8 +499,11 @@ def get_debug_stats():
 
 @enhanced_cv_bp.route('/debug-list/<user_id>', methods=['GET'])
 def debug_list_cvs(user_id):
-    """Debug: List CVs for specific user ID (Bypass Auth)"""
+    """Debug: List CVs for specific user ID (admin only)"""
     try:
+        auth_user = get_user_id_from_token()
+        if not auth_user:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
         result = cv_storage_manager.get_user_cvs(user_id)
         return jsonify(result), 200
     except Exception as e:
@@ -509,9 +511,11 @@ def debug_list_cvs(user_id):
 
 @enhanced_cv_bp.route('/debug-auth', methods=['GET'])
 def debug_auth_check():
-    """Debug: Check what user ID is extracted from token"""
+    """Debug: Check what user ID is extracted from token (admin only)"""
     try:
         user_id = get_user_id_from_token()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
         return jsonify({
             'success': True,
             'user_id': user_id,

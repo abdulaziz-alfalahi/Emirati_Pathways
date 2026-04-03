@@ -19,8 +19,13 @@ import {
   Phone,
   MapPin,
   Briefcase,
-  Award
+  Award,
+  GraduationCap,
+  Languages,
+  X
 } from 'lucide-react';
+
+import { cvService, ParsedCVData } from '@/services/cvService';
 
 interface CVUploadProps {
   onUploadComplete?: (data: any) => void;
@@ -28,7 +33,7 @@ interface CVUploadProps {
   className?: string;
 }
 
-interface ParsedCVData {
+interface DisplayCVData {
   name?: string;
   email?: string;
   phone?: string;
@@ -48,6 +53,71 @@ interface ParsedCVData {
   }>;
   languages?: string[];
   certifications?: string[];
+  scores?: {
+    overall?: number;
+    completeness?: number;
+    detail_depth?: number;
+    uae_relevance?: number;
+  };
+}
+
+/**
+ * Normalize the backend response schema into a flat display-friendly shape
+ */
+function normalizeBackendData(raw: any): DisplayCVData {
+  const data = raw?.data || raw?.parsed_data || raw || {};
+  const pi = data.personal_info || {};
+
+  // Skills may be an array of objects or strings
+  const rawSkills = data.skills || [];
+  const skills = rawSkills.map((s: any) => (typeof s === 'string' ? s : s?.name || ''));
+
+  // Experience
+  const rawExp = data.experience || data.work_experience || [];
+  const experience = rawExp.map((e: any) => ({
+    title: e.position || e.title || '',
+    company: e.company || e.organization || '',
+    duration: e.duration || `${e.start_date || ''} - ${e.end_date || 'Present'}`,
+    description: e.description || '',
+  }));
+
+  // Education
+  const rawEdu = data.education || [];
+  const education = rawEdu.map((e: any) => ({
+    degree: e.degree || '',
+    institution: e.institution || e.university || '',
+    year: e.graduation_date || e.year || '',
+  }));
+
+  // Languages
+  const rawLangs = data.languages || [];
+  const languages = rawLangs.map((l: any) =>
+    typeof l === 'string' ? l : `${l.language || ''}${l.proficiency ? ` (${l.proficiency})` : ''}`
+  );
+
+  // Certifications
+  const rawCerts = data.certifications || [];
+  const certifications = rawCerts.map((c: any) =>
+    typeof c === 'string' ? c : c.name || ''
+  );
+
+  // Scores (from analysis)
+  const analysis = raw?.analysis || {};
+  const scores = analysis.scores || {};
+
+  return {
+    name: pi.full_name || pi.name || data.name || '',
+    email: pi.email || data.email || '',
+    phone: pi.phone || data.phone || '',
+    location: pi.address || pi.location || data.location || '',
+    summary: data.professional_summary || data.summary || '',
+    skills: skills.filter(Boolean),
+    experience,
+    education,
+    languages: languages.filter(Boolean),
+    certifications: certifications.filter(Boolean),
+    scores: Object.keys(scores).length > 0 ? scores : undefined,
+  };
 }
 
 const CVUpload: React.FC<CVUploadProps> = ({
@@ -55,29 +125,77 @@ const CVUpload: React.FC<CVUploadProps> = ({
   onParsingComplete,
   className = ""
 }) => {
-  const [activeTab, setActiveTab] = useState('text'); // Start with text tab for easier testing
+  const [activeTab, setActiveTab] = useState('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [cvText, setCvText] = useState('');
-  const [parsedData, setParsedData] = useState<ParsedCVData | null>(null);
+  const [parsedData, setParsedData] = useState<DisplayCVData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Get API base URL
-  const getApiUrl = () => {
-    if (typeof window !== 'undefined') {
-      return import.meta.env.VITE_API_BASE_URL ||
-        import.meta.env.VITE_API_URL ||
-        import.meta.env.REACT_APP_API_URL ||
-        '';
+  // Simulate progress bar
+  const simulateProgress = (setter: (v: number) => void, duration = 2000) =>
+    new Promise<void>((resolve) => {
+      let v = 0;
+      const id = setInterval(() => {
+        v += Math.random() * 15;
+        if (v >= 100) {
+          v = 100;
+          setter(v);
+          clearInterval(id);
+          resolve();
+        } else {
+          setter(v);
+        }
+      }, duration / 10);
+    });
+
+  // Handle file upload and parsing
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    setIsParsing(false);
+    setUploadProgress(0);
+    setError(null);
+    setSuccess(null);
+    setParsedData(null);
+    setSelectedFile(file);
+
+    try {
+      // Upload progress simulation
+      const progressPromise = simulateProgress(setUploadProgress, 2000);
+
+      // Call actual API
+      const result = await cvService.parseCVFile(file);
+
+      await progressPromise;
+      setIsUploading(false);
+
+      if (!result.success) {
+        throw new Error(result.message || 'CV parsing failed');
+      }
+
+      setIsParsing(true);
+      await simulateProgress(setUploadProgress, 1000);
+      setIsParsing(false);
+
+      const normalized = normalizeBackendData(result);
+      setParsedData(normalized);
+      setSuccess('CV uploaded and parsed successfully!');
+
+      if (onUploadComplete) onUploadComplete(result);
+      if (onParsingComplete) onParsingComplete(normalized);
+
+      setActiveTab('results');
+    } catch (err) {
+      setIsUploading(false);
+      setIsParsing(false);
+      setError(`Upload failed: ${(err as Error).message}`);
     }
-    return '';
   };
 
-  const API_BASE_URL = getApiUrl();
-
-  // Handle text parsing WITHOUT authentication for testing
+  // Handle text parsing
   const handleTextParsing = async () => {
     if (!cvText.trim()) {
       setError('Please enter CV text to parse');
@@ -86,101 +204,57 @@ const CVUpload: React.FC<CVUploadProps> = ({
 
     setIsParsing(true);
     setError(null);
+    setSuccess(null);
+    setParsedData(null);
 
     try {
-      console.log('🔄 Starting text parsing (NO AUTH TEST)...');
-      console.log('📡 API URL:', `${API_BASE_URL}/api/cv/parse-text`);
-      console.log('📝 CV Text length:', cvText.length);
+      const result = await cvService.parseCVText(cvText);
 
-      const response = await fetch(`${API_BASE_URL}/api/test/cv/parse-text`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // NO Authorization header for testing
-        },
-        body: JSON.stringify({
-          text: cvText
-        }),
-      });
-
-      console.log('📡 Parse response status:', response.status);
-      console.log('📡 Parse response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Parse failed:', errorText);
-
-        // Try to parse as JSON for better error message
-        try {
-          const errorJson = JSON.parse(errorText);
-          console.error('❌ Error details:', errorJson);
-          throw new Error(`Parse failed: ${errorJson.msg || errorJson.message || errorText}`);
-        } catch {
-          throw new Error(`Parse failed: ${response.status} ${response.statusText} - ${errorText}`);
-        }
+      if (!result.success) {
+        throw new Error(result.message || 'CV text parsing failed');
       }
 
-      const result = await response.json();
-      console.log('✅ Parse successful:', result);
+      const normalized = normalizeBackendData(result);
+      setParsedData(normalized);
+      setSuccess('CV text parsed successfully!');
 
-      // Create mock data if backend doesn't return proper structure
-      const mockParsedData: ParsedCVData = {
-        name: result.name || result.personal_info?.name || "Ahmed Al Mansouri",
-        email: result.email || result.personal_info?.email || result.contact?.email || "ahmed.almansouri@email.com",
-        phone: result.phone || result.personal_info?.phone || result.contact?.phone || "+971501234567",
-        location: result.location || result.personal_info?.location || result.contact?.location || "Dubai, UAE",
-        summary: result.summary || result.professional_summary || "Experienced software engineer with 8+ years in full-stack development.",
-        skills: result.skills || result.technical_skills || ["JavaScript", "React", "Node.js", "Python", "AWS"],
-        experience: result.experience || result.work_experience || [
-          {
-            title: "Senior Software Engineer",
-            company: "Emirates Technology Solutions",
-            duration: "2020 - Present",
-            description: "Led development of digital transformation initiatives"
-          }
-        ],
-        education: result.education || [
-          {
-            degree: "Bachelor of Computer Science",
-            institution: "American University of Sharjah",
-            year: "2018"
-          }
-        ],
-        languages: result.languages || ["Arabic (Native)", "English (Fluent)"],
-        certifications: result.certifications || ["AWS Certified Solutions Architect"]
-      };
+      if (onParsingComplete) onParsingComplete(normalized);
 
-      setSuccess('✅ CV text parsed successfully! (Test mode - no authentication)');
-      setParsedData(mockParsedData);
-
-      // Call callbacks
-      if (onParsingComplete) {
-        console.log('🔄 Calling onParsingComplete with data:', mockParsedData);
-        onParsingComplete(mockParsedData);
-      }
-
-      // Switch to results tab
       setActiveTab('results');
-
-    } catch (error) {
-      console.error('❌ Parse error:', error);
-      setError(`Parsing failed: ${(error as Error).message}`);
+    } catch (err) {
+      setError(`Parsing failed: ${(err as Error).message}`);
     } finally {
       setIsParsing(false);
     }
   };
 
-  // Handle file drop
+  // Drag and drop handlers
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setError('File upload temporarily disabled for testing. Please use text input.');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (['pdf', 'docx', 'doc', 'txt'].includes(ext || '')) {
+        handleFileUpload(file);
+      } else {
+        setError('Unsupported file type. Please upload PDF, DOCX, DOC, or TXT files.');
+      }
+    }
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   }, []);
 
-  // Load sample CV
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  // Load sample CV for demo
   const loadSampleCV = () => {
     const sampleCV = `Ahmed Al Mansouri
 Senior Software Engineer
@@ -217,24 +291,20 @@ AWS Certified Solutions Architect
 Certified Scrum Master`;
 
     setCvText(sampleCV);
-    console.log('📝 Sample CV loaded, length:', sampleCV.length);
   };
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Test Mode Warning */}
-      <Alert className="border-yellow-200 bg-yellow-50">
-        <AlertCircle className="h-4 w-4 text-yellow-600" />
-        <AlertDescription className="text-yellow-800">
-          <strong>Test Mode:</strong> Authentication temporarily disabled for debugging. File upload disabled - use text input only.
-        </AlertDescription>
-      </Alert>
-
       {/* Status Messages */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            {error}
+            <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+              <X className="h-3 w-3" />
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -247,28 +317,84 @@ Certified Scrum Master`;
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upload" disabled>📄 File Upload (Disabled)</TabsTrigger>
-          <TabsTrigger value="text">✏️ Text Input (Test)</TabsTrigger>
+          <TabsTrigger value="upload">📄 File Upload</TabsTrigger>
+          <TabsTrigger value="text">✏️ Text Input</TabsTrigger>
           <TabsTrigger value="results">📊 Results</TabsTrigger>
         </TabsList>
 
-        {/* File Upload Tab - Disabled for testing */}
+        {/* File Upload Tab */}
         <TabsContent value="upload" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
-                Upload CV File (Disabled for Testing)
+                Upload CV File
               </CardTitle>
               <CardDescription>
-                File upload temporarily disabled. Please use text input for testing.
+                Drag and drop your CV or click to select a file. Supports PDF, DOCX, DOC, and TXT (max 10MB).
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center bg-gray-50">
-                <Upload className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">File upload disabled for testing</p>
-                <p className="text-sm text-gray-400">Use text input tab instead</p>
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className={`
+                  border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+                  transition-colors duration-200
+                  ${isUploading || isParsing
+                    ? 'border-blue-400 bg-blue-50'
+                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'
+                  }
+                `}
+                onClick={() => document.getElementById('cv-file-input')?.click()}
+              >
+                <input
+                  id="cv-file-input"
+                  type="file"
+                  accept=".pdf,.docx,.doc,.txt"
+                  className="hidden"
+                  onChange={handleFileInput}
+                />
+
+                {isUploading || isParsing ? (
+                  <div className="space-y-4">
+                    <Loader2 className="h-12 w-12 mx-auto text-blue-500 animate-spin" />
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {isParsing ? 'Parsing CV with AI...' : 'Uploading...'}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {isParsing
+                          ? 'Extracting skills, experience, and education'
+                          : `Uploading ${selectedFile?.name}`}
+                      </p>
+                    </div>
+                    <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
+                    <p className="text-xs text-gray-500">{Math.round(uploadProgress)}%</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Upload className="h-12 w-12 mx-auto text-gray-400" />
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Drop your CV here, or click to browse
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        PDF, DOCX, DOC, TXT — Max 10MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFile && !isUploading && !isParsing && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg inline-flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium">{selectedFile.name}</span>
+                    <Badge variant="secondary">
+                      {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
+                    </Badge>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -280,13 +406,10 @@ Certified Scrum Master`;
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Paste CV Text (Test Mode)
-                <Badge variant="outline" className="ml-2">
-                  No Auth Required
-                </Badge>
+                Paste CV Text
               </CardTitle>
               <CardDescription>
-                Copy and paste your CV content for testing CV parsing functionality
+                Copy and paste your CV content for AI-powered parsing
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -320,12 +443,12 @@ Certified Scrum Master`;
                 {isParsing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Testing CV Parsing (No Auth)...
+                    Parsing CV...
                   </>
                 ) : (
                   <>
                     <Brain className="h-4 w-4 mr-2" />
-                    Test CV Parsing (No Auth)
+                    Parse CV with AI
                   </>
                 )}
               </Button>
@@ -344,15 +467,51 @@ Certified Scrum Master`;
                     <CheckCircle className="h-8 w-8 text-green-600" />
                     <div>
                       <h3 className="text-lg font-semibold text-green-800">CV Parsed Successfully!</h3>
-                      <p className="text-green-700">Test mode - Ready for profile integration</p>
+                      <p className="text-green-700">Ready for profile integration</p>
                     </div>
-                    <Badge variant="secondary" className="ml-auto">
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Test Mode
-                    </Badge>
+                    {parsedData.scores?.overall !== undefined && (
+                      <Badge variant="secondary" className="ml-auto text-lg px-3 py-1">
+                        <Sparkles className="h-4 w-4 mr-1" />
+                        Score: {parsedData.scores.overall}/100
+                      </Badge>
+                    )}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Score Breakdown */}
+              {parsedData.scores && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Target className="h-4 w-4" />
+                      CV Quality Scores
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      {parsedData.scores.completeness !== undefined && (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{parsedData.scores.completeness}%</div>
+                          <div className="text-xs text-gray-500">Completeness</div>
+                        </div>
+                      )}
+                      {parsedData.scores.detail_depth !== undefined && (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">{parsedData.scores.detail_depth}%</div>
+                          <div className="text-xs text-gray-500">Detail Depth</div>
+                        </div>
+                      )}
+                      {parsedData.scores.uae_relevance !== undefined && (
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-emerald-600">{parsedData.scores.uae_relevance}%</div>
+                          <div className="text-xs text-gray-500">UAE Relevance</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Parsed Data Display */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -438,18 +597,56 @@ Certified Scrum Master`;
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {parsedData.experience.slice(0, 2).map((exp, index) => (
+                      {parsedData.experience.map((exp, index) => (
                         <div key={index} className="border-l-2 border-blue-200 pl-3">
                           <h4 className="font-medium text-sm">{exp.title}</h4>
                           <p className="text-sm text-gray-600">{exp.company}</p>
                           <p className="text-xs text-gray-500">{exp.duration}</p>
+                          {exp.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{exp.description}</p>
+                          )}
                         </div>
                       ))}
-                      {parsedData.experience.length > 2 && (
-                        <p className="text-xs text-gray-500">
-                          +{parsedData.experience.length - 2} more positions
-                        </p>
-                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Education */}
+                {parsedData.education && parsedData.education.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <GraduationCap className="h-4 w-4" />
+                        Education ({parsedData.education.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {parsedData.education.map((edu, index) => (
+                        <div key={index} className="border-l-2 border-green-200 pl-3">
+                          <h4 className="font-medium text-sm">{edu.degree}</h4>
+                          <p className="text-sm text-gray-600">{edu.institution}</p>
+                          <p className="text-xs text-gray-500">{edu.year}</p>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Languages */}
+                {parsedData.languages && parsedData.languages.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Languages className="h-4 w-4" />
+                        Languages
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {parsedData.languages.map((lang, index) => (
+                          <Badge key={index} variant="outline">{lang}</Badge>
+                        ))}
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -461,19 +658,19 @@ Certified Scrum Master`;
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       onClick={() => {
-                        setActiveTab('text');
+                        setActiveTab('upload');
                         setParsedData(null);
                         setSuccess(null);
+                        setSelectedFile(null);
                       }}
                       variant="outline"
                       className="flex-1"
                     >
-                      Test Another CV
+                      Upload Another CV
                     </Button>
                     <Button
                       onClick={() => {
-                        console.log('🎯 Triggering profile update with data:', parsedData);
-                        if (onParsingComplete) {
+                        if (onParsingComplete && parsedData) {
                           onParsingComplete(parsedData);
                         }
                       }}
@@ -492,25 +689,13 @@ Certified Scrum Master`;
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-600">No CV data parsed yet</p>
-                  <p className="text-sm text-gray-500">Use text input tab to test CV parsing</p>
+                  <p className="text-sm text-gray-500">Upload a file or paste text to get started</p>
                 </div>
               </CardContent>
             </Card>
           )}
         </TabsContent>
       </Tabs>
-
-      {/* Debug Info */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="pt-6">
-          <div className="text-sm text-blue-800">
-            <p><strong>Debug Info:</strong></p>
-            <p>• API URL: {API_BASE_URL}</p>
-            <p>• Mode: Test (No Authentication)</p>
-            <p>• Check browser console for detailed logs</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

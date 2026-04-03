@@ -871,14 +871,13 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
             except Exception as e:
                 logger.warning(f"Could not list models: {e}")
 
-            # List of models to try in order of preference
+            # List of models to try in order of preference (2026 available)
             candidate_models = [
-                'gemini-1.5-flash',
-                'gemini-1.5-flash-001',
-                'gemini-1.5-pro',
-                'gemini-pro',
-                'models/gemini-1.5-flash',
-                'models/gemini-pro'
+                'gemini-2.5-flash',
+                'gemini-3-flash-preview',
+                'gemini-3-pro-preview',
+                'models/gemini-2.5-flash',
+                'models/gemini-3-flash-preview'
             ]
 
             model = None
@@ -901,11 +900,9 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                         break
 
             # Priority 2: If no match found or listing failed, default to a safe bet
-            # Priority 2: If no match found or listing failed, default to a safe bet
             if not model:
-                # Switch to 1.5-flash as default (better quotas/speed)
-                model = genai.GenerativeModel('gemini-1.5-flash')
-                used_model_name = 'gemini-1.5-flash (fallback)'
+                model = genai.GenerativeModel('gemini-2.5-flash')
+                used_model_name = 'gemini-2.5-flash (fallback)'
 
             logger.info(f"Attempting to use Gemini model: {used_model_name}")
 

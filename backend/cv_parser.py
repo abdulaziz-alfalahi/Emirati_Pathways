@@ -498,10 +498,10 @@ class CVParser:
             elif ('word' in mime_type or 'office' in mime_type or path.endswith('.doc') or path.endswith('.docx')):
                  if docx:
                      doc = Document(path)
-                     text = "\\n".join([p.text for p in doc.paragraphs])
+                     text = "\n".join([p.text for p in doc.paragraphs])
                      for table in doc.tables:
                          for row in table.rows:
-                             text += " ".join([c.text for c in row.cells]) + "\\n"
+                             text += " ".join([c.text for c in row.cells]) + "\n"
                      return text
                  else:
                      return ""
@@ -569,8 +569,134 @@ class CVParser:
         return data
 
     def _calculate_cv_scores(self, data: Dict, text: str) -> Dict:
-        # Placeholder
-        return {'scores': {'overall': 75}, 'insights': {}, 'recommendations': []}
+        """Calculate real CV quality scores using weighted criteria"""
+        scores = {}
+        recommendations = []
+        
+        # --- Completeness Score (40% weight) ---
+        completeness_fields = {
+            'name': bool(data.get('personal_info', {}).get('full_name')),
+            'email': bool(data.get('personal_info', {}).get('email')),
+            'phone': bool(data.get('personal_info', {}).get('phone')),
+            'summary': bool(data.get('professional_summary')),
+            'experience': len(data.get('experience', [])) > 0,
+            'education': len(data.get('education', [])) > 0,
+            'skills': len(data.get('skills', [])) > 0,
+            'certifications': len(data.get('certifications', [])) > 0,
+        }
+        filled = sum(1 for v in completeness_fields.values() if v)
+        completeness = int((filled / len(completeness_fields)) * 100)
+        scores['completeness'] = completeness
+        
+        missing = [k for k, v in completeness_fields.items() if not v]
+        if missing:
+            recommendations.append(f"Add missing sections: {', '.join(missing)}")
+        
+        # --- Detail Depth Score (30% weight) ---
+        depth_points = 0
+        max_depth = 100
+        
+        # Experience detail
+        experiences = data.get('experience', [])
+        if len(experiences) >= 3:
+            depth_points += 25
+        elif len(experiences) >= 1:
+            depth_points += 15
+        else:
+            recommendations.append('Add work experience entries with descriptions')
+        
+        # Check experience descriptions
+        has_descriptions = sum(1 for e in experiences if len(e.get('description', '')) > 20)
+        if has_descriptions >= 2:
+            depth_points += 20
+        elif has_descriptions >= 1:
+            depth_points += 10
+        else:
+            recommendations.append('Add detailed descriptions to your work experience')
+        
+        # Skills count
+        skills_count = len(data.get('skills', []))
+        if skills_count >= 8:
+            depth_points += 25
+        elif skills_count >= 4:
+            depth_points += 15
+        elif skills_count >= 1:
+            depth_points += 8
+        else:
+            recommendations.append('List your technical and soft skills')
+        
+        # Education detail
+        education = data.get('education', [])
+        if len(education) >= 1:
+            depth_points += 15
+            if any(e.get('field_of_study') for e in education):
+                depth_points += 10
+        
+        # Summary length
+        summary = data.get('professional_summary', '')
+        if len(summary) > 100:
+            depth_points += 5
+        elif len(summary) > 30:
+            depth_points += 3
+        
+        depth_score = min(int(depth_points), max_depth)
+        scores['detail_depth'] = depth_score
+        
+        # --- UAE Relevance Score (30% weight) ---
+        uae_points = 0
+        text_lower = text.lower()
+        
+        # Nationality check
+        uae_keywords = ['uae', 'emirati', 'united arab emirates', 'dubai', 'abu dhabi', 
+                       'sharjah', 'ajman', 'fujairah', 'ras al khaimah', 'umm al quwain']
+        if any(kw in text_lower for kw in uae_keywords):
+            uae_points += 30
+        
+        # Arabic language
+        if 'arabic' in text_lower or 'عربي' in text:
+            uae_points += 20
+        else:
+            recommendations.append('Mention Arabic language proficiency if applicable')
+        
+        # UAE companies/institutions
+        uae_entities = ['adnoc', 'etisalat', 'emaar', 'dubai government', 'mubadala',
+                       'masdar', 'emirates', 'du telecom', 'dewa', 'rta',
+                       'american university of sharjah', 'khalifa university',
+                       'zayed university', 'university of sharjah']
+        entity_matches = sum(1 for e in uae_entities if e in text_lower)
+        uae_points += min(entity_matches * 10, 30)
+        
+        # Emiratization keywords
+        emiratization_kw = ['emiratization', 'nafis', 'national service', 'tawteen']
+        if any(kw in text_lower for kw in emiratization_kw):
+            uae_points += 20
+        
+        uae_relevance = min(uae_points, 100)
+        scores['uae_relevance'] = uae_relevance
+        
+        # --- Overall Score ---
+        overall = int(completeness * 0.4 + depth_score * 0.3 + uae_relevance * 0.3)
+        scores['overall'] = min(overall, 100)
+        
+        # Insights
+        insights = {
+            'strengths': [],
+            'improvement_areas': []
+        }
+        if completeness >= 80:
+            insights['strengths'].append('Comprehensive CV with all key sections')
+        if depth_score >= 70:
+            insights['strengths'].append('Detailed experience and skills descriptions')
+        if uae_relevance >= 60:
+            insights['strengths'].append('Strong UAE market relevance')
+        if completeness < 60:
+            insights['improvement_areas'].append('CV is missing several important sections')
+        if depth_score < 50:
+            insights['improvement_areas'].append('Add more detail to experience and skills')
+        if uae_relevance < 30:
+            insights['improvement_areas'].append('Consider adding UAE-specific context')
+        
+        return {'scores': scores, 'insights': insights, 'recommendations': recommendations}
 
 # Instantiate the parser for import
 cv_parser = CVParser()

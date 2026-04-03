@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-Enhanced CV Upload Routes for Emirati Journey Platform
-Comprehensive file upload, validation, and processing system
+CV Upload Routes - DEPRECATED
+==============================
+⚠️ This module is DEPRECATED. All CV routes have been consolidated into
+   routes/enhanced_cv_routes.py (enhanced_cv_bp).
+
+Do NOT register this blueprint alongside enhanced_cv_bp — they share
+the same url_prefix (/api/cv) and will cause route collisions.
+
+This file is kept for reference only. Remove in a future cleanup pass.
 """
 
 import os

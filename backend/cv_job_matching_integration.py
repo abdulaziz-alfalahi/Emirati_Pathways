@@ -31,8 +31,9 @@ class CVJobMatchingIntegration:
             try:
                 # Configure Gemini
                 genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-1.5-pro')
-                logger.info("✅ CV-Job Matching Integration initialized with Gemini 1.5 Pro")
+                # [FIX] Use 2026-available model (matching cv_parser.py)
+                self.model = genai.GenerativeModel('gemini-2.5-flash')
+                logger.info("✅ CV-Job Matching Integration initialized with Gemini 2.5 Flash")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini for matching: {e}")
         
@@ -441,11 +442,82 @@ class CVJobMatchingIntegration:
         }
     
     def _generate_job_matches(self, criteria: Dict[str, Any], limit: int) -> List[Dict[str, Any]]:
-        """Generate mock job matches (would query real database in production)"""
-        # This is a simplified mock implementation
-        # In production, this would query a job database
-        
-        mock_jobs = [
+        """Find job matches from the recruiter_vacancies database table"""
+        try:
+            import psycopg2
+            import psycopg2.extras
+            
+            db_config = {
+                'dbname': os.getenv('DB_NAME', 'emirati_journey'),
+                'user': os.getenv('DB_USER', 'emirati_user'),
+                'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+                'host': os.getenv('DB_HOST', 'localhost'),
+                'port': os.getenv('DB_PORT', 5432)
+            }
+            
+            conn = psycopg2.connect(**db_config)
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            
+            # Fetch active vacancies
+            cur.execute('''
+                SELECT id, title, employer, location, description, requirements, tags, created_at
+                FROM recruiter_vacancies
+                ORDER BY created_at DESC
+                LIMIT %s
+            ''', (limit * 3,))  # Fetch extra to allow scoring/filtering
+            
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            if not rows:
+                logger.info("No vacancies in DB, using fallback mock data")
+                return self._get_fallback_mock_jobs()
+            
+            jobs = []
+            for row in rows:
+                # Parse JSONB fields
+                requirements = row.get('requirements', [])
+                if isinstance(requirements, str):
+                    try:
+                        requirements = json.loads(requirements)
+                    except:
+                        requirements = []
+                
+                tags = row.get('tags', [])
+                if isinstance(tags, str):
+                    try:
+                        tags = json.loads(tags)
+                    except:
+                        tags = []
+                
+                jobs.append({
+                    'job_id': str(row['id']),
+                    'title': row.get('title', ''),
+                    'company': row.get('employer', ''),
+                    'location': row.get('location', 'UAE'),
+                    'description': row.get('description', ''),
+                    'required_skills': [r if isinstance(r, str) else r.get('name', '') for r in requirements],
+                    'tags': tags,
+                    'experience_required': '',
+                    'industry': '',
+                    'job_type': 'Full-time',
+                    'remote_allowed': False,
+                    'emiratization_priority': True,
+                    'salary_range': {'min': 8000, 'max': 20000, 'currency': 'AED'},
+                    'posted_at': str(row.get('created_at', ''))
+                })
+            
+            logger.info(f"✅ Found {len(jobs)} vacancies from database for matching")
+            return jobs
+            
+        except Exception as e:
+            logger.warning(f"DB query failed, using fallback mock jobs: {e}")
+            return self._get_fallback_mock_jobs()
+    
+    def _get_fallback_mock_jobs(self) -> List[Dict[str, Any]]:
+        """Fallback mock jobs when DB is unavailable"""
+        return [
             {
                 'job_id': str(uuid.uuid4()),
                 'title': 'Senior Software Engineer',
@@ -472,10 +544,7 @@ class CVJobMatchingIntegration:
                 'remote_allowed': True,
                 'emiratization_priority': True
             }
-            # Add more mock jobs as needed
         ]
-        
-        return mock_jobs
     
     def _score_job_matches(self, jobs: List[Dict[str, Any]], criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Score job matches based on criteria"""

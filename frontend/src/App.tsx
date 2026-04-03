@@ -19,6 +19,8 @@ import DashboardLoading from '@/components/dashboard/DashboardLoading';
 // Shadcn Toaster
 import { Toaster } from '@/components/ui/toaster';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
+import { SupportChatProvider } from '@/context/SupportChatContext';
+import SupportChatWidget from '@/components/support/SupportChatWidget';
 
 // Auth Pages (not lazy loaded for faster initial access)
 // import AuthPage from '@/pages/auth'; 
@@ -214,6 +216,7 @@ const AppContent: React.FC = () => {
           authToken={token}
         >
           <ConnectionBanner />
+          <SupportChatProvider>
           <Suspense fallback={<DashboardLoading />}>
             <Routes>
               {/* Public Routes */}
@@ -235,7 +238,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/candidate-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker']}>
+                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'retiree']}>
                     <CandidateDashboard />
                   </ProtectedRoute>
                 }
@@ -245,7 +248,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/candidate/profile/*"
                 element={
-                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'recruiter', 'hr_manager', 'hr_recruiter', 'hr']}>
+                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'retiree', 'recruiter', 'hr_manager', 'hr_recruiter', 'hr']}>
                     <ProfileStudioPage />
                   </ProtectedRoute>
                 }
@@ -582,7 +585,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/cv-builder"
                 element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate', 'retiree']}>
                     <AutoFillCVBuilder />
                   </ProtectedRoute>
                 }
@@ -673,7 +676,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/applications"
                 element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate']}>
+                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate', 'retiree']}>
                     <Applications />
                   </ProtectedRoute>
                 }
@@ -937,6 +940,9 @@ const AppContent: React.FC = () => {
               },
             }}
           />
+          {/* Support Chat Widget — visible to all non-agent personas */}
+          {user.role !== 'call_center_agent' && <SupportChatWidget />}
+          </SupportChatProvider>
         </NotificationProvider>
       )}
       {!isAuthenticated && (

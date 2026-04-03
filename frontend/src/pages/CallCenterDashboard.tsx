@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { restClient } from '@/utils/api';
 import toast from 'react-hot-toast';
+import { useNotifications } from '@/components/notifications/NotificationSystem';
 
 /* ── Brand Tokens ── */
 const brand = {
@@ -39,7 +40,7 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string; labe
   closed:      { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Closed', labelAr: 'مغلقة', icon: X },
 };
 const SOURCE_ICON: Record<string, React.ElementType> = {
-  phone: PhoneCall, whatsapp: MessageCircle, email: Mail, in_app: Globe,
+  phone: PhoneCall, whatsapp: MessageCircle, email: Mail, in_app: Globe, live_chat: MessageCircle,
 };
 const CATEGORY_ICON: Record<string, React.ElementType> = {
   technical: Zap, account: Shield, jobs: Briefcase, training: GraduationCap,
@@ -83,6 +84,14 @@ const CallCenterDashboard: React.FC = () => {
   const [kbLoading, setKbLoading] = useState(false);
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
 
+  // Live chat
+  const { socket } = useNotifications();
+  const [liveSessions, setLiveSessions] = useState<any[]>([]);
+  const [activeChat, setActiveChat] = useState<any>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [liveChatLoading, setLiveChatLoading] = useState(false);
+
   // Create ticket dialog
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ subject: '', description: '', category: 'general', priority: 'medium', source: 'phone', user_id: '' });
@@ -102,6 +111,112 @@ const CallCenterDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => { loadTickets(); }, [loadTickets]);
+
+  /* ── Live Chat Loading ── */
+  const loadLiveChats = useCallback(async () => {
+    setLiveChatLoading(true);
+    try {
+      const res = await restClient.get('/api/platform-ops/live-chat/agent/sessions');
+      setLiveSessions(res.data.sessions || []);
+    } catch (e) { console.error('Failed to load live chats', e); }
+    setLiveChatLoading(false);
+  }, []);
+
+  useEffect(() => { loadLiveChats(); const iv = setInterval(loadLiveChats, 15000); return () => clearInterval(iv); }, [loadLiveChats]);
+
+  /* ── Live Chat Socket listeners ── */
+  useEffect(() => {
+    if (!socket) return;
+    const handleQueueUpdate = (data: any) => {
+      loadLiveChats();
+      toast(b(`New chat from ${data.user_name || 'a user'}`, `محادثة جديدة من ${data.user_name || 'مستخدم'}`), { icon: '💬' });
+    };
+    const handleChatEnded = (data: any) => {
+      loadLiveChats();
+      if (activeChat?.id === data.session_id) {
+        setActiveChat((prev: any) => prev ? { ...prev, status: 'ended' } : prev);
+      }
+    };
+    socket.on('live_chat_queue_update', handleQueueUpdate);
+    socket.on('live_chat_ended', handleChatEnded);
+    // Listen for new messages in active chat
+    const handleNewChatMsg = (data: any) => {
+      if (!activeChat) return;
+      const { message: msgData, conversation_id: convId } = data;
+      if (!msgData || String(convId) !== String(activeChat.conversation_id)) return;
+      if (String(msgData.sender_id) === String(user?.id)) return;
+      setChatMessages(prev => {
+        if (prev.some((m: any) => m.id === msgData.id)) return prev;
+        return [...prev, {
+          id: msgData.id,
+          sender_id: msgData.sender_id,
+          sender_name: msgData.sender_name || 'User',
+          content: msgData.content || '',
+          created_at: msgData.created_at || new Date().toISOString(),
+        }];
+      });
+    };
+    socket.on('new_message', handleNewChatMsg);
+    return () => {
+      socket.off('live_chat_queue_update', handleQueueUpdate);
+      socket.off('live_chat_ended', handleChatEnded);
+      socket.off('new_message', handleNewChatMsg);
+    };
+  }, [socket, activeChat, loadLiveChats, user]);
+
+  const acceptLiveChat = async (session: any) => {
+    try {
+      const res = await restClient.put(`/api/platform-ops/live-chat/session/${session.id}/accept`, { agent_id: user?.id });
+      toast.success(b('Chat accepted', 'تم قبول المحادثة'));
+      setActiveChat({ ...session, status: 'active', conversation_id: res.data.conversation_id || session.conversation_id, agent_name: res.data.agent_name });
+      // Load existing messages for this conversation
+      if (res.data.conversation_id) {
+        try {
+          const msgRes = await restClient.get(`/api/communication/conversations/${res.data.conversation_id}/messages`);
+          if (msgRes.data.success) setChatMessages(msgRes.data.data?.messages || []);
+        } catch { setChatMessages([]); }
+      }
+      setActiveTab('live');
+      loadLiveChats();
+    } catch { toast.error(b('Failed to accept', 'فشل القبول')); }
+  };
+
+  const sendChatReply = async () => {
+    if (!chatInput.trim() || !activeChat?.conversation_id) return;
+    const tempMsg = { id: `_tmp_${Date.now()}`, sender_id: String(user?.id), sender_name: 'Agent', content: chatInput, created_at: new Date().toISOString() };
+    setChatMessages(prev => [...prev, tempMsg]);
+    const saved = chatInput;
+    setChatInput('');
+    try {
+      await restClient.post('/api/communication/messages', {
+        conversation_id: activeChat.conversation_id,
+        recipient_id: String(activeChat.user_id),
+        content: saved,
+        message_type: 'text',
+        sender_role: 'call_center_agent',
+      });
+    } catch { toast.error(b('Failed to send', 'فشل الإرسال')); }
+  };
+
+  const endLiveChatSession = async (sessionId: number, createTicket = false) => {
+    try {
+      const res = await restClient.put(`/api/platform-ops/live-chat/session/${sessionId}/end`, {
+        ended_by: 'agent', create_ticket: createTicket,
+      });
+      const ticketId = res.data?.ticket_id;
+      if (createTicket && ticketId) {
+        toast.success(b(`Chat ended — Ticket #${ticketId} created`, `تم إنهاء المحادثة — تذكرة #${ticketId}`), { duration: 5000 });
+        loadTickets(); // Refresh queue so the new ticket appears
+      } else {
+        toast.success(b('Chat ended', 'تم إنهاء المحادثة'));
+      }
+      if (activeChat?.id === sessionId) setActiveChat(null);
+      loadLiveChats();
+    } catch { toast.error(b('Failed to end chat', 'فشل إنهاء المحادثة')); }
+  };
+
+  const waitingSessions = liveSessions.filter(s => s.status === 'waiting');
+  const activeSessions = liveSessions.filter(s => s.status === 'active');
 
   const loadMessages = async (ticketId: number) => {
     setLoadingMessages(true);
@@ -292,7 +407,8 @@ const CallCenterDashboard: React.FC = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-white border border-slate-200 rounded-full p-1 mb-6 gap-1 flex-wrap">
               {[
-                { id: 'queue', label: b('Queue', 'الطابور'), icon: Ticket },
+              { id: 'queue', label: b('Queue', 'الطابور'), icon: Ticket },
+                { id: 'live', label: b(`Live Chats${waitingSessions.length ? ` (${waitingSessions.length})` : ''}`, `المحادثات${waitingSessions.length ? ` (${waitingSessions.length})` : ''}`), icon: MessageCircle },
                 { id: 'active', label: b('Active Ticket', 'التذكرة النشطة'), icon: MessageSquare },
                 { id: 'lookup', label: b('User Lookup', 'بحث المستخدم'), icon: Search },
                 { id: 'kb', label: b('Knowledge Base', 'قاعدة المعرفة'), icon: BookOpen },
@@ -303,6 +419,204 @@ const CallCenterDashboard: React.FC = () => {
                 </TabsTrigger>
               ))}
             </TabsList>
+
+            {/* ═══ LIVE CHATS TAB ═══ */}
+            <TabsContent value="live">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left — Session list */}
+                <div className="lg:col-span-1 space-y-4">
+                  <Card className="border-slate-200">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-teal-600" />
+                        {b('Live Chat Queue', 'طابور المحادثات')}
+                      </CardTitle>
+                      <CardDescription>{b(`${waitingSessions.length} waiting · ${activeSessions.length} active`, `${waitingSessions.length} في الانتظار · ${activeSessions.length} نشط`)}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2 max-h-[600px] overflow-y-auto">
+                      {liveChatLoading && liveSessions.length === 0 && (
+                        <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-teal-500" /></div>
+                      )}
+                      {!liveChatLoading && liveSessions.length === 0 && (
+                        <div className="text-center py-10 text-sm text-slate-400">
+                          <MessageCircle className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                          <p>{b('No active live chats', 'لا توجد محادثات حية')}</p>
+                        </div>
+                      )}
+                      {liveSessions.map(session => {
+                        const isWaiting = session.status === 'waiting';
+                        const isActive = session.status === 'active';
+                        const CatIcon = CATEGORY_ICON[session.category] || Inbox;
+                        const selected = activeChat?.id === session.id;
+                        return (
+                          <div
+                            key={session.id}
+                            className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                              selected ? 'border-teal-400 bg-teal-50 shadow-sm' : 'border-slate-200 hover:border-teal-200 hover:bg-slate-50'
+                            }`}
+                            onClick={() => {
+                              if (isActive) {
+                                setActiveChat(session);
+                                // Load messages for this conversation
+                                if (session.conversation_id) {
+                                  restClient.get(`/api/communication/conversations/${session.conversation_id}/messages`)
+                                    .then(r => { if (r.data.success) setChatMessages(r.data.data?.messages || []); })
+                                    .catch(() => setChatMessages([]));
+                                }
+                              }
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                                  isWaiting ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                                }`}>
+                                  {(session.user_name || '?')[0]?.toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-sm text-slate-800 truncate">{session.user_name || b('User', 'مستخدم')}</p>
+                                  <p className="text-xs text-slate-400 flex items-center gap-1">
+                                    <CatIcon className="h-3 w-3" />
+                                    {session.category || 'general'}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge className={`text-[10px] flex-shrink-0 ${
+                                isWaiting ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-green-50 text-green-700 border-green-200'
+                              }`}>
+                                {isWaiting ? b('Waiting', 'في الانتظار') : b('Active', 'نشط')}
+                              </Badge>
+                            </div>
+                            {session.initial_message && (
+                              <p className="text-xs text-slate-500 mt-2 line-clamp-2 bg-white/70 rounded px-2 py-1">
+                                {session.initial_message}
+                              </p>
+                            )}
+                            {isWaiting && (
+                              <Button
+                                size="sm"
+                                className="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg gap-1.5 h-8 text-xs"
+                                onClick={(e) => { e.stopPropagation(); acceptLiveChat(session); }}
+                              >
+                                <Headphones className="h-3.5 w-3.5" />
+                                {b('Accept Chat', 'قبول المحادثة')}
+                              </Button>
+                            )}
+                            <div className="text-[10px] text-slate-400 mt-1">
+                              {session.started_at ? new Date(session.started_at).toLocaleTimeString(isRTL ? 'ar-AE' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Right — Active chat view */}
+                <div className="lg:col-span-2">
+                  {!activeChat ? (
+                    <Card className="border-slate-200 flex items-center justify-center h-[600px]">
+                      <div className="text-center text-slate-400">
+                        <MessageCircle className="h-14 w-14 mx-auto mb-3 text-slate-300" />
+                        <p className="text-sm font-medium">{b('Select a chat to start', 'اختر محادثة للبدء')}</p>
+                        <p className="text-xs mt-1">{b('Accept a waiting chat from the queue', 'اقبل محادثة من الطابور')}</p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <Card className="border-slate-200 flex flex-col h-[600px]">
+                      {/* Chat header */}
+                      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white rounded-t-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold">
+                            {(activeChat.user_name || '?')[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-sm text-slate-800">{activeChat.user_name || b('User', 'مستخدم')}</h4>
+                            <p className="text-xs text-slate-400">{activeChat.category || 'general'} · #{activeChat.id}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {activeChat.status === 'active' && (
+                            <>
+                              <Button
+                                size="sm" variant="outline"
+                                className="rounded-lg text-xs h-8 gap-1 border-amber-200 text-amber-700 hover:bg-amber-50"
+                                onClick={() => endLiveChatSession(activeChat.id, true)}
+                              >
+                                <Ticket className="h-3.5 w-3.5" />
+                                {b('End + Ticket', 'إنهاء + تذكرة')}
+                              </Button>
+                              <Button
+                                size="sm" variant="outline"
+                                className="rounded-lg text-xs h-8 gap-1 border-red-200 text-red-600 hover:bg-red-50"
+                                onClick={() => endLiveChatSession(activeChat.id)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                {b('End Chat', 'إنهاء')}
+                              </Button>
+                            </>
+                          )}
+                          {activeChat.status === 'ended' && (
+                            <Badge className="bg-slate-100 text-slate-500">{b('Ended', 'منتهية')}</Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Messages */}
+                      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5" style={{ background: '#f8fafb' }}>
+                        {chatMessages.length === 0 && (
+                          <div className="text-center py-6 text-xs text-slate-400">
+                            {activeChat.initial_message
+                              ? b('Initial message shown below', 'الرسالة الأولية أدناه')
+                              : b('No messages yet', 'لا توجد رسائل بعد')}
+                          </div>
+                        )}
+                        {chatMessages.map((msg: any) => {
+                          const isAgent = String(msg.sender_id) === String(user?.id);
+                          return (
+                            <div key={msg.id} className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-sm ${
+                                isAgent
+                                  ? 'bg-teal-600 text-white rounded-br-md'
+                                  : 'bg-white text-slate-700 border border-slate-200 rounded-bl-md shadow-sm'
+                              }`}>
+                                {!isAgent && <div className="text-[10px] font-semibold text-teal-600 mb-0.5">{msg.sender_name || 'User'}</div>}
+                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                <div className={`text-[9px] mt-1 text-end ${isAgent ? 'text-teal-200' : 'text-slate-400'}`}>
+                                  {msg.created_at ? new Date(msg.created_at).toLocaleTimeString(isRTL ? 'ar-AE' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Input */}
+                      {activeChat.status === 'active' && (
+                        <div className="px-3 py-2.5 bg-white border-t border-slate-100 flex items-center gap-2 rounded-b-xl">
+                          <input
+                            type="text"
+                            value={chatInput}
+                            onChange={e => setChatInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatReply(); } }}
+                            placeholder={b('Type a reply...', 'اكتب ردًا...')}
+                            className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400 bg-slate-50"
+                          />
+                          <Button
+                            size="sm"
+                            className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl h-9 w-9 p-0"
+                            onClick={sendChatReply}
+                            disabled={!chatInput.trim()}
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
 
             {/* ═══ QUEUE TAB ═══ */}
             <TabsContent value="queue">

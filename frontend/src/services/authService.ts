@@ -367,6 +367,20 @@ class AuthService {
     return getAuthToken();
   }
 
+  /**
+   * Get standard auth headers for API requests
+   */
+  getAuthHeaders(): Record<string, string> {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
   clearAuth(): void {
     clearAuthTokens();
     localStorage.removeItem('user');
