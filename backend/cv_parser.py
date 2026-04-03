@@ -21,7 +21,11 @@ except ImportError:
     genai = None
 
 from werkzeug.datastructures import FileStorage
-import PyPDF2
+# Fix: Use pdfplumber for superior PDF text extraction (multi-column, tables, Arabic)
+try:
+    import pdfplumber
+except ImportError:
+    pdfplumber = None
 # Fix: Import docx safely
 try:
     import docx
@@ -481,11 +485,27 @@ class CVParser:
 
     def _extract_from_pdf_stream(self, file_stream) -> str:
         try:
-            reader = PyPDF2.PdfReader(file_stream)
-            text = ""
-            for page in reader.pages:
-                text += page.extract_text() + "\n"
-            return text.strip()
+            if pdfplumber:
+                # pdfplumber needs a file path or file-like object
+                file_stream.seek(0)
+                with pdfplumber.open(file_stream) as pdf:
+                    pages_text = []
+                    for page in pdf.pages:
+                        text = page.extract_text()
+                        if text:
+                            pages_text.append(text)
+                        # Also extract tables for comprehensive data capture
+                        tables = page.extract_tables()
+                        for table in tables:
+                            for row in table:
+                                if row:
+                                    row_text = ' | '.join([cell or '' for cell in row])
+                                    if row_text.strip():
+                                        pages_text.append(row_text)
+                    return '\n'.join(pages_text).strip()
+            else:
+                logger.warning("pdfplumber not available, returning empty text")
+                return ""
         except Exception as e:
             logger.error(f"PDF extract error: {e}")
             return ""

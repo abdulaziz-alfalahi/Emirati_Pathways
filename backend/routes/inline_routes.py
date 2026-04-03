@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 from backend.db_utils import get_db, execute_query, DATABASE_CONFIG
 
 try:
-    import PyPDF2
+    import pdfplumber
 except ImportError:
-    PyPDF2 = None
+    pdfplumber = None
 
 try:
     from reportlab.lib.pagesizes import A4
@@ -732,36 +732,46 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
     # =====================================================
 
     def extract_text_from_pdf(file_stream):
-        """Extract text from PDF file with improved encoding handling"""
+        """Extract text from PDF file using pdfplumber for superior layout handling"""
         try:
             # Reset stream position
             file_stream.seek(0)
-            pdf_reader = PyPDF2.PdfReader(file_stream)
 
-            if len(pdf_reader.pages) == 0:
-                logger.error("PDF has no pages")
+            if not pdfplumber:
+                logger.error("pdfplumber not available")
                 return ""
 
-            text = ""
-            for i, page in enumerate(pdf_reader.pages):
-                try:
-                    # Try different extraction methods for better encoding
-                    page_text = page.extract_text()
+            with pdfplumber.open(file_stream) as pdf:
+                if len(pdf.pages) == 0:
+                    logger.error("PDF has no pages")
+                    return ""
 
-                    # Clean up common encoding issues
-                    if page_text:
-                        # Fix common encoding problems
-                        page_text = fix_encoding_issues(page_text)
-                        text += page_text + "\n"
-                        logger.debug(f"Page {i+1}: extracted {len(page_text)} characters")
+                text = ""
+                for i, page in enumerate(pdf.pages):
+                    try:
+                        page_text = page.extract_text()
 
-                except Exception as page_error:
-                    logger.warning(f"Error extracting page {i+1}: {page_error}")
-                    continue
+                        if page_text:
+                            page_text = fix_encoding_issues(page_text)
+                            text += page_text + "\n"
+                            logger.debug(f"Page {i+1}: extracted {len(page_text)} characters")
 
-            extracted_text = text.strip()
-            logger.info(f"PDF extraction complete: {len(extracted_text)} total characters from {len(pdf_reader.pages)} pages")
-            return extracted_text
+                        # Also extract table data
+                        tables = page.extract_tables()
+                        for table in tables:
+                            for row in table:
+                                if row:
+                                    row_text = ' | '.join([cell or '' for cell in row])
+                                    if row_text.strip():
+                                        text += row_text + "\n"
+
+                    except Exception as page_error:
+                        logger.warning(f"Error extracting page {i+1}: {page_error}")
+                        continue
+
+                extracted_text = text.strip()
+                logger.info(f"PDF extraction complete: {len(extracted_text)} total characters from {len(pdf.pages)} pages")
+                return extracted_text
 
         except Exception as e:
             logger.error(f"Error extracting PDF text: {e}")

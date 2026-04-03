@@ -106,18 +106,19 @@ class JDParser:
                         text += page.get_text()
                 return text
             except ImportError:
-                logger.warning("PyMuPDF (fitz) not available, falling back to PyPDF2")
-                # Fallback to PyPDF2
+                logger.warning("PyMuPDF (fitz) not available, falling back to pdfplumber")
+                # Fallback to pdfplumber (better than PyPDF2 for layout)
                 try:
-                    import PyPDF2
-                    with open(file_path, 'rb') as f:
-                        reader = PyPDF2.PdfReader(f)
+                    import pdfplumber
+                    with pdfplumber.open(file_path) as pdf:
                         text = ''
-                        for page in reader.pages:
-                            text += page.extract_text()
+                        for page in pdf.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                text += page_text + '\n'
                         return text
                 except ImportError:
-                    raise ImportError("No PDF parser available. Please install pymupdf.")
+                    raise ImportError("No PDF parser available. Please install pdfplumber or pymupdf.")
         
         elif file_ext in ['.docx', '.doc']:
             # Use python-docx
