@@ -22,6 +22,12 @@ except ImportError:
     logger.warning("pdfplumber not installed — PDF extraction will be unavailable")
 
 try:
+    import fitz as pymupdf  # PyMuPDF — fallback for image-heavy PDFs
+except ImportError:
+    pymupdf = None
+    logger.warning("PyMuPDF not installed — fallback PDF extraction unavailable")
+
+try:
     from docx import Document as DocxDocument
 except ImportError:
     DocxDocument = None
@@ -82,32 +88,90 @@ def extract_text_from_stream(file_stream, filename: str = "") -> str:
 # ---------------------------------------------------------------------------
 
 def _extract_pdf(file_path: str) -> str:
-    """Extract text from a PDF file on disk."""
-    if not pdfplumber:
-        logger.error("pdfplumber not available for PDF extraction")
-        return ""
+    """Extract text from a PDF file on disk.
 
-    try:
-        with pdfplumber.open(file_path) as pdf:
-            return _process_pdf_pages(pdf)
-    except Exception as e:
-        logger.error(f"PDF extraction error ({file_path}): {e}")
-        return ""
+    Strategy:
+    1. Try pdfplumber (best for selectable-text PDFs)
+    2. If empty, try PyMuPDF/fitz (handles more embedded fonts)
+    """
+    text = ""
+
+    # Strategy 1: pdfplumber
+    if pdfplumber:
+        try:
+            with pdfplumber.open(file_path) as pdf:
+                text = _process_pdf_pages(pdf)
+        except Exception as e:
+            logger.warning(f"pdfplumber extraction failed ({file_path}): {e}")
+
+    # Strategy 2: PyMuPDF fallback (handles image-heavy and embedded-font PDFs)
+    if len(text.strip()) < 50 and pymupdf:
+        logger.info(f"pdfplumber returned {len(text)} chars — trying PyMuPDF fallback")
+        try:
+            text = _extract_pdf_pymupdf(file_path)
+        except Exception as e:
+            logger.warning(f"PyMuPDF extraction also failed ({file_path}): {e}")
+
+    if not text:
+        logger.error(f"All PDF extraction strategies returned empty for {file_path}")
+
+    return text
 
 
 def _extract_pdf_stream(file_stream) -> str:
     """Extract text from a PDF file stream."""
-    if not pdfplumber:
-        logger.error("pdfplumber not available for PDF extraction")
-        return ""
+    text = ""
 
-    try:
-        file_stream.seek(0)
-        with pdfplumber.open(file_stream) as pdf:
-            return _process_pdf_pages(pdf)
-    except Exception as e:
-        logger.error(f"PDF stream extraction error: {e}")
-        return ""
+    # Strategy 1: pdfplumber
+    if pdfplumber:
+        try:
+            file_stream.seek(0)
+            with pdfplumber.open(file_stream) as pdf:
+                text = _process_pdf_pages(pdf)
+        except Exception as e:
+            logger.warning(f"pdfplumber stream extraction failed: {e}")
+
+    # Strategy 2: PyMuPDF fallback
+    if len(text.strip()) < 50 and pymupdf:
+        logger.info(f"pdfplumber stream returned {len(text)} chars — trying PyMuPDF")
+        try:
+            file_stream.seek(0)
+            data = file_stream.read()
+            doc = pymupdf.open(stream=data, filetype="pdf")
+            parts = []
+            for page in doc:
+                page_text = page.get_text("text")
+                if page_text:
+                    parts.append(page_text)
+            doc.close()
+            text = _clean_text("\n".join(parts))
+        except Exception as e:
+            logger.warning(f"PyMuPDF stream extraction also failed: {e}")
+
+    return text
+
+
+def _extract_pdf_pymupdf(file_path: str) -> str:
+    """Fallback PDF extraction using PyMuPDF (fitz).
+
+    PyMuPDF handles embedded fonts, Type3 fonts, and some image-based
+    content better than pdfplumber. It's also faster for large PDFs.
+    """
+    doc = pymupdf.open(file_path)
+    parts: list[str] = []
+
+    for page in doc:
+        # get_text("text") extracts in reading order
+        page_text = page.get_text("text")
+        if page_text and page_text.strip():
+            parts.append(page_text)
+
+    page_count = len(doc)
+    doc.close()
+    text = "\n".join(parts).strip()
+    text = _clean_text(text)
+    logger.info(f"PyMuPDF extraction: {len(text)} chars from {page_count} pages")
+    return text
 
 
 def _process_pdf_pages(pdf) -> str:

@@ -137,6 +137,14 @@ def get_user_id_from_token():
         logger.error(f"Token validation error: {e}")
         return None
 
+@enhanced_cv_bp.route('/debug-qwen', methods=['GET'])
+def debug_qwen_status():
+    """Check if Qwen pipeline is active (no auth required)."""
+    return jsonify({
+        'qwen_available': QWEN_AVAILABLE,
+        'engine': 'Qwen' if QWEN_AVAILABLE else 'Gemini (fallback)',
+    }), 200
+
 @enhanced_cv_bp.route('/upload', methods=['POST'])
 def upload_cv():
     """Upload and parse CV file"""
@@ -209,7 +217,9 @@ def upload_cv():
         
         try:
             # Parse CV — use Qwen pipeline (primary) or Gemini fallback
-            logger.info(f"Parsing CV: {filename} (engine={'Qwen' if QWEN_AVAILABLE else 'Gemini'})")
+            engine = 'Qwen' if QWEN_AVAILABLE else 'Gemini'
+            logger.info(f"Parsing CV: {filename} (engine={engine})")
+            log_debug_cv(f"PARSE START: engine={engine}, file={file_path}")
             start_time = time.time()
 
             if QWEN_AVAILABLE:
@@ -220,16 +230,19 @@ def upload_cv():
 
                     # Wrap Qwen flat dict into legacy {success, data} format
                     parse_result = _wrap_qwen_result(qwen_data, processing_time)
+                    log_debug_cv(f"PARSE OK: {processing_time}s, name={qwen_data.get('personal_info', {}).get('full_name', 'N/A')}")
                     logger.info(f"✅ Qwen parsed in {processing_time}s: {qwen_data.get('personal_info', {}).get('full_name', 'N/A')}")
 
                 except (QwenParsingError, QwenClientError) as qe:
                     logger.error(f"❌ Qwen parsing failed: {qe}")
+                    log_debug_cv(f"PARSE FAIL (Qwen): {qe}")
                     return jsonify({
                         'success': False,
                         'message': f'CV parsing failed: {str(qe)}'
                     }), 400
                 except ValueError as ve:
                     logger.error(f"❌ Extraction error: {ve}")
+                    log_debug_cv(f"PARSE FAIL (ValueError): {ve}")
                     return jsonify({
                         'success': False,
                         'message': str(ve)
@@ -237,7 +250,9 @@ def upload_cv():
             else:
                 # ── Gemini Fallback ──
                 parse_result = cv_parser.parse_cv(file_path)
+                log_debug_cv(f"GEMINI result: success={parse_result.get('success')}, msg={parse_result.get('message', 'n/a')}")
                 if not parse_result.get('success'):
+                    log_debug_cv(f"PARSE FAIL (Gemini): {parse_result.get('message', '?')}")
                     return jsonify({
                         'success': False,
                         'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
