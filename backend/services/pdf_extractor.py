@@ -93,6 +93,7 @@ def _extract_pdf(file_path: str) -> str:
     Strategy:
     1. Try pdfplumber (best for selectable-text PDFs)
     2. If empty, try PyMuPDF/fitz (handles more embedded fonts)
+    3. If still empty, use Qwen Vision OCR (scanned/image-based PDFs)
     """
     text = ""
 
@@ -104,7 +105,7 @@ def _extract_pdf(file_path: str) -> str:
         except Exception as e:
             logger.warning(f"pdfplumber extraction failed ({file_path}): {e}")
 
-    # Strategy 2: PyMuPDF fallback (handles image-heavy and embedded-font PDFs)
+    # Strategy 2: PyMuPDF fallback (handles embedded fonts)
     if len(text.strip()) < 50 and pymupdf:
         logger.info(f"pdfplumber returned {len(text)} chars — trying PyMuPDF fallback")
         try:
@@ -112,7 +113,15 @@ def _extract_pdf(file_path: str) -> str:
         except Exception as e:
             logger.warning(f"PyMuPDF extraction also failed ({file_path}): {e}")
 
-    if not text:
+    # Strategy 3: Vision OCR via Qwen (scanned/image-based PDFs)
+    if len(text.strip()) < 50 and pymupdf:
+        logger.info(f"Text extraction returned {len(text)} chars — trying Vision OCR")
+        try:
+            text = _extract_pdf_vision_ocr(file_path)
+        except Exception as e:
+            logger.warning(f"Vision OCR extraction failed ({file_path}): {e}")
+
+    if not text.strip():
         logger.error(f"All PDF extraction strategies returned empty for {file_path}")
 
     return text
@@ -173,6 +182,87 @@ def _extract_pdf_pymupdf(file_path: str) -> str:
     logger.info(f"PyMuPDF extraction: {len(text)} chars from {page_count} pages")
     return text
 
+
+def _extract_pdf_vision_ocr(file_path: str, max_pages: int = 5) -> str:
+    """Extract text from a scanned/image-based PDF using Qwen Vision OCR.
+
+    Converts PDF pages to images via PyMuPDF, then sends them to
+    DashScope's qwen-vl-ocr model for AI-powered OCR.
+
+    Args:
+        file_path: Path to the PDF file.
+        max_pages: Maximum number of pages to OCR (cost control).
+
+    Returns:
+        Extracted text from all processed pages.
+    """
+    import base64
+    import os
+
+    api_key = os.getenv("DASHSCOPE_API_KEY")
+    base_url = os.getenv("QWEN_BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
+
+    if not api_key:
+        logger.warning("DASHSCOPE_API_KEY not set — Vision OCR unavailable")
+        return ""
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        logger.warning("openai package not installed — Vision OCR unavailable")
+        return ""
+
+    # Convert PDF pages to PNG images
+    doc = pymupdf.open(file_path)
+    page_count = min(len(doc), max_pages)
+    all_text_parts: list[str] = []
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
+
+    for i in range(page_count):
+        page = doc[i]
+        # Render page at 200 DPI for good OCR quality
+        mat = pymupdf.Matrix(200 / 72, 200 / 72)
+        pix = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("png")
+        b64_img = base64.b64encode(img_bytes).decode("utf-8")
+
+        logger.info(f"Vision OCR: processing page {i + 1}/{page_count} ({len(img_bytes)} bytes)")
+
+        try:
+            response = client.chat.completions.create(
+                model="qwen-vl-ocr",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/png;base64,{b64_img}"},
+                                "min_pixels": 28 * 28 * 4,
+                                "max_pixels": 1280 * 784,
+                            },
+                            {
+                                "type": "text",
+                                "text": "Read all the text in this image. Output the raw text only, preserving layout. Include Arabic text as-is.",
+                            },
+                        ],
+                    }
+                ],
+            )
+            page_text = response.choices[0].message.content
+            if page_text and page_text.strip():
+                all_text_parts.append(page_text.strip())
+                logger.info(f"Vision OCR page {i + 1}: {len(page_text)} chars extracted")
+        except Exception as ocr_err:
+            logger.warning(f"Vision OCR page {i + 1} failed: {ocr_err}")
+
+    doc.close()
+
+    text = "\n\n".join(all_text_parts)
+    text = _clean_text(text)
+    logger.info(f"Vision OCR total: {len(text)} chars from {page_count} pages")
+    return text
 
 def _process_pdf_pages(pdf) -> str:
     """Process all pages of an opened pdfplumber PDF object.
