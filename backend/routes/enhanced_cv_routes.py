@@ -548,7 +548,7 @@ def list_user_cvs():
 
 @enhanced_cv_bp.route('/<cv_id>/visible', methods=['PUT'])
 def update_cv_visibility(cv_id):
-    """Update CV visibility"""
+    """Update CV visibility — when making a CV visible, re-sync profile data."""
     try:
         # Check authentication
         user_id = get_user_id_from_token()
@@ -570,7 +570,50 @@ def update_cv_visibility(cv_id):
         # Update visibility
         result = cv_storage_manager.set_cv_visibility(cv_id, user_id, is_visible)
         
-        return jsonify(result), 200 if result.get('success') else 500
+        if not result.get('success'):
+            return jsonify(result), 500
+
+        # ── Re-sync Profile V2 from the newly-visible CV ──
+        if is_visible:
+            try:
+                import psycopg2, psycopg2.extras, json as _json
+                db_config = cv_storage_manager.db_config
+                conn = psycopg2.connect(**db_config)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute(
+                    "SELECT parsed_data, analysis_results FROM user_cvs WHERE id = %s AND user_id = %s",
+                    (cv_id, user_id)
+                )
+                row = cur.fetchone()
+                cur.close()
+                conn.close()
+
+                if row and row.get('parsed_data'):
+                    parsed = row['parsed_data']
+                    if isinstance(parsed, str):
+                        parsed = _json.loads(parsed)
+                    analysis = row.get('analysis_results', {})
+                    if isinstance(analysis, str):
+                        analysis = _json.loads(analysis)
+
+                    cv_result = {
+                        'success': True,
+                        'data': parsed,
+                        'analysis': analysis or {},
+                    }
+
+                    from backend.services.profile_v2_service import ProfileV2Service
+                    ProfileV2Service.populate_from_cv_data(user_id, cv_result)
+                    logger.info(f"✅ Profile V2 re-synced from CV {cv_id} for user {user_id}")
+                    result['profile_synced'] = True
+                else:
+                    logger.warning(f"⚠️ CV {cv_id} has no parsed_data to sync")
+                    result['profile_synced'] = False
+            except Exception as sync_err:
+                logger.error(f"⚠️ Profile re-sync failed (non-blocking): {sync_err}")
+                result['profile_synced'] = False
+
+        return jsonify(result), 200
     
     except Exception as e:
         logger.error(f"CV visibility update error: {str(e)}")
