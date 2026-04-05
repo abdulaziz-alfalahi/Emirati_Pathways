@@ -564,7 +564,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       } else if (isRecruiter) {
         navigate(`/recruiter?tab=messages${convParam}`);
       } else if (isOperator) {
-        navigate(`${operatorDashboard}?tab=messages${convParam}`);
+        const target = `${operatorDashboard}?tab=messages${convParam}`;
+        console.log(`🔔 Notification: navigating operator to ${target} (role=${userRole}, dashboard=${operatorDashboard})`);
+        navigate(target);
       } else {
         navigate(`/candidate-dashboard?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`);
       }
