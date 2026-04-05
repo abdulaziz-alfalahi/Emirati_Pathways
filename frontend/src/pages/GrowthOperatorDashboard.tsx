@@ -139,6 +139,15 @@ const GrowthOperatorDashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
 
+  // Sync activeTab with URL query param so notification deep-links work
+  // even when the user is already on this dashboard
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
   // ─── Computed Metrics ───
   const totalCompanies = companies.length;
   const activeCompanies = companies.filter(c => c.status === 'active').length;
