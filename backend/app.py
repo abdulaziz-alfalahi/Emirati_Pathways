@@ -44,12 +44,12 @@ load_dotenv(env_path)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Debug: Print API Key status
-api_key = os.getenv('GEMINI_API_KEY')
-if api_key:
-    logger.info(f"GEMINI_API_KEY found: {api_key[:4]}...")
+# Debug: Print AI API Key status
+dashscope_key = os.getenv('DASHSCOPE_API_KEY')
+if dashscope_key:
+    logger.info(f"DASHSCOPE_API_KEY found: {dashscope_key[:4]}...")
 else:
-    logger.warning("GEMINI_API_KEY NOT FOUND - AI features may not work")
+    logger.warning("DASHSCOPE_API_KEY NOT FOUND - AI features may not work")
 
 
 # =====================================================

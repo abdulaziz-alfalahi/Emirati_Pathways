@@ -250,13 +250,22 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
   // If viewing a specific candidate detailed profile
   if (selectedApplicant) {
     return (
-      <RecruiterCandidateView
-        applicant={selectedApplicant}
-        onBack={() => setSelectedApplicant(null)}
-        onMessage={handleMessage}
-        onScheduleInterview={handleScheduleInterview}
-        onUpdateStatus={updateStatus}
-      />
+      <>
+        <RecruiterCandidateView
+          applicant={selectedApplicant}
+          onBack={() => setSelectedApplicant(null)}
+          onMessage={handleMessage}
+          onScheduleInterview={handleScheduleInterview}
+          onUpdateStatus={updateStatus}
+        />
+        {/* Dialog must render here too — otherwise the early return hides it */}
+        <ScheduleVideoInterviewDialog
+          open={isInterviewDialogOpen}
+          onOpenChange={setIsInterviewDialogOpen}
+          initialJobId={jdId}
+          initialCandidateId={interviewCandidateId || undefined}
+        />
+      </>
     );
   }
 

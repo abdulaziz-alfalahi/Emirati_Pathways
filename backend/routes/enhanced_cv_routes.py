@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
 Enhanced CV Upload Routes with Job Matching Integration
-Emirati Journey Platform - Complete CV workflow
+Emirati Journey Platform - Qwen-Powered Pipeline
 """
 
 import os
 import json
 import logging
+import time
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import uuid
-from datetime import datetime
 
 # DEBUG HELPER
 def log_debug_cv(msg):
@@ -21,15 +21,22 @@ def log_debug_cv(msg):
     except:
         pass
 
-# Import our CV processing modules
-# Robust import for cv_parser
+# --- Qwen Resume Parser (primary) ---
 try:
-    # Try relative import first (module context)
+    from backend.services.resume_parser import parse_resume, parse_resume_from_stream
+    from backend.services.qwen_client import QwenParsingError, QwenClientError
+    QWEN_AVAILABLE = True
+    logger_init_msg = "✅ Qwen resume parser loaded"
+except ImportError:
+    QWEN_AVAILABLE = False
+    logger_init_msg = "⚠️ Qwen parser unavailable, falling back to Gemini cv_parser"
+
+# --- Gemini fallback (legacy) ---
+try:
     from ..cv_parser import cv_parser
     from ..cv_storage_manager import cv_storage_manager
     from ..cv_job_matching_integration import cv_job_matching_integration
 except (ImportError, ValueError):
-    # Fallback for script execution or different path structure
     import sys
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from cv_parser import cv_parser
@@ -37,12 +44,12 @@ except (ImportError, ValueError):
          from cv_storage_manager import cv_storage_manager
          from cv_job_matching_integration import cv_job_matching_integration
     except ImportError:
-         # Last resort: try finding them in parent
          pass
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.info(logger_init_msg)
 
 # Create blueprint
 enhanced_cv_bp = Blueprint('enhanced_cv', __name__, url_prefix='/api/cv')
@@ -55,6 +62,45 @@ def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _wrap_qwen_result(qwen_data: dict, processing_time: float = 0) -> dict:
+    """Bridge Qwen flat resume JSON → legacy {success, data, analysis} format.
+
+    The downstream consumers (cv_storage_manager, cv_job_matching_integration,
+    profile_v2_service) expect this specific shape from cv_parser.
+    """
+    # Build scores from NQF and skills data
+    skills = qwen_data.get('skills', [])
+    experience = qwen_data.get('experience', [])
+    education = qwen_data.get('education', [])
+
+    # Simple completeness score
+    pi = qwen_data.get('personal_info', {})
+    completeness_fields = [
+        pi.get('full_name'), pi.get('email'), pi.get('phone'),
+        pi.get('location'), qwen_data.get('professional_summary'),
+    ]
+    completeness = round(sum(1 for f in completeness_fields if f) / max(len(completeness_fields), 1) * 100)
+
+    return {
+        'success': True,
+        'data': qwen_data,
+        'analysis': {
+            'scores': {
+                'overall': min(completeness + len(skills) + len(experience) * 5, 100),
+                'completeness': completeness,
+                'detail': min(len(experience) * 15 + len(education) * 10, 100),
+                'uae_relevance': 80 if qwen_data.get('highest_nqf_level') else 40,
+            },
+            'highest_nqf_level': qwen_data.get('highest_nqf_level'),
+            'total_experience_years': qwen_data.get('total_experience_years'),
+            'skills_count': len(skills),
+            'experience_count': len(experience),
+            'education_count': len(education),
+        },
+        'processing_time': processing_time,
+    }
 
 def get_normalized_user_id(identity):
     """Normalize user identity — delegates to shared utility."""
@@ -90,6 +136,14 @@ def get_user_id_from_token():
     except Exception as e:
         logger.error(f"Token validation error: {e}")
         return None
+
+@enhanced_cv_bp.route('/debug-qwen', methods=['GET'])
+def debug_qwen_status():
+    """Check if Qwen pipeline is active (no auth required)."""
+    return jsonify({
+        'qwen_available': QWEN_AVAILABLE,
+        'engine': 'Qwen' if QWEN_AVAILABLE else 'Gemini (fallback)',
+    }), 200
 
 @enhanced_cv_bp.route('/upload', methods=['POST'])
 def upload_cv():
@@ -162,15 +216,47 @@ def upload_cv():
         file.save(file_path)
         
         try:
-            # Parse CV
-            logger.info(f"Parsing CV: {filename}")
-            parse_result = cv_parser.parse_cv(file_path)
-            
-            if not parse_result.get('success'):
-                return jsonify({
-                    'success': False,
-                    'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
-                }), 400
+            # Parse CV — use Qwen pipeline (primary) or Gemini fallback
+            engine = 'Qwen' if QWEN_AVAILABLE else 'Gemini'
+            logger.info(f"Parsing CV: {filename} (engine={engine})")
+            log_debug_cv(f"PARSE START: engine={engine}, file={file_path}")
+            start_time = time.time()
+
+            if QWEN_AVAILABLE:
+                # ── Qwen Pipeline ──
+                try:
+                    qwen_data = parse_resume(file_path, is_file_path=True)
+                    processing_time = round(time.time() - start_time, 2)
+
+                    # Wrap Qwen flat dict into legacy {success, data} format
+                    parse_result = _wrap_qwen_result(qwen_data, processing_time)
+                    log_debug_cv(f"PARSE OK: {processing_time}s, name={qwen_data.get('personal_info', {}).get('full_name', 'N/A')}")
+                    logger.info(f"✅ Qwen parsed in {processing_time}s: {qwen_data.get('personal_info', {}).get('full_name', 'N/A')}")
+
+                except (QwenParsingError, QwenClientError) as qe:
+                    logger.error(f"❌ Qwen parsing failed: {qe}")
+                    log_debug_cv(f"PARSE FAIL (Qwen): {qe}")
+                    return jsonify({
+                        'success': False,
+                        'message': f'CV parsing failed: {str(qe)}'
+                    }), 400
+                except ValueError as ve:
+                    logger.error(f"❌ Extraction error: {ve}")
+                    log_debug_cv(f"PARSE FAIL (ValueError): {ve}")
+                    return jsonify({
+                        'success': False,
+                        'message': str(ve)
+                    }), 400
+            else:
+                # ── Gemini Fallback ──
+                parse_result = cv_parser.parse_cv(file_path)
+                log_debug_cv(f"GEMINI result: success={parse_result.get('success')}, msg={parse_result.get('message', 'n/a')}")
+                if not parse_result.get('success'):
+                    log_debug_cv(f"PARSE FAIL (Gemini): {parse_result.get('message', '?')}")
+                    return jsonify({
+                        'success': False,
+                        'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
+                    }), 400
             
             # Add file metadata
             parse_result['file_info'] = {
@@ -205,14 +291,12 @@ def upload_cv():
             profile_result = cv_job_matching_integration.complete_profile_from_cv(parse_result)
             
             # --- PROFILE V2 INTEGRATION ---
-            # Automatically populate the new Profile 2.0 SQL tables
             try:
                 from backend.services.profile_v2_service import ProfileV2Service
                 ProfileV2Service.populate_from_cv_data(user_id, parse_result)
                 logger.info(f"✅ Auto-populated Profile V2 for user {user_id}")
             except Exception as v2_err:
                 logger.error(f"⚠️ Failed to populate Profile V2: {v2_err}")
-            # ------------------------------
             
             # Prepare response
             response_data = {
@@ -222,7 +306,7 @@ def upload_cv():
                 'data': parse_result.get('data', {}),
                 'analysis': parse_result.get('analysis', {}),
                 'file_info': parse_result['file_info'],
-                'job_matches': job_matches.get('matches', [])[:5],  # Top 5 matches
+                'job_matches': job_matches.get('matches', [])[:5],
                 'profile_completion': profile_result.get('completion_percentage', 0),
                 'processing_time': parse_result.get('processing_time', 0)
             }
@@ -276,15 +360,28 @@ def parse_cv_text():
                 'message': 'CV text too long (maximum 50,000 characters)'
             }), 400
         
-        # Parse CV text
-        logger.info("Parsing CV from text input")
-        parse_result = cv_parser.parse_cv_text(cv_text)
-        
-        if not parse_result.get('success'):
-            return jsonify({
-                'success': False,
-                'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
-            }), 400
+        # Parse CV text — Qwen primary, Gemini fallback
+        logger.info(f"Parsing CV from text input (engine={'Qwen' if QWEN_AVAILABLE else 'Gemini'})")
+        start_time = time.time()
+
+        if QWEN_AVAILABLE:
+            try:
+                qwen_data = parse_resume(cv_text, is_file_path=False)
+                processing_time = round(time.time() - start_time, 2)
+                parse_result = _wrap_qwen_result(qwen_data, processing_time)
+            except (QwenParsingError, QwenClientError, ValueError) as e:
+                logger.error(f"❌ Qwen text parsing failed: {e}")
+                return jsonify({
+                    'success': False,
+                    'message': f'CV parsing failed: {str(e)}'
+                }), 400
+        else:
+            parse_result = cv_parser.parse_cv_text(cv_text)
+            if not parse_result.get('success'):
+                return jsonify({
+                    'success': False,
+                    'message': f'CV parsing failed: {parse_result.get("message", "Unknown error")}'
+                }), 400
         
         # Add metadata
         parse_result['file_info'] = {
@@ -451,7 +548,7 @@ def list_user_cvs():
 
 @enhanced_cv_bp.route('/<cv_id>/visible', methods=['PUT'])
 def update_cv_visibility(cv_id):
-    """Update CV visibility"""
+    """Update CV visibility — when making a CV visible, re-sync profile data."""
     try:
         # Check authentication
         user_id = get_user_id_from_token()
@@ -473,7 +570,50 @@ def update_cv_visibility(cv_id):
         # Update visibility
         result = cv_storage_manager.set_cv_visibility(cv_id, user_id, is_visible)
         
-        return jsonify(result), 200 if result.get('success') else 500
+        if not result.get('success'):
+            return jsonify(result), 500
+
+        # ── Re-sync Profile V2 from the newly-visible CV ──
+        if is_visible:
+            try:
+                import psycopg2, psycopg2.extras, json as _json
+                db_config = cv_storage_manager.db_config
+                conn = psycopg2.connect(**db_config)
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                cur.execute(
+                    "SELECT parsed_data, analysis_results FROM user_cvs WHERE id = %s AND user_id = %s",
+                    (cv_id, user_id)
+                )
+                row = cur.fetchone()
+                cur.close()
+                conn.close()
+
+                if row and row.get('parsed_data'):
+                    parsed = row['parsed_data']
+                    if isinstance(parsed, str):
+                        parsed = _json.loads(parsed)
+                    analysis = row.get('analysis_results', {})
+                    if isinstance(analysis, str):
+                        analysis = _json.loads(analysis)
+
+                    cv_result = {
+                        'success': True,
+                        'data': parsed,
+                        'analysis': analysis or {},
+                    }
+
+                    from backend.services.profile_v2_service import ProfileV2Service
+                    ProfileV2Service.populate_from_cv_data(user_id, cv_result)
+                    logger.info(f"✅ Profile V2 re-synced from CV {cv_id} for user {user_id}")
+                    result['profile_synced'] = True
+                else:
+                    logger.warning(f"⚠️ CV {cv_id} has no parsed_data to sync")
+                    result['profile_synced'] = False
+            except Exception as sync_err:
+                logger.error(f"⚠️ Profile re-sync failed (non-blocking): {sync_err}")
+                result['profile_synced'] = False
+
+        return jsonify(result), 200
     
     except Exception as e:
         logger.error(f"CV visibility update error: {str(e)}")

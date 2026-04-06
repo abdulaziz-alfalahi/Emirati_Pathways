@@ -150,28 +150,25 @@ class JDParser:
         return self._rule_based_parse(content)
     
     def _ai_parse(self, content: str) -> Optional[Dict[str, Any]]:
-        """Parse using Gemini AI"""
+        """Parse using Qwen AI via DashScope"""
         try:
-            import google.generativeai as genai
-            
-            # Get API key from environment
-            api_key = os.getenv('GEMINI_API_KEY')
-            if not api_key:
-                logger.warning("GEMINI_API_KEY not found")
-                return None
-            
-            genai.configure(api_key=api_key)
-            # Try gemini-1.5-flash first (latest), fallback to gemini-pro
-            try:
-                model = genai.GenerativeModel('gemini-1.5-flash')
-            except:
-                model = genai.GenerativeModel('gemini-pro')
-            
-            prompt = f"""
-Extract structured information from this job description and return it as JSON.
+            from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert Job Description Parser for the UAE job market. "
+                        "Extract structured information and return ONLY raw, valid JSON. "
+                        "No markdown, no code fences, no explanatory text."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"""Extract structured information from this job description and return it as JSON.
 
 Job Description:
-{content}
+{content[:15000]}
 
 Extract the following fields:
 1. job_title: The job title
@@ -194,21 +191,18 @@ Extract the following fields:
 13. salary_max: Maximum salary (number)
 14. salary_currency: Currency code (default: AED)
 
-Return ONLY valid JSON, no markdown or explanations.
-"""
-            
-            response = model.generate_content(prompt)
-            result_text = response.text.strip()
-            
-            # Remove markdown code blocks if present
-            if result_text.startswith('```'):
-                result_text = re.sub(r'^```json?\s*', '', result_text)
-                result_text = re.sub(r'\s*```$', '', result_text)
-            
-            parsed = json.loads(result_text)
-            logger.info("Successfully parsed with AI")
+Return ONLY valid JSON.""",
+                },
+            ]
+
+            parsed = chat_completion(
+                task_type="parse",
+                messages=messages,
+                response_format={"type": "json_object"},
+            )
+            logger.info("Successfully parsed with Qwen AI")
             return parsed
-            
+
         except Exception as e:
             logger.error(f"AI parsing error: {e}")
             return None

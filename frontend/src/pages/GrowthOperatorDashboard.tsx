@@ -131,9 +131,14 @@ const GrowthOperatorDashboard: React.FC = () => {
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => language === 'ar' ? ar : en;
 
-  const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'overview';
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Derive activeTab directly from URL — no useState, so notification
+  // deep-links that update ?tab= always take effect immediately.
+  const activeTab = searchParams.get('tab') || 'overview';
+  console.log(`📊 GrowthOperatorDashboard render: activeTab="${activeTab}", URL=${window.location.search}`);
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
   const [companies] = useState<Company[]>(mockCompanies);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');

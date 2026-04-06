@@ -516,19 +516,34 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     const userRole = user?.role || user?.user_type || '';
 
     // Operator role → dashboard path mapping
+    // Use centralized map and add local-only entries not in ROLE_DASHBOARD_MAP
     const operatorDashboardMap: Record<string, string> = {
       'mentor': '/mentor-dashboard',
       'educator': '/educator-dashboard',
       'assessor': '/assessor-dashboard',
       'growth_operator': '/growth-operator-dashboard',
-      'operator': '/operator-dashboard',
+      'growth_operator_candidate': '/growth-operator-dashboard',
+      'growth_operator_company': '/growth-operator-dashboard',
+      'growth_operator_education': '/growth-operator-dashboard',
+      'growth_operator_assessment': '/growth-operator-dashboard',
+      'growth_operator_mentorship': '/growth-operator-dashboard',
+      'growth_operator_community': '/growth-operator-dashboard',
+      'growth_operator_monitoring': '/growth-operator-dashboard',
+      'operator': '/growth-operator-dashboard',
       'call_center_agent': '/call-center-dashboard',
+      'advisor': '/advisor-dashboard',
+      'coach': '/coach-dashboard',
+      'internship_coordinator': '/internship-coordinator-dashboard',
+      'training_center_rep': '/training-center-dashboard',
     };
-    const operatorDashboard = operatorDashboardMap[userRole];
+    // Fallback: any growth_operator_* sub-role not in the map → growth-operator-dashboard
+    const operatorDashboard = operatorDashboardMap[userRole]
+      || (userRole.startsWith('growth_operator') ? '/growth-operator-dashboard' : undefined);
     const isOperator = !!operatorDashboard;
     const isCallCenter = userRole === 'call_center_agent';
     // Default to isCandidate if not any other known role
     const isCandidate = !isRecruiter && !isHRManager && !isAdmin && !isOperator;
+
 
     // Helper to detect intent from text if type is ambiguous
     const text = (notification.title + ' ' + notification.content).toLowerCase();
@@ -549,7 +564,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
       } else if (isRecruiter) {
         navigate(`/recruiter?tab=messages${convParam}`);
       } else if (isOperator) {
-        navigate(`${operatorDashboard}?tab=messages${convParam}`);
+        const target = `${operatorDashboard}?tab=messages${convParam}`;
+        console.log(`🔔 Notification: navigating operator to ${target} (role=${userRole}, dashboard=${operatorDashboard})`);
+        navigate(target);
       } else {
         navigate(`/candidate-dashboard?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`);
       }

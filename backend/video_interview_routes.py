@@ -133,7 +133,7 @@ def process_realtime_analysis():
 @video_interview_bp.route('/sessions/<session_id>/analyze-transcript', methods=['POST'])
 @jwt_required()
 def analyze_transcript():
-    """Analyze interview transcript text using Gemini AI.
+    """Analyze interview transcript text using Qwen AI.
     
     Receives transcript chunks from:
       - Browser's Web Speech API (legacy, backward-compatible)
@@ -158,18 +158,16 @@ def analyze_transcript():
         logger.info(f"Analyzing transcript for session {session_id} ({len(transcript)} chars)")
         
         # Try Gemini analysis
-        import google.generativeai as genai
+        from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
         import os
         
-        api_key = os.getenv('GEMINI_API_KEY')
+        api_key = DASHSCOPE_API_KEY
         if not api_key:
             return jsonify({
                 'success': False,
                 'error': 'AI analysis not configured'
             }), 503
-        
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        # Model initialized via qwen_client (lazy-loaded)
         
         prompt = f"""You are an AI interview analyst. Analyze this interview transcript segment and provide structured scoring.
 
@@ -198,8 +196,20 @@ Analyze the transcript and respond with ONLY a valid JSON object (no markdown, n
 
 Be objective and base scores on the actual transcript content. Consider UAE professional context."""
 
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
+        messages = [
+
+
+            {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+
+            {"role": "user", "content": prompt},
+
+
+        ]
+
+
+        response = chat_completion(task_type="interview", messages=messages, response_format={"type": "json_object"})
+        response_text = str(response) if isinstance(response, dict) else response
         
         # Clean response - remove markdown code fences if present
         if response_text.startswith('```'):
@@ -509,7 +519,7 @@ def system_check():
             },
             'ai_analysis': {
                 'status': 'operational',
-                'model': 'Gemini 2.5 Pro',
+                'model': 'Qwen / DashScope',
                 'response_time': 1.2
             },
             'storage_service': {
@@ -595,7 +605,7 @@ def health_check():
             'Bias Detection',
         ],
         'ai_engines': {
-            'transcript_analysis': 'Gemini 2.0 Flash',
+            'transcript_analysis': 'Qwen / DashScope',
             'speech_to_text': 'IBM Granite 4.0 1B Speech',
         },
         'granite_speech_server': granite_status,

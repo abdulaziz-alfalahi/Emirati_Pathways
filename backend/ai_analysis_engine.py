@@ -1,6 +1,6 @@
 """
 Advanced Real-time AI Analysis Engine
-Powered by Gemini 2.5 Pro for revolutionary interview monitoring
+Powered by Qwen / DashScope for revolutionary interview monitoring
 """
 
 import os
@@ -13,7 +13,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from dataclasses import dataclass, asdict
 import numpy as np
 import re
@@ -92,15 +98,19 @@ class AdvancedAIAnalysisEngine:
             'port': os.getenv('DB_PORT', '5432')
         }
         
-        # Initialize Gemini AI
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        else:
-            logger.error("GEMINI_API_KEY not found - AI analysis will not work")
-            self.model = None
+        # Qwen AI (lazy-loaded via qwen_client module)
+
         
+        if _qwen_available:
+
+        
+            logger.info("Qwen AI ready")
+
+        
+        else:
+
+        
+            logger.warning("DASHSCOPE_API_KEY not found - AI features disabled")
         # Real-time analysis storage
         self.active_sessions = {}
         self.analysis_history = defaultdict(deque)
@@ -188,7 +198,7 @@ class AdvancedAIAnalysisEngine:
             # Convert audio to text (mock implementation)
             transcript = self._audio_to_text(audio_data)
             
-            # Analyze transcript with Gemini 2.5 Pro
+            # Analyze transcript with Qwen / DashScope
             metrics = self._analyze_speech_content(session_id, transcript, speaker_id, timestamp)
             
             # Store metrics
@@ -227,9 +237,9 @@ class AdvancedAIAnalysisEngine:
 
     def _analyze_speech_content(self, session_id: str, transcript: str, 
                                speaker_id: str, timestamp: datetime) -> RealTimeMetrics:
-        """Analyze speech content using Gemini 2.5 Pro"""
+        """Analyze speech content using Qwen / DashScope"""
         try:
-            if not self.model or not transcript.strip():
+            if not _qwen_available or not transcript.strip():
                 return self._get_default_metrics(session_id, timestamp)
             
             prompt = f"""
@@ -258,10 +268,22 @@ class AdvancedAIAnalysisEngine:
             Consider UAE cultural context and professional communication standards.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             try:
-                analysis_data = json.loads(response.text)
+                analysis_data = response  # chat_completion returns parsed JSON directly
                 
                 return RealTimeMetrics(
                     session_id=session_id,
@@ -289,7 +311,7 @@ class AdvancedAIAnalysisEngine:
                               speaker_id: str, timestamp: datetime):
         """Check for bias indicators in real-time"""
         try:
-            if not self.model or not transcript.strip():
+            if not _qwen_available or not transcript.strip():
                 return
             
             prompt = f"""
@@ -312,10 +334,22 @@ class AdvancedAIAnalysisEngine:
             Focus on UAE employment context and fair hiring practices.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             try:
-                bias_data = json.loads(response.text)
+                bias_data = response  # chat_completion returns parsed JSON directly
                 
                 if bias_data.get('bias_detected', False):
                     for bias_type_str in bias_data.get('bias_types', []):
@@ -512,7 +546,7 @@ class AdvancedAIAnalysisEngine:
             alerts = self.bias_alerts.get(session_id, [])
             
             # Generate AI-powered comprehensive report
-            if self.model:
+            if _qwen_available:
                 ai_report = self._generate_ai_final_report(session_id, avg_metrics, insights, alerts)
             else:
                 ai_report = self._generate_mock_final_report()
@@ -576,7 +610,7 @@ class AdvancedAIAnalysisEngine:
 
     def _generate_ai_final_report(self, session_id: str, avg_metrics: RealTimeMetrics,
                                  insights: List[InterviewInsight], alerts: List[BiasAlert]) -> Dict[str, Any]:
-        """Generate AI-powered final report using Gemini 2.5 Pro"""
+        """Generate AI-powered final report using Qwen / DashScope"""
         try:
             prompt = f"""
             Generate a comprehensive final interview analysis report:
@@ -631,10 +665,22 @@ class AdvancedAIAnalysisEngine:
             Focus on UAE employment context and objective assessment.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             try:
-                return json.loads(response.text)
+                return response  # chat_completion returns parsed JSON directly
             except json.JSONDecodeError:
                 return self._generate_mock_final_report()
                 

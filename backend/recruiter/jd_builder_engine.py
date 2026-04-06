@@ -23,13 +23,13 @@ try:
 except ImportError:
     pass
 
+# Qwen / DashScope client (replaces google.generativeai)
 try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
 except ImportError:
-    GEMINI_AVAILABLE = False
-    logging.warning("Google Generative AI not available. Install with: pip install google-generativeai")
-
+    _qwen_available = False
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -87,18 +87,17 @@ class JDBuilderEngine:
         self.logger.info("JDBuilderEngine initialized")
         
         # Initialize Gemini
-        self.gemini_model = None
-        if GEMINI_AVAILABLE:
+        pass  # Qwen client is module-level
+        if _qwen_available:
             try:
-                api_key = os.getenv('GEMINI_API_KEY')
+                api_key = DASHSCOPE_API_KEY
                 if api_key:
-                    genai.configure(api_key=api_key)
-                    self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                    self.logger.info("Gemini AI initialized for JD generation")
+                    # AI model initialized via qwen_client (lazy-loaded)
+                    self.logger.info("Qwen AI initialized for JD generation")
                 else:
-                    self.logger.warning("GEMINI_API_KEY not found in environment")
+                    self.logger.warning("DASHSCOPE_API_KEY not found in environment")
             except Exception as e:
-                self.logger.error(f"Failed to initialize Gemini AI: {e}")
+                self.logger.error(f"Failed to initialize Qwen AI: {e}")
     
     def create_jd(
         self,
@@ -287,15 +286,13 @@ class JDBuilderEngine:
     ) -> str:
         """Generate AI-powered job description using Gemini"""
         try:
-            import google.generativeai as genai
+            from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
             
-            api_key = os.getenv('GEMINI_API_KEY')
+            api_key = DASHSCOPE_API_KEY
             if not api_key:
-                self.logger.warning("GEMINI_API_KEY not found, using placeholder")
+                self.logger.warning("DASHSCOPE_API_KEY not found, using placeholder")
                 return self._generate_placeholder_description(jd_data)
-            
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            # Model initialized via qwen_client (lazy-loaded)
             
             basic_info = jd_data.get('basic_info', {})
             title = basic_info.get('title', 'Position')
@@ -323,9 +320,21 @@ class JDBuilderEngine:
             Keep it under 400 words. Use professional business English suitable for the UAE market.
             """
             
-            response = model.generate_content(prompt)
+            messages = [
+
             
-            if response and response.text:
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="generate", messages=messages, response_format={"type": "json_object"})
+            
+            if response:
                 self.logger.info(f"Generated AI description for JD {jd_data['metadata']['jd_id']}")
                 return response.text
             else:

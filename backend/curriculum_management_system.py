@@ -10,7 +10,13 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from enum import Enum
 import uuid
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 import json
 import statistics
 from collections import defaultdict
@@ -166,19 +172,17 @@ class CurriculumManagementSystem:
     
     def __init__(self):
         """Initialize the curriculum management system"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.api_key = DASHSCOPE_API_KEY
         if not self.api_key:
-            logger.warning("⚠️ GEMINI_API_KEY not found. AI features will be limited.")
-            self.model = None
+            logger.warning("⚠️ DASHSCOPE_API_KEY not found. AI features will be limited.")
+            pass  # Qwen client is module-level, no instance model
         else:
             try:
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                logger.info("✅ Curriculum Management System initialized with Gemini 2.5 Pro")
+                # AI model initialized via qwen_client (lazy-loaded)
+                logger.info("✅ Curriculum Management System initialized with Qwen / DashScope")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini: {e}")
-                self.model = None
-        
+                pass  # Qwen client is module-level, no instance model
         # Initialize UAE educational standards
         self.uae_educational_standards = self._initialize_uae_standards()
         self.industry_requirements = self._initialize_industry_requirements()
@@ -196,7 +200,7 @@ class CurriculumManagementSystem:
             industry_focus = curriculum_requirements.get('industry_focus', 'technology')
             learning_outcomes = curriculum_requirements.get('learning_outcomes', [])
             
-            if self.model:
+            if _qwen_available:
                 # Use AI to generate curriculum structure
                 ai_curriculum = self._generate_ai_curriculum(curriculum_requirements)
                 modules.extend(ai_curriculum)
@@ -230,7 +234,7 @@ class CurriculumManagementSystem:
                 difficulty = module.difficulty_level
             
             # Generate assessment content with AI
-            if self.model:
+            if _qwen_available:
                 assessment_content = self._generate_ai_assessment_content(module, difficulty, assessment_type)
             else:
                 assessment_content = self._generate_fallback_assessment_content(module, difficulty, assessment_type)
@@ -273,7 +277,7 @@ class CurriculumManagementSystem:
             result_id = str(uuid.uuid4())
             
             # AI-powered analysis
-            if self.model:
+            if _qwen_available:
                 ai_analysis = self._analyze_submission_with_ai(assessment, submission_content, student_profile)
             else:
                 ai_analysis = self._fallback_submission_analysis(assessment, submission_content)
@@ -384,7 +388,7 @@ class CurriculumManagementSystem:
                                   industry_feedback: Dict[str, Any]) -> List[CurriculumModule]:
         """Optimize curriculum using AI analysis of performance and industry feedback"""
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_curriculum_optimization(current_curriculum, performance_data)
             
             optimized_modules = []
@@ -432,10 +436,18 @@ class CurriculumManagementSystem:
                 """
                 
                 try:
-                    response = self.model.generate_content(optimization_prompt)
-                    if response and response.text:
+                    messages = [
+
+                        {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                        {"role": "user", "content": optimization_prompt},
+
+                    ]
+
+                    response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+                    if response:
                         # Parse AI recommendations and apply optimizations
-                        optimized_module = self._apply_ai_optimizations(module, response.text, module_performance)
+                        optimized_module = self._apply_ai_optimizations(module, str(response) if isinstance(response, dict) else response, module_performance)
                         optimized_modules.append(optimized_module)
                     else:
                         optimized_modules.append(module)
@@ -615,8 +627,20 @@ class CurriculumManagementSystem:
             Each module should be 2-4 weeks in duration and include both theoretical and practical components.
             """
             
-            response = self.model.generate_content(prompt)
-            if response and response.text:
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            if response:
                 # Parse AI response and create modules
                 return self._parse_ai_curriculum_response(response.text, requirements)
             else:
@@ -746,7 +770,7 @@ class CurriculumManagementSystem:
                                       difficulty: DifficultyLevel,
                                       assessment_type: AssessmentType) -> Dict[str, Any]:
         """Generate assessment content using AI"""
-        if not self.model:
+        if not _qwen_available:
             return self._generate_fallback_assessment_content(module, difficulty, assessment_type)
         
         try:
@@ -777,8 +801,20 @@ class CurriculumManagementSystem:
             5. Question types and structure
             """
             
-            response = self.model.generate_content(prompt)
-            if response and response.text:
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            if response:
                 return {
                     "title": f"{module.title} - {assessment_type.value.title()} Assessment",
                     "description": f"Comprehensive {assessment_type.value} covering key concepts from {module.title}",
@@ -856,7 +892,7 @@ class CurriculumManagementSystem:
                                   submission_content: str,
                                   student_profile: Dict[str, Any] = None) -> Dict[str, Any]:
         """Analyze student submission using AI"""
-        if not self.model:
+        if not _qwen_available:
             return self._fallback_submission_analysis(assessment, submission_content)
         
         try:
@@ -884,8 +920,20 @@ class CurriculumManagementSystem:
             Be constructive and encouraging while maintaining academic standards.
             """
             
-            response = self.model.generate_content(prompt)
-            if response and response.text:
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            if response:
                 return {
                     "score": 82.5,
                     "feedback": "Good understanding of core concepts with room for improvement in practical application.",

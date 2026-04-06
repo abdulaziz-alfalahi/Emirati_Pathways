@@ -100,7 +100,9 @@ export const IdentityModule = () => {
     const handleToggleVisibility = async (cvId: string, currentStatus: boolean) => {
         try {
             await profileService.toggleCVVisibility(cvId, !currentStatus);
-            loadCVs();
+            await loadCVs();
+            // Re-load profile so Experience/Education/Skills update to match the selected CV
+            await loadProfile();
         } catch (e) {
             alert(t("Failed to update visibility", "فشل تحديث الظهور"));
         }

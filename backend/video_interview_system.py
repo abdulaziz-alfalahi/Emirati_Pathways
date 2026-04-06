@@ -13,7 +13,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from dataclasses import dataclass
 from backend.user_helpers import user_display_name
 import uuid
@@ -83,14 +89,11 @@ class VideoInterviewEngine:
             'port': os.getenv('DB_PORT', '5432')
         }
         
-        # Initialize Gemini AI
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Qwen AI (lazy-loaded via qwen_client module)
+        if _qwen_available:
+            logger.info("✅ Video Interview Engine AI ready (Qwen / DashScope)")
         else:
-            logger.error("GEMINI_API_KEY not found - AI analysis will not work")
-            self.model = None
+            logger.warning("⚠️ DASHSCOPE_API_KEY not found - AI analysis will be disabled")
         
         # Video service configuration (Agora.io)
         self.agora_app_id = os.getenv('AGORA_APP_ID', 'demo_app_id')
@@ -318,8 +321,8 @@ class VideoInterviewEngine:
                     if not session:
                         raise ValueError("Interview session not found")
                     
-                    # Generate AI report using Gemini 2.5 Pro
-                    if self.model:
+                    # Generate AI report using Qwen / DashScope
+                    if _qwen_available:
                         report = self._generate_ai_report(session)
                     else:
                         report = self._generate_mock_report(session)
@@ -342,7 +345,7 @@ class VideoInterviewEngine:
             return {'error': 'Failed to generate report'}
 
     def _generate_ai_report(self, session: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate AI-powered interview report using Gemini 2.5 Pro"""
+        """Generate AI-powered interview report using Qwen / DashScope"""
         try:
             prompt = f"""
             Generate a comprehensive interview report for this UAE job interview:
@@ -409,10 +412,22 @@ class VideoInterviewEngine:
             Focus on UAE market context, Emiratization benefits, and objective assessment.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="interview", messages=messages, response_format={"type": "json_object"})
             
             try:
-                return json.loads(response.text)
+                return response  # chat_completion returns parsed JSON directly
             except json.JSONDecodeError:
                 return self._generate_mock_report(session)
                 

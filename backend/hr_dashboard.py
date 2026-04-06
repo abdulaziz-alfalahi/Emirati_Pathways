@@ -11,7 +11,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from dataclasses import dataclass
 
 # Configure logging
@@ -80,15 +86,19 @@ class HRDashboardEngine:
             'port': os.getenv('DB_PORT', '5432')
         }
         
-        # Initialize Gemini AI
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        else:
-            logger.warning("GEMINI_API_KEY not found - AI features will be limited")
-            self.model = None
+        # Qwen AI (lazy-loaded via qwen_client module)
+
         
+        if _qwen_available:
+
+        
+            logger.info("Qwen AI ready")
+
+        
+        else:
+
+        
+            logger.warning("DASHSCOPE_API_KEY not found - AI features disabled")
         logger.info("HR Dashboard Engine initialized")
 
     def get_db_connection(self):
@@ -275,7 +285,7 @@ class HRDashboardEngine:
                     job_id = f"job_{int(datetime.now().timestamp())}"
                     
                     # AI-enhance job description if available
-                    enhanced_description = self._enhance_job_description(job_data) if self.model else job_data.get('description', '')
+                    enhanced_description = self._enhance_job_description(job_data) if _qwen_available else job_data.get('description', '')
                     
                     # Insert job posting
                     import uuid
@@ -320,7 +330,7 @@ class HRDashboardEngine:
     def _enhance_job_description(self, job_data: Dict[str, Any]) -> str:
         """Use AI to enhance job description"""
         try:
-            if not self.model:
+            if not _qwen_available:
                 return job_data.get('description', '')
             
             prompt = f"""
@@ -344,8 +354,20 @@ class HRDashboardEngine:
             Return only the enhanced job description text.
             """
             
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
+            return str(response) if isinstance(response, dict) else response
             
         except Exception as e:
             logger.error(f"Error enhancing job description: {e}")
@@ -530,7 +552,7 @@ class HRDashboardEngine:
     def get_ai_recruitment_insights(self, company_id: Optional[str] = None) -> Dict[str, Any]:
         """Get AI-powered recruitment insights"""
         try:
-            if not self.model:
+            if not _qwen_available:
                 return {'error': 'AI model not available'}
             
             # Get recent hiring data
@@ -562,10 +584,22 @@ class HRDashboardEngine:
             Focus on UAE market context and Emiratization goals.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             try:
-                insights = json.loads(response.text)
+                insights = response  # chat_completion returns parsed JSON directly
                 return insights
             except json.JSONDecodeError:
                 return {

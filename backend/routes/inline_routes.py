@@ -861,172 +861,106 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
             return ""
 
     def parse_cv_with_gemini(cv_text: str) -> dict:
-        """Parse CV text using Gemini 2.5 Pro"""
+        """Parse CV text using Qwen / DashScope (migrated from Gemini)"""
         try:
-            # Initialize Gemini
-            gemini_api_key = os.getenv('GEMINI_API_KEY')
-            if not gemini_api_key:
-                logger.warning("GEMINI_API_KEY not found, using mock data")
+            from backend.services.qwen_client import chat_completion
+            from backend.config.qwen_config import DASHSCOPE_API_KEY
+
+            if not DASHSCOPE_API_KEY:
+                logger.warning("DASHSCOPE_API_KEY not found, using mock data")
                 return None
 
-            genai.configure(api_key=gemini_api_key)
+            # Enhanced prompt for UAE job market
+            prompt = f"""Analyze this CV/Resume text and extract structured information for the UAE job market.
+Focus on UAE-specific context, Arabic names, local companies, and regional experience.
 
-            # Debug: List available models to find a valid one
-            available_models = []
-            try:
-                for m in genai.list_models():
-                    if 'generateContent' in m.supported_generation_methods:
-                        available_models.append(m.name)
-                logger.info(f"Available Gemini Models: {available_models}")
-            except Exception as e:
-                logger.warning(f"Could not list models: {e}")
+CV Text:
+{cv_text[:15000]}
 
-            # List of models to try in order of preference (2026 available)
-            candidate_models = [
-                'gemini-2.5-flash',
-                'gemini-3-flash-preview',
-                'gemini-3-pro-preview',
-                'models/gemini-2.5-flash',
-                'models/gemini-3-flash-preview'
+Please extract and return a JSON object with the following structure:
+{{
+  "personal_info": {{
+    "name": "Full name (preserve Arabic if present)",
+    "email": "email address",
+    "phone": "phone number (UAE format preferred)",
+    "location": "city, country",
+    "nationality": "nationality if mentioned",
+    "visa_status": "visa status if mentioned"
+  }},
+  "professional_summary": "Brief professional summary",
+  "experience_years": "total years of experience (number)",
+  "skills": {{
+    "technical": ["list of technical skills"],
+    "soft": ["list of soft skills"],
+    "languages": ["list of languages with proficiency"]
+  }},
+  "experience": [
+    {{
+      "job_title": "position title",
+      "company": "company name",
+      "location": "work location",
+      "start_date": "start date",
+      "end_date": "end date or current",
+      "duration": "duration in months",
+      "responsibilities": "key responsibilities"
+    }}
+  ],
+  "education": [
+    {{
+      "degree": "degree name",
+      "institution": "institution name",
+      "location": "education location",
+      "graduation_year": "year",
+      "field": "field of study"
+    }}
+  ],
+  "certifications": ["list of certifications"],
+  "job_matches": [
+    {{
+      "title": "suggested job title",
+      "company_type": "type of company (government/private/startup)",
+      "match_score": "match percentage (0-100)",
+      "alignment": "D33/Talent33 alignment",
+      "salary_range": "AED salary range",
+      "location": "UAE location"
+    }}
+  ],
+  "recommendations": [
+    "specific recommendations for UAE job market",
+    "suggestions for skill enhancement",
+    "cultural fit improvements"
+  ],
+  "uae_context": {{
+    "local_experience": "years of UAE experience",
+    "arabic_proficiency": "Arabic language level",
+    "cultural_alignment": "cultural fit score (0-100)",
+    "government_sector_fit": "fit for government roles (0-100)",
+    "private_sector_fit": "fit for private sector (0-100)"
+  }}
+}}
+
+Return only the JSON object, no additional text."""
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert CV/Resume parser for the UAE job market. "
+                        "Extract structured information and return ONLY raw, valid JSON. "
+                        "No markdown, no code fences, no explanatory text."
+                    ),
+                },
+                {"role": "user", "content": prompt},
             ]
 
-            model = None
-            used_model_name = ""
+            parsed_data = chat_completion(
+                task_type="parse",
+                messages=messages,
+                response_format={"type": "json_object"},
+            )
 
-            # Try to find a valid model from the candidates that exists in available_models
-            # If listing failed, we just try them one by one in the try/except block below
-
-            # Priority 1: Match against available list
-            if available_models:
-                for candidate in candidate_models:
-                    # Handle both 'models/name' and 'name' formats
-                    cmd_clean = candidate.replace('models/', '')
-                    for avail in available_models:
-                        if cmd_clean in avail:
-                            model = genai.GenerativeModel(avail)
-                            used_model_name = avail
-                            break
-                    if model:
-                        break
-
-            # Priority 2: If no match found or listing failed, default to a safe bet
-            if not model:
-                model = genai.GenerativeModel('gemini-2.5-flash')
-                used_model_name = 'gemini-2.5-flash (fallback)'
-
-            logger.info(f"Attempting to use Gemini model: {used_model_name}")
-
-
-            # Enhanced prompt for UAE job market
-            prompt = f"""
-    Analyze this CV/Resume text and extract structured information for the UAE job market.
-    Focus on UAE-specific context, Arabic names, local companies, and regional experience.
-
-    CV Text:
-    {cv_text}
-
-    Please extract and return a JSON object with the following structure:
-    {{
-      "personal_info": {{
-        "name": "Full name (preserve Arabic if present)",
-        "email": "email address",
-        "phone": "phone number (UAE format preferred)",
-        "location": "city, country",
-        "nationality": "nationality if mentioned",
-        "visa_status": "visa status if mentioned"
-      }},
-      "professional_summary": "Brief professional summary",
-      "experience_years": "total years of experience (number)",
-      "skills": {{
-        "technical": ["list of technical skills"],
-        "soft": ["list of soft skills"],
-        "languages": ["list of languages with proficiency"]
-      }},
-      "experience": [
-        {{
-          "job_title": "position title",
-          "company": "company name",
-          "location": "work location",
-          "start_date": "start date",
-          "end_date": "end date or current",
-          "duration": "duration in months",
-          "responsibilities": "key responsibilities"
-        }}
-      ],
-      "education": [
-        {{
-          "degree": "degree name",
-          "institution": "institution name",
-          "location": "education location",
-          "graduation_year": "year",
-          "field": "field of study"
-        }}
-      ],
-      "certifications": ["list of certifications"],
-      "job_matches": [
-        {{
-          "title": "suggested job title",
-          "company_type": "type of company (government/private/startup)",
-          "match_score": "match percentage (0-100)",
-          "alignment": "D33/Talent33 alignment",
-          "salary_range": "AED salary range",
-          "location": "UAE location"
-        }}
-      ],
-      "recommendations": [
-        "specific recommendations for UAE job market",
-        "suggestions for skill enhancement",
-        "cultural fit improvements"
-      ],
-      "uae_context": {{
-        "local_experience": "years of UAE experience",
-        "arabic_proficiency": "Arabic language level",
-        "cultural_alignment": "cultural fit score (0-100)",
-        "government_sector_fit": "fit for government roles (0-100)",
-        "private_sector_fit": "fit for private sector (0-100)"
-      }}
-    }}
-
-    Return only the JSON object, no additional text.
-    """
-
-            # Retry mechanism (3 attempts)
-            import time
-            for attempt in range(3):
-                try:
-                    logger.info(f"Gemini generation attempt {attempt + 1}/3...")
-                    response = model.generate_content(prompt)
-
-                    # Parse JSON response
-                    try:
-                        # Clean the response text
-                        response_text = response.text.strip()
-                        if response_text.startswith('```json'):
-                            response_text = response_text[7:]
-                        if response_text.endswith('```'):
-                            response_text = response_text[:-3]
-
-                        parsed_data = json.loads(response_text)
-                        logger.info("Γ£à Gemini CV parsing successful")
-                        return parsed_data
-
-                    except json.JSONDecodeError as e:
-                        logger.warning(f"Failed to parse Gemini JSON check (Attempt {attempt + 1}): {e}")
-                        if attempt == 2: # Last attempt
-                            logger.error(f"Raw response: {response.text[:500]}...")
-                            raise ValueError(f"AI returned invalid JSON: {e}")
-                        time.sleep(1) # Short backoff
-                        continue
-
-                except Exception as gen_err:
-                    logger.warning(f"Gemini generation error (Attempt {attempt + 1}): {gen_err}")
-                    if attempt == 2:
-                        logger.error("Final retry failed. Raising exception.")
-                        raise gen_err
-                    time.sleep(2) # Backoff before retry
-                    continue
-
-            raise  Exception("AI Parsing failed after retries")
+            logger.info("✅ Qwen CV parsing successful")
+            return parsed_data
 
         except Exception as e:
             logger.error(f"Gemini CV parsing fatal error: {e}")
@@ -1348,6 +1282,76 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
             logger.error(f"PDF generation traceback: {traceback.format_exc()}")
             return None
 
+    # ----- Admin Provider Management Data -----
+    admin_providers = {}
+    admin_configurations = {}
+
+    PROVIDER_TEMPLATES = {
+        'dashscope-qwen': {
+            'id': 'dashscope-qwen',
+            'name': 'Alibaba DashScope (Qwen)',
+            'category': 'LLM',
+            'description': 'High-performance Qwen LLM via DashScope OpenAI-compatible API',
+            'endpoint': 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+            'models': ['qwen-turbo', 'qwen-plus', 'qwen-max'],
+            'default_model': 'qwen-plus',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'model': {'type': 'string', 'required': True},
+                'temperature': {'type': 'float', 'default': 0.3, 'min': 0.0, 'max': 2.0},
+                'max_tokens': {'type': 'integer', 'default': 4096, 'min': 1, 'max': 32768},
+            }
+        },
+        'groq-llama4': {
+            'id': 'groq-llama4',
+            'name': 'Groq (Llama 4 Scout)',
+            'category': 'LLM',
+            'description': 'High-performance LLM inference with Llama 4 Scout model',
+            'endpoint': 'https://api.groq.com/openai/v1',
+            'models': ['llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+            'default_model': 'llama-3.1-70b-versatile',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'model': {'type': 'string', 'required': True},
+                'temperature': {'type': 'float', 'default': 0.7, 'min': 0.0, 'max': 2.0},
+                'max_tokens': {'type': 'integer', 'default': 4096, 'min': 1, 'max': 32768},
+            }
+        },
+        'openai-gpt4': {
+            'id': 'openai-gpt4',
+            'name': 'OpenAI GPT-4',
+            'category': 'LLM',
+            'description': 'Industry-leading language model for complex reasoning tasks',
+            'endpoint': 'https://api.openai.com/v1',
+            'models': ['gpt-4-turbo-preview', 'gpt-4', 'gpt-3.5-turbo'],
+            'default_model': 'gpt-4-turbo-preview',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'model': {'type': 'string', 'required': True},
+                'temperature': {'type': 'float', 'default': 0.7, 'min': 0.0, 'max': 2.0},
+                'max_tokens': {'type': 'integer', 'default': 4096, 'min': 1, 'max': 32768},
+            }
+        },
+        'azure-speech': {
+            'id': 'azure-speech',
+            'name': 'Azure Speech Services',
+            'category': 'Speech Processing',
+            'description': 'Enterprise-grade speech-to-text and text-to-speech',
+            'endpoint': 'https://eastus.api.cognitive.microsoft.com',
+            'models': ['speech-v1'],
+            'default_model': 'speech-v1',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'region': {'type': 'string', 'default': 'eastus'},
+                'language': {'type': 'string', 'default': 'en-US'},
+            }
+        },
+    }
+
     # Initialize default providers
     def initialize_default_providers():
         """Initialize default provider configurations."""
@@ -1359,7 +1363,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     'category': template['category'],
                     'description': template['description'],
                     'status': 'inactive',
-                    'is_default': provider_id == 'google-gemini',
+                    'is_default': provider_id == 'dashscope-qwen',
                     'created_at': datetime.now().isoformat(),
                     'updated_at': datetime.now().isoformat()
                 }

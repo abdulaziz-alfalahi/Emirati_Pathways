@@ -10,7 +10,13 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from enum import Enum
 import uuid
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 import json
 import statistics
 from collections import defaultdict
@@ -126,19 +132,17 @@ class AICareerGuidanceEngine:
     
     def __init__(self):
         """Initialize the AI career guidance engine"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.api_key = DASHSCOPE_API_KEY
         if not self.api_key:
-            logger.warning("⚠️ GEMINI_API_KEY not found. AI features will be limited.")
-            self.model = None
+            logger.warning("⚠️ DASHSCOPE_API_KEY not found. AI features will be limited.")
+            pass  # Qwen client is module-level, no instance model
         else:
             try:
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                logger.info("✅ AI Career Guidance Engine initialized with Gemini 2.5 Pro")
+                # AI model initialized via qwen_client (lazy-loaded)
+                logger.info("✅ AI Career Guidance Engine initialized with Qwen / DashScope")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini: {e}")
-                self.model = None
-        
+                pass  # Qwen client is module-level, no instance model
         # Initialize UAE career data
         self.uae_career_data = self._initialize_uae_career_data()
         self.industry_trends = self._initialize_industry_trends()
@@ -260,7 +264,7 @@ class AICareerGuidanceEngine:
                               timeframe_years: int = 5) -> Dict[str, Any]:
         """Predict career outcomes using AI analysis"""
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_career_prediction(student_profile, career_pathway)
             
             prompt = f"""
@@ -293,9 +297,21 @@ class AICareerGuidanceEngine:
             Provide detailed analysis with confidence scores.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
             
-            if response and response.text:
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            
+            if response:
                 # Parse and structure the AI response
                 return {
                     "success_probability": 85.5,
@@ -504,7 +520,7 @@ class AICareerGuidanceEngine:
     def _analyze_student_with_ai(self, student_profile: Dict[str, Any], 
                                academic_records: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Analyze student profile using AI"""
-        if not self.model:
+        if not _qwen_available:
             return self._fallback_ai_analysis(student_profile)
         
         try:
