@@ -1282,6 +1282,76 @@ Return only the JSON object, no additional text."""
             logger.error(f"PDF generation traceback: {traceback.format_exc()}")
             return None
 
+    # ----- Admin Provider Management Data -----
+    admin_providers = {}
+    admin_configurations = {}
+
+    PROVIDER_TEMPLATES = {
+        'dashscope-qwen': {
+            'id': 'dashscope-qwen',
+            'name': 'Alibaba DashScope (Qwen)',
+            'category': 'LLM',
+            'description': 'High-performance Qwen LLM via DashScope OpenAI-compatible API',
+            'endpoint': 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+            'models': ['qwen-turbo', 'qwen-plus', 'qwen-max'],
+            'default_model': 'qwen-plus',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'model': {'type': 'string', 'required': True},
+                'temperature': {'type': 'float', 'default': 0.3, 'min': 0.0, 'max': 2.0},
+                'max_tokens': {'type': 'integer', 'default': 4096, 'min': 1, 'max': 32768},
+            }
+        },
+        'groq-llama4': {
+            'id': 'groq-llama4',
+            'name': 'Groq (Llama 4 Scout)',
+            'category': 'LLM',
+            'description': 'High-performance LLM inference with Llama 4 Scout model',
+            'endpoint': 'https://api.groq.com/openai/v1',
+            'models': ['llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'],
+            'default_model': 'llama-3.1-70b-versatile',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'model': {'type': 'string', 'required': True},
+                'temperature': {'type': 'float', 'default': 0.7, 'min': 0.0, 'max': 2.0},
+                'max_tokens': {'type': 'integer', 'default': 4096, 'min': 1, 'max': 32768},
+            }
+        },
+        'openai-gpt4': {
+            'id': 'openai-gpt4',
+            'name': 'OpenAI GPT-4',
+            'category': 'LLM',
+            'description': 'Industry-leading language model for complex reasoning tasks',
+            'endpoint': 'https://api.openai.com/v1',
+            'models': ['gpt-4-turbo-preview', 'gpt-4', 'gpt-3.5-turbo'],
+            'default_model': 'gpt-4-turbo-preview',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'model': {'type': 'string', 'required': True},
+                'temperature': {'type': 'float', 'default': 0.7, 'min': 0.0, 'max': 2.0},
+                'max_tokens': {'type': 'integer', 'default': 4096, 'min': 1, 'max': 32768},
+            }
+        },
+        'azure-speech': {
+            'id': 'azure-speech',
+            'name': 'Azure Speech Services',
+            'category': 'Speech Processing',
+            'description': 'Enterprise-grade speech-to-text and text-to-speech',
+            'endpoint': 'https://eastus.api.cognitive.microsoft.com',
+            'models': ['speech-v1'],
+            'default_model': 'speech-v1',
+            'config_schema': {
+                'api_key': {'type': 'string', 'required': True, 'sensitive': True},
+                'endpoint': {'type': 'string', 'required': True},
+                'region': {'type': 'string', 'default': 'eastus'},
+                'language': {'type': 'string', 'default': 'en-US'},
+            }
+        },
+    }
+
     # Initialize default providers
     def initialize_default_providers():
         """Initialize default provider configurations."""
@@ -1293,7 +1363,7 @@ Return only the JSON object, no additional text."""
                     'category': template['category'],
                     'description': template['description'],
                     'status': 'inactive',
-                    'is_default': provider_id == 'google-gemini',
+                    'is_default': provider_id == 'dashscope-qwen',
                     'created_at': datetime.now().isoformat(),
                     'updated_at': datetime.now().isoformat()
                 }

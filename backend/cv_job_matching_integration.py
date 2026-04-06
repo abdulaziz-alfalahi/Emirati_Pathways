@@ -36,7 +36,7 @@ class CVJobMatchingIntegration:
                 # Configure Gemini
                 # [FIX] Use 2026-available model (matching cv_parser.py)
                 # AI model initialized via qwen_client (lazy-loaded)
-                logger.info("✅ CV-Job Matching Integration initialized with Qwen 2.5 Flash")
+                logger.info("✅ CV-Job Matching Integration initialized with Qwen / DashScope")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini for matching: {e}")
         
