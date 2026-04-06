@@ -209,7 +209,7 @@ export const FeedbackWidget = () => {
     return (
         <>
             {/* Floating Trigger Button */}
-            <div className="fixed bottom-6 right-6 z-50 group">
+            <div className="fixed bottom-24 right-6 z-50 group">
                 {/* Pulse effect ring */}
                 <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
 
