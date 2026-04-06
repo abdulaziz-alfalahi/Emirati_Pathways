@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-CV Parser with Gemini 2.5 Pro Integration
-Emirati Journey Platform - Production Implementation
+CV Parser with Qwen / DashScope Integration
+Emirati Journey Platform — Qwen Migration
 """
 
 import os
@@ -14,19 +14,21 @@ import tempfile
 import mimetypes
 from pathlib import Path
 
-# Fix: Import google.generativeai safely
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
 from werkzeug.datastructures import FileStorage
-# Fix: Use pdfplumber for superior PDF text extraction (multi-column, tables, Arabic)
+
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY, MAX_INPUT_CHARS
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
+
+# PDF / DOCX extraction
 try:
     import pdfplumber
 except ImportError:
     pdfplumber = None
-# Fix: Import docx safely
 try:
     import docx
     from docx import Document
@@ -39,26 +41,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class CVParser:
-    """CV Parser with Gemini 2.5 Pro integration for comprehensive CV analysis"""
+    """CV Parser with Qwen / DashScope integration for comprehensive CV analysis"""
     
     def __init__(self):
-        """Initialize CV Parser with Gemini configuration"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        self.model = None
+        """Initialize CV Parser with Qwen configuration"""
+        self.ai_available = _qwen_available
         
-        if not self.api_key:
-            logger.warning("⚠️ GEMINI_API_KEY not found. AI features will be disabled.")
-        elif genai:
-            try:
-                # Configure Gemini
-                genai.configure(api_key=self.api_key)
-                # [FIX] Use 2026-available model
-                self.model = genai.GenerativeModel('gemini-2.5-flash')
-                logger.info("✅ CV Parser initialized with Gemini 2.5 Flash")
-            except Exception as e:
-                logger.error(f"❌ Failed to initialize Gemini: {e}")
+        if not self.ai_available:
+            logger.warning("⚠️ DASHSCOPE_API_KEY not set. AI features will be disabled.")
         else:
-             logger.warning("⚠️ google-generativeai package not installed/imported.")
+            logger.info("✅ CV Parser initialized with Qwen / DashScope (qwen-turbo)")
 
         
         # Supported file types
@@ -153,93 +145,59 @@ class CVParser:
             }
     
     def parse_cv_text(self, text: str, user_id: str = None, filename: str = None) -> Dict[str, Any]:
-        """Parse CV from text content using Gemini 2.5 Pro"""
+        """Parse CV from text content using Qwen via DashScope"""
         try:
             cleaned_text = text.strip()
             if not cleaned_text or len(cleaned_text) < 50:
-                 # Try fallback if short? Or just fail
                 return {
                     'success': False,
                     'message': 'Text content too short or empty'
                 }
 
-            # If no model (no API key), use fallback
-            if not self.model:
+            # If no API key, use fallback
+            if not self.ai_available:
                  logger.info("Using fallback parser (No AI)")
                  return self._fallback_parse_text(cleaned_text, user_id, filename)
             
             # Generate CV ID
             cv_id = str(uuid.uuid4())
             
-            # Create comprehensive prompt for Gemini
-            prompt = self._create_parsing_prompt(cleaned_text)
-            
-            
-            # [ENHANCED] Call Gemini API with aggressive retries and model fallbacks
+            # Build chat messages for Qwen
             import time
-            
-            # Try multiple models in order of preference (2026 available models)
-            models_to_try = [
-                'gemini-3-flash-preview',      # Fast, frontier-class performance (2026)
-                'gemini-2.5-flash',            # Lightning-fast and capable
-                'gemini-3-pro-preview'         # Most capable for complex reasoning
+            start_time = time.time()
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert AI Resume Parser built for the UAE job market "
+                        "and Emirati workforce. You MUST return ONLY raw, valid JSON. "
+                        "No markdown, no code fences, no explanatory text. "
+                        "Field keys MUST be in English. Values can be in Arabic or English "
+                        "per the source CV."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": self._create_parsing_prompt(cleaned_text),
+                },
             ]
 
-            
-            max_retries_per_model = 3  # Retry each model 3 times
-            retry_delay = 2  # Start with 2 seconds
-            response = None
-            last_error = None
-            
-            for model_name in models_to_try:
-                logger.info(f"Trying Gemini model: {model_name}")
-                
-                try:
-                    # Reinitialize model if different from current
-                    if not self.model or model_name != 'gemini-2.5-flash':
-                        current_model = genai.GenerativeModel(model_name)
-                    else:
-                        current_model = self.model
-                    
-                    # Retry with current model
-                    for attempt in range(max_retries_per_model):
-                        try:
-                            logger.info(f"Model {model_name} - Attempt {attempt + 1}/{max_retries_per_model}")
-                            response = current_model.generate_content(prompt)
-                            
-                            if response and response.text:
-                                logger.info(f"✅ Success with {model_name} on attempt {attempt + 1}")
-                                break
-                                
-                        except Exception as e:
-                            last_error = e
-                            logger.warning(f"{model_name} attempt {attempt + 1} failed: {str(e)}")
-                            
-                            if attempt < max_retries_per_model - 1:
-                                # Exponential backoff
-                                wait_time = retry_delay * (2 ** attempt)
-                                logger.info(f"Waiting {wait_time}s before retry...")
-                                time.sleep(wait_time)
-                    
-                    # If we got a response, break out of model loop
-                    if response and response.text:
-                        break
-                        
-                except Exception as model_error:
-                    logger.error(f"Failed to initialize {model_name}: {model_error}")
-                    continue
-            
-            if not response or not response.text:
-                logger.error(f"❌ All Gemini models failed after multiple retries. Last error: {last_error}")
-                return self._fallback_parse_text(cleaned_text, user_id, filename)
-            
-            # Parse Gemini response
-            parsed_data = self._parse_gemini_response(response.text)
-            
-            if not parsed_data:
-                logger.warning("Failed to parse Gemini response JSON, retrying with fallback")
+            try:
+                parsed_data = chat_completion(
+                    task_type="parse",
+                    messages=messages,
+                    response_format={"type": "json_object"},
+                )
+            except (QwenParsingError, QwenClientError) as e:
+                logger.error(f"❌ Qwen CV parsing failed: {e}")
                 return self._fallback_parse_text(cleaned_text, user_id, filename)
 
+            processing_time = round(time.time() - start_time, 3)
+
+            if not parsed_data:
+                logger.warning("Empty response from Qwen, using fallback")
+                return self._fallback_parse_text(cleaned_text, user_id, filename)
             
             # Enhance with UAE-specific analysis
             enhanced_data = self._enhance_with_uae_analysis(parsed_data, cleaned_text)
@@ -269,17 +227,17 @@ class CVParser:
                     'user_id': user_id,
                     'filename': filename,
                     'parsed_at': datetime.utcnow().isoformat(),
-                    'parser_version': '2.0',
-                    'ai_model': 'gemini-2.5-flash',  # Updated for 2026
+                    'parser_version': '3.0-qwen',
+                    'ai_model': 'qwen-turbo',
                     'text_length': len(cleaned_text),
-                    'processing_time': None 
+                    'processing_time': processing_time
                 }
             }
             
             return result
             
         except Exception as e:
-            logger.error(f"Error parsing CV text with Gemini: {str(e)}")
+            logger.error(f"Error parsing CV text with Qwen: {str(e)}")
             return self._fallback_parse_text(text, user_id, filename)
 
     def _fallback_parse_text(self, text: str, user_id: str = None, filename: str = None) -> Dict[str, Any]:
@@ -645,16 +603,8 @@ OUTPUT (return ONLY this JSON, no markdown, no explanation)
     "volunteer_work": []
 }}"""
 
-    def _parse_gemini_response(self, response_text: str) -> Dict[str, Any]:
-        try:
-            text = response_text.strip()
-            if text.startswith("```json"): text = text[7:]
-            if text.startswith("```"): text = text[3:]
-            if text.endswith("```"): text = text[:-3]
-            return json.loads(text.strip())
-        except Exception as e:
-            logger.error(f"JSON Parse Error: {e}")
-            return None
+    # NOTE: _parse_gemini_response removed — JSON extraction is handled by
+    # qwen_client._extract_json() automatically within chat_completion().
 
     def _enhance_with_uae_analysis(self, data: Dict, text: str) -> Dict:
         # Placeholder for UAE Specific Logic

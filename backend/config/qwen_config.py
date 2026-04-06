@@ -42,6 +42,11 @@ MODEL_ROUTING: Dict[str, str] = {
     "match": os.getenv("QWEN_MATCH_MODEL", "qwen-plus"),
     "score": os.getenv("QWEN_MATCH_MODEL", "qwen-plus"),
     "explain": os.getenv("QWEN_MATCH_MODEL", "qwen-plus"),
+    # Batch 1 migration
+    "jd_parse": os.getenv("QWEN_JD_PARSE_MODEL", "qwen-plus"),
+    "interview": os.getenv("QWEN_INTERVIEW_MODEL", "qwen-plus"),
+    # Batch 2 (reserved)
+    "generate": os.getenv("QWEN_GENERATE_MODEL", "qwen-max"),
 }
 
 # Fallback model used when a specific task type is not mapped
@@ -60,6 +65,11 @@ TEMPERATURE: Dict[str, float] = {
     "match": 0.3,
     "score": 0.2,
     "explain": 0.4,
+    # Batch 1 migration
+    "jd_parse": 0.1,
+    "interview": 0.3,
+    # Batch 2 (reserved)
+    "generate": 0.5,
 }
 
 # ---------------------------------------------------------------------------
@@ -69,6 +79,7 @@ COST_PER_MILLION_TOKENS: Dict[str, Dict[str, float]] = {
     "qwen-turbo": {"input": 0.80, "output": 2.00},
     "qwen-plus": {"input": 1.60, "output": 4.40},
     "qwen-max": {"input": 8.00, "output": 24.00},
+    "qwen-vl-max": {"input": 12.00, "output": 36.00},
 }
 
 # ---------------------------------------------------------------------------

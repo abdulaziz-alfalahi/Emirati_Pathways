@@ -7,7 +7,13 @@ import os
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from models.job import Job, EmploymentType, EducationalOpportunityDetails, AgeGroup, OpportunityCategory
 
 # Configure logging
@@ -19,31 +25,37 @@ class EducationalOpportunityAI:
     
     def __init__(self):
         """Initialize the Educational Opportunity AI engine"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.api_key = DASHSCOPE_API_KEY
         if not self.api_key:
-            logger.warning("⚠️ GEMINI_API_KEY not found. Educational AI features will be limited.")
-            self.model = None
+            logger.warning("⚠️ DASHSCOPE_API_KEY not found. Educational AI features will be limited.")
+            pass  # Qwen client is module-level, no instance model
         else:
             try:
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                logger.info("✅ Educational Opportunity AI initialized with Gemini 2.5 Pro")
+                # AI model initialized via qwen_client (lazy-loaded)
+                logger.info("✅ Educational Opportunity AI initialized with Qwen / DashScope")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini: {e}")
-                self.model = None
-    
+                pass  # Qwen client is module-level, no instance model
     def enhance_educational_opportunity(self, opportunity_text: str, opportunity_type: EmploymentType) -> Dict[str, Any]:
         """
         Enhance educational opportunity description with AI-powered analysis
         """
-        if not self.model:
+        if not _qwen_available:
             return self._fallback_enhancement(opportunity_text, opportunity_type)
         
         try:
             prompt = self._create_enhancement_prompt(opportunity_text, opportunity_type)
-            response = self.model.generate_content(prompt)
+            messages = [
+
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                {"role": "user", "content": prompt},
+
+            ]
+
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
             
-            if response and response.text:
+            if response:
                 return self._parse_enhancement_response(response.text, opportunity_type)
             else:
                 logger.warning("Empty response from Gemini for educational opportunity enhancement")
@@ -249,7 +261,7 @@ class EducationalOpportunityAI:
     
     def analyze_opportunity_market_fit(self, opportunity: Job) -> Dict[str, Any]:
         """Analyze how well an educational opportunity fits UAE market needs"""
-        if not self.model or not opportunity.is_educational_opportunity():
+        if not _qwen_available or not opportunity.is_educational_opportunity():
             return self._basic_market_analysis(opportunity)
         
         try:
@@ -274,10 +286,22 @@ class EducationalOpportunityAI:
             }}
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
             
-            if response and response.text:
-                return self._parse_market_analysis(response.text)
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            
+            if response:
+                return self._parse_market_analysis(str(response) if isinstance(response, dict) else response)
             else:
                 return self._basic_market_analysis(opportunity)
                 

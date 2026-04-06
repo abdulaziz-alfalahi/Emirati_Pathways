@@ -7,9 +7,15 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import google.generativeai as genai
 import secrets
 from backend.user_helpers import user_display_name
+
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    _qwen_available = True
+except ImportError:
+    _qwen_available = False
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +25,11 @@ class InterviewService:
         self.upload_folder = os.path.join(os.getcwd(), 'uploads', 'interviews')
         os.makedirs(self.upload_folder, exist_ok=True)
         
-        # Configure Gemini
-        api_key = os.getenv('GEMINI_API_KEY')
-        if api_key:
-            genai.configure(api_key=api_key)
+        # Qwen client is lazy-loaded via qwen_client module; no init needed
+        if _qwen_available:
+            self.logger.info("✅ Interview service AI ready (Qwen / DashScope)")
+        else:
+            self.logger.warning("⚠️ Qwen client not available. AI analysis disabled.")
 
     def _get_db_connection(self):
         try:
@@ -300,59 +307,151 @@ class InterviewService:
         finally:
             conn.close()
 
+    def _get_transcript_for_session(self, session_id: str) -> Optional[str]:
+        """
+        Fetch Granite ASR transcript segments from the database.
+        Returns concatenated transcript text or None if unavailable.
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Try interview_transcripts table (LiveKit Granite pipeline)
+                try:
+                    cur.execute("""
+                        SELECT it.text, it.speaker, it.start_time_s
+                        FROM interview_transcripts it
+                        JOIN interview_recordings_lk ir ON it.recording_id = ir.id
+                        WHERE ir.interview_id = %s
+                        ORDER BY it.segment_index ASC
+                    """, (session_id,))
+                    segments = cur.fetchall()
+                    if segments:
+                        lines = []
+                        for seg in segments:
+                            speaker = seg.get('speaker', 'Unknown')
+                            text = seg.get('text', '')
+                            lines.append(f"[{speaker}]: {text}")
+                        return "\n".join(lines)
+                except Exception:
+                    pass  # Table may not exist
+
+                # Fallback: try the simpler interview_recordings table
+                try:
+                    cur.execute("""
+                        SELECT file_path FROM interview_recordings
+                        WHERE session_id = %s LIMIT 1
+                    """, (session_id,))
+                    row = cur.fetchone()
+                    if row:
+                        # Recording exists but no transcript — return None
+                        # Caller can decide to do audio extraction or placeholder
+                        return None
+                except Exception:
+                    pass
+
+            return None
+        finally:
+            conn.close()
+
     def analyze_interview(self, session_id: str, file_path: str = None):
         """
-        Send video to Gemini for analysis.
-        If file_path not provided, try to find one.
+        Analyze interview using Qwen on transcript data.
+
+        Strategy:
+          1. Try to fetch Granite ASR transcript from DB
+          2. If transcript found → send to qwen-plus for analysis
+          3. If no transcript → save placeholder analysis with note
+
+        NOTE: Post-migration, video body-language analysis is no longer
+        available. Analysis is transcript-only (verbal + content).
         """
-        if not file_path:
-            # Find a recording
-            conn = self._get_db_connection()
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT file_path FROM interview_recordings WHERE session_id = %s LIMIT 1", (session_id,))
-                row = cur.fetchone()
-                if row:
-                    file_path = row['file_path']
-            conn.close()
-        
-        if not file_path or not os.path.exists(file_path):
-            self.logger.error("No recording found for analysis.")
+        # 1. Try to get transcript
+        transcript = self._get_transcript_for_session(session_id)
+
+        if not transcript and not _qwen_available:
+            self.logger.warning("No transcript and no AI available — skipping analysis.")
             return
 
+        if not transcript:
+            self.logger.warning(
+                f"No ASR transcript found for session {session_id}. "
+                "Saving placeholder analysis."
+            )
+            placeholder = {
+                "technical_score": 0,
+                "soft_skills_score": 0,
+                "key_strengths": [],
+                "areas_for_improvement": ["Transcript unavailable — manual review required"],
+                "summary": (
+                    "Automated analysis could not be completed because no ASR transcript "
+                    "was found for this interview session. Please review the recording manually."
+                ),
+                "analysis_model": "none",
+                "analysis_type": "placeholder",
+            }
+            self._save_analysis(session_id, placeholder)
+            return
+
+        # 2. Send transcript to Qwen for analysis
         try:
-            self.logger.info(f"Uploading {file_path} to Gemini...")
-            video_file = genai.upload_file(path=file_path)
-            
-            # Wait for processing? Usually fast for small clips.
-            # In a real async flow we'd poll. Here we assume immediate or short wait.
-            import time
-            while video_file.state.name == "PROCESSING":
-                time.sleep(2)
-                video_file = genai.get_file(video_file.name)
+            self.logger.info(f"Analyzing transcript for session {session_id} via Qwen...")
 
-            if video_file.state.name == "FAILED":
-                raise ValueError(f"Video processing failed: {video_file.state.name}")
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert interview analyst for the UAE job market. "
+                        "Analyze the provided interview transcript and return a structured "
+                        "evaluation. Return ONLY raw, valid JSON. No markdown, no code fences."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"""Analyze this interview transcript and evaluate the candidate.
 
-            model = genai.GenerativeModel(model_name="gemini-1.5-pro")
-            prompt = """
-            Analyze this job interview video.
-            Provide a JSON output with:
-            1. "technical_score" (1-10)
-            2. "soft_skills_score" (1-10)
-            3. "key_strengths" (list of strings)
-            4. "areas_for_improvement" (list of strings)
-            5. "summary" (text)
-            """
-            response = model.generate_content([video_file, prompt])
-            
-            analysis_json = response.text.strip()
-            # Clean md code blocks if present
-            if "```json" in analysis_json:
-                analysis_json = analysis_json.split("```json")[1].split("```")[0]
-            
-            self._save_analysis(session_id, json.loads(analysis_json))
-            self.logger.info("Analysis complete and saved.")
+Transcript:
+{transcript[:15000]}
 
+Return a JSON object with:
+{{
+    "technical_score": 1-10,
+    "soft_skills_score": 1-10,
+    "key_strengths": ["strength 1", "strength 2", ...],
+    "areas_for_improvement": ["area 1", "area 2", ...],
+    "summary": "2-3 sentence assessment of the candidate's performance",
+    "communication_score": 1-10,
+    "confidence_level": "high/medium/low",
+    "recommended_action": "shortlist/hold/reject"
+}}""",
+                },
+            ]
+
+            analysis_data = chat_completion(
+                task_type="interview",
+                messages=messages,
+                response_format={"type": "json_object"},
+            )
+
+            # Add metadata
+            analysis_data["analysis_model"] = "qwen-plus"
+            analysis_data["analysis_type"] = "transcript"
+            analysis_data["transcript_length"] = len(transcript)
+
+            self._save_analysis(session_id, analysis_data)
+            self.logger.info("✅ Interview analysis complete and saved.")
+
+        except (QwenParsingError, QwenClientError) as e:
+            self.logger.error(f"Qwen analysis failed: {e}")
+            # Save error state so the UI knows analysis was attempted
+            self._save_analysis(session_id, {
+                "technical_score": 0,
+                "soft_skills_score": 0,
+                "key_strengths": [],
+                "areas_for_improvement": ["AI analysis failed — please retry or review manually"],
+                "summary": f"Analysis error: {str(e)}",
+                "analysis_model": "qwen-plus",
+                "analysis_type": "error",
+            })
         except Exception as e:
             self.logger.error(f"AI Analysis Failed: {e}")
 

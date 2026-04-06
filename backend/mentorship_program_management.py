@@ -10,7 +10,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from collections import defaultdict
 import uuid
 
@@ -18,11 +24,11 @@ import uuid
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configure Gemini AI
+# Configure Qwen AI
 try:
-    genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-    logger.info("✅ Gemini 2.5 Pro configured successfully")
+
+    # Model initialized via qwen_client (lazy-loaded)
+    logger.info("✅ Qwen / DashScope configured successfully")
 except Exception as e:
     logger.error(f"❌ Failed to configure Gemini: {e}")
     model = None
@@ -841,8 +847,20 @@ class MentorshipProgramManager:
             Keep recommendations practical and actionable (max 200 words).
             """
             
-            response = model.generate_content(prompt)
-            return response.text if response.text else "AI recommendations could not be generated"
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            return str(response) if response else "AI recommendations could not be generated"
             
         except Exception as e:
             logger.error(f"❌ Error generating program recommendations: {str(e)}")
@@ -880,8 +898,20 @@ class MentorshipProgramManager:
             Keep insights concise and actionable (max 150 words).
             """
             
-            response = model.generate_content(prompt)
-            return response.text if response.text else "AI insights could not be generated"
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            return str(response) if response else "AI insights could not be generated"
             
         except Exception as e:
             logger.error(f"❌ Error generating AI insights: {str(e)}")

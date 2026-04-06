@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Enhanced Job Description Parser with Bilingual Support
-Adapted from working CV parser with correct GROQ API configuration
-Windows-compatible with safe console output
+Emirati Journey Platform — Qwen Migration
+
+Uses qwen-plus via DashScope for structured JD extraction.
 """
 
 import os
@@ -14,14 +15,16 @@ import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import fitz  # PyMuPDF
-import google.generativeai as genai
+
+# Qwen / DashScope client (replaces google.generativeai)
+from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+from backend.config.qwen_config import DASHSCOPE_API_KEY
 
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    # dotenv not available, continue without it
     pass
 
 # Configure logging with Windows-safe format
@@ -34,18 +37,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# GROQ Configuration - Using exact same settings as working CV parser
-GEMINI_MODEL = "gemini-2.0-flash-exp"
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 class JobDescriptionParser:
     def __init__(self):
-        """Initialize the JD parser with Gemini client and Windows-safe output."""
-        if not GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY environment variable is required")
-        genai.configure(api_key=GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(GEMINI_MODEL)
-        logger.info("SUCCESS: JD Parser initialized with Gemini client")
+        """Initialize the JD parser with Qwen client."""
+        if not DASHSCOPE_API_KEY:
+            raise ValueError("DASHSCOPE_API_KEY environment variable is required")
+        logger.info("SUCCESS: JD Parser initialized with Qwen / DashScope (qwen-plus)")
     
     def safe_console_output(self, text: str) -> str:
         """Convert text to Windows-safe console output."""
@@ -54,11 +52,9 @@ class JobDescriptionParser:
         
         # For console output, handle non-ASCII characters safely
         try:
-            # Try to encode/decode to catch problematic characters
             text.encode('ascii')
             return text
         except UnicodeEncodeError:
-            # If contains non-ASCII, provide safe representation
             return f"[Non-ASCII text - {len(text)} characters]"
     
     def extract_text_from_pdf(self, pdf_path: str) -> str:
@@ -116,7 +112,6 @@ class JobDescriptionParser:
         if not text:
             return "unknown"
         
-        # Simple heuristic for Arabic detection
         arabic_chars = sum(1 for char in text if '\u0600' <= char <= '\u06FF')
         total_chars = len([char for char in text if char.isalpha()])
         
@@ -131,12 +126,18 @@ class JobDescriptionParser:
             return "en"
     
     def parse_jd_section(self, text: str, section_name: str, language: str) -> Dict[str, Any]:
-        """Parse a specific section of the job description using GROQ API."""
+        """Parse a specific section of the job description using Qwen via DashScope."""
         
-        # Define section-specific prompts
-        section_prompts = {
+        # Define section-specific prompts (system + user message pairs)
+        section_configs = {
             "basic_info": {
-                "en": """Extract basic job information from this job description text. Return ONLY a JSON object with these exact fields:
+                "system": (
+                    "You are an expert Job Description Parser for the UAE job market. "
+                    "Extract basic job information. Return ONLY raw, valid JSON. "
+                    "No markdown, no code fences. Field keys in English."
+                ),
+                "prompts": {
+                    "en": """Extract basic job information from this job description text. Return ONLY a JSON object with these exact fields:
 {
   "title": "job title",
   "company": "company name", 
@@ -148,7 +149,7 @@ class JobDescriptionParser:
 
 Job Description Text:
 """,
-                "ar": """استخرج المعلومات الأساسية للوظيفة من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذه الحقول:
+                    "ar": """استخرج المعلومات الأساسية للوظيفة من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذه الحقول:
 {
   "title": "المسمى الوظيفي",
   "company": "اسم الشركة",
@@ -160,9 +161,16 @@ Job Description Text:
 
 نص الوصف الوظيفي:
 """
+                }
             },
             "requirements": {
-                "en": """Extract job requirements from this job description text. Return ONLY a JSON object with these exact fields:
+                "system": (
+                    "You are an expert Job Description Parser for the UAE job market. "
+                    "Extract job requirements. Return ONLY raw, valid JSON. "
+                    "No markdown, no code fences. Field keys in English."
+                ),
+                "prompts": {
+                    "en": """Extract job requirements from this job description text. Return ONLY a JSON object with these exact fields:
 {
   "education": ["education requirement 1", "education requirement 2"],
   "experience": ["experience requirement 1", "experience requirement 2"], 
@@ -173,7 +181,7 @@ Job Description Text:
 
 Job Description Text:
 """,
-                "ar": """استخرج متطلبات الوظيفة من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذه الحقول:
+                    "ar": """استخرج متطلبات الوظيفة من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذه الحقول:
 {
   "education": ["متطلب تعليمي 1", "متطلب تعليمي 2"],
   "experience": ["متطلب خبرة 1", "متطلب خبرة 2"],
@@ -184,25 +192,39 @@ Job Description Text:
 
 نص الوصف الوظيفي:
 """
+                }
             },
             "responsibilities": {
-                "en": """Extract job responsibilities and duties from this job description text. Return ONLY a JSON object with this exact field:
+                "system": (
+                    "You are an expert Job Description Parser for the UAE job market. "
+                    "Extract job responsibilities. Return ONLY raw, valid JSON. "
+                    "No markdown, no code fences."
+                ),
+                "prompts": {
+                    "en": """Extract job responsibilities and duties from this job description text. Return ONLY a JSON object with this exact field:
 {
   "responsibilities": ["responsibility 1", "responsibility 2", "responsibility 3"]
 }
 
 Job Description Text:
 """,
-                "ar": """استخرج المسؤوليات والواجبات الوظيفية من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذا الحقل:
+                    "ar": """استخرج المسؤوليات والواجبات الوظيفية من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذا الحقل:
 {
   "responsibilities": ["مسؤولية 1", "مسؤولية 2", "مسؤولية 3"]
 }
 
 نص الوصف الوظيفي:
 """
+                }
             },
             "benefits": {
-                "en": """Extract job benefits, compensation, and perks from this job description text. Return ONLY a JSON object with these exact fields:
+                "system": (
+                    "You are an expert Job Description Parser for the UAE job market. "
+                    "Extract job benefits and compensation. Return ONLY raw, valid JSON. "
+                    "No markdown, no code fences."
+                ),
+                "prompts": {
+                    "en": """Extract job benefits, compensation, and perks from this job description text. Return ONLY a JSON object with these exact fields:
 {
   "benefits": ["benefit 1", "benefit 2", "benefit 3"],
   "salary": null,
@@ -211,7 +233,7 @@ Job Description Text:
 
 Job Description Text:
 """,
-                "ar": """استخرج المزايا والتعويضات والامتيازات من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذه الحقول:
+                    "ar": """استخرج المزايا والتعويضات والامتيازات من نص الوصف الوظيفي. أرجع فقط كائن JSON بهذه الحقول:
 {
   "benefits": ["ميزة 1", "ميزة 2", "ميزة 3"],
   "salary": null,
@@ -220,29 +242,43 @@ Job Description Text:
 
 نص الوصف الوظيفي:
 """
+                }
             }
         }
         
-        prompt = section_prompts.get(section_name, {}).get(language, section_prompts[section_name]["en"])
-        full_prompt = prompt + "\n\n" + text
+        config = section_configs.get(section_name)
+        if not config:
+            return {"data": {}, "success": False, "processing_time": 0}
+
+        user_prompt = config["prompts"].get(language, config["prompts"]["en"])
+        full_user_prompt = user_prompt + "\n\n" + text
+        
+        messages = [
+            {"role": "system", "content": config["system"]},
+            {"role": "user", "content": full_user_prompt},
+        ]
         
         try:
             start_time = time.time()
-            response = self.model.generate_content(full_prompt)
+            parsed_data = chat_completion(
+                task_type="jd_parse",
+                messages=messages,
+                response_format={"type": "json_object"},
+            )
             processing_time = time.time() - start_time
-            response_content = response.text if hasattr(response, 'text') else ''
-            if not response_content:
+
+            if not parsed_data:
                 logger.warning(f"WARNING: Empty response for section {section_name}")
                 return {"data": {}, "success": False, "processing_time": processing_time}
-            try:
-                parsed_data = json.loads(response_content)
-                logger.info(f"SUCCESS: Parsed section {section_name} in {processing_time:.2f}s")
-                return {"data": parsed_data, "success": True, "processing_time": processing_time}
-            except json.JSONDecodeError as e:
-                logger.error(f"ERROR: Invalid JSON in section {section_name}: {str(e)}")
-                return {"data": {}, "success": False, "processing_time": processing_time}
+
+            logger.info(f"SUCCESS: Parsed section {section_name} in {processing_time:.2f}s")
+            return {"data": parsed_data, "success": True, "processing_time": processing_time}
+
+        except (QwenParsingError, QwenClientError) as e:
+            logger.error(f"ERROR: Qwen API call failed for section {section_name}: {str(e)}")
+            return {"data": {}, "success": False, "processing_time": 0}
         except Exception as e:
-            logger.error(f"ERROR: Gemini API call failed for section {section_name}: {str(e)}")
+            logger.error(f"ERROR: Unexpected error for section {section_name}: {str(e)}")
             return {"data": {}, "success": False, "processing_time": 0}
     
     def fix_arabic_text_direction(self, text: str) -> str:
@@ -312,7 +348,7 @@ Job Description Text:
             if isinstance(skills, list):
                 keywords.extend([skill.lower() for skill in skills if isinstance(skill, str)])
         
-        jd_data['keywords'] = list(set(keywords))[:10]  # Limit to 10 unique keywords
+        jd_data['keywords'] = list(set(keywords))[:10]
         
         # Set default values
         jd_data.setdefault('is_active', True)
@@ -402,13 +438,14 @@ Job Description Text:
         
         # Add parsing metadata
         jd_data["parsing_metadata"] = {
-            "extraction_method": "enhanced_jd_processing",
+            "extraction_method": "qwen_enhanced_jd_processing",
             "confidence_score": completeness_score,
             "language_detected": language,
             "source_format": "text_input",
             "processing_time": total_processing_time,
             "successful_sections": successful_sections,
-            "total_sections": len(sections)
+            "total_sections": len(sections),
+            "ai_model": "qwen-plus",
         }
         
         total_time = time.time() - start_time
@@ -419,7 +456,6 @@ Job Description Text:
         logger.info(f"DATA: Completeness score: {completeness_score:.1f}%")
         logger.info(f"DATA: Language detected: {language}")
         
-        # Safe console output for title and company
         title_safe = self.safe_console_output(jd_data.get('title', ''))
         company_safe = self.safe_console_output(jd_data.get('company', ''))
         logger.info(f"DATA: Title: {title_safe}")
@@ -446,30 +482,24 @@ def main():
         jd_parser = JobDescriptionParser()
         
         if args.command == 'parse_jd':
-            # Check if input is a file or direct text
             if os.path.isfile(args.jd):
-                # Extract text from file
                 text = jd_parser.extract_text_from_file(args.jd)
                 if not text:
                     logger.error("ERROR: Failed to extract text from file")
                     sys.exit(1)
                 
-                # Generate output filename based on input file
                 input_path = Path(args.jd)
                 output_filename = f"{input_path.stem}_parsed.json"
             else:
-                # Treat as direct text input
                 text = args.jd
                 output_filename = f"jd_{int(time.time())}_parsed.json"
             
-            # Parse the job description
             result = jd_parser.parse_job_description(text)
             
             if not result["success"]:
                 logger.error(f"ERROR: JD parsing failed: {result.get('error', 'Unknown error')}")
                 sys.exit(1)
             
-            # Save results
             output_dir = Path(args.output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / output_filename
@@ -486,4 +516,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

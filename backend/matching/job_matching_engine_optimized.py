@@ -14,13 +14,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Now import other modules
+# Qwen / DashScope client (replaces google.generativeai)
 try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
 except ImportError:
-    GEMINI_AVAILABLE = False
-    logging.warning("Google Generative AI not available. Install with: pip install google-generativeai")
-
+    _qwen_available = False
 try:
     import redis
     REDIS_AVAILABLE = True
@@ -41,7 +41,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class EnhancedJobMatchingEngine:
-    """Enhanced Job Matching Engine with Gemini 2.5 PRO and UAE-specific optimizations"""
+    """Enhanced Job Matching Engine with Qwen 2.5 PRO and UAE-specific optimizations"""
     
     def __init__(self):
         """Initialize the enhanced matching engine"""
@@ -74,40 +74,29 @@ class EnhancedJobMatchingEngine:
         logger.info("✅ Enhanced Job Matching Engine initialized successfully")
     
     def setup_gemini(self):
-        """Setup Gemini AI with proper error handling"""
+        """Setup Qwen AI with proper error handling"""
         try:
             # Load API key from environment
-            api_key = os.getenv('GEMINI_API_KEY')
+            api_key = DASHSCOPE_API_KEY
             
             if not api_key:
-                logger.error("GEMINI_API_KEY not found in environment variables")
+                logger.error("DASHSCOPE_API_KEY not found in environment variables")
                 logger.info("Available environment variables: %s", list(os.environ.keys()))
                 # Don't raise error, use fallback mode
-                self.gemini_model = None
-                self.gemini_available = False
-                logger.warning("⚠️ Gemini AI not available - using fallback scoring mode")
+                pass  # Qwen client is module-level                logger.warning("⚠️ Qwen AI not available - using fallback scoring mode")
                 return
             
-            if not GEMINI_AVAILABLE:
+            if not _qwen_available:
                 logger.error("Google Generative AI package not installed")
-                self.gemini_model = None
-                self.gemini_available = False
-                return
+                pass  # Qwen client is module-level                return
             
             # Configure Gemini
-            genai.configure(api_key=api_key)
-            
             # Initialize model
-            self.gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
-            self.gemini_available = True
-            
-            logger.info("✅ Gemini 2.5 PRO initialized successfully")
+            # AI model initialized via qwen_client (lazy-loaded)            logger.info("✅ Gemini 2.5 PRO initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to setup Gemini: {e}")
-            self.gemini_model = None
-            self.gemini_available = False
-            logger.warning("⚠️ Gemini AI not available - using fallback scoring mode")
+            pass  # Qwen client is module-level            logger.warning("⚠️ Qwen AI not available - using fallback scoring mode")
     
     def setup_cache(self):
         """Setup Redis cache with fallback to in-memory"""
@@ -168,7 +157,7 @@ class EnhancedJobMatchingEngine:
             logger.warning(f"Cache set error: {e}")
     
     def enhanced_single_match(self, cv_data: Dict, jd_data: Dict) -> Dict[str, Any]:
-        """Enhanced single CV-JD matching with Gemini 2.5 PRO"""
+        """Enhanced single CV-JD matching with Qwen 2.5 PRO"""
         start_time = time.time()
         self.metrics['total_requests'] += 1
         
@@ -192,7 +181,7 @@ class EnhancedJobMatchingEngine:
             processing_time = time.time() - start_time
             result['processing_metadata'] = {
                 'processing_time': round(processing_time, 3),
-                'ai_model': 'gemini-2.5-pro' if self.gemini_available else 'fallback',
+                'ai_model': 'qwen-plus',
                 'cache_used': False,
                 'timestamp': datetime.now().isoformat(),
                 'engine_version': '3.0'
@@ -225,7 +214,7 @@ class EnhancedJobMatchingEngine:
         )
         
         # Perform AI-enhanced analysis if available
-        if self.gemini_available:
+        if _qwen_available:
             ai_analysis = self._gemini_analysis(cv_info, jd_info)
             self.metrics['gemini_requests'] += 1
         else:
@@ -329,10 +318,22 @@ class EnhancedJobMatchingEngine:
         try:
             prompt = self._create_gemini_prompt(cv_info, jd_info)
             
-            response = self.gemini_model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="match", messages=messages, response_format={"type": "json_object"})
             
             # Parse the response
-            analysis = self._parse_gemini_response(response.text)
+            analysis = self._parse_gemini_response(str(response) if isinstance(response, dict) else response)
             
             return analysis
             
@@ -585,7 +586,7 @@ Provide analysis in JSON format:
             'errors': self.metrics['errors'],
             'error_rate': round((self.metrics['errors'] / total_requests) * 100, 2),
             'cache_type': self.cache_type,
-            'gemini_available': self.gemini_available
+            'qwen_available': _qwen_available
         }
 
 # Global instance

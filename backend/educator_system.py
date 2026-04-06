@@ -10,7 +10,13 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from enum import Enum
 import uuid
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from models.job import Job, EmploymentType
 
 # Configure logging
@@ -161,19 +167,17 @@ class EducatorSystem:
     
     def __init__(self):
         """Initialize the educator system"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.api_key = DASHSCOPE_API_KEY
         if not self.api_key:
-            logger.warning("⚠️ GEMINI_API_KEY not found. AI features will be limited.")
-            self.model = None
+            logger.warning("⚠️ DASHSCOPE_API_KEY not found. AI features will be limited.")
+            pass  # Qwen client is module-level, no instance model
         else:
             try:
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                logger.info("✅ Educator System initialized with Gemini 2.5 Pro")
+                # AI model initialized via qwen_client (lazy-loaded)
+                logger.info("✅ Educator System initialized with Qwen / DashScope")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini: {e}")
-                self.model = None
-    
+                pass  # Qwen client is module-level, no instance model
     def create_educator_profile(self, profile_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new educator profile"""
         try:
@@ -435,7 +439,7 @@ class EducatorSystem:
     
     def _generate_initial_career_guidance(self, student: StudentProfile) -> Dict[str, Any]:
         """Generate AI-powered initial career guidance for new student"""
-        if not self.model:
+        if not _qwen_available:
             return self._fallback_career_guidance(student)
         
         try:
@@ -465,9 +469,21 @@ class EducatorSystem:
             Format as JSON with confidence scores and UAE-specific insights.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
             
-            if response and response.text:
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="explain", messages=messages, response_format={"type": "json_object"})
+            
+            if response:
                 # Parse AI response (simplified for demo)
                 return {
                     "career_pathways": [
@@ -508,7 +524,7 @@ class EducatorSystem:
     
     def _generate_career_guidance(self, student_profile: Dict[str, Any], session_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate AI-powered career guidance for session"""
-        if not self.model:
+        if not _qwen_available:
             return self._fallback_session_guidance()
         
         try:

@@ -14,7 +14,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from dataclasses import dataclass, asdict
 import uuid
 import boto3
@@ -131,14 +137,11 @@ class SecureVideoStorageSystem:
         self.master_key = os.getenv('VIDEO_ENCRYPTION_KEY', 'default_key_change_in_production')
         self.encryption_suite = Fernet(base64.urlsafe_b64encode(self.master_key.encode().ljust(32)[:32]))
         
-        # Initialize Gemini AI for content analysis
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Qwen AI (lazy-loaded via qwen_client module)
+        if _qwen_available:
+            logger.info("Qwen AI ready for content analysis")
         else:
-            logger.warning("GEMINI_API_KEY not found - AI analysis will be limited")
-            self.model = None
+            logger.warning("DASHSCOPE_API_KEY not found - AI analysis will be limited")
         
         # Processing queue
         self.processing_queue = queue.Queue()
@@ -407,7 +410,7 @@ class SecureVideoStorageSystem:
     def _analyze_video_quality(self, session_id: str, file_id: str) -> QualityAssessment:
         """Analyze video quality using AI"""
         try:
-            if self.model:
+            if _qwen_available:
                 # In production, this would analyze the actual video
                 # For demo, return mock assessment
                 return self._generate_mock_quality_assessment(session_id)

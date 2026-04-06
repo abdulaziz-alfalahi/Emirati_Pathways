@@ -1,9 +1,9 @@
 """
 AI-Powered Job Matching Service
-Uses Google Gemini 2.5 Pro for semantic matching between CVs and job postings
+Uses Google Qwen / DashScope for semantic matching between CVs and job postings
 Supports experience level filtering and D33/Talent33 alignment
 
-IMPORTANT: This service requires Google Gemini AI. No fallback to basic matching.
+IMPORTANT: This service requires Google Qwen AI. No fallback to basic matching.
 """
 
 import os
@@ -56,38 +56,38 @@ class AIJobMatchingService:
         self._client = None
         self._client_initialized = False
         self._initialization_error = None
-        # Use Gemini 2.0 Flash (more reliable with safety settings)
-        # Gemini 2.5 Pro has stricter built-in filters that cannot be disabled
-        self.model = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+        # Use Qwen / DashScope (more reliable with safety settings)
+        # Qwen / DashScope has stricter built-in filters that cannot be disabled
+        self._model_name = 'qwen-turbo'  # Qwen model via DashScope
     
     def _initialize_client(self):
-        """Initialize Google Gemini client"""
+        """Initialize Qwen / DashScope client"""
         if self._client_initialized:
             return
         
         self._client_initialized = True
         try:
-            api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
-            if not api_key:
-                self._initialization_error = "GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set"
+            from backend.services.qwen_client import chat_completion
+            from backend.config.qwen_config import DASHSCOPE_API_KEY
+            
+            if not DASHSCOPE_API_KEY:
+                self._initialization_error = "DASHSCOPE_API_KEY environment variable not set"
                 logger.error(self._initialization_error)
                 return
             
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            self._client = genai.GenerativeModel(self.model)
-            logger.info(f"Google Gemini client initialized successfully with model: {self.model}")
+            self._client = chat_completion  # Store the function reference
+            logger.info(f"Qwen/DashScope client initialized successfully (model: {self._model_name})")
             
         except ImportError:
-            self._initialization_error = "google-generativeai package not installed. Run: pip install google-generativeai"
+            self._initialization_error = "qwen_client not available. Check backend/services/qwen_client.py"
             logger.error(self._initialization_error)
         except Exception as e:
-            self._initialization_error = f"Failed to initialize Gemini client: {str(e)}"
+            self._initialization_error = f"Failed to initialize Qwen client: {str(e)}"
             logger.error(self._initialization_error)
     
     @property
     def client(self):
-        """Get the Gemini client, initializing if needed"""
+        """Get the Qwen chat_completion function, initializing if needed"""
         if not self._client_initialized:
             self._initialize_client()
         return self._client
@@ -354,51 +354,25 @@ Return ONLY a valid JSON object in this format:
   "fit_assessment": "excellent|good|moderate|poor|not_suitable"
 }}"""
 
-                # Use Gemini to generate response with safety settings disabled
-                # Using list format with category/threshold as required by the API
-                safety_settings = [
+                # Use Qwen / DashScope for semantic matching
+                messages = [
                     {
-                        "category": "HARM_CATEGORY_HARASSMENT",
-                        "threshold": "BLOCK_NONE"
+                        "role": "system",
+                        "content": (
+                            "You are an expert UAE job market analyst. Analyze candidate-job fit "
+                            "and return ONLY raw, valid JSON. No markdown, no code fences."
+                        ),
                     },
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH",
-                        "threshold": "BLOCK_NONE"
-                    },
-                    {
-                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE"
-                    },
-                    {
-                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE"
-                    }
+                    {"role": "user", "content": prompt},
                 ]
-                
-                response = self.client.generate_content(
-                    prompt,
-                    generation_config={
-                        'temperature': 0.2,
-                        'max_output_tokens': 1000,
-                    },
-                    safety_settings=safety_settings
+
+                result = self.client(
+                    task_type="match",
+                    messages=messages,
+                    response_format={"type": "json_object"},
                 )
-                
-                # Check if response was blocked
-                if not response.candidates or not response.candidates[0].content.parts:
-                    # Response was blocked, check finish reason
-                    finish_reason = response.candidates[0].finish_reason if response.candidates else 'UNKNOWN'
-                    logger.warning(f"Gemini response blocked. Finish reason: {finish_reason}")
-                    raise ValueError(f"Response blocked by safety filters. Finish reason: {finish_reason}")
-                
-                result_text = response.text.strip()
-                
-                # Extract JSON from response (handle potential markdown code blocks)
-                result_text = result_text.replace('```json', '').replace('```', '').strip()
-                json_match = re.search(r'\{[\s\S]*\}', result_text)
-                if json_match:
-                    result = json.loads(json_match.group())
-                    
+
+                if isinstance(result, dict):
                     score = min(100, max(0, result.get('total_score', 50)))
                     breakdown = {
                         'skills_match': result.get('breakdown', {}).get('skills_match', 0),
@@ -414,10 +388,9 @@ Return ONLY a valid JSON object in this format:
                             'recommendation': result.get('recommendation', ''),
                             'fit_assessment': result.get('fit_assessment', 'moderate'),
                             'ai_analyzed': True,
-                            'ai_model': self.model
+                            'ai_model': 'qwen-plus'
                         }
                     }
-                    
                     return score, breakdown
                 else:
                     raise ValueError("Could not parse JSON from AI response")

@@ -11,8 +11,13 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple
 import uuid
 
-import google.generativeai as genai
-
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,18 +27,16 @@ class CVJobMatchingIntegration:
     
     def __init__(self):
         """Initialize the integration system"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        self.model = None
-        
+        self.api_key = DASHSCOPE_API_KEY
+        pass  # Qwen client is module-level, no instance model
         if not self.api_key:
-            logger.warning("⚠️ GEMINI_API_KEY not found. Job matching AI features will be disabled.")
+            logger.warning("⚠️ DASHSCOPE_API_KEY not found. Job matching AI features will be disabled.")
         else:
             try:
                 # Configure Gemini
-                genai.configure(api_key=self.api_key)
                 # [FIX] Use 2026-available model (matching cv_parser.py)
-                self.model = genai.GenerativeModel('gemini-2.5-flash')
-                logger.info("✅ CV-Job Matching Integration initialized with Gemini 2.5 Flash")
+                # AI model initialized via qwen_client (lazy-loaded)
+                logger.info("✅ CV-Job Matching Integration initialized with Qwen 2.5 Flash")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Gemini for matching: {e}")
         
@@ -213,16 +216,28 @@ class CVJobMatchingIntegration:
             Return only valid JSON.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
             
-            if not response or not response.text:
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="match", messages=messages, response_format={"type": "json_object"})
+            
+            if not response or not response:
                 return {
                     'success': False,
                     'message': 'Failed to generate insights'
                 }
             
             # Parse response
-            insights_text = response.text.strip()
+            insights_text = str(response) if isinstance(response, dict) else response
             if insights_text.startswith('```json'):
                 insights_text = insights_text[7:]
             if insights_text.startswith('```'):

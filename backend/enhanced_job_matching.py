@@ -1,5 +1,5 @@
 """
-Enhanced Job Matching Engine with Gemini 2.5 Pro Integration
+Enhanced Job Matching Engine with Qwen / DashScope Integration
 Provides AI-powered job recommendations for Emirati candidates
 """
 
@@ -8,7 +8,13 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 from dataclasses import dataclass
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -34,13 +40,11 @@ class JobMatch:
 
 class EnhancedJobMatchingEngine:
     def __init__(self):
-        """Initialize the enhanced job matching engine with Gemini 2.5 Pro"""
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        """Initialize the enhanced job matching engine with Qwen / DashScope"""
+        self.api_key = DASHSCOPE_API_KEY
         if not self.api_key:
-            raise ValueError("GEMINI_API_KEY environment variable is required")
-        
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            raise ValueError("DASHSCOPE_API_KEY environment variable is required")
+        # AI model initialized via qwen_client (lazy-loaded)
         
         # Database connection
         self.db_config = {
@@ -51,7 +55,7 @@ class EnhancedJobMatchingEngine:
             'port': os.getenv('DB_PORT', '5432')
         }
         
-        logger.info("Enhanced Job Matching Engine initialized with Gemini 2.5 Pro")
+        logger.info("Enhanced Job Matching Engine initialized with Qwen / DashScope")
 
     def get_db_connection(self):
         """Get database connection"""
@@ -127,7 +131,7 @@ class EnhancedJobMatchingEngine:
             return []
 
     def analyze_job_match_with_ai(self, candidate_profile: Dict, job: Dict) -> Dict[str, Any]:
-        """Use Gemini 2.5 Pro to analyze job match compatibility"""
+        """Use Qwen / DashScope to analyze job match compatibility"""
         try:
             prompt = f"""
             Analyze the job match compatibility between this Emirati candidate and job opportunity.
@@ -170,15 +174,27 @@ class EnhancedJobMatchingEngine:
             Focus on UAE market context, Emiratization benefits, and career growth potential.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="match", messages=messages, response_format={"type": "json_object"})
             
             # Parse JSON response
             try:
-                analysis = json.loads(response.text)
+                analysis = response  # chat_completion returns parsed JSON directly
                 return analysis
             except json.JSONDecodeError:
                 # Fallback parsing if JSON is malformed
-                return self._parse_fallback_response(response.text)
+                return self._parse_fallback_response(str(response) if isinstance(response, dict) else response)
                 
         except Exception as e:
             logger.error(f"Error in AI job match analysis: {e}")
@@ -399,10 +415,22 @@ class EnhancedJobMatchingEngine:
             Focus on UAE job market trends and Emiratization initiatives.
             """
             
-            response = self.model.generate_content(prompt)
+            messages = [
+
+            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+            
+                {"role": "user", "content": prompt},
+
+            
+            ]
+
+            
+            response = chat_completion(task_type="match", messages=messages, response_format={"type": "json_object"})
             
             try:
-                insights = json.loads(response.text)
+                insights = response  # chat_completion returns parsed JSON directly
                 return insights
             except json.JSONDecodeError:
                 return {

@@ -1,6 +1,6 @@
 """
 AI Assessment Intelligence Engine for Emirati Journey Platform
-Powered by Gemini 2.5 Pro for intelligent assessment creation and evaluation
+Powered by Qwen / DashScope for intelligent assessment creation and evaluation
 """
 
 import os
@@ -10,7 +10,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
-import google.generativeai as genai
+# Qwen / DashScope client (replaces google.generativeai)
+try:
+    from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
+    from backend.config.qwen_config import DASHSCOPE_API_KEY
+    _qwen_available = bool(DASHSCOPE_API_KEY)
+except ImportError:
+    _qwen_available = False
 import asyncio
 import time
 
@@ -19,12 +25,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini API
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    logger.info("✅ Gemini 2.5 Pro API configured successfully")
+DASHSCOPE_API_KEY = DASHSCOPE_API_KEY
+if DASHSCOPE_API_KEY:
+    logger.info("✅ Qwen / DashScope API configured successfully")
 else:
-    logger.warning("⚠️ GEMINI_API_KEY not found in environment variables")
+    logger.warning("⚠️ DASHSCOPE_API_KEY not found in environment variables")
 
 @dataclass
 class AssessmentIntelligence:
@@ -74,10 +79,10 @@ class AssessmentIntelligenceType(Enum):
     BIAS_DETECTION = "bias_detection"
 
 class AIAssessmentIntelligence:
-    """AI-powered assessment intelligence engine using Gemini 2.5 Pro"""
+    """AI-powered assessment intelligence engine using Qwen / DashScope"""
     
     def __init__(self):
-        self.model = None
+        pass  # Qwen client is module-level, no instance model
         self.intelligence_cache = {}
         self.processing_stats = {
             'total_requests': 0,
@@ -93,17 +98,16 @@ class AIAssessmentIntelligence:
         logger.info("✅ AI Assessment Intelligence Engine initialized")
     
     def _initialize_model(self):
-        """Initialize Gemini 2.5 Pro model"""
+        """Initialize Qwen / DashScope model"""
         try:
-            if GEMINI_API_KEY:
-                self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                logger.info("✅ Gemini 2.5 Pro model initialized successfully")
+            if DASHSCOPE_API_KEY:
+                # AI model initialized via qwen_client (lazy-loaded)
+                logger.info("✅ Qwen / DashScope model initialized successfully")
             else:
                 logger.warning("⚠️ Gemini API key not available - AI features will be limited")
         except Exception as e:
             logger.error(f"❌ Failed to initialize Gemini model: {str(e)}")
-            self.model = None
-    
+            pass  # Qwen client is module-level, no instance model
     def generate_intelligent_questions(self, 
                                      assessment_type: str,
                                      industry_category: str,
@@ -111,11 +115,11 @@ class AIAssessmentIntelligence:
                                      skill_focus: List[str],
                                      question_count: int = 10,
                                      uae_context: bool = True) -> Dict[str, Any]:
-        """Generate intelligent questions using Gemini 2.5 Pro"""
+        """Generate intelligent questions using Qwen / DashScope"""
         start_time = time.time()
         
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_question_generation(assessment_type, question_count)
             
             # Create comprehensive prompt for question generation
@@ -125,10 +129,18 @@ class AIAssessmentIntelligence:
             )
             
             # Generate questions using Gemini
-            response = self.model.generate_content(prompt)
+            messages = [
+
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                {"role": "user", "content": prompt},
+
+            ]
+
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse and structure the response
-            questions_data = self._parse_question_response(response.text)
+            questions_data = self._parse_question_response(str(response) if isinstance(response, dict) else response)
             
             # Add UAE-specific enhancements
             if uae_context:
@@ -174,7 +186,7 @@ class AIAssessmentIntelligence:
         start_time = time.time()
         
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_response_evaluation(question_data, response_data)
             
             # Create evaluation prompt
@@ -183,10 +195,18 @@ class AIAssessmentIntelligence:
             )
             
             # Generate evaluation using Gemini
-            response = self.model.generate_content(prompt)
+            messages = [
+
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                {"role": "user", "content": prompt},
+
+            ]
+
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse evaluation response
-            evaluation_data = self._parse_evaluation_response(response.text)
+            evaluation_data = self._parse_evaluation_response(str(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -218,17 +238,25 @@ class AIAssessmentIntelligence:
         start_time = time.time()
         
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_performance_analysis(assessment_data, session_data)
             
             # Create performance analysis prompt
             prompt = self._create_performance_analysis_prompt(assessment_data, session_data)
             
             # Generate analysis using Gemini
-            response = self.model.generate_content(prompt)
+            messages = [
+
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                {"role": "user", "content": prompt},
+
+            ]
+
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse analysis response
-            analysis_data = self._parse_performance_response(response.text)
+            analysis_data = self._parse_performance_response(str(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -260,17 +288,25 @@ class AIAssessmentIntelligence:
         start_time = time.time()
         
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_skill_gap_analysis(candidate_results)
             
             # Create skill gap analysis prompt
             prompt = self._create_skill_gap_prompt(candidate_results, industry_requirements)
             
             # Generate analysis using Gemini
-            response = self.model.generate_content(prompt)
+            messages = [
+
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                {"role": "user", "content": prompt},
+
+            ]
+
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse skill gap response
-            gap_data = self._parse_skill_gap_response(response.text)
+            gap_data = self._parse_skill_gap_response(str(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -303,17 +339,25 @@ class AIAssessmentIntelligence:
         start_time = time.time()
         
         try:
-            if not self.model:
+            if not _qwen_available:
                 return self._fallback_bias_detection()
             
             # Create bias detection prompt
             prompt = self._create_bias_detection_prompt(assessment_data, response_patterns)
             
             # Generate bias analysis using Gemini
-            response = self.model.generate_content(prompt)
+            messages = [
+
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
+
+                {"role": "user", "content": prompt},
+
+            ]
+
+            response = chat_completion(task_type="score", messages=messages, response_format={"type": "json_object"})
             
             # Parse bias analysis response
-            bias_data = self._parse_bias_response(response.text)
+            bias_data = self._parse_bias_response(str(response) if isinstance(response, dict) else response)
             
             processing_time = time.time() - start_time
             
@@ -777,7 +821,7 @@ class AIAssessmentIntelligence:
         """Get AI intelligence processing statistics"""
         return {
             'processing_stats': self.processing_stats.copy(),
-            'model_status': 'operational' if self.model else 'unavailable',
+            'model_status': 'operational' if _qwen_available else 'unavailable',
             'cache_size': len(self.intelligence_cache),
             'system_health': 'excellent' if self.processing_stats['successful_requests'] > 0 else 'initializing'
         }
