@@ -638,16 +638,6 @@ const BilingualHomePage: React.FC = () => {
         </div>
       </footer>
 
-      {/* Language Toggle Floating Button */}
-      <button
-        onClick={toggleLanguage}
-        className="fixed bottom-6 right-6 bg-teal-600 hover:bg-teal-700 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:shadow-xl z-50"
-        title={`Switch to ${currentLanguage === 'en' ? 'Arabic' : 'English'}`}
-      >
-        <Globe className="w-6 h-6" />
-        <span className="sr-only">Toggle Language</span>
-      </button>
-
       {/* Interactive Dashboard Demo */}
       <InteractiveDashboardDemo
         isOpen={isDemoModalOpen}

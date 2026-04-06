@@ -996,7 +996,6 @@ const App: React.FC = () => {
               <AppContent />
               <Toaster />
               <HotToaster position="top-center" />
-              <FeedbackWidget />
             </ThemeProvider>
           </LanguageProvider>
         </AuthProvider>
