@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
     User,
@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 
 const SidebarItem = ({ icon: Icon, label, path, active, isRTL }: any) => {
     const navigate = useNavigate();
@@ -42,8 +43,55 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
     // Bilingual helper
     const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
-    // Calculate completion (Mock for now)
-    const completion = 65;
+    // Calculate completion dynamically from profile API
+    const [completion, setCompletion] = useState(0);
+    const [completionHint, setCompletionHint] = useState('');
+
+    useEffect(() => {
+        const fetchCompletion = async () => {
+            try {
+                const { data } = await restClient.get('/api/profile/v2/me');
+                if (data.success && data.profile) {
+                    const p = data.profile;
+                    let score = 0;
+                    const missing: string[] = [];
+
+                    // Basic Info (30%)
+                    if (p.first_name || p.full_name) score += 10; else missing.push('name');
+                    if (p.headline) score += 10; else missing.push('headline');
+                    if (p.bio) score += 10; else missing.push('bio');
+
+                    // Contact (20%)
+                    if (p.contact?.phone) score += 10; else missing.push('phone');
+                    if (p.contact?.location) score += 10; else missing.push('location');
+
+                    // Assets (50%)
+                    if (p.cv_count > 0 || p.has_cv) score += 30; else missing.push('CV');
+                    if (p.skills && p.skills.length > 0) score += 10; else missing.push('skills');
+                    if (p.experience && p.experience.length > 0) score += 10; else missing.push('experience');
+
+                    setCompletion(Math.min(score, 100));
+                    if (missing.length > 0) {
+                        setCompletionHint(language === 'ar'
+                            ? `أضف ${missing[0]} للتقدم`
+                            : `Add ${missing[0]} to improve`);
+                    } else {
+                        setCompletionHint(language === 'ar' ? 'ملف كامل! 🌟' : 'All-Star Profile! 🌟');
+                    }
+                }
+            } catch (err) {
+                // Fallback — try CV count separately
+                try {
+                    const { data: cvData } = await restClient.get('/api/cv/list');
+                    const cvCount = cvData?.total_count || cvData?.cvs?.length || 0;
+                    setCompletion(cvCount > 0 ? 40 : 10);
+                } catch {
+                    setCompletion(10);
+                }
+            }
+        };
+        fetchCompletion();
+    }, [language]);
 
     return (
         <div className={`min-h-screen bg-background flex flex-col ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -77,7 +125,7 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                                 style={{ width: `${completion}%` }}
                             ></div>
                         </div>
-                        <p className="text-[10px] text-teal-600 mt-2">{t('Add 1 more project to reach "All-Star"', 'أضف مشروعاً واحداً للوصول إلى "نجم"')}</p>
+                        <p className="text-[10px] text-teal-600 mt-2">{completionHint || t('Add 1 more project to reach "All-Star"', 'أضف مشروعاً واحداً للوصول إلى "نجم"')}</p>
                     </div>
 
                     <nav className="space-y-1">

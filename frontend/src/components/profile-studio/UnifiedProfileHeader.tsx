@@ -79,8 +79,8 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         secondaryRoles: [],
         profileCompletion: calculateCompletion(initialProfile, cvUploaded),
         lastUpdated: new Date().toISOString().split('T')[0],
-        verificationStatus: 'pending',
-        profileVisibility: 'professional',
+        verificationStatus: initialProfile?.verification_status || (calculateCompletion(initialProfile, cvUploaded) >= 80 ? 'verified' : calculateCompletion(initialProfile, cvUploaded) >= 40 ? 'pending' : 'unverified'),
+        profileVisibility: initialProfile?.profile_visibility || 'professional',
         profilePhotoUrl: initialProfile?.profile_photo_url
     });
 
@@ -342,7 +342,32 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                         <span className="text-sm font-medium mb-2 block">Last Updated</span>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">{currentUser.lastUpdated}</span>
-                            <Button variant="outline" size="sm" onClick={() => setIsRefreshing(true)}>
+                            <Button variant="outline" size="sm" disabled={isRefreshing} onClick={async () => {
+                                setIsRefreshing(true);
+                                try {
+                                    const { data } = await restClient.get('/api/profile/v2/me');
+                                    if (data.success && data.profile) {
+                                        const p = data.profile;
+                                        const comp = calculateCompletion(p, cvUploaded);
+                                        setCurrentUser(prev => ({
+                                            ...prev,
+                                            firstName: p.full_name?.split(' ')[0] || p.first_name || prev.firstName,
+                                            lastName: p.full_name?.split(' ').slice(1).join(' ') || p.last_name || prev.lastName,
+                                            email: p.email || p.contact?.email || prev.email,
+                                            profileCompletion: comp,
+                                            lastUpdated: new Date().toISOString().split('T')[0],
+                                            verificationStatus: comp >= 80 ? 'verified' : comp >= 40 ? 'pending' : 'unverified',
+                                            profilePhotoUrl: p.profile_photo_url || prev.profilePhotoUrl,
+                                        }));
+                                        toast({ title: 'Profile refreshed', description: `Completion: ${comp}%` });
+                                    }
+                                } catch (err) {
+                                    console.error('Refresh failed:', err);
+                                    toast({ title: 'Refresh failed', description: 'Could not reload profile data.', variant: 'destructive' });
+                                } finally {
+                                    setIsRefreshing(false);
+                                }
+                            }}>
                                 <RefreshCw className={`h-3 w-3 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                                 Refresh Data
                             </Button>
