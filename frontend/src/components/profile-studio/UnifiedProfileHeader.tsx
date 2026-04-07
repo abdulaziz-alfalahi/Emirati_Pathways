@@ -345,9 +345,9 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                             <Button variant="outline" size="sm" disabled={isRefreshing} onClick={async () => {
                                 setIsRefreshing(true);
                                 try {
-                                    const { data } = await restClient.get('/api/profile/v2/me');
-                                    if (data.success && data.profile) {
-                                        const p = data.profile;
+                                    const { data } = await restClient.get('/api/v2/profile/');
+                                    const p = data.success ? (data.data || data.profile) : null;
+                                    if (p) {
                                         const comp = calculateCompletion(p, cvUploaded);
                                         setCurrentUser(prev => ({
                                             ...prev,

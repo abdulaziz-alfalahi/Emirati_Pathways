@@ -50,9 +50,9 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
     useEffect(() => {
         const fetchCompletion = async () => {
             try {
-                const { data } = await restClient.get('/api/profile/v2/me');
-                if (data.success && data.profile) {
-                    const p = data.profile;
+                const { data } = await restClient.get('/api/v2/profile/');
+                const p = data.success ? (data.data || data.profile) : null;
+                if (p) {
                     let score = 0;
                     const missing: string[] = [];
 
