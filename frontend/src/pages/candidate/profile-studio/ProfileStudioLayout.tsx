@@ -50,44 +50,49 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
     useEffect(() => {
         const fetchCompletion = async () => {
             try {
-                const { data } = await restClient.get('/api/v2/profile/');
-                const p = data.success ? (data.data || data.profile) : null;
-                if (p) {
-                    let score = 0;
-                    const missing: string[] = [];
+                // Fetch profile and CV list in parallel
+                const [profileRes, cvRes] = await Promise.allSettled([
+                    restClient.get('/api/v2/profile/'),
+                    restClient.get('/api/cv/list'),
+                ]);
 
+                const profileData = profileRes.status === 'fulfilled' ? profileRes.value.data : null;
+                const cvData = cvRes.status === 'fulfilled' ? cvRes.value.data : null;
+
+                const p = profileData?.success ? (profileData.data || profileData.profile) : null;
+                const cvCount = cvData?.total_count ?? cvData?.cvs?.length ?? 0;
+
+                let score = 0;
+                const missing: string[] = [];
+
+                if (p) {
                     // Basic Info (30%)
                     if (p.first_name || p.full_name) score += 10; else missing.push('name');
                     if (p.headline) score += 10; else missing.push('headline');
                     if (p.bio) score += 10; else missing.push('bio');
 
                     // Contact (20%)
-                    if (p.contact?.phone) score += 10; else missing.push('phone');
-                    if (p.contact?.location) score += 10; else missing.push('location');
+                    if (p.contact?.phone || p.phone) score += 10; else missing.push('phone');
+                    if (p.contact?.location || p.location) score += 10; else missing.push('location');
 
-                    // Assets (50%)
-                    if (p.cv_count > 0 || p.has_cv) score += 30; else missing.push('CV');
+                    // Skills & Experience (20%)
                     if (p.skills && p.skills.length > 0) score += 10; else missing.push('skills');
                     if (p.experience && p.experience.length > 0) score += 10; else missing.push('experience');
+                }
 
-                    setCompletion(Math.min(score, 100));
-                    if (missing.length > 0) {
-                        setCompletionHint(language === 'ar'
-                            ? `أضف ${missing[0]} للتقدم`
-                            : `Add ${missing[0]} to improve`);
-                    } else {
-                        setCompletionHint(language === 'ar' ? 'ملف كامل! 🌟' : 'All-Star Profile! 🌟');
-                    }
+                // CV (30%) — from separate CV endpoint
+                if (cvCount > 0) score += 30; else missing.push('CV');
+
+                setCompletion(Math.min(score, 100));
+                if (missing.length > 0) {
+                    setCompletionHint(language === 'ar'
+                        ? `أضف ${missing[0]} للتقدم`
+                        : `Add ${missing[0]} to improve`);
+                } else {
+                    setCompletionHint(language === 'ar' ? 'ملف كامل! 🌟' : 'All-Star Profile! 🌟');
                 }
             } catch (err) {
-                // Fallback — try CV count separately
-                try {
-                    const { data: cvData } = await restClient.get('/api/cv/list');
-                    const cvCount = cvData?.total_count || cvData?.cvs?.length || 0;
-                    setCompletion(cvCount > 0 ? 40 : 10);
-                } catch {
-                    setCompletion(10);
-                }
+                setCompletion(10);
             }
         };
         fetchCompletion();

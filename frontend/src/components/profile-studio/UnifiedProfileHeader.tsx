@@ -58,8 +58,8 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         if (profile.bio) score += 10;
 
         // Contact (20%)
-        if (profile.contact?.phone) score += 10;
-        if (profile.contact?.location) score += 10;
+        if (profile.contact?.phone || profile.phone) score += 10;
+        if (profile.contact?.location || profile.location) score += 10;
 
         // Assets (50%)
         if (hasCv) score += 30; // CV is major
@@ -345,10 +345,17 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                             <Button variant="outline" size="sm" disabled={isRefreshing} onClick={async () => {
                                 setIsRefreshing(true);
                                 try {
-                                    const { data } = await restClient.get('/api/v2/profile/');
-                                    const p = data.success ? (data.data || data.profile) : null;
+                                    const [profileRes, cvRes] = await Promise.allSettled([
+                                        restClient.get('/api/v2/profile/'),
+                                        restClient.get('/api/cv/list'),
+                                    ]);
+                                    const profileData = profileRes.status === 'fulfilled' ? profileRes.value.data : null;
+                                    const cvData = cvRes.status === 'fulfilled' ? cvRes.value.data : null;
+                                    const p = profileData?.success ? (profileData.data || profileData.profile) : null;
+                                    const hasCv = (cvData?.total_count ?? cvData?.cvs?.length ?? 0) > 0;
+
                                     if (p) {
-                                        const comp = calculateCompletion(p, cvUploaded);
+                                        const comp = calculateCompletion(p, hasCv);
                                         setCurrentUser(prev => ({
                                             ...prev,
                                             firstName: p.full_name?.split(' ')[0] || p.first_name || prev.firstName,
