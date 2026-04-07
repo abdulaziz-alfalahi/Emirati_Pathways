@@ -516,7 +516,7 @@ const EnhancedJobPosting = () => {
                   onCheckedChange={(checked) => handleInputChange('enhance_with_ai', checked)}
                 />
                 <Label htmlFor="enhance_with_ai">
-                  Enhance with AI (Gemini 2.5 Pro)
+                  Enhance with AI
                 </Label>
               </div>
 

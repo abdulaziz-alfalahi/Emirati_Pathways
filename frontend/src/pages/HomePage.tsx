@@ -61,7 +61,7 @@ const HomePage: React.FC = () => {
     {
       icon: Sparkles,
       title: 'AI-Powered Intelligence',
-      description: 'Advanced Gemini 2.5 Pro integration for personalized career guidance and matching'
+      description: 'Advanced AI integration for personalized career guidance and matching'
     },
     {
       icon: Shield,

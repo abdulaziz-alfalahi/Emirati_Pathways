@@ -434,12 +434,12 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
                 {isAnalyzing ? (
                     <>
                         <BrainCircuit className="h-3 w-3 animate-spin text-purple-500" />
-                        Analyzing with Gemini AI...
+                        Analyzing with AI...
                     </>
                 ) : analysis ? (
                     <>
                         <Activity className="h-3 w-3 animate-pulse text-green-500" />
-                        Powered by Gemini AI • Updates every 30s
+                        Powered by AI • Updates every 30s
                     </>
                 ) : isListening ? (
                     <>

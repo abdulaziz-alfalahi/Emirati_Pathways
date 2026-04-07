@@ -268,7 +268,7 @@ const BilingualHomePage: React.FC = () => {
     {
       icon: Sparkles,
       title: translations.features?.aiIntelligence?.title || 'AI-Powered Intelligence',
-      description: translations.features?.aiIntelligence?.description || 'Advanced Gemini 2.5 Pro integration for personalized career guidance and matching',
+      description: translations.features?.aiIntelligence?.description || 'Advanced AI integration for personalized career guidance and matching',
     },
     {
       icon: Shield,

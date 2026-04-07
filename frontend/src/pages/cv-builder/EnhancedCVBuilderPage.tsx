@@ -236,7 +236,7 @@ const CVBuilderContent: React.FC = () => {
             </h1>
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               {currentLanguage === 'en'
-                ? 'Create professional CVs tailored for the UAE job market with Gemini AI analysis and D33/Talent33 alignment'
+                ? 'Create professional CVs tailored for the UAE job market with AI analysis and D33/Talent33 alignment'
                 : 'أنشئ سيراً ذاتية مهنية مصممة للسوق الإماراتي مع تحليل ذكاء جيميني والتوافق مع رؤية D33/Talent33'
               }
             </p>
@@ -245,7 +245,7 @@ const CVBuilderContent: React.FC = () => {
                 <span className="font-medium">🇦🇪 UAE Focused</span>
               </div>
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-                <span className="font-medium">🤖 Gemini AI</span>
+                <span className="font-medium">🤖 AI-Powered</span>
               </div>
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
                 <span className="font-medium">🌟 D33 Aligned</span>
@@ -373,7 +373,7 @@ const CVBuilderContent: React.FC = () => {
 
                       <p className="text-sm text-gray-500">
                         {currentLanguage === 'en'
-                          ? 'Maximum file size: 10MB • Powered by Gemini AI'
+                          ? 'Maximum file size: 10MB • Powered by AI'
                           : 'الحد الأقصى لحجم الملف: 10 ميجابايت • مدعوم بذكاء جيميني'
                         }
                       </p>
@@ -581,7 +581,7 @@ const CVBuilderContent: React.FC = () => {
               </h3>
               <p className="text-gray-600">
                 {currentLanguage === 'en'
-                  ? 'Advanced Gemini AI extracts and analyzes your experience, skills, and achievements'
+                  ? 'Advanced AI extracts and analyzes your experience, skills, and achievements'
                   : 'ذكاء جيميني المتقدم يستخرج ويحلل خبراتك ومهاراتك وإنجازاتك'
                 }
               </p>
