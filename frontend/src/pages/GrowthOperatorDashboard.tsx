@@ -9,8 +9,8 @@ import {
   Building2, Plus, Search, Filter, Mail, Phone, MapPin, Globe,
   Users, Briefcase, CheckCircle, Clock, AlertTriangle, Eye, Edit,
   RefreshCw, Download, Upload, TrendingUp, BarChart3, Target,
-  Activity, ArrowUpRight, ArrowDownRight, FileText, ShieldCheck,
-  Building, UserCheck, Flag, ChevronRight, ExternalLink,
+  Activity, ArrowUpRight, ArrowDownRight, ShieldCheck,
+  Building, Flag, ChevronRight, ExternalLink,
   Handshake, PieChart, Award, MessageSquare
 } from 'lucide-react';
 
@@ -56,73 +56,52 @@ interface Company {
   healthScore: number; // 0-100
   tradeLicense: boolean;
   mohrRegistered: boolean;
+  leadSource: string; // nafis_import | manual | magic_link
 }
 
-// ─── Mock Data ───
-const mockCompanies: Company[] = [
-  {
-    id: '1', name: 'Emirates Digital Solutions', nameAr: 'حلول الإمارات الرقمية',
-    industry: 'Technology', industryAr: 'التكنولوجيا', size: '201-500', emirate: 'Dubai',
-    status: 'active', contactPerson: 'Ahmed Al Marzouqi', contactEmail: 'ahmed@eds.ae',
-    contactPhone: '+971501234567', jobsPosted: 24, emiratizationRate: 12.5,
-    emiratizationTarget: 10, hiresCount: 156, emiratiHires: 19,
-    registeredAt: '2025-06-15', lastActivity: '2026-02-20', healthScore: 92,
-    tradeLicense: true, mohrRegistered: true
-  },
-  {
-    id: '2', name: 'Gulf Construction Group', nameAr: 'مجموعة الخليج للبناء',
-    industry: 'Construction', industryAr: 'البناء', size: '501-1000', emirate: 'Abu Dhabi',
-    status: 'active', contactPerson: 'Sara Al Hashimi', contactEmail: 'sara@gcg.ae',
-    contactPhone: '+971502345678', jobsPosted: 18, emiratizationRate: 7.2,
-    emiratizationTarget: 10, hiresCount: 340, emiratiHires: 24,
-    registeredAt: '2025-03-10', lastActivity: '2026-02-19', healthScore: 68,
-    tradeLicense: true, mohrRegistered: true
-  },
-  {
-    id: '3', name: 'Al Noor Financial Services', nameAr: 'خدمات النور المالية',
-    industry: 'Finance & Banking', industryAr: 'المالية والمصرفية', size: '51-200', emirate: 'Dubai',
-    status: 'documentation', contactPerson: 'Khalid Ibrahim', contactEmail: 'khalid@alnoor.ae',
-    contactPhone: '+971503456789', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-01', lastActivity: '2026-02-18', healthScore: 45,
-    tradeLicense: true, mohrRegistered: false
-  },
-  {
-    id: '4', name: 'Sharjah Health Partners', nameAr: 'شركاء الشارقة للصحة',
-    industry: 'Healthcare', industryAr: 'الرعاية الصحية', size: '201-500', emirate: 'Sharjah',
-    status: 'verification', contactPerson: 'Fatima Al Ketbi', contactEmail: 'fatima@shp.ae',
-    contactPhone: '+971504567890', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-10', lastActivity: '2026-02-20', healthScore: 55,
-    tradeLicense: true, mohrRegistered: true
-  },
-  {
-    id: '5', name: 'RAK Manufacturing LLC', nameAr: 'رأس الخيمة للصناعات',
-    industry: 'Manufacturing', industryAr: 'الصناعة', size: '1000+', emirate: 'Ras Al Khaimah',
-    status: 'contacted', contactPerson: 'Omar Al Nuaimi', contactEmail: 'omar@rakm.ae',
-    contactPhone: '+971505678901', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-15', lastActivity: '2026-02-17', healthScore: 20,
-    tradeLicense: false, mohrRegistered: false
-  },
-  {
-    id: '6', name: 'Ajman Retail Group', nameAr: 'مجموعة عجمان للتجزئة',
-    industry: 'Retail', industryAr: 'التجزئة', size: '51-200', emirate: 'Ajman',
-    status: 'lead', contactPerson: 'Maryam Al Shamsi', contactEmail: 'maryam@arg.ae',
-    contactPhone: '+971506789012', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-19', lastActivity: '2026-02-19', healthScore: 10,
-    tradeLicense: false, mohrRegistered: false
-  },
-];
+interface ActivityItem {
+  type: string;
+  text: string;
+  time: string;
+}
 
-const recentActivity = [
-  { type: 'onboard', text: 'Sharjah Health Partners submitted trade license', textAr: 'شركاء الشارقة للصحة قدمت الرخصة التجارية', time: '2h ago', timeAr: 'منذ ساعتين' },
-  { type: 'job', text: 'Emirates Digital Solutions posted 3 new jobs', textAr: 'حلول الإمارات الرقمية نشرت 3 وظائف جديدة', time: '5h ago', timeAr: 'منذ 5 ساعات' },
-  { type: 'flag', text: 'Gulf Construction Group below Emiratization target', textAr: 'مجموعة الخليج للبناء أقل من نسبة التوطين المستهدفة', time: '1d ago', timeAr: 'منذ يوم' },
-  { type: 'contact', text: 'RAK Manufacturing LLC initial outreach completed', textAr: 'رأس الخيمة للصناعات - تم التواصل الأولي', time: '2d ago', timeAr: 'منذ يومين' },
-  { type: 'success', text: 'Al Noor Financial Services uploaded MoHR registration', textAr: 'خدمات النور المالية رفعت تسجيل وزارة الموارد البشرية', time: '3d ago', timeAr: 'منذ 3 أيام' },
-];
+// Helper: convert API company to UI Company
+const toCompany = (c: any): Company => ({
+  id: c.id || '',
+  name: c.name || c.company_name || '',
+  nameAr: c.nameAr || c.name || '',
+  industry: c.industry || '',
+  industryAr: c.industryAr || c.industry || '',
+  size: c.size || '—',
+  emirate: c.emirate || '',
+  status: c.status || 'lead',
+  contactPerson: c.contactPerson || '',
+  contactEmail: c.contactEmail || '',
+  contactPhone: c.contactPhone || '',
+  jobsPosted: c.jobsPosted || 0,
+  emiratizationRate: c.emiratizationRate || 0,
+  emiratizationTarget: c.emiratizationTarget || 10,
+  hiresCount: c.totalHired || c.hiresCount || 0,
+  emiratiHires: c.emiratiHires || 0,
+  registeredAt: c.registeredAt || '',
+  lastActivity: c.invitationAcceptedAt || c.invitationSentAt || c.registeredAt || '',
+  healthScore: c.isVerified ? 80 : (c.status === 'active' ? 60 : c.status === 'verification' ? 40 : 20),
+  tradeLicense: !!c.tradeLicense,
+  mohrRegistered: c.isVerified || false,
+  leadSource: c.leadSource || 'manual',
+});
+
+// Helper: relative time
+const timeAgo = (iso: string | null): string => {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+};
 
 // ─── Component ───
 const GrowthOperatorDashboard: React.FC = () => {
@@ -139,33 +118,62 @@ const GrowthOperatorDashboard: React.FC = () => {
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
   };
-  const [companies] = useState<Company[]>(mockCompanies);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [funnelCounts, setFunnelCounts] = useState<Record<string, number>>({ lead: 0, contacted: 0, documentation: 0, verification: 0, active: 0 });
+  const [kpis, setKpis] = useState<any>({});
+  const [dashLoading, setDashLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
 
+  // ─── Fetch live data ───
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await restClient.get('/api/growth/dashboard-stats');
+        const d = (res as any).data || res;
+        if (cancelled) return;
+        if (d.companies) setCompanies(d.companies.map(toCompany));
+        if (d.funnel) setFunnelCounts(d.funnel);
+        if (d.kpis) setKpis(d.kpis);
+        if (d.recentActivity) setRecentActivity(d.recentActivity.map((a: any) => ({
+          type: a.type || 'contact',
+          text: a.text || '',
+          time: timeAgo(a.time),
+        })));
+      } catch (err) {
+        console.error('Failed to load dashboard stats:', err);
+      } finally {
+        if (!cancelled) setDashLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // ─── Computed Metrics ───
-  const totalCompanies = companies.length;
-  const activeCompanies = companies.filter(c => c.status === 'active').length;
-  const inPipeline = companies.filter(c => ['lead', 'contacted', 'documentation', 'verification'].includes(c.status)).length;
-  const totalJobs = companies.reduce((sum, c) => sum + c.jobsPosted, 0);
+  const totalCompanies = kpis.totalCompanies ?? companies.length;
+  const activeCompanies = kpis.activeCompanies ?? companies.filter(c => c.status === 'active').length;
+  const inPipeline = kpis.inPipeline ?? companies.filter(c => ['lead', 'contacted', 'documentation', 'verification'].includes(c.status)).length;
+  const totalJobs = kpis.totalJobs ?? companies.reduce((sum, c) => sum + c.jobsPosted, 0);
   const avgEmiratization = activeCompanies > 0
     ? (companies.filter(c => c.status === 'active').reduce((sum, c) => sum + c.emiratizationRate, 0) / activeCompanies).toFixed(1)
     : '0.0';
   const belowTarget = companies.filter(c => c.status === 'active' && c.emiratizationRate < c.emiratizationTarget).length;
 
   const pipelineStages = [
-    { key: 'lead', label: t('Lead', 'عميل محتمل'), count: companies.filter(c => c.status === 'lead').length, color: colors.textSecondary, bgColor: '#F1F5F9' },
-    { key: 'contacted', label: t('Contacted', 'تم التواصل'), count: companies.filter(c => c.status === 'contacted').length, color: colors.blueText, bgColor: colors.blueBg },
-    { key: 'documentation', label: t('Documentation', 'التوثيق'), count: companies.filter(c => c.status === 'documentation').length, color: colors.yellowText, bgColor: colors.yellowBg },
-    { key: 'verification', label: t('Verification', 'التحقق'), count: companies.filter(c => c.status === 'verification').length, color: colors.purpleText, bgColor: colors.purpleBg },
-    { key: 'active', label: t('Active', 'نشط'), count: companies.filter(c => c.status === 'active').length, color: colors.greenText, bgColor: colors.greenBg },
+    { key: 'lead', label: t('Lead', 'عميل محتمل'), count: funnelCounts.lead || 0, color: colors.textSecondary, bgColor: '#F1F5F9' },
+    { key: 'contacted', label: t('Contacted', 'تم التواصل'), count: funnelCounts.contacted || 0, color: colors.blueText, bgColor: colors.blueBg },
+    { key: 'documentation', label: t('Documentation', 'التوثيق'), count: funnelCounts.documentation || 0, color: colors.yellowText, bgColor: colors.yellowBg },
+    { key: 'verification', label: t('Verification', 'التحقق'), count: funnelCounts.verification || 0, color: colors.purpleText, bgColor: colors.purpleBg },
+    { key: 'active', label: t('Active', 'نشط'), count: funnelCounts.active || 0, color: colors.greenText, bgColor: colors.greenBg },
   ];
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase());
+      c.contactEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -271,9 +279,14 @@ const GrowthOperatorDashboard: React.FC = () => {
           {t('Recent Activity', 'النشاط الأخير')}
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {recentActivity.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 20, color: colors.textSecondary, fontSize: 14 }}>
+              {t('No activity yet — import NAFIS data to get started', 'لا يوجد نشاط بعد — قم باستيراد بيانات نافس للبدء')}
+            </div>
+          )}
           {recentActivity.map((item, i) => {
             const iconMap: Record<string, any> = {
-              onboard: { Icon: FileText, color: colors.blueText },
+              invitation: { Icon: Mail, color: colors.blueText },
               job: { Icon: Briefcase, color: colors.primary },
               flag: { Icon: AlertTriangle, color: colors.yellowText },
               contact: { Icon: Phone, color: colors.purpleText },
@@ -285,8 +298,8 @@ const GrowthOperatorDashboard: React.FC = () => {
                 <div style={{ padding: 8, borderRadius: 8, background: color + '15', flexShrink: 0 }}>
                   <Icon size={16} color={color} />
                 </div>
-                <div style={{ flex: 1, fontSize: 14, color: colors.text }}>{t(item.text, item.textAr)}</div>
-                <div style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0 }}>{t(item.time, item.timeAr)}</div>
+                <div style={{ flex: 1, fontSize: 14, color: colors.text }}>{item.text}</div>
+                <div style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0 }}>{item.time}</div>
               </div>
             );
           })}
@@ -359,9 +372,17 @@ const GrowthOperatorDashboard: React.FC = () => {
                 <Building2 size={20} color={colors.primary} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: colors.text }}>{isRTL ? company.nameAr : company.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 600, color: colors.text }}>{company.name}</span>
+                  {company.leadSource === 'nafis_import' && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8', letterSpacing: '0.03em' }}>NAFIS</span>
+                  )}
+                  {company.leadSource === 'magic_link' && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#FEF3C7', color: '#92400E', letterSpacing: '0.03em' }}>MAGIC LINK</span>
+                  )}
+                </div>
                 <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                  {isRTL ? company.industryAr : company.industry} • {company.emirate} • {company.contactPerson}
+                  {company.industry || '—'} • {company.emirate || '—'} • {company.contactEmail || '—'}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
@@ -435,9 +456,14 @@ const GrowthOperatorDashboard: React.FC = () => {
                   <Building2 size={24} color={colors.primary} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{isRTL ? company.nameAr : company.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{company.name}</span>
+                    {company.leadSource === 'nafis_import' && (
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8' }}>NAFIS</span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>
-                    {isRTL ? company.industryAr : company.industry} • {company.size} {t('employees', 'موظف')} • {company.emirate}
+                    {company.industry || '—'} • {company.size} {t('employees', 'موظف')} • {company.emirate || '—'}
                   </div>
                 </div>
               </div>
@@ -471,18 +497,15 @@ const GrowthOperatorDashboard: React.FC = () => {
             </div>
 
             {/* Contact Row */}
-            <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.border}` }}>
+            <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.border}`, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
-                <UserCheck size={14} /> {company.contactPerson}
+                <Mail size={14} /> {company.contactEmail || '—'}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
-                <Mail size={14} /> {company.contactEmail}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
-                <Phone size={14} /> {company.contactPhone}
+                <Phone size={14} /> {company.contactPhone || '—'}
               </div>
               <div style={{ marginLeft: 'auto', fontSize: 12, color: colors.textSecondary }}>
-                {t('Last active:', 'آخر نشاط:')} {company.lastActivity}
+                {t('Registered:', 'تسجيل:')} {company.registeredAt ? new Date(company.registeredAt).toLocaleDateString() : '—'}
               </div>
             </div>
           </div>
@@ -551,7 +574,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                   return (
                     <tr key={company.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 600, color: colors.text }}>{isRTL ? company.nameAr : company.name}</div>
+                        <div style={{ fontWeight: 600, color: colors.text }}>{company.name}</div>
                         <div style={{ fontSize: 12, color: colors.textSecondary }}>{company.emirate}</div>
                       </td>
                       <td style={{ textAlign: 'center', padding: '14px 16px', fontWeight: 600, color: colors.text }}>{company.jobsPosted}</td>

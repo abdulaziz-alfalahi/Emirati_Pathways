@@ -8,6 +8,24 @@ logger = logging.getLogger(__name__)
 # Initialize system
 growth_sys = GrowthSystem()
 
+
+# =====================================================
+# DASHBOARD STATS (Live Funnel Data)
+# =====================================================
+
+@growth_bp.route('/api/growth/dashboard-stats', methods=['GET'])
+def dashboard_stats():
+    """
+    Returns live funnel data for the Growth Operator dashboard.
+    Aggregates companies, invitation statuses, job counts, and recent activity.
+    """
+    try:
+        data = growth_sys.get_dashboard_stats()
+        return jsonify({'success': True, **data})
+    except Exception as e:
+        logger.error(f"Dashboard stats error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @growth_bp.route('/api/growth/import', methods=['POST'])
 def import_vacancies():
     try:
