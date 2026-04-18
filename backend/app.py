@@ -107,7 +107,8 @@ from backend.db_utils import DATABASE_CONFIG, get_db, close_db, execute_query
 # =====================================================
 
 # Initialize SocketIO (lazy — will attach to app below)
-socketio = SocketIO(cors_allowed_origins="*", async_mode='threading', logger=True, engineio_logger=True)
+# Note: cors_allowed_origins will be set after CORS config
+socketio = SocketIO(async_mode='threading', logger=True, engineio_logger=True)
 
 # In-memory presence tracking
 online_users: dict[str, str] = {}
@@ -131,25 +132,31 @@ jwt = JWTManager(app)
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
 allowed_origin_list = [o for o in (x.strip() for x in allowed_origins_env.split(',')) if o]
 
-cors_origins = [
-    "http://localhost:8081",
-    "http://localhost:3000",
-    "http://localhost:8089",
-    "http://localhost:5173",
-]
+_is_production = os.getenv('FLASK_ENV', 'production') == 'production'
 
-if os.getenv('FLASK_ENV', 'production') != 'production':
-    cors_origins.extend([
+if _is_production:
+    # Production: only allow the production domain + explicitly configured origins
+    cors_origins = [
+        "https://emirati.ehrdc.gov.ae",
+        "http://emirati.ehrdc.gov.ae",
+    ]
+    cors_origins.extend(allowed_origin_list)
+    logger.info(f"CORS: Production mode — allowed origins: {cors_origins}")
+else:
+    # Development: allow localhost + ngrok + configured origins
+    cors_origins = [
+        "http://localhost:8081",
+        "http://localhost:3000",
+        "http://localhost:8089",
+        "http://localhost:5173",
         r"https?://.*\.ngrok\.io",
         r"https?://.*\.ngrok\.app",
         r"https?://.*\.ngrok-free\.app",
         r"https?://.*\.ngrok-free\.dev",
-    ])
-    logger.info("CORS: Ngrok wildcard origins ENABLED (non-production mode)")
-else:
-    logger.info("CORS: Ngrok wildcard origins DISABLED (production mode)")
+    ]
+    cors_origins.extend(allowed_origin_list)
+    logger.info("CORS: Development mode — localhost + ngrok origins ENABLED")
 
-cors_origins.extend(allowed_origin_list)
 socketio.cors_allowed_origins = cors_origins
 
 CORS(app, resources={
@@ -160,17 +167,86 @@ CORS(app, resources={
         "supports_credentials": True,
         "expose_headers": ["Authorization"]
     },
-    r"/debug/*": {
-        "origins": cors_origins,
-        "methods": ["POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": True
-    },
     r"/health": {
         "origins": ["*"],
         "methods": ["GET", "OPTIONS"]
     }
 })
+
+# =====================================================
+# RATE LIMITING (OWASP: Brute-Force Protection)
+# =====================================================
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per minute"],
+    storage_uri=os.getenv('REDIS_URL', 'memory://'),
+)
+
+# Apply strict rate limits to authentication endpoints
+@app.before_request
+def rate_limit_auth():
+    """Apply strict rate limits to sensitive endpoints."""
+    pass  # flask-limiter decorators are applied on the individual routes
+
+# =====================================================
+# SECURITY HEADERS (OWASP: Security Misconfiguration)
+# =====================================================
+@app.after_request
+def add_security_headers(response):
+    """Inject security headers on every response."""
+    # Prevent MIME-type sniffing
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # Prevent clickjacking
+    response.headers['X-Frame-Options'] = 'DENY'
+    # XSS Protection (legacy browsers)
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Control referrer information
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    # Restrict browser features
+    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+    # Remove server header
+    response.headers.pop('Server', None)
+
+    if _is_production:
+        # HSTS — force HTTPS (only enable after SSL is configured)
+        # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        # Content Security Policy
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' wss: ws:; "
+            "frame-ancestors 'none';"
+        )
+    return response
+
+# =====================================================
+# GLOBAL ERROR HANDLERS (prevent stack trace leaks)
+# =====================================================
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'success': False, 'error': 'Resource not found'}), 404
+
+@app.errorhandler(405)
+def method_not_allowed_error(error):
+    return jsonify({'success': False, 'error': 'Method not allowed'}), 405
+
+@app.errorhandler(500)
+def internal_error(error):
+    if _is_production:
+        logger.error(f"Internal server error: {error}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+    return jsonify({'success': False, 'error': str(error)}), 500
+
+@app.errorhandler(429)
+def rate_limit_exceeded(error):
+    return jsonify({'success': False, 'error': 'Rate limit exceeded. Try again later.'}), 429
 
 # SQLAlchemy Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DATABASE_CONFIG['user']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"

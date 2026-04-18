@@ -1816,35 +1816,37 @@ Return only the JSON object, no additional text."""
                 'details': traceback.format_exc()
             }), 500
 
-    @_app.route('/debug/save_pdf', methods=['POST'])
-    def debug_save_pdf():
-        """Debug endpoint to inspect generated PDFs"""
-        try:
-            if 'file' not in request.files:
-                return jsonify({'success': False, 'message': 'No file part'}), 400
+    # Debug endpoint - only available in development mode
+    if os.getenv('FLASK_ENV', 'production') != 'production':
+        @_app.route('/debug/save_pdf', methods=['POST'])
+        def debug_save_pdf():
+            """Debug endpoint to inspect generated PDFs (dev only)"""
+            try:
+                if 'file' not in request.files:
+                    return jsonify({'success': False, 'message': 'No file part'}), 400
 
-            file = request.files['file']
-            if file.filename == '':
-                return jsonify({'success': False, 'message': 'No selected file'}), 400
+                file = request.files['file']
+                if file.filename == '':
+                    return jsonify({'success': False, 'message': 'No selected file'}), 400
 
-            debug_dir = Path(__file__).parent / 'debug_output'
-            debug_dir.mkdir(exist_ok=True)
+                debug_dir = Path(__file__).parent / 'debug_output'
+                debug_dir.mkdir(exist_ok=True)
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"DEBUG_PDF_{timestamp}.pdf"
-            file_path = debug_dir / filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"DEBUG_PDF_{timestamp}.pdf"
+                file_path = debug_dir / filename
 
-            file.save(str(file_path))
-            logger.info(f"≡ƒÆ╛ DEBUG: Saved PDF to {file_path}")
+                file.save(str(file_path))
+                logger.info(f"DEBUG: Saved PDF to {file_path}")
 
-            return jsonify({
-                'success': True,
-                'message': 'PDF Saved to Server Debug Folder',
-                'path': str(file_path)
-            })
-        except Exception as e:
-            logger.error(f"Debug Save Error: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
+                return jsonify({
+                    'success': True,
+                    'message': 'PDF Saved to Server Debug Folder',
+                    'path': str(file_path)
+                })
+            except Exception as e:
+                logger.error(f"Debug Save Error: {e}")
+                return jsonify({'success': False, 'message': str(e)}), 500
 
     @_app.route('/api/cv/list-mock', methods=['GET'])
     @jwt_required()

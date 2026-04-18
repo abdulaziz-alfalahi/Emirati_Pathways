@@ -376,30 +376,30 @@ def health_check():
         ]
     })
 
-@hr_candidate_search_bp.route('/debug/token', methods=['GET'])
-@jwt_required()
-def debug_token():
-    """Debug endpoint to check JWT token information"""
-    try:
-        current_user_id = get_jwt_identity()
-        claims = get_jwt()
-        return jsonify({
-            'success': True,
-            'data': {
-                'user_id': current_user_id,
-                'claims': claims,
-                'role': claims.get('role', ''),
-                'user_type': claims.get('user_type', ''),
-                'all_claims': dict(claims) if claims else {}
-            }
-        })
-    except Exception as e:
-        logger.error(f"Debug token error: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+if os.getenv('FLASK_ENV', 'production') != 'production':
+    @hr_candidate_search_bp.route('/debug/token', methods=['GET'])
+    @jwt_required()
+    def debug_token():
+        """Debug endpoint to check JWT token information (dev only)"""
+        try:
+            current_user_id = get_jwt_identity()
+            claims = get_jwt()
+            return jsonify({
+                'success': True,
+                'data': {
+                    'user_id': current_user_id,
+                    'claims': claims,
+                    'role': claims.get('role', ''),
+                    'user_type': claims.get('user_type', ''),
+                    'all_claims': dict(claims) if claims else {}
+                }
+            })
+        except Exception as e:
+            logger.error(f"Debug token error: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
 
 @hr_candidate_search_bp.route('/search', methods=['GET'])
 def search_candidates():
@@ -423,9 +423,6 @@ def search_candidates():
         else:
             # Normal JWT authentication - try to get JWT claims
             try:
-                with open("debug_search.log", "a") as f:
-                    f.write(f"DEBUG: Request Headers: {request.headers}\n")
-                logger.info(f"DEBUG: Request Headers: {request.headers}")
                 from flask_jwt_extended import verify_jwt_in_request
                 verify_jwt_in_request()
                 current_user_id = get_jwt_identity()
@@ -553,9 +550,6 @@ def search_candidates():
             
     except Exception as e:
         logger.error(f"Error searching candidates: {str(e)}")
-        with open("debug_error.log", "w") as f:
-            f.write(f"Error: {str(e)}\n")
-            f.write(traceback.format_exc())
         return jsonify({
             'success': False,
             'message': 'Failed to search candidates'
