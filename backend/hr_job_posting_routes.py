@@ -211,8 +211,8 @@ def ensure_job_postings_table_exists():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS job_shortlists (
                 job_posting_id INTEGER REFERENCES job_postings(id) ON DELETE CASCADE,
-                candidate_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                added_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                candidate_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                added_by UUID REFERENCES users(id) ON DELETE SET NULL,
                 notes TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (job_posting_id, candidate_id)
@@ -1346,8 +1346,8 @@ def add_to_shortlist(job_id):
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS job_shortlists (
                         job_posting_id {id_type} REFERENCES job_postings(id) ON DELETE CASCADE,
-                        candidate_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                        added_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        candidate_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        added_by UUID REFERENCES users(id) ON DELETE SET NULL,
                         notes TEXT,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         PRIMARY KEY (job_posting_id, candidate_id)

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Upload, Users, MessageSquare } from 'lucide-react';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+const API = (p: string) => `${p}`;
 
 export default function JobDetailsPage() {
   const { id: routeId } = useParams();

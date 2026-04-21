@@ -2774,12 +2774,13 @@ Return only the JSON object, no additional text."""
 
     # Run table initialization within the app context
     try:
-        initialize_default_providers()
-        ensure_cv_tables_exist()
-        ensure_vacancy_tables_exist()
-        ensure_application_tables_exist()
-        ensure_fallback_schools_exist()
-        logger.info("✅ Inline route initialization complete (tables + providers)")
+        with _app.app_context():
+            initialize_default_providers()
+            ensure_cv_tables_exist()
+            ensure_vacancy_tables_exist()
+            ensure_application_tables_exist()
+            ensure_fallback_schools_exist()
+            logger.info("✅ Inline route initialization complete (tables + providers)")
     except Exception as e:
         logger.error(f"Inline route initialization error: {e}")
 

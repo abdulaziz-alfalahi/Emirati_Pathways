@@ -3,7 +3,7 @@ import { getAuthToken } from '@/utils/tokenUtils';
 
 // Determine Base URL
 // Priority: Vite Env Var -> Default Localhost
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const API_URL = `${BASE_URL}/api`;
 
 // Create logic to handle tokens

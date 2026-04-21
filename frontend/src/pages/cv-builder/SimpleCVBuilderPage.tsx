@@ -104,7 +104,7 @@ const SimpleCVBuilderPage: React.FC = () => {
       const formData = new FormData();
       formData.append('cv_file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005'}/api/cv/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/cv/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`

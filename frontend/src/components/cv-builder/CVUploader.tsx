@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 // Production Parser API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Enhanced interfaces matching your production parser output
 interface ProductionParserContactInfo {
