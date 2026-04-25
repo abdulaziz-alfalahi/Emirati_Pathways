@@ -11,6 +11,15 @@ DB_CONFIG = {
     'port': int(os.getenv('DB_PORT', 5432)),
 }
 
+# Schema separation: set DB_SCHEMA=dev or DB_SCHEMA=qa to isolate environments
+DB_SCHEMA = os.getenv('DB_SCHEMA', 'public')
+
 def get_db_connection():
     """Return a new psycopg2 connection to the platform database."""
-    return psycopg2.connect(**DB_CONFIG)
+    conn = psycopg2.connect(**DB_CONFIG)
+    if DB_SCHEMA and DB_SCHEMA != 'public':
+        with conn.cursor() as cur:
+            cur.execute(f"SET search_path TO {DB_SCHEMA}, public")
+        conn.commit()
+    return conn
+

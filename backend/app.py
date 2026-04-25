@@ -255,6 +255,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 from backend.extensions import db
 db.init_app(app)
 
+# Auto-create SQLAlchemy ORM tables (Profile V2, etc.) on startup.
+# Safe: db.create_all() only creates tables that don't exist, never drops existing ones.
+# This runs at import time so it works with both Gunicorn and direct execution.
+with app.app_context():
+    try:
+        from backend.models.profile.candidate_profile_models import (
+            CandidateProfile, CandidateExperience, CandidateEducation,
+            CandidateSkill, CandidateCertification, CandidateAssessment
+        )
+        db.create_all()
+        logger.info("✅ SQLAlchemy ORM tables verified/created")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not auto-create ORM tables (DB may be unavailable): {e}")
+
 # =====================================================
 # SOCKETIO EVENT HANDLERS
 # =====================================================
@@ -505,6 +519,7 @@ def initialize_unified_server():
             # Table creation and data seeding is handled by the inline route
             # registration (ensure_cv_tables_exist, ensure_vacancy_tables_exist, etc.
             # are called as part of register_inline_routes > internal init).
+            # ORM tables (Profile V2) are auto-created at import time (line ~258).
             # Here we just verify the DB connection works.
             from backend.db_utils import get_db
             db_conn = get_db()

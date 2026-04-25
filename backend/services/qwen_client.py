@@ -7,12 +7,14 @@ Uses the `openai` Python package in compatibility mode.
 """
 
 import json
+import os
 import time
 import logging
 import re
 from typing import Any, Dict, List, Optional
 
 from openai import OpenAI, APIError, APITimeoutError, RateLimitError
+import httpx
 
 from backend.config.qwen_config import (
     DASHSCOPE_API_KEY,
@@ -93,12 +95,28 @@ def _get_client() -> OpenAI:
             raise QwenClientError(
                 "DASHSCOPE_API_KEY is not set. Cannot initialise Qwen client."
             )
-        _client = OpenAI(
-            api_key=DASHSCOPE_API_KEY,
-            base_url=QWEN_BASE_URL,
-            timeout=REQUEST_TIMEOUT,
-        )
-        logger.info(f"✅ Qwen OpenAI-compatible client initialised (base_url={QWEN_BASE_URL})")
+
+        # Proxy support for restricted network environments (e.g. MoroHub)
+        https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+        http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+        proxy_url = https_proxy or http_proxy
+
+        client_kwargs = {
+            "api_key": DASHSCOPE_API_KEY,
+            "base_url": QWEN_BASE_URL,
+            "timeout": REQUEST_TIMEOUT,
+        }
+
+        if proxy_url:
+            logger.info(f"🌐 Configuring Qwen client with proxy: {proxy_url}")
+            client_kwargs["http_client"] = httpx.Client(
+                proxy=proxy_url,
+                timeout=REQUEST_TIMEOUT,
+                verify=True,
+            )
+
+        _client = OpenAI(**client_kwargs)
+        logger.info(f"✅ Qwen OpenAI-compatible client initialised (base_url={QWEN_BASE_URL}, proxy={'yes' if proxy_url else 'no'})")
     return _client
 
 
