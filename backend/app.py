@@ -107,8 +107,9 @@ from backend.db_utils import DATABASE_CONFIG, get_db, close_db, execute_query
 # =====================================================
 
 # Initialize SocketIO (lazy — will attach to app below)
-# Note: cors_allowed_origins will be set after CORS config
-socketio = SocketIO(async_mode='threading', logger=True, engineio_logger=True)
+# IMPORTANT: cors_allowed_origins MUST be in the constructor.
+# Setting it as a property after init_app() is silently ignored.
+socketio = SocketIO(async_mode='gevent', logger=True, engineio_logger=True, cors_allowed_origins='*')
 
 # In-memory presence tracking
 online_users: dict[str, str] = {}
@@ -157,7 +158,8 @@ else:
     cors_origins.extend(allowed_origin_list)
     logger.info("CORS: Development mode — localhost + ngrok origins ENABLED")
 
-socketio.cors_allowed_origins = cors_origins
+# Note: socketio cors_allowed_origins is set to '*' in the constructor above.
+# The Flask CORS below handles API route CORS separately.
 
 CORS(app, resources={
     r"/api/*": {

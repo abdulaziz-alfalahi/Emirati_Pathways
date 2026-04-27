@@ -114,6 +114,8 @@ def _get_client() -> OpenAI:
                 timeout=REQUEST_TIMEOUT,
                 verify=True,
             )
+            # Disable SDK internal retries — we handle retries in chat_completion()
+            client_kwargs["max_retries"] = 0
 
         _client = OpenAI(**client_kwargs)
         logger.info(f"✅ Qwen OpenAI-compatible client initialised (base_url={QWEN_BASE_URL}, proxy={'yes' if proxy_url else 'no'})")

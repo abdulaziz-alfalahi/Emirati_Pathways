@@ -55,7 +55,7 @@ DEFAULT_MODEL: str = os.getenv("QWEN_DEFAULT_MODEL", "qwen-turbo")
 # ---------------------------------------------------------------------------
 # Request Defaults
 # ---------------------------------------------------------------------------
-REQUEST_TIMEOUT: int = int(os.getenv("QWEN_TIMEOUT", "30"))
+REQUEST_TIMEOUT: int = int(os.getenv("QWEN_TIMEOUT", "120"))
 MAX_RETRIES: int = int(os.getenv("QWEN_MAX_RETRIES", "3"))
 MAX_INPUT_CHARS: int = int(os.getenv("QWEN_MAX_INPUT_CHARS", "20000"))
 
