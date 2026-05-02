@@ -1,4 +1,5 @@
 import logging
+import os
 import csv
 import io
 import uuid
@@ -218,8 +219,6 @@ class GrowthSystem:
                 return existing
         finally:
             conn.close()
-            
-        return report
 
     def _generate_verification_token(self, cur, job_id, email, company_name):
         token = secrets.token_urlsafe(32)
@@ -298,11 +297,9 @@ class GrowthSystem:
                     user_id = user['id']
                     # logic to handle existing user (maybe just link them)
                 else:
-                    # Create new Recruiter User
-                    # Hashing password skipped for simplicity in prototype - assume pre-hashed or handle in route
-                    # For prototype, we'll store plaintext (BAD PRACTICE, but fine for prototype speed)
-                    # In real app replace with bcrypt
-                    hashed_pw = password # placeholder
+                    # Create new Recruiter User — hash password with bcrypt
+                    import bcrypt
+                    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
                     cur.execute("""
                         INSERT INTO users (
@@ -477,7 +474,8 @@ class GrowthSystem:
                         record = cur.fetchone()
 
                         # Mock email
-                        link = f"http://localhost:8089/join/{token}"
+                        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                        link = f"{frontend_url}/join/{token}"
                         print(f"\n[INVITATION EMAIL] ─────────────────────────────────────────")
                         print(f"  To: {company.get('email', 'N/A')}")
                         print(f"  Subject: Join Dubai Human Development Platform — {company.get('name', '')}")
@@ -710,7 +708,6 @@ class GrowthSystem:
                         c.business_type,
                         c.is_verified,
                         c.lead_source,
-                        c.created_at,
                         COALESCE(j.job_count, 0) AS jobs_posted,
                         COALESCE(j.total_hired, 0) AS total_hired,
                         COALESCE(j.published_count, 0) AS published_jobs
@@ -724,7 +721,7 @@ class GrowthSystem:
                         FROM job_postings
                         GROUP BY company_id
                     ) j ON c.id::text = j.company_id
-                    ORDER BY c.created_at DESC
+                    ORDER BY c.company_name ASC
                 """)
                 companies_raw = cur.fetchall()
 

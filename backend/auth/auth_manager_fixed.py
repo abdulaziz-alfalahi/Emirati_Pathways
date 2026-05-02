@@ -37,6 +37,14 @@ class AuthenticationManager:
     def __init__(self, redis_client=None):
         # Setup logging
         self.logger = logging.getLogger(__name__)
+
+        # Check if magic OTP bypass is active (non-production)
+        self._is_production = os.getenv('FLASK_ENV', 'production') == 'production'
+        if not self._is_production:
+            self.logger.warning(
+                "AuthManager: Magic OTP bypass is ACTIVE (FLASK_ENV != 'production'). "
+                "Production auth will use UAEPass — no OTP."
+            )
         
         # Handle Redis connection gracefully
         self.redis_client = None

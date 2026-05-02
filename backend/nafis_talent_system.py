@@ -473,7 +473,8 @@ class NafisTalentSystem:
                             WHERE id = %s AND status = 'imported'
                         """, (sid,))
 
-                        link = f"http://localhost:8089/register/{token}"
+                        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                        link = f"{frontend_url}/register/{token}"
 
                         # Mock email
                         print(f"\n[SEEKER INVITATION EMAIL] ──────────────────────────────────")

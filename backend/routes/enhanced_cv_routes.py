@@ -64,6 +64,43 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+# Magic byte signatures for content-type validation
+_FILE_SIGNATURES = {
+    'pdf':  b'%PDF',
+    'docx': b'PK\x03\x04',          # DOCX is a ZIP archive
+    'doc':  b'\xd0\xcf\x11\xe0',     # OLE2 compound document
+    'txt':  None,                     # No specific signature for plain text
+}
+
+def validate_file_content(file_obj, filename):
+    """Validate that the file content matches its declared extension.
+
+    Reads the first 8 bytes (magic bytes) and compares against known
+    signatures.  Rewinds the file pointer after inspection.
+    Returns (is_valid: bool, reason: str).
+    """
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    sig = _FILE_SIGNATURES.get(ext)
+
+    if sig is None:
+        # No signature to check (e.g. .txt), allow it
+        return True, 'ok'
+
+    header = file_obj.read(8)
+    file_obj.seek(0)  # Always rewind
+
+    if not header:
+        return False, 'File is empty'
+
+    if not header.startswith(sig):
+        return False, (
+            f'File content does not match .{ext} format. '
+            f'The file may be corrupted or have the wrong extension.'
+        )
+
+    return True, 'ok'
+
+
 def _wrap_qwen_result(qwen_data: dict, processing_time: float = 0) -> dict:
     """Bridge Qwen flat resume JSON → legacy {success, data, analysis} format.
 
@@ -202,6 +239,15 @@ def upload_cv():
             return jsonify({
                 'success': False,
                 'message': f'File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB'
+            }), 400
+        
+        # Validate file content (magic bytes) matches extension
+        content_valid, content_reason = validate_file_content(file, file.filename)
+        if not content_valid:
+            logger.warning(f"File content validation failed for {file.filename}: {content_reason}")
+            return jsonify({
+                'success': False,
+                'message': content_reason
             }), 400
         
         # Generate unique filename
