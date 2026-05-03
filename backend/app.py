@@ -251,7 +251,10 @@ def rate_limit_exceeded(error):
     return jsonify({'success': False, 'error': 'Rate limit exceeded. Try again later.'}), 429
 
 # SQLAlchemy Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DATABASE_CONFIG['user']}:{DATABASE_CONFIG['password']}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
+# URL-encode password to handle special chars (#, $, @) in Moro credentials
+from urllib.parse import quote_plus as _url_quote
+_db_password_encoded = _url_quote(str(DATABASE_CONFIG['password']))
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DATABASE_CONFIG['user']}:{_db_password_encoded}@{DATABASE_CONFIG['host']}:{DATABASE_CONFIG['port']}/{DATABASE_CONFIG['database']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 from backend.extensions import db
