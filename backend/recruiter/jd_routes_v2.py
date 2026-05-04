@@ -1165,30 +1165,31 @@ def save_jd(jd_id):
         recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id')
         company_id = metadata.get('company_id') or data.get('company_id')
         
-        # If missing, try to lookup from user profile
-        if (not recruiter_id or not company_id) and current_user_id:
+        # CRITICAL: Use JWT identity as authoritative recruiter_id
+        # This ensures RBAC filter (recruiter_id = user_id OR created_by = user_id) always matches
+        if current_user_id:
+            recruiter_id = str(current_user_id)
+        
+        # If company_id missing, try to lookup from user profile
+        if not company_id and current_user_id:
              try:
-                # Get company ID for the user
-                cur.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+                cur.execute("SELECT company FROM users WHERE id = %s", (current_user_id,))
                 row = cur.fetchone()
-                
-                if not row or not row.get('company_id'):
-                    # Try to find company via job_postings if no profile (fallback)
-                    cur.execute("SELECT company_id FROM job_postings WHERE recruiter_id = %s LIMIT 1", (current_user_id,))
-                    row = cur.fetchone()
-                    
-                if row and row.get('company_id'):
-                     if not company_id:
-                         company_id = row['company_id']
-                     if not recruiter_id:
-                         recruiter_id = current_user_id
-                     logger.info(f"Auto-detected company_id {company_id} for user {current_user_id}")
+                if row and row.get('company'):
+                    company_id = str(row['company'])
+                    logger.info(f"Auto-detected company '{company_id}' for user {current_user_id}")
              except Exception as e:
-                 logger.error(f"Error looking up company for user {current_user_id}: {e}")
+                 logger.warning(f"Error looking up company for user {current_user_id}: {e}")
+                 try:
+                     conn.rollback()
+                 except:
+                     pass
 
         # Fallback to unknown if still missing
         recruiter_id = recruiter_id or 'unknown'
         company_id = company_id or 'unknown'
+        
+        logger.info(f"Save JD {jd_id}: recruiter_id={recruiter_id}, company_id={company_id}, jwt_user={current_user_id}")
         
         # Check if JD already exists
         cur.execute("SELECT id, jd_id FROM job_postings WHERE jd_id = %s", (jd_id,))
@@ -1217,6 +1218,8 @@ def save_jd(jd_id):
                     application_process = %s,
                     metadata = %s,
                     status = %s,
+                    recruiter_id = %s,
+                    created_by = COALESCE(created_by, %s),
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -1240,16 +1243,18 @@ def save_jd(jd_id):
                 json.dumps(jd_data.get('application_process', {})),
                 json.dumps(metadata),
                 status,
+                recruiter_id,
+                recruiter_id,
                 status,
                 jd_id
             ))
-            logger.info(f"Updated JD {jd_id} with status: {status}")
+            logger.info(f"Updated JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}")
         else:
             logger.info(f"No existing JD found with jd_id: {jd_id}, inserting new record")
-            # Insert new JD
+            # Insert new JD (includes created_by for RBAC filtering)
             cur.execute("""
                 INSERT INTO job_postings (
-                    jd_id, recruiter_id, company_id,
+                    jd_id, recruiter_id, company_id, created_by,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, latitude, longitude, remote_option,
                     description, description_arabic,
@@ -1257,13 +1262,14 @@ def save_jd(jd_id):
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
                 jd_id,
                 recruiter_id,
                 company_id,
+                recruiter_id,  # created_by = recruiter_id (the JWT user)
                 basic_info.get('title'),
                 basic_info.get('title_arabic'),
                 basic_info.get('department'),
@@ -1285,7 +1291,7 @@ def save_jd(jd_id):
                 status,
                 status
             ))
-            logger.info(f"Inserted new JD {jd_id} with status: {status}")
+            logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, created_by: {recruiter_id}")
         
         conn.commit()
         cur.close()

@@ -87,6 +87,7 @@ const RecruiterDashboard: React.FC = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sourceCandidatesDialogOpen, setSourceCandidatesDialogOpen] = useState(false);
   const [roiCalculatorOpen, setRoiCalculatorOpen] = useState(false);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const { unreadCount } = useUnreadMessageCount();
 
   // Get user data from localStorage for dynamic display
@@ -136,7 +137,20 @@ const RecruiterDashboard: React.FC = () => {
   // Load real dashboard data from backend
   useEffect(() => {
     loadDashboardData();
+    loadActiveJobs();
   }, []);
+
+  // Fetch real active jobs for overview tab
+  const loadActiveJobs = async () => {
+    try {
+      const response = await restClient.get('/api/recruiter/jd/list');
+      if (response.data?.job_descriptions) {
+        setActiveJobs(response.data.job_descriptions.slice(0, 5)); // Show top 5
+      }
+    } catch (error) {
+      console.error('Failed to load active jobs:', error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -404,22 +418,33 @@ const RecruiterDashboard: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {[
-                          { title: b('Senior Software Engineer', 'مهندس برمجيات أول'), applicants: 45, status: 'active', posted: b('10 days ago', 'قبل 10 أيام') },
-                          { title: b('Marketing Director', 'مدير تسويق'), applicants: 120, status: 'reviewing', posted: b('5 days ago', 'قبل 5 أيام') },
-                          { title: b('HR Business Partner', 'شريك أعمال الموارد البشرية'), applicants: 32, status: 'active', posted: b('25 days ago', 'قبل 25 يوماً') },
-                        ].map((job, i) => (
-                          <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer">
-                            <td className="px-5 py-3 font-dubai-medium text-slate-800">{job.title}</td>
-                            <td className="px-3 py-3 font-dubai text-slate-600">{job.applicants}</td>
-                            <td className="px-3 py-3">
-                              <Badge className={`text-[10px] font-dubai-medium ${job.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                {job.status === 'active' ? b('Active', 'نشط') : b('Reviewing', 'قيد المراجعة')}
-                              </Badge>
+                        {activeJobs.length > 0 ? (
+                          activeJobs.map((job: any, i: number) => {
+                            const postedDate = job.created ? new Date(job.created) : null;
+                            const daysAgo = postedDate ? Math.floor((Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                            const postedLabel = daysAgo !== null
+                              ? (daysAgo === 0 ? b('Today', 'اليوم') : `${daysAgo} ${b('days ago', 'أيام')}`)
+                              : '';
+                            return (
+                              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => handleTabChange('jobs')}>
+                                <td className="px-5 py-3 font-dubai-medium text-slate-800">{job.title || b('Untitled', 'بدون عنوان')}</td>
+                                <td className="px-3 py-3 font-dubai text-slate-600">{job.applications || 0}</td>
+                                <td className="px-3 py-3">
+                                  <Badge className={`text-[10px] font-dubai-medium ${(job.status === 'active' || job.status === 'published') ? 'bg-green-50 text-green-700 border-green-200' : job.status === 'draft' ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                    {job.status === 'published' ? b('Active', 'نشط') : job.status === 'draft' ? b('Draft', 'مسودة') : b(job.status || 'Active', 'نشط')}
+                                  </Badge>
+                                </td>
+                                <td className="px-3 py-3 text-xs text-slate-400 font-dubai">{postedLabel}</td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="px-5 py-6 text-center text-sm text-slate-400 font-dubai-medium">
+                              {b('No jobs yet. Click "Post New Job" to create one.', 'لا توجد وظائف بعد. انقر "نشر وظيفة جديدة" للبدء.')}
                             </td>
-                            <td className="px-3 py-3 text-xs text-slate-400 font-dubai">{job.posted}</td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </CardContent>
