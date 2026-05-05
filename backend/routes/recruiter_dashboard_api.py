@@ -354,7 +354,7 @@ def get_jd_list_enhanced():
                 elif user_role in ('hr_manager', 'hr') and user_company_id:
                      # HR Manager with Company: See all jobs for that company OR created by them
                      # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
-                     filter_sql_new = " AND (company_id = %s OR recruiter_id = %s)"
+                     filter_sql_new = " AND (jp.company_id = %s OR jp.recruiter_id = %s)"
                      params_new = [user_company_id, str(current_user_id)]
                      
                      # Legacy table: Try user_id (most likely) or recruiter_id
@@ -368,7 +368,7 @@ def get_jd_list_enhanced():
                 else:
                     # Regular Recruiter OR HR Manager without Company: See ONLY their own jobs
                     # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
-                    filter_sql_new = " AND recruiter_id = %s"
+                    filter_sql_new = " AND jp.recruiter_id = %s"
                     params_new = [str(current_user_id)]
                     
                     # Legacy table: Use user_id
@@ -384,25 +384,40 @@ def get_jd_list_enhanced():
                 try:
                     query_new = f"""
                         SELECT 
-                            jd_id,
-                            title,
-                            COALESCE(company_id::text, 'Company') as company,
-                            location,
-                            status,
-                            COALESCE(applications_count, 0) as applications,
-                            created_at,
-                            description,
-                            requirements,
-                            responsibilities,
-                            benefits,
-                            salary_range_min,
-                            salary_range_max,
-                            employment_type,
-                            experience_level,
-                            id::text as pk
-                        FROM job_postings
-                        WHERE status != 'deleted' {filter_sql_new}
-                        ORDER BY created_at DESC
+                            jp.jd_id,
+                            jp.title,
+                            COALESCE(
+                                NULLIF(u.company, ''),
+                                NULLIF(jp.company_id, 'company_default'),
+                                NULLIF(jp.company_id, 'unknown'),
+                                'Company'
+                            ) as company,
+                            COALESCE(
+                                NULLIF(jp.location, ''),
+                                CASE 
+                                    WHEN jp.city IS NOT NULL AND jp.emirate IS NOT NULL 
+                                        THEN jp.city || ', ' || jp.emirate
+                                    WHEN jp.emirate IS NOT NULL THEN jp.emirate
+                                    WHEN jp.city IS NOT NULL THEN jp.city
+                                    ELSE NULL
+                                END
+                            ) as location,
+                            jp.status,
+                            COALESCE(jp.applications_count, 0) as applications,
+                            jp.created_at,
+                            jp.description,
+                            jp.requirements,
+                            jp.responsibilities,
+                            jp.benefits,
+                            jp.salary_range_min,
+                            jp.salary_range_max,
+                            COALESCE(jp.employment_type, jp.job_type) as employment_type,
+                            jp.experience_level,
+                            jp.id::text as pk
+                        FROM job_postings jp
+                        LEFT JOIN users u ON jp.recruiter_id = u.id::text
+                        WHERE jp.status != 'deleted' {filter_sql_new}
+                        ORDER BY jp.created_at DESC
                         LIMIT 50
                     """
                     cur.execute(query_new, params_new)

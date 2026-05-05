@@ -1166,12 +1166,13 @@ def save_jd(jd_id):
         company_id = metadata.get('company_id') or data.get('company_id')
         
         # CRITICAL: Use JWT identity as authoritative recruiter_id
-        # This ensures RBAC filter (recruiter_id = user_id OR created_by = user_id) always matches
+        # This ensures RBAC filter (recruiter_id = user_id) always matches
         if current_user_id:
             recruiter_id = str(current_user_id)
         
-        # If company_id missing, try to lookup from user profile
-        if not company_id and current_user_id:
+        # If company_id is missing or a placeholder, look up from user's profile
+        company_id_placeholder = not company_id or company_id in ('company_default', 'unknown', '')
+        if company_id_placeholder and current_user_id:
              try:
                 cur.execute("SELECT company FROM users WHERE id = %s", (current_user_id,))
                 row = cur.fetchone()
@@ -1187,9 +1188,17 @@ def save_jd(jd_id):
 
         # Fallback to unknown if still missing
         recruiter_id = recruiter_id or 'unknown'
-        company_id = company_id or 'unknown'
+        company_id = company_id if (company_id and company_id not in ('company_default', 'unknown', '')) else 'unknown'
         
         logger.info(f"Save JD {jd_id}: recruiter_id={recruiter_id}, company_id={company_id}, jwt_user={current_user_id}")
+        
+        # Build location string from city + emirate if location not set
+        city = basic_info.get('city')
+        emirate = basic_info.get('emirate')
+        location = basic_info.get('location')
+        if not location:
+            parts = [p for p in [city, emirate] if p]
+            location = ', '.join(parts) if parts else None
         
         # Check if JD already exists
         cur.execute("SELECT id, jd_id FROM job_postings WHERE jd_id = %s", (jd_id,))
@@ -1209,6 +1218,7 @@ def save_jd(jd_id):
                     job_level = %s,
                     emirate = %s,
                     city = %s,
+                    location = %s,
                     remote_option = %s,
                     description = %s,
                     description_arabic = %s,
@@ -1220,6 +1230,7 @@ def save_jd(jd_id):
                     metadata = %s,
                     status = %s,
                     recruiter_id = %s,
+                    company_id = %s,
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -1231,8 +1242,9 @@ def save_jd(jd_id):
                 basic_info.get('department'),
                 basic_info.get('job_type'),
                 basic_info.get('job_level'),
-                basic_info.get('emirate'),
-                basic_info.get('city'),
+                emirate,
+                city,
+                location,
                 basic_info.get('remote_option', False),
                 jd_data.get('description'),
                 jd_data.get('description_arabic'),
@@ -1244,10 +1256,11 @@ def save_jd(jd_id):
                 json.dumps(metadata),
                 status,
                 recruiter_id,
+                company_id,
                 status,
                 jd_id
             ))
-            logger.info(f"Updated JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}")
+            logger.info(f"Updated JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
         else:
             logger.info(f"No existing JD found with jd_id: {jd_id}, inserting new record")
             # Insert new JD — RBAC uses recruiter_id (VARCHAR), NOT created_by (INTEGER)
@@ -1255,13 +1268,13 @@ def save_jd(jd_id):
                 INSERT INTO job_postings (
                     jd_id, recruiter_id, company_id,
                     title, title_arabic, department, job_type, job_level,
-                    emirate, city, latitude, longitude, remote_option,
+                    emirate, city, location, latitude, longitude, remote_option,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -1273,8 +1286,9 @@ def save_jd(jd_id):
                 basic_info.get('department'),
                 basic_info.get('job_type'),
                 basic_info.get('job_level'),
-                basic_info.get('emirate'),
-                basic_info.get('city'),
+                emirate,
+                city,
+                location,
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
@@ -1289,7 +1303,7 @@ def save_jd(jd_id):
                 status,
                 status
             ))
-            logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}")
+            logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
         
         conn.commit()
         cur.close()
