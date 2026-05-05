@@ -126,7 +126,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                 SELECT DISTINCT ON (ja.id)
                     ja.id as application_id,
                     ja.candidate_id,
-                    ja.submitted_at,
+                    ja.applied_at as submitted_at,
                     ja.status as application_status,
                     uc.id as cv_id,
                     uc.user_id,
@@ -142,18 +142,16 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     CONCAT(u.first_name, ' ', u.last_name) as candidate_name,
                     u.email
                 FROM job_applications ja
-                LEFT JOIN users u ON ja.candidate_id = u.id
+                LEFT JOIN users u ON ja.candidate_id = u.id::text
                 LEFT JOIN user_cvs uc ON u.id = uc.user_id
                 WHERE 1=1
             """
 
             params = []
 
-            # robust job_id filtering
-            # Since DB clean up, job_applications.job_id is STRICTLY INTEGER.
-            # We no longer look for jd_id (UUID string) in the applications table.
+            # job_applications.job_id is TEXT after migration; cast both sides
             candidate_query += " AND ja.job_id = %s"
-            params.append(job_id)
+            params.append(str(job_id))
 
             # if employment_status_filter:
             #     candidate_query += " AND (u.employment_status = %s OR u.employment_status IS NULL)"
