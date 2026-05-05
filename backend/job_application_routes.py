@@ -23,6 +23,66 @@ job_application_bp = Blueprint('job_application', __name__, url_prefix='/api/job
 # Mock user ID for development
 MOCK_USER_ID = '00000000-0000-0000-0000-000000000001'
 
+
+def _migrate_job_applications_table():
+    """
+    Migrate job_applications table columns from INTEGER to TEXT.
+    
+    The table was originally created by jobs_api.py with:
+        candidate_id INTEGER, job_id INTEGER, id SERIAL
+    But the auth system uses UUID strings for user IDs (e.g. '47dcb02a-...'),
+    and application IDs are text ('APP-XXXX'). This migration fixes the mismatch.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return
+        cur = conn.cursor()
+        
+        # Check current column type for candidate_id
+        cur.execute("""
+            SELECT data_type FROM information_schema.columns 
+            WHERE table_name = 'job_applications' AND column_name = 'candidate_id'
+        """)
+        result = cur.fetchone()
+        
+        if result and result[0] == 'integer':
+            logger.info("🔄 Migrating job_applications columns from INTEGER to TEXT...")
+            
+            # Drop the SERIAL default on id if it exists (SERIAL creates a sequence)
+            try:
+                cur.execute("ALTER TABLE job_applications ALTER COLUMN id DROP DEFAULT")
+            except Exception:
+                conn.rollback()
+            
+            # Convert columns to TEXT
+            cur.execute("""
+                ALTER TABLE job_applications 
+                    ALTER COLUMN id TYPE TEXT USING id::text,
+                    ALTER COLUMN candidate_id TYPE TEXT USING candidate_id::text,
+                    ALTER COLUMN job_id TYPE TEXT USING job_id::text
+            """)
+            conn.commit()
+            logger.info("✅ job_applications columns migrated to TEXT successfully")
+        else:
+            logger.debug("job_applications columns already TEXT, no migration needed")
+            
+    except Exception as e:
+        logger.warning(f"job_applications migration check: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+# Run migration on import
+_migrate_job_applications_table()
+
+
 def get_user_id_from_request():
     """Get user ID from JWT or mock token"""
     auth_header = request.headers.get('Authorization', '')
@@ -101,7 +161,7 @@ def apply_for_job():
         
         cur.execute("""
             INSERT INTO job_applications (
-                id, job_id, candidate_id, cover_letter, status, submitted_at, last_updated
+                id, job_id, candidate_id, cover_letter, status, applied_at, updated_at
             ) VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
         """, (application_id, job_id, current_user_id, cover_letter, 'pending'))
         
