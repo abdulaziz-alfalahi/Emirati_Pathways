@@ -2536,15 +2536,17 @@ def get_candidate_profile_full(candidate_id):
     try:
         logger.info(f"Fetching full profile for candidate_id: {candidate_id}")
         
-        # Ensure ID is an integer (Schema strictness)
+        # Support both integer and UUID candidate IDs
+        # Try integer first, then fall back to UUID/string match
         try:
             candidate_id_int = int(candidate_id)
+            id_param = candidate_id_int
         except (ValueError, TypeError):
-            logger.error(f"Invalid candidate_id format: {candidate_id}")
-            return jsonify({'success': False, 'message': 'Invalid candidate ID format'}), 400
+            # UUID string — use text comparison
+            id_param = str(candidate_id)
 
-        # Standard Query: Join Users and Candidate Profiles on Integer IDs
-        # Note: We select from users first to ensure we get user details even if profile is missing
+        # Standard Query: Join Users and Candidate Profiles
+        # Use text cast for robust matching (handles both int and UUID IDs)
         query = """
             SELECT 
                 cp.id as profile_id,
@@ -2552,12 +2554,12 @@ def get_candidate_profile_full(candidate_id):
                 cp.dob, cp.avatar_url, cp.video_intro_url,
                 cp.expected_salary_range, cp.notice_period,
                 cp.full_name, cp.ats_score, cp.profile_photo_url,
-                u.email, u.first_name, u.last_name
+                u.email, u.first_name, u.last_name, u.phone as user_phone
             FROM users u
             LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
-            WHERE u.id = %s
+            WHERE u.id::text = %s
         """
-        profile = execute_query(query, (candidate_id_int,), fetch_one=True)
+        profile = execute_query(query, (str(id_param),), fetch_one=True)
         
         # Fallback: If no profile record (and join returned None for cp columns), we construct a basic object.
         # But execute_query returns a dict. If cp is null, keys might be None.
@@ -2604,25 +2606,70 @@ def get_candidate_profile_full(candidate_id):
             except Exception as e:
                 logger.error(f"Error fetching related data for profile {profile_id}: {e}")
 
-        # Privacy: extract emirate from location string for recruiter view
-        raw_location = profile.get('location') or ''
-        emirate = raw_location.split(',')[0].strip() if raw_location else None
+        # Also try to fetch CV data from user_cvs (may have more info than candidate_profiles)
+        cv_data = None
+        try:
+            cv_query = "SELECT * FROM user_cvs WHERE user_id::text = %s ORDER BY updated_at DESC LIMIT 1"
+            cv_data = execute_query(cv_query, (str(id_param),), fetch_one=True)
+        except Exception as e:
+            logger.debug(f"No CV data found: {e}")
 
-        # Construct Response — exclude email/phone for privacy (all communication on-platform)
+        # Merge CV data for richer profiles
+        cv_technical_skills = []
+        cv_soft_skills = []
+        cv_work_experience = []
+        cv_education = []
+        cv_summary = None
+        if cv_data:
+            import json as _json
+            def _parse_json(val):
+                if isinstance(val, list): return val
+                if isinstance(val, str):
+                    try: return _json.loads(val)
+                    except: return []
+                return val or []
+            cv_technical_skills = _parse_json(cv_data.get('technical_skills'))
+            cv_soft_skills = _parse_json(cv_data.get('soft_skills'))
+            cv_work_experience = _parse_json(cv_data.get('work_experience'))
+            cv_education = _parse_json(cv_data.get('education'))
+            cv_summary = cv_data.get('professional_summary')
+
+        # Build final skills lists (prefer candidate_skills table, fallback to CV)
+        tech_skills = [s.get('name') for s in skills if s.get('category') == 'technical'] if skills else []
+        soft_skills_list = [s.get('name') for s in skills if s.get('category') == 'soft'] if skills else []
+        if not tech_skills and cv_technical_skills:
+            tech_skills = [s if isinstance(s, str) else s.get('name', str(s)) for s in cv_technical_skills]
+        if not soft_skills_list and cv_soft_skills:
+            soft_skills_list = [s if isinstance(s, str) else s.get('name', str(s)) for s in cv_soft_skills]
+
+        # Build final experience/education (prefer profile tables, fallback to CV)
+        final_experience = experience if experience else cv_work_experience
+        final_education = education if education else cv_education
+
+        # Build summary
+        summary = profile.get('bio') or cv_summary
+
+        # Extract location
+        raw_location = profile.get('location') or ''
+        location = raw_location if raw_location else None
+
+        # Construct Response — include contact info for recruiter decision-making
         data = {
             'candidate_id': candidate_id,
             'full_name': profile.get('full_name') or f"{profile.get('first_name','')} {profile.get('last_name','')}".strip(),
-            'emirate': emirate,
+            'email': profile.get('email'),
+            'phone': profile.get('phone') or profile.get('user_phone'),
+            'location': location,
             'headline': profile.get('headline'),
             'bio': profile.get('bio'),
-            'summary': profile.get('bio'), 
+            'summary': summary, 
             'nationality': profile.get('nationality'),
-            'work_experience': experience,
-            'education': education,
-            'skills': [s.get('name') for s in skills], 
-            'technical_skills': [s.get('name') for s in skills if s.get('category') == 'technical'],
-            'soft_skills': [s.get('name') for s in skills if s.get('category') == 'soft'],
-            'ats_score': profile.get('ats_score'),
+            'work_experience': final_experience,
+            'education': final_education,
+            'skills': [s.get('name') for s in skills] if skills else (tech_skills + soft_skills_list), 
+            'technical_skills': tech_skills,
+            'soft_skills': soft_skills_list,
+            'ats_score': profile.get('ats_score') or (cv_data.get('ats_score') if cv_data else None),
             'profile_photo_url': profile.get('profile_photo_url') or profile.get('avatar_url')
         }
         
