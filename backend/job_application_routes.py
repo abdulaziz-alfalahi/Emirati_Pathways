@@ -280,6 +280,8 @@ def get_user_applications():
         
         # Join with job_postings and companies to get titles
         # Using job_postings as confirmed by candidate_job_routes
+        # NOTE: job_applications columns are TEXT after migration;
+        #       job_postings.id is INTEGER so we cast for the JOIN.
         query = """
             SELECT 
                 a.id as application_id,
@@ -288,13 +290,13 @@ def get_user_applications():
                 COALESCE(c.company_name, 'Confidential') as company,
                 j.location,
                 a.status,
-                a.submitted_at,
-                a.last_updated
+                a.applied_at,
+                a.updated_at
             FROM job_applications a
-            LEFT JOIN job_postings j ON a.job_id = j.id
+            LEFT JOIN job_postings j ON a.job_id = j.id::text
             LEFT JOIN companies c ON j.company_id::text = c.id::text
             WHERE a.candidate_id = %s
-            ORDER BY a.submitted_at DESC
+            ORDER BY a.applied_at DESC
         """
         cur.execute(query, (current_user_id,))
         rows = cur.fetchall()
@@ -309,8 +311,8 @@ def get_user_applications():
                 'company': row['company'] or 'Confidential',
                 'location': row['location'] or 'UAE',
                 'status': row['status'],
-                'appliedDate': row['submitted_at'].isoformat() if row['submitted_at'] else None,
-                'lastUpdate': row['last_updated'].isoformat() if row['last_updated'] else None
+                'appliedDate': row['applied_at'].isoformat() if row.get('applied_at') else None,
+                'lastUpdate': row['updated_at'].isoformat() if row.get('updated_at') else None
             })
 
         return jsonify({
