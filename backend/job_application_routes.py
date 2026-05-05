@@ -30,8 +30,11 @@ def get_user_id_from_request():
     
     # Check for mock token first
     if 'mock_token' in auth_header:
-        logger.info(f"Mock authentication detected, using mock user ID: {MOCK_USER_ID}")
-        return MOCK_USER_ID
+        # Extract actual user ID from mock token (format: "Bearer mock_token_<user_id>")
+        mock_token = auth_header.replace('Bearer ', '').strip()
+        user_id = mock_token.replace('mock_token_', '')
+        logger.info(f"Mock authentication detected, extracted user ID: {user_id}")
+        return str(user_id)
     
     # Try to get from JWT
     try:
@@ -136,8 +139,8 @@ def apply_for_job():
                         recruiter_id = str(any_rec['id'])
             
             if recruiter_id:
-                # Get candidate name
-                cand_query = "SELECT COALESCE(full_name, email, 'A candidate') as name FROM users WHERE id::text = %s"
+                # Get candidate name (users table has first_name + last_name, not full_name)
+                cand_query = "SELECT COALESCE(NULLIF(CONCAT(first_name, ' ', last_name), ' '), email, 'A candidate') as name FROM users WHERE id::text = %s"
                 cur2.execute(cand_query, (str(current_user_id),))
                 cand_row = cur2.fetchone()
                 candidate_name = cand_row['name'] if cand_row else 'A candidate'
