@@ -2556,7 +2556,7 @@ def get_candidate_profile_full(candidate_id):
                 cp.full_name, cp.ats_score, cp.profile_photo_url,
                 u.email, u.first_name, u.last_name, u.phone as user_phone
             FROM users u
-            LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
+            LEFT JOIN candidate_profiles cp ON cp.user_id::text = u.id::text
             WHERE u.id::text = %s
         """
         profile = execute_query(query, (str(id_param),), fetch_one=True)
