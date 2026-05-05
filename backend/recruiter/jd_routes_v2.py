@@ -1174,11 +1174,30 @@ def save_jd(jd_id):
         company_id_placeholder = not company_id or company_id in ('company_default', 'unknown', '')
         if company_id_placeholder and current_user_id:
              try:
-                cur.execute("SELECT company FROM users WHERE id = %s", (current_user_id,))
+                # Check multiple sources for company name:
+                # 1. users.company (VARCHAR column)
+                # 2. users.profile_data->>'companyName' (JSONB from Settings)
+                # 3. hr_profiles -> companies (relational)
+                cur.execute("""
+                    SELECT 
+                        u.company,
+                        u.profile_data->>'companyName' as profile_company,
+                        COALESCE(c.company_name, c.name) as hr_company
+                    FROM users u
+                    LEFT JOIN hr_profiles hp ON hp.user_id = u.id
+                    LEFT JOIN companies c ON hp.company_id::text = c.id::text
+                    WHERE u.id = %s
+                """, (current_user_id,))
                 row = cur.fetchone()
-                if row and row.get('company'):
-                    company_id = str(row['company'])
-                    logger.info(f"Auto-detected company '{company_id}' for user {current_user_id}")
+                if row:
+                    resolved = (
+                        row.get('company') or 
+                        row.get('profile_company') or 
+                        row.get('hr_company')
+                    )
+                    if resolved:
+                        company_id = str(resolved)
+                        logger.info(f"Auto-detected company '{company_id}' for user {current_user_id}")
              except Exception as e:
                  logger.warning(f"Error looking up company for user {current_user_id}: {e}")
                  try:

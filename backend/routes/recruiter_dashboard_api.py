@@ -388,6 +388,7 @@ def get_jd_list_enhanced():
                             jp.title,
                             COALESCE(
                                 NULLIF(u.company, ''),
+                                NULLIF(u.profile_data->>'companyName', ''),
                                 NULLIF(jp.company_id, 'company_default'),
                                 NULLIF(jp.company_id, 'unknown'),
                                 'Company'
