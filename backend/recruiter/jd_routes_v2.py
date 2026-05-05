@@ -1199,6 +1199,7 @@ def save_jd(jd_id):
         if existing:
             logger.info(f"Found existing JD: id={existing.get('id')}, jd_id={existing.get('jd_id')}")
             # Update existing JD
+            # NOTE: Do NOT set created_by — it's INTEGER (FK to users.id) but JWT IDs are UUIDs
             cur.execute("""
                 UPDATE job_postings SET
                     title = %s,
@@ -1219,7 +1220,6 @@ def save_jd(jd_id):
                     metadata = %s,
                     status = %s,
                     recruiter_id = %s,
-                    created_by = COALESCE(created_by, %s),
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -1244,17 +1244,16 @@ def save_jd(jd_id):
                 json.dumps(metadata),
                 status,
                 recruiter_id,
-                recruiter_id,
                 status,
                 jd_id
             ))
             logger.info(f"Updated JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}")
         else:
             logger.info(f"No existing JD found with jd_id: {jd_id}, inserting new record")
-            # Insert new JD (includes created_by for RBAC filtering)
+            # Insert new JD — RBAC uses recruiter_id (VARCHAR), NOT created_by (INTEGER)
             cur.execute("""
                 INSERT INTO job_postings (
-                    jd_id, recruiter_id, company_id, created_by,
+                    jd_id, recruiter_id, company_id,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, latitude, longitude, remote_option,
                     description, description_arabic,
@@ -1262,14 +1261,13 @@ def save_jd(jd_id):
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
                 jd_id,
                 recruiter_id,
                 company_id,
-                recruiter_id,  # created_by = recruiter_id (the JWT user)
                 basic_info.get('title'),
                 basic_info.get('title_arabic'),
                 basic_info.get('department'),
@@ -1291,7 +1289,7 @@ def save_jd(jd_id):
                 status,
                 status
             ))
-            logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, created_by: {recruiter_id}")
+            logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}")
         
         conn.commit()
         cur.close()

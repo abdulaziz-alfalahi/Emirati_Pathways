@@ -353,8 +353,9 @@ def get_jd_list_enhanced():
                     pass
                 elif user_role in ('hr_manager', 'hr') and user_company_id:
                      # HR Manager with Company: See all jobs for that company OR created by them
-                     filter_sql_new = " AND (company_id = %s OR recruiter_id = %s OR created_by = %s)"
-                     params_new = [user_company_id, str(current_user_id), str(current_user_id)]
+                     # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
+                     filter_sql_new = " AND (company_id = %s OR recruiter_id = %s)"
+                     params_new = [user_company_id, str(current_user_id)]
                      
                      # Legacy table: Try user_id (most likely) or recruiter_id
                      # Since we confirmed user_id exists for legacy jobs, use that.
@@ -366,8 +367,9 @@ def get_jd_list_enhanced():
                         filter_sql_legacy = " AND 1=0"
                 else:
                     # Regular Recruiter OR HR Manager without Company: See ONLY their own jobs
-                    filter_sql_new = " AND (recruiter_id = %s OR created_by = %s)"
-                    params_new = [str(current_user_id), str(current_user_id)]
+                    # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
+                    filter_sql_new = " AND recruiter_id = %s"
+                    params_new = [str(current_user_id)]
                     
                     # Legacy table: Use user_id
                     filter_sql_legacy = " AND user_id = %s"
