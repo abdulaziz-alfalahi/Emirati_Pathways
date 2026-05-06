@@ -59,7 +59,7 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id
         conn.close()
 
 def ensure_tables_exist():
-    """Ensure interview tables exist"""
+    """Ensure interview tables exist and columns support UUID IDs"""
     conn = get_db_connection()
     if not conn:
         return
@@ -69,9 +69,9 @@ def ensure_tables_exist():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS interview_sessions (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    candidate_id INTEGER NOT NULL,
-                    job_id INTEGER,
-                    recruiter_id INTEGER,
+                    candidate_id TEXT NOT NULL,
+                    job_id TEXT,
+                    recruiter_id TEXT,
                     scheduled_at TIMESTAMP,
                     duration_minutes INTEGER DEFAULT 60,
                     status VARCHAR(50) DEFAULT 'scheduled',
@@ -102,16 +102,38 @@ def ensure_tables_exist():
                 CREATE TABLE IF NOT EXISTS interview_participants (
                     id SERIAL PRIMARY KEY,
                     session_id UUID REFERENCES interview_sessions(id),
-                    user_id INTEGER NOT NULL,
+                    user_id TEXT NOT NULL,
                     role VARCHAR(50),
-                    status VARCHAR(50) DEFAULT 'invited', -- invited, accepted, declined
+                    status VARCHAR(50) DEFAULT 'invited',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(session_id, user_id)
                 )
             """)
             
             conn.commit()
-            logger.info("Interview tables ensured")
+            
+            # Migrate existing INTEGER columns to TEXT for UUID compatibility
+            for tbl, cols in [
+                ('interview_sessions', ['candidate_id', 'recruiter_id', 'job_id']),
+                ('interview_participants', ['user_id']),
+            ]:
+                for col in cols:
+                    try:
+                        cursor.execute(f"""
+                            SELECT data_type FROM information_schema.columns
+                            WHERE table_name = %s AND column_name = %s
+                        """, (tbl, col))
+                        row = cursor.fetchone()
+                        if row and row[0] == 'integer':
+                            logger.info(f"Migrating {tbl}.{col} from INTEGER to TEXT")
+                            cursor.execute(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE TEXT USING {col}::text")
+                            conn.commit()
+                            logger.info(f"✅ {tbl}.{col} migrated to TEXT")
+                    except Exception as col_err:
+                        logger.warning(f"Column migration {tbl}.{col}: {col_err}")
+                        conn.rollback()
+            
+            logger.info("Interview tables ensured (with UUID support)")
     except Exception as e:
         logger.error(f"Failed to create tables: {e}")
         conn.rollback()
@@ -149,8 +171,8 @@ def list_sessions():
     try:
         role = request.args.get('role', 'candidate')
         status = request.args.get('status')
-        candidate_id = request.args.get('candidate_id', type=int)
-        recruiter_id = request.args.get('recruiter_id', type=int)
+        candidate_id = request.args.get('candidate_id')  # UUID string, not int
+        recruiter_id = request.args.get('recruiter_id')  # UUID string, not int
         
         # Extract user ID from JWT auth header
         user_id = None
@@ -300,13 +322,12 @@ def list_sessions():
                             WHERE (
                                 isched.recruiter_id::text = %s
                                 OR (isched.interviewers IS NOT NULL AND (
-                                    isched.interviewers @> %s::jsonb
-                                    OR isched.interviewers @> %s::jsonb
+                                    isched.interviewers::text LIKE %s
                                 ))
                             )
                             AND isched.status NOT IN ('cancelled', 'rejected')
                             ORDER BY isched.scheduled_date DESC
-                        """, (user_id_str, json.dumps([int(user_id_str)]), json.dumps([user_id_str])))
+                        """, (user_id_str, f'%{user_id_str}%'))
                     
                     for row in cur.fetchall():
                         session = dict(row)
@@ -367,7 +388,7 @@ def get_my_sessions():
     """
     try:
         # Get user_id from auth or query param
-        user_id = request.args.get('user_id', type=int)
+        user_id = request.args.get('user_id')  # UUID string, not int
         role = request.args.get('role', 'candidate')
         
         if role == 'candidate':
