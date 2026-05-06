@@ -26,7 +26,9 @@ export default function CandidateInterviews() {
 
     const fetchSessions = async () => {
         try {
-            const res = await restClient.get('/api/video-interview/sessions?role=candidate');
+            const userStr = localStorage.getItem('user');
+            const userId = userStr ? JSON.parse(userStr)?.id : '';
+            const res = await restClient.get(`/api/video-interview/sessions?role=candidate&candidate_id=${userId}`);
             // Normalize response (backend returns { success: true, sessions: [...] })
             if (res.data.success) {
                 setSessions(res.data.sessions || []);
