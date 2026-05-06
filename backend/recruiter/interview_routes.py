@@ -74,7 +74,6 @@ def get_all_recruiter_interviews():
         cur = conn.cursor()
 
         # Get all interviews where this user is the recruiter OR is listed as an interviewer/attendee
-        # interviewers JSONB can store IDs as integers [121] or strings ["121"], so check both
         cur.execute(f"""
             SELECT i.*,
                    u.first_name as candidate_first_name,
@@ -82,14 +81,13 @@ def get_all_recruiter_interviews():
                    {user_display_name('candidate_display_name')},
                    u.email as candidate_email
             FROM interview_schedules i
-            LEFT JOIN users u ON CAST(i.candidate_id AS INTEGER) = u.id
-            WHERE i.recruiter_id = %s
+            LEFT JOIN users u ON i.candidate_id::text = u.id::text
+            WHERE i.recruiter_id::text = %s
                OR (i.interviewers IS NOT NULL AND (
-                   i.interviewers @> %s::jsonb 
-                   OR i.interviewers @> %s::jsonb
+                   i.interviewers::text LIKE %s
                ))
             ORDER BY i.scheduled_date DESC, i.scheduled_time DESC
-        """, (str(recruiter_id), json.dumps([int(recruiter_id)]), json.dumps([str(recruiter_id)])))
+        """, (str(recruiter_id), f'%{str(recruiter_id)}%'))
 
         columns = [desc[0] for desc in cur.description]
         interviews = [dict(zip(columns, row)) for row in cur.fetchall()]
