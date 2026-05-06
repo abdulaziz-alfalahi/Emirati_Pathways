@@ -934,6 +934,25 @@ def add_to_shortlist():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
+            # Migrate shortlisted_candidates columns from INTEGER to TEXT if needed
+            # (supports UUID-based IDs from modern auth system)
+            try:
+                cursor.execute("""
+                    SELECT data_type FROM information_schema.columns
+                    WHERE table_name = 'shortlisted_candidates' AND column_name = 'candidate_id'
+                """)
+                col_info = cursor.fetchone()
+                if col_info and col_info.get('data_type') == 'integer':
+                    logger.info("Migrating shortlisted_candidates columns to TEXT for UUID support")
+                    cursor.execute("ALTER TABLE shortlisted_candidates ALTER COLUMN candidate_id TYPE TEXT USING candidate_id::text")
+                    cursor.execute("ALTER TABLE shortlisted_candidates ALTER COLUMN hr_user_id TYPE TEXT USING hr_user_id::text")
+                    cursor.execute("ALTER TABLE shortlisted_candidates ALTER COLUMN hr_user_id DROP NOT NULL")
+                    conn.commit()
+                    logger.info("✅ shortlisted_candidates columns migrated to TEXT")
+            except Exception as mig_err:
+                logger.warning(f"Column migration check: {mig_err}")
+                conn.rollback()
+
             # Look up integer job_postings.id from the UUID jd_id
             cursor.execute(
                 "SELECT id FROM job_postings WHERE jd_id = %s",
@@ -944,13 +963,8 @@ def add_to_shortlist():
                 return jsonify({'error': f'Job posting not found for jd_id: {jd_id}'}), 404
             job_id_int = jp_row['id']
 
-            # Resolve recruiter user id (may be string or int)
-            hr_user_id = None
-            if recruiter_id:
-                try:
-                    hr_user_id = int(recruiter_id)
-                except (ValueError, TypeError):
-                    hr_user_id = None
+            # Use string IDs (candidate_id and recruiter_id are UUIDs)
+            hr_user_id = str(recruiter_id) if recruiter_id else None
 
             # Upsert into shortlisted_candidates
             cursor.execute("""
@@ -962,7 +976,7 @@ def add_to_shortlist():
                     status = 'shortlisted',
                     updated_at = CURRENT_TIMESTAMP
                 RETURNING id, job_id, candidate_id, status, created_at
-            """, (job_id_int, int(candidate_id), hr_user_id, notes))
+            """, (job_id_int, str(candidate_id), hr_user_id, notes))
 
             row = dict(cursor.fetchone())
             conn.commit()
