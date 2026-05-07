@@ -325,7 +325,7 @@ def get_jd_list_enhanced():
                     try:
                         # Fetch company for the user (column is 'company', not 'company_id')
                         with conn.cursor() as cur_user:
-                            cur_user.execute("SELECT company FROM users WHERE id = %s", (current_user_id,))
+                            cur_user.execute("SELECT company FROM users WHERE id::text = %s", (str(current_user_id),))
                             user_data = cur_user.fetchone()
                             if user_data:
                                 user_company_id = user_data[0] # Tuple index 0
@@ -333,8 +333,8 @@ def get_jd_list_enhanced():
                             # Fallback: check company_team_members if users.company is NULL
                             if not user_company_id:
                                 cur_user.execute(
-                                    "SELECT company_id FROM company_team_members WHERE user_id = %s LIMIT 1",
-                                    (int(current_user_id),)
+                                    "SELECT company_id FROM company_team_members WHERE user_id::text = %s LIMIT 1",
+                                    (str(current_user_id),)
                                 )
                                 team_data = cur_user.fetchone()
                                 if team_data:
@@ -359,9 +359,9 @@ def get_jd_list_enhanced():
                      
                      # Legacy table: Try user_id (most likely) or recruiter_id
                      # Since we confirmed user_id exists for legacy jobs, use that.
-                     filter_sql_legacy = " AND user_id = %s" 
+                     filter_sql_legacy = " AND user_id::text = %s" 
                      try:
-                        params_legacy = [int(current_user_id)]
+                        params_legacy = [str(current_user_id)]
                      except:
                         params_legacy = [0]
                         filter_sql_legacy = " AND 1=0"
@@ -372,13 +372,8 @@ def get_jd_list_enhanced():
                     params_new = [str(current_user_id)]
                     
                     # Legacy table: Use user_id
-                    filter_sql_legacy = " AND user_id = %s"
-                    try: 
-                        rec_id_int = int(current_user_id)
-                        params_legacy = [rec_id_int]
-                    except:
-                        params_legacy = [0]
-                        filter_sql_legacy = " AND 1=0"
+                    filter_sql_legacy = " AND user_id::text = %s"
+                    params_legacy = [str(current_user_id)]
                 
                 # Query 1: job_postings (New Table)
                 try:

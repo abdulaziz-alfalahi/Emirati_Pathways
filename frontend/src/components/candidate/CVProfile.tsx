@@ -610,6 +610,16 @@ const CVProfile: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Back to Dashboard Button */}
+      <Button
+        variant="outline"
+        onClick={() => navigate('/candidate-dashboard')}
+        className="mb-2"
+        id="back-to-dashboard-btn"
+      >
+        <ArrowRight className="h-4 w-4 rotate-180" style={{ marginInlineEnd: 8 }} />
+        {t('Back to Dashboard', 'العودة إلى لوحة التحكم')}
+      </Button>
       {/* ATS Score Card */}
       {atsScore && (
         <Card className="border-teal-200 bg-gradient-to-br from-white to-teal-50/30">
