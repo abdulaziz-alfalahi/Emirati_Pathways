@@ -1,23 +1,32 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '@/components/notifications/NotificationSystem';
 import { WifiOff } from 'lucide-react';
 
 /**
- * Renders a slim banner at the top of the viewport when the Socket.IO
- * connection drops. Shows after a 2-second delay to avoid flashing on
- * quick reconnects.
+ * Renders a slim banner at the top of the viewport when a previously
+ * established Socket.IO connection drops. Does NOT show if Socket.IO
+ * was never connected (e.g. server not deployed), since the app falls
+ * back to REST polling gracefully.
  */
 const ConnectionBanner: React.FC = () => {
     const { isConnected } = useNotifications();
     const [showBanner, setShowBanner] = useState(false);
+    const wasEverConnected = useRef(false);
+
+    useEffect(() => {
+        if (isConnected) {
+            wasEverConnected.current = true;
+            setShowBanner(false);
+        }
+    }, [isConnected]);
 
     useEffect(() => {
         let timer: NodeJS.Timeout | undefined;
 
-        if (!isConnected) {
-            // Wait 2s before showing to avoid flash on quick reconnects
-            timer = setTimeout(() => setShowBanner(true), 2000);
+        if (!isConnected && wasEverConnected.current) {
+            // Only show banner if we HAD a connection and lost it
+            timer = setTimeout(() => setShowBanner(true), 5000);
         } else {
             setShowBanner(false);
         }
