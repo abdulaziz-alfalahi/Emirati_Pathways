@@ -81,6 +81,22 @@ def create_app() -> Flask:
 
 
 
+    # Recruiter Dashboard API (offers, JD list, shortlist, candidate details, dashboard overview)
+    try:
+        from routes.recruiter_dashboard_api import recruiter_dashboard_bp
+        app.register_blueprint(recruiter_dashboard_bp)
+        logger.info("Registered: Recruiter Dashboard API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Recruiter Dashboard API routes: {e}")
+
+    # Interview Sessions API (video interview)
+    try:
+        from routes.interview_sessions_api import interview_sessions_bp
+        app.register_blueprint(interview_sessions_bp)
+        logger.info("Registered: Interview Sessions API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Interview Sessions API routes: {e}")
+
     # Auth
     try:
         from routes.auth_routes import auth_bp
