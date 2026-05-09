@@ -97,6 +97,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering Interview Sessions API routes: {e}")
 
+    # Profile V2 API (candidate profile studio)
+    try:
+        from routes.profile.profile_routes_v2 import profile_v2_bp
+        app.register_blueprint(profile_v2_bp)
+        logger.info("Registered: Profile V2 API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Profile V2 API routes: {e}")
+
+
     # Auth
     try:
         from routes.auth_routes import auth_bp
