@@ -38,6 +38,7 @@ const SidebarItem = ({ icon: Icon, label, path, active, isRTL }: any) => {
 
 export const ProfileStudioLayout = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const currentPath = location.pathname;
     const { language, toggleLanguage, isRTL } = useLanguage();
     const { t: i18t } = useTranslation();
