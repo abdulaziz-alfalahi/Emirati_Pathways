@@ -8,7 +8,9 @@ import {
     Layers,
     Compass,
     ChevronRight,
-    ChevronLeft
+    ChevronLeft,
+    ArrowLeft,
+    ArrowRight
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -134,6 +136,16 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                     </div>
 
                     <nav className="space-y-1">
+                        {/* Back to Dashboard */}
+                        <div
+                            onClick={() => navigate('/candidate-dashboard')}
+                            className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 text-teal-600 hover:bg-teal-50 mb-2 border border-teal-200"
+                            id="back-to-dashboard-btn"
+                        >
+                            {isRTL ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
+                            <span className="font-medium text-sm">{t('Back to Dashboard', 'العودة إلى لوحة التحكم')}</span>
+                        </div>
+                        <div className="w-full h-px bg-border my-2"></div>
                         <SidebarItem
                             icon={User}
                             label={t('Identity & Bio', 'الهوية والسيرة')}
