@@ -267,11 +267,20 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering Statistics routes: {e}")
 
-    # Register CV Builder routes
+    # Register Enhanced CV routes (full-featured, used by Profile Studio IdentityModule)
     try:
-        from recruiter.cv_routes import cv_bp
-        app.register_blueprint(cv_bp)
-        logger.info("Registered: CV Builder routes")
+        from routes.enhanced_cv_routes import enhanced_cv_bp
+        app.register_blueprint(enhanced_cv_bp)
+        logger.info("Registered: Enhanced CV routes")
+    except Exception as e:
+        logger.error(f"Failed registering Enhanced CV routes: {e}")
+
+    # Fallback: Register basic CV Builder routes only if enhanced failed
+    try:
+        if 'enhanced_cv' not in [bp.name for bp in app.blueprints.values() if hasattr(bp, 'name')]:
+            from recruiter.cv_routes import cv_bp
+            app.register_blueprint(cv_bp)
+            logger.info("Registered: CV Builder routes (basic fallback)")
     except Exception as e:
         logger.error(f"Failed registering CV Builder routes: {e}")
 
