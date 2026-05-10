@@ -1765,7 +1765,7 @@ def create_offer_legacy():
                     update_query = """
                         UPDATE job_applications 
                         SET status = 'offer_received', updated_at = NOW()
-                        WHERE job_posting_id = %s AND applicant_id = %s
+                        WHERE job_id = %s AND candidate_id = %s
                     """
                     execute_query(update_query, (job_posting_id, str(candidate_id)), fetch_one=False, fetch_all=False)
                     logger.info(f"Updated application status to 'offer_received' for candidate {candidate_id}")
