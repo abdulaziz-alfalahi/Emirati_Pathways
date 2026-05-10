@@ -92,6 +92,45 @@ def create_app() -> Flask:
             200,
         )
 
+    # Job Shortlist Count (needed for My Jobs badge)
+    @app.route("/api/recruiter/job-shortlist-count", methods=["GET"])
+    def get_job_shortlist_count():
+        try:
+            from backend.db import get_db_connection
+            import psycopg2.extras
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("""
+                SELECT
+                    jp.jd_id as job_id,
+                    jp.title as job_title,
+                    COUNT(*) as total_shortlisted,
+                    COUNT(CASE WHEN s.status = 'shortlisted' THEN 1 END) as shortlisted,
+                    COUNT(CASE WHEN s.status = 'contacted' THEN 1 END) as contacted,
+                    COUNT(CASE WHEN s.status = 'interview_scheduled' THEN 1 END) as interview_scheduled,
+                    COUNT(CASE WHEN s.status = 'interviewed' THEN 1 END) as interviewed,
+                    COUNT(CASE WHEN s.status = 'offer_sent' THEN 1 END) as offer_sent,
+                    COUNT(CASE WHEN s.status = 'hired' THEN 1 END) as hired,
+                    COUNT(CASE WHEN s.status = 'rejected' THEN 1 END) as rejected,
+                    MAX(s.created_at) as last_shortlist_date
+                FROM shortlisted_candidates s
+                JOIN job_postings jp ON s.job_id = jp.id
+                GROUP BY jp.jd_id, jp.title
+                ORDER BY last_shortlist_date DESC
+            """)
+            results = cur.fetchall()
+            cur.close()
+            conn.close()
+            shortlist_counts = []
+            for row in results:
+                row_dict = dict(row)
+                if row_dict.get('last_shortlist_date'):
+                    row_dict['last_shortlist_date'] = row_dict['last_shortlist_date'].isoformat()
+                shortlist_counts.append(row_dict)
+            return jsonify({'success': True, 'data': shortlist_counts}), 200
+        except Exception as e:
+            logger.error(f"Get job shortlist count error: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
 
 
     # Recruiter Dashboard API (offers, JD list, shortlist, candidate details, dashboard overview)
