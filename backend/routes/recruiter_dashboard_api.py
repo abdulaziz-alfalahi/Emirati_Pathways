@@ -1755,6 +1755,36 @@ def create_offer_legacy():
             traceback.print_exc()
         
         if offer_id:
+            # Post-offer: Update application status to 'offer_received'
+            try:
+                # Find the job posting ID from jd_id
+                jp_query = "SELECT id FROM job_postings WHERE jd_id = %s LIMIT 1"
+                jp_result = execute_query(jp_query, (jd_id,), fetch_one=True)
+                if jp_result:
+                    job_posting_id = jp_result.get('id')
+                    update_query = """
+                        UPDATE job_applications 
+                        SET status = 'offer_received', updated_at = NOW()
+                        WHERE job_posting_id = %s AND applicant_id = %s
+                    """
+                    execute_query(update_query, (job_posting_id, str(candidate_id)), fetch_one=False, fetch_all=False)
+                    logger.info(f"Updated application status to 'offer_received' for candidate {candidate_id}")
+            except Exception as app_err:
+                logger.warning(f"Failed to update application status: {app_err}")
+            
+            # Post-offer: Create notification for candidate
+            try:
+                notif_query = """
+                    INSERT INTO notifications (user_id, type, title, message, is_read, created_at)
+                    VALUES (%s, 'offer', %s, %s, false, NOW())
+                """
+                notif_title = f"Job Offer: {position_title}"
+                notif_message = f"Congratulations! You have received a job offer for {position_title}. Review the offer details in your application tracker."
+                execute_query(notif_query, (str(candidate_id), notif_title, notif_message), fetch_one=False, fetch_all=False)
+                logger.info(f"Notification created for candidate {candidate_id}")
+            except Exception as notif_err:
+                logger.warning(f"Failed to create notification: {notif_err}")
+            
             return jsonify({
                 'success': True,
                 'data': {'id': offer_id, 'offer_id': offer_id},
