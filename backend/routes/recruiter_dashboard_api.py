@@ -1583,16 +1583,23 @@ def create_offer_legacy():
         data = request.get_json()
         logger.info(f"Create offer request data: {data}")
         
-        # Get candidate_id - handle both string and int formats
+        # Get candidate_id - handle both string UUID and int formats
         candidate_id = data.get('candidate_id')
         if candidate_id:
-            # Try to convert to integer if it's a numeric string
-            try:
-                candidate_id = int(candidate_id)
-            except (ValueError, TypeError):
-                # If it's a UUID or non-numeric string, we need to look up the user
-                logger.warning(f"Non-integer candidate_id: {candidate_id}")
-                candidate_id = None
+            candidate_id_str = str(candidate_id).strip()
+            # Check if it's a valid UUID
+            import re
+            uuid_re = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+            if uuid_re.match(candidate_id_str):
+                # Valid UUID - keep as string
+                candidate_id = candidate_id_str
+            else:
+                # Try to convert to integer if it's a numeric string
+                try:
+                    candidate_id = int(candidate_id)
+                except (ValueError, TypeError):
+                    logger.warning(f"Non-integer/non-UUID candidate_id: {candidate_id}")
+                    candidate_id = None
         
         # Get jd_id (job description ID) - this is a UUID
         jd_id = data.get('jd_id') or data.get('job_id')
