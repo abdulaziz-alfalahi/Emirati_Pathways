@@ -35,6 +35,18 @@ def create_app() -> Flask:
 
     JWTManager(app)
 
+    # SQLAlchemy configuration (required for Profile V2 API and ORM-based routes)
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "emirati_journey")
+    db_user = os.getenv("DB_USER", "emirati_user")
+    db_pass = os.getenv("DB_PASSWORD", "emirati_secure_password")
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    from backend.extensions import db
+    db.init_app(app)
+
     # CORS configuration
     origins_env = os.getenv("CORS_ORIGINS", "").strip()
     allowed_origins = [o for o in (x.strip() for x in origins_env.split(",")) if o]
