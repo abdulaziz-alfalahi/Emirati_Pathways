@@ -1764,7 +1764,7 @@ def create_offer_legacy():
                     job_posting_id = jp_result.get('id')
                     update_query = """
                         UPDATE job_applications 
-                        SET status = 'offer_received', updated_at = NOW()
+                        SET status = 'offer', updated_at = NOW()
                         WHERE job_id = %s AND candidate_id = %s
                     """
                     execute_query(update_query, (job_posting_id, str(candidate_id)), fetch_one=False, fetch_all=False)
