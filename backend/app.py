@@ -461,6 +461,7 @@ _additional_blueprints = [
     ('backend.platform_ops_routes', 'platform_ops_bp', None, 'Platform Operations'),
     ('backend.routes.workspace_routes', 'workspace_bp', None, 'Workspaces'),
     ('backend.routes.workspace_phase2_routes', 'workspace_phase2_bp', None, 'Workspace Phase 2'),
+    ('backend.routes.uaepass_routes', 'uaepass_bp', None, 'UAE Pass Authentication'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:

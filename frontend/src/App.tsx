@@ -27,6 +27,7 @@ import SupportChatWidget from '@/components/support/SupportChatWidget';
 // import AuthPage from './pages/auth';
 // import MockLogin from '@/pages/auth/MockLogin'; 
 import EnhancedAuthPage from '@/pages/auth/EnhancedAuth';
+const UAEPassCallback = lazy(() => import('@/pages/auth/UAEPassCallback'));
 import { VerifyJob } from '@/pages/public/VerifyJob';
 const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
 const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
@@ -223,6 +224,11 @@ const AppContent: React.FC = () => {
               <Route path="/" element={<BilingualHomePage />} />
               <Route path="/our-mission" element={<OurMission />} />
               <Route path="/auth" element={<EnhancedAuthPage />} />
+              <Route path="/auth/uaepass/callback" element={
+                <Suspense fallback={<DashboardLoading />}>
+                  <UAEPassCallback />
+                </Suspense>
+              } />
               <Route path="/welcome" element={
                 <ProtectedRoute>
                   <WelcomePage />
@@ -959,6 +965,11 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             } />
             <Route path="/auth" element={<EnhancedAuthPage />} />
+            <Route path="/auth/uaepass/callback" element={
+              <Suspense fallback={<DashboardLoading />}>
+                <UAEPassCallback />
+              </Suspense>
+            } />
             <Route path="/verify-job/:token" element={<VerifyJob />} />
             <Route path="/join/:token" element={<CompanyOnboardingWizard />} />
             <Route path="/register/:token" element={<SeekerOnboardingWizard />} />
