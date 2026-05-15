@@ -167,6 +167,15 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering auth routes: {e}")
 
+    # UAE Pass Authentication (OAuth 2.0)
+    try:
+        from routes.uaepass_routes import uaepass_bp
+
+        app.register_blueprint(uaepass_bp)
+        logger.info("Registered: UAE Pass authentication routes")
+    except Exception as e:
+        logger.error(f"Failed registering UAE Pass routes: {e}")
+
     # Candidate profile
     try:
         from candidate_profile_routes import candidate_profile_bp
