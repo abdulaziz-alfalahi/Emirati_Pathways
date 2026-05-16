@@ -524,7 +524,7 @@ const EnhancedAuthPage: React.FC = () => {
                             onClick={handleUAEPassLogin}
                             disabled={uaePassLoading}
                             className="w-full h-14 text-lg font-semibold rounded-lg
-                                       bg-[#00843D] hover:bg-[#006B31] text-white
+                                       bg-teal-600 hover:bg-teal-700 text-white
                                        shadow-lg hover:shadow-xl transition-all duration-200
                                        flex items-center justify-center gap-3"
                           >
@@ -534,7 +534,7 @@ const EnhancedAuthPage: React.FC = () => {
                               <>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <rect width="24" height="24" rx="4" fill="white"/>
-                                  <path d="M6 8h12v2H6V8zm0 3h12v2H6v-2zm0 3h8v2H6v-2z" fill="#00843D"/>
+                                  <path d="M6 8h12v2H6V8zm0 3h12v2H6v-2zm0 3h8v2H6v-2z" fill="#0D9488"/>
                                 </svg>
                                 <span>Sign in with UAE PASS</span>
                               </>
