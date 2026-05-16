@@ -46,12 +46,12 @@ class UAEPassConfig:
             self.authorize_url = 'https://id.uaepass.ae/idp/authorize'
             self.logout_url = 'https://id.uaepass.ae/idp/logout'
         else:
-            # Staging / sandbox
+            # Staging / sandbox — MUST use /idshub/ paths (not /idp/)
             self.base_url = 'https://stg-id.uaepass.ae'
-            self.token_url = 'https://stg-id.uaepass.ae/idp/token'
-            self.userinfo_url = 'https://stg-id.uaepass.ae/idp/userinfo'
-            self.authorize_url = 'https://stg-id.uaepass.ae/idp/authorize'
-            self.logout_url = 'https://stg-id.uaepass.ae/idp/logout'
+            self.token_url = 'https://stg-id.uaepass.ae/idshub/token'
+            self.userinfo_url = 'https://stg-id.uaepass.ae/idshub/userinfo'
+            self.authorize_url = 'https://stg-id.uaepass.ae/idshub/authorize'
+            self.logout_url = 'https://stg-id.uaepass.ae/idshub/logout'
 
         self.scope = 'openid'
         self.response_type = 'code'
