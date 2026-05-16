@@ -516,27 +516,43 @@ const EnhancedAuthPage: React.FC = () => {
                           </CardDescription>
                         </CardHeader>
 
-                        {/* ── UAE PASS Login Button (Primary) ── */}
+                        {/* ── UAE PASS Login Button (Official Black Variant) ── */}
                         <div className="space-y-4 mb-6">
                           <Button
                             id="uaepass-login-btn"
                             type="button"
                             onClick={handleUAEPassLogin}
                             disabled={uaePassLoading}
-                            className="w-full h-14 text-lg font-semibold rounded-lg
-                                       bg-teal-600 hover:bg-teal-700 text-white
+                            className="w-full h-14 text-lg font-semibold rounded-xl
+                                       bg-[#1C1C1C] hover:bg-[#2a2a2a] text-white
                                        shadow-lg hover:shadow-xl transition-all duration-200
-                                       flex items-center justify-center gap-3"
+                                       flex items-center justify-center gap-3
+                                       border border-gray-700"
                           >
                             {uaePassLoading ? (
                               <Loader2 className="h-5 w-5 animate-spin" />
                             ) : (
                               <>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <rect width="24" height="24" rx="4" fill="white"/>
-                                  <path d="M6 8h12v2H6V8zm0 3h12v2H6v-2zm0 3h8v2H6v-2z" fill="#0D9488"/>
+                                {/* Official UAE Pass Green Fingerprint Logo */}
+                                <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="50" cy="50" r="48" fill="url(#uaepass_gradient)" />
+                                  <defs>
+                                    <linearGradient id="uaepass_gradient" x1="0" y1="0" x2="100" y2="100">
+                                      <stop offset="0%" stopColor="#2ED573" />
+                                      <stop offset="100%" stopColor="#00B894" />
+                                    </linearGradient>
+                                  </defs>
+                                  {/* Fingerprint arcs */}
+                                  <path d="M50 25 C35 25, 22 38, 22 53 C22 60, 25 66, 30 70" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 33 C39 33, 30 42, 30 53 C30 58, 32 62, 36 65" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 41 C43 41, 38 47, 38 53 C38 57, 40 60, 43 62" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 25 C65 25, 78 38, 78 53 C78 60, 75 66, 70 70" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 33 C61 33, 70 42, 70 53 C70 58, 68 62, 64 65" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 41 C57 41, 62 47, 62 53 C62 57, 60 60, 57 62" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  {/* Center vertical line */}
+                                  <line x1="50" y1="25" x2="50" y2="53" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
                                 </svg>
-                                <span>Sign in with UAE PASS</span>
+                                <span>Sign in using UAE PASS</span>
                               </>
                             )}
                           </Button>
