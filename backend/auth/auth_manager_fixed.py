@@ -1,6 +1,9 @@
 """
 Fixed Authentication Manager with Correct Database Schema
 Matches the actual PostgreSQL database structure
+
+Post-EID Migration: users.id is now CHAR(15) — Emirates ID format.
+New users get a synthetic EID via _next_eid() until UAE Pass provides real ones.
 """
 
 import os
@@ -10,12 +13,12 @@ import bcrypt
 import secrets
 import hashlib
 import logging
-import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, Optional, List
 import psycopg2
 import psycopg2.extras
 from flask_jwt_extended import create_access_token, create_refresh_token
+from backend.utils.user_id import strip_eid_hyphens, is_valid_eid
 try:
     from twilio.rest import Client
     from twilio.base.exceptions import TwilioRestException
@@ -91,6 +94,21 @@ class AuthenticationManager:
         except Exception as e:
             self.logger.error(f"Database connection error: {e}")
             raise
+
+    def _next_eid(self, cursor) -> str:
+        """
+        Generate the next synthetic EID for a new user.
+        Format: 784 + 0000 + 7-digit sequence + 0
+        Scans existing users to find the max sequence and increments.
+        """
+        cursor.execute("""
+            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
+            FROM users WHERE id LIKE '7840000%'
+        """)
+        row = cursor.fetchone()
+        max_seq = row[0] if row and row[0] else 0
+        next_seq = max_seq + 1
+        return f"784{'0000'}{next_seq:07d}{'0'}"
     
     def authenticate_user(self, email: str, password: str, mfa_code: Optional[str] = None) -> Tuple[bool, str, Optional[Dict]]:
         """
@@ -135,19 +153,20 @@ class AuthenticationManager:
             # Update last login
             self._update_last_login(user['id'])
             
-            # Generate JWT tokens
+            # Generate JWT tokens (identity is now EID CHAR(15))
+            user_eid = str(user['id']).strip()
             access_token = create_access_token(
-                identity=str(user['id']),  # Convert UUID to string
+                identity=user_eid,
                 expires_delta=timedelta(hours=24)
             )
             refresh_token = create_refresh_token(
-                identity=str(user['id']),  # Convert UUID to string
+                identity=user_eid,
                 expires_delta=timedelta(days=30)
             )
             
             # Prepare user data for response
             user_data = {
-                'id': str(user['id']),  # Convert UUID to string
+                'id': user_eid,
                 'email': user['email'],
                 'first_name': user['first_name'],
                 'last_name': user['last_name'],
@@ -339,14 +358,18 @@ class AuthenticationManager:
             conn = self._get_db_connection()
             try:
                 cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+                # Generate the next synthetic EID for the new user
+                new_eid = self._next_eid(cursor)
                 
                 cursor.execute("""
                     INSERT INTO users (
-                        email, password_hash, first_name, last_name, phone, 
+                        id, email, password_hash, first_name, last_name, phone, 
                         role, emirate, nationality, is_active, is_verified
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
+                    new_eid,
                     user_data['email'].lower().strip(),
                     password_hash,
                     user_data['first_name'].strip(),
@@ -747,22 +770,13 @@ class AuthenticationManager:
                  temp_pass = secrets.token_urlsafe(16)
                  pass_hash = bcrypt.hashpw(temp_pass.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                  
-                 # Determine column name: user_type or role
-                 # We try 'user_type' based on setup_database.py
-                 try:
-                     cursor.execute("""
-                         INSERT INTO users (email, password_hash, full_name, user_type, phone, is_verified, is_active)
-                         VALUES (%s, %s, %s, %s, %s, %s, %s)
-                         RETURNING *
-                     """, (temp_email, pass_hash, 'New Member', 'candidate', clean_phone, True, True))
-                 except psycopg2.errors.UndefinedColumn:
-                     # Fallback to 'role' if user_type doesn't exist (handled by transaction rollback?)
-                     conn.rollback()
-                     cursor.execute("""
-                         INSERT INTO users (email, password_hash, first_name, last_name, role, phone, is_verified, is_active)
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                         RETURNING *
-                     """, (temp_email, pass_hash, 'New', 'Member', 'candidate', clean_phone, True, True))
+                 # Generate EID for new user (users.id is CHAR(15), no default)
+                 new_eid = self._next_eid(cursor)
+                 cursor.execute("""
+                     INSERT INTO users (id, email, password_hash, first_name, last_name, role, phone, is_verified, is_active)
+                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     RETURNING *
+                 """, (new_eid, temp_email, pass_hash, 'New', 'Member', 'candidate', clean_phone, True, True))
                  
                  user = cursor.fetchone()
                  conn.commit()

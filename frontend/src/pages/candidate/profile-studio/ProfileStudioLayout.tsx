@@ -49,57 +49,31 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
     // Calculate completion dynamically from profile API
     const [completion, setCompletion] = useState(0);
     const [completionHint, setCompletionHint] = useState('');
+    const [pillars, setPillars] = useState<{key: string; label: string; label_ar: string; score: number; max: number; complete: boolean}[]>([]);
 
     useEffect(() => {
-        const fetchCompletion = async () => {
+        const fetchReadiness = async () => {
             try {
-                // Fetch profile and CV list in parallel
-                const [profileRes, cvRes] = await Promise.allSettled([
-                    restClient.get('/api/v2/profile/'),
-                    restClient.get('/api/cv/list'),
-                ]);
-
-                const profileData = profileRes.status === 'fulfilled' ? profileRes.value.data : null;
-                const cvData = cvRes.status === 'fulfilled' ? cvRes.value.data : null;
-
-                const p = profileData?.success ? (profileData.data || profileData.profile) : null;
-                const cvCount = cvData?.total_count ?? cvData?.cvs?.length ?? 0;
-
-                let score = 0;
-                const missing: string[] = [];
-
-                if (p) {
-                    // Basic Info (30%)
-                    if (p.first_name || p.full_name) score += 10; else missing.push('name');
-                    if (p.headline) score += 10; else missing.push('headline');
-                    if (p.bio) score += 10; else missing.push('bio');
-
-                    // Contact (20%)
-                    if (p.contact?.phone || p.phone) score += 10; else missing.push('phone');
-                    if (p.contact?.location || p.location) score += 10; else missing.push('location');
-
-                    // Skills & Experience (20%)
-                    if (p.skills && p.skills.length > 0) score += 10; else missing.push('skills');
-                    if (p.experience && p.experience.length > 0) score += 10; else missing.push('experience');
-                }
-
-                // CV (30%) — from separate CV endpoint
-                if (cvCount > 0) score += 30; else missing.push('CV');
-
-                setCompletion(Math.min(score, 100));
-                if (missing.length > 0) {
-                    setCompletionHint(language === 'ar'
-                        ? `أضف ${missing[0]} للتقدم`
-                        : `Add ${missing[0]} to improve`);
-                } else {
-                    setCompletionHint(language === 'ar' ? 'ملف كامل! 🌟' : 'All-Star Profile! 🌟');
+                const { data } = await restClient.get('/api/v2/profile/readiness');
+                if (data?.success) {
+                    setCompletion(data.overall);
+                    setCompletionHint(language === 'ar' ? data.next_action_ar : data.next_action);
+                    setPillars(data.pillars || []);
                 }
             } catch (err) {
-                setCompletion(10);
+                console.error('Profile readiness fetch failed:', err);
+                setCompletion(0);
+                setCompletionHint(language === 'ar' ? 'تعذر حساب الجاهزية' : 'Could not calculate readiness');
             }
         };
-        fetchCompletion();
+        fetchReadiness();
     }, [language]);
+
+    const getReadinessColor = (pct: number) => {
+        if (pct >= 80) return 'text-green-600';
+        if (pct >= 50) return 'text-amber-600';
+        return 'text-red-500';
+    };
 
     return (
         <div className={`min-h-screen bg-background flex flex-col ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -121,19 +95,43 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                         <p className="text-xs text-muted-foreground px-2 mt-1">{t('Unified Candidate Profile', 'الملف الموحد للمرشح')}</p>
                     </div>
 
-                    {/* Completion Meter */}
-                    <div className="mb-8 bg-teal-50 p-4 rounded-xl">
+                    {/* Readiness Meter */}
+                    <div className="mb-6 bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-teal-700">{t('Profile Strength', 'قوة الملف')}</span>
-                            <span className="text-xs font-bold text-teal-700">{completion}%</span>
+                            <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">{t('Profile Readiness', 'جاهزية الملف')}</span>
+                            <span className={`text-sm font-bold ${getReadinessColor(completion)}`}>{completion}%</span>
                         </div>
-                        <div className="w-full bg-teal-200 rounded-full h-1.5">
+                        <div className="w-full bg-teal-200 dark:bg-teal-800 rounded-full h-2">
                             <div
-                                className="bg-teal-600 h-1.5 rounded-full transition-all duration-500"
+                                className="bg-teal-600 h-2 rounded-full transition-all duration-700 ease-out"
                                 style={{ width: `${completion}%` }}
                             ></div>
                         </div>
-                        <p className="text-[10px] text-teal-600 mt-2">{completionHint || t('Add 1 more project to reach "All-Star"', 'أضف مشروعاً واحداً للوصول إلى "نجم"')}</p>
+
+                        {/* Pillar mini-bars */}
+                        {pillars.length > 0 && (
+                            <div className="mt-3 space-y-1.5">
+                                {pillars.map(p => {
+                                    const pct = p.max > 0 ? Math.round((p.score / p.max) * 100) : 0;
+                                    return (
+                                        <div key={p.key} className="flex items-center gap-2">
+                                            <span className="text-[9px] text-teal-700 dark:text-teal-300 w-[72px] truncate" title={language === 'ar' ? p.label_ar : p.label}>
+                                                {language === 'ar' ? p.label_ar : p.label}
+                                            </span>
+                                            <div className="flex-1 bg-teal-200 dark:bg-teal-800 rounded-full h-1">
+                                                <div
+                                                    className={`h-1 rounded-full transition-all duration-500 ${p.complete ? 'bg-green-500' : 'bg-teal-500'}`}
+                                                    style={{ width: `${pct}%` }}
+                                                ></div>
+                                            </div>
+                                            {p.complete && <span className="text-[8px]">✓</span>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        <p className="text-[10px] text-teal-600 dark:text-teal-400 mt-2">{completionHint}</p>
                     </div>
 
                     <nav className="space-y-1">

@@ -140,23 +140,17 @@ def _wrap_qwen_result(qwen_data: dict, processing_time: float = 0) -> dict:
     }
 
 def get_normalized_user_id(identity):
-    """Normalize user identity — delegates to shared utility."""
+    """Normalize user identity — EID CHAR(15) pass-through."""
     try:
         from utils.user_id import get_normalized_user_id as _normalize
         return _normalize(identity)
     except ImportError:
-        # Inline fallback if utils not found
+        # Inline fallback: JWT identity is now EID CHAR(15), no UUID conversion
         if not identity:
             return None
         if isinstance(identity, dict):
             identity = identity.get('id')
-        identity_str = str(identity).strip()
-        if identity_str.isdigit():
-            return identity_str
-        try:
-            return str(uuid.UUID(identity_str))
-        except ValueError:
-            return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+        return str(identity).strip()
 
 def get_user_id_from_token():
     """Extract user ID from JWT token (simplified)"""

@@ -1624,13 +1624,8 @@ Return only the JSON object, no additional text."""
                 try:
                     verify_jwt_in_request(optional=True)
                     user_id = get_jwt_identity() or 'anonymous_user'
-                    # Ensure user_id is a UUID
-                    try:
-                        uuidlib.UUID(str(user_id))
-                        user_uuid = user_id
-                    except ValueError:
-                        # Generate consistent UUID from string (e.g. email)
-                        user_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                    # Post-EID migration: identity is CHAR(15) EID, use as-is
+                    user_uuid = str(user_id).strip()
                 except Exception:
                     user_uuid = '00000000-0000-0000-0000-000000000001'
                     user_id = 'anonymous_user'
@@ -1746,7 +1741,7 @@ Return only the JSON object, no additional text."""
                     status, is_visible, created_at, updated_at,
                     cv_score, ats_score
                 ) VALUES (
-                    %s::uuid, %s::uuid, %s,
+                    %s::uuid, %s, %s,
                     %s::jsonb, %s,
                     %s::jsonb, %s::jsonb,
                     %s::jsonb, %s::jsonb,
@@ -1894,11 +1889,7 @@ Return only the JSON object, no additional text."""
                     if not user_id:
                          user_uuid = '00000000-0000-0000-0000-000000000001'
                     else:
-                        try:
-                            uuidlib.UUID(str(user_id))
-                            user_uuid = user_id
-                        except ValueError:
-                            user_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                        user_uuid = str(user_id).strip()
                 except Exception:
                     user_uuid = '00000000-0000-0000-0000-000000000001'
 
@@ -1906,7 +1897,7 @@ Return only the JSON object, no additional text."""
                 SELECT
                     id, title, status, cv_score, ats_score, updated_at, template_name, is_visible
                 FROM user_cvs
-                WHERE user_id = %s::uuid AND COALESCE(status, 'draft') <> 'archived'
+                WHERE user_id = %s AND COALESCE(status, 'draft') <> 'archived'
                 ORDER BY updated_at DESC
             """
             cvs = execute_query(query, (user_uuid,))
@@ -1939,11 +1930,7 @@ Return only the JSON object, no additional text."""
                     if not user_id:
                          user_uuid = '00000000-0000-0000-0000-000000000001'
                     else:
-                        try:
-                            uuidlib.UUID(str(user_id))
-                            user_uuid = user_id
-                        except ValueError:
-                            user_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                        user_uuid = str(user_id).strip()
                 except Exception:
                     user_uuid = '00000000-0000-0000-0000-000000000001'
 
@@ -1966,7 +1953,7 @@ Return only the JSON object, no additional text."""
                     cv_score, ats_score, status,
                     created_at, updated_at, is_visible
                 ) VALUES (
-                    %s::uuid, %s::uuid, %s, %s,
+                    %s::uuid, %s, %s, %s,
                     %s::jsonb, %s,
                     %s::jsonb, %s::jsonb,
                     %s::jsonb, %s::jsonb,
@@ -1999,7 +1986,7 @@ Return only the JSON object, no additional text."""
             return jsonify({'success': False, 'message': str(e)}), 500
 
     def get_current_user_uuid_inline():
-        """Helper to get standardized UUID for current user"""
+        """Helper to get user ID from JWT (now EID CHAR(15))"""
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
             return '00000000-0000-0000-0000-000000000001'
@@ -2009,12 +1996,7 @@ Return only the JSON object, no additional text."""
             user_id = get_jwt_identity()
             if not user_id:
                  return '00000000-0000-0000-0000-000000000001'
-
-            try:
-                uuidlib.UUID(str(user_id))
-                return str(user_id)
-            except ValueError:
-                return str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+            return str(user_id).strip()
 
         except Exception:
             return '00000000-0000-0000-0000-000000000001'
@@ -2149,7 +2131,7 @@ Return only the JSON object, no additional text."""
                     technical_skills, soft_skills, work_experience, education,
                     cv_score, ats_score
                 ) VALUES (
-                    %s::uuid, %s::uuid, %s, %s::jsonb, %s,
+                    %s::uuid, %s, %s, %s::jsonb, %s,
                     %s::jsonb, %s::jsonb, %s::jsonb, %s::jsonb,
                     %s, %s
                 )
@@ -2394,11 +2376,8 @@ Return only the JSON object, no additional text."""
             if user_id == 'mock_user_candidate':
                 user_uuid = '550e8400-e29b-41d4-a716-446655440000'
             else:
-                try:
-                    uuid.UUID(str(user_id))
-                    user_uuid = str(user_id)
-                except ValueError:
-                    user_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_id)))
+                # Post-EID migration: identity is CHAR(15) EID, use as-is
+                user_uuid = str(user_id).strip()
 
             limit = int(request.args.get('limit', 20))
             search = request.args.get('search', '').strip()
@@ -2410,7 +2389,7 @@ Return only the JSON object, no additional text."""
             cv = None
             try:
                 cv = execute_query(
-                    "SELECT * FROM user_cvs WHERE user_id = %s::uuid AND is_visible = TRUE ORDER BY updated_at DESC, id DESC LIMIT 1",
+                    "SELECT * FROM user_cvs WHERE user_id = %s AND is_visible = TRUE ORDER BY updated_at DESC, id DESC LIMIT 1",
                     (user_uuid,), fetch_one=True
                 )
             except Exception as cv_err:

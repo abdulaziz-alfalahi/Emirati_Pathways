@@ -11,25 +11,12 @@ logger = logging.getLogger(__name__)
 
 def get_normalized_user_id(identity):
     """
-    Normalize user identity to a consistent UUID string.
-    Matches logic in cv_routes.py to ensure data consistency.
+    Normalize user identity to a consistent EID string (CHAR(15)).
+    Post-migration: JWT identity is the EID, no UUID conversion needed.
     """
     if isinstance(identity, dict):
         identity = identity.get('id')
-    
-    identity_str = str(identity).strip()
-    
-    # [FIX] Legacy Integer ID Support
-    # If the ID is a simple integer string (like '108'), preserve it.
-    if identity_str.isdigit():
-        return identity_str
-    
-    try:
-        # Check if already valid UUID
-        return str(uuid.UUID(identity_str))
-    except ValueError:
-        # If not, hash strictly using DNS namespace (same as cv_routes)
-        return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+    return str(identity).strip()
 
 @profile_v2_bp.route('/', methods=['GET'])
 @jwt_required()

@@ -4,7 +4,7 @@
 # =====================================================
 
 def get_current_user_uuid_inline():
-    """Helper to get standardized UUID for current user"""
+    """Helper to get user ID from JWT (now EID CHAR(15))"""
     auth_header = request.headers.get('Authorization', '')
     if 'mock_token' in auth_header:
         return '00000000-0000-0000-0000-000000000001'
@@ -14,12 +14,7 @@ def get_current_user_uuid_inline():
         user_id = get_jwt_identity()
         if not user_id:
              return '00000000-0000-0000-0000-000000000001'
-        
-        try:
-            uuidlib.UUID(str(user_id))
-            return str(user_id)
-        except ValueError:
-            return str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+        return str(user_id).strip()
             
     except Exception:
         return '00000000-0000-0000-0000-000000000001'
@@ -153,7 +148,7 @@ def duplicate_cv_fixed(cv_id):
                 work_experience, education, cv_score, ats_score, 
                 created_at, updated_at, status, is_visible
             ) VALUES (
-                %s::uuid, %s::uuid, %s, %s,
+                %s::uuid, %s, %s, %s,
                 %s::jsonb, %s, %s::jsonb, %s::jsonb,
                 %s::jsonb, %s::jsonb, %s, %s,
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'draft', false
@@ -181,7 +176,7 @@ def set_visible_fixed(cv_id):
         user_uuid = get_current_user_uuid_inline()
         
         # Set all to false
-        execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s::uuid", (user_uuid,), fetch_all=False)
+        execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s", (user_uuid,), fetch_all=False)
         # Set specific to true
         execute_query("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid", (cv_id,), fetch_all=False)
         

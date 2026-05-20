@@ -56,9 +56,13 @@ def create_app() -> Flask:
         "http://localhost:8080",
         "http://localhost:8081",
         "http://localhost:3000",
+        "http://localhost:8089",
         "http://127.0.0.1:8080",
         "http://127.0.0.1:8081",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:8089",
+        "https://emirati.ehrdc.gov.ae",
+        "https://stg-emirati.ehrdc.gov.ae",
         "https://archdiocesan-complimentarily-marianna.ngrok-free.dev",
     ]
     
@@ -156,6 +160,14 @@ def create_app() -> Flask:
         logger.info("Registered: Profile V2 API routes")
     except Exception as e:
         logger.error(f"Failed registering Profile V2 API routes: {e}")
+
+    # Profile Readiness API (holistic candidate readiness score)
+    try:
+        from routes.profile.profile_readiness import profile_readiness_bp
+        app.register_blueprint(profile_readiness_bp)
+        logger.info("Registered: Profile Readiness API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Profile Readiness API routes: {e}")
 
 
     # Auth
@@ -446,8 +458,11 @@ def create_app() -> Flask:
     return app
 
 
+# Module-level app instance for Gunicorn WSGI
+# Usage: gunicorn backend.recruiter_server:app
+app = create_app()
+
 if __name__ == "__main__":
-    flask_app = create_app()
     port = int(os.getenv("PORT", "5005"))
     logger.info(f"Recruiter services running on http://0.0.0.0:{port}")
-    flask_app.run(host="0.0.0.0", port=port, debug=os.getenv('FLASK_ENV', 'production') != 'production', threaded=True)
+    app.run(host="0.0.0.0", port=port, debug=os.getenv('FLASK_ENV', 'production') != 'production', threaded=True)

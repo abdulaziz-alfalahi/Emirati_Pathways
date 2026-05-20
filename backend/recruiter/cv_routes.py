@@ -23,7 +23,7 @@ def get_current_user_id():
     """
     Get the current user ID securely.
     Handles both mock authentication and real JWT tokens.
-    Ensures the returned ID is always a valid UUID.
+    Post-EID migration: returns CHAR(15) EID string directly.
     """
     # 1. Check for mock token first (for testing/development)
     auth_header = request.headers.get('Authorization', '')
@@ -36,17 +36,8 @@ def get_current_user_id():
         user_identity = get_jwt_identity()
 
         if user_identity:
-            # Check if it's already a valid UUID
-            try:
-                # If it's a UUID string, this will succeed
-                user_uuid = str(uuid.UUID(str(user_identity)))
-                return user_uuid
-            except ValueError:
-                # If not a UUID (e.g., email "khalid.almazrouei@email.ae"), hash it to a UUID
-                # using UUIDv5 (SHA-1 hashing) with a DNS namespace for consistency
-                user_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_identity)))
-                # print(f"DEBUG: Mapped non-UUID identity '{user_identity}' to UUID '{user_uuid}'")
-                return user_uuid
+            # Post-EID migration: identity is CHAR(15) EID, use as-is
+            return str(user_identity).strip()
     except Exception as e:
         print(f"Error getting user ID from JWT: {str(e)}")
 
@@ -164,7 +155,7 @@ def list_cvs():
         cur.execute("""
             SELECT id, title, template_name, cv_score, ats_score, created_at, updated_at, status, is_visible
             FROM user_cvs
-            WHERE user_id = %s::uuid
+            WHERE user_id = %s
             ORDER BY updated_at DESC
         """, (user_id,))
         
@@ -407,10 +398,10 @@ def set_visible(cv_id):
         cur = conn.cursor()
         
         # Set all user's CVs to not visible
-        cur.execute("UPDATE user_cvs SET is_visible = false WHERE user_id = %s::uuid", (user_id,))
+        cur.execute("UPDATE user_cvs SET is_visible = false WHERE user_id = %s", (user_id,))
         
         # Set selected CV to visible
-        cur.execute("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid AND user_id = %s::uuid", (cv_id, user_id))
+        cur.execute("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid AND user_id = %s", (cv_id, user_id))
         
         conn.commit()
         cur.close()

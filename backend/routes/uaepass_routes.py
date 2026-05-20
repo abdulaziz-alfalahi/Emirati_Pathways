@@ -25,6 +25,7 @@ import psycopg2
 import psycopg2.extras
 
 from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassConfig, UAEPassError
+from backend.utils.user_id import strip_eid_hyphens, is_valid_eid
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +185,7 @@ def uaepass_callback():
             raise UAEPassError("Failed to find or create user in database")
 
         # Step 5: Issue our JWT tokens
-        user_id = str(user_data['id'])
+        user_id = str(user_data['id']).strip()  # Now EID CHAR(15)
         additional_claims = {
             'role': user_data.get('role', 'candidate'),
             'auth_method': 'uaepass'
@@ -458,14 +459,29 @@ def _find_or_create_user(profile: dict) -> tuple:
                 return dict(linked), False
 
         # 4. Create new user
-        # Encrypt EID before storage
+        # Determine the user's EID for the primary key
+        raw_eid = profile.get('emirates_id', '')
+        eid_for_pk = ''
+        if raw_eid and is_valid_eid(raw_eid):
+            eid_for_pk = strip_eid_hyphens(raw_eid)
+        else:
+            # Generate synthetic EID for users without a real one
+            cursor.execute("""
+                SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
+                FROM users WHERE id LIKE '7840000%'
+            """)
+            row = cursor.fetchone()
+            max_seq = row[0] if row and row[0] else 0
+            eid_for_pk = f"784{'0000'}{max_seq + 1:07d}{'0'}"
+
+        # Encrypt EID before storage in the enc column (backward compat)
         eid_encrypted = ''
-        if profile.get('emirates_id'):
-            eid_encrypted = _encrypt_eid(profile['emirates_id'])
+        if raw_eid:
+            eid_encrypted = _encrypt_eid(raw_eid)
 
         cursor.execute("""
             INSERT INTO users (
-                email, first_name, last_name, phone, role,
+                id, email, first_name, last_name, phone, role,
                 emirate, nationality, nationality_ar,
                 is_active, is_verified,
                 uaepass_uuid, emirates_id_enc, fullname_ar,
@@ -473,7 +489,7 @@ def _find_or_create_user(profile: dict) -> tuple:
                 auth_method, uaepass_verified_at,
                 last_login, created_at, updated_at
             ) VALUES (
-                %s, %s, %s, %s, 'candidate',
+                %s, %s, %s, %s, %s, 'candidate',
                 '', %s, %s,
                 TRUE, TRUE,
                 %s, %s, %s,
@@ -483,6 +499,7 @@ def _find_or_create_user(profile: dict) -> tuple:
             )
             RETURNING *
         """, (
+            eid_for_pk,
             profile.get('email', '').lower().strip() or f"{profile['uaepass_uuid']}@uaepass.local",
             profile.get('first_name', ''),
             profile.get('last_name', ''),

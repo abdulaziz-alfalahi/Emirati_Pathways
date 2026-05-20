@@ -66,8 +66,8 @@ def allowed_file(filename):
 
 def get_normalized_user_id_simple(identity):
     """
-    Normalize user identity to a consistent UUID string.
-    Ensures '62' (Int) remains '62', but emails become UUIDs.
+    Normalize user identity to a consistent string.
+    Post-EID migration: JWT identity is CHAR(15) EID, returned as-is.
     """
     if not identity:
         return None
@@ -75,18 +75,7 @@ def get_normalized_user_id_simple(identity):
     if isinstance(identity, dict):
         identity = identity.get('id')
     
-    identity_str = str(identity).strip()
-    
-    # Legacy Integer ID Support
-    if identity_str.isdigit():
-        return identity_str
-    
-    try:
-        # Check if already valid UUID
-        return str(uuid.UUID(identity_str))
-    except ValueError:
-        # If not, hash strictly using DNS namespace
-        return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+    return str(identity).strip()
 
 @cv_upload_bp.route('/upload', methods=['POST'])
 @jwt_required()
