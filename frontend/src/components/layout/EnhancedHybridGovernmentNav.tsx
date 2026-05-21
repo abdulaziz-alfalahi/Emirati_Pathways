@@ -78,7 +78,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
                   <h1 className={`text-xl font-bold text-slate-900 ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {t('platform_title', 'Dubai Human Development Platform')}
+                    {t('platform_title', 'Emirati Human Development Platform')}
                   </h1>
                   <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
                     {t('platform_subtitle', 'UAE Nationals Career Development')}

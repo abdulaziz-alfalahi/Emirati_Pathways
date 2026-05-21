@@ -221,7 +221,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
-          <p className="text-gray-600 mt-1">AI-powered insights for the Dubai Human Development Platform</p>
+          <p className="text-gray-600 mt-1">AI-powered insights for the Emirati Human Development Platform</p>
         </div>
         <div className="flex items-center space-x-3">
           <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>

@@ -447,7 +447,7 @@ const EnhancedAuthPage: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Account Created Successfully!</h2>
               <p className="text-gray-600">
-                Welcome to the Dubai Human Development Platform! You can now sign in using your WhatsApp number.
+                Welcome to the Emirati Human Development Platform! You can now sign in using your WhatsApp number.
               </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
@@ -471,7 +471,7 @@ const EnhancedAuthPage: React.FC = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Dubai Human Development Platform
+              Emirati Human Development Platform
             </h1>
             <p className="text-slate-600">
               UAE Nationals Career Development Platform

@@ -142,7 +142,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     CONCAT(u.first_name, ' ', u.last_name) as candidate_name,
                     u.email
                 FROM job_applications ja
-                LEFT JOIN users u ON ja.candidate_id = u.id::text
+                LEFT JOIN users u ON ja.candidate_id = u.id
                 LEFT JOIN user_cvs uc ON u.id = uc.user_id
                 WHERE 1=1
             """
@@ -1618,18 +1618,18 @@ Return only the JSON object, no additional text."""
             # For development: accept mock tokens or use fallback user_id
             auth_header = request.headers.get('Authorization', '')
             if 'mock_token' in auth_header:
-                user_uuid = '00000000-0000-0000-0000-000000000001'
+                user_eid = '784000000000010'
                 user_id = 'mock_user_candidate'
             else:
                 try:
                     verify_jwt_in_request(optional=True)
                     user_id = get_jwt_identity() or 'anonymous_user'
                     # Post-EID migration: identity is CHAR(15) EID, use as-is
-                    user_uuid = str(user_id).strip()
+                    user_eid = str(user_id).strip()
                 except Exception:
-                    user_uuid = '00000000-0000-0000-0000-000000000001'
+                    user_eid = '784000000000010'
                     user_id = 'anonymous_user'
-            logger.debug(f"CV upload request from user_uuid: {user_uuid}")
+            logger.debug(f"CV upload request from user_eid: {user_eid}")
 
             # Check if file is present (handle both 'file' and 'cv_file')
             if 'cv_file' not in request.files and 'file' not in request.files:
@@ -1675,7 +1675,7 @@ Return only the JSON object, no additional text."""
             # Save file after text extraction
             filename = secure_filename(file.filename)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_filename = f"{user_uuid}_{timestamp}_{filename}"
+            safe_filename = f"{user_eid}_{timestamp}_{filename}"
             file_path = UPLOAD_FOLDER / safe_filename
 
             file.save(str(file_path))
@@ -1711,7 +1711,7 @@ Return only the JSON object, no additional text."""
                 parser = CVParser()
 
                 # Use raw file stream if possible or text
-                parse_result = parser.parse_cv_text(cv_text, user_id=user_uuid, filename=file.filename)
+                parse_result = parser.parse_cv_text(cv_text, user_id=user_eid, filename=file.filename)
 
                 if not parse_result.get('success'):
                     logger.warning(f"AI parsing failed, using fallback: {parse_result.get('message')}")
@@ -1764,13 +1764,8 @@ Return only the JSON object, no additional text."""
             cv_score = scores.get('overall', 0)
             ats_score = scores.get('completeness', 0)
 
-            # Determine User UUID (handle mock)
-            if user_id == 'mock_user_candidate':
-                db_user_id = '550e8400-e29b-41d4-a716-446655440000'
-            elif user_id == 'anonymous_user':
-                 db_user_id = '550e8400-e29b-41d4-a716-446655440000'
-            else:
-                db_user_id = user_id
+            # Determine user ID for DB insert — use user_eid set earlier
+            db_user_id = user_eid
 
             try:
                  execute_query(insert_query, (
@@ -1881,17 +1876,17 @@ Return only the JSON object, no additional text."""
             # Auth check
             auth_header = request.headers.get('Authorization', '')
             if 'mock_token' in auth_header:
-                user_uuid = '00000000-0000-0000-0000-000000000001'
+                user_eid = '784000000000010'
             else:
                 try:
                     verify_jwt_in_request(optional=True)
                     user_id = get_jwt_identity()
                     if not user_id:
-                         user_uuid = '00000000-0000-0000-0000-000000000001'
+                         user_eid = '784000000000010'
                     else:
-                        user_uuid = str(user_id).strip()
+                        user_eid = str(user_id).strip()
                 except Exception:
-                    user_uuid = '00000000-0000-0000-0000-000000000001'
+                    user_eid = '784000000000010'
 
             query = """
                 SELECT
@@ -1900,7 +1895,7 @@ Return only the JSON object, no additional text."""
                 WHERE user_id = %s AND COALESCE(status, 'draft') <> 'archived'
                 ORDER BY updated_at DESC
             """
-            cvs = execute_query(query, (user_uuid,))
+            cvs = execute_query(query, (user_eid,))
 
             result = []
             if cvs:
@@ -1922,17 +1917,17 @@ Return only the JSON object, no additional text."""
             # Auth check
             auth_header = request.headers.get('Authorization', '')
             if 'mock_token' in auth_header:
-                user_uuid = '00000000-0000-0000-0000-000000000001'
+                user_eid = '784000000000010'
             else:
                 try:
                     verify_jwt_in_request(optional=True)
                     user_id = get_jwt_identity()
                     if not user_id:
-                         user_uuid = '00000000-0000-0000-0000-000000000001'
+                         user_eid = '784000000000010'
                     else:
-                        user_uuid = str(user_id).strip()
+                        user_eid = str(user_id).strip()
                 except Exception:
-                    user_uuid = '00000000-0000-0000-0000-000000000001'
+                    user_eid = '784000000000010'
 
             data = request.get_json()
             cv_data = data.get('cvData', {})
@@ -1963,7 +1958,7 @@ Return only the JSON object, no additional text."""
             """
 
             params = (
-                cv_id, user_uuid, title, template_id,
+                cv_id, user_eid, title, template_id,
                 json.dumps(cv_data.get('personalInfo', {})),
                 cv_data.get('professionalSummary', ''),
                 json.dumps(cv_data.get('technicalSkills', [])),
@@ -1985,26 +1980,26 @@ Return only the JSON object, no additional text."""
             logger.error(f"Save CV error: {e}")
             return jsonify({'success': False, 'message': str(e)}), 500
 
-    def get_current_user_uuid_inline():
-        """Helper to get user ID from JWT (now EID CHAR(15))"""
+    def get_current_user_eid_inline():
+        """Helper to get user EID from JWT. Returns CHAR(15) EID string."""
         auth_header = request.headers.get('Authorization', '')
         if 'mock_token' in auth_header:
-            return '00000000-0000-0000-0000-000000000001'
+            return '784000000000010'
 
         try:
             verify_jwt_in_request(optional=True)
             user_id = get_jwt_identity()
             if not user_id:
-                 return '00000000-0000-0000-0000-000000000001'
+                 return '784000000000010'
             return str(user_id).strip()
 
         except Exception:
-            return '00000000-0000-0000-0000-000000000001'
+            return '784000000000010'
 
     # @_app.route('/api/cv/<cv_id>', methods=['GET'])
     def get_cv_fixed_deprecated(cv_id):
         try:
-            user_uuid = get_current_user_uuid_inline()
+            user_eid = get_current_user_eid_inline()
 
             query = "SELECT * FROM user_cvs WHERE id = %s::uuid"
 
@@ -2044,7 +2039,7 @@ Return only the JSON object, no additional text."""
     # @_app.route('/api/cv/<cv_id>', methods=['PUT'])
     def update_cv_fixed_deprecated(cv_id):
         try:
-            user_uuid = get_current_user_uuid_inline()
+            user_eid = get_current_user_eid_inline()
             data = request.get_json()
 
             cv_data = data.get('cvData', {})
@@ -2108,7 +2103,7 @@ Return only the JSON object, no additional text."""
     @_app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
     def duplicate_cv_fixed(cv_id):
         try:
-            user_uuid = get_current_user_uuid_inline()
+            user_eid = get_current_user_eid_inline()
 
             # Get original
             original = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
@@ -2137,7 +2132,7 @@ Return only the JSON object, no additional text."""
                 )
             """
             params = (
-                new_cv_id, user_uuid, new_title, json.dumps(personal_info), original['professional_summary'],
+                new_cv_id, user_eid, new_title, json.dumps(personal_info), original['professional_summary'],
                 json.dumps(tech_skills), json.dumps(soft_skills),
                 json.dumps(work_exp), json.dumps(education),
                 original['cv_score'], original['ats_score']
@@ -2156,7 +2151,7 @@ Return only the JSON object, no additional text."""
     @_app.route('/api/cv/<cv_id>/export/<format>', methods=['GET'])
     def export_cv_fixed(cv_id, format):
         try:
-            user_uuid = get_current_user_uuid_inline()
+            user_eid = get_current_user_eid_inline()
 
             cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
             if not cv:
@@ -2374,10 +2369,10 @@ Return only the JSON object, no additional text."""
             logger.info(f"Job matching request from user_id={user_id}")
 
             if user_id == 'mock_user_candidate':
-                user_uuid = '550e8400-e29b-41d4-a716-446655440000'
+                user_eid = '784000000000010'
             else:
                 # Post-EID migration: identity is CHAR(15) EID, use as-is
-                user_uuid = str(user_id).strip()
+                user_eid = str(user_id).strip()
 
             limit = int(request.args.get('limit', 20))
             search = request.args.get('search', '').strip()
@@ -2390,10 +2385,10 @@ Return only the JSON object, no additional text."""
             try:
                 cv = execute_query(
                     "SELECT * FROM user_cvs WHERE user_id = %s AND is_visible = TRUE ORDER BY updated_at DESC, id DESC LIMIT 1",
-                    (user_uuid,), fetch_one=True
+                    (user_eid,), fetch_one=True
                 )
             except Exception as cv_err:
-                logger.warning(f"CV lookup failed for user_uuid={user_uuid}: {cv_err}")
+                logger.warning(f"CV lookup failed for user_eid={user_eid}: {cv_err}")
 
             if cv:
                 cvk = _collect_cv_keywords(dict(cv))

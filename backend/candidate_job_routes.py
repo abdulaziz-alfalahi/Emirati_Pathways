@@ -52,9 +52,7 @@ def get_candidate_cv(user_id):
     2. cv_profiles - legacy CV storage
     3. cv_data - another legacy table
     
-    Handles multiple user ID formats:
-    - UUID strings
-    - Integer IDs (converted to UUID using uuid5)
+    Post-EID migration: user_id is CHAR(15) Emirates ID.
     """
     conn = None
     try:
@@ -266,7 +264,7 @@ def get_job_matches():
         
         # Handle mock authentication
         if 'mock_token' in auth_header:
-            user_id = '00000000-0000-0000-0000-000000000001'
+            user_id = '784000000000010'
             raw_user_id = user_id
             normalized_uuid = user_id
         else:
@@ -854,7 +852,7 @@ def get_dashboard_stats():
         
         # Handle mock authentication (for development/testing)
         if 'mock_token' in auth_header:
-            user_id = '00000000-0000-0000-0000-000000000001'
+            user_id = '784000000000010'
             raw_user_id = user_id
             logger.info(f"Dashboard stats: Using mock user ID: {user_id}")
         else:

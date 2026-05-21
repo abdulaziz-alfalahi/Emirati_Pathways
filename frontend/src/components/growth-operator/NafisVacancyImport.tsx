@@ -803,7 +803,7 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                     {inviteResults
                                         ? t(`${inviteResults.length} magic links generated`, `تم إنشاء ${inviteResults.length} رابط سحري`)
                                         : t(
-                                            `You are about to invite ${selectedCompanies.size} companies to join Dubai Human Development Platform`,
+                                            `You are about to invite ${selectedCompanies.size} companies to join Emirati Human Development Platform`,
                                             `أنت على وشك دعوة ${selectedCompanies.size} شركة للانضمام إلى المسارات الإماراتية`
                                         )}
                                 </p>

@@ -96,7 +96,7 @@ const ServiceCards: React.FC = () => {
         </div>
         <h2 className="text-3xl md:text-5xl font-display font-semibold mb-6">Platform Services</h2>
         <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-          The Dubai Human Development platform offers a wide range of services designed to support
+          The Emirati Human Development platform offers a wide range of services designed to support
           UAE citizens throughout their career development.
         </p>
       </div>

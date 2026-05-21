@@ -38,7 +38,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-base font-semibold text-[#1A1A1A]">Dubai Human Development Platform</h1>
+                  <h1 className="text-base font-semibold text-[#1A1A1A]">Emirati Human Development Platform</h1>
                   <p className="text-xs text-[#6B7280]">UAE Nationals Career Development</p>
                 </Link>
               </div>
@@ -119,7 +119,7 @@ const EHRDCLayout: React.FC<EHRDCLayoutProps> = ({ children }) => {
                     />
                   </div>
                 </div>
-                <h3 className="font-semibold text-lg text-white mb-1">Dubai Human Development Platform</h3>
+                <h3 className="font-semibold text-lg text-white mb-1">Emirati Human Development Platform</h3>
                 <p className="text-gray-400 text-sm mb-4">UAE Nationals Career Development</p>
                 <p className="text-gray-300 text-sm mb-5 leading-relaxed max-w-md">
                   Supporting UAE citizens throughout their journey from education to retirement,

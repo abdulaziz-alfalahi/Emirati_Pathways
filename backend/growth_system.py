@@ -478,10 +478,10 @@ class GrowthSystem:
                         link = f"{frontend_url}/join/{token}"
                         print(f"\n[INVITATION EMAIL] ─────────────────────────────────────────")
                         print(f"  To: {company.get('email', 'N/A')}")
-                        print(f"  Subject: Join Dubai Human Development Platform — {company.get('name', '')}")
+                        print(f"  Subject: Join Emirati Human Development Platform — {company.get('name', '')}")
                         print(f"  Body:")
                         print(f"  Dear {company.get('name', '')},")
-                        print(f"  You have been invited to join the Dubai Human Development Platform")
+                        print(f"  You have been invited to join the Emirati Human Development Platform")
                         print(f"  as a Recruiter or HR Manager for your company.")
                         print(f"  Click the link below to complete your registration:")
                         print(f"  🔗 MAGIC LINK: {link}")

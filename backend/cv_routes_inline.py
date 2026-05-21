@@ -3,26 +3,26 @@
 # INLINE CV ROUTES (FIXED FOR CONSISTENCY)
 # =====================================================
 
-def get_current_user_uuid_inline():
-    """Helper to get user ID from JWT (now EID CHAR(15))"""
+def get_current_user_eid_inline():
+    """Helper to get user EID from JWT. Returns CHAR(15) EID string."""
     auth_header = request.headers.get('Authorization', '')
     if 'mock_token' in auth_header:
-        return '00000000-0000-0000-0000-000000000001'
+        return '784000000000010'
     
     try:
         verify_jwt_in_request(optional=True)
         user_id = get_jwt_identity()
         if not user_id:
-             return '00000000-0000-0000-0000-000000000001'
+             return '784000000000010'
         return str(user_id).strip()
             
     except Exception:
-        return '00000000-0000-0000-0000-000000000001'
+        return '784000000000010'
 
 @app.route('/api/cv/<cv_id>', methods=['GET'])
 def get_cv_fixed(cv_id):
     try:
-        user_uuid = get_current_user_uuid_inline()
+        user_eid = get_current_user_eid_inline()
         
         query = "SELECT * FROM user_cvs WHERE id = %s::uuid"
         # Ideally: AND user_id = %s::uuid but for debugging we trust ID lookup first
@@ -60,7 +60,7 @@ def get_cv_fixed(cv_id):
 @app.route('/api/cv/<cv_id>', methods=['PUT'])
 def update_cv_fixed(cv_id):
     try:
-        user_uuid = get_current_user_uuid_inline()
+        user_eid = get_current_user_eid_inline()
         data = request.get_json()
         
         cv_data = data.get('cvData', {})
@@ -121,7 +121,7 @@ def update_cv_fixed(cv_id):
 @app.route('/api/cv/<cv_id>', methods=['DELETE'])
 def delete_cv_fixed(cv_id):
     try:
-        user_uuid = get_current_user_uuid_inline()
+        user_eid = get_current_user_eid_inline()
         execute_query("DELETE FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_all=False)
         return jsonify({'success': True, 'message': 'CV deleted successfully'})
     except Exception as e:
@@ -131,7 +131,7 @@ def delete_cv_fixed(cv_id):
 @app.route('/api/cv/<cv_id>/duplicate', methods=['POST'])
 def duplicate_cv_fixed(cv_id):
     try:
-        user_uuid = get_current_user_uuid_inline()
+        user_eid = get_current_user_eid_inline()
         
         # Get original
         original = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
@@ -156,7 +156,7 @@ def duplicate_cv_fixed(cv_id):
         """
         
         params = (
-            new_cv_id, user_uuid, new_title, original['template_name'],
+            new_cv_id, user_eid, new_title, original['template_name'],
             json.dumps(original['personal_info']), original['professional_summary'],
             json.dumps(original['technical_skills']), json.dumps(original['soft_skills']),
             json.dumps(original['work_experience']), json.dumps(original['education']),
@@ -173,10 +173,10 @@ def duplicate_cv_fixed(cv_id):
 @app.route('/api/cv/<cv_id>/visible', methods=['PUT'])
 def set_visible_fixed(cv_id):
     try:
-        user_uuid = get_current_user_uuid_inline()
+        user_eid = get_current_user_eid_inline()
         
         # Set all to false
-        execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s", (user_uuid,), fetch_all=False)
+        execute_query("UPDATE user_cvs SET is_visible = false WHERE user_id = %s", (user_eid,), fetch_all=False)
         # Set specific to true
         execute_query("UPDATE user_cvs SET is_visible = true WHERE id = %s::uuid", (cv_id,), fetch_all=False)
         
@@ -188,7 +188,7 @@ def set_visible_fixed(cv_id):
 @app.route('/api/cv/<cv_id>/export/<format>', methods=['GET'])
 def export_cv_fixed(cv_id, format):
     try:
-        user_uuid = get_current_user_uuid_inline()
+        user_eid = get_current_user_eid_inline()
         
         cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
         if not cv:

@@ -391,8 +391,6 @@ def duplicate_cv(cv_id):
 def set_visible(cv_id):
     try:
         user_id = get_current_user_id()
-        if user_id == '1':
-             user_id = '00000000-0000-0000-0000-000000000001'
 
         conn = get_db_connection()
         cur = conn.cursor()
@@ -424,8 +422,6 @@ def export_cv(cv_id, format):
             return jsonify({'error': 'Invalid export format. Supported: pdf, docx, json'}), 400
             
         user_id = get_current_user_id()
-        # Mock mapping for export
-        if user_id == '1': user_id = '00000000-0000-0000-0000-000000000001'
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

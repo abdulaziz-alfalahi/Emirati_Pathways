@@ -168,7 +168,7 @@ const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-[#1A1A1A] mb-3">
-              Why Choose Dubai Human Development Platform?
+              Why Choose Emirati Human Development Platform?
             </h2>
             <p className="text-lg text-[#6B7280] max-w-2xl mx-auto">
               Built specifically for the UAE market with advanced AI technology and cultural intelligence
@@ -344,7 +344,7 @@ const HomePage: React.FC = () => {
                   className="h-8 w-auto opacity-90"
                 />
               </div>
-              <h3 className="text-base font-semibold mb-1">Dubai Human Development Platform</h3>
+              <h3 className="text-base font-semibold mb-1">Emirati Human Development Platform</h3>
               <p className="text-gray-500 text-xs mb-3">UAE Nationals Career Development</p>
               <p className="text-gray-400 text-sm leading-relaxed max-w-md">
                 Empowering UAE nationals with AI-powered career development tools and

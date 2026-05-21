@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 job_application_bp = Blueprint('job_application', __name__, url_prefix='/api/jobs')
 
-# Mock user ID for development
-MOCK_USER_ID = '00000000-0000-0000-0000-000000000001'
+# Mock user ID for development (synthetic EID — post-migration)
+MOCK_USER_ID = '784000000000010'
 
 
 def _migrate_job_applications_table():
