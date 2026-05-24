@@ -80,8 +80,10 @@ def admin_required(f):
             request.current_user = user_details
             return f(*args, **kwargs)
         except Exception as e:
+            import traceback
             logger.error(f"Admin authentication error: {str(e)}")
-            return jsonify({'error': 'Authentication failed'}), 401
+            logger.error(f"Admin authentication traceback: {traceback.format_exc()}")
+            return jsonify({'error': 'Authentication failed', 'detail': str(e)}), 401
     
     return decorated_function
 
@@ -100,7 +102,8 @@ def permission_required(permission: str):
                 if user.get('role'):
                     roles.append(user['role'])
                     
-                if 'super_admin' in roles or 'admin' in roles or 'platform_administrator' in roles:
+                admin_bypass_roles = {'super_admin', 'admin', 'platform_administrator', 'administrator'}
+                if admin_bypass_roles.intersection(roles):
                     return f(*args, **kwargs)
 
                 user_permissions = user.get('permissions', [])
@@ -233,7 +236,7 @@ def export_users():
             'message': 'Failed to export users'
         }), 500
 
-@admin_bp.route('/users/<int:user_id>', methods=['GET'])
+@admin_bp.route('/users/<user_id>', methods=['GET'])
 @admin_required
 @permission_required('users.view')
 def get_user_details(user_id: int):
@@ -296,7 +299,7 @@ def create_user():
             'message': 'Failed to create user'
         }), 500
 
-@admin_bp.route('/users/<int:user_id>', methods=['PUT'])
+@admin_bp.route('/users/<user_id>', methods=['PUT'])
 @admin_required
 @permission_required('users.edit')
 def update_user(user_id: int):
@@ -347,10 +350,10 @@ def update_user(user_id: int):
             'message': 'Failed to update user'
         }), 500
 
-@admin_bp.route('/users/<int:user_id>/roles', methods=['PUT'])
+@admin_bp.route('/users/<user_id>/roles', methods=['PUT'])
 @admin_required
 @permission_required('users.edit')
-def update_user_roles(user_id: int):
+def update_user_roles(user_id):
     """Update user roles"""
     try:
         data = request.get_json()
@@ -379,7 +382,7 @@ def update_user_roles(user_id: int):
             'message': 'Failed to update user roles'
         }), 500
 
-@admin_bp.route('/users/<int:user_id>/suspend', methods=['POST'])
+@admin_bp.route('/users/<user_id>/suspend', methods=['POST'])
 @admin_required
 @permission_required('users.suspend')
 def suspend_user(user_id: int):
@@ -411,7 +414,7 @@ def suspend_user(user_id: int):
             'message': 'Failed to suspend user'
         }), 500
 
-@admin_bp.route('/users/<int:user_id>/activate', methods=['POST'])
+@admin_bp.route('/users/<user_id>/activate', methods=['POST'])
 @admin_required
 @permission_required('users.activate')
 def activate_user(user_id: int):
@@ -439,7 +442,7 @@ def activate_user(user_id: int):
             'message': 'Failed to activate user'
         }), 500
 
-@admin_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@admin_bp.route('/users/<user_id>', methods=['DELETE'])
 @admin_required
 @permission_required('users.delete')
 def delete_user(user_id: int):

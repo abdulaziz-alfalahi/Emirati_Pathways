@@ -2619,22 +2619,22 @@ def get_candidate_profile_full(candidate_id):
         if profile_id:
             try:
                 # Experience
-                exp_query = "SELECT * FROM candidate_experience_entries WHERE profile_id = %s ORDER BY start_date DESC"
-                experience = execute_query(exp_query, (profile_id,)) or []
+                exp_query = "SELECT * FROM candidate_experience_entries WHERE user_id = %s ORDER BY start_date DESC"
+                experience = execute_query(exp_query, (str(id_param),)) or []
                 for exp in experience:
                     for date_field in ['start_date', 'end_date']:
                         if exp.get(date_field): exp[date_field] = str(exp[date_field])
 
                 # Education
-                edu_query = "SELECT * FROM candidate_education_entries WHERE profile_id = %s ORDER BY start_date DESC"
-                education = execute_query(edu_query, (profile_id,)) or []
+                edu_query = "SELECT * FROM candidate_education_entries WHERE user_id = %s ORDER BY start_date DESC"
+                education = execute_query(edu_query, (str(id_param),)) or []
                 for edu in education:
                     for date_field in ['start_date', 'end_date']:
                         if edu.get(date_field): edu[date_field] = str(edu[date_field])
 
                 # Skills
-                skill_query = "SELECT * FROM candidate_skills WHERE profile_id = %s"
-                skills = execute_query(skill_query, (profile_id,)) or []
+                skill_query = "SELECT * FROM candidate_skills WHERE user_id = %s"
+                skills = execute_query(skill_query, (str(id_param),)) or []
             except Exception as e:
                 logger.error(f"Error fetching related data for profile {profile_id}: {e}")
 

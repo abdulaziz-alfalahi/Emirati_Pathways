@@ -86,25 +86,25 @@ def get_readiness():
                     AS cv_count,
 
                 -- Experience count
-                (SELECT count(*) FROM candidate_experience_entries WHERE profile_id = p.id)
+                (SELECT count(*) FROM candidate_experience_entries WHERE user_id = p.user_id)
                     AS exp_count,
 
                 -- Education count
-                (SELECT count(*) FROM candidate_education_entries WHERE profile_id = p.id)
+                (SELECT count(*) FROM candidate_education_entries WHERE user_id = p.user_id)
                     AS edu_count,
 
                 -- Skills count + verified count
-                (SELECT count(*) FROM candidate_skills WHERE profile_id = p.id)
+                (SELECT count(*) FROM candidate_skills WHERE user_id = p.user_id)
                     AS skill_count,
-                (SELECT count(*) FROM candidate_skills WHERE profile_id = p.id AND is_verified = true)
+                (SELECT count(*) FROM candidate_skills WHERE user_id = p.user_id AND is_verified = true)
                     AS verified_skill_count,
 
                 -- Assessments completed
-                (SELECT count(*) FROM candidate_assessments WHERE profile_id = p.id AND status = 'completed')
+                (SELECT count(*) FROM candidate_assessments WHERE user_id = p.user_id AND status = 'completed')
                     AS assessment_count,
 
                 -- Certifications
-                (SELECT count(*) FROM candidate_certifications WHERE profile_id = p.id)
+                (SELECT count(*) FROM candidate_certifications WHERE user_id = p.user_id)
                     AS cert_count,
 
                 -- Job applications

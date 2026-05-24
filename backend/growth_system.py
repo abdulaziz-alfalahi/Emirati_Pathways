@@ -748,7 +748,7 @@ class GrowthSystem:
 
                 # ── 3. Map each company to a funnel stage ──
                 companies = []
-                funnel = {'lead': 0, 'contacted': 0, 'documentation': 0, 'verification': 0, 'active': 0}
+                funnel = {'lead': 0, 'invited': 0, 'link_opened': 0, 'signing_up': 0, 'active': 0, 'expired': 0}
 
                 for c in companies_raw:
                     name = c['company_name']
@@ -758,15 +758,15 @@ class GrowthSystem:
                     if c['is_verified'] or c.get('published_jobs', 0) > 0:
                         stage = 'active'
                     elif inv and inv['status'] == 'accepted':
-                        stage = 'verification'
+                        stage = 'signing_up'
                     elif inv and inv['status'] == 'pending' and not inv['is_used']:
                         # Check if expired
                         if inv['expires_at'] and inv['expires_at'] < datetime.now(inv['expires_at'].tzinfo if inv['expires_at'].tzinfo else None):
-                            stage = 'lead'  # expired invitation = back to lead
+                            stage = 'expired'
                         else:
-                            stage = 'contacted'
+                            stage = 'invited'
                     elif inv and inv['is_used'] and inv['status'] != 'accepted':
-                        stage = 'documentation'  # opened but not completed
+                        stage = 'link_opened'
                     else:
                         stage = 'lead'
 

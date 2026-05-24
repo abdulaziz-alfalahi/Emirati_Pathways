@@ -46,7 +46,8 @@ def validate():
     check("users.id is CHAR(15)", """
         SELECT column_name, data_type, character_maximum_length
         FROM information_schema.columns
-        WHERE table_name='users' AND column_name='id'
+        WHERE table_schema = 'public'
+          AND table_name='users' AND column_name='id'
           AND data_type != 'character'
     """)
 

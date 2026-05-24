@@ -455,6 +455,38 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering mentorship routes: {e}")
 
+    # Growth Operator Assignment API (admin operator management)
+    try:
+        from routes.growth_operator_assignment_api import growth_operator_assignment_bp
+        app.register_blueprint(growth_operator_assignment_bp)
+        logger.info("Registered: Growth Operator Assignment API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Growth Operator Assignment API routes: {e}")
+
+    # Administrator Routes (user management, roles, settings, system monitoring)
+    try:
+        from routes.administrator_routes import admin_bp, init_admin_routes
+        db_config = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'database': os.getenv('DB_NAME', 'emirati_journey'),
+            'user': os.getenv('DB_USER', 'emirati_user'),
+            'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+            'port': int(os.getenv('DB_PORT', 5432)),
+        }
+        init_admin_routes(app, db_config)
+        app.register_blueprint(admin_bp)
+        logger.info("Registered: Administrator routes (user management, roles, settings)")
+    except Exception as e:
+        logger.error(f"Failed registering Administrator routes: {e}")
+
+    # User Activity API (session tracking, activity logs, statistics)
+    try:
+        from routes.user_activity_api import user_activity_bp
+        app.register_blueprint(user_activity_bp)
+        logger.info("Registered: User Activity API routes")
+    except Exception as e:
+        logger.error(f"Failed registering User Activity API routes: {e}")
+
     return app
 
 

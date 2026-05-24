@@ -310,7 +310,7 @@ def get_certifications():
         cur.execute("""
             SELECT cc.id, cc.name, cc.issuing_organization, cc.issue_date,
                    cc.expiry_date, cc.credential_id, cc.credential_url,
-                   cc.profile_id
+                   cc.user_id
             FROM candidate_certifications cc
             ORDER BY cc.issue_date DESC
         """)
@@ -357,41 +357,35 @@ def get_user_progress():
         conn = get_db()
         cur = conn.cursor()
 
-        # Get user id from JWT or use first candidate
+        # Get user_id from JWT or use first candidate
         user_identity = get_jwt_identity()
         user_id = None
-        profile_id = None
 
         if user_identity:
             if isinstance(user_identity, dict):
                 user_id = user_identity.get('id')
             else:
-                user_id = user_identity
-            # Get profile_id
-            cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s LIMIT 1", (user_id,))
-            row = cur.fetchone()
-            if row:
-                profile_id = row['id']
+                user_id = str(user_identity).strip()
 
-        # If no profile found, use first available for demo
-        if not profile_id:
-            cur.execute("SELECT id FROM candidate_profiles LIMIT 1")
+        # If no user found, use first available for demo
+        if not user_id:
+            cur.execute("SELECT user_id FROM candidate_profiles LIMIT 1")
             row = cur.fetchone()
             if row:
-                profile_id = row['id']
+                user_id = row['user_id']
 
         skills = []
         assessments = []
         certs = []
 
-        if profile_id:
+        if user_id:
             # Skills
             cur.execute("""
                 SELECT name, category, level, is_verified, assessment_score
                 FROM candidate_skills
-                WHERE profile_id = %s
+                WHERE user_id = %s
                 ORDER BY assessment_score DESC NULLS LAST, name
-            """, (profile_id,))
+            """, (user_id,))
             for row in cur.fetchall():
                 skills.append({
                     'name': safe_str(row['name']),
@@ -405,9 +399,9 @@ def get_user_progress():
             cur.execute("""
                 SELECT title, assessment_type, score, max_score, status, d33_sector, completed_at
                 FROM candidate_assessments
-                WHERE profile_id = %s
+                WHERE user_id = %s
                 ORDER BY completed_at DESC NULLS LAST
-            """, (profile_id,))
+            """, (user_id,))
             for row in cur.fetchall():
                 assessments.append({
                     'title': safe_str(row['title']),
@@ -423,9 +417,9 @@ def get_user_progress():
             cur.execute("""
                 SELECT name, issuing_organization, issue_date, expiry_date, credential_id
                 FROM candidate_certifications
-                WHERE profile_id = %s
+                WHERE user_id = %s
                 ORDER BY issue_date DESC
-            """, (profile_id,))
+            """, (user_id,))
             for row in cur.fetchall():
                 certs.append({
                     'name': safe_str(row['name']),

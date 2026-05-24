@@ -466,6 +466,8 @@ def _find_or_create_user(profile: dict) -> tuple:
             eid_for_pk = strip_eid_hyphens(raw_eid)
         else:
             # Generate synthetic EID for users without a real one
+            # Use advisory lock to prevent race condition under concurrent registration
+            cursor.execute("SELECT pg_advisory_xact_lock(784000)")  # Lock ID for EID generation
             cursor.execute("""
                 SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
                 FROM users WHERE id LIKE '7840000%'
@@ -531,6 +533,7 @@ def _find_or_create_user(profile: dict) -> tuple:
         return None, False
 
 
+
 def _cleanup_stale_states():
     """Remove state tokens older than 10 minutes."""
     cutoff = datetime.utcnow() - timedelta(minutes=10)
@@ -540,3 +543,135 @@ def _cleanup_stale_states():
     ]
     for k in stale_keys:
         del _pending_states[k]
+
+
+# ────────────────────────────────────────────────────────────────────
+# DEV-ONLY: Test login bypass (NOT available in production)
+# ────────────────────────────────────────────────────────────────────
+
+@uaepass_bp.route('/dev-login', methods=['POST'])
+def dev_login():
+    """
+    DEV-ONLY: Sign in as any existing user by EID.
+    Bypasses UAE Pass OAuth and directly issues JWT tokens.
+
+    POST /api/auth/uaepass/dev-login
+    Body: { "user_id": "784000000000200" }
+
+    ⚠️ MUST be removed or disabled before production deployment.
+    """
+    if os.getenv('FLASK_ENV') == 'production':
+        return jsonify({'success': False, 'message': 'Dev login is disabled in production'}), 403
+
+    data = request.get_json() or {}
+    user_id = str(data.get('user_id', '')).strip()
+
+    if not user_id or len(user_id) != 15:
+        return jsonify({'success': False, 'message': 'user_id (15-digit EID) is required'}), 400
+
+    try:
+        conn = _get_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT id, email, first_name, last_name, role, phone, is_active
+            FROM users WHERE id = %s
+        """, (user_id,))
+        user = cur.fetchone()
+
+        if not user:
+            conn.close()
+            return jsonify({'success': False, 'message': f'User {user_id} not found'}), 404
+
+        if not user['is_active']:
+            conn.close()
+            return jsonify({'success': False, 'message': 'User account is inactive'}), 403
+
+        # Update last_login
+        cur.execute("UPDATE users SET last_login = NOW() WHERE id = %s", (user_id,))
+        conn.commit()
+        conn.close()
+
+        # Issue tokens
+        additional_claims = {
+            'role': user.get('role', 'candidate'),
+            'auth_method': 'dev_bypass'
+        }
+        access_token = create_access_token(
+            identity=user_id,
+            expires_delta=timedelta(hours=24),
+            additional_claims=additional_claims
+        )
+        refresh_token = create_refresh_token(
+            identity=user_id,
+            expires_delta=timedelta(days=30)
+        )
+
+        logger.warning(f"⚠️  DEV LOGIN: user {user_id} ({user['email']}) signed in via dev bypass")
+
+        return jsonify({
+            'success': True,
+            'message': f"Dev login successful for {user['first_name']} {user['last_name']}",
+            'data': {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'user': {
+                    'id': user['id'],
+                    'email': user['email'],
+                    'first_name': user['first_name'],
+                    'last_name': user['last_name'],
+                    'role': user['role'],
+                    'phone': user['phone'],
+                }
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Dev login error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@uaepass_bp.route('/dev-login/users', methods=['GET'])
+def dev_login_users():
+    """
+    DEV-ONLY: List all test users available for dev login.
+    GET /api/auth/uaepass/dev-login/users
+    """
+    if os.getenv('FLASK_ENV') == 'production':
+        return jsonify({'success': False, 'message': 'Disabled in production'}), 403
+
+    try:
+        conn = _get_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT
+                u.id, u.email, u.first_name, u.last_name, u.role, u.phone,
+                u.is_active, u.last_login,
+                (SELECT COUNT(*) FROM user_cvs WHERE user_id = u.id) AS cv_count,
+                (SELECT COUNT(*) FROM candidate_experience_entries WHERE user_id = u.id) AS exp_count,
+                (SELECT COUNT(*) FROM candidate_education_entries WHERE user_id = u.id) AS edu_count
+            FROM users u
+            WHERE u.is_active = true
+            ORDER BY u.role, u.first_name
+        """)
+        users = []
+        for row in cur.fetchall():
+            users.append({
+                'id': row['id'],
+                'name': f"{row['first_name'] or ''} {row['last_name'] or ''}".strip(),
+                'email': row['email'],
+                'role': row['role'],
+                'phone': row['phone'],
+                'has_data': row['cv_count'] > 0 or row['exp_count'] > 0,
+                'cv_count': row['cv_count'],
+                'exp_count': row['exp_count'],
+                'edu_count': row['edu_count'],
+                'last_login': row['last_login'].isoformat() if row['last_login'] else None,
+            })
+        conn.close()
+
+        return jsonify({'success': True, 'users': users, 'count': len(users)}), 200
+
+    except Exception as e:
+        logger.error(f"Dev login users error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+

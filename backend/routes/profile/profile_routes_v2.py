@@ -164,7 +164,7 @@ def add_experience():
         
         data = request.json
         exp = CandidateExperience(
-            profile_id=profile.id,
+            user_id=user_id,
             job_title=data['job_title'],
             company=data['company'],
             location=data.get('location'),
@@ -203,7 +203,7 @@ def add_education():
         
         data = request.json
         edu = CandidateEducation(
-            profile_id=profile.id,
+            user_id=user_id,
             institution=data['institution'],
             degree=data['degree'],
             field_of_study=data.get('field'),

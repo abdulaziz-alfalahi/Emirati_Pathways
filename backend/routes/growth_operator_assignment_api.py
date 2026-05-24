@@ -111,9 +111,9 @@ def ensure_tables_exist():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS growth_operator_assignments (
                     id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
+                    user_id VARCHAR(15) NOT NULL,
                     domain VARCHAR(50) NOT NULL,
-                    assigned_by INTEGER,
+                    assigned_by VARCHAR(15),
                     is_primary BOOLEAN DEFAULT FALSE,
                     is_active BOOLEAN DEFAULT TRUE,
                     notes TEXT,
@@ -138,13 +138,23 @@ def ensure_tables_exist():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS growth_operator_activity_log (
                     id SERIAL PRIMARY KEY,
-                    user_id INTEGER NOT NULL,
+                    user_id VARCHAR(15) NOT NULL,
                     domain VARCHAR(50),
                     action VARCHAR(100),
                     details JSONB,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            
+            # Migrate existing tables from INTEGER to VARCHAR(15) if needed
+            try:
+                cursor.execute("ALTER TABLE growth_operator_assignments ALTER COLUMN user_id TYPE VARCHAR(15) USING user_id::varchar")
+                cursor.execute("ALTER TABLE growth_operator_assignments ALTER COLUMN assigned_by TYPE VARCHAR(15) USING assigned_by::varchar")
+                cursor.execute("ALTER TABLE growth_operator_activity_log ALTER COLUMN user_id TYPE VARCHAR(15) USING user_id::varchar")
+            except Exception:
+                conn.rollback()
+                conn = get_db_connection()
+                cursor = conn.cursor()
             
             conn.commit()
             logger.info("Growth Operator assignment tables ensured")
@@ -154,8 +164,11 @@ def ensure_tables_exist():
     finally:
         conn.close()
 
-# Initialize tables
-ensure_tables_exist()
+# Initialize tables (non-fatal — tables will be created on first request if this fails)
+try:
+    ensure_tables_exist()
+except Exception as _init_err:
+    logger.warning(f"Could not ensure growth_operator tables at import time: {_init_err}")
 
 def optional_auth(f):
     """Decorator that allows requests with or without authentication"""
@@ -241,19 +254,17 @@ def list_growth_operators():
         query = """
             SELECT DISTINCT
                 u.id,
-                u.username,
                 u.email,
-                u.full_name,
+                COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name)) AS full_name,
+                u.first_name,
+                u.last_name,
                 u.role,
                 u.is_active,
                 u.created_at,
                 u.last_login
             FROM users u
-            LEFT JOIN growth_operator_assignments goa ON u.id = goa.user_id AND goa.is_active = true
+            LEFT JOIN growth_operator_assignments goa ON u.id::text = goa.user_id::text AND goa.is_active = true
             WHERE u.role LIKE 'growth_operator%%'
-               OR EXISTS (
-                   SELECT 1 FROM unnest(u.secondary_roles) AS sr WHERE sr LIKE 'growth_operator_%%'
-               )
                OR goa.user_id IS NOT NULL
         """
         params = []
@@ -263,7 +274,7 @@ def list_growth_operators():
         elif status == 'inactive':
             query += " AND u.is_active = false"
         
-        query += " ORDER BY u.full_name LIMIT %s OFFSET %s"
+        query += " ORDER BY full_name LIMIT %s OFFSET %s"
         params.extend([per_page, offset])
         
         operators = execute_query(query, tuple(params))
@@ -353,11 +364,8 @@ def list_growth_operators():
         count_query = """
             SELECT COUNT(DISTINCT u.id) as total
             FROM users u
-            LEFT JOIN growth_operator_assignments goa ON u.id = goa.user_id AND goa.is_active = true
+            LEFT JOIN growth_operator_assignments goa ON u.id::text = goa.user_id::text AND goa.is_active = true
             WHERE u.role LIKE 'growth_operator%%'
-               OR EXISTS (
-                   SELECT 1 FROM unnest(u.secondary_roles) AS sr WHERE sr LIKE 'growth_operator_%%'
-               )
                OR goa.user_id IS NOT NULL
         """
         total_result = execute_query(count_query, fetch_one=True)
@@ -388,7 +396,7 @@ def list_growth_operators():
         })
 
 
-@growth_operator_assignment_bp.route('/<int:user_id>', methods=['GET'])
+@growth_operator_assignment_bp.route('/<user_id>', methods=['GET'])
 @optional_auth
 def get_growth_operator(user_id):
     """Get details of a specific Growth Operator including domain assignments"""
@@ -459,7 +467,7 @@ def get_growth_operator(user_id):
 # DOMAIN ASSIGNMENT ENDPOINTS
 # =====================================================
 
-@growth_operator_assignment_bp.route('/<int:user_id>/domains', methods=['POST'])
+@growth_operator_assignment_bp.route('/<user_id>/domains', methods=['POST'])
 @optional_auth
 def assign_domains(user_id):
     """
@@ -510,9 +518,9 @@ def assign_domains(user_id):
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS growth_operator_assignments (
                         id SERIAL PRIMARY KEY,
-                        user_id INTEGER NOT NULL,
+                        user_id VARCHAR(15) NOT NULL,
                         domain VARCHAR(50) NOT NULL,
-                        assigned_by INTEGER,
+                        assigned_by VARCHAR(15),
                         is_primary BOOLEAN DEFAULT FALSE,
                         is_active BOOLEAN DEFAULT TRUE,
                         notes TEXT,
@@ -526,7 +534,7 @@ def assign_domains(user_id):
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS growth_operator_activity_log (
                         id SERIAL PRIMARY KEY,
-                        user_id INTEGER NOT NULL,
+                        user_id VARCHAR(15) NOT NULL,
                         domain VARCHAR(50),
                         action VARCHAR(100),
                         details JSONB,
@@ -619,7 +627,7 @@ def assign_domains(user_id):
         }), 500
 
 
-@growth_operator_assignment_bp.route('/<int:user_id>/domains/<domain>', methods=['DELETE'])
+@growth_operator_assignment_bp.route('/<user_id>/domains/<domain>', methods=['DELETE'])
 @optional_auth
 def remove_domain(user_id, domain):
     """Remove a specific domain assignment from a Growth Operator"""
@@ -650,7 +658,7 @@ def remove_domain(user_id, domain):
         }), 500
 
 
-@growth_operator_assignment_bp.route('/<int:user_id>/primary-domain', methods=['PUT'])
+@growth_operator_assignment_bp.route('/<user_id>/primary-domain', methods=['PUT'])
 @optional_auth
 def set_primary_domain(user_id):
     """Set the primary domain for a Growth Operator"""

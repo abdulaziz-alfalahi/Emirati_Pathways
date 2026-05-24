@@ -42,7 +42,7 @@ interface Company {
   industryAr: string;
   size: string;
   emirate: string;
-  status: 'lead' | 'contacted' | 'documentation' | 'verification' | 'active' | 'inactive';
+  status: 'lead' | 'invited' | 'link_opened' | 'signing_up' | 'active' | 'expired' | 'inactive';
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;
@@ -85,7 +85,7 @@ const toCompany = (c: any): Company => ({
   emiratiHires: c.emiratiHires || 0,
   registeredAt: c.registeredAt || '',
   lastActivity: c.invitationAcceptedAt || c.invitationSentAt || c.registeredAt || '',
-  healthScore: c.isVerified ? 80 : (c.status === 'active' ? 60 : c.status === 'verification' ? 40 : 20),
+  healthScore: c.isVerified ? 80 : (c.status === 'active' ? 60 : c.status === 'signing_up' ? 40 : 20),
   tradeLicense: !!c.tradeLicense,
   mohrRegistered: c.isVerified || false,
   leadSource: c.leadSource || 'manual',
@@ -120,7 +120,7 @@ const GrowthOperatorDashboard: React.FC = () => {
   };
   const [companies, setCompanies] = useState<Company[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [funnelCounts, setFunnelCounts] = useState<Record<string, number>>({ lead: 0, contacted: 0, documentation: 0, verification: 0, active: 0 });
+  const [funnelCounts, setFunnelCounts] = useState<Record<string, number>>({ lead: 0, invited: 0, link_opened: 0, signing_up: 0, active: 0, expired: 0 });
   const [kpis, setKpis] = useState<any>({});
   const [dashLoading, setDashLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,7 +155,7 @@ const GrowthOperatorDashboard: React.FC = () => {
   // ─── Computed Metrics ───
   const totalCompanies = kpis.totalCompanies ?? companies.length;
   const activeCompanies = kpis.activeCompanies ?? companies.filter(c => c.status === 'active').length;
-  const inPipeline = kpis.inPipeline ?? companies.filter(c => ['lead', 'contacted', 'documentation', 'verification'].includes(c.status)).length;
+  const inPipeline = companies.filter(c => ['invited', 'link_opened', 'signing_up', 'expired'].includes(c.status)).length;
   const totalJobs = kpis.totalJobs ?? companies.reduce((sum, c) => sum + c.jobsPosted, 0);
   const avgEmiratization = activeCompanies > 0
     ? (companies.filter(c => c.status === 'active').reduce((sum, c) => sum + c.emiratizationRate, 0) / activeCompanies).toFixed(1)
@@ -163,10 +163,11 @@ const GrowthOperatorDashboard: React.FC = () => {
   const belowTarget = companies.filter(c => c.status === 'active' && c.emiratizationRate < c.emiratizationTarget).length;
 
   const pipelineStages = [
-    { key: 'lead', label: t('Lead', 'عميل محتمل'), count: funnelCounts.lead || 0, color: colors.textSecondary, bgColor: '#F1F5F9' },
-    { key: 'contacted', label: t('Contacted', 'تم التواصل'), count: funnelCounts.contacted || 0, color: colors.blueText, bgColor: colors.blueBg },
-    { key: 'documentation', label: t('Documentation', 'التوثيق'), count: funnelCounts.documentation || 0, color: colors.yellowText, bgColor: colors.yellowBg },
-    { key: 'verification', label: t('Verification', 'التحقق'), count: funnelCounts.verification || 0, color: colors.purpleText, bgColor: colors.purpleBg },
+    { key: 'lead', label: t('Uploaded', 'تم الرفع'), count: funnelCounts.lead || 0, color: colors.textSecondary, bgColor: '#F1F5F9' },
+    { key: 'invited', label: t('Invited', 'تمت الدعوة'), count: funnelCounts.invited || 0, color: colors.blueText, bgColor: colors.blueBg },
+    { key: 'link_opened', label: t('Link Opened', 'فتح الرابط'), count: funnelCounts.link_opened || 0, color: colors.yellowText, bgColor: colors.yellowBg },
+    { key: 'signing_up', label: t('Signing Up', 'التسجيل'), count: funnelCounts.signing_up || 0, color: colors.purpleText, bgColor: colors.purpleBg },
+    { key: 'expired', label: t('Expired', 'منتهي'), count: funnelCounts.expired || 0, color: colors.redText, bgColor: colors.redBg },
     { key: 'active', label: t('Active', 'نشط'), count: funnelCounts.active || 0, color: colors.greenText, bgColor: colors.greenBg },
   ];
 
@@ -180,11 +181,12 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { bg: string; text: string; label: string; labelAr: string }> = {
-      lead: { bg: '#F1F5F9', text: colors.textSecondary, label: 'Lead', labelAr: 'عميل محتمل' },
-      contacted: { bg: colors.blueBg, text: colors.blueText, label: 'Contacted', labelAr: 'تم التواصل' },
-      documentation: { bg: colors.yellowBg, text: colors.yellowText, label: 'Documentation', labelAr: 'التوثيق' },
-      verification: { bg: colors.purpleBg, text: colors.purpleText, label: 'Verification', labelAr: 'التحقق' },
+      lead: { bg: '#F1F5F9', text: colors.textSecondary, label: 'Uploaded', labelAr: 'تم الرفع' },
+      invited: { bg: colors.blueBg, text: colors.blueText, label: 'Invited', labelAr: 'تمت الدعوة' },
+      link_opened: { bg: colors.yellowBg, text: colors.yellowText, label: 'Link Opened', labelAr: 'فتح الرابط' },
+      signing_up: { bg: colors.purpleBg, text: colors.purpleText, label: 'Signing Up', labelAr: 'التسجيل' },
       active: { bg: colors.greenBg, text: colors.greenText, label: 'Active', labelAr: 'نشط' },
+      expired: { bg: colors.redBg, text: colors.redText, label: 'Expired', labelAr: 'منتهي' },
       inactive: { bg: colors.redBg, text: colors.redText, label: 'Inactive', labelAr: 'غير نشط' },
     };
     const c = config[status] || config.lead;
@@ -203,12 +205,10 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   const tabs = [
     { key: 'overview', label: t('Overview', 'نظرة عامة'), icon: BarChart3 },
-    { key: 'onboarding', label: t('Company Onboarding', 'إلحاق الشركات'), icon: Plus },
-    { key: 'partnerships', label: t('Employer Partnerships', 'شراكات أصحاب العمل'), icon: Handshake },
-    { key: 'workspaces', label: t('Workspaces', 'مساحات العمل'), icon: ShieldCheck },
-    { key: 'emiratization', label: t('Jobs & Emiratization', 'الوظائف والتوطين'), icon: Flag },
     { key: 'nafis', label: t('NAFIS Import', 'استيراد نافس'), icon: Upload },
-    { key: 'reports', label: t('Reports', 'التقارير'), icon: PieChart },
+    { key: 'pipeline', label: t('Invitation Pipeline', 'خط الدعوات'), icon: Target },
+    { key: 'partnerships', label: t('Partner Management', 'إدارة الشركاء'), icon: Handshake },
+    { key: 'workspaces', label: t('Workspaces', 'مساحات العمل'), icon: ShieldCheck },
     { key: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
   ];
 
@@ -235,87 +235,140 @@ const GrowthOperatorDashboard: React.FC = () => {
   );
 
   // ═══════ OVERVIEW TAB ═══════
-  const renderOverview = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-        <KPICard icon={Building2} label={t('Total Companies', 'إجمالي الشركات')} value={totalCompanies} color={colors.primary} trend={8} />
-        <KPICard icon={Target} label={t('In Pipeline', 'في خط الإلحاق')} value={inPipeline} color={colors.blueText} subtext={t(`${pipelineStages[0].count} leads`, `${pipelineStages[0].count} عملاء محتملين`)} />
-        <KPICard icon={Handshake} label={t('Active Partners', 'شركاء نشطون')} value={activeCompanies} color={colors.greenText} trend={12} />
-        <KPICard icon={Flag} label={t('Avg. Emiratization', 'متوسط التوطين')} value={`${avgEmiratization}%`} color={colors.accent}
-          subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
-      </div>
+  const renderOverview = () => {
+    // Industry breakdown
+    const industryMap: Record<string, number> = {};
+    companies.forEach(c => { industryMap[c.industry] = (industryMap[c.industry] || 0) + 1; });
 
-      {/* Onboarding Funnel */}
-      <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-          {t('Onboarding Funnel', 'مسار إلحاق الشركات')}
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {pipelineStages.map((stage, i) => (
-            <React.Fragment key={stage.key}>
-              <div
-                style={{
-                  flex: 1, textAlign: 'center', padding: '16px 8px', borderRadius: 12,
-                  background: stage.bgColor, border: `2px solid ${stage.color}22`, cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                }}
-                onClick={() => { setActiveTab('onboarding'); setStatusFilter(stage.key); }}
-              >
-                <div style={{ fontSize: 28, fontWeight: 700, color: stage.color }}>{stage.count}</div>
-                <div style={{ fontSize: 12, fontWeight: 500, color: stage.color, marginTop: 4 }}>{stage.label}</div>
-              </div>
-              {i < pipelineStages.length - 1 && (
-                <ChevronRight size={20} color={colors.textSecondary} style={{ flexShrink: 0, opacity: 0.4 }} />
-              )}
-            </React.Fragment>
-          ))}
+    // Emirate breakdown
+    const emirateMap: Record<string, number> = {};
+    companies.forEach(c => { emirateMap[c.emirate] = (emirateMap[c.emirate] || 0) + 1; });
+
+    const barColors = [colors.primary, colors.blueText, colors.accent, colors.purpleText, colors.greenText, colors.yellowText];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* KPI Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <KPICard icon={Building2} label={t('Total Companies', 'إجمالي الشركات')} value={totalCompanies} color={colors.primary} trend={8} />
+          <KPICard icon={Target} label={t('In Pipeline', 'في خط الإلحاق')} value={inPipeline} color={colors.blueText} subtext={t(`${pipelineStages[0].count} leads`, `${pipelineStages[0].count} عملاء محتملين`)} />
+          <KPICard icon={Handshake} label={t('Active Partners', 'شركاء نشطون')} value={activeCompanies} color={colors.greenText} trend={12} />
+          <KPICard icon={Flag} label={t('Avg. Emiratization', 'متوسط التوطين')} value={`${avgEmiratization}%`} color={colors.accent}
+            subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
         </div>
-      </div>
 
-      {/* Recent Activity */}
-      <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 16 }}>
-          {t('Recent Activity', 'النشاط الأخير')}
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {recentActivity.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 20, color: colors.textSecondary, fontSize: 14 }}>
-              {t('No activity yet — import NAFIS data to get started', 'لا يوجد نشاط بعد — قم باستيراد بيانات نافس للبدء')}
-            </div>
-          )}
-          {recentActivity.map((item, i) => {
-            const iconMap: Record<string, any> = {
-              invitation: { Icon: Mail, color: colors.blueText },
-              job: { Icon: Briefcase, color: colors.primary },
-              flag: { Icon: AlertTriangle, color: colors.yellowText },
-              contact: { Icon: Phone, color: colors.purpleText },
-              success: { Icon: CheckCircle, color: colors.greenText },
-            };
-            const { Icon, color } = iconMap[item.type] || iconMap.contact;
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < recentActivity.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
-                <div style={{ padding: 8, borderRadius: 8, background: color + '15', flexShrink: 0 }}>
-                  <Icon size={16} color={color} />
+        {/* Conversion Funnel */}
+        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
+            {t('Invitation Pipeline Funnel', 'مسار الدعوات')}
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {pipelineStages.map((stage, i) => {
+              const maxCount = Math.max(...pipelineStages.map(s => s.count), 1);
+              const widthPct = (stage.count / maxCount) * 100;
+              return (
+                <div key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ width: 120, fontSize: 13, fontWeight: 500, color: colors.textSecondary, textAlign: isRTL ? 'left' : 'right' }}>
+                    {stage.label}
+                  </div>
+                  <div style={{ flex: 1, background: '#F1F5F9', borderRadius: 8, height: 32, overflow: 'hidden', cursor: 'pointer' }}
+                       onClick={() => { setActiveTab('pipeline'); setStatusFilter(stage.key); }}>
+                    <div style={{
+                      width: `${Math.max(widthPct, 8)}%`, height: '100%', background: stage.color,
+                      borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'width 0.5s ease', minWidth: 40,
+                    }}>
+                      <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>{stage.count}</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ flex: 1, fontSize: 14, color: colors.text }}>{item.text}</div>
-                <div style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0 }}>{item.time}</div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          {/* Industry Breakdown */}
+          <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
+              {t('Industry Breakdown', 'توزيع القطاعات')}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Object.entries(industryMap).sort((a, b) => b[1] - a[1]).map(([industry, count], i) => (
+                <div key={industry} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: 3, background: barColors[i % barColors.length] }} />
+                    <span style={{ fontSize: 14, color: colors.text }}>{industry}</span>
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Emirate Distribution */}
+          <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
+              {t('Distribution by Emirate', 'التوزيع حسب الإمارة')}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Object.entries(emirateMap).sort((a, b) => b[1] - a[1]).map(([emirate, count], i) => (
+                <div key={emirate} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <MapPin size={14} color={barColors[i % barColors.length]} />
+                    <span style={{ fontSize: 14, color: colors.text }}>{emirate}</span>
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 16 }}>
+            {t('Recent Activity', 'النشاط الأخير')}
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {recentActivity.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 20, color: colors.textSecondary, fontSize: 14 }}>
+                {t('No activity yet — import NAFIS data to get started', 'لا يوجد نشاط بعد — قم باستيراد بيانات نافس للبدء')}
               </div>
-            );
-          })}
+            )}
+            {recentActivity.map((item, i) => {
+              const iconMap: Record<string, any> = {
+                invitation: { Icon: Mail, color: colors.blueText },
+                job: { Icon: Briefcase, color: colors.primary },
+                flag: { Icon: AlertTriangle, color: colors.yellowText },
+                contact: { Icon: Phone, color: colors.purpleText },
+                success: { Icon: CheckCircle, color: colors.greenText },
+              };
+              const { Icon, color } = iconMap[item.type] || iconMap.contact;
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < recentActivity.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                  <div style={{ padding: 8, borderRadius: 8, background: color + '15', flexShrink: 0 }}>
+                    <Icon size={16} color={color} />
+                  </div>
+                  <div style={{ flex: 1, fontSize: 14, color: colors.text }}>{item.text}</div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0 }}>{item.time}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ═══════ COMPANY ONBOARDING TAB ═══════
-  const renderOnboarding = () => {
-    const onboardingCompanies = companies.filter(c => ['lead', 'contacted', 'documentation', 'verification'].includes(c.status));
+  const renderPipeline = () => {
+    const pipelineCompanies = companies.filter(c => ['lead', 'invited', 'link_opened', 'signing_up', 'expired'].includes(c.status));
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Pipeline Stages */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
           {pipelineStages.filter(s => s.key !== 'active').map(stage => (
             <div
               key={stage.key}
@@ -336,7 +389,7 @@ const GrowthOperatorDashboard: React.FC = () => {
         <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>
-              {t('Onboarding Pipeline', 'خط إلحاق الشركات')}
+              {t('Invitation Pipeline', 'خط الدعوات')}
             </h3>
             <button
               onClick={() => setShowOnboardDialog(true)}
@@ -363,7 +416,7 @@ const GrowthOperatorDashboard: React.FC = () => {
           </div>
 
           {/* Companies in Pipeline */}
-          {(statusFilter !== 'all' ? onboardingCompanies.filter(c => c.status === statusFilter) : onboardingCompanies).map(company => (
+          {(statusFilter !== 'all' ? pipelineCompanies.filter(c => c.status === statusFilter) : pipelineCompanies).map(company => (
             <div key={company.id} style={{
               display: 'flex', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12,
               border: `1px solid ${colors.border}`, marginBottom: 12, background: '#FAFBFC',
@@ -381,37 +434,41 @@ const GrowthOperatorDashboard: React.FC = () => {
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#FEF3C7', color: '#92400E', letterSpacing: '0.03em' }}>MAGIC LINK</span>
                   )}
                 </div>
-                <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
                   {company.industry || '—'} • {company.emirate || '—'} • {company.contactEmail || '—'}
+                </div>
+                <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, display: 'flex', gap: 12 }}>
+                  <span>{t('Jobs:', 'الوظائف:')} <span style={{fontWeight:600}}>{company.jobsPosted}</span></span>
+                  <span>{t('Last Activity:', 'آخر نشاط:')} <span style={{fontWeight:600}}>{timeAgo(company.lastActivity)}</span></span>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                 {getStatusBadge(company.status)}
                 <div style={{ display: 'flex', gap: 6 }}>
-                  {company.tradeLicense ? (
-                    <span style={{ fontSize: 11, color: colors.greenText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CheckCircle size={12} /> {t('Trade License', 'رخصة تجارية')}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: colors.redText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Clock size={12} /> {t('Trade License', 'رخصة تجارية')}
-                    </span>
+                  {['invited', 'link_opened'].includes(company.status) && (
+                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: '#fff', border: `1px solid ${colors.border}`, color: colors.text, cursor: 'pointer', fontWeight: 600 }}>
+                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                      {t('Nudge', 'تذكير')}
+                    </button>
                   )}
-                  {company.mohrRegistered ? (
-                    <span style={{ fontSize: 11, color: colors.greenText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CheckCircle size={12} /> {t('MoHR', 'الموارد البشرية')}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: colors.redText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Clock size={12} /> {t('MoHR', 'الموارد البشرية')}
-                    </span>
+                  {company.status === 'expired' && (
+                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                      {t('Resend Link', 'إعادة إرسال الرابط')}
+                    </button>
+                  )}
+                  {company.status === 'lead' && company.jobsPosted > 0 && (
+                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                      <Mail size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                      {t('Send Invite', 'إرسال دعوة')}
+                    </button>
                   )}
                 </div>
               </div>
             </div>
           ))}
 
-          {onboardingCompanies.length === 0 && (
+          {pipelineCompanies.length === 0 && (
             <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
               {t('No companies in the pipeline', 'لا توجد شركات في خط الإلحاق')}
             </div>
@@ -421,12 +478,20 @@ const GrowthOperatorDashboard: React.FC = () => {
     );
   };
 
-  // ═══════ EMPLOYER PARTNERSHIPS TAB ═══════
-  const renderPartnerships = () => {
+  // ═══════ PARTNER MANAGEMENT TAB ═══════
+  const renderPartnerManagement = () => {
     const activePartners = companies.filter(c => c.status === 'active');
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Summary KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <KPICard icon={Briefcase} label={t('Total Job Postings', 'إجمالي الوظائف المنشورة')} value={totalJobs} color={colors.primary} />
+          <KPICard icon={Users} label={t('Total Hires', 'إجمالي التوظيف')} value={companies.reduce((s, c) => s + c.hiresCount, 0)} color={colors.blueText} />
+          <KPICard icon={Award} label={t('Emirati Hires', 'توظيف إماراتيين')} value={companies.reduce((s, c) => s + c.emiratiHires, 0)} color={colors.accent} />
+          <KPICard icon={AlertTriangle} label={t('Below Target', 'أقل من المستهدف')} value={belowTarget} color={belowTarget > 0 ? colors.redText : colors.greenText} />
+        </div>
+
         {/* Search & Filters */}
         <div style={{ background: colors.card, borderRadius: 16, padding: 20, border: `1px solid ${colors.border}` }}>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -517,23 +582,6 @@ const GrowthOperatorDashboard: React.FC = () => {
             <p style={{ marginTop: 16, color: colors.textSecondary }}>{t('No active partners yet', 'لا يوجد شركاء نشطون بعد')}</p>
           </div>
         )}
-      </div>
-    );
-  };
-
-  // ═══════ JOBS & EMIRATIZATION TAB ═══════
-  const renderEmiratization = () => {
-    const activeWithJobs = companies.filter(c => c.status === 'active');
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* Summary KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-          <KPICard icon={Briefcase} label={t('Total Job Postings', 'إجمالي الوظائف المنشورة')} value={totalJobs} color={colors.primary} />
-          <KPICard icon={Users} label={t('Total Hires', 'إجمالي التوظيف')} value={companies.reduce((s, c) => s + c.hiresCount, 0)} color={colors.blueText} />
-          <KPICard icon={Award} label={t('Emirati Hires', 'توظيف إماراتيين')} value={companies.reduce((s, c) => s + c.emiratiHires, 0)} color={colors.accent} />
-          <KPICard icon={AlertTriangle} label={t('Below Target', 'أقل من المستهدف')} value={belowTarget} color={belowTarget > 0 ? colors.redText : colors.greenText} />
-        </div>
 
         {/* Compliance Table */}
         <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
@@ -569,7 +617,7 @@ const GrowthOperatorDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {activeWithJobs.map(company => {
+                {activePartners.map(company => {
                   const compliant = company.emiratizationRate >= company.emiratizationTarget;
                   return (
                     <tr key={company.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
@@ -606,116 +654,7 @@ const GrowthOperatorDashboard: React.FC = () => {
     );
   };
 
-  // ═══════ REPORTS TAB ═══════
-  const renderReports = () => {
-    // Industry breakdown
-    const industryMap: Record<string, number> = {};
-    companies.forEach(c => { industryMap[c.industry] = (industryMap[c.industry] || 0) + 1; });
 
-    // Emirate breakdown
-    const emirateMap: Record<string, number> = {};
-    companies.forEach(c => { emirateMap[c.emirate] = (emirateMap[c.emirate] || 0) + 1; });
-
-    const barColors = [colors.primary, colors.blueText, colors.accent, colors.purpleText, colors.greenText, colors.yellowText];
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* Conversion Funnel */}
-        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-            {t('Conversion Funnel', 'مسار التحويل')}
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {pipelineStages.map((stage, i) => {
-              const maxCount = Math.max(...pipelineStages.map(s => s.count), 1);
-              const widthPct = (stage.count / maxCount) * 100;
-              return (
-                <div key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ width: 120, fontSize: 13, fontWeight: 500, color: colors.textSecondary, textAlign: isRTL ? 'left' : 'right' }}>
-                    {stage.label}
-                  </div>
-                  <div style={{ flex: 1, background: '#F1F5F9', borderRadius: 8, height: 32, overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${Math.max(widthPct, 8)}%`, height: '100%', background: stage.color,
-                      borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'width 0.5s ease', minWidth: 40,
-                    }}>
-                      <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>{stage.count}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-          {/* Industry Breakdown */}
-          <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-              {t('Industry Breakdown', 'توزيع القطاعات')}
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {Object.entries(industryMap).sort((a, b) => b[1] - a[1]).map(([industry, count], i) => (
-                <div key={industry} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: 3, background: barColors[i % barColors.length] }} />
-                    <span style={{ fontSize: 14, color: colors.text }}>{industry}</span>
-                  </div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Emirate Distribution */}
-          <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-              {t('Distribution by Emirate', 'التوزيع حسب الإمارة')}
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {Object.entries(emirateMap).sort((a, b) => b[1] - a[1]).map(([emirate, count], i) => (
-                <div key={emirate} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <MapPin size={14} color={barColors[i % barColors.length]} />
-                    <span style={{ fontSize: 14, color: colors.text }}>{emirate}</span>
-                  </div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-            {t('Key Metrics Summary', 'ملخص المؤشرات الرئيسية')}
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.primary }}>{totalCompanies}</div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Total Registered', 'إجمالي المسجلين')}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.greenText }}>
-                {totalCompanies > 0 ? ((activeCompanies / totalCompanies) * 100).toFixed(0) : 0}%
-              </div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Activation Rate', 'معدل التفعيل')}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.accent }}>{avgEmiratization}%</div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Avg. Emiratization', 'متوسط التوطين')}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.blueText }}>{totalJobs}</div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Jobs Created', 'وظائف أنشئت')}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ═══════ WORKSPACES TAB ═══════
   const WorkspacesTab = () => {
@@ -957,12 +896,10 @@ const GrowthOperatorDashboard: React.FC = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'onboarding' && renderOnboarding()}
-        {activeTab === 'partnerships' && renderPartnerships()}
+        {activeTab === 'pipeline' && renderPipeline()}
+        {activeTab === 'partnerships' && renderPartnerManagement()}
         {activeTab === 'workspaces' && <WorkspacesTab />}
-        {activeTab === 'emiratization' && renderEmiratization()}
         {activeTab === 'nafis' && <NafisVacancyImport t={t} isRTL={isRTL} />}
-        {activeTab === 'reports' && renderReports()}
         {activeTab === 'messages' && <Messages senderRole="growth_operator" />}
       </main>
 

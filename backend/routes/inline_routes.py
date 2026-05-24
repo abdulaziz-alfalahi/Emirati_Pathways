@@ -2398,7 +2398,7 @@ Return only the JSON object, no additional text."""
                 cvk = {'skills': set(), 'text': set(), 'location': ''}
                 try:
                     skills_rows = execute_query(
-                        "SELECT name FROM candidate_skills WHERE profile_id = (SELECT id FROM candidate_profiles WHERE user_id = %s LIMIT 1)",
+                        "SELECT name FROM candidate_skills WHERE user_id = %s",
                         (str(user_id),)
                     ) or []
                     for s in skills_rows:
