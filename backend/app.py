@@ -550,18 +550,12 @@ def _log_security_warnings():
     if flask_env != 'production':
         logger.warning("=" * 72)
         logger.warning("⚠️  SECURITY WARNING: FLASK_ENV='%s' (non-production)", flask_env)
-        logger.warning("⚠️  Magic OTP bypass is ACTIVE — code 123456 accepted for test accounts")
-        logger.warning("⚠️  Do NOT deploy this configuration to production servers.")
-        logger.warning("⚠️  Production auth must use UAEPass — OTP will not be available.")
+        logger.warning("⚠️  Dev-login bypass is ACTIVE — /api/auth/uaepass/dev-login accepts any EID")
+        logger.warning("⚠️  Set FLASK_ENV=production to disable dev-login.")
         logger.warning("=" * 72)
-        print("\n" + "!" * 72)
-        print("!  SECURITY: Magic OTP bypass is ACTIVE (FLASK_ENV=%s)" % flask_env)
-        print("!  Test accounts accept OTP code 123456 without SMS.")
-        print("!  Set FLASK_ENV=production to disable this bypass.")
-        print("!" * 72 + "\n")
     else:
-        logger.info("🔒 Production mode — Magic OTP bypass is DISABLED")
-        logger.info("🔒 Authentication will use UAEPass integration")
+        logger.info("🔒 Production mode — dev-login is DISABLED")
+        logger.info("🔒 Authentication uses UAEPass integration")
 
 _log_security_warnings()
 

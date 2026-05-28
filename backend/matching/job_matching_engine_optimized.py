@@ -92,7 +92,7 @@ class EnhancedJobMatchingEngine:
             
             # Configure Gemini
             # Initialize model
-            # AI model initialized via qwen_client (lazy-loaded)            logger.info("✅ Gemini 2.5 PRO initialized successfully")
+            # AI model initialized via qwen_client (lazy-loaded)            logger.info("✅ AI Engine PRO initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to setup Gemini: {e}")
@@ -314,7 +314,7 @@ class EnhancedJobMatchingEngine:
         }
     
     def _gemini_analysis(self, cv_info: Dict, jd_info: Dict) -> Dict:
-        """Perform AI analysis using Gemini 2.5 PRO"""
+        """Perform AI analysis using AI Engine PRO"""
         try:
             prompt = self._create_gemini_prompt(cv_info, jd_info)
             
@@ -342,7 +342,7 @@ class EnhancedJobMatchingEngine:
             return self._fallback_analysis(cv_info, jd_info)
     
     def _create_gemini_prompt(self, cv_info: Dict, jd_info: Dict) -> str:
-        """Create optimized prompt for Gemini 2.5 PRO"""
+        """Create optimized prompt for AI Engine PRO"""
         return f"""
 Analyze this CV-Job match for the UAE job market with cultural and professional context:
 
