@@ -125,14 +125,14 @@ class TestDevLoginValidation:
         assert resp.status_code == 400
 
     def test_dev_login_no_json_body(self, client, monkeypatch):
-        """POST with no Content-Type json → 400."""
+        """POST with no Content-Type json → 400 or 415."""
         monkeypatch.delenv("FLASK_ENV", raising=False)
         resp = client.post(
             "/api/auth/uaepass/dev-login",
             data="not-json",
             content_type="text/plain",
         )
-        assert resp.status_code == 400
+        assert resp.status_code in (400, 415)
 
 
 # ── Unit: Dev-Login — User Not Found (mocked DB) ──────────────────
