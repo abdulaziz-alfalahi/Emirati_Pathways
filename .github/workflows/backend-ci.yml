@@ -2,10 +2,10 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, production-readiness]
     paths: ['backend/**']
   pull_request:
-    branches: [main]
+    branches: [main, production-readiness]
     paths: ['backend/**']
 
 jobs:
@@ -45,18 +45,19 @@ jobs:
         run: |
           cd backend
           pip install flake8
-          flake8 app.py --max-line-length=150 --count --statistics || true
+          flake8 app.py --max-line-length=150 --count --statistics
 
       - name: Run tests
         env:
           DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_emirati
           JWT_SECRET_KEY: ci-test-secret-key-not-for-production
-          GEMINI_API_KEY: fake-key-for-ci
+          DASHSCOPE_API_KEY: fake-key-for-ci
           FLASK_ENV: testing
           USE_REDIS: "false"
         run: |
           cd backend
-          python -m pytest tests/ -v --tb=short || echo "Tests completed"
+          pip install pytest
+          python -m pytest tests/ -v --tb=short
 
   docker-build:
     runs-on: ubuntu-latest
