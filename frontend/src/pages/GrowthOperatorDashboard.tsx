@@ -126,6 +126,44 @@ const GrowthOperatorDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
+  const [isSubmittingCompany, setIsSubmittingCompany] = useState(false);
+  const [newCompany, setNewCompany] = useState({
+    name: '', name_arabic: '', industry: 'Technology', company_size: 'medium',
+    company_type: 'private', emirate: 'Dubai', trade_license_number: '',
+    contact_name: '', primary_email: '', phone: '', website: ''
+  });
+
+  const handleRegisterCompany = async () => {
+    try {
+      if (!newCompany.name || !newCompany.industry) return alert(t('Please fill required fields', 'يرجى تعبئة الحقول المطلوبة'));
+      setIsSubmittingCompany(true);
+      const payload = {
+        name: newCompany.name,
+        name_arabic: newCompany.name_arabic,
+        industry: newCompany.industry,
+        company_size: newCompany.company_size,
+        company_type: newCompany.company_type,
+        trade_license_number: newCompany.trade_license_number,
+        locations: [{ emirate: newCompany.emirate, is_headquarters: true }],
+        contact: { primary_email: newCompany.primary_email, phone: newCompany.phone, website: newCompany.website }
+      };
+      const res = await restClient.post('/api/companies/create', payload);
+      
+      const mockNewCompany: Company = {
+        id: `comp-${Date.now()}`, name: newCompany.name, industry: newCompany.industry, emirate: newCompany.emirate,
+        status: 'lead', jobsPosted: 0, emiratizationRate: 0, emiratizationTarget: 0,
+        contactName: newCompany.contact_name, contactEmail: newCompany.primary_email,
+      };
+      setCompanies(prev => [mockNewCompany, ...prev]);
+      setShowOnboardDialog(false);
+      setNewCompany({ name: '', name_arabic: '', industry: 'Technology', company_size: 'medium', company_type: 'private', emirate: 'Dubai', trade_license_number: '', contact_name: '', primary_email: '', phone: '', website: '' });
+    } catch (err) {
+      console.error('Failed to create company:', err);
+      alert(t('Failed to register company', 'فشل تسجيل الشركة'));
+    } finally {
+      setIsSubmittingCompany(false);
+    }
+  };
 
   // ─── Fetch live data ───
   useEffect(() => {
@@ -921,30 +959,55 @@ const GrowthOperatorDashboard: React.FC = () => {
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {[
-                { label: t('Company Name (EN)', 'اسم الشركة (إنجليزي)'), placeholder: 'Emirates Tech LLC' },
-                { label: t('Company Name (AR)', 'اسم الشركة (عربي)'), placeholder: 'الإمارات للتكنولوجيا' },
-                { label: t('Industry', 'القطاع'), placeholder: t('Select industry', 'اختر القطاع'), type: 'select' },
-                { label: t('Company Size', 'حجم الشركة'), placeholder: t('Select size', 'اختر الحجم'), type: 'select' },
-                { label: t('Emirate', 'الإمارة'), placeholder: t('Select emirate', 'اختر الإمارة'), type: 'select' },
-                { label: t('Trade License No.', 'رقم الرخصة التجارية'), placeholder: 'TL-2026-XXXXX' },
-                { label: t('Contact Person', 'شخص التواصل'), placeholder: t('Full name', 'الاسم الكامل') },
-                { label: t('Contact Email', 'البريد الإلكتروني'), placeholder: 'email@company.ae' },
-                { label: t('Contact Phone', 'رقم الهاتف'), placeholder: '+971 5X XXX XXXX' },
-                { label: t('Website', 'الموقع الإلكتروني'), placeholder: 'https://www.company.ae' },
-              ].map((field, i) => (
-                <div key={i} style={{ gridColumn: i >= 8 ? '1 / -1' : undefined }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{field.label}</label>
-                  <input
-                    placeholder={field.placeholder}
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: 10,
-                      border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none',
-                      background: '#F8FAFC',
-                    }}
-                  />
-                </div>
-              ))}
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Company Name (EN)', 'اسم الشركة (إنجليزي)')} *</label>
+                <input value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} placeholder="Emirates Tech LLC" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Company Name (AR)', 'اسم الشركة (عربي)')}</label>
+                <input value={newCompany.name_arabic} onChange={e => setNewCompany({ ...newCompany, name_arabic: e.target.value })} placeholder="الإمارات للتكنولوجيا" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC', textAlign: 'right' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Industry', 'القطاع')} *</label>
+                <select value={newCompany.industry} onChange={e => setNewCompany({ ...newCompany, industry: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}>
+                  <option value="Technology">Technology</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Retail">Retail</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Company Size', 'حجم الشركة')}</label>
+                <select value={newCompany.company_size} onChange={e => setNewCompany({ ...newCompany, company_size: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}>
+                  <option value="micro">Micro (1-9)</option>
+                  <option value="small">Small (10-49)</option>
+                  <option value="medium">Medium (50-249)</option>
+                  <option value="large">Large (250+)</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Emirate', 'الإمارة')}</label>
+                <select value={newCompany.emirate} onChange={e => setNewCompany({ ...newCompany, emirate: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}>
+                  {['Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah'].map(em => <option key={em} value={em}>{em}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Trade License No.', 'رقم الرخصة التجارية')}</label>
+                <input value={newCompany.trade_license_number} onChange={e => setNewCompany({ ...newCompany, trade_license_number: e.target.value })} placeholder="TL-2026-XXXXX" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Contact Person', 'شخص التواصل')}</label>
+                <input value={newCompany.contact_name} onChange={e => setNewCompany({ ...newCompany, contact_name: e.target.value })} placeholder={t('Full name', 'الاسم الكامل')} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Contact Email', 'البريد الإلكتروني')}</label>
+                <input value={newCompany.primary_email} onChange={e => setNewCompany({ ...newCompany, primary_email: e.target.value })} placeholder="email@company.ae" type="email" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Contact Phone', 'رقم الهاتف')}</label>
+                <input value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: e.target.value })} placeholder="+971 5X XXX XXXX" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
@@ -955,11 +1018,12 @@ const GrowthOperatorDashboard: React.FC = () => {
                 {t('Cancel', 'إلغاء')}
               </button>
               <button
-                onClick={() => setShowOnboardDialog(false)}
-                style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: colors.primary, color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+                onClick={handleRegisterCompany}
+                disabled={isSubmittingCompany}
+                style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: colors.primary, color: '#fff', cursor: isSubmittingCompany ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: isSubmittingCompany ? 0.7 : 1 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Plus size={16} />
+                  {isSubmittingCompany ? <span style={{ width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <Plus size={16} />}
                   {t('Register Company', 'تسجيل الشركة')}
                 </span>
               </button>

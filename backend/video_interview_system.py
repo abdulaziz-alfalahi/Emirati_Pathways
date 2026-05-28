@@ -28,6 +28,7 @@ import hashlib
 import hmac
 import time
 import requests
+from livekit.api import AccessToken, VideoGrants
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -95,9 +96,10 @@ class VideoInterviewEngine:
         else:
             logger.warning("⚠️ DASHSCOPE_API_KEY not found - AI analysis will be disabled")
         
-        # Video service configuration (Agora.io)
-        self.agora_app_id = os.getenv('AGORA_APP_ID', 'demo_app_id')
-        self.agora_app_certificate = os.getenv('AGORA_APP_CERTIFICATE', 'demo_certificate')
+        # Video service configuration (LiveKit)
+        self.livekit_url = os.getenv('LIVEKIT_URL', 'ws://localhost:7880')
+        self.livekit_api_key = os.getenv('LIVEKIT_API_KEY', 'devkey')
+        self.livekit_api_secret = os.getenv('LIVEKIT_API_SECRET', 'secret')
         
         # Storage configuration
         self.video_storage_bucket = os.getenv('VIDEO_STORAGE_BUCKET', 'emirati-interviews')
@@ -112,39 +114,22 @@ class VideoInterviewEngine:
         """Get database connection"""
         return psycopg2.connect(**self.db_config)
 
-    def generate_agora_token(self, channel_name: str, user_id: str, role: str = 'publisher') -> str:
-        """Generate Agora RTC token for video session"""
+    def generate_livekit_token(self, room_name: str, participant_identity: str, participant_name: str) -> str:
+        """Generate LiveKit JWT token for video session"""
         try:
-            # Token expiration time (24 hours)
-            expiration_time = int(time.time()) + 24 * 3600
-            
-            # This is a simplified token generation
-            # In production, use Agora's official token generation service
-            token_data = {
-                'app_id': self.agora_app_id,
-                'channel': channel_name,
-                'user_id': user_id,
-                'role': role,
-                'expires': expiration_time
-            }
-            
-            # Create HMAC signature
-            message = f"{self.agora_app_id}{channel_name}{user_id}{expiration_time}"
-            signature = hmac.new(
-                self.agora_app_certificate.encode(),
-                message.encode(),
-                hashlib.sha256
-            ).hexdigest()
-            
-            # Encode token
-            token = base64.b64encode(
-                json.dumps({**token_data, 'signature': signature}).encode()
-            ).decode()
-            
-            return token
-            
+            grant = VideoGrants(room_join=True, room=room_name)
+            access_token = AccessToken(
+                self.livekit_api_key, 
+                self.livekit_api_secret
+            )
+            access_token.with_identity(participant_identity)
+            access_token.with_name(participant_name)
+            access_token.with_grants(grant)
+            # Add 24-hour expiration equivalent (TTL)
+            access_token.with_ttl(timedelta(hours=24))
+            return access_token.to_jwt()
         except Exception as e:
-            logger.error(f"Error generating Agora token: {e}")
+            logger.error(f"Error generating LiveKit token: {e}")
             return "demo_token"
 
 # REMOVED: schedule_interview was dead code — shadowed by
@@ -175,12 +160,14 @@ class VideoInterviewEngine:
                         """, (InterviewStatus.IN_PROGRESS.value, datetime.now(), session_id))
                         conn.commit()
                     
-                    # Generate Agora tokens
-                    interviewer_token = self.generate_agora_token(
-                        session['room_id'], session['interviewer_id'], 'publisher'
+                    # Generate LiveKit tokens
+                    # We pass the user_id as identity, but we don't have the user name easily here. 
+                    # We'll use role+id as name, or let the frontend pass it.
+                    interviewer_token = self.generate_livekit_token(
+                        session['room_id'], session['interviewer_id'], "Interviewer"
                     )
-                    candidate_token = self.generate_agora_token(
-                        session['room_id'], session['candidate_id'], 'publisher'
+                    candidate_token = self.generate_livekit_token(
+                        session['room_id'], session['candidate_id'], "Candidate"
                     )
                     
                     # Determine user role and token
@@ -190,7 +177,7 @@ class VideoInterviewEngine:
                     return {
                         'session_id': session_id,
                         'room_id': session['room_id'],
-                        'app_id': self.agora_app_id,
+                        'livekit_url': self.livekit_url,
                         'token': user_token,
                         'user_id': user_id,
                         'user_role': user_role,

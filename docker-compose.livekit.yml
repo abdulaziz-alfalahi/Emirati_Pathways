@@ -5,11 +5,7 @@
 #   livekit-server  — WebRTC SFU (:7880)
 #   livekit-egress  — Headless Chrome recorder → S3
 #   minio           — S3-compatible encrypted object storage (:9000/:9001)
-#   agent-worker    — LiveKit Agent + Granite ASR (:8002)
-#   egress-webhook  — Recording lifecycle webhook receiver (:8003)
-#
-# Usage:
-#   docker compose -f docker-compose.livekit.yml up -d
+#   agent-worker    — AI Transcription Python Bridge
 # =============================================================================
 
 services:
@@ -54,6 +50,22 @@ services:
     cap_add:
       - SYS_ADMIN   # Required for headless Chrome
 
+  # ─── LiveKit Agent Worker (AI Transcription) ────────────────────────
+  agent-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - LIVEKIT_URL=ws://livekit-server:7880
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=secret
+      - GRANITE_SPEECH_URL=http://10.228.145.194:8001/v1
+    depends_on:
+      - livekit-server
+    restart: unless-stopped
+    networks:
+      - lk-net
+
   # ─── MinIO (S3-Compatible Object Storage) ───────────────────────────
   minio:
     image: minio/minio:latest
@@ -92,59 +104,6 @@ services:
       mc encrypt set sse-s3 local/interview-recordings;
       echo 'Bucket ready with SSE-S3 encryption';
       "
-    networks:
-      - lk-net
-
-  # ─── Agent Worker (Granite ASR) ─────────────────────────────────────
-  agent-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.agent
-    ports:
-      - "8002:8002"
-    environment:
-      - LIVEKIT_URL=ws://livekit-server:7880
-      - LIVEKIT_API_KEY=devkey
-      - LIVEKIT_API_SECRET=secret
-      - GRANITE_SPEECH_URL=http://localhost:8001  # Granite sidecar
-      - S3_ENDPOINT=http://minio:9000
-      - S3_BUCKET=interview-recordings
-      - S3_ACCESS_KEY=minioadmin
-      - S3_SECRET_KEY=minioadmin123
-      - DATABASE_URL=postgresql://emirati_user:emirati_secure_password@host.docker.internal:5432/emirati_journey
-      - WEBHOOK_URL=http://egress-webhook:8003/webhook/egress
-    depends_on:
-      - livekit-server
-      - minio
-    restart: unless-stopped
-    networks:
-      - lk-net
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  # ─── Egress Webhook Receiver ────────────────────────────────────────
-  egress-webhook:
-    build:
-      context: .
-      dockerfile: Dockerfile.webhook
-    ports:
-      - "8003:8003"
-    environment:
-      - LIVEKIT_API_KEY=devkey
-      - LIVEKIT_API_SECRET=secret
-      - DATABASE_URL=postgresql://emirati_user:emirati_secure_password@host.docker.internal:5432/emirati_journey
-      - S3_ENDPOINT=http://minio:9000
-      - S3_BUCKET=interview-recordings
-      - S3_ACCESS_KEY=minioadmin
-      - S3_SECRET_KEY=minioadmin123
-    depends_on:
-      - livekit-server
-    restart: unless-stopped
     networks:
       - lk-net
 

@@ -97,20 +97,52 @@ class AdministratorSystem:
             logger.error(f"Failed to connect to database: {str(e)}")
             raise
     
-    def _execute_query(self, query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:
-        """Execute database query with error handling"""
+    def _ensure_connection(self):
+        """Ensure database connection is alive, reconnect if stale"""
         try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, params)
-                if fetch:
-                    return [dict(row) for row in cursor.fetchall()]
+            if self.connection and not self.connection.closed:
+                # Quick check — a lightweight query to verify the connection
+                with self.connection.cursor() as cur:
+                    cur.execute("SELECT 1")
+                return  # Connection is alive
+        except Exception:
+            logger.warning("Database connection is stale, reconnecting...")
+        # Reconnect
+        try:
+            if self.connection and not self.connection.closed:
+                self.connection.close()
+        except Exception:
+            pass
+        self._connect_to_database()
+
+    def _execute_query(self, query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:
+        """Execute database query with error handling and auto-reconnect"""
+        for attempt in range(2):
+            try:
+                self._ensure_connection()
+                with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                    cursor.execute(query, params)
+                    if fetch:
+                        return [dict(row) for row in cursor.fetchall()]
+                    else:
+                        self.connection.commit()
+                        return []
+            except Exception as e:
+                try:
+                    self.connection.rollback()
+                except Exception:
+                    pass
+                if attempt == 0:
+                    logger.warning(f"Database query failed (attempt 1), reconnecting: {str(e)}")
+                    try:
+                        if self.connection and not self.connection.closed:
+                            self.connection.close()
+                    except Exception:
+                        pass
+                    self._connect_to_database()
                 else:
-                    self.connection.commit()
-                    return []
-        except Exception as e:
-            self.connection.rollback()
-            logger.error(f"Database query failed: {str(e)}")
-            raise
+                    logger.error(f"Database query failed after reconnect: {str(e)}")
+                    raise
     
     def _log_admin_action(self, user_id: int, action: str, resource_type: str, 
                          resource_id: str = None, details: Dict = None, 

@@ -104,3 +104,6 @@ cachetools==5.3.3
 
 redis>=4.5.0
 sqlalchemy>=1.4.0
+
+# LiveKit SFU Integration
+livekit-api>=0.8.0

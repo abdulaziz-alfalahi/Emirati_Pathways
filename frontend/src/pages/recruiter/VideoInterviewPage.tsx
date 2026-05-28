@@ -89,7 +89,7 @@ const AIAnalysisSidebar: React.FC<{ sessionId: string }> = ({ sessionId }) => {
         recognition.onerror = (event: any) => {
             if (event.error === 'not-allowed') {
                 console.warn('🎙️ Microphone access denied');
-                setSttSupported(false);
+                // We don't disable STT entirely because LiveKit Granite ASR might still work from the backend side
                 stoppedRef.current = true; // Don't retry
             } else if (event.error === 'aborted') {
                 // Silently handle — often caused by component re-mount or mic conflict
@@ -457,6 +457,30 @@ const VideoInterviewPage = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
+    
+    // LiveKit State
+    const [livekitDetails, setLivekitDetails] = useState<{ url: string, token: string } | null>(null);
+
+    useEffect(() => {
+        const fetchLiveKitDetails = async () => {
+            try {
+                // The start API now returns livekit_url and token
+                const response = await restClient.post(`/api/video-interview/sessions/${sessionId}/start`);
+                if (response.data && response.data.token) {
+                    setLivekitDetails({
+                        url: response.data.livekit_url,
+                        token: response.data.token
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to start session and fetch LiveKit details", err);
+            }
+        };
+        
+        if (sessionId) {
+            fetchLiveKitDetails();
+        }
+    }, [sessionId]);
 
     const handleEndSession = () => {
         const role = user?.role || user?.user_type || '';
@@ -498,6 +522,8 @@ const VideoInterviewPage = () => {
                         userName={user?.username || user?.first_name || 'User'}
                         onEndCall={handleEndSession}
                         isRecruiter={user?.role === 'recruiter'}
+                        livekitUrl={livekitDetails?.url}
+                        token={livekitDetails?.token}
                     />
                 </div>
 

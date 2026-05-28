@@ -301,9 +301,15 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                         user?.user_type,
                         ...(user?.secondary_roles || [])
                       ].filter(Boolean);
-                      const uniqueRoles = Array.from(new Set(
+                      let uniqueRoles = Array.from(new Set(
                         rawRoles.map(r => normalizeRole(r as string))
                       )).filter(Boolean) as string[];
+
+                      // Filter out the generic 'growth_operator' role if the user has specific domain roles
+                      const hasSpecificGoRole = uniqueRoles.some(r => r !== 'growth_operator' && r.startsWith('growth_operator_'));
+                      if (hasSpecificGoRole) {
+                        uniqueRoles = uniqueRoles.filter(r => r !== 'growth_operator');
+                      }
                       const hasMultipleRoles = uniqueRoles.length > 1;
 
                       return (
@@ -409,7 +415,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                         {group.items.map((item) => (
                           <Link
                             key={item.name}
-                            to={item.href}
+                            to={item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href}
                             className="flex flex-row items-start gap-3 p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group"
                           >
                             <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
@@ -469,7 +475,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     {group.items.slice(0, 4).map((item) => (
                       <Link
                         key={item.name}
-                        to={item.href}
+                        to={item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href}
                         className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#6B7280] hover:text-[#006E6D] transition-colors py-1`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
