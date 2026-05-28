@@ -1,6 +1,6 @@
 """
 AI Intelligence Routes for Emirati Journey Platform Assessment System
-API endpoints for Gemini 2.5 Pro powered assessment intelligence
+API endpoints for AI Engine powered assessment intelligence
 """
 
 from flask import Blueprint, request, jsonify, current_app
@@ -46,7 +46,7 @@ def health_check():
         stats = ai_assessment_intelligence.get_intelligence_stats()
         return jsonify({
             'status': 'operational',
-            'ai_model': 'Gemini 2.5 Pro',
+            'ai_model': 'AI Engine',
             'system_health': stats['system_health'],
             'model_status': stats['model_status'],
             'processing_stats': stats['processing_stats'],
@@ -64,7 +64,7 @@ def health_check():
 @ai_intelligence_bp.route('/generate-questions', methods=['POST'])
 @token_required
 def generate_intelligent_questions(current_user):
-    """Generate intelligent questions using Gemini 2.5 Pro"""
+    """Generate intelligent questions using AI Engine"""
     try:
         data = request.get_json()
         

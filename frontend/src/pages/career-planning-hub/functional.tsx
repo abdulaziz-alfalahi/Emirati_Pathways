@@ -721,7 +721,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
           )}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: brand.primary, fontWeight: 600 }}>
-          <CheckCircle style={{ width: 16, height: 16 }} /> {t('Powered by Gemini 2.5 Pro', 'مدعوم بـ Gemini 2.5 Pro')}
+          <CheckCircle style={{ width: 16, height: 16 }} /> {t('Powered by AI', 'مدعوم بالذكاء الاصطناعي')}
         </div>
       </div>
     </div>

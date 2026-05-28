@@ -311,10 +311,10 @@ const OurMission: React.FC = () => {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">D</span>
+                                <span className="text-white font-bold text-sm">E</span>
                             </div>
                             <span className="text-sm font-medium text-slate-300">
-                                {t('Dubai Human Development Platform', 'منصة تنمية الموارد البشرية في دبي')}
+                                {t('Emirati Human Development Platform', 'منصة تنمية الموارد البشرية الإماراتية')}
                             </span>
                         </div>
                         <div className="flex items-center gap-6 text-xs text-slate-400">
@@ -325,7 +325,7 @@ const OurMission: React.FC = () => {
                     </div>
                     <div className="border-t border-slate-800 mt-6 pt-6 text-center">
                         <p className="text-xs text-slate-500">
-                            © 2024 {t('Dubai Human Development Platform. All rights reserved.', 'منصة تنمية الموارد البشرية في دبي. جميع الحقوق محفوظة.')}
+                            © 2024 {t('Emirati Human Development Platform. All rights reserved.', 'منصة تنمية الموارد البشرية الإماراتية. جميع الحقوق محفوظة.')}
                         </p>
                     </div>
                 </div>

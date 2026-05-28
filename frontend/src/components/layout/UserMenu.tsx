@@ -191,9 +191,15 @@ const UserMenu: React.FC = () => {
           ].filter(Boolean);
 
           // Normalize and deduplicate
-          const uniqueRoles = Array.from(new Set(
+          let uniqueRoles = Array.from(new Set(
             rawRoles.map(r => normalizeRole(r as string))
           )).filter(Boolean);
+
+          // Filter out the generic 'growth_operator' role if the user has specific domain roles
+          const hasSpecificGoRole = uniqueRoles.some(r => typeof r === 'string' && r !== 'growth_operator' && r.startsWith('growth_operator_'));
+          if (hasSpecificGoRole) {
+            uniqueRoles = uniqueRoles.filter(r => r !== 'growth_operator');
+          }
 
           // Only show switch role section if there's more than one role
           // OR if the user has secondary_roles property (legacy compatibility)

@@ -193,7 +193,7 @@ interface Domain {
 }
 
 interface GrowthOperator {
-  id: number;
+  id: string;
   username: string;
   email: string;
   full_name: string;
@@ -230,7 +230,7 @@ interface DomainStats {
 
 interface DragState {
   isDragging: boolean;
-  operatorId: number | null;
+  operatorId: string | null;
   sourceElement: HTMLElement | null;
 }
 
@@ -253,7 +253,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const [showOperatorDetailModal, setShowOperatorDetailModal] = useState(false);
   const [selectedOperator, setSelectedOperator] = useState<GrowthOperator | null>(null);
-  const [selectedOperators, setSelectedOperators] = useState<number[]>([]);
+  const [selectedOperators, setSelectedOperators] = useState<string[]>([]);
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [primaryDomain, setPrimaryDomain] = useState<string>('');
   const [assignmentNotes, setAssignmentNotes] = useState('');
@@ -292,13 +292,17 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
       const response = await restClient.get('/api/admin/growth-operators', {
         params: { domain: filterDomain || undefined, status: filterStatus || undefined }
       });
+      console.log('[DEBUG loadOperators] response.status:', response.status);
+      console.log('[DEBUG loadOperators] response.data:', JSON.stringify(response.data).substring(0, 500));
+      console.log('[DEBUG loadOperators] response.data?.data?.operators:', response.data?.data?.operators);
       if (response.data?.data?.operators) {
+        console.log('[DEBUG loadOperators] Setting operators count:', response.data.data.operators.length);
         setOperators(response.data.data.operators);
       } else {
         // Mock data for development
         setOperators([
           {
-            id: 1,
+            id: '1',
             username: 'ahmed.operator',
             email: 'ahmed@emiratipathways.ae',
             full_name: 'Ahmed Al Maktoum',
@@ -315,7 +319,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
             performance: { tasksCompleted: 156, avgResponseTime: '2.5h', rating: 4.8 }
           },
           {
-            id: 2,
+            id: '2',
             username: 'fatima.operator',
             email: 'fatima@emiratipathways.ae',
             full_name: 'Fatima Al Nahyan',
@@ -332,7 +336,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
             performance: { tasksCompleted: 203, avgResponseTime: '1.8h', rating: 4.9 }
           },
           {
-            id: 3,
+            id: '3',
             username: 'mohammed.operator',
             email: 'mohammed@emiratipathways.ae',
             full_name: 'Mohammed Al Qasimi',
@@ -348,7 +352,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
             performance: { tasksCompleted: 89, avgResponseTime: '3.2h', rating: 4.5 }
           },
           {
-            id: 4,
+            id: '4',
             username: 'sara.operator',
             email: 'sara@emiratipathways.ae',
             full_name: 'Sara Al Falasi',
@@ -364,7 +368,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
             performance: { tasksCompleted: 124, avgResponseTime: '2.1h', rating: 4.7 }
           },
           {
-            id: 5,
+            id: '5',
             username: 'khalid.operator',
             email: 'khalid@emiratipathways.ae',
             full_name: 'Khalid Al Mazrouei',
@@ -379,7 +383,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
           }
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[DEBUG loadOperators] CATCH ERROR:', error?.message, error?.response?.status, error?.response?.data);
       console.error('Failed to load operators:', error);
       setOperators([]);
     }
@@ -431,8 +436,8 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
   };
 
   // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, operatorId: number) => {
-    e.dataTransfer.setData('operatorId', operatorId.toString());
+  const handleDragStart = (e: React.DragEvent, operatorId: string) => {
+    e.dataTransfer.setData('operatorId', String(operatorId));
     e.dataTransfer.effectAllowed = 'move';
     setDragState({
       isDragging: true,
@@ -462,7 +467,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
 
   const handleDrop = async (e: React.DragEvent, targetDomain: string) => {
     e.preventDefault();
-    const operatorId = parseInt(e.dataTransfer.getData('operatorId'));
+    const operatorId = e.dataTransfer.getData('operatorId');
 
     if (operatorId && targetDomain) {
       await assignOperatorToDomain(operatorId, targetDomain);
@@ -476,9 +481,9 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
     });
   };
 
-  const assignOperatorToDomain = async (operatorId: number, domain: string) => {
+  const assignOperatorToDomain = async (operatorId: string, domain: string) => {
     try {
-      const operator = operators.find(op => op.id === operatorId);
+      const operator = operators.find(op => String(op.id) === String(operatorId));
       if (!operator) return;
 
       const newDomains = operator.domains.includes(domain)
@@ -496,7 +501,7 @@ const GrowthOperatorManagerEnhanced: React.FC = () => {
     }
   };
 
-  const removeOperatorFromDomain = async (operatorId: number, domain: string) => {
+  const removeOperatorFromDomain = async (operatorId: string, domain: string) => {
     try {
       await restClient.delete(`/api/admin/growth-operators/${operatorId}/domains/${domain}`);
       await loadData();

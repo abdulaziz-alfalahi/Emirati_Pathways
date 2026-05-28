@@ -545,7 +545,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
               {aiMatching && (
                 <Badge className="bg-purple-100 text-purple-800">
                   <Sparkles className="h-3 w-3" style={{ marginInlineEnd: 4 }} />
-                  {t('AI-Powered (Gemini)', 'مدعوم بالذكاء الاصطناعي (Gemini)')}
+                  {t('AI-Powered', 'مدعوم بالذكاء الاصطناعي')}
                 </Badge>
               )}
               {userLocation.lat && (

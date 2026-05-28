@@ -307,7 +307,7 @@ def get_matching_analytics():
             'total_mentors_available': len(mentor_system.get_available_mentors()),
             'total_mentors_registered': len(mentor_system.get_all_mentors()),
             'matching_engine_version': '1.0.0',
-            'ai_model': 'Gemini 2.5 Pro',
+            'ai_model': 'AI Engine',
             'cultural_intelligence_enabled': True,
             'emiratization_support_enabled': True
         }

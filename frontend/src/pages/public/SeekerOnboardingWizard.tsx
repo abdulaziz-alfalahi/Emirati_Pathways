@@ -261,7 +261,7 @@ const SeekerOnboardingWizard: React.FC = () => {
             }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>🇦🇪</div>
                 <h1 style={{ color: '#fff', fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: 0.3 }}>
-                    Dubai Human Development Platform
+                    Emirati Human Development Platform
                 </h1>
                 <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, margin: '6px 0 0', fontWeight: 400 }}>
                     UAE Nationals Career Development
@@ -312,7 +312,7 @@ const SeekerOnboardingWizard: React.FC = () => {
                     </div>
                     <h2 style={{ color: colors.text, textAlign: 'center', marginBottom: 8 }}>Registration Complete!</h2>
                     <p style={{ color: colors.textSec, textAlign: 'center', marginBottom: 8 }}>
-                        Welcome to the Dubai Human Development Platform, <strong>{seekerData?.full_name}</strong>.
+                        Welcome to the Emirati Human Development Platform, <strong>{seekerData?.full_name}</strong>.
                     </p>
                     <p style={{ color: colors.textSec, textAlign: 'center', marginBottom: 24, fontSize: 14 }}>
                         Your candidate profile has been created. You can now explore job opportunities and build your career pathway.

@@ -1,5 +1,5 @@
 /**
- * Enhanced Authentication Components for Dubai Human Development Platform
+ * Enhanced Authentication Components for Emirati Human Development Platform
  * UAE-specific features and production-ready security
  */
 
@@ -109,7 +109,7 @@ export const LoginForm: React.FC = () => {
 
     setLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -159,7 +159,7 @@ export const LoginForm: React.FC = () => {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Welcome back to Dubai Human Development Platform
+            Welcome back to Emirati Human Development Platform
           </p>
         </div>
 
@@ -395,7 +395,7 @@ export const RegistrationForm: React.FC = () => {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Join the Dubai Human Development Platform
+            Join the Emirati Human Development Platform
           </p>
         </div>
 

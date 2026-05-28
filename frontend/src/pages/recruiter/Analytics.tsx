@@ -8,7 +8,7 @@ import { KeyInsights } from '@/components/recruiter/analytics/KeyInsights';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+const API = (p: string) => `${p}`;
 
 export default function RecruiterAnalyticsPage() {
   const navigate = useNavigate();

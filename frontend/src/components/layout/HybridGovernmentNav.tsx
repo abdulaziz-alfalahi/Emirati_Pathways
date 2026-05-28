@@ -22,25 +22,26 @@ const HybridGovernmentNav: React.FC<HybridGovernmentNavProps> = ({
       {/* Main Government Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-24">
             {/* Government Logos Section */}
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-4">
                 <img
                   src="/dubai-gov-logo.jpg"
                   alt="Government of Dubai"
-                  className="h-14 w-auto"
+                  className="h-20 w-auto"
                 />
-                <div className="w-px h-12 bg-slate-300"></div>
+                <div className="w-px h-16 bg-slate-300"></div>
                 <img
                   src="/ehrdc-logo.png"
                   alt="EHRDC Logo"
-                  className="h-12 w-auto"
+                  className="h-18 w-auto"
+                  style={{ height: '4.5rem' }}
                 />
               </div>
               <div className="hidden md:block">
                 <Link to="/" className="hover:opacity-80 transition-opacity">
-                  <h1 className="text-xl font-bold text-slate-900">Dubai Human Development Platform</h1>
+                  <h1 className="text-2xl font-bold text-slate-900">Emirati Human Development Platform</h1>
                   <p className="text-sm text-slate-600">UAE Nationals Career Development</p>
                 </Link>
               </div>

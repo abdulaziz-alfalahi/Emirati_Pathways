@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import VideoInterviewRoom from '@/components/recruiter/interviews/VideoInterviewRoom';
 import { restClient } from '@/utils/api';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+const API = (p: string) => `${p}`;
 
 export default function InterviewSchedulerPage() {
   const { toast } = useToast();

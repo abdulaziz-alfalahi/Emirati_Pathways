@@ -217,7 +217,7 @@ const CompanyOnboardingWizard: React.FC = () => {
                     fontSize: 28, fontWeight: 800, margin: 0,
                     background: colors.primaryGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                 }}>
-                    Dubai Human Development Platform
+                    Emirati Human Development Platform
                 </h1>
                 <p style={{ color: colors.textSecondary, fontSize: 14, marginTop: 6 }}>Company Onboarding</p>
             </div>
@@ -275,7 +275,7 @@ const CompanyOnboardingWizard: React.FC = () => {
                                     Welcome, {invitation.company_name}!
                                 </h2>
                                 <p style={{ fontSize: 14, color: colors.textSecondary, margin: '4px 0 0' }}>
-                                    You've been invited to join Dubai Human Development Platform
+                                    You've been invited to join Emirati Human Development Platform
                                 </p>
                             </div>
                         </div>

@@ -97,20 +97,52 @@ class AdministratorSystem:
             logger.error(f"Failed to connect to database: {str(e)}")
             raise
     
-    def _execute_query(self, query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:
-        """Execute database query with error handling"""
+    def _ensure_connection(self):
+        """Ensure database connection is alive, reconnect if stale"""
         try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(query, params)
-                if fetch:
-                    return [dict(row) for row in cursor.fetchall()]
+            if self.connection and not self.connection.closed:
+                # Quick check — a lightweight query to verify the connection
+                with self.connection.cursor() as cur:
+                    cur.execute("SELECT 1")
+                return  # Connection is alive
+        except Exception:
+            logger.warning("Database connection is stale, reconnecting...")
+        # Reconnect
+        try:
+            if self.connection and not self.connection.closed:
+                self.connection.close()
+        except Exception:
+            pass
+        self._connect_to_database()
+
+    def _execute_query(self, query: str, params: tuple = None, fetch: bool = True) -> List[Dict]:
+        """Execute database query with error handling and auto-reconnect"""
+        for attempt in range(2):
+            try:
+                self._ensure_connection()
+                with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                    cursor.execute(query, params)
+                    if fetch:
+                        return [dict(row) for row in cursor.fetchall()]
+                    else:
+                        self.connection.commit()
+                        return []
+            except Exception as e:
+                try:
+                    self.connection.rollback()
+                except Exception:
+                    pass
+                if attempt == 0:
+                    logger.warning(f"Database query failed (attempt 1), reconnecting: {str(e)}")
+                    try:
+                        if self.connection and not self.connection.closed:
+                            self.connection.close()
+                    except Exception:
+                        pass
+                    self._connect_to_database()
                 else:
-                    self.connection.commit()
-                    return []
-        except Exception as e:
-            self.connection.rollback()
-            logger.error(f"Database query failed: {str(e)}")
-            raise
+                    logger.error(f"Database query failed after reconnect: {str(e)}")
+                    raise
     
     def _log_admin_action(self, user_id: int, action: str, resource_type: str, 
                          resource_id: str = None, details: Dict = None, 
@@ -545,21 +577,38 @@ class AdministratorSystem:
             raise
     
     def update_user_roles(self, user_id: int, roles: List[str], admin_user_id: int) -> bool:
-        """Update user roles"""
+        """Update user roles — preserves the user's original role alongside new ones"""
         try:
             # Check user exists
             current_user = self.get_user_details(user_id)
             if not current_user:
                 raise Exception("User not found")
 
-            # Update the primary role on the users table (first role becomes primary)
-            primary_role = roles[0] if roles else 'job_seeker'
+            # Preserve the user's original/current role so they can switch back
+            original_role = current_user.get('role')
+            existing_secondary = current_user.get('secondary_roles') or []
+            # Flatten existing secondary_roles (may be JSONB list or None)
+            if isinstance(existing_secondary, str):
+                try:
+                    existing_secondary = json.loads(existing_secondary)
+                except Exception:
+                    existing_secondary = [existing_secondary]
+            
+            # Build merged role set: new roles + original role + existing secondary roles
+            all_roles = list(dict.fromkeys(
+                roles + ([original_role] if original_role else []) + 
+                [r for r in existing_secondary if r]
+            ))  # dict.fromkeys preserves order and deduplicates
+            
+            # The first role in the requested list becomes primary
+            primary_role = roles[0] if roles else original_role or 'job_seeker'
+            
             update_role_query = """
                 UPDATE users 
-                SET role = %s, secondary_roles = %s, updated_at = CURRENT_TIMESTAMP
+                SET role = %s, secondary_roles = %s::jsonb, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
             """
-            self._execute_query(update_role_query, (primary_role, roles, user_id), fetch=False)
+            self._execute_query(update_role_query, (primary_role, json.dumps(all_roles), user_id), fetch=False)
             
             # Also try to sync with admin_user_roles join table (best-effort)
             try:

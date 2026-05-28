@@ -361,28 +361,37 @@ class InterviewSchedulingEngine:
             metadata
         ))
         
-        # Update candidate status in shortlist
-        cur.execute("""
-            UPDATE candidate_shortlist
-            SET status = 'interview_scheduled',
-                updated_at = CURRENT_TIMESTAMP
-            WHERE shortlist_id = %s
-        """, (data['shortlist_id'],))
+        # Update candidate status in shortlist (use SAVEPOINT so failure doesn't poison the transaction)
+        try:
+            cur.execute("SAVEPOINT pre_shortlist_update")
+            cur.execute("""
+                UPDATE candidate_shortlist
+                SET status = 'interview_scheduled',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE shortlist_id = %s
+            """, (data['shortlist_id'],))
+            cur.execute("RELEASE SAVEPOINT pre_shortlist_update")
+        except Exception as e:
+            self.logger.warning(f"Could not update candidate_shortlist status: {e}")
+            cur.execute("ROLLBACK TO SAVEPOINT pre_shortlist_update")
         
         # Also update job_applications status to 'interview' so it shows in candidate's Application Tracker
+        # CRITICAL: Use SAVEPOINT because a type mismatch here will poison the entire transaction
+        # in PostgreSQL/psycopg2, causing conn.commit() to silently roll back everything
         try:
-            # jd_id maps to job_postings.jd_id; job_applications.job_id references job_postings.id
-            # Use ::text cast because candidate_id types differ between tables
+            cur.execute("SAVEPOINT pre_app_update")
             cur.execute("""
                 UPDATE job_applications
                 SET status = 'interview'
-                WHERE candidate_id::text = %s::text
-                  AND job_id IN (SELECT id FROM job_postings WHERE jd_id = %s)
+                WHERE candidate_id::text = %s
+                  AND job_id::text IN (SELECT id::text FROM job_postings WHERE jd_id::text = %s)
                   AND status NOT IN ('withdrawn', 'rejected', 'interview')
-            """, (str(candidate_id), jd_id))
+            """, (str(candidate_id), str(jd_id)))
             self.logger.info(f"Updated job_applications status to 'interview' for candidate {candidate_id}, jd_id {jd_id}")
+            cur.execute("RELEASE SAVEPOINT pre_app_update")
         except Exception as e:
             self.logger.warning(f"Could not update job_applications status: {e}")
+            cur.execute("ROLLBACK TO SAVEPOINT pre_app_update")
         
         conn.commit()
 

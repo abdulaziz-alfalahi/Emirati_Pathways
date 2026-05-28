@@ -10,7 +10,7 @@ import {
   ProgramCategory
 } from '../types/schoolPrograms';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://127.0.0.1:5005/api');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : '/api');
 
 // Mock data for Dubai school programs
 const mockPrograms: SchoolProgram[] = [

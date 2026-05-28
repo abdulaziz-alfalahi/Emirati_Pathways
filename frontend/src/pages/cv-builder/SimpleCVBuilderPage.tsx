@@ -104,7 +104,7 @@ const SimpleCVBuilderPage: React.FC = () => {
       const formData = new FormData();
       formData.append('cv_file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5005'}/api/cv/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/cv/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`
@@ -149,14 +149,14 @@ const SimpleCVBuilderPage: React.FC = () => {
               AI-Powered CV Builder
             </h1>
             <p className="text-xl mb-8 max-w-3xl mx-auto">
-              Create professional CVs tailored for the UAE job market with Gemini AI analysis
+              Create professional CVs tailored for the UAE job market with AI analysis
             </p>
             <div className="flex justify-center space-x-4">
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
                 <span className="font-medium">🇦🇪 UAE Focused</span>
               </div>
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-                <span className="font-medium">🤖 Gemini AI</span>
+                <span className="font-medium">🤖 AI-Powered</span>
               </div>
               <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
                 <span className="font-medium">🌟 D33 Aligned</span>
@@ -237,7 +237,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                     />
 
                     <p className="text-sm text-gray-500">
-                      Maximum file size: 10MB • Powered by Gemini AI
+                      Maximum file size: 10MB • Powered by AI
                     </p>
                   </div>
                 )}
@@ -418,7 +418,7 @@ const SimpleCVBuilderPage: React.FC = () => {
                 AI-Powered Analysis
               </h3>
               <p className="text-gray-600">
-                Advanced Gemini AI extracts and analyzes your experience, skills, and achievements
+                Advanced AI extracts and analyzes your experience, skills, and achievements
               </p>
             </div>
 

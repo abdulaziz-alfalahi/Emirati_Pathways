@@ -55,7 +55,7 @@ PROVIDER_TEMPLATES = {
     },
     'google-gemini': {
         'id': 'google-gemini',
-        'name': 'Google Gemini 2.5',
+        'name': 'Google AI Engine',
         'category': 'LLM',
         'description': 'Advanced multimodal AI with superior reasoning capabilities',
         'endpoint': 'https://generativelanguage.googleapis.com/v1beta',

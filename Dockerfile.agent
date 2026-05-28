@@ -1,0 +1,16 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Set proxy so pip can reach the internet
+ENV HTTP_PROXY="http://10.61.192.2:8080/"
+ENV HTTPS_PROXY="http://10.61.192.2:8080/"
+
+# Install dependencies required by the agent
+RUN pip install --no-cache-dir livekit-agents livekit-plugins-openai
+
+# Copy the agent script
+COPY backend/agent.py /app/agent.py
+
+# Run the agent worker
+CMD ["python", "agent.py", "start"]

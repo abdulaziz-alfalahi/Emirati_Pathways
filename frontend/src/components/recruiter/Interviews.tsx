@@ -56,7 +56,8 @@ export default function RecruiterInterviews() {
   const fetchSessions = async () => {
     try {
       // Single endpoint already queries both interview_sessions AND interview_schedules tables
-      const res = await restClient.get('/api/video-interview/sessions?role=recruiter');
+      const userId = user?.id || '';
+      const res = await restClient.get(`/api/video-interview/sessions?role=recruiter&recruiter_id=${userId}`);
       if (res.data?.success) {
         setSessions(res.data.sessions || []);
       }

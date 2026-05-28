@@ -268,7 +268,7 @@ const BilingualHomePage: React.FC = () => {
     {
       icon: Sparkles,
       title: translations.features?.aiIntelligence?.title || 'AI-Powered Intelligence',
-      description: translations.features?.aiIntelligence?.description || 'Advanced Gemini 2.5 Pro integration for personalized career guidance and matching',
+      description: translations.features?.aiIntelligence?.description || 'Advanced AI integration for personalized career guidance and matching',
     },
     {
       icon: Shield,
@@ -404,7 +404,7 @@ const BilingualHomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-dubai-bold text-slate-900 mb-4">
-              {translations.whyChoose?.title || 'Why Choose Dubai Human Development Platform?'}
+              {translations.whyChoose?.title || 'Why Choose Emirati Human Development Platform?'}
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               {translations.whyChoose?.subtitle ||
@@ -584,7 +584,7 @@ const BilingualHomePage: React.FC = () => {
             {/* Platform info */}
             <div className="md:col-span-1">
               <h3 className="text-white font-dubai-bold text-lg mb-4">
-                {currentLanguage === 'ar' ? 'منصة رحلة المورد البشري الإماراتي' : 'Dubai Human Development Platform'}
+                {currentLanguage === 'ar' ? 'منصة رحلة المورد البشري الإماراتي' : 'Emirati Human Development Platform'}
               </h3>
               <p className="text-sm leading-relaxed">
                 {translations.footer?.description ||
@@ -629,7 +629,7 @@ const BilingualHomePage: React.FC = () => {
           {/* Bottom bar */}
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs">
-              {translations.footer?.copyright || '© 2025 Dubai Human Development Platform. All rights reserved.'}
+              {translations.footer?.copyright || '© 2025 Emirati Human Development Platform. All rights reserved.'}
             </p>
             <p className="text-xs text-teal-500">
               {translations.footer?.government || 'A Dubai Government Initiative in partnership with EHRDC'}

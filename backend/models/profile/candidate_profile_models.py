@@ -34,12 +34,17 @@ class CandidateProfile(db.Model):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    experience = relationship('CandidateExperience', backref='profile', cascade="all, delete-orphan")
-    education = relationship('CandidateEducation', backref='profile', cascade="all, delete-orphan")
-    skills = relationship('CandidateSkill', backref='profile', cascade="all, delete-orphan")
-    certifications = relationship('CandidateCertification', backref='profile', cascade="all, delete-orphan")
-    assessments = relationship('CandidateAssessment', backref='profile', cascade="all, delete-orphan")
+    # Relationships — post-EID migration, child tables use user_id (CHAR(15)) FK to users.id
+    experience = relationship('CandidateExperience', backref='profile', cascade="all, delete-orphan",
+                              primaryjoin="CandidateProfile.user_id == foreign(CandidateExperience.user_id)")
+    education = relationship('CandidateEducation', backref='profile', cascade="all, delete-orphan",
+                             primaryjoin="CandidateProfile.user_id == foreign(CandidateEducation.user_id)")
+    skills = relationship('CandidateSkill', backref='profile', cascade="all, delete-orphan",
+                          primaryjoin="CandidateProfile.user_id == foreign(CandidateSkill.user_id)")
+    certifications = relationship('CandidateCertification', backref='profile', cascade="all, delete-orphan",
+                                  primaryjoin="CandidateProfile.user_id == foreign(CandidateCertification.user_id)")
+    assessments = relationship('CandidateAssessment', backref='profile', cascade="all, delete-orphan",
+                               primaryjoin="CandidateProfile.user_id == foreign(CandidateAssessment.user_id)")
 
     def to_dict(self):
         try:
@@ -118,7 +123,7 @@ class CandidateExperience(db.Model):
     __tablename__ = 'candidate_experience_entries'
 
     id = Column(Integer, primary_key=True)
-    profile_id = Column(Integer, ForeignKey('candidate_profiles.id'), nullable=False)
+    user_id = Column(String(15), nullable=False)  # EID FK — post-migration
     
     job_title = Column(String(255), nullable=False)
     company = Column(String(255), nullable=False)
@@ -147,7 +152,7 @@ class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education_entries'
 
     id = Column(Integer, primary_key=True)
-    profile_id = Column(Integer, ForeignKey('candidate_profiles.id'), nullable=False)
+    user_id = Column(String(15), nullable=False)  # EID FK — post-migration
     
     institution = Column(String(255), nullable=False)
     degree = Column(String(255), nullable=False)
@@ -181,7 +186,7 @@ class CandidateSkill(db.Model):
     __tablename__ = 'candidate_skills'
 
     id = Column(Integer, primary_key=True)
-    profile_id = Column(Integer, ForeignKey('candidate_profiles.id'), nullable=False)
+    user_id = Column(String(15), nullable=False)  # EID FK — post-migration
     
     name = Column(String(100), nullable=False)
     category = Column(String(50)) # Technical, Soft, Language
@@ -205,7 +210,7 @@ class CandidateCertification(db.Model):
     __tablename__ = 'candidate_certifications'
     
     id = Column(Integer, primary_key=True)
-    profile_id = Column(Integer, ForeignKey('candidate_profiles.id'), nullable=False)
+    user_id = Column(String(15), nullable=False)  # EID FK — post-migration
     
     name = Column(String(255), nullable=False)
     issuing_organization = Column(String(255), nullable=False)
@@ -233,7 +238,7 @@ class CandidateAssessment(db.Model):
     __tablename__ = 'candidate_assessments'
 
     id = Column(Integer, primary_key=True)
-    profile_id = Column(Integer, ForeignKey('candidate_profiles.id'), nullable=False)
+    user_id = Column(String(15), nullable=False)  # EID FK — post-migration
     
     assessment_type = Column(String(50)) # technical, cultural, soft_skills, d33_alignment
     title = Column(String(255))

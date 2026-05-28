@@ -477,6 +477,6 @@ def health_check():
             'Quality Assurance',
             'Predictive Analytics'
         ],
-        'ai_model': 'Gemini 2.5 Pro',
+        'ai_model': 'AI Engine',
         'version': '1.0.0'
     }), 200

@@ -52,9 +52,7 @@ def get_candidate_cv(user_id):
     2. cv_profiles - legacy CV storage
     3. cv_data - another legacy table
     
-    Handles multiple user ID formats:
-    - UUID strings
-    - Integer IDs (converted to UUID using uuid5)
+    Post-EID migration: user_id is CHAR(15) Emirates ID.
     """
     conn = None
     try:
@@ -68,20 +66,8 @@ def get_candidate_cv(user_id):
         # Build list of user IDs to try (handles multiple formats)
         user_ids_to_try = []
         
-        # 1. Try original user_id (as string) - allow integers like '108'
+        # Post-EID migration: user_id is CHAR(15) EID, use as-is
         user_ids_to_try.append(str(user_id))
-        
-        # 2. Convert non-UUID to UUID using uuid5 
-        # (This is a fallback for systems using deterministic UUIDs from ints)
-        try:
-             # Only add if it looks different from original (e.g. if original was '108')
-             # If original was already a UUID, this might produce a 'uuid-from-uuid' which is fine to try as fallback
-             converted_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
-             if converted_uuid not in user_ids_to_try:
-                 user_ids_to_try.append(converted_uuid)
-                 logger.debug(f"Converted user_id '{user_id}' to UUID: {converted_uuid}")
-        except Exception:
-             pass
 
         logger.info(f"Trying user IDs for CV lookup: {user_ids_to_try}")
         
@@ -278,7 +264,7 @@ def get_job_matches():
         
         # Handle mock authentication
         if 'mock_token' in auth_header:
-            user_id = '00000000-0000-0000-0000-000000000001'
+            user_id = '784000000000010'
             raw_user_id = user_id
             normalized_uuid = user_id
         else:
@@ -286,14 +272,8 @@ def get_job_matches():
                 verify_jwt_in_request(optional=True)
                 raw_user_id = str(get_jwt_identity())
                 user_id = raw_user_id
-                
-                if user_id:
-                    # Create normalized UUID for systems that require it
-                    try:
-                        uuidlib.UUID(str(user_id))
-                        normalized_uuid = str(user_id)
-                    except ValueError:
-                        normalized_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(user_id)))
+                # Post-EID migration: identity is CHAR(15) EID, use as-is
+                normalized_uuid = user_id
             except Exception as e:
                 pass
 
@@ -872,7 +852,7 @@ def get_dashboard_stats():
         
         # Handle mock authentication (for development/testing)
         if 'mock_token' in auth_header:
-            user_id = '00000000-0000-0000-0000-000000000001'
+            user_id = '784000000000010'
             raw_user_id = user_id
             logger.info(f"Dashboard stats: Using mock user ID: {user_id}")
         else:
@@ -1010,13 +990,8 @@ def get_dashboard_stats():
                 if user_id and str(user_id) not in user_ids_to_try:
                     user_ids_to_try.append(str(user_id))
                     
-                # Double check if we can make a UUID from raw
-                try:
-                    if raw_user_id:
-                        u_uuid = str(uuidlib.uuid5(uuidlib.NAMESPACE_DNS, str(raw_user_id)))
-                        if u_uuid not in user_ids_to_try:
-                             user_ids_to_try.append(u_uuid)
-                except: pass
+                # Post-EID migration: user_id is CHAR(15) EID, no UUID conversion needed
+                pass
 
                 # Query with ANY of the potential IDs - using TEXT cast to allow matching both int-as-text and uuid-as-text
                 # candidate_profiles.user_id is likely INTEGER based on previous errors.
@@ -1026,7 +1001,7 @@ def get_dashboard_stats():
                 cur.execute("""
                     SELECT profile_photo_url 
                     FROM candidate_profiles 
-                    WHERE user_id::text = ANY(%s)
+                    WHERE user_id = ANY(%s)
                 """, (user_ids_to_try,))
                 
                 p_row = cur.fetchone()

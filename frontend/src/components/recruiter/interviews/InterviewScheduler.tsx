@@ -100,7 +100,7 @@ export const InterviewScheduler: React.FC<InterviewSchedulerProps> = ({
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5005';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
   useEffect(() => {
     fetchInterviews();

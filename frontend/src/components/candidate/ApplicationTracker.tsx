@@ -197,7 +197,9 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
+      case 'submitted':
         return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'under_review':
       case 'reviewed':
       case 'shortlisted':
         return <Eye className="h-4 w-4 text-blue-500" />;
@@ -218,7 +220,9 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
+      case 'submitted':
         return 'bg-yellow-100 text-yellow-800';
+      case 'under_review':
       case 'reviewed':
       case 'shortlisted':
         return 'bg-blue-100 text-blue-800';
@@ -239,7 +243,9 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending':
+      case 'submitted':
         return t('Pending Review', 'قيد المراجعة');
+      case 'under_review':
       case 'reviewed':
         return t('Under Review', 'تحت المراجعة');
       case 'shortlisted':
@@ -261,7 +267,7 @@ const ApplicationTracker: React.FC<ApplicationTrackerProps> = ({ candidateId }) 
 
   const canWithdraw = (status: string) => {
     // Can only withdraw if application is still active (not rejected, withdrawn, or offer accepted)
-    return ['pending', 'reviewed', 'interview'].includes(status);
+    return ['pending', 'submitted', 'under_review', 'reviewed', 'shortlisted', 'interview'].includes(status);
   };
 
   const filterApplications = (status?: string) => {

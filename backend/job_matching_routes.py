@@ -318,6 +318,6 @@ def health_check():
         'service': 'Job Matching API',
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'ai_engine': 'Gemini 2.5 Pro',
+        'ai_engine': 'AI Engine',
         'version': '1.0.0'
     }), 200

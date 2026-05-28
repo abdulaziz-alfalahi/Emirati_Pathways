@@ -9,7 +9,7 @@ import { getAuthToken } from '@/utils/tokenUtils';
 // ── Flask backend API ──
 const API_BASE = (import.meta.env.VITE_API_BASE_URL
   ? `${import.meta.env.VITE_API_BASE_URL}/api/education`
-  : 'http://127.0.0.1:5005/api/education');
+  : '/api/education');
 
 interface ScholarshipFilters {
   providerType?: string[];

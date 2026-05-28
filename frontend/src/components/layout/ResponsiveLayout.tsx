@@ -395,7 +395,7 @@ const TopHeader: React.FC<{
 
         <div className="flex items-center space-x-2">
           <h1 className="text-xl font-bold text-gray-900">
-            {isMobile ? 'DHD Platform' : 'Dubai Human Development Platform'}
+            {isMobile ? 'EHD Platform' : 'Emirati Human Development Platform'}
           </h1>
           {!isMobile && (
             <Badge variant="outline" className="hidden sm:flex">

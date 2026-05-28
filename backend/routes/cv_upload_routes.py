@@ -55,8 +55,8 @@ UPLOAD_FOLDER.mkdir(exist_ok=True)
 import uuid
 def get_normalized_user_id_cv_upload(identity):
     """
-    Normalize user identity to a consistent UUID string.
-    Local implementation to ensure this route works correctly.
+    Normalize user identity to a consistent string.
+    Post-EID migration: JWT identity is CHAR(15) EID, returned as-is.
     """
     if not identity:
         return None
@@ -64,18 +64,7 @@ def get_normalized_user_id_cv_upload(identity):
     if isinstance(identity, dict):
         identity = identity.get('id')
     
-    identity_str = str(identity).strip()
-    
-    # Legacy Integer ID Support
-    if identity_str.isdigit():
-        return identity_str
-    
-    try:
-        # Check if already valid UUID
-        return str(uuid.UUID(identity_str))
-    except ValueError:
-        # If not, hash strictly using DNS namespace
-        return str(uuid.uuid5(uuid.NAMESPACE_DNS, identity_str))
+    return str(identity).strip()
 
 
 def validate_file(file: FileStorage) -> Dict[str, Any]:

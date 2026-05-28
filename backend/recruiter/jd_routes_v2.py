@@ -934,6 +934,25 @@ def add_to_shortlist():
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
+            # Migrate shortlisted_candidates columns from INTEGER to TEXT if needed
+            # (supports UUID-based IDs from modern auth system)
+            try:
+                cursor.execute("""
+                    SELECT data_type FROM information_schema.columns
+                    WHERE table_name = 'shortlisted_candidates' AND column_name = 'candidate_id'
+                """)
+                col_info = cursor.fetchone()
+                if col_info and col_info.get('data_type') == 'integer':
+                    logger.info("Migrating shortlisted_candidates columns to TEXT for UUID support")
+                    cursor.execute("ALTER TABLE shortlisted_candidates ALTER COLUMN candidate_id TYPE TEXT USING candidate_id::text")
+                    cursor.execute("ALTER TABLE shortlisted_candidates ALTER COLUMN hr_user_id TYPE TEXT USING hr_user_id::text")
+                    cursor.execute("ALTER TABLE shortlisted_candidates ALTER COLUMN hr_user_id DROP NOT NULL")
+                    conn.commit()
+                    logger.info("✅ shortlisted_candidates columns migrated to TEXT")
+            except Exception as mig_err:
+                logger.warning(f"Column migration check: {mig_err}")
+                conn.rollback()
+
             # Look up integer job_postings.id from the UUID jd_id
             cursor.execute(
                 "SELECT id FROM job_postings WHERE jd_id = %s",
@@ -944,13 +963,8 @@ def add_to_shortlist():
                 return jsonify({'error': f'Job posting not found for jd_id: {jd_id}'}), 404
             job_id_int = jp_row['id']
 
-            # Resolve recruiter user id (may be string or int)
-            hr_user_id = None
-            if recruiter_id:
-                try:
-                    hr_user_id = int(recruiter_id)
-                except (ValueError, TypeError):
-                    hr_user_id = None
+            # Use string IDs (candidate_id and recruiter_id are UUIDs)
+            hr_user_id = str(recruiter_id) if recruiter_id else None
 
             # Upsert into shortlisted_candidates
             cursor.execute("""
@@ -962,7 +976,7 @@ def add_to_shortlist():
                     status = 'shortlisted',
                     updated_at = CURRENT_TIMESTAMP
                 RETURNING id, job_id, candidate_id, status, created_at
-            """, (job_id_int, int(candidate_id), hr_user_id, notes))
+            """, (job_id_int, str(candidate_id), hr_user_id, notes))
 
             row = dict(cursor.fetchone())
             conn.commit()
@@ -1165,30 +1179,59 @@ def save_jd(jd_id):
         recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id')
         company_id = metadata.get('company_id') or data.get('company_id')
         
-        # If missing, try to lookup from user profile
-        if (not recruiter_id or not company_id) and current_user_id:
+        # CRITICAL: Use JWT identity as authoritative recruiter_id
+        # This ensures RBAC filter (recruiter_id = user_id) always matches
+        if current_user_id:
+            recruiter_id = str(current_user_id)
+        
+        # If company_id is missing or a placeholder, look up from user's profile
+        company_id_placeholder = not company_id or company_id in ('company_default', 'unknown', '')
+        if company_id_placeholder and current_user_id:
              try:
-                # Get company ID for the user
-                cur.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+                # Check multiple sources for company name:
+                # 1. users.company (VARCHAR column)
+                # 2. users.profile_data->>'companyName' (JSONB from Settings)
+                # 3. hr_profiles -> companies (relational)
+                cur.execute("""
+                    SELECT 
+                        u.company,
+                        u.profile_data->>'companyName' as profile_company,
+                        COALESCE(c.company_name, c.name) as hr_company
+                    FROM users u
+                    LEFT JOIN hr_profiles hp ON hp.user_id = u.id
+                    LEFT JOIN companies c ON hp.company_id::text = c.id::text
+                    WHERE u.id = %s
+                """, (current_user_id,))
                 row = cur.fetchone()
-                
-                if not row or not row.get('company_id'):
-                    # Try to find company via job_postings if no profile (fallback)
-                    cur.execute("SELECT company_id FROM job_postings WHERE recruiter_id = %s LIMIT 1", (current_user_id,))
-                    row = cur.fetchone()
-                    
-                if row and row.get('company_id'):
-                     if not company_id:
-                         company_id = row['company_id']
-                     if not recruiter_id:
-                         recruiter_id = current_user_id
-                     logger.info(f"Auto-detected company_id {company_id} for user {current_user_id}")
+                if row:
+                    resolved = (
+                        row.get('company') or 
+                        row.get('profile_company') or 
+                        row.get('hr_company')
+                    )
+                    if resolved:
+                        company_id = str(resolved)
+                        logger.info(f"Auto-detected company '{company_id}' for user {current_user_id}")
              except Exception as e:
-                 logger.error(f"Error looking up company for user {current_user_id}: {e}")
+                 logger.warning(f"Error looking up company for user {current_user_id}: {e}")
+                 try:
+                     conn.rollback()
+                 except:
+                     pass
 
         # Fallback to unknown if still missing
         recruiter_id = recruiter_id or 'unknown'
-        company_id = company_id or 'unknown'
+        company_id = company_id if (company_id and company_id not in ('company_default', 'unknown', '')) else 'unknown'
+        
+        logger.info(f"Save JD {jd_id}: recruiter_id={recruiter_id}, company_id={company_id}, jwt_user={current_user_id}")
+        
+        # Build location string from city + emirate if location not set
+        city = basic_info.get('city')
+        emirate = basic_info.get('emirate')
+        location = basic_info.get('location')
+        if not location:
+            parts = [p for p in [city, emirate] if p]
+            location = ', '.join(parts) if parts else None
         
         # Check if JD already exists
         cur.execute("SELECT id, jd_id FROM job_postings WHERE jd_id = %s", (jd_id,))
@@ -1198,6 +1241,7 @@ def save_jd(jd_id):
         if existing:
             logger.info(f"Found existing JD: id={existing.get('id')}, jd_id={existing.get('jd_id')}")
             # Update existing JD
+            # NOTE: Do NOT set created_by — it's INTEGER (FK to users.id) but JWT IDs are UUIDs
             cur.execute("""
                 UPDATE job_postings SET
                     title = %s,
@@ -1207,6 +1251,7 @@ def save_jd(jd_id):
                     job_level = %s,
                     emirate = %s,
                     city = %s,
+                    location = %s,
                     remote_option = %s,
                     description = %s,
                     description_arabic = %s,
@@ -1217,6 +1262,8 @@ def save_jd(jd_id):
                     application_process = %s,
                     metadata = %s,
                     status = %s,
+                    recruiter_id = %s,
+                    company_id = %s,
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -1228,8 +1275,9 @@ def save_jd(jd_id):
                 basic_info.get('department'),
                 basic_info.get('job_type'),
                 basic_info.get('job_level'),
-                basic_info.get('emirate'),
-                basic_info.get('city'),
+                emirate,
+                city,
+                location,
                 basic_info.get('remote_option', False),
                 jd_data.get('description'),
                 jd_data.get('description_arabic'),
@@ -1240,24 +1288,26 @@ def save_jd(jd_id):
                 json.dumps(jd_data.get('application_process', {})),
                 json.dumps(metadata),
                 status,
+                recruiter_id,
+                company_id,
                 status,
                 jd_id
             ))
-            logger.info(f"Updated JD {jd_id} with status: {status}")
+            logger.info(f"Updated JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
         else:
             logger.info(f"No existing JD found with jd_id: {jd_id}, inserting new record")
-            # Insert new JD
+            # Insert new JD — RBAC uses recruiter_id (VARCHAR), NOT created_by (INTEGER)
             cur.execute("""
                 INSERT INTO job_postings (
                     jd_id, recruiter_id, company_id,
                     title, title_arabic, department, job_type, job_level,
-                    emirate, city, latitude, longitude, remote_option,
+                    emirate, city, location, latitude, longitude, remote_option,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -1269,8 +1319,9 @@ def save_jd(jd_id):
                 basic_info.get('department'),
                 basic_info.get('job_type'),
                 basic_info.get('job_level'),
-                basic_info.get('emirate'),
-                basic_info.get('city'),
+                emirate,
+                city,
+                location,
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
@@ -1285,7 +1336,7 @@ def save_jd(jd_id):
                 status,
                 status
             ))
-            logger.info(f"Inserted new JD {jd_id} with status: {status}")
+            logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
         
         conn.commit()
         cur.close()

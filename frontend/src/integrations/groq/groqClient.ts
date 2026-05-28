@@ -2,7 +2,7 @@
 export class GroqClient {
   private readonly backendBaseUrl: string;
   constructor() {
-    this.backendBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://127.0.0.1:5005';
+    this.backendBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || '';
   }
 
   /**

@@ -35,6 +35,19 @@ def create_app() -> Flask:
 
     JWTManager(app)
 
+    # SQLAlchemy configuration (required for Profile V2 API and ORM-based routes)
+    from urllib.parse import quote_plus
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "emirati_journey")
+    db_user = os.getenv("DB_USER", "emirati_user")
+    db_pass = quote_plus(os.getenv("DB_PASSWORD", "emirati_secure_password"))
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    from backend.extensions import db
+    db.init_app(app)
+
     # CORS configuration
     origins_env = os.getenv("CORS_ORIGINS", "").strip()
     allowed_origins = [o for o in (x.strip() for x in origins_env.split(",")) if o]
@@ -43,9 +56,13 @@ def create_app() -> Flask:
         "http://localhost:8080",
         "http://localhost:8081",
         "http://localhost:3000",
+        "http://localhost:8089",
         "http://127.0.0.1:8080",
         "http://127.0.0.1:8081",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:8089",
+        "https://emirati.ehrdc.gov.ae",
+        "https://stg-emirati.ehrdc.gov.ae",
         "https://archdiocesan-complimentarily-marianna.ngrok-free.dev",
     ]
     
@@ -79,6 +96,78 @@ def create_app() -> Flask:
             200,
         )
 
+    # Job Shortlist Count (needed for My Jobs badge)
+    @app.route("/api/recruiter/job-shortlist-count", methods=["GET"])
+    def get_job_shortlist_count():
+        try:
+            from backend.db import get_db_connection
+            import psycopg2.extras
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("""
+                SELECT
+                    jp.jd_id as job_id,
+                    jp.title as job_title,
+                    COUNT(*) as total_shortlisted,
+                    COUNT(CASE WHEN s.status = 'shortlisted' THEN 1 END) as shortlisted,
+                    COUNT(CASE WHEN s.status = 'contacted' THEN 1 END) as contacted,
+                    COUNT(CASE WHEN s.status = 'interview_scheduled' THEN 1 END) as interview_scheduled,
+                    COUNT(CASE WHEN s.status = 'interviewed' THEN 1 END) as interviewed,
+                    COUNT(CASE WHEN s.status = 'offer_sent' THEN 1 END) as offer_sent,
+                    COUNT(CASE WHEN s.status = 'hired' THEN 1 END) as hired,
+                    COUNT(CASE WHEN s.status = 'rejected' THEN 1 END) as rejected,
+                    MAX(s.created_at) as last_shortlist_date
+                FROM shortlisted_candidates s
+                JOIN job_postings jp ON s.job_id = jp.id
+                GROUP BY jp.jd_id, jp.title
+                ORDER BY last_shortlist_date DESC
+            """)
+            results = cur.fetchall()
+            cur.close()
+            conn.close()
+            shortlist_counts = []
+            for row in results:
+                row_dict = dict(row)
+                if row_dict.get('last_shortlist_date'):
+                    row_dict['last_shortlist_date'] = row_dict['last_shortlist_date'].isoformat()
+                shortlist_counts.append(row_dict)
+            return jsonify({'success': True, 'data': shortlist_counts}), 200
+        except Exception as e:
+            logger.error(f"Get job shortlist count error: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+
+    # Recruiter Dashboard API (offers, JD list, shortlist, candidate details, dashboard overview)
+    try:
+        from routes.recruiter_dashboard_api import recruiter_dashboard_bp
+        app.register_blueprint(recruiter_dashboard_bp)
+        logger.info("Registered: Recruiter Dashboard API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Recruiter Dashboard API routes: {e}")
+
+    # Interview Sessions API (video interview)
+    try:
+        from routes.interview_sessions_api import interview_sessions_bp
+        app.register_blueprint(interview_sessions_bp)
+        logger.info("Registered: Interview Sessions API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Interview Sessions API routes: {e}")
+
+    # Profile V2 API (candidate profile studio)
+    try:
+        from routes.profile.profile_routes_v2 import profile_v2_bp
+        app.register_blueprint(profile_v2_bp)
+        logger.info("Registered: Profile V2 API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Profile V2 API routes: {e}")
+
+    # Profile Readiness API (holistic candidate readiness score)
+    try:
+        from routes.profile.profile_readiness import profile_readiness_bp
+        app.register_blueprint(profile_readiness_bp)
+        logger.info("Registered: Profile Readiness API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Profile Readiness API routes: {e}")
 
 
     # Auth
@@ -89,6 +178,15 @@ def create_app() -> Flask:
         logger.info("Registered: auth routes")
     except Exception as e:
         logger.error(f"Failed registering auth routes: {e}")
+
+    # UAE Pass Authentication (OAuth 2.0)
+    try:
+        from routes.uaepass_routes import uaepass_bp
+
+        app.register_blueprint(uaepass_bp)
+        logger.info("Registered: UAE Pass authentication routes")
+    except Exception as e:
+        logger.error(f"Failed registering UAE Pass routes: {e}")
 
     # Candidate profile
     try:
@@ -242,11 +340,20 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering Statistics routes: {e}")
 
-    # Register CV Builder routes
+    # Register Enhanced CV routes (full-featured, used by Profile Studio IdentityModule)
     try:
-        from recruiter.cv_routes import cv_bp
-        app.register_blueprint(cv_bp)
-        logger.info("Registered: CV Builder routes")
+        from routes.enhanced_cv_routes import enhanced_cv_bp
+        app.register_blueprint(enhanced_cv_bp)
+        logger.info("Registered: Enhanced CV routes")
+    except Exception as e:
+        logger.error(f"Failed registering Enhanced CV routes: {e}")
+
+    # Fallback: Register basic CV Builder routes only if enhanced failed
+    try:
+        if 'enhanced_cv' not in [bp.name for bp in app.blueprints.values() if hasattr(bp, 'name')]:
+            from recruiter.cv_routes import cv_bp
+            app.register_blueprint(cv_bp)
+            logger.info("Registered: CV Builder routes (basic fallback)")
     except Exception as e:
         logger.error(f"Failed registering CV Builder routes: {e}")
 
@@ -348,11 +455,46 @@ def create_app() -> Flask:
     except Exception as e:
         logger.error(f"Failed registering mentorship routes: {e}")
 
+    # Growth Operator Assignment API (admin operator management)
+    try:
+        from routes.growth_operator_assignment_api import growth_operator_assignment_bp
+        app.register_blueprint(growth_operator_assignment_bp)
+        logger.info("Registered: Growth Operator Assignment API routes")
+    except Exception as e:
+        logger.error(f"Failed registering Growth Operator Assignment API routes: {e}")
+
+    # Administrator Routes (user management, roles, settings, system monitoring)
+    try:
+        from routes.administrator_routes import admin_bp, init_admin_routes
+        db_config = {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'database': os.getenv('DB_NAME', 'emirati_journey'),
+            'user': os.getenv('DB_USER', 'emirati_user'),
+            'password': os.getenv('DB_PASSWORD', 'emirati_secure_password'),
+            'port': int(os.getenv('DB_PORT', 5432)),
+        }
+        init_admin_routes(app, db_config)
+        app.register_blueprint(admin_bp)
+        logger.info("Registered: Administrator routes (user management, roles, settings)")
+    except Exception as e:
+        logger.error(f"Failed registering Administrator routes: {e}")
+
+    # User Activity API (session tracking, activity logs, statistics)
+    try:
+        from routes.user_activity_api import user_activity_bp
+        app.register_blueprint(user_activity_bp)
+        logger.info("Registered: User Activity API routes")
+    except Exception as e:
+        logger.error(f"Failed registering User Activity API routes: {e}")
+
     return app
 
 
+# Module-level app instance for Gunicorn WSGI
+# Usage: gunicorn backend.recruiter_server:app
+app = create_app()
+
 if __name__ == "__main__":
-    flask_app = create_app()
     port = int(os.getenv("PORT", "5005"))
     logger.info(f"Recruiter services running on http://0.0.0.0:{port}")
-    flask_app.run(host="0.0.0.0", port=port, debug=os.getenv('FLASK_ENV', 'production') != 'production', threaded=True)
+    app.run(host="0.0.0.0", port=port, debug=os.getenv('FLASK_ENV', 'production') != 'production', threaded=True)

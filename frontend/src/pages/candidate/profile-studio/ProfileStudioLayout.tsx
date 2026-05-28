@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
     User,
@@ -8,12 +8,15 @@ import {
     Layers,
     Compass,
     ChevronRight,
-    ChevronLeft
+    ChevronLeft,
+    ArrowLeft,
+    ArrowRight
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 
 const SidebarItem = ({ icon: Icon, label, path, active, isRTL }: any) => {
     const navigate = useNavigate();
@@ -35,6 +38,7 @@ const SidebarItem = ({ icon: Icon, label, path, active, isRTL }: any) => {
 
 export const ProfileStudioLayout = ({ children }: { children: React.ReactNode }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const currentPath = location.pathname;
     const { language, toggleLanguage, isRTL } = useLanguage();
     const { t: i18t } = useTranslation();
@@ -42,8 +46,34 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
     // Bilingual helper
     const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
-    // Calculate completion (Mock for now)
-    const completion = 65;
+    // Calculate completion dynamically from profile API
+    const [completion, setCompletion] = useState(0);
+    const [completionHint, setCompletionHint] = useState('');
+    const [pillars, setPillars] = useState<{key: string; label: string; label_ar: string; score: number; max: number; complete: boolean}[]>([]);
+
+    useEffect(() => {
+        const fetchReadiness = async () => {
+            try {
+                const { data } = await restClient.get('/api/v2/profile/readiness');
+                if (data?.success) {
+                    setCompletion(data.overall);
+                    setCompletionHint(language === 'ar' ? data.next_action_ar : data.next_action);
+                    setPillars(data.pillars || []);
+                }
+            } catch (err) {
+                console.error('Profile readiness fetch failed:', err);
+                setCompletion(0);
+                setCompletionHint(language === 'ar' ? 'تعذر حساب الجاهزية' : 'Could not calculate readiness');
+            }
+        };
+        fetchReadiness();
+    }, [language]);
+
+    const getReadinessColor = (pct: number) => {
+        if (pct >= 80) return 'text-green-600';
+        if (pct >= 50) return 'text-amber-600';
+        return 'text-red-500';
+    };
 
     return (
         <div className={`min-h-screen bg-background flex flex-col ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -65,22 +95,56 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                         <p className="text-xs text-muted-foreground px-2 mt-1">{t('Unified Candidate Profile', 'الملف الموحد للمرشح')}</p>
                     </div>
 
-                    {/* Completion Meter */}
-                    <div className="mb-8 bg-teal-50 p-4 rounded-xl">
+                    {/* Readiness Meter */}
+                    <div className="mb-6 bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-semibold text-teal-700">{t('Profile Strength', 'قوة الملف')}</span>
-                            <span className="text-xs font-bold text-teal-700">{completion}%</span>
+                            <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">{t('Profile Readiness', 'جاهزية الملف')}</span>
+                            <span className={`text-sm font-bold ${getReadinessColor(completion)}`}>{completion}%</span>
                         </div>
-                        <div className="w-full bg-teal-200 rounded-full h-1.5">
+                        <div className="w-full bg-teal-200 dark:bg-teal-800 rounded-full h-2">
                             <div
-                                className="bg-teal-600 h-1.5 rounded-full transition-all duration-500"
+                                className="bg-teal-600 h-2 rounded-full transition-all duration-700 ease-out"
                                 style={{ width: `${completion}%` }}
                             ></div>
                         </div>
-                        <p className="text-[10px] text-teal-600 mt-2">{t('Add 1 more project to reach "All-Star"', 'أضف مشروعاً واحداً للوصول إلى "نجم"')}</p>
+
+                        {/* Pillar mini-bars */}
+                        {pillars.length > 0 && (
+                            <div className="mt-3 space-y-1.5">
+                                {pillars.map(p => {
+                                    const pct = p.max > 0 ? Math.round((p.score / p.max) * 100) : 0;
+                                    return (
+                                        <div key={p.key} className="flex items-center gap-2">
+                                            <span className="text-[9px] text-teal-700 dark:text-teal-300 w-[72px] truncate" title={language === 'ar' ? p.label_ar : p.label}>
+                                                {language === 'ar' ? p.label_ar : p.label}
+                                            </span>
+                                            <div className="flex-1 bg-teal-200 dark:bg-teal-800 rounded-full h-1">
+                                                <div
+                                                    className={`h-1 rounded-full transition-all duration-500 ${p.complete ? 'bg-green-500' : 'bg-teal-500'}`}
+                                                    style={{ width: `${pct}%` }}
+                                                ></div>
+                                            </div>
+                                            {p.complete && <span className="text-[8px]">✓</span>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        <p className="text-[10px] text-teal-600 dark:text-teal-400 mt-2">{completionHint}</p>
                     </div>
 
                     <nav className="space-y-1">
+                        {/* Back to Dashboard */}
+                        <div
+                            onClick={() => navigate('/candidate-dashboard')}
+                            className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 text-teal-600 hover:bg-teal-50 mb-2 border border-teal-200"
+                            id="back-to-dashboard-btn"
+                        >
+                            {isRTL ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
+                            <span className="font-medium text-sm">{t('Back to Dashboard', 'العودة إلى لوحة التحكم')}</span>
+                        </div>
+                        <div className="w-full h-px bg-border my-2"></div>
                         <SidebarItem
                             icon={User}
                             label={t('Identity & Bio', 'الهوية والسيرة')}

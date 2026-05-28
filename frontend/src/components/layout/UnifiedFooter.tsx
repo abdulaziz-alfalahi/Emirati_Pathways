@@ -28,7 +28,7 @@ export const UnifiedFooter: React.FC = () => {
                             />
                         </div>
                         <h3 className="text-base font-semibold mb-1">
-                            {t('Dubai Human Development Platform', 'منصة دبي للتنمية البشرية')}
+                            {t('Emirati Human Development Platform', 'منصة الإمارات للتنمية البشرية')}
                         </h3>
                         <p className="text-gray-500 text-xs mb-3">
                             {t('UAE Nationals Career Development', 'تطوير المسيرة المهنية للمواطنين الإماراتيين')}
@@ -107,7 +107,7 @@ export const UnifiedFooter: React.FC = () => {
                 {/* Copyright */}
                 <div className="mt-8 pt-6 border-t border-gray-800">
                     <p className="text-center text-xs text-gray-500">
-                        © {new Date().getFullYear()} {t('Dubai Human Development Platform', 'منصة دبي للتنمية البشرية')}. {t('All rights reserved.', 'جميع الحقوق محفوظة.')}
+                        © {new Date().getFullYear()} {t('Emirati Human Development Platform', 'منصة الإمارات للتنمية البشرية')}. {t('All rights reserved.', 'جميع الحقوق محفوظة.')}
                     </p>
                 </div>
             </div>

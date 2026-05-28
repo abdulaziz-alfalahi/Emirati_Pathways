@@ -64,7 +64,7 @@ def enhanced_single_match():
         
         # Use performance optimizer for caching and monitoring
         def perform_matching(cv, jd):
-            # Get AI analysis with Gemini 2.5 PRO
+            # Get AI analysis with AI Engine PRO
             ai_analysis = matching_engine.analyze_with_gemini(cv, jd)
             
             # Calculate advanced scores

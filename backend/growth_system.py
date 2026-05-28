@@ -1,4 +1,5 @@
 import logging
+import os
 import csv
 import io
 import uuid
@@ -106,9 +107,11 @@ class GrowthSystem:
                             cur.execute("""
                                 INSERT INTO public.companies (
                                     company_name, name, contact_email, is_verified, description,
-                                    industry, trade_license_no, phone, emirate, city, business_type
+                                    industry, trade_license_no, phone, emirate, city, business_type,
+                                    lead_source
                                 )
-                                VALUES (%s, %s, %s, FALSE, 'Imported from Nafis', %s, %s, %s, %s, %s, %s)
+                                VALUES (%s, %s, %s, FALSE, 'Imported from Nafis', %s, %s, %s, %s, %s, %s,
+                                        'nafis_import')
                                 RETURNING id
                             """, (
                                 company_name, company_name, company_email, 
@@ -216,8 +219,6 @@ class GrowthSystem:
                 return existing
         finally:
             conn.close()
-            
-        return report
 
     def _generate_verification_token(self, cur, job_id, email, company_name):
         token = secrets.token_urlsafe(32)
@@ -296,11 +297,9 @@ class GrowthSystem:
                     user_id = user['id']
                     # logic to handle existing user (maybe just link them)
                 else:
-                    # Create new Recruiter User
-                    # Hashing password skipped for simplicity in prototype - assume pre-hashed or handle in route
-                    # For prototype, we'll store plaintext (BAD PRACTICE, but fine for prototype speed)
-                    # In real app replace with bcrypt
-                    hashed_pw = password # placeholder
+                    # Create new Recruiter User — hash password with bcrypt
+                    import bcrypt
+                    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
                     cur.execute("""
                         INSERT INTO users (
@@ -475,13 +474,14 @@ class GrowthSystem:
                         record = cur.fetchone()
 
                         # Mock email
-                        link = f"http://localhost:8089/join/{token}"
+                        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                        link = f"{frontend_url}/join/{token}"
                         print(f"\n[INVITATION EMAIL] ─────────────────────────────────────────")
                         print(f"  To: {company.get('email', 'N/A')}")
-                        print(f"  Subject: Join Dubai Human Development Platform — {company.get('name', '')}")
+                        print(f"  Subject: Join Emirati Human Development Platform — {company.get('name', '')}")
                         print(f"  Body:")
                         print(f"  Dear {company.get('name', '')},")
-                        print(f"  You have been invited to join the Dubai Human Development Platform")
+                        print(f"  You have been invited to join the Emirati Human Development Platform")
                         print(f"  as a Recruiter or HR Manager for your company.")
                         print(f"  Click the link below to complete your registration:")
                         print(f"  🔗 MAGIC LINK: {link}")
@@ -618,8 +618,10 @@ class GrowthSystem:
                     cur.execute("""
                         INSERT INTO companies (
                             company_name, name, contact_email, phone,
-                            industry, trade_license_no, is_verified, description
-                        ) VALUES (%s, %s, %s, %s, %s, %s, FALSE, 'Invited via Growth Operator')
+                            industry, trade_license_no, is_verified, description,
+                            lead_source
+                        ) VALUES (%s, %s, %s, %s, %s, %s, FALSE, 'Invited via Growth Operator',
+                                  'magic_link')
                         RETURNING id
                     """, (
                         company_name, company_name,
@@ -677,3 +679,179 @@ class GrowthSystem:
             logger.error(f"Invitation acceptance failed: {e}")
             raise e
 
+    # =====================================================
+    # DASHBOARD STATS (Live Funnel)
+    # =====================================================
+
+    def get_dashboard_stats(self):
+        """
+        Returns aggregated dashboard data for the Growth Operator:
+        - Funnel counts (lead → contacted → documentation → verification → active)
+        - Company list with invitation status, job counts, lead source
+        - Recent activity
+        - KPI summaries
+        """
+        conn = self._get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # ── 1. Get all companies with job counts ──
+                cur.execute("""
+                    SELECT
+                        c.id,
+                        c.company_name,
+                        c.contact_email,
+                        c.phone,
+                        c.industry,
+                        c.emirate,
+                        c.city,
+                        c.trade_license_no,
+                        c.business_type,
+                        c.is_verified,
+                        c.lead_source,
+                        COALESCE(j.job_count, 0) AS jobs_posted,
+                        COALESCE(j.total_hired, 0) AS total_hired,
+                        COALESCE(j.published_count, 0) AS published_jobs
+                    FROM companies c
+                    LEFT JOIN (
+                        SELECT
+                            company_id,
+                            COUNT(*) AS job_count,
+                            SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) AS published_count,
+                            0 AS total_hired
+                        FROM job_postings
+                        GROUP BY company_id
+                    ) j ON c.id::text = j.company_id
+                    ORDER BY c.company_name ASC
+                """)
+                companies_raw = cur.fetchall()
+
+                # ── 2. Get invitation statuses ──
+                cur.execute("""
+                    SELECT
+                        company_name,
+                        status,
+                        is_used,
+                        expires_at,
+                        accepted_at,
+                        created_at
+                    FROM company_invitations
+                    ORDER BY created_at DESC
+                """)
+                invitations = cur.fetchall()
+
+                # Build invitation lookup by company name
+                invitation_map = {}
+                for inv in invitations:
+                    name = inv['company_name']
+                    if name not in invitation_map:
+                        invitation_map[name] = inv  # latest invitation per company
+
+                # ── 3. Map each company to a funnel stage ──
+                companies = []
+                funnel = {'lead': 0, 'invited': 0, 'link_opened': 0, 'signing_up': 0, 'active': 0, 'expired': 0}
+
+                for c in companies_raw:
+                    name = c['company_name']
+                    inv = invitation_map.get(name)
+
+                    # Determine funnel stage
+                    if c['is_verified'] or c.get('published_jobs', 0) > 0:
+                        stage = 'active'
+                    elif inv and inv['status'] == 'accepted':
+                        stage = 'signing_up'
+                    elif inv and inv['status'] == 'pending' and not inv['is_used']:
+                        # Check if expired
+                        if inv['expires_at'] and inv['expires_at'] < datetime.now(inv['expires_at'].tzinfo if inv['expires_at'].tzinfo else None):
+                            stage = 'expired'
+                        else:
+                            stage = 'invited'
+                    elif inv and inv['is_used'] and inv['status'] != 'accepted':
+                        stage = 'link_opened'
+                    else:
+                        stage = 'lead'
+
+                    funnel[stage] += 1
+
+                    # Serialize for JSON
+                    companies.append({
+                        'id': str(c['id']),
+                        'name': name,
+                        'industry': c.get('industry') or '',
+                        'emirate': c.get('emirate') or '',
+                        'contactEmail': c.get('contact_email') or '',
+                        'contactPhone': c.get('phone') or '',
+                        'tradeLicense': c.get('trade_license_no') or '',
+                        'businessType': c.get('business_type') or '',
+                        'isVerified': c.get('is_verified', False),
+                        'leadSource': c.get('lead_source') or 'manual',
+                        'status': stage,
+                        'jobsPosted': c.get('jobs_posted', 0),
+                        'totalHired': c.get('total_hired', 0),
+                        'publishedJobs': c.get('published_jobs', 0),
+                        'registeredAt': c['created_at'].isoformat() if c.get('created_at') else None,
+                        'invitationStatus': inv['status'] if inv else None,
+                        'invitationSentAt': inv['created_at'].isoformat() if inv and inv.get('created_at') else None,
+                        'invitationAcceptedAt': inv['accepted_at'].isoformat() if inv and inv.get('accepted_at') else None,
+                    })
+
+                # ── 4. Recent activity from invitations + job_postings ──
+                cur.execute("""
+                    (
+                        SELECT
+                            'invitation' AS type,
+                            CASE
+                                WHEN status = 'accepted' THEN company_name || ' accepted invitation and joined'
+                                ELSE 'Invitation sent to ' || company_name
+                            END AS text,
+                            COALESCE(accepted_at, created_at) AS event_time
+                        FROM company_invitations
+                        ORDER BY COALESCE(accepted_at, created_at) DESC
+                        LIMIT 5
+                    )
+                    UNION ALL
+                    (
+                        SELECT
+                            'job' AS type,
+                            c.company_name || ' posted job: ' || jp.title AS text,
+                            jp.created_at AS event_time
+                        FROM job_postings jp
+                        JOIN companies c ON c.id::text = jp.company_id
+                        WHERE jp.status = 'published'
+                        ORDER BY jp.created_at DESC
+                        LIMIT 5
+                    )
+                    ORDER BY event_time DESC
+                    LIMIT 10
+                """)
+                activity_raw = cur.fetchall()
+                recent_activity = []
+                for a in activity_raw:
+                    recent_activity.append({
+                        'type': a['type'],
+                        'text': a['text'],
+                        'time': a['event_time'].isoformat() if a.get('event_time') else None,
+                    })
+
+                # ── 5. KPI summaries ──
+                total_companies = len(companies)
+                active_count = funnel['active']
+                in_pipeline = funnel['lead'] + funnel['contacted'] + funnel['documentation'] + funnel['verification']
+                total_jobs = sum(c['jobsPosted'] for c in companies)
+
+                return {
+                    'funnel': funnel,
+                    'companies': companies,
+                    'recentActivity': recent_activity,
+                    'kpis': {
+                        'totalCompanies': total_companies,
+                        'activeCompanies': active_count,
+                        'inPipeline': in_pipeline,
+                        'totalJobs': total_jobs,
+                    }
+                }
+
+        except Exception as e:
+            logger.error(f"Dashboard stats error: {e}")
+            raise e
+        finally:
+            conn.close()

@@ -49,7 +49,7 @@ export const InterviewFeedbackDialog: React.FC<InterviewFeedbackDialogProps> = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:5005';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

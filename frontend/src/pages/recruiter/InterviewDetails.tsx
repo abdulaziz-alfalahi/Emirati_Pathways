@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
-const API = (p: string) => `http://127.0.0.1:5005${p}`;
+const API = (p: string) => `${p}`;
 
 export default function InterviewDetailsPage() {
   const [sp] = useSearchParams();

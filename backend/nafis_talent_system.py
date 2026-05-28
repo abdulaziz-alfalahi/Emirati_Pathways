@@ -473,15 +473,16 @@ class NafisTalentSystem:
                             WHERE id = %s AND status = 'imported'
                         """, (sid,))
 
-                        link = f"http://localhost:8089/register/{token}"
+                        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:8089')
+                        link = f"{frontend_url}/register/{token}"
 
                         # Mock email
                         print(f"\n[SEEKER INVITATION EMAIL] ──────────────────────────────────")
                         print(f"  To: {seeker['email']}")
-                        print(f"  Subject: Complete Your Registration — Dubai Human Development Platform")
+                        print(f"  Subject: Complete Your Registration — Emirati Human Development Platform")
                         print(f"  Body:")
                         print(f"  Dear {seeker['full_name']},")
-                        print(f"  You have been invited to join the Dubai Human Development Platform.")
+                        print(f"  You have been invited to join the Emirati Human Development Platform.")
                         print(f"  Click the link below to complete your registration:")
                         print(f"  🔗 MAGIC LINK: {link}")
                         print(f"  This link expires in 7 days.")

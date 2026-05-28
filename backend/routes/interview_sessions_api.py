@@ -59,7 +59,7 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id
         conn.close()
 
 def ensure_tables_exist():
-    """Ensure interview tables exist"""
+    """Ensure interview tables exist and columns support UUID IDs"""
     conn = get_db_connection()
     if not conn:
         return
@@ -69,9 +69,9 @@ def ensure_tables_exist():
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS interview_sessions (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    candidate_id INTEGER NOT NULL,
-                    job_id INTEGER,
-                    recruiter_id INTEGER,
+                    candidate_id TEXT NOT NULL,
+                    job_id TEXT,
+                    recruiter_id TEXT,
                     scheduled_at TIMESTAMP,
                     duration_minutes INTEGER DEFAULT 60,
                     status VARCHAR(50) DEFAULT 'scheduled',
@@ -102,16 +102,38 @@ def ensure_tables_exist():
                 CREATE TABLE IF NOT EXISTS interview_participants (
                     id SERIAL PRIMARY KEY,
                     session_id UUID REFERENCES interview_sessions(id),
-                    user_id INTEGER NOT NULL,
+                    user_id TEXT NOT NULL,
                     role VARCHAR(50),
-                    status VARCHAR(50) DEFAULT 'invited', -- invited, accepted, declined
+                    status VARCHAR(50) DEFAULT 'invited',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(session_id, user_id)
                 )
             """)
             
             conn.commit()
-            logger.info("Interview tables ensured")
+            
+            # Migrate existing INTEGER columns to TEXT for UUID compatibility
+            for tbl, cols in [
+                ('interview_sessions', ['candidate_id', 'recruiter_id', 'job_id']),
+                ('interview_participants', ['user_id']),
+            ]:
+                for col in cols:
+                    try:
+                        cursor.execute(f"""
+                            SELECT data_type FROM information_schema.columns
+                            WHERE table_name = %s AND column_name = %s
+                        """, (tbl, col))
+                        row = cursor.fetchone()
+                        if row and row[0] == 'integer':
+                            logger.info(f"Migrating {tbl}.{col} from INTEGER to TEXT")
+                            cursor.execute(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE TEXT USING {col}::text")
+                            conn.commit()
+                            logger.info(f"✅ {tbl}.{col} migrated to TEXT")
+                    except Exception as col_err:
+                        logger.warning(f"Column migration {tbl}.{col}: {col_err}")
+                        conn.rollback()
+            
+            logger.info("Interview tables ensured (with UUID support)")
     except Exception as e:
         logger.error(f"Failed to create tables: {e}")
         conn.rollback()
@@ -137,22 +159,24 @@ def optional_auth(f):
 @optional_auth
 def list_sessions():
     """
-    Get list of interview sessions for the current user.
-    Merges data from both interview_sessions and interview_schedules tables.
+    Get interview sessions for the current user.
     
-    Query params:
-        role: 'candidate' or 'recruiter' (determines which filter to apply)
-        status: Filter by status
-        candidate_id: Filter by candidate (override)
-        recruiter_id: Filter by recruiter (override)
+    DATA SOURCE: interview_schedules table ONLY.
+    The interview_sessions table is NOT used here because:
+    - All interviews are created via /api/recruiter/interviews/create 
+      which writes to interview_schedules (via interview_engine.py)
+    - interview_sessions has a conflicting schema (INTEGER recruiter_id)
+      and is never populated by the scheduling workflow
     """
     try:
         role = request.args.get('role', 'candidate')
-        status = request.args.get('status')
-        candidate_id = request.args.get('candidate_id', type=int)
-        recruiter_id = request.args.get('recruiter_id', type=int)
+        status_filter = request.args.get('status')
+        candidate_id = request.args.get('candidate_id')
+        recruiter_id = request.args.get('recruiter_id')
         
-        # Extract user ID from JWT auth header
+        logger.info("=== /sessions START === role=%s, qp_candidate=%s, qp_recruiter=%s" % (role, candidate_id, recruiter_id))
+        
+        # 1. Resolve user_id: JWT first, then query params
         user_id = None
         auth_header = request.headers.get('Authorization', '')
         if auth_header.startswith('Bearer ') and 'mock_token' not in auth_header:
@@ -160,196 +184,139 @@ def list_sessions():
                 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
                 verify_jwt_in_request()
                 user_id = get_jwt_identity()
-                logger.info("VIDEO-INTERVIEW /sessions: JWT user_id=%s (type=%s), role=%s" % (user_id, type(user_id).__name__, role))
+                logger.info("JWT user_id=%s" % user_id)
             except Exception as jwt_err:
-                logger.warning("VIDEO-INTERVIEW /sessions: JWT extraction failed: %s" % jwt_err)
-        else:
-            logger.info("VIDEO-INTERVIEW /sessions: No JWT auth header (auth='%s')" % auth_header[:30])
+                logger.warning("JWT failed: %s" % jwt_err)
         
-        # If no JWT, try query params
+        # Fallback to query params
         if not user_id:
             if role == 'candidate' and candidate_id:
                 user_id = candidate_id
             elif role == 'recruiter' and recruiter_id:
                 user_id = recruiter_id
+            if user_id:
+                logger.info("Using query param user_id=%s" % user_id)
         
         if not user_id:
-            logger.warning("VIDEO-INTERVIEW /sessions: No user_id resolved, returning empty")
+            logger.warning("No user_id resolved → empty response")
             return jsonify({'success': True, 'data': [], 'sessions': []})
         
         user_id_str = str(user_id)
-        logger.info("VIDEO-INTERVIEW /sessions: Querying for user_id_str='%s', role='%s'" % (user_id_str, role))
         
         conn = get_db_connection()
         if not conn:
+            logger.error("DB connection failed")
             return jsonify({'success': True, 'data': [], 'sessions': []})
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                all_sessions = []
+                # Query interview_schedules — the ONLY table where interviews are written
+                if role == 'candidate':
+                    cur.execute("""
+                        SELECT 
+                            isched.interview_id as id,
+                            isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_time,
+                            isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_at,
+                            COALESCE(isched.duration_minutes, 45) as duration_minutes,
+                            isched.status,
+                            isched.interview_type,
+                            isched.meeting_link,
+                            COALESCE(isched.interview_title, isched.notes, '') as title,
+                            isched.notes,
+                            isched.created_at,
+                            isched.interview_round,
+                            u.full_name as recruiter_name,
+                            jp.title as job_title,
+                            COALESCE(comp.company_name, '') as company_name
+                        FROM interview_schedules isched
+                        LEFT JOIN users u ON isched.recruiter_id::text = u.id::text
+                        LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
+                        LEFT JOIN companies comp ON jp.company_id::text = comp.id::text
+                        WHERE isched.candidate_id::text = %s
+                        ORDER BY isched.scheduled_date DESC
+                    """, (user_id_str,))
+                else:
+                    cur.execute("""
+                        SELECT 
+                            isched.interview_id as id,
+                            isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_time,
+                            isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_at,
+                            COALESCE(isched.duration_minutes, 45) as duration_minutes,
+                            isched.status,
+                            isched.interview_type,
+                            isched.meeting_link,
+                            COALESCE(isched.interview_title, isched.notes, '') as title,
+                            isched.notes,
+                            isched.created_at,
+                            isched.interview_round,
+                            u.full_name as candidate_name,
+                            u.first_name as candidate_first_name,
+                            u.last_name as candidate_last_name,
+                            u.email as candidate_email,
+                            jp.title as job_title,
+                            COALESCE(comp.company_name, '') as company_name
+                        FROM interview_schedules isched
+                        LEFT JOIN users u ON isched.candidate_id::text = u.id::text
+                        LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
+                        LEFT JOIN companies comp ON jp.company_id::text = comp.id::text
+                        WHERE isched.recruiter_id::text = %s
+                        ORDER BY isched.scheduled_date DESC
+                    """, (user_id_str,))
                 
-                # 1) Query interview_sessions table (may not have all columns)
-                try:
-                    if role == 'candidate':
-                        cur.execute("""
-                            SELECT 
-                                s.id::text as id,
-                                s.scheduled_at as scheduled_time,
-                                s.scheduled_at,
-                                45 as duration_minutes,
-                                s.status,
-                                s.interview_type,
-                                s.meeting_link,
-                                s.title,
-                                s.ai_analysis,
-                                s.notes,
-                                s.created_at,
-                                u.full_name as recruiter_name,
-                                jp.title as job_title,
-                                COALESCE(comp.company_name, '') as company_name
-                            FROM interview_sessions s
-                            LEFT JOIN users u ON s.recruiter_id = u.id
-                            LEFT JOIN job_postings jp ON s.application_id = jp.jd_id
-                            LEFT JOIN companies comp ON jp.company_id = comp.id::text
-                            WHERE s.candidate_id::text = %s
-                            ORDER BY s.scheduled_at DESC
-                        """, (user_id_str,))
-                    else:
-                        cur.execute("""
-                            SELECT 
-                                s.id::text as id,
-                                s.scheduled_at as scheduled_time,
-                                s.scheduled_at,
-                                45 as duration_minutes,
-                                s.status,
-                                s.interview_type,
-                                s.meeting_link,
-                                s.title,
-                                s.ai_analysis,
-                                s.notes,
-                                s.created_at,
-                                u.full_name as candidate_name,
-                                jp.title as job_title,
-                                COALESCE(comp.company_name, '') as company_name
-                            FROM interview_sessions s
-                            LEFT JOIN users u ON s.candidate_id::text = u.id::text
-                            LEFT JOIN job_postings jp ON s.application_id = jp.jd_id
-                            LEFT JOIN companies comp ON jp.company_id = comp.id::text
-                            WHERE s.recruiter_id::text = %s
-                            ORDER BY s.scheduled_at DESC
-                        """, (user_id_str,))
-                    
-                    for row in cur.fetchall():
-                        session = dict(row)
-                        # Serialize datetime objects
-                        for key in ['scheduled_time', 'scheduled_at', 'created_at']:
-                            if session.get(key) and hasattr(session[key], 'isoformat'):
-                                session[key] = session[key].isoformat()
-                        all_sessions.append(session)
-                except Exception as e1:
-                    logger.warning("interview_sessions query skipped (table may lack columns): %s" % e1)
-                    # CRITICAL: Reset connection error state so interview_schedules query can run
-                    conn.rollback()
+                rows = cur.fetchall()
+                logger.info("interview_schedules returned %d rows (user=%s, role=%s)" % (len(rows), user_id_str, role))
                 
-                # 2) Also query interview_schedules table (where recruiter schedules go)
-                try:
-                    if role == 'candidate':
-                        cur.execute("""
-                            SELECT 
-                                isched.interview_id as id,
-                                isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_time,
-                                isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_at,
-                                COALESCE(isched.duration_minutes, 45) as duration_minutes,
-                                isched.status,
-                                isched.interview_type,
-                                isched.meeting_link,
-                                COALESCE(isched.interview_title, isched.notes, '') as title,
-                                NULL::jsonb as ai_analysis,
-                                isched.notes,
-                                isched.created_at,
-                                u.full_name as recruiter_name,
-                                jp.title as job_title,
-                                '' as company_name
-                            FROM interview_schedules isched
-                            LEFT JOIN users u ON isched.recruiter_id::text = u.id::text
-                            LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
-                            WHERE isched.candidate_id::text = %s
-                            AND isched.status NOT IN ('cancelled', 'rejected')
-                            ORDER BY isched.scheduled_date DESC
-                        """, (user_id_str,))
-                    else:
-                        cur.execute("""
-                            SELECT 
-                                isched.interview_id as id,
-                                isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_time,
-                                isched.scheduled_date::text || ' ' || COALESCE(isched.scheduled_time::text, '09:00') as scheduled_at,
-                                COALESCE(isched.duration_minutes, 45) as duration_minutes,
-                                isched.status,
-                                isched.interview_type,
-                                isched.meeting_link,
-                                COALESCE(isched.interview_title, isched.notes, '') as title,
-                                NULL::jsonb as ai_analysis,
-                                isched.notes,
-                                isched.created_at,
-                                u.full_name as candidate_name,
-                                jp.title as job_title,
-                                '' as company_name
-                            FROM interview_schedules isched
-                            LEFT JOIN users u ON isched.candidate_id::text = u.id::text
-                            LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
-                            WHERE (
-                                isched.recruiter_id::text = %s
-                                OR (isched.interviewers IS NOT NULL AND (
-                                    isched.interviewers @> %s::jsonb
-                                    OR isched.interviewers @> %s::jsonb
-                                ))
-                            )
-                            AND isched.status NOT IN ('cancelled', 'rejected')
-                            ORDER BY isched.scheduled_date DESC
-                        """, (user_id_str, json.dumps([int(user_id_str)]), json.dumps([user_id_str])))
-                    
-                    for row in cur.fetchall():
-                        session = dict(row)
-                        # Normalize status
-                        if session.get('status') == 'accepted':
-                            session['status'] = 'confirmed'
-                        elif session.get('status') == 'pending':
-                            session['status'] = 'scheduled'
-                        # Use job title as title if no specific title
-                        if not session.get('title') or session['title'] == '':
-                            session['title'] = session.get('job_title', 'Interview')
-                        # Serialize datetime objects
-                        for key in ['scheduled_time', 'scheduled_at', 'created_at']:
-                            if session.get(key) and hasattr(session[key], 'isoformat'):
-                                session[key] = session[key].isoformat()
-                        all_sessions.append(session)
-                        
-                except Exception as sched_err:
-                    logger.warning("Could not query interview_schedules: %s" % sched_err)
+                # Debug dump if empty
+                if len(rows) == 0:
+                    try:
+                        cur.execute("SELECT interview_id, candidate_id, recruiter_id, status FROM interview_schedules ORDER BY created_at DESC LIMIT 10")
+                        debug_rows = cur.fetchall()
+                        logger.info("DEBUG DUMP: %d total rows in interview_schedules" % len(debug_rows))
+                        for r in debug_rows:
+                            logger.info("  row: id=%s candidate=%s recruiter=%s status=%s" % (
+                                r.get('interview_id','?'), r.get('candidate_id','?'), 
+                                r.get('recruiter_id','?'), r.get('status','?')))
+                        logger.info("  Looking for user_id_str='%s' in role='%s'" % (user_id_str, role))
+                    except Exception as dbg_err:
+                        logger.warning("Debug dump error: %s" % dbg_err)
                 
-                # Filter by status if specified
-                if status:
-                    all_sessions = [s for s in all_sessions if s.get('status') == status]
+                sessions = []
+                for row in rows:
+                    session = dict(row)
+                    # Normalize status
+                    if session.get('status') == 'accepted':
+                        session['status'] = 'confirmed'
+                    elif session.get('status') == 'pending':
+                        session['status'] = 'scheduled'
+                    # Use job title if no specific title
+                    if not session.get('title') or session['title'] == '':
+                        session['title'] = session.get('job_title', 'Interview')
+                    # Serialize datetime objects
+                    for key in ['scheduled_time', 'scheduled_at', 'created_at']:
+                        if session.get(key) and hasattr(session[key], 'isoformat'):
+                            session[key] = session[key].isoformat()
+                    sessions.append(session)
                 
-                # Deduplicate by id
-                seen_ids = set()
-                unique_sessions = []
-                for s in all_sessions:
-                    sid = s.get('id')
-                    if sid and sid not in seen_ids:
-                        seen_ids.add(sid)
-                        unique_sessions.append(s)
+                # Filter by status if requested
+                if status_filter:
+                    sessions = [s for s in sessions if s.get('status') == status_filter]
+                
+                # Filter cancelled unless explicitly requested
+                if not status_filter:
+                    sessions = [s for s in sessions if s.get('status') not in ('cancelled', 'rejected')]
+                
+                logger.info("=== /sessions END === returning %d sessions" % len(sessions))
                 
                 return jsonify({
                     'success': True,
-                    'data': unique_sessions,
-                    'sessions': unique_sessions  # Frontend checks this key
+                    'data': sessions,
+                    'sessions': sessions
                 })
         finally:
             conn.close()
         
     except Exception as e:
-        logger.error("Failed to list sessions: %s" % e)
+        logger.error("FATAL in list_sessions: %s" % e)
         import traceback
         logger.error(traceback.format_exc())
         return jsonify({
@@ -367,7 +334,7 @@ def get_my_sessions():
     """
     try:
         # Get user_id from auth or query param
-        user_id = request.args.get('user_id', type=int)
+        user_id = request.args.get('user_id')  # UUID string, not int
         role = request.args.get('role', 'candidate')
         
         if role == 'candidate':

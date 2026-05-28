@@ -404,18 +404,13 @@ def get_profile():
             # domain assignments without updating the secondary_roles column,
             # causing stale roles to appear in the role-switcher.
             has_go_roles = any(
-                r and r.startswith('growth_operator_') for r in raw_secondary
-            ) or (user_data.get('role') or '').startswith('growth_operator_')
+                r and r.startswith('growth_operator') for r in raw_secondary
+            ) or (user_data.get('role') or '').startswith('growth_operator')
             
             if has_go_roles:
                 try:
-                    go_conn = psycopg2.connect(
-                        host=os.getenv('DB_HOST', 'localhost'),
-                        port=os.getenv('DB_PORT', '5432'),
-                        database=os.getenv('DB_NAME', 'emirati_journey'),
-                        user=os.getenv('DB_USER', 'emirati_user'),
-                        password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
-                    )
+                    from backend.db import get_db_connection
+                    go_conn = get_db_connection()
                     go_cur = go_conn.cursor()
                     go_cur.execute(
                         "SELECT domain FROM growth_operator_assignments WHERE user_id = %s AND is_active = true",
@@ -426,11 +421,17 @@ def get_profile():
                     
                     if active_domains:
                         # Keep non-growth-operator roles, replace GO roles with active assignments
-                        non_go = [r for r in raw_secondary if not r.startswith('growth_operator_')]
+                        non_go = [r for r in raw_secondary if not r.startswith('growth_operator')]
                         go_from_assignments = [f"growth_operator_{d}" for d in active_domains]
                         raw_secondary = non_go + go_from_assignments
                 except Exception as go_err:
                     logger.warning(f"Could not cross-ref growth_operator_assignments for profile: {go_err}")
+            
+            # Default Job Seeker role for UAE Nationals
+            nationality = user_data.get('nationality', '').upper()
+            if nationality in ['UAE', 'AE', 'UNITED ARAB EMIRATES']:
+                if 'job_seeker' not in raw_secondary and user_data.get('role') != 'job_seeker':
+                    raw_secondary.append('job_seeker')
             
             profile_data['secondary_roles'] = raw_secondary
             profile_data['id'] = user_data.get('id')
@@ -909,245 +910,3 @@ def internal_error(error):
         'success': False,
         'message': 'Internal server error'
     }), 500
-
-
-def _seed_dev_data(user_id, email, role):
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv('DB_HOST', 'localhost'),
-            database=os.getenv('DB_NAME', 'emirati_journey'),
-            user=os.getenv('DB_USER', 'emirati_user'),
-            password=os.getenv('DB_PASSWORD', 'emirati_secure_password')
-        )
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        # 1. Ensure HR Profile
-        cursor.execute("SELECT * FROM hr_profiles WHERE user_id = %s", (user_id,))
-        profile = cursor.fetchone()
-        company_id = None
-        
-        if not profile:
-            # Check for existing company or create one
-            cursor.execute("SELECT id FROM companies LIMIT 1")
-            company = cursor.fetchone()
-            if company:
-                company_id = company['id']
-            else:
-                # Create default company
-                company_id = str(uuid.uuid4())
-                cursor.execute("""
-                    INSERT INTO companies (id, name, industry, description)
-                    VALUES (%s, 'UAE Talent Solutions', 'Technology', 'Leading recruitment agency')
-                    RETURNING id
-                """, (company_id,))
-                company_id = cursor.fetchone()['id']
-                conn.commit()
-            
-            # Create HR Profile
-            cursor.execute("""
-                INSERT INTO hr_profiles (user_id, company_id, position, department)
-                VALUES (%s, %s, 'Recruiter', 'HR')
-            """, (user_id, company_id))
-            conn.commit()
-            logger.info(f"Seeded HR Profile for {email}")
-        else:
-            company_id = profile['company_id']
-            
-        # 2. Ensure Job Posting
-        cursor.execute("SELECT id FROM job_postings WHERE created_by = %s", (user_id,))
-        job = cursor.fetchone()
-        
-        if not job and company_id:
-            jd_id = str(uuid.uuid4()) # Public ID
-            job_uuid = str(uuid.uuid4()) # Primary Key
-            cursor.execute("""
-                INSERT INTO job_postings (
-                    id, jd_id, recruiter_id, company_id, created_by, title, description, 
-                    status, salary_range_min, salary_range_max, currency,
-                    location, employment_type, experience_level
-                ) VALUES (
-                    %s, %s, %s, %s, %s, 'Senior Software Engineer', 'We are looking for a skilled engineer to join our team.',
-                    'active', 15000, 25000, 'AED',
-                    'Dubai', 'full-time', 'mid'
-                )
-            """, (job_uuid, jd_id, user_id, company_id, user_id))
-            conn.commit()
-            logger.info(f"Seeded Sample Job for {email}")
-            
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        logger.error(f"Seeding error: {e}")
-        # Don't raise, just log, so login still works
-        pass
-
-@auth_bp.route('/dev-login', methods=['POST'])
-def dev_login():
-    """
-    Development only: Generate a token for a mock user, ensuring they exist in DB
-    """
-    try:
-        data = request.get_json()
-        mock_user_id = data.get('user_id')
-        role = data.get('role', 'job_seeker')
-        email = data.get('email')
-        
-        if not email:
-            return jsonify({'success': False, 'message': 'email required'}), 400
-
-        # Initialize authentication manager
-        auth_manager = AuthenticationManager()
-        
-        # Check if user exists
-        # Navigate name mangling/protected method access for dev utility
-        user = auth_manager._get_user_by_email(email)
-        
-        real_user_id = None
-        
-        if user:
-            real_user_id = user['id']
-            # Update role if needed? No, respect DB role.
-        else:
-            # Create user if not exists
-            logger.info(f"Dev Login: Creating missing user {email}")
-            user_data = {
-                'email': email,
-                'password': 'DevPassword123!', # Default dev password
-                'first_name': 'Dev',
-                'last_name': role.capitalize(),
-                'role': role,
-                'phone': '+971500000000', # Dummy phone
-                'nationality': 'UAE',
-                'emirate': 'Dubai'
-            }
-            success, msg, res = auth_manager.register_user(user_data)
-            if success and res:
-                 real_user_id = res['user_id']
-            else:
-                 return jsonify({'success': False, 'message': f'Failed to create dev user: {msg}'}), 500
-
-        # Create access token with REAL identity
-        # Add role to claims if needed by your JWT setup
-        additional_claims = {'role': role, 'email': email}
-        access_token = create_access_token(identity=str(real_user_id), additional_claims=additional_claims)
-        
-        # Seed data for HR roles if missing
-        if role in ('hr_recruiter', 'recruiter', 'hr', 'hr_manager'):
-             try:
-                _seed_dev_data(str(real_user_id), email, role)
-             except Exception as seed_err:
-                 logger.error(f"Seeding failed: {seed_err}")
-        
-        # Fetch full user details to ensure secondary_roles are included
-        full_user_data = auth_manager.get_user_by_id(str(real_user_id))
-        
-        return jsonify({
-            'success': True,
-            'data': {
-                'access_token': access_token,
-                'user': {
-                    'id': str(real_user_id),
-                    'role': role,
-                    'email': email,
-                    'user_type': role,
-                    'secondary_roles': full_user_data.get('secondary_roles', []) if full_user_data else [],
-                    'full_name': f"{full_user_data.get('first_name', '')} {full_user_data.get('last_name', '')}".strip() if full_user_data else 'Dev User'
-                }
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Dev login error: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@auth_bp.route('/request-otp', methods=['POST', 'OPTIONS'])
-def request_otp_route():
-    """Request OTP for phone verification"""
-    if request.method == 'OPTIONS':
-        # Manual CORS Preflight Response
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:8089')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept')
-        response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response
-
-    try:
-        data = request.get_json()
-        phone = data.get('phone')
-        if not phone:
-            return jsonify({'success': False, 'message': 'Phone number required'}), 400
-        
-        auth_manager = AuthenticationManager()
-        # Ensure we call the new method (which we added to the class)
-        # Note: request_otp was added to AuthenticationManager in auth_manager_fixed.py
-        if not hasattr(auth_manager, 'request_otp'):
-             return jsonify({'success': False, 'message': 'OTP system not fully initialized'}), 503
-
-        success, msg, otp = auth_manager.request_otp(phone)
-        
-        if success:
-            # Include debug_otp only in dev environment if needed, but for now we follow the plan
-            response = {'success': True, 'message': msg}
-            if otp: # Magic or Test mode
-                response['debug_otp'] = otp
-            return jsonify(response), 200
-            
-        return jsonify({'success': False, 'message': msg}), 400
-    except Exception as e:
-        logger.error(f"OTP Request Validaton Error: {e}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@auth_bp.route('/login-with-otp', methods=['POST'])
-def login_with_otp_route():
-    """Login or Register with OTP"""
-    try:
-        data = request.get_json()
-        phone = data.get('phone')
-        code = data.get('code')
-        if not phone or not code:
-             return jsonify({'success': False, 'message': 'Phone and code required'}), 400
-             
-        auth_manager = AuthenticationManager()
-        
-        if not hasattr(auth_manager, 'authenticate_by_phone'):
-             return jsonify({'success': False, 'message': 'OTP auth not implemented'}), 503
-
-        success, msg, user_data = auth_manager.authenticate_by_phone(phone, code)
-        
-        if success and user_data:
-            # Create tokens
-            # Determine role/user_type
-            identity_role = user_data.get('user_type') or user_data.get('role') or 'job_seeker'
-            
-            # Ensure ID is string
-            user_id = str(user_data.get('id', ''))
-            
-            access_token = create_access_token(
-                identity=user_id, 
-                additional_claims={'role': identity_role}
-            )
-            refresh_token = create_refresh_token(identity=user_id)
-            
-            return jsonify({
-                'success': True,
-                'message': msg,
-                'data': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token,
-                    'user': user_data
-                }
-            }), 200
-            
-        return jsonify({'success': False, 'message': msg}), 401
-    except Exception as e:
-        logger.error(f"OTP Login Error: {e}")
-
-
-
-
-
-
-
-
-

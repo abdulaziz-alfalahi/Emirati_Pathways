@@ -228,7 +228,7 @@ class UserProfile:
     UAE-specific and internationally compliant
     """
     
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: str):
         self.user_id = user_id
         self.personal_info: Optional[PersonalInfo] = None
         self.contact_info: Optional[ContactInfo] = None

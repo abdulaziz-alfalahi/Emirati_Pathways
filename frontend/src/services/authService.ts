@@ -508,6 +508,74 @@ class AuthService {
     }
   }
 
+  // =============================================
+  // UAE Pass Authentication
+  // =============================================
+
+  /**
+   * Get UAE Pass authorization URL from the backend.
+   * The frontend should redirect the user to this URL.
+   *
+   * @param returnUrl - Optional URL to redirect to after auth
+   * @returns The UAE Pass authorization URL
+   */
+  async getUAEPassLoginUrl(returnUrl?: string): Promise<string> {
+    try {
+      const params = returnUrl ? `?return_url=${encodeURIComponent(returnUrl)}` : '';
+      const response = await fetch(`${this.API_BASE_URL}/auth/uaepass/login${params}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get UAE Pass login URL: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success && data.data?.authorization_url) {
+        return data.data.authorization_url;
+      }
+      throw new Error('No authorization URL returned');
+    } catch (error) {
+      console.error('AuthService: UAE Pass login URL error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get UAE Pass logout URL.
+   * The frontend should redirect the user to this URL to complete logout.
+   */
+  async getUAEPassLogoutUrl(): Promise<string | null> {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${this.API_BASE_URL}/auth/uaepass/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.data?.logout_url || null;
+      }
+      return null;
+    } catch (error) {
+      console.warn('AuthService: UAE Pass logout URL fetch failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if the current user authenticated via UAE Pass
+   */
+  isUAEPassUser(): boolean {
+    const user = this.getUser();
+    return user?.auth_method === 'uaepass';
+  }
+
   /**
    * Get available roles for selection
    */

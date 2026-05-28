@@ -161,13 +161,25 @@ const CandidateDashboard: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await restClient.get('/api/candidate/dashboard/stats');
-        if (response.data.success) {
-          const result = response.data;
+        const [statsRes, readinessRes] = await Promise.allSettled([
+          restClient.get('/api/candidate/dashboard/stats'),
+          restClient.get('/api/v2/profile/readiness'),
+        ]);
+
+        if (statsRes.status === 'fulfilled' && statsRes.value.data.success) {
+          const result = statsRes.value.data;
           setDashboardData(prev => ({
             ...prev,
             profile: { ...prev.profile, ...result.data.profile },
             stats: { ...prev.stats, ...result.data.stats }
+          }));
+        }
+
+        // Override completionPercentage with holistic readiness score
+        if (readinessRes.status === 'fulfilled' && readinessRes.value.data.success) {
+          setDashboardData(prev => ({
+            ...prev,
+            profile: { ...prev.profile, completionPercentage: readinessRes.value.data.overall }
           }));
         }
       } catch (error) {
@@ -389,12 +401,12 @@ const CandidateDashboard: React.FC = () => {
 
                 {/* Left Sidebar — Profile Status + Quick Actions */}
                 <div className="lg:col-span-3 space-y-6">
-                  {/* Profile Status */}
+                  {/* Profile Readiness */}
                   <Card className="bg-white border border-slate-200/80">
                     <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
                       <CardTitle className="flex items-center gap-2 text-base text-slate-800">
                         <User className="h-4 w-4 text-teal-600" />
-                        {t('Profile Status', 'حالة الملف')}
+                        {t('Profile Readiness', 'جاهزية الملف')}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-5 flex flex-col items-center">
@@ -411,7 +423,7 @@ const CandidateDashboard: React.FC = () => {
                         size="sm"
                         className="w-full mt-4 text-xs font-dubai-medium text-teal-700 border-teal-200 hover:bg-teal-50"
                       >
-                        {t('Complete Profile →', 'أكمل الملف ←')}
+                        {t('Improve Readiness →', 'حسّن الجاهزية ←')}
                       </Button>
                     </CardContent>
                   </Card>

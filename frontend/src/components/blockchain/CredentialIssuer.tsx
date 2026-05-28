@@ -69,7 +69,7 @@ const CredentialIssuer: React.FC<CredentialIssuerProps> = ({ onCredentialIssued 
         skills: skills.length > 0 ? skills : undefined,
         metadata: {
           issuer_name: user.user_metadata?.full_name || 'Unknown Issuer',
-          issued_by_platform: 'Dubai Human Development Platform'
+          issued_by_platform: 'Emirati Human Development Platform'
         }
       };
 

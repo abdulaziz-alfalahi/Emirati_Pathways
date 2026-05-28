@@ -186,8 +186,25 @@ backend/test_output/
 # Uploads
 uploads/
 
+# Environment files with secrets (additional specific paths)
+.env.*.local
+backend/.env
+frontend/.env
+
+# Debug/log files (additional specific patterns)
+*_debug.log
+debug_output/
+test_output/
+error_log.txt
+cv_routes_loaded.txt
+env_debug.txt
+
+# Sensitive artifacts
+token.txt
+magic_otp_users.txt
+users_list.txt
+
 # Keep template env files (override the *.env exclusion above)
 !.env.template
 !.env.example
 !.env.production
-

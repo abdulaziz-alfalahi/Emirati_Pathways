@@ -48,25 +48,14 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
     const navigate = useNavigate();
     const { switchRole, refreshUser } = useAuth();
 
-    const calculateCompletion = (profile: any, hasCv: boolean) => {
-        if (!profile) return 0;
-        let score = 0;
-
-        // Basic Info (30%)
-        if (profile.first_name || profile.full_name) score += 10;
-        if (profile.headline) score += 10;
-        if (profile.bio) score += 10;
-
-        // Contact (20%)
-        if (profile.contact?.phone) score += 10;
-        if (profile.contact?.location) score += 10;
-
-        // Assets (50%)
-        if (hasCv) score += 30; // CV is major
-        if (profile.skills && profile.skills.length > 0) score += 10;
-        if (profile.experience && profile.experience.length > 0) score += 10;
-
-        return Math.min(score, 100);
+    // Fetch holistic readiness from the backend
+    const fetchReadinessScore = async (): Promise<number> => {
+        try {
+            const { data } = await restClient.get('/api/v2/profile/readiness');
+            return data?.success ? data.overall : 0;
+        } catch {
+            return 0;
+        }
     };
 
     // Transform initialProfile to match UserProfile structure if needed
@@ -77,10 +66,10 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         email: initialProfile?.email || initialProfile?.contact?.email || 'user@example.com',
         primaryRole: 'Job Seeker', // Default
         secondaryRoles: [],
-        profileCompletion: calculateCompletion(initialProfile, cvUploaded),
+        profileCompletion: 0, // Will be fetched from readiness API
         lastUpdated: new Date().toISOString().split('T')[0],
-        verificationStatus: 'pending',
-        profileVisibility: 'professional',
+        verificationStatus: initialProfile?.verification_status || 'pending',
+        profileVisibility: initialProfile?.profile_visibility || 'professional',
         profilePhotoUrl: initialProfile?.profile_photo_url
     });
 
@@ -110,6 +99,17 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         fetchUserRoles();
     }, []);
 
+    // Fetch readiness score on mount
+    useEffect(() => {
+        fetchReadinessScore().then(score => {
+            setCurrentUser(prev => ({
+                ...prev,
+                profileCompletion: score,
+                verificationStatus: score >= 80 ? 'verified' : score >= 40 ? 'pending' : 'unverified',
+            }));
+        });
+    }, []);
+
     // Update effect when prop changes
     useEffect(() => {
         if (initialProfile) {
@@ -119,7 +119,6 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                 lastName: initialProfile.full_name?.split(' ').slice(1).join(' ') || initialProfile.last_name || prev.lastName,
                 email: initialProfile.email || initialProfile.contact?.email || prev.email,
                 profilePhotoUrl: initialProfile.profile_photo_url || prev.profilePhotoUrl,
-                profileCompletion: calculateCompletion(initialProfile, cvUploaded)
             }));
         }
     }, [initialProfile, cvUploaded]);
@@ -241,10 +240,10 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Profile Completion */}
+                    {/* Profile Readiness */}
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium">Profile Completion</span>
+                            <span className="text-sm font-medium">Profile Readiness</span>
                             <span className={`text-sm font-bold ${getCompletionColor(currentUser.profileCompletion)}`}>
                                 {currentUser.profileCompletion}%
                             </span>
@@ -342,7 +341,38 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                         <span className="text-sm font-medium mb-2 block">Last Updated</span>
                         <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">{currentUser.lastUpdated}</span>
-                            <Button variant="outline" size="sm" onClick={() => setIsRefreshing(true)}>
+                            <Button variant="outline" size="sm" disabled={isRefreshing} onClick={async () => {
+                                setIsRefreshing(true);
+                                try {
+                                    const [profileRes, readinessRes] = await Promise.allSettled([
+                                        restClient.get('/api/v2/profile/'),
+                                        restClient.get('/api/v2/profile/readiness'),
+                                    ]);
+                                    const profileData = profileRes.status === 'fulfilled' ? profileRes.value.data : null;
+                                    const readinessData = readinessRes.status === 'fulfilled' ? readinessRes.value.data : null;
+                                    const p = profileData?.success ? (profileData.data || profileData.profile) : null;
+                                    const comp = readinessData?.success ? readinessData.overall : currentUser.profileCompletion;
+
+                                    if (p) {
+                                        setCurrentUser(prev => ({
+                                            ...prev,
+                                            firstName: p.full_name?.split(' ')[0] || p.first_name || prev.firstName,
+                                            lastName: p.full_name?.split(' ').slice(1).join(' ') || p.last_name || prev.lastName,
+                                            email: p.email || p.contact?.email || prev.email,
+                                            profileCompletion: comp,
+                                            lastUpdated: new Date().toISOString().split('T')[0],
+                                            verificationStatus: comp >= 80 ? 'verified' : comp >= 40 ? 'pending' : 'unverified',
+                                            profilePhotoUrl: p.profile_photo_url || prev.profilePhotoUrl,
+                                        }));
+                                        toast({ title: 'Profile refreshed', description: `Readiness: ${comp}%` });
+                                    }
+                                } catch (err) {
+                                    console.error('Refresh failed:', err);
+                                    toast({ title: 'Refresh failed', description: 'Could not reload profile data.', variant: 'destructive' });
+                                } finally {
+                                    setIsRefreshing(false);
+                                }
+                            }}>
                                 <RefreshCw className={`h-3 w-3 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                                 Refresh Data
                             </Button>

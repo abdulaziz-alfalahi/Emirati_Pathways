@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS cms_content (
     publish_date TIMESTAMP,
     expire_date TIMESTAMP,
     view_count INTEGER DEFAULT 0,
-    created_by INTEGER REFERENCES users(id),
-    updated_by INTEGER REFERENCES users(id),
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS cms_content_versions (
     content_data JSONB NOT NULL,
     meta_data JSONB,
     change_summary TEXT,
-    created_by INTEGER REFERENCES users(id),
+    created_by UUID REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(content_id, version_number)
 );
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS cms_media (
     tags TEXT[],
     dimensions JSONB, -- {width: 1920, height: 1080}
     is_public BOOLEAN DEFAULT TRUE,
-    uploaded_by INTEGER REFERENCES users(id),
+    uploaded_by UUID REFERENCES users(id),
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS admin_settings (
     description TEXT,
     is_public BOOLEAN DEFAULT FALSE, -- Whether setting can be accessed by non-admins
     validation_rules JSONB, -- Validation rules for the setting
-    updated_by INTEGER REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS admin_settings (
 -- Audit trail for administrative actions
 CREATE TABLE IF NOT EXISTS admin_audit_log (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    user_id UUID REFERENCES users(id),
     action VARCHAR(100) NOT NULL, -- 'create', 'update', 'delete', 'login', 'logout'
     resource_type VARCHAR(50) NOT NULL, -- 'user', 'content', 'media', 'setting'
     resource_id VARCHAR(100),
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
     severity VARCHAR(20) DEFAULT 'info', -- 'info', 'warning', 'error', 'critical'
     is_read BOOLEAN DEFAULT FALSE,
     is_dismissed BOOLEAN DEFAULT FALSE,
-    target_user_id INTEGER REFERENCES users(id), -- NULL for system-wide notifications
+    target_user_id UUID REFERENCES users(id), -- NULL for system-wide notifications
     action_url VARCHAR(500),
     expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
 -- User management enhancements
 CREATE TABLE IF NOT EXISTS admin_user_sessions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     session_token VARCHAR(255) UNIQUE NOT NULL,
     ip_address INET,
     user_agent TEXT,
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS admin_roles (
     description TEXT,
     permissions JSONB NOT NULL, -- Array of permission strings
     is_system_role BOOLEAN DEFAULT FALSE, -- Cannot be deleted if true
-    created_by INTEGER REFERENCES users(id),
+    created_by UUID REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -164,9 +164,9 @@ CREATE TABLE IF NOT EXISTS admin_roles (
 -- User role assignments
 CREATE TABLE IF NOT EXISTS admin_user_roles (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     role_id INTEGER REFERENCES admin_roles(id) ON DELETE CASCADE,
-    assigned_by INTEGER REFERENCES users(id),
+    assigned_by UUID REFERENCES users(id),
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
     UNIQUE(user_id, role_id)
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS cms_workflows (
     description TEXT,
     workflow_steps JSONB NOT NULL, -- Array of workflow step definitions
     is_active BOOLEAN DEFAULT TRUE,
-    created_by INTEGER REFERENCES users(id),
+    created_by UUID REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS cms_content_workflows (
     workflow_id INTEGER REFERENCES cms_workflows(id),
     current_step INTEGER NOT NULL DEFAULT 1,
     status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'completed'
-    assigned_to INTEGER REFERENCES users(id),
+    assigned_to UUID REFERENCES users(id),
     comments TEXT,
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP

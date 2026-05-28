@@ -41,6 +41,10 @@ const EnhancedAuthPage: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [uaePassLoading, setUaePassLoading] = useState(false);
+
+  // Show OTP login only when explicitly enabled (development/staging)
+  const showDevOtp = (import.meta as any).env?.VITE_ENABLE_DEV_OTP === 'true';
 
   // UAE Emirates list
   const emirates = [
@@ -79,7 +83,31 @@ const EnhancedAuthPage: React.FC = () => {
     }
   }, [isAuthLoading, isAuthenticated, user, navigate, location]);
 
+  // Check for UAE Pass error in URL params (redirected back from callback)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const uaePassError = searchParams.get('error');
+    const uaePassMessage = searchParams.get('message');
+    if (uaePassError) {
+      setError(uaePassMessage || 'UAE Pass authentication failed. Please try again.');
+      // Clean the URL
+      navigate('/auth', { replace: true });
+    }
+  }, [location.search]);
 
+  const handleUAEPassLogin = async () => {
+    setError('');
+    setUaePassLoading(true);
+    try {
+      const authUrl = await authService.getUAEPassLoginUrl();
+      // Redirect to UAE Pass
+      window.location.href = authUrl;
+    } catch (err: any) {
+      console.error('UAE Pass login error:', err);
+      setError('Failed to connect to UAE PASS. Please try again.');
+      setUaePassLoading(false);
+    }
+  };
 
   const handleRoleSelection = (roleId: string) => {
     setSelectedRole(roleId);
@@ -419,7 +447,7 @@ const EnhancedAuthPage: React.FC = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Account Created Successfully!</h2>
               <p className="text-gray-600">
-                Welcome to the Dubai Human Development Platform! You can now sign in using your WhatsApp number.
+                Welcome to the Emirati Human Development Platform! You can now sign in using your WhatsApp number.
               </p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4">
@@ -443,7 +471,7 @@ const EnhancedAuthPage: React.FC = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-              Dubai Human Development Platform
+              Emirati Human Development Platform
             </h1>
             <p className="text-slate-600">
               UAE Nationals Career Development Platform
@@ -484,84 +512,147 @@ const EnhancedAuthPage: React.FC = () => {
                         <CardHeader className="text-center pb-6">
                           <CardTitle className="text-2xl">Welcome Back</CardTitle>
                           <CardDescription>
-                            Sign in with your WhatsApp number
+                            Sign in securely with your UAE PASS identity
                           </CardDescription>
                         </CardHeader>
 
-                        <form onSubmit={otpSent ? handleVerifyOtp : handleRequestOtp} className="space-y-4">
-                          <div>
-                            <Label htmlFor="login-phone">WhatsApp Number</Label>
-                            <Input
-                              id="login-phone"
-                              type="tel"
-                              value={loginPhone}
-                              onChange={(e) => setLoginPhone(e.target.value)}
-                              placeholder="0501234567"
-                              required
-                              disabled={otpSent}
-                              className="h-12"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Format: 0501234567 or +971501234567
-                            </p>
-                          </div>
-
-                          {otpSent && (
-                            <div>
-                              <Label htmlFor="otp-code">Verification Code</Label>
-                              <Input
-                                id="otp-code"
-                                type="text"
-                                value={otpCode}
-                                onChange={(e) => setOtpCode(e.target.value)}
-                                placeholder="123456"
-                                required
-                                className="h-12 text-center text-lg tracking-widest"
-                              />
-                            </div>
-                          )}
-
+                        {/* ── UAE PASS Login Button (Official Black Variant) ── */}
+                        <div className="space-y-4 mb-6">
                           <Button
-                            type="submit"
-                            className="w-full h-12 text-lg bg-teal-600 hover:bg-teal-700"
-                            disabled={isLoading}
+                            id="uaepass-login-btn"
+                            type="button"
+                            onClick={handleUAEPassLogin}
+                            disabled={uaePassLoading}
+                            className="w-full h-14 text-lg font-semibold rounded-xl
+                                       bg-[#1C1C1C] hover:bg-[#2a2a2a] text-white
+                                       shadow-lg hover:shadow-xl transition-all duration-200
+                                       flex items-center justify-center gap-3
+                                       border border-gray-700"
                           >
-                            {isLoading ? (
-                              <>
-                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                {otpSent ? 'Verifying...' : 'Sending Code...'}
-                              </>
+                            {uaePassLoading ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
                             ) : (
                               <>
-                                {otpSent ? 'Verify & Login' : 'Send WhatsApp Code'}
+                                {/* Official UAE Pass Green Fingerprint Logo */}
+                                <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="50" cy="50" r="48" fill="url(#uaepass_gradient)" />
+                                  <defs>
+                                    <linearGradient id="uaepass_gradient" x1="0" y1="0" x2="100" y2="100">
+                                      <stop offset="0%" stopColor="#2ED573" />
+                                      <stop offset="100%" stopColor="#00B894" />
+                                    </linearGradient>
+                                  </defs>
+                                  {/* Fingerprint arcs */}
+                                  <path d="M50 25 C35 25, 22 38, 22 53 C22 60, 25 66, 30 70" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 33 C39 33, 30 42, 30 53 C30 58, 32 62, 36 65" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 41 C43 41, 38 47, 38 53 C38 57, 40 60, 43 62" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 25 C65 25, 78 38, 78 53 C78 60, 75 66, 70 70" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 33 C61 33, 70 42, 70 53 C70 58, 68 62, 64 65" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  <path d="M50 41 C57 41, 62 47, 62 53 C62 57, 60 60, 57 62" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+                                  {/* Center vertical line */}
+                                  <line x1="50" y1="25" x2="50" y2="53" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+                                </svg>
+                                <span>Sign in using UAE PASS</span>
                               </>
                             )}
                           </Button>
 
-                          {otpSent && (
-                            <div className="flex flex-col items-center space-y-2">
-                              <Button
-                                type="button"
-                                variant="link"
-                                onClick={handleResendOtp}
-                                disabled={resendCooldown > 0 || isLoading}
-                                className="text-sm"
-                              >
-                                {resendCooldown > 0
-                                  ? `Resend code in ${resendCooldown}s`
-                                  : 'Resend Code'}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => { setOtpSent(false); setOtpCode(''); setResendCooldown(0); }}
-                              >
-                                Change Phone Number
-                              </Button>
+                          <p className="text-xs text-center text-gray-500">
+                            Secure national digital identity verification
+                          </p>
+                        </div>
+
+                        {/* ── Dev OTP Login (Development/Staging Only) ── */}
+                        {showDevOtp && (
+                          <>
+                            <div className="relative my-6">
+                              <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                              </div>
+                              <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-2 text-gray-500">
+                                  🛠️ Development Login (OTP)
+                                </span>
+                              </div>
                             </div>
-                          )}
-                        </form>
+
+                            <form onSubmit={otpSent ? handleVerifyOtp : handleRequestOtp} className="space-y-4">
+                              <div>
+                                <Label htmlFor="login-phone">WhatsApp Number</Label>
+                                <Input
+                                  id="login-phone"
+                                  type="tel"
+                                  value={loginPhone}
+                                  onChange={(e) => setLoginPhone(e.target.value)}
+                                  placeholder="0501234567"
+                                  required
+                                  disabled={otpSent}
+                                  className="h-12"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Format: 0501234567 or +971501234567
+                                </p>
+                              </div>
+
+                              {otpSent && (
+                                <div>
+                                  <Label htmlFor="otp-code">Verification Code</Label>
+                                  <Input
+                                    id="otp-code"
+                                    type="text"
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value)}
+                                    placeholder="123456"
+                                    required
+                                    className="h-12 text-center text-lg tracking-widest"
+                                  />
+                                </div>
+                              )}
+
+                              <Button
+                                type="submit"
+                                variant="outline"
+                                className="w-full h-12 text-lg border-teal-300 text-teal-700 hover:bg-teal-50"
+                                disabled={isLoading}
+                              >
+                                {isLoading ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    {otpSent ? 'Verifying...' : 'Sending Code...'}
+                                  </>
+                                ) : (
+                                  <>
+                                    {otpSent ? 'Verify & Login' : 'Send WhatsApp Code'}
+                                  </>
+                                )}
+                              </Button>
+
+                              {otpSent && (
+                                <div className="flex flex-col items-center space-y-2">
+                                  <Button
+                                    type="button"
+                                    variant="link"
+                                    onClick={handleResendOtp}
+                                    disabled={resendCooldown > 0 || isLoading}
+                                    className="text-sm"
+                                  >
+                                    {resendCooldown > 0
+                                      ? `Resend code in ${resendCooldown}s`
+                                      : 'Resend Code'}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => { setOtpSent(false); setOtpCode(''); setResendCooldown(0); }}
+                                  >
+                                    Change Phone Number
+                                  </Button>
+                                </div>
+                              )}
+                            </form>
+                          </>
+                        )}
                       </div>
                     </TabsContent>
 

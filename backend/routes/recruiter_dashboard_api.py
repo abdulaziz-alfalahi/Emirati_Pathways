@@ -325,7 +325,7 @@ def get_jd_list_enhanced():
                     try:
                         # Fetch company for the user (column is 'company', not 'company_id')
                         with conn.cursor() as cur_user:
-                            cur_user.execute("SELECT company FROM users WHERE id = %s", (current_user_id,))
+                            cur_user.execute("SELECT company FROM users WHERE id::text = %s", (str(current_user_id),))
                             user_data = cur_user.fetchone()
                             if user_data:
                                 user_company_id = user_data[0] # Tuple index 0
@@ -333,8 +333,8 @@ def get_jd_list_enhanced():
                             # Fallback: check company_team_members if users.company is NULL
                             if not user_company_id:
                                 cur_user.execute(
-                                    "SELECT company_id FROM company_team_members WHERE user_id = %s LIMIT 1",
-                                    (int(current_user_id),)
+                                    "SELECT company_id FROM company_team_members WHERE user_id::text = %s LIMIT 1",
+                                    (str(current_user_id),)
                                 )
                                 team_data = cur_user.fetchone()
                                 if team_data:
@@ -353,54 +353,67 @@ def get_jd_list_enhanced():
                     pass
                 elif user_role in ('hr_manager', 'hr') and user_company_id:
                      # HR Manager with Company: See all jobs for that company OR created by them
-                     filter_sql_new = " AND (company_id = %s OR recruiter_id = %s OR created_by = %s)"
-                     params_new = [user_company_id, str(current_user_id), str(current_user_id)]
+                     # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
+                     filter_sql_new = " AND (jp.company_id = %s OR jp.recruiter_id = %s)"
+                     params_new = [user_company_id, str(current_user_id)]
                      
                      # Legacy table: Try user_id (most likely) or recruiter_id
                      # Since we confirmed user_id exists for legacy jobs, use that.
-                     filter_sql_legacy = " AND user_id = %s" 
+                     filter_sql_legacy = " AND user_id::text = %s" 
                      try:
-                        params_legacy = [int(current_user_id)]
+                        params_legacy = [str(current_user_id)]
                      except:
                         params_legacy = [0]
                         filter_sql_legacy = " AND 1=0"
                 else:
                     # Regular Recruiter OR HR Manager without Company: See ONLY their own jobs
-                    filter_sql_new = " AND (recruiter_id = %s OR created_by = %s)"
-                    params_new = [str(current_user_id), str(current_user_id)]
+                    # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
+                    filter_sql_new = " AND jp.recruiter_id = %s"
+                    params_new = [str(current_user_id)]
                     
                     # Legacy table: Use user_id
-                    filter_sql_legacy = " AND user_id = %s"
-                    try: 
-                        rec_id_int = int(current_user_id)
-                        params_legacy = [rec_id_int]
-                    except:
-                        params_legacy = [0]
-                        filter_sql_legacy = " AND 1=0"
+                    filter_sql_legacy = " AND user_id::text = %s"
+                    params_legacy = [str(current_user_id)]
                 
                 # Query 1: job_postings (New Table)
                 try:
                     query_new = f"""
                         SELECT 
-                            jd_id,
-                            title,
-                            COALESCE(company_id::text, 'Company') as company,
-                            location,
-                            status,
-                            COALESCE(applications_count, 0) as applications,
-                            created_at,
-                            description,
-                            requirements,
-                            responsibilities,
-                            benefits,
-                            salary_range_min,
-                            salary_range_max,
-                            employment_type,
-                            experience_level,
-                            id::text as pk
-                        FROM job_postings
-                        WHERE status != 'deleted' {filter_sql_new}
-                        ORDER BY created_at DESC
+                            jp.jd_id,
+                            jp.title,
+                            COALESCE(
+                                NULLIF(u.company, ''),
+                                NULLIF(u.profile_data->>'companyName', ''),
+                                NULLIF(jp.company_id, 'company_default'),
+                                NULLIF(jp.company_id, 'unknown'),
+                                'Company'
+                            ) as company,
+                            COALESCE(
+                                NULLIF(jp.location, ''),
+                                CASE 
+                                    WHEN jp.city IS NOT NULL AND jp.emirate IS NOT NULL 
+                                        THEN jp.city || ', ' || jp.emirate
+                                    WHEN jp.emirate IS NOT NULL THEN jp.emirate
+                                    WHEN jp.city IS NOT NULL THEN jp.city
+                                    ELSE NULL
+                                END
+                            ) as location,
+                            jp.status,
+                            COALESCE(jp.applications_count, 0) as applications,
+                            jp.created_at,
+                            jp.description,
+                            jp.requirements,
+                            jp.responsibilities,
+                            jp.benefits,
+                            jp.salary_range_min,
+                            jp.salary_range_max,
+                            COALESCE(jp.employment_type, jp.job_type) as employment_type,
+                            jp.experience_level,
+                            jp.id::text as pk
+                        FROM job_postings jp
+                        LEFT JOIN users u ON jp.recruiter_id = u.id::text
+                        WHERE jp.status != 'deleted' {filter_sql_new}
+                        ORDER BY jp.created_at DESC
                         LIMIT 50
                     """
                     cur.execute(query_new, params_new)
@@ -961,7 +974,7 @@ def generate_offer_letter(offer_id):
 </head>
 <body>
 <div class="header">
-  <h1>Dubai Human Development Platform</h1>
+  <h1>Emirati Human Development Platform</h1>
   <p>UAE Nationals Career Development</p>
   <p style="font-size:18px; margin-top:15px; font-weight:bold;">OFFICIAL OFFER LETTER</p>
 </div>
@@ -1024,7 +1037,7 @@ We believe your skills and experience are an excellent match for this role and l
 </div>
 
 <div class="footer">
-  <p>This offer letter was generated by the Dubai Human Development Platform.<br/>
+  <p>This offer letter was generated by the Emirati Human Development Platform.<br/>
   Offer Reference: {offer_id}</p>
 </div>
 </body>
@@ -1570,16 +1583,23 @@ def create_offer_legacy():
         data = request.get_json()
         logger.info(f"Create offer request data: {data}")
         
-        # Get candidate_id - handle both string and int formats
+        # Get candidate_id - handle both string UUID and int formats
         candidate_id = data.get('candidate_id')
         if candidate_id:
-            # Try to convert to integer if it's a numeric string
-            try:
-                candidate_id = int(candidate_id)
-            except (ValueError, TypeError):
-                # If it's a UUID or non-numeric string, we need to look up the user
-                logger.warning(f"Non-integer candidate_id: {candidate_id}")
-                candidate_id = None
+            candidate_id_str = str(candidate_id).strip()
+            # Check if it's a valid UUID
+            import re
+            uuid_re = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
+            if uuid_re.match(candidate_id_str):
+                # Valid UUID - keep as string
+                candidate_id = candidate_id_str
+            else:
+                # Try to convert to integer if it's a numeric string
+                try:
+                    candidate_id = int(candidate_id)
+                except (ValueError, TypeError):
+                    logger.warning(f"Non-integer/non-UUID candidate_id: {candidate_id}")
+                    candidate_id = None
         
         # Get jd_id (job description ID) - this is a UUID
         jd_id = data.get('jd_id') or data.get('job_id')
@@ -1735,6 +1755,36 @@ def create_offer_legacy():
             traceback.print_exc()
         
         if offer_id:
+            # Post-offer: Update application status to 'offer_received'
+            try:
+                # Find the job posting ID from jd_id
+                jp_query = "SELECT id FROM job_postings WHERE jd_id = %s LIMIT 1"
+                jp_result = execute_query(jp_query, (jd_id,), fetch_one=True)
+                if jp_result:
+                    job_posting_id = jp_result.get('id')
+                    update_query = """
+                        UPDATE job_applications 
+                        SET status = 'offer', updated_at = NOW()
+                        WHERE job_id = %s AND candidate_id = %s
+                    """
+                    execute_query(update_query, (job_posting_id, str(candidate_id)), fetch_one=False, fetch_all=False)
+                    logger.info(f"Updated application status to 'offer_received' for candidate {candidate_id}")
+            except Exception as app_err:
+                logger.warning(f"Failed to update application status: {app_err}")
+            
+            # Post-offer: Create notification for candidate
+            try:
+                notif_query = """
+                    INSERT INTO notifications (id, user_id, type, title, content, is_read, created_at)
+                    VALUES (uuid_generate_v4(), %s, 'offer', %s, %s, false, NOW())
+                """
+                notif_title = f"Job Offer: {position_title}"
+                notif_content = f"Congratulations! You have received a job offer for {position_title}. Review the offer details in your application tracker."
+                execute_query(notif_query, (str(candidate_id), notif_title, notif_content), fetch_one=False, fetch_all=False)
+                logger.info(f"Notification created for candidate {candidate_id}")
+            except Exception as notif_err:
+                logger.warning(f"Failed to create notification: {notif_err}")
+            
             return jsonify({
                 'success': True,
                 'data': {'id': offer_id, 'offer_id': offer_id},
@@ -2518,15 +2568,17 @@ def get_candidate_profile_full(candidate_id):
     try:
         logger.info(f"Fetching full profile for candidate_id: {candidate_id}")
         
-        # Ensure ID is an integer (Schema strictness)
+        # Support both integer and UUID candidate IDs
+        # Try integer first, then fall back to UUID/string match
         try:
             candidate_id_int = int(candidate_id)
+            id_param = candidate_id_int
         except (ValueError, TypeError):
-            logger.error(f"Invalid candidate_id format: {candidate_id}")
-            return jsonify({'success': False, 'message': 'Invalid candidate ID format'}), 400
+            # UUID string — use text comparison
+            id_param = str(candidate_id)
 
-        # Standard Query: Join Users and Candidate Profiles on Integer IDs
-        # Note: We select from users first to ensure we get user details even if profile is missing
+        # Standard Query: Join Users and Candidate Profiles
+        # Use text cast for robust matching (handles both int and UUID IDs)
         query = """
             SELECT 
                 cp.id as profile_id,
@@ -2534,12 +2586,12 @@ def get_candidate_profile_full(candidate_id):
                 cp.dob, cp.avatar_url, cp.video_intro_url,
                 cp.expected_salary_range, cp.notice_period,
                 cp.full_name, cp.ats_score, cp.profile_photo_url,
-                u.email, u.first_name, u.last_name
+                u.email, u.first_name, u.last_name, u.phone as user_phone
             FROM users u
-            LEFT JOIN candidate_profiles cp ON cp.user_id = u.id
-            WHERE u.id = %s
+            LEFT JOIN candidate_profiles cp ON cp.user_id::text = u.id::text
+            WHERE u.id::text = %s
         """
-        profile = execute_query(query, (candidate_id_int,), fetch_one=True)
+        profile = execute_query(query, (str(id_param),), fetch_one=True)
         
         # Fallback: If no profile record (and join returned None for cp columns), we construct a basic object.
         # But execute_query returns a dict. If cp is null, keys might be None.
@@ -2567,44 +2619,89 @@ def get_candidate_profile_full(candidate_id):
         if profile_id:
             try:
                 # Experience
-                exp_query = "SELECT * FROM candidate_experience_entries WHERE profile_id = %s ORDER BY start_date DESC"
-                experience = execute_query(exp_query, (profile_id,)) or []
+                exp_query = "SELECT * FROM candidate_experience_entries WHERE user_id = %s ORDER BY start_date DESC"
+                experience = execute_query(exp_query, (str(id_param),)) or []
                 for exp in experience:
                     for date_field in ['start_date', 'end_date']:
                         if exp.get(date_field): exp[date_field] = str(exp[date_field])
 
                 # Education
-                edu_query = "SELECT * FROM candidate_education_entries WHERE profile_id = %s ORDER BY start_date DESC"
-                education = execute_query(edu_query, (profile_id,)) or []
+                edu_query = "SELECT * FROM candidate_education_entries WHERE user_id = %s ORDER BY start_date DESC"
+                education = execute_query(edu_query, (str(id_param),)) or []
                 for edu in education:
                     for date_field in ['start_date', 'end_date']:
                         if edu.get(date_field): edu[date_field] = str(edu[date_field])
 
                 # Skills
-                skill_query = "SELECT * FROM candidate_skills WHERE profile_id = %s"
-                skills = execute_query(skill_query, (profile_id,)) or []
+                skill_query = "SELECT * FROM candidate_skills WHERE user_id = %s"
+                skills = execute_query(skill_query, (str(id_param),)) or []
             except Exception as e:
                 logger.error(f"Error fetching related data for profile {profile_id}: {e}")
 
-        # Privacy: extract emirate from location string for recruiter view
-        raw_location = profile.get('location') or ''
-        emirate = raw_location.split(',')[0].strip() if raw_location else None
+        # Also try to fetch CV data from user_cvs (may have more info than candidate_profiles)
+        cv_data = None
+        try:
+            cv_query = "SELECT * FROM user_cvs WHERE user_id::text = %s ORDER BY updated_at DESC LIMIT 1"
+            cv_data = execute_query(cv_query, (str(id_param),), fetch_one=True)
+        except Exception as e:
+            logger.debug(f"No CV data found: {e}")
 
-        # Construct Response — exclude email/phone for privacy (all communication on-platform)
+        # Merge CV data for richer profiles
+        cv_technical_skills = []
+        cv_soft_skills = []
+        cv_work_experience = []
+        cv_education = []
+        cv_summary = None
+        if cv_data:
+            import json as _json
+            def _parse_json(val):
+                if isinstance(val, list): return val
+                if isinstance(val, str):
+                    try: return _json.loads(val)
+                    except: return []
+                return val or []
+            cv_technical_skills = _parse_json(cv_data.get('technical_skills'))
+            cv_soft_skills = _parse_json(cv_data.get('soft_skills'))
+            cv_work_experience = _parse_json(cv_data.get('work_experience'))
+            cv_education = _parse_json(cv_data.get('education'))
+            cv_summary = cv_data.get('professional_summary')
+
+        # Build final skills lists (prefer candidate_skills table, fallback to CV)
+        tech_skills = [s.get('name') for s in skills if s.get('category') == 'technical'] if skills else []
+        soft_skills_list = [s.get('name') for s in skills if s.get('category') == 'soft'] if skills else []
+        if not tech_skills and cv_technical_skills:
+            tech_skills = [s if isinstance(s, str) else s.get('name', str(s)) for s in cv_technical_skills]
+        if not soft_skills_list and cv_soft_skills:
+            soft_skills_list = [s if isinstance(s, str) else s.get('name', str(s)) for s in cv_soft_skills]
+
+        # Build final experience/education (prefer profile tables, fallback to CV)
+        final_experience = experience if experience else cv_work_experience
+        final_education = education if education else cv_education
+
+        # Build summary
+        summary = profile.get('bio') or cv_summary
+
+        # Extract location
+        raw_location = profile.get('location') or ''
+        location = raw_location if raw_location else None
+
+        # Construct Response — include contact info for recruiter decision-making
         data = {
             'candidate_id': candidate_id,
             'full_name': profile.get('full_name') or f"{profile.get('first_name','')} {profile.get('last_name','')}".strip(),
-            'emirate': emirate,
+            'email': profile.get('email'),
+            'phone': profile.get('phone') or profile.get('user_phone'),
+            'location': location,
             'headline': profile.get('headline'),
             'bio': profile.get('bio'),
-            'summary': profile.get('bio'), 
+            'summary': summary, 
             'nationality': profile.get('nationality'),
-            'work_experience': experience,
-            'education': education,
-            'skills': [s.get('name') for s in skills], 
-            'technical_skills': [s.get('name') for s in skills if s.get('category') == 'technical'],
-            'soft_skills': [s.get('name') for s in skills if s.get('category') == 'soft'],
-            'ats_score': profile.get('ats_score'),
+            'work_experience': final_experience,
+            'education': final_education,
+            'skills': [s.get('name') for s in skills] if skills else (tech_skills + soft_skills_list), 
+            'technical_skills': tech_skills,
+            'soft_skills': soft_skills_list,
+            'ats_score': profile.get('ats_score') or (cv_data.get('ats_score') if cv_data else None),
             'profile_photo_url': profile.get('profile_photo_url') or profile.get('avatar_url')
         }
         

@@ -34,7 +34,7 @@ const GovernmentHeader: React.FC<GovernmentHeaderProps> = ({
             </div>
             <div className="hidden md:block">
               <Link to="/" className="hover:opacity-80 transition-opacity">
-                <h1 className="text-xl font-bold text-slate-900">Dubai Human Development Platform</h1>
+                <h1 className="text-xl font-bold text-slate-900">Emirati Human Development Platform</h1>
                 <p className="text-sm text-slate-600">UAE Nationals Career Development</p>
               </Link>
             </div>

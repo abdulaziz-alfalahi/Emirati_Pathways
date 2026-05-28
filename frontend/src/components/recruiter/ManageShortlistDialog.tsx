@@ -43,7 +43,7 @@ const ManageShortlistDialog: React.FC<ManageShortlistDialogProps> = ({ open, onC
       setLoading(true);
       const token = getAuthToken();
 
-      const response = await fetch('http://127.0.0.1:5005/api/recruiter/jd/list', {
+      const response = await fetch('/api/recruiter/jd/list', {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json',

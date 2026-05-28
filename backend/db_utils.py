@@ -26,12 +26,25 @@ DATABASE_CONFIG = {
     'port': int(os.getenv('DB_PORT', 5432))
 }
 
+# Schema separation: set DB_SCHEMA=dev or DB_SCHEMA=qa to isolate environments
+DB_SCHEMA = os.getenv('DB_SCHEMA', 'public')
+
+
+def _apply_schema(conn):
+    """Set the search_path to the configured schema for environment isolation."""
+    if DB_SCHEMA and DB_SCHEMA != 'public':
+        with conn.cursor() as cur:
+            cur.execute(f"SET search_path TO {DB_SCHEMA}, public")
+        conn.commit()
+        logger.info(f"DB search_path set to: {DB_SCHEMA}, public")
+    return conn
+
 
 def get_db():
     """Get database connection from Flask request context (g)."""
     if 'db' not in g:
         try:
-            g.db = psycopg2.connect(**DATABASE_CONFIG)
+            g.db = _apply_schema(psycopg2.connect(**DATABASE_CONFIG))
         except psycopg2.Error as e:
             logger.error(f"Database connection error: {e}")
             return None

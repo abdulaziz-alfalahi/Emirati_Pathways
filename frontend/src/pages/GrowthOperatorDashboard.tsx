@@ -9,8 +9,8 @@ import {
   Building2, Plus, Search, Filter, Mail, Phone, MapPin, Globe,
   Users, Briefcase, CheckCircle, Clock, AlertTriangle, Eye, Edit,
   RefreshCw, Download, Upload, TrendingUp, BarChart3, Target,
-  Activity, ArrowUpRight, ArrowDownRight, FileText, ShieldCheck,
-  Building, UserCheck, Flag, ChevronRight, ExternalLink,
+  Activity, ArrowUpRight, ArrowDownRight, ShieldCheck,
+  Building, Flag, ChevronRight, ExternalLink,
   Handshake, PieChart, Award, MessageSquare
 } from 'lucide-react';
 
@@ -42,7 +42,7 @@ interface Company {
   industryAr: string;
   size: string;
   emirate: string;
-  status: 'lead' | 'contacted' | 'documentation' | 'verification' | 'active' | 'inactive';
+  status: 'lead' | 'invited' | 'link_opened' | 'signing_up' | 'active' | 'expired' | 'inactive';
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;
@@ -56,73 +56,52 @@ interface Company {
   healthScore: number; // 0-100
   tradeLicense: boolean;
   mohrRegistered: boolean;
+  leadSource: string; // nafis_import | manual | magic_link
 }
 
-// ─── Mock Data ───
-const mockCompanies: Company[] = [
-  {
-    id: '1', name: 'Emirates Digital Solutions', nameAr: 'حلول الإمارات الرقمية',
-    industry: 'Technology', industryAr: 'التكنولوجيا', size: '201-500', emirate: 'Dubai',
-    status: 'active', contactPerson: 'Ahmed Al Marzouqi', contactEmail: 'ahmed@eds.ae',
-    contactPhone: '+971501234567', jobsPosted: 24, emiratizationRate: 12.5,
-    emiratizationTarget: 10, hiresCount: 156, emiratiHires: 19,
-    registeredAt: '2025-06-15', lastActivity: '2026-02-20', healthScore: 92,
-    tradeLicense: true, mohrRegistered: true
-  },
-  {
-    id: '2', name: 'Gulf Construction Group', nameAr: 'مجموعة الخليج للبناء',
-    industry: 'Construction', industryAr: 'البناء', size: '501-1000', emirate: 'Abu Dhabi',
-    status: 'active', contactPerson: 'Sara Al Hashimi', contactEmail: 'sara@gcg.ae',
-    contactPhone: '+971502345678', jobsPosted: 18, emiratizationRate: 7.2,
-    emiratizationTarget: 10, hiresCount: 340, emiratiHires: 24,
-    registeredAt: '2025-03-10', lastActivity: '2026-02-19', healthScore: 68,
-    tradeLicense: true, mohrRegistered: true
-  },
-  {
-    id: '3', name: 'Al Noor Financial Services', nameAr: 'خدمات النور المالية',
-    industry: 'Finance & Banking', industryAr: 'المالية والمصرفية', size: '51-200', emirate: 'Dubai',
-    status: 'documentation', contactPerson: 'Khalid Ibrahim', contactEmail: 'khalid@alnoor.ae',
-    contactPhone: '+971503456789', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-01', lastActivity: '2026-02-18', healthScore: 45,
-    tradeLicense: true, mohrRegistered: false
-  },
-  {
-    id: '4', name: 'Sharjah Health Partners', nameAr: 'شركاء الشارقة للصحة',
-    industry: 'Healthcare', industryAr: 'الرعاية الصحية', size: '201-500', emirate: 'Sharjah',
-    status: 'verification', contactPerson: 'Fatima Al Ketbi', contactEmail: 'fatima@shp.ae',
-    contactPhone: '+971504567890', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-10', lastActivity: '2026-02-20', healthScore: 55,
-    tradeLicense: true, mohrRegistered: true
-  },
-  {
-    id: '5', name: 'RAK Manufacturing LLC', nameAr: 'رأس الخيمة للصناعات',
-    industry: 'Manufacturing', industryAr: 'الصناعة', size: '1000+', emirate: 'Ras Al Khaimah',
-    status: 'contacted', contactPerson: 'Omar Al Nuaimi', contactEmail: 'omar@rakm.ae',
-    contactPhone: '+971505678901', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-15', lastActivity: '2026-02-17', healthScore: 20,
-    tradeLicense: false, mohrRegistered: false
-  },
-  {
-    id: '6', name: 'Ajman Retail Group', nameAr: 'مجموعة عجمان للتجزئة',
-    industry: 'Retail', industryAr: 'التجزئة', size: '51-200', emirate: 'Ajman',
-    status: 'lead', contactPerson: 'Maryam Al Shamsi', contactEmail: 'maryam@arg.ae',
-    contactPhone: '+971506789012', jobsPosted: 0, emiratizationRate: 0,
-    emiratizationTarget: 10, hiresCount: 0, emiratiHires: 0,
-    registeredAt: '2026-02-19', lastActivity: '2026-02-19', healthScore: 10,
-    tradeLicense: false, mohrRegistered: false
-  },
-];
+interface ActivityItem {
+  type: string;
+  text: string;
+  time: string;
+}
 
-const recentActivity = [
-  { type: 'onboard', text: 'Sharjah Health Partners submitted trade license', textAr: 'شركاء الشارقة للصحة قدمت الرخصة التجارية', time: '2h ago', timeAr: 'منذ ساعتين' },
-  { type: 'job', text: 'Emirates Digital Solutions posted 3 new jobs', textAr: 'حلول الإمارات الرقمية نشرت 3 وظائف جديدة', time: '5h ago', timeAr: 'منذ 5 ساعات' },
-  { type: 'flag', text: 'Gulf Construction Group below Emiratization target', textAr: 'مجموعة الخليج للبناء أقل من نسبة التوطين المستهدفة', time: '1d ago', timeAr: 'منذ يوم' },
-  { type: 'contact', text: 'RAK Manufacturing LLC initial outreach completed', textAr: 'رأس الخيمة للصناعات - تم التواصل الأولي', time: '2d ago', timeAr: 'منذ يومين' },
-  { type: 'success', text: 'Al Noor Financial Services uploaded MoHR registration', textAr: 'خدمات النور المالية رفعت تسجيل وزارة الموارد البشرية', time: '3d ago', timeAr: 'منذ 3 أيام' },
-];
+// Helper: convert API company to UI Company
+const toCompany = (c: any): Company => ({
+  id: c.id || '',
+  name: c.name || c.company_name || '',
+  nameAr: c.nameAr || c.name || '',
+  industry: c.industry || '',
+  industryAr: c.industryAr || c.industry || '',
+  size: c.size || '—',
+  emirate: c.emirate || '',
+  status: c.status || 'lead',
+  contactPerson: c.contactPerson || '',
+  contactEmail: c.contactEmail || '',
+  contactPhone: c.contactPhone || '',
+  jobsPosted: c.jobsPosted || 0,
+  emiratizationRate: c.emiratizationRate || 0,
+  emiratizationTarget: c.emiratizationTarget || 10,
+  hiresCount: c.totalHired || c.hiresCount || 0,
+  emiratiHires: c.emiratiHires || 0,
+  registeredAt: c.registeredAt || '',
+  lastActivity: c.invitationAcceptedAt || c.invitationSentAt || c.registeredAt || '',
+  healthScore: c.isVerified ? 80 : (c.status === 'active' ? 60 : c.status === 'signing_up' ? 40 : 20),
+  tradeLicense: !!c.tradeLicense,
+  mohrRegistered: c.isVerified || false,
+  leadSource: c.leadSource || 'manual',
+});
+
+// Helper: relative time
+const timeAgo = (iso: string | null): string => {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+};
 
 // ─── Component ───
 const GrowthOperatorDashboard: React.FC = () => {
@@ -139,44 +118,113 @@ const GrowthOperatorDashboard: React.FC = () => {
   const setActiveTab = (tab: string) => {
     setSearchParams({ tab }, { replace: true });
   };
-  const [companies] = useState<Company[]>(mockCompanies);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [funnelCounts, setFunnelCounts] = useState<Record<string, number>>({ lead: 0, invited: 0, link_opened: 0, signing_up: 0, active: 0, expired: 0 });
+  const [kpis, setKpis] = useState<any>({});
+  const [dashLoading, setDashLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showOnboardDialog, setShowOnboardDialog] = useState(false);
+  const [isSubmittingCompany, setIsSubmittingCompany] = useState(false);
+  const [newCompany, setNewCompany] = useState({
+    name: '', name_arabic: '', industry: 'Technology', company_size: 'medium',
+    company_type: 'private', emirate: 'Dubai', trade_license_number: '',
+    contact_name: '', primary_email: '', phone: '', website: ''
+  });
+
+  const handleRegisterCompany = async () => {
+    try {
+      if (!newCompany.name || !newCompany.industry) return alert(t('Please fill required fields', 'يرجى تعبئة الحقول المطلوبة'));
+      setIsSubmittingCompany(true);
+      const payload = {
+        name: newCompany.name,
+        name_arabic: newCompany.name_arabic,
+        industry: newCompany.industry,
+        company_size: newCompany.company_size,
+        company_type: newCompany.company_type,
+        trade_license_number: newCompany.trade_license_number,
+        locations: [{ emirate: newCompany.emirate, is_headquarters: true }],
+        contact: { primary_email: newCompany.primary_email, phone: newCompany.phone, website: newCompany.website }
+      };
+      const res = await restClient.post('/api/companies/create', payload);
+      
+      const mockNewCompany: Company = {
+        id: `comp-${Date.now()}`, name: newCompany.name, industry: newCompany.industry, emirate: newCompany.emirate,
+        status: 'lead', jobsPosted: 0, emiratizationRate: 0, emiratizationTarget: 0,
+        contactName: newCompany.contact_name, contactEmail: newCompany.primary_email,
+      };
+      setCompanies(prev => [mockNewCompany, ...prev]);
+      setShowOnboardDialog(false);
+      setNewCompany({ name: '', name_arabic: '', industry: 'Technology', company_size: 'medium', company_type: 'private', emirate: 'Dubai', trade_license_number: '', contact_name: '', primary_email: '', phone: '', website: '' });
+    } catch (err) {
+      console.error('Failed to create company:', err);
+      alert(t('Failed to register company', 'فشل تسجيل الشركة'));
+    } finally {
+      setIsSubmittingCompany(false);
+    }
+  };
+
+  // ─── Fetch live data ───
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await restClient.get('/api/growth/dashboard-stats');
+        const d = (res as any).data || res;
+        if (cancelled) return;
+        if (d.companies) setCompanies(d.companies.map(toCompany));
+        if (d.funnel) setFunnelCounts(d.funnel);
+        if (d.kpis) setKpis(d.kpis);
+        if (d.recentActivity) setRecentActivity(d.recentActivity.map((a: any) => ({
+          type: a.type || 'contact',
+          text: a.text || '',
+          time: timeAgo(a.time),
+        })));
+      } catch (err) {
+        console.error('Failed to load dashboard stats:', err);
+      } finally {
+        if (!cancelled) setDashLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // ─── Computed Metrics ───
-  const totalCompanies = companies.length;
-  const activeCompanies = companies.filter(c => c.status === 'active').length;
-  const inPipeline = companies.filter(c => ['lead', 'contacted', 'documentation', 'verification'].includes(c.status)).length;
-  const totalJobs = companies.reduce((sum, c) => sum + c.jobsPosted, 0);
+  const totalCompanies = kpis.totalCompanies ?? companies.length;
+  const activeCompanies = kpis.activeCompanies ?? companies.filter(c => c.status === 'active').length;
+  const inPipeline = companies.filter(c => ['invited', 'link_opened', 'signing_up', 'expired'].includes(c.status)).length;
+  const totalJobs = kpis.totalJobs ?? companies.reduce((sum, c) => sum + c.jobsPosted, 0);
   const avgEmiratization = activeCompanies > 0
     ? (companies.filter(c => c.status === 'active').reduce((sum, c) => sum + c.emiratizationRate, 0) / activeCompanies).toFixed(1)
     : '0.0';
   const belowTarget = companies.filter(c => c.status === 'active' && c.emiratizationRate < c.emiratizationTarget).length;
 
   const pipelineStages = [
-    { key: 'lead', label: t('Lead', 'عميل محتمل'), count: companies.filter(c => c.status === 'lead').length, color: colors.textSecondary, bgColor: '#F1F5F9' },
-    { key: 'contacted', label: t('Contacted', 'تم التواصل'), count: companies.filter(c => c.status === 'contacted').length, color: colors.blueText, bgColor: colors.blueBg },
-    { key: 'documentation', label: t('Documentation', 'التوثيق'), count: companies.filter(c => c.status === 'documentation').length, color: colors.yellowText, bgColor: colors.yellowBg },
-    { key: 'verification', label: t('Verification', 'التحقق'), count: companies.filter(c => c.status === 'verification').length, color: colors.purpleText, bgColor: colors.purpleBg },
-    { key: 'active', label: t('Active', 'نشط'), count: companies.filter(c => c.status === 'active').length, color: colors.greenText, bgColor: colors.greenBg },
+    { key: 'lead', label: t('Uploaded', 'تم الرفع'), count: funnelCounts.lead || 0, color: colors.textSecondary, bgColor: '#F1F5F9' },
+    { key: 'invited', label: t('Invited', 'تمت الدعوة'), count: funnelCounts.invited || 0, color: colors.blueText, bgColor: colors.blueBg },
+    { key: 'link_opened', label: t('Link Opened', 'فتح الرابط'), count: funnelCounts.link_opened || 0, color: colors.yellowText, bgColor: colors.yellowBg },
+    { key: 'signing_up', label: t('Signing Up', 'التسجيل'), count: funnelCounts.signing_up || 0, color: colors.purpleText, bgColor: colors.purpleBg },
+    { key: 'expired', label: t('Expired', 'منتهي'), count: funnelCounts.expired || 0, color: colors.redText, bgColor: colors.redBg },
+    { key: 'active', label: t('Active', 'نشط'), count: funnelCounts.active || 0, color: colors.greenText, bgColor: colors.greenBg },
   ];
 
   const filteredCompanies = companies.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase());
+      c.contactEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { bg: string; text: string; label: string; labelAr: string }> = {
-      lead: { bg: '#F1F5F9', text: colors.textSecondary, label: 'Lead', labelAr: 'عميل محتمل' },
-      contacted: { bg: colors.blueBg, text: colors.blueText, label: 'Contacted', labelAr: 'تم التواصل' },
-      documentation: { bg: colors.yellowBg, text: colors.yellowText, label: 'Documentation', labelAr: 'التوثيق' },
-      verification: { bg: colors.purpleBg, text: colors.purpleText, label: 'Verification', labelAr: 'التحقق' },
+      lead: { bg: '#F1F5F9', text: colors.textSecondary, label: 'Uploaded', labelAr: 'تم الرفع' },
+      invited: { bg: colors.blueBg, text: colors.blueText, label: 'Invited', labelAr: 'تمت الدعوة' },
+      link_opened: { bg: colors.yellowBg, text: colors.yellowText, label: 'Link Opened', labelAr: 'فتح الرابط' },
+      signing_up: { bg: colors.purpleBg, text: colors.purpleText, label: 'Signing Up', labelAr: 'التسجيل' },
       active: { bg: colors.greenBg, text: colors.greenText, label: 'Active', labelAr: 'نشط' },
+      expired: { bg: colors.redBg, text: colors.redText, label: 'Expired', labelAr: 'منتهي' },
       inactive: { bg: colors.redBg, text: colors.redText, label: 'Inactive', labelAr: 'غير نشط' },
     };
     const c = config[status] || config.lead;
@@ -195,12 +243,10 @@ const GrowthOperatorDashboard: React.FC = () => {
 
   const tabs = [
     { key: 'overview', label: t('Overview', 'نظرة عامة'), icon: BarChart3 },
-    { key: 'onboarding', label: t('Company Onboarding', 'إلحاق الشركات'), icon: Plus },
-    { key: 'partnerships', label: t('Employer Partnerships', 'شراكات أصحاب العمل'), icon: Handshake },
-    { key: 'workspaces', label: t('Workspaces', 'مساحات العمل'), icon: ShieldCheck },
-    { key: 'emiratization', label: t('Jobs & Emiratization', 'الوظائف والتوطين'), icon: Flag },
     { key: 'nafis', label: t('NAFIS Import', 'استيراد نافس'), icon: Upload },
-    { key: 'reports', label: t('Reports', 'التقارير'), icon: PieChart },
+    { key: 'pipeline', label: t('Invitation Pipeline', 'خط الدعوات'), icon: Target },
+    { key: 'partnerships', label: t('Partner Management', 'إدارة الشركاء'), icon: Handshake },
+    { key: 'workspaces', label: t('Workspaces', 'مساحات العمل'), icon: ShieldCheck },
     { key: 'messages', label: t('Messages', 'الرسائل'), icon: MessageSquare },
   ];
 
@@ -227,364 +273,7 @@ const GrowthOperatorDashboard: React.FC = () => {
   );
 
   // ═══════ OVERVIEW TAB ═══════
-  const renderOverview = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-        <KPICard icon={Building2} label={t('Total Companies', 'إجمالي الشركات')} value={totalCompanies} color={colors.primary} trend={8} />
-        <KPICard icon={Target} label={t('In Pipeline', 'في خط الإلحاق')} value={inPipeline} color={colors.blueText} subtext={t(`${pipelineStages[0].count} leads`, `${pipelineStages[0].count} عملاء محتملين`)} />
-        <KPICard icon={Handshake} label={t('Active Partners', 'شركاء نشطون')} value={activeCompanies} color={colors.greenText} trend={12} />
-        <KPICard icon={Flag} label={t('Avg. Emiratization', 'متوسط التوطين')} value={`${avgEmiratization}%`} color={colors.accent}
-          subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
-      </div>
-
-      {/* Onboarding Funnel */}
-      <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-          {t('Onboarding Funnel', 'مسار إلحاق الشركات')}
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {pipelineStages.map((stage, i) => (
-            <React.Fragment key={stage.key}>
-              <div
-                style={{
-                  flex: 1, textAlign: 'center', padding: '16px 8px', borderRadius: 12,
-                  background: stage.bgColor, border: `2px solid ${stage.color}22`, cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                }}
-                onClick={() => { setActiveTab('onboarding'); setStatusFilter(stage.key); }}
-              >
-                <div style={{ fontSize: 28, fontWeight: 700, color: stage.color }}>{stage.count}</div>
-                <div style={{ fontSize: 12, fontWeight: 500, color: stage.color, marginTop: 4 }}>{stage.label}</div>
-              </div>
-              {i < pipelineStages.length - 1 && (
-                <ChevronRight size={20} color={colors.textSecondary} style={{ flexShrink: 0, opacity: 0.4 }} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 16 }}>
-          {t('Recent Activity', 'النشاط الأخير')}
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {recentActivity.map((item, i) => {
-            const iconMap: Record<string, any> = {
-              onboard: { Icon: FileText, color: colors.blueText },
-              job: { Icon: Briefcase, color: colors.primary },
-              flag: { Icon: AlertTriangle, color: colors.yellowText },
-              contact: { Icon: Phone, color: colors.purpleText },
-              success: { Icon: CheckCircle, color: colors.greenText },
-            };
-            const { Icon, color } = iconMap[item.type] || iconMap.contact;
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < recentActivity.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
-                <div style={{ padding: 8, borderRadius: 8, background: color + '15', flexShrink: 0 }}>
-                  <Icon size={16} color={color} />
-                </div>
-                <div style={{ flex: 1, fontSize: 14, color: colors.text }}>{t(item.text, item.textAr)}</div>
-                <div style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0 }}>{t(item.time, item.timeAr)}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-
-  // ═══════ COMPANY ONBOARDING TAB ═══════
-  const renderOnboarding = () => {
-    const onboardingCompanies = companies.filter(c => ['lead', 'contacted', 'documentation', 'verification'].includes(c.status));
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* Pipeline Stages */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-          {pipelineStages.filter(s => s.key !== 'active').map(stage => (
-            <div
-              key={stage.key}
-              onClick={() => setStatusFilter(statusFilter === stage.key ? 'all' : stage.key)}
-              style={{
-                background: colors.card, borderRadius: 16, padding: 20,
-                border: statusFilter === stage.key ? `2px solid ${stage.color}` : `1px solid ${colors.border}`,
-                cursor: 'pointer', transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ fontSize: 24, fontWeight: 700, color: stage.color }}>{stage.count}</div>
-              <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>{stage.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pipeline Entries */}
-        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>
-              {t('Onboarding Pipeline', 'خط إلحاق الشركات')}
-            </h3>
-            <button
-              onClick={() => setShowOnboardDialog(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10,
-                background: colors.primary, color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-              }}
-            >
-              <Plus size={16} />
-              {t('Register Company', 'تسجيل شركة')}
-            </button>
-          </div>
-
-          {/* Filter/Search */}
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
-              <input
-                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                placeholder={t('Search companies...', 'البحث عن شركات...')}
-                style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}
-              />
-            </div>
-          </div>
-
-          {/* Companies in Pipeline */}
-          {(statusFilter !== 'all' ? onboardingCompanies.filter(c => c.status === statusFilter) : onboardingCompanies).map(company => (
-            <div key={company.id} style={{
-              display: 'flex', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12,
-              border: `1px solid ${colors.border}`, marginBottom: 12, background: '#FAFBFC',
-            }}>
-              <div style={{ padding: 12, borderRadius: 12, background: colors.primaryLight, flexShrink: 0 }}>
-                <Building2 size={20} color={colors.primary} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: colors.text }}>{isRTL ? company.nameAr : company.name}</div>
-                <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                  {isRTL ? company.industryAr : company.industry} • {company.emirate} • {company.contactPerson}
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                {getStatusBadge(company.status)}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {company.tradeLicense ? (
-                    <span style={{ fontSize: 11, color: colors.greenText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CheckCircle size={12} /> {t('Trade License', 'رخصة تجارية')}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: colors.redText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Clock size={12} /> {t('Trade License', 'رخصة تجارية')}
-                    </span>
-                  )}
-                  {company.mohrRegistered ? (
-                    <span style={{ fontSize: 11, color: colors.greenText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <CheckCircle size={12} /> {t('MoHR', 'الموارد البشرية')}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: colors.redText, display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Clock size={12} /> {t('MoHR', 'الموارد البشرية')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {onboardingCompanies.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
-              {t('No companies in the pipeline', 'لا توجد شركات في خط الإلحاق')}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // ═══════ EMPLOYER PARTNERSHIPS TAB ═══════
-  const renderPartnerships = () => {
-    const activePartners = companies.filter(c => c.status === 'active');
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* Search & Filters */}
-        <div style={{ background: colors.card, borderRadius: 16, padding: 20, border: `1px solid ${colors.border}` }}>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
-              <input
-                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                placeholder={t('Search active partners...', 'البحث عن شركاء نشطين...')}
-                style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}
-              />
-            </div>
-            <button style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.card, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: colors.textSecondary }}>
-              <Download size={16} /> {t('Export', 'تصدير')}
-            </button>
-          </div>
-        </div>
-
-        {/* Partner Cards */}
-        {activePartners.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(company => (
-          <div key={company.id} style={{
-            background: colors.card, borderRadius: 16, padding: 24,
-            border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                <div style={{ padding: 14, borderRadius: 14, background: colors.primaryLight }}>
-                  <Building2 size={24} color={colors.primary} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{isRTL ? company.nameAr : company.name}</div>
-                  <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>
-                    {isRTL ? company.industryAr : company.industry} • {company.size} {t('employees', 'موظف')} • {company.emirate}
-                  </div>
-                </div>
-              </div>
-              {/* Health Score */}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 24, fontWeight: 700, color: getHealthColor(company.healthScore) }}>{company.healthScore}</div>
-                <div style={{ fontSize: 11, color: colors.textSecondary }}>{t('Health', 'الصحة')}</div>
-              </div>
-            </div>
-
-            {/* Stats Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 20 }}>
-              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: '#F8FAFC' }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{company.jobsPosted}</div>
-                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Jobs Posted', 'وظائف منشورة')}</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: '#F8FAFC' }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{company.hiresCount}</div>
-                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Total Hires', 'إجمالي التوظيف')}</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: colors.primaryLight }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: colors.primary }}>{company.emiratiHires}</div>
-                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Emirati Hires', 'توظيف إماراتي')}</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: company.emiratizationRate >= company.emiratizationTarget ? colors.greenBg : colors.redBg }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: company.emiratizationRate >= company.emiratizationTarget ? colors.greenText : colors.redText }}>
-                  {company.emiratizationRate}%
-                </div>
-                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Emiratization', 'التوطين')}</div>
-              </div>
-            </div>
-
-            {/* Contact Row */}
-            <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.border}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
-                <UserCheck size={14} /> {company.contactPerson}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
-                <Mail size={14} /> {company.contactEmail}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
-                <Phone size={14} /> {company.contactPhone}
-              </div>
-              <div style={{ marginLeft: 'auto', fontSize: 12, color: colors.textSecondary }}>
-                {t('Last active:', 'آخر نشاط:')} {company.lastActivity}
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {activePartners.length === 0 && (
-          <div style={{ background: colors.card, borderRadius: 16, padding: 60, textAlign: 'center', border: `1px solid ${colors.border}` }}>
-            <Building2 size={48} color={colors.textSecondary} style={{ opacity: 0.3 }} />
-            <p style={{ marginTop: 16, color: colors.textSecondary }}>{t('No active partners yet', 'لا يوجد شركاء نشطون بعد')}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ═══════ JOBS & EMIRATIZATION TAB ═══════
-  const renderEmiratization = () => {
-    const activeWithJobs = companies.filter(c => c.status === 'active');
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        {/* Summary KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-          <KPICard icon={Briefcase} label={t('Total Job Postings', 'إجمالي الوظائف المنشورة')} value={totalJobs} color={colors.primary} />
-          <KPICard icon={Users} label={t('Total Hires', 'إجمالي التوظيف')} value={companies.reduce((s, c) => s + c.hiresCount, 0)} color={colors.blueText} />
-          <KPICard icon={Award} label={t('Emirati Hires', 'توظيف إماراتيين')} value={companies.reduce((s, c) => s + c.emiratiHires, 0)} color={colors.accent} />
-          <KPICard icon={AlertTriangle} label={t('Below Target', 'أقل من المستهدف')} value={belowTarget} color={belowTarget > 0 ? colors.redText : colors.greenText} />
-        </div>
-
-        {/* Compliance Table */}
-        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-            {t('Emiratization Compliance by Company', 'التزام التوطين حسب الشركة')}
-          </h3>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-              <thead>
-                <tr style={{ borderBottom: `2px solid ${colors.border}` }}>
-                  <th style={{ textAlign: isRTL ? 'right' : 'left', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Company', 'الشركة')}
-                  </th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Jobs', 'وظائف')}
-                  </th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Total Hires', 'إجمالي التوظيف')}
-                  </th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Emirati Hires', 'توظيف إماراتي')}
-                  </th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Rate', 'النسبة')}
-                  </th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Target', 'المستهدف')}
-                  </th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
-                    {t('Status', 'الحالة')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeWithJobs.map(company => {
-                  const compliant = company.emiratizationRate >= company.emiratizationTarget;
-                  return (
-                    <tr key={company.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 600, color: colors.text }}>{isRTL ? company.nameAr : company.name}</div>
-                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{company.emirate}</div>
-                      </td>
-                      <td style={{ textAlign: 'center', padding: '14px 16px', fontWeight: 600, color: colors.text }}>{company.jobsPosted}</td>
-                      <td style={{ textAlign: 'center', padding: '14px 16px', color: colors.text }}>{company.hiresCount}</td>
-                      <td style={{ textAlign: 'center', padding: '14px 16px', color: colors.primary, fontWeight: 600 }}>{company.emiratiHires}</td>
-                      <td style={{ textAlign: 'center', padding: '14px 16px' }}>
-                        <span style={{ fontWeight: 700, color: compliant ? colors.greenText : colors.redText }}>{company.emiratizationRate}%</span>
-                      </td>
-                      <td style={{ textAlign: 'center', padding: '14px 16px', color: colors.textSecondary }}>{company.emiratizationTarget}%</td>
-                      <td style={{ textAlign: 'center', padding: '14px 16px' }}>
-                        {compliant ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: colors.greenBg, color: colors.greenText, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                            <CheckCircle size={12} /> {t('Compliant', 'ملتزم')}
-                          </span>
-                        ) : (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: colors.redBg, color: colors.redText, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                            <AlertTriangle size={12} /> {t('Below', 'أقل')}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ═══════ REPORTS TAB ═══════
-  const renderReports = () => {
+  const renderOverview = () => {
     // Industry breakdown
     const industryMap: Record<string, number> = {};
     companies.forEach(c => { industryMap[c.industry] = (industryMap[c.industry] || 0) + 1; });
@@ -597,10 +286,19 @@ const GrowthOperatorDashboard: React.FC = () => {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* KPI Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          <KPICard icon={Building2} label={t('Total Companies', 'إجمالي الشركات')} value={totalCompanies} color={colors.primary} trend={8} />
+          <KPICard icon={Target} label={t('In Pipeline', 'في خط الإلحاق')} value={inPipeline} color={colors.blueText} subtext={t(`${pipelineStages[0].count} leads`, `${pipelineStages[0].count} عملاء محتملين`)} />
+          <KPICard icon={Handshake} label={t('Active Partners', 'شركاء نشطون')} value={activeCompanies} color={colors.greenText} trend={12} />
+          <KPICard icon={Flag} label={t('Avg. Emiratization', 'متوسط التوطين')} value={`${avgEmiratization}%`} color={colors.accent}
+            subtext={belowTarget > 0 ? t(`${belowTarget} below target`, `${belowTarget} أقل من المستهدف`) : t('All on target', 'الكل في المستهدف')} />
+        </div>
+
         {/* Conversion Funnel */}
         <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-            {t('Conversion Funnel', 'مسار التحويل')}
+            {t('Invitation Pipeline Funnel', 'مسار الدعوات')}
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {pipelineStages.map((stage, i) => {
@@ -611,7 +309,8 @@ const GrowthOperatorDashboard: React.FC = () => {
                   <div style={{ width: 120, fontSize: 13, fontWeight: 500, color: colors.textSecondary, textAlign: isRTL ? 'left' : 'right' }}>
                     {stage.label}
                   </div>
-                  <div style={{ flex: 1, background: '#F1F5F9', borderRadius: 8, height: 32, overflow: 'hidden' }}>
+                  <div style={{ flex: 1, background: '#F1F5F9', borderRadius: 8, height: 32, overflow: 'hidden', cursor: 'pointer' }}
+                       onClick={() => { setActiveTab('pipeline'); setStatusFilter(stage.key); }}>
                     <div style={{
                       width: `${Math.max(widthPct, 8)}%`, height: '100%', background: stage.color,
                       borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -664,35 +363,336 @@ const GrowthOperatorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Summary Stats */}
+        {/* Recent Activity */}
         <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
-            {t('Key Metrics Summary', 'ملخص المؤشرات الرئيسية')}
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 16 }}>
+            {t('Recent Activity', 'النشاط الأخير')}
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.primary }}>{totalCompanies}</div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Total Registered', 'إجمالي المسجلين')}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.greenText }}>
-                {totalCompanies > 0 ? ((activeCompanies / totalCompanies) * 100).toFixed(0) : 0}%
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {recentActivity.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 20, color: colors.textSecondary, fontSize: 14 }}>
+                {t('No activity yet — import NAFIS data to get started', 'لا يوجد نشاط بعد — قم باستيراد بيانات نافس للبدء')}
               </div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Activation Rate', 'معدل التفعيل')}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.accent }}>{avgEmiratization}%</div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Avg. Emiratization', 'متوسط التوطين')}</div>
-            </div>
-            <div style={{ textAlign: 'center', padding: 20, background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: colors.blueText }}>{totalJobs}</div>
-              <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{t('Jobs Created', 'وظائف أنشئت')}</div>
-            </div>
+            )}
+            {recentActivity.map((item, i) => {
+              const iconMap: Record<string, any> = {
+                invitation: { Icon: Mail, color: colors.blueText },
+                job: { Icon: Briefcase, color: colors.primary },
+                flag: { Icon: AlertTriangle, color: colors.yellowText },
+                contact: { Icon: Phone, color: colors.purpleText },
+                success: { Icon: CheckCircle, color: colors.greenText },
+              };
+              const { Icon, color } = iconMap[item.type] || iconMap.contact;
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < recentActivity.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                  <div style={{ padding: 8, borderRadius: 8, background: color + '15', flexShrink: 0 }}>
+                    <Icon size={16} color={color} />
+                  </div>
+                  <div style={{ flex: 1, fontSize: 14, color: colors.text }}>{item.text}</div>
+                  <div style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0 }}>{item.time}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     );
   };
+
+  // ═══════ COMPANY ONBOARDING TAB ═══════
+  const renderPipeline = () => {
+    const pipelineCompanies = companies.filter(c => ['lead', 'invited', 'link_opened', 'signing_up', 'expired'].includes(c.status));
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Pipeline Stages */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+          {pipelineStages.filter(s => s.key !== 'active').map(stage => (
+            <div
+              key={stage.key}
+              onClick={() => setStatusFilter(statusFilter === stage.key ? 'all' : stage.key)}
+              style={{
+                background: colors.card, borderRadius: 16, padding: 20,
+                border: statusFilter === stage.key ? `2px solid ${stage.color}` : `1px solid ${colors.border}`,
+                cursor: 'pointer', transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ fontSize: 24, fontWeight: 700, color: stage.color }}>{stage.count}</div>
+              <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>{stage.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pipeline Entries */}
+        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>
+              {t('Invitation Pipeline', 'خط الدعوات')}
+            </h3>
+            <button
+              onClick={() => setShowOnboardDialog(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10,
+                background: colors.primary, color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer',
+              }}
+            >
+              <Plus size={16} />
+              {t('Register Company', 'تسجيل شركة')}
+            </button>
+          </div>
+
+          {/* Filter/Search */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+              <input
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                placeholder={t('Search companies...', 'البحث عن شركات...')}
+                style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}
+              />
+            </div>
+          </div>
+
+          {/* Companies in Pipeline */}
+          {(statusFilter !== 'all' ? pipelineCompanies.filter(c => c.status === statusFilter) : pipelineCompanies).map(company => (
+            <div key={company.id} style={{
+              display: 'flex', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12,
+              border: `1px solid ${colors.border}`, marginBottom: 12, background: '#FAFBFC',
+            }}>
+              <div style={{ padding: 12, borderRadius: 12, background: colors.primaryLight, flexShrink: 0 }}>
+                <Building2 size={20} color={colors.primary} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 600, color: colors.text }}>{company.name}</span>
+                  {company.leadSource === 'nafis_import' && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8', letterSpacing: '0.03em' }}>NAFIS</span>
+                  )}
+                  {company.leadSource === 'magic_link' && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#FEF3C7', color: '#92400E', letterSpacing: '0.03em' }}>MAGIC LINK</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
+                  {company.industry || '—'} • {company.emirate || '—'} • {company.contactEmail || '—'}
+                </div>
+                <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, display: 'flex', gap: 12 }}>
+                  <span>{t('Jobs:', 'الوظائف:')} <span style={{fontWeight:600}}>{company.jobsPosted}</span></span>
+                  <span>{t('Last Activity:', 'آخر نشاط:')} <span style={{fontWeight:600}}>{timeAgo(company.lastActivity)}</span></span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                {getStatusBadge(company.status)}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {['invited', 'link_opened'].includes(company.status) && (
+                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: '#fff', border: `1px solid ${colors.border}`, color: colors.text, cursor: 'pointer', fontWeight: 600 }}>
+                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                      {t('Nudge', 'تذكير')}
+                    </button>
+                  )}
+                  {company.status === 'expired' && (
+                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                      <RefreshCw size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                      {t('Resend Link', 'إعادة إرسال الرابط')}
+                    </button>
+                  )}
+                  {company.status === 'lead' && company.jobsPosted > 0 && (
+                    <button style={{ padding: '6px 12px', fontSize: 11, borderRadius: 6, background: colors.primary, border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                      <Mail size={12} style={{marginRight: 4, verticalAlign: 'text-bottom'}} /> 
+                      {t('Send Invite', 'إرسال دعوة')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {pipelineCompanies.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 40, color: colors.textSecondary }}>
+              {t('No companies in the pipeline', 'لا توجد شركات في خط الإلحاق')}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ═══════ PARTNER MANAGEMENT TAB ═══════
+  const renderPartnerManagement = () => {
+    const activePartners = companies.filter(c => c.status === 'active');
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Summary KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <KPICard icon={Briefcase} label={t('Total Job Postings', 'إجمالي الوظائف المنشورة')} value={totalJobs} color={colors.primary} />
+          <KPICard icon={Users} label={t('Total Hires', 'إجمالي التوظيف')} value={companies.reduce((s, c) => s + c.hiresCount, 0)} color={colors.blueText} />
+          <KPICard icon={Award} label={t('Emirati Hires', 'توظيف إماراتيين')} value={companies.reduce((s, c) => s + c.emiratiHires, 0)} color={colors.accent} />
+          <KPICard icon={AlertTriangle} label={t('Below Target', 'أقل من المستهدف')} value={belowTarget} color={belowTarget > 0 ? colors.redText : colors.greenText} />
+        </div>
+
+        {/* Search & Filters */}
+        <div style={{ background: colors.card, borderRadius: 16, padding: 20, border: `1px solid ${colors.border}` }}>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: colors.textSecondary }} />
+              <input
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                placeholder={t('Search active partners...', 'البحث عن شركاء نشطين...')}
+                style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}
+              />
+            </div>
+            <button style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.card, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: colors.textSecondary }}>
+              <Download size={16} /> {t('Export', 'تصدير')}
+            </button>
+          </div>
+        </div>
+
+        {/* Partner Cards */}
+        {activePartners.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(company => (
+          <div key={company.id} style={{
+            background: colors.card, borderRadius: 16, padding: 24,
+            border: `1px solid ${colors.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                <div style={{ padding: 14, borderRadius: 14, background: colors.primaryLight }}>
+                  <Building2 size={24} color={colors.primary} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: colors.text }}>{company.name}</span>
+                    {company.leadSource === 'nafis_import' && (
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6, background: '#DBEAFE', color: '#1D4ED8' }}>NAFIS</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>
+                    {company.industry || '—'} • {company.size} {t('employees', 'موظف')} • {company.emirate || '—'}
+                  </div>
+                </div>
+              </div>
+              {/* Health Score */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: getHealthColor(company.healthScore) }}>{company.healthScore}</div>
+                <div style={{ fontSize: 11, color: colors.textSecondary }}>{t('Health', 'الصحة')}</div>
+              </div>
+            </div>
+
+            {/* Stats Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 20 }}>
+              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: '#F8FAFC' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{company.jobsPosted}</div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Jobs Posted', 'وظائف منشورة')}</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: '#F8FAFC' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{company.hiresCount}</div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Total Hires', 'إجمالي التوظيف')}</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: colors.primaryLight }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: colors.primary }}>{company.emiratiHires}</div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Emirati Hires', 'توظيف إماراتي')}</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: 12, borderRadius: 10, background: company.emiratizationRate >= company.emiratizationTarget ? colors.greenBg : colors.redBg }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: company.emiratizationRate >= company.emiratizationTarget ? colors.greenText : colors.redText }}>
+                  {company.emiratizationRate}%
+                </div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>{t('Emiratization', 'التوطين')}</div>
+              </div>
+            </div>
+
+            {/* Contact Row */}
+            <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${colors.border}`, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
+                <Mail size={14} /> {company.contactEmail || '—'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: colors.textSecondary }}>
+                <Phone size={14} /> {company.contactPhone || '—'}
+              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 12, color: colors.textSecondary }}>
+                {t('Registered:', 'تسجيل:')} {company.registeredAt ? new Date(company.registeredAt).toLocaleDateString() : '—'}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {activePartners.length === 0 && (
+          <div style={{ background: colors.card, borderRadius: 16, padding: 60, textAlign: 'center', border: `1px solid ${colors.border}` }}>
+            <Building2 size={48} color={colors.textSecondary} style={{ opacity: 0.3 }} />
+            <p style={{ marginTop: 16, color: colors.textSecondary }}>{t('No active partners yet', 'لا يوجد شركاء نشطون بعد')}</p>
+          </div>
+        )}
+
+        {/* Compliance Table */}
+        <div style={{ background: colors.card, borderRadius: 16, padding: 24, border: `1px solid ${colors.border}` }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, marginBottom: 20 }}>
+            {t('Emiratization Compliance by Company', 'التزام التوطين حسب الشركة')}
+          </h3>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${colors.border}` }}>
+                  <th style={{ textAlign: isRTL ? 'right' : 'left', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Company', 'الشركة')}
+                  </th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Jobs', 'وظائف')}
+                  </th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Total Hires', 'إجمالي التوظيف')}
+                  </th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Emirati Hires', 'توظيف إماراتي')}
+                  </th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Rate', 'النسبة')}
+                  </th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Target', 'المستهدف')}
+                  </th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px', color: colors.textSecondary, fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>
+                    {t('Status', 'الحالة')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {activePartners.map(company => {
+                  const compliant = company.emiratizationRate >= company.emiratizationTarget;
+                  return (
+                    <tr key={company.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                      <td style={{ padding: '14px 16px' }}>
+                        <div style={{ fontWeight: 600, color: colors.text }}>{company.name}</div>
+                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{company.emirate}</div>
+                      </td>
+                      <td style={{ textAlign: 'center', padding: '14px 16px', fontWeight: 600, color: colors.text }}>{company.jobsPosted}</td>
+                      <td style={{ textAlign: 'center', padding: '14px 16px', color: colors.text }}>{company.hiresCount}</td>
+                      <td style={{ textAlign: 'center', padding: '14px 16px', color: colors.primary, fontWeight: 600 }}>{company.emiratiHires}</td>
+                      <td style={{ textAlign: 'center', padding: '14px 16px' }}>
+                        <span style={{ fontWeight: 700, color: compliant ? colors.greenText : colors.redText }}>{company.emiratizationRate}%</span>
+                      </td>
+                      <td style={{ textAlign: 'center', padding: '14px 16px', color: colors.textSecondary }}>{company.emiratizationTarget}%</td>
+                      <td style={{ textAlign: 'center', padding: '14px 16px' }}>
+                        {compliant ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: colors.greenBg, color: colors.greenText, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                            <CheckCircle size={12} /> {t('Compliant', 'ملتزم')}
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: colors.redBg, color: colors.redText, padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                            <AlertTriangle size={12} /> {t('Below', 'أقل')}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
 
   // ═══════ WORKSPACES TAB ═══════
   const WorkspacesTab = () => {
@@ -934,12 +934,10 @@ const GrowthOperatorDashboard: React.FC = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'onboarding' && renderOnboarding()}
-        {activeTab === 'partnerships' && renderPartnerships()}
+        {activeTab === 'pipeline' && renderPipeline()}
+        {activeTab === 'partnerships' && renderPartnerManagement()}
         {activeTab === 'workspaces' && <WorkspacesTab />}
-        {activeTab === 'emiratization' && renderEmiratization()}
         {activeTab === 'nafis' && <NafisVacancyImport t={t} isRTL={isRTL} />}
-        {activeTab === 'reports' && renderReports()}
         {activeTab === 'messages' && <Messages senderRole="growth_operator" />}
       </main>
 
@@ -961,30 +959,55 @@ const GrowthOperatorDashboard: React.FC = () => {
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {[
-                { label: t('Company Name (EN)', 'اسم الشركة (إنجليزي)'), placeholder: 'Emirates Tech LLC' },
-                { label: t('Company Name (AR)', 'اسم الشركة (عربي)'), placeholder: 'الإمارات للتكنولوجيا' },
-                { label: t('Industry', 'القطاع'), placeholder: t('Select industry', 'اختر القطاع'), type: 'select' },
-                { label: t('Company Size', 'حجم الشركة'), placeholder: t('Select size', 'اختر الحجم'), type: 'select' },
-                { label: t('Emirate', 'الإمارة'), placeholder: t('Select emirate', 'اختر الإمارة'), type: 'select' },
-                { label: t('Trade License No.', 'رقم الرخصة التجارية'), placeholder: 'TL-2026-XXXXX' },
-                { label: t('Contact Person', 'شخص التواصل'), placeholder: t('Full name', 'الاسم الكامل') },
-                { label: t('Contact Email', 'البريد الإلكتروني'), placeholder: 'email@company.ae' },
-                { label: t('Contact Phone', 'رقم الهاتف'), placeholder: '+971 5X XXX XXXX' },
-                { label: t('Website', 'الموقع الإلكتروني'), placeholder: 'https://www.company.ae' },
-              ].map((field, i) => (
-                <div key={i} style={{ gridColumn: i >= 8 ? '1 / -1' : undefined }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{field.label}</label>
-                  <input
-                    placeholder={field.placeholder}
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: 10,
-                      border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none',
-                      background: '#F8FAFC',
-                    }}
-                  />
-                </div>
-              ))}
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Company Name (EN)', 'اسم الشركة (إنجليزي)')} *</label>
+                <input value={newCompany.name} onChange={e => setNewCompany({ ...newCompany, name: e.target.value })} placeholder="Emirates Tech LLC" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Company Name (AR)', 'اسم الشركة (عربي)')}</label>
+                <input value={newCompany.name_arabic} onChange={e => setNewCompany({ ...newCompany, name_arabic: e.target.value })} placeholder="الإمارات للتكنولوجيا" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC', textAlign: 'right' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Industry', 'القطاع')} *</label>
+                <select value={newCompany.industry} onChange={e => setNewCompany({ ...newCompany, industry: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}>
+                  <option value="Technology">Technology</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Retail">Retail</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Company Size', 'حجم الشركة')}</label>
+                <select value={newCompany.company_size} onChange={e => setNewCompany({ ...newCompany, company_size: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}>
+                  <option value="micro">Micro (1-9)</option>
+                  <option value="small">Small (10-49)</option>
+                  <option value="medium">Medium (50-249)</option>
+                  <option value="large">Large (250+)</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Emirate', 'الإمارة')}</label>
+                <select value={newCompany.emirate} onChange={e => setNewCompany({ ...newCompany, emirate: e.target.value })} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }}>
+                  {['Abu Dhabi', 'Dubai', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah'].map(em => <option key={em} value={em}>{em}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Trade License No.', 'رقم الرخصة التجارية')}</label>
+                <input value={newCompany.trade_license_number} onChange={e => setNewCompany({ ...newCompany, trade_license_number: e.target.value })} placeholder="TL-2026-XXXXX" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Contact Person', 'شخص التواصل')}</label>
+                <input value={newCompany.contact_name} onChange={e => setNewCompany({ ...newCompany, contact_name: e.target.value })} placeholder={t('Full name', 'الاسم الكامل')} style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Contact Email', 'البريد الإلكتروني')}</label>
+                <input value={newCompany.primary_email} onChange={e => setNewCompany({ ...newCompany, primary_email: e.target.value })} placeholder="email@company.ae" type="email" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>{t('Contact Phone', 'رقم الهاتف')}</label>
+                <input value={newCompany.phone} onChange={e => setNewCompany({ ...newCompany, phone: e.target.value })} placeholder="+971 5X XXX XXXX" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 14, outline: 'none', background: '#F8FAFC' }} />
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
@@ -995,11 +1018,12 @@ const GrowthOperatorDashboard: React.FC = () => {
                 {t('Cancel', 'إلغاء')}
               </button>
               <button
-                onClick={() => setShowOnboardDialog(false)}
-                style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: colors.primary, color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+                onClick={handleRegisterCompany}
+                disabled={isSubmittingCompany}
+                style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: colors.primary, color: '#fff', cursor: isSubmittingCompany ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: isSubmittingCompany ? 0.7 : 1 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Plus size={16} />
+                  {isSubmittingCompany ? <span style={{ width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <Plus size={16} />}
                   {t('Register Company', 'تسجيل الشركة')}
                 </span>
               </button>

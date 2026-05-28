@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
     Upload, FileText, X, Search, Filter, Download, CheckCircle,
     Building2, Briefcase, MapPin, Users, TrendingUp, AlertTriangle,
@@ -149,6 +149,23 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
     const [businessTypeFilter, setBusinessTypeFilter] = useState<string[]>([]);
     const [educationFilter, setEducationFilter] = useState<string[]>([]);
 
+    // ─── Restore from sessionStorage on mount ───
+    useEffect(() => {
+        try {
+            const cached = sessionStorage.getItem('nafis_import_data');
+            const cachedName = sessionStorage.getItem('nafis_import_filename');
+            if (cached && cachedName) {
+                const parsed = JSON.parse(cached) as NafisJob[];
+                if (parsed.length > 0) {
+                    setJobs(parsed);
+                    setFileName(cachedName);
+                }
+            }
+        } catch (e) {
+            // Ignore parse errors — user will just re-upload
+        }
+    }, []);
+
     // ─── File Handling ───
     const handleFile = useCallback((file: File) => {
         if (!file.name.endsWith('.csv')) {
@@ -169,6 +186,13 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
             setMinVacancies(0);
             setBusinessTypeFilter([]);
             setEducationFilter([]);
+            // Persist to sessionStorage so data survives tab switches
+            try {
+                sessionStorage.setItem('nafis_import_data', JSON.stringify(parsed));
+                sessionStorage.setItem('nafis_import_filename', file.name);
+            } catch (e) {
+                // sessionStorage might be full for very large files — silently ignore
+            }
         };
         reader.readAsText(file);
     }, [t]);
@@ -426,7 +450,7 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                     </span>
                 </div>
                 <button
-                    onClick={() => { setJobs([]); setFileName(''); setSelectedCompanies(new Set()); }}
+                    onClick={() => { setJobs([]); setFileName(''); setSelectedCompanies(new Set()); sessionStorage.removeItem('nafis_import_data'); sessionStorage.removeItem('nafis_import_filename'); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.card, cursor: 'pointer', fontSize: 13, color: colors.textSecondary }}
                 >
                     <X size={14} /> {t('Clear', 'مسح')}
@@ -530,16 +554,21 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                 <button onClick={deselectAll} style={{ padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, background: colors.card, cursor: 'pointer', fontSize: 13, color: colors.textSecondary }}>
                                     {t('Deselect', 'إلغاء التحديد')} ({selectedCompanies.size})
                                 </button>
-                                <button
-                                    onClick={() => setShowInviteConfirm(true)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 10,
-                                        background: colors.primary, color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                                    }}
-                                >
-                                    <Send size={14} />
-                                    {t(`Invite ${selectedCompanies.size} Companies`, `دعوة ${selectedCompanies.size} شركة`)}
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', background: colors.primaryLight, padding: '4px 4px 4px 12px', borderRadius: 12, border: `1px solid ${colors.primary}30` }}>
+                                    <div style={{ marginRight: 12, fontSize: 12, color: colors.primary }}>
+                                        <span style={{ fontWeight: 700 }}>{selectedVacancies.toLocaleString()}</span> / {stats.totalVacancies.toLocaleString()} {t('vacancies', 'شواغر')} ({coveragePct}%)
+                                    </div>
+                                    <button
+                                        onClick={() => setShowInviteConfirm(true)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10,
+                                            background: colors.primary, color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                                        }}
+                                    >
+                                        <Send size={14} />
+                                        {t(`Invite ${selectedCompanies.size}`, `دعوة ${selectedCompanies.size}`)}
+                                    </button>
+                                </div>
                             </>
                         )}
                     </>
@@ -803,7 +832,7 @@ const NafisVacancyImport: React.FC<NafisVacancyImportProps> = ({ t, isRTL }) => 
                                     {inviteResults
                                         ? t(`${inviteResults.length} magic links generated`, `تم إنشاء ${inviteResults.length} رابط سحري`)
                                         : t(
-                                            `You are about to invite ${selectedCompanies.size} companies to join Dubai Human Development Platform`,
+                                            `You are about to invite ${selectedCompanies.size} companies to join Emirati Human Development Platform`,
                                             `أنت على وشك دعوة ${selectedCompanies.size} شركة للانضمام إلى المسارات الإماراتية`
                                         )}
                                 </p>

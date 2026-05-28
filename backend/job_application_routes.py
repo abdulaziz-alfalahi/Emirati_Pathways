@@ -20,8 +20,68 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 job_application_bp = Blueprint('job_application', __name__, url_prefix='/api/jobs')
 
-# Mock user ID for development
-MOCK_USER_ID = '00000000-0000-0000-0000-000000000001'
+# Mock user ID for development (synthetic EID — post-migration)
+MOCK_USER_ID = '784000000000010'
+
+
+def _migrate_job_applications_table():
+    """
+    Migrate job_applications table columns from INTEGER to TEXT.
+    
+    The table was originally created by jobs_api.py with:
+        candidate_id INTEGER, job_id INTEGER, id SERIAL
+    But the auth system uses UUID strings for user IDs (e.g. '47dcb02a-...'),
+    and application IDs are text ('APP-XXXX'). This migration fixes the mismatch.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return
+        cur = conn.cursor()
+        
+        # Check current column type for candidate_id
+        cur.execute("""
+            SELECT data_type FROM information_schema.columns 
+            WHERE table_name = 'job_applications' AND column_name = 'candidate_id'
+        """)
+        result = cur.fetchone()
+        
+        if result and result[0] == 'integer':
+            logger.info("🔄 Migrating job_applications columns from INTEGER to TEXT...")
+            
+            # Drop the SERIAL default on id if it exists (SERIAL creates a sequence)
+            try:
+                cur.execute("ALTER TABLE job_applications ALTER COLUMN id DROP DEFAULT")
+            except Exception:
+                conn.rollback()
+            
+            # Convert columns to TEXT
+            cur.execute("""
+                ALTER TABLE job_applications 
+                    ALTER COLUMN id TYPE TEXT USING id::text,
+                    ALTER COLUMN candidate_id TYPE TEXT USING candidate_id::text,
+                    ALTER COLUMN job_id TYPE TEXT USING job_id::text
+            """)
+            conn.commit()
+            logger.info("✅ job_applications columns migrated to TEXT successfully")
+        else:
+            logger.debug("job_applications columns already TEXT, no migration needed")
+            
+    except Exception as e:
+        logger.warning(f"job_applications migration check: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+# Run migration on import
+_migrate_job_applications_table()
+
 
 def get_user_id_from_request():
     """Get user ID from JWT or mock token"""
@@ -30,8 +90,11 @@ def get_user_id_from_request():
     
     # Check for mock token first
     if 'mock_token' in auth_header:
-        logger.info(f"Mock authentication detected, using mock user ID: {MOCK_USER_ID}")
-        return MOCK_USER_ID
+        # Extract actual user ID from mock token (format: "Bearer mock_token_<user_id>")
+        mock_token = auth_header.replace('Bearer ', '').strip()
+        user_id = mock_token.replace('mock_token_', '')
+        logger.info(f"Mock authentication detected, extracted user ID: {user_id}")
+        return str(user_id)
     
     # Try to get from JWT
     try:
@@ -73,10 +136,12 @@ def apply_for_job():
                 logger.error(f"Missing required field: {field}")
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
         
-        job_id = data['job_id']
+        # CRITICAL: Cast job_id to string — job_applications.job_id is TEXT
+        # but the frontend sends it as an integer from job_postings.id
+        job_id = str(data['job_id'])
         cover_letter = data['cover_letter']
         
-        logger.info(f"Applying for job_id: {job_id}")
+        logger.info(f"Applying for job_id: {job_id} (type: {type(data['job_id']).__name__})")
         
         conn = get_db_connection()
         if not conn:
@@ -86,8 +151,7 @@ def apply_for_job():
         cur = conn.cursor()
         
         # Check if already applied
-        # Cast job_id to string because job_applications.job_id is text, while frontend sends int
-        cur.execute("SELECT id FROM job_applications WHERE candidate_id = %s AND job_id = %s", (current_user_id, str(job_id)))
+        cur.execute("SELECT id FROM job_applications WHERE candidate_id = %s AND job_id = %s", (current_user_id, job_id))
         existing = cur.fetchone()
         if existing:
             logger.warning(f"User {current_user_id} already applied for job {job_id}")
@@ -97,77 +161,90 @@ def apply_for_job():
         
         cur.execute("""
             INSERT INTO job_applications (
-                id, job_id, candidate_id, cover_letter, status, submitted_at, last_updated
+                id, job_id, candidate_id, cover_letter, status, applied_at, updated_at
             ) VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
         """, (application_id, job_id, current_user_id, cover_letter, 'pending'))
         
         conn.commit()
+        cur.close()
         
         logger.info(f"Job application submitted: {application_id} for user {current_user_id}, job {job_id}")
         
-        # --- Create notification for the recruiter ---
+        # --- Create notification for the recruiter (separate connection to avoid poisoning) ---
+        notif_conn = None
         try:
-            cur2 = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            # Find recruiter who posted the job and the job title
-            cur2.execute("""
-                SELECT jp.title, jp.recruiter_id, jp.company_id
-                FROM job_postings jp
-                WHERE jp.jd_id = %s OR jp.id::text = %s
-                LIMIT 1
-            """, (str(job_id), str(job_id)))
-            job_row = cur2.fetchone()
-            
-            recruiter_id = None
-            job_title = 'a position'
-            
-            if job_row:
-                job_title = job_row.get('title') or 'a position'
-                raw_recruiter = job_row.get('recruiter_id')
-                
-                # recruiter_id might be '0' or empty for seed data
-                if raw_recruiter and str(raw_recruiter) not in ('0', '', 'None'):
-                    recruiter_id = str(raw_recruiter)
-                
-                # Fallback: find any recruiter user
-                if not recruiter_id:
-                    cur2.execute("SELECT id FROM users WHERE role = 'recruiter' LIMIT 1")
-                    any_rec = cur2.fetchone()
-                    if any_rec:
-                        recruiter_id = str(any_rec['id'])
-            
-            if recruiter_id:
-                # Get candidate name
-                cand_query = "SELECT COALESCE(full_name, email, 'A candidate') as name FROM users WHERE id::text = %s"
-                cur2.execute(cand_query, (str(current_user_id),))
-                cand_row = cur2.fetchone()
-                candidate_name = cand_row['name'] if cand_row else 'A candidate'
-                
-                # Insert notification for recruiter
+            notif_conn = get_db_connection()
+            if notif_conn:
+                cur2 = notif_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                # Find recruiter who posted the job and the job title
+                # NOTE: job_postings does NOT have jd_id column — use id::text only
                 cur2.execute("""
-                    INSERT INTO notifications (user_id, type, title, content, metadata, is_read, created_at)
-                    VALUES (%s, %s, %s, %s, %s, FALSE, NOW())
-                """, (
-                    recruiter_id,
-                    'application_submitted',
-                    'New Application: %s' % job_title,
-                    '%s applied for %s' % (candidate_name, job_title),
-                    json.dumps({
-                        'application_id': application_id,
-                        'job_id': str(job_id),
-                        'candidate_id': str(current_user_id),
-                        'candidate_name': candidate_name,
-                        'job_title': job_title,
-                        'priority': 'high'
-                    })
-                ))
-                conn.commit()
-                logger.info("Notification created for recruiter %s: %s applied for %s" % (recruiter_id, candidate_name, job_title))
-            else:
-                logger.warning("Could not find any recruiter for job %s - no notification created" % job_id)
+                    SELECT jp.title, jp.recruiter_id, jp.company_id
+                    FROM job_postings jp
+                    WHERE jp.id::text = %s
+                    LIMIT 1
+                """, (job_id,))
+                job_row = cur2.fetchone()
+                
+                recruiter_id = None
+                job_title = 'a position'
+                
+                if job_row:
+                    job_title = job_row.get('title') or 'a position'
+                    raw_recruiter = job_row.get('recruiter_id')
+                    
+                    # recruiter_id might be '0' or empty for seed data
+                    if raw_recruiter and str(raw_recruiter) not in ('0', '', 'None'):
+                        recruiter_id = str(raw_recruiter)
+                    
+                    # Fallback: find any recruiter user
+                    if not recruiter_id:
+                        cur2.execute("SELECT id FROM users WHERE role = 'recruiter' LIMIT 1")
+                        any_rec = cur2.fetchone()
+                        if any_rec:
+                            recruiter_id = str(any_rec['id'])
+                
+                if recruiter_id:
+                    # Get candidate name
+                    cur2.execute(
+                        "SELECT COALESCE(NULLIF(CONCAT(first_name, ' ', last_name), ' '), email, 'A candidate') as name FROM users WHERE id::text = %s",
+                        (str(current_user_id),)
+                    )
+                    cand_row = cur2.fetchone()
+                    candidate_name = cand_row['name'] if cand_row else 'A candidate'
+                    
+                    # Insert notification for recruiter
+                    cur2.execute("""
+                        INSERT INTO notifications (user_id, type, title, content, metadata, is_read, created_at)
+                        VALUES (%s, %s, %s, %s, %s, FALSE, NOW())
+                    """, (
+                        recruiter_id,
+                        'application_submitted',
+                        'New Application: %s' % job_title,
+                        '%s applied for %s' % (candidate_name, job_title),
+                        json.dumps({
+                            'application_id': application_id,
+                            'job_id': job_id,
+                            'candidate_id': str(current_user_id),
+                            'candidate_name': candidate_name,
+                            'job_title': job_title,
+                            'priority': 'high'
+                        })
+                    ))
+                    notif_conn.commit()
+                    logger.info("Notification created for recruiter %s: %s applied for %s" % (recruiter_id, candidate_name, job_title))
+                else:
+                    logger.warning("Could not find any recruiter for job %s - no notification created" % job_id)
         except Exception as notif_err:
             logger.warning("Failed to create recruiter notification (non-critical): %s" % notif_err)
             import traceback
             logger.warning(traceback.format_exc())
+        finally:
+            if notif_conn:
+                try:
+                    notif_conn.close()
+                except:
+                    pass
         
         return jsonify({
             'success': True,
@@ -203,6 +280,8 @@ def get_user_applications():
         
         # Join with job_postings and companies to get titles
         # Using job_postings as confirmed by candidate_job_routes
+        # NOTE: job_applications columns are TEXT after migration;
+        #       job_postings.id is INTEGER so we cast for the JOIN.
         query = """
             SELECT 
                 a.id as application_id,
@@ -211,13 +290,13 @@ def get_user_applications():
                 COALESCE(c.company_name, 'Confidential') as company,
                 j.location,
                 a.status,
-                a.submitted_at,
-                a.last_updated
+                a.applied_at,
+                a.updated_at
             FROM job_applications a
-            LEFT JOIN job_postings j ON a.job_id = j.id
+            LEFT JOIN job_postings j ON a.job_id = j.id::text
             LEFT JOIN companies c ON j.company_id::text = c.id::text
             WHERE a.candidate_id = %s
-            ORDER BY a.submitted_at DESC
+            ORDER BY a.applied_at DESC
         """
         cur.execute(query, (current_user_id,))
         rows = cur.fetchall()
@@ -232,8 +311,8 @@ def get_user_applications():
                 'company': row['company'] or 'Confidential',
                 'location': row['location'] or 'UAE',
                 'status': row['status'],
-                'appliedDate': row['submitted_at'].isoformat() if row['submitted_at'] else None,
-                'lastUpdate': row['last_updated'].isoformat() if row['last_updated'] else None
+                'appliedDate': row['applied_at'].isoformat() if row.get('applied_at') else None,
+                'lastUpdate': row['updated_at'].isoformat() if row.get('updated_at') else None
             })
 
         return jsonify({
