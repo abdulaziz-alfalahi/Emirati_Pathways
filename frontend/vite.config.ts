@@ -63,7 +63,12 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
+          'vendor-router': ['react-router-dom'],
           ui: ['lucide-react', '@radix-ui/react-tabs', '@radix-ui/react-alert-dialog'],
+          // Heavy libraries — isolated to avoid bloating the main bundle
+          charts: ['recharts'],
+          pdf: ['jspdf'],
+          livekit: ['livekit-client'],
         },
       },
     },

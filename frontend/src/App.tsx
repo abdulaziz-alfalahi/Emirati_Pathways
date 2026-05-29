@@ -26,9 +26,9 @@ import SupportChatWidget from '@/components/support/SupportChatWidget';
 // import AuthPage from '@/pages/auth'; 
 // import AuthPage from './pages/auth';
 // import MockLogin from '@/pages/auth/MockLogin'; 
-import EnhancedAuthPage from '@/pages/auth/EnhancedAuth';
+const EnhancedAuthPage = lazy(() => import('@/pages/auth/EnhancedAuth'));
 const UAEPassCallback = lazy(() => import('@/pages/auth/UAEPassCallback'));
-import { VerifyJob } from '@/pages/public/VerifyJob';
+const VerifyJob = lazy(() => import('@/pages/public/VerifyJob').then(m => ({ default: m.VerifyJob })));
 const CompanyOnboardingWizard = lazy(() => import('@/pages/public/CompanyOnboardingWizard'));
 const SeekerOnboardingWizard = lazy(() => import('@/pages/public/SeekerOnboardingWizard'));
 
@@ -79,9 +79,9 @@ const ProfileStudioPage = lazy(() => import('@/pages/candidate/profile-studio/Pr
 const AutoFillCVBuilder = lazy(() => import('@/pages/cv-builder/AutoFillCVBuilder'));
 const PublicCVViewer = lazy(() => import('@/pages/cv-builder/PublicCVViewer'));
 
-// Home Page (not lazy loaded for faster initial access)
-import BilingualHomePage from '@/pages/BilingualHomePage';
-import LoginTestPage from './pages/LoginTestPage';
+// Home Page (lazy loaded to reduce initial bundle — was 650 lines)
+const BilingualHomePage = lazy(() => import('@/pages/BilingualHomePage'));
+const LoginTestPage = lazy(() => import('./pages/LoginTestPage'));
 
 // CV Upload Page
 const CVUploadPage = lazy(() => import('@/pages/cv-upload/CVUploadPage'));
@@ -167,8 +167,7 @@ const OurMission = lazy(() => import('@/pages/OurMission'));
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 // Role-based Dashboard Components
-// Removed old RecruiterDashboard import - now using the new one from pages
-import OperatorDashboard from './pages/OperatorDashboard';
+const OperatorDashboard = lazy(() => import('./pages/OperatorDashboard'));
 
 // Global Styles
 import './index.css';
