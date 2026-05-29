@@ -29,7 +29,7 @@ for p in (_root_dir, _backend_dir):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from recruiter_server import create_app
+from app import create_app
 from backend.routes.uaepass_routes import uaepass_bp, _pending_states, _cleanup_stale_states
 
 

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@/integrations/supabase/auth-types';
 
 export interface CollaborationSession {
   id: string;

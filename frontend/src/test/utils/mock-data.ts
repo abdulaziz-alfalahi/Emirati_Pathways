@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { User } from '@supabase/supabase-js';
+import { User } from '@/integrations/supabase/auth-types';
 import { MFAFactor, MFAStatus } from '@/types/mfa';
 
 // Mock user data

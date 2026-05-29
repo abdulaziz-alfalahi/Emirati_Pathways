@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 
 import pytest
 
-from recruiter_server import create_app
+from app import create_app
 
 SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
 

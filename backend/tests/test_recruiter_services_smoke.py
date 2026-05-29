@@ -1,7 +1,7 @@
 import os
 import json
 import pytest
-from recruiter_server import create_app
+from app import create_app
 
 @pytest.fixture(scope="module")
 def app():

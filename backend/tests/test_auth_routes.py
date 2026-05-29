@@ -24,7 +24,7 @@ for p in (_root_dir, _backend_dir):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from recruiter_server import create_app
+from app import create_app
 from backend.routes.auth_routes import auth_bp, get_role_permissions
 
 

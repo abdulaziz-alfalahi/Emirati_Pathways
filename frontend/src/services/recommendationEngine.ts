@@ -1,5 +1,5 @@
 
-import { User } from '@supabase/supabase-js';
+import { User } from '@/integrations/supabase/auth-types';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {

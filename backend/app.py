@@ -462,6 +462,19 @@ _additional_blueprints = [
     ('backend.routes.workspace_routes', 'workspace_bp', None, 'Workspaces'),
     ('backend.routes.workspace_phase2_routes', 'workspace_phase2_bp', None, 'Workspace Phase 2'),
     ('backend.routes.uaepass_routes', 'uaepass_bp', None, 'UAE Pass Authentication'),
+    # --- Blueprints migrated from recruiter_server.py ---
+    ('backend.routes.profile.profile_readiness', 'profile_readiness_bp', None, 'Profile Readiness'),
+    ('backend.hr_approval_routes', 'hr_approval_bp', None, 'HR Approval Workflow'),
+    ('backend.hr_external_distribution_routes', 'hr_distribution_bp', None, 'HR External Distribution'),
+    ('backend.hr_external_distribution_routes', 'external_distribution_bp', None, 'External Distribution Callbacks'),
+    ('backend.hr_candidate_search_routes', 'hr_candidate_search_bp', None, 'HR Candidate Search'),
+    ('backend.quality_assurance_routes', 'qa_bp', None, 'Quality Assurance'),
+    ('backend.recruiter.statistics_routes', 'statistics_bp', '/api/recruiter/statistics', 'Recruiter Statistics'),
+    ('backend.recruiter.offer_routes', 'offer_bp', '/api/recruiter/offers', 'Recruiter Offer Management'),
+    ('backend.recruiter.training_routes', 'training_bp', None, 'Recruiter Training'),
+    ('backend.recruiter.mentorship_routes', 'mentorship_bp', None, 'Recruiter Mentorship'),
+    ('backend.routes.user_activity_api', 'user_activity_bp', None, 'User Activity'),
+    ('backend.recruiter.analytics_routes', 'analytics_bp', '/api/recruiter', 'Recruiter Analytics'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:
@@ -492,6 +505,17 @@ try:
     logger.info("✅ Growth Operator Assignment API registered")
 except Exception as e:
     logger.error(f"Failed to register Growth Operator Assignment API: {e}")
+
+# Optimized matching routes (function-based registration, migrated from recruiter_server.py)
+try:
+    try:
+        from backend.matching.matching_routes_optimized import register_optimized_matching_routes
+    except ImportError:
+        from matching.matching_routes_optimized import register_optimized_matching_routes
+    register_optimized_matching_routes(app)
+    logger.info("✅ Optimized matching routes registered")
+except Exception as e:
+    logger.error(f"Failed to register optimized matching routes: {e}")
 
 
 # =====================================================
@@ -580,3 +604,14 @@ if __name__ == '__main__':
 
     is_debug = os.getenv('FLASK_ENV', 'production') != 'production'
     socketio.run(app, host='0.0.0.0', port=port, debug=is_debug, allow_unsafe_werkzeug=is_debug)
+
+
+# =====================================================
+# TEST FACTORY (backward compatibility with test suites)
+# =====================================================
+
+def create_app():
+    """Factory function for test compatibility.
+    Returns the module-level app (already configured with all blueprints).
+    """
+    return app

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import PersonalizationSettings from '@/components/personalization/PersonalizationSettings';
-import { User } from '@supabase/supabase-js';
+import { User } from '@/integrations/supabase/auth-types';
 import { UserRole } from '@/types/auth';
 import MobileNotifications from './MobileNotifications';
 import MobileOfflineIndicator from './MobileOfflineIndicator';
