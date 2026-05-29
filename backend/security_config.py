@@ -46,7 +46,7 @@ class SecurityConfig:
         'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
         'font-src': "'self' https://fonts.gstatic.com",
         'img-src': "'self' data: https:",
-        'connect-src': "'self' https://api.groq.com https://generativelanguage.googleapis.com",
+        'connect-src': "'self' https://dashscope.aliyuncs.com",
         'frame-ancestors': "'none'"
     }
     

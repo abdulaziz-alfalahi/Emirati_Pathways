@@ -1,5 +1,5 @@
 # ===========================================================
-# Dubai Human Development Platform — Docker Compose (Moro)
+# Emirati Human Development Platform — Docker Compose (Moro)
 # Stack: Frontend (Nginx) + Backend (Gunicorn) + Redis
 # Database: External Moro PostgreSQL 18.3 at 10.228.145.66:5454
 # ===========================================================
@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD:-3cdefacfde2cabd806eccaddf0fef3b9}
+      --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
       --appendonly yes
@@ -31,7 +31,7 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -50,7 +50,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-dghr_prod}:${DB_PASSWORD}@${DB_HOST:-10.228.145.66}:${DB_PORT:-5454}/${DB_NAME:-dghr_prod}
       DB_HOST: ${DB_HOST:-10.228.145.66}
       DB_PORT: ${DB_PORT:-5454}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-3cdefacfde2cabd806eccaddf0fef3b9}@redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD}@redis:6379/0
       USE_REDIS: "true"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://emirati.ehrdc.gov.ae,http://emirati.ehrdc.gov.ae,http://10.228.145.3,http://10.228.145.6}
     ports:

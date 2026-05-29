@@ -1,10 +1,10 @@
 # =========================================
-# Dubai Human Development Platform — Frontend
+# Emirati Human Development Platform — Frontend
 # Multi-stage build: Node build → Nginx serve
 # =========================================
 
 # Stage 1: Build the React app
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
