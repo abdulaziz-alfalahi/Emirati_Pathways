@@ -3,6 +3,7 @@ from flask_cors import cross_origin
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
 from backend.company_team_system import CompanyTeamSystem
+from backend.workspace_middleware import get_company_context
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +26,11 @@ def get_team_members():
         
         if not company_id:
              return jsonify({'success': False, 'error': 'Company ID is required'}), 400
+
+        # ACL: verify workspace.view permission
+        context = get_company_context(current_user_id, company_id)
+        if not context or 'workspace.view' not in context.get('permissions', set()):
+            return jsonify({'success': False, 'error': 'Access denied: requires workspace.view permission'}), 403
 
         # Exclude current user from the list
         try:
@@ -51,7 +57,12 @@ def invite_member():
         
         if not company_id or not email:
             return jsonify({'success': False, 'error': 'Company ID and Email are required'}), 400
-            
+
+        # ACL: verify workspace.manage_employees permission
+        context = get_company_context(current_user_id, company_id)
+        if not context or 'workspace.manage_employees' not in context.get('permissions', set()):
+            return jsonify({'success': False, 'error': 'Access denied: requires workspace.manage_employees permission'}), 403
+
         result = team_system.invite_member(company_id, email, role, current_user_id)
         
         if result['success']:
@@ -74,6 +85,11 @@ def remove_member():
         
         if not company_id or not user_id:
              return jsonify({'success': False, 'error': 'Missing params'}), 400
+
+        # ACL: verify workspace.manage_employees permission
+        context = get_company_context(current_user_id, company_id)
+        if not context or 'workspace.manage_employees' not in context.get('permissions', set()):
+            return jsonify({'success': False, 'error': 'Access denied: requires workspace.manage_employees permission'}), 403
 
         success = team_system.remove_member(company_id, user_id)
         if success:

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import { restClient } from '@/utils/api';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, 
@@ -17,7 +18,8 @@ import {
   Info,
   Lock,
   Globe,
-  Users
+  Users,
+  Briefcase
 } from 'lucide-react';
 
 interface PrivacySettings {
@@ -51,6 +53,10 @@ export const PrivacyDashboard: React.FC = () => {
   const [exportRequests, setExportRequests] = useState<DataExportRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
+  // G22/G23: Employment Status state
+  const [employmentStatus, setEmploymentStatus] = useState('job_seeker');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -58,6 +64,7 @@ export const PrivacyDashboard: React.FC = () => {
     if (user) {
       loadPrivacySettings();
       loadExportRequests();
+      loadEmploymentStatus();
     }
   }, [user]);
 
@@ -89,6 +96,44 @@ export const PrivacyDashboard: React.FC = () => {
       title: 'Privacy Settings Updated',
       description: 'Your privacy preferences have been saved'
     });
+  };
+
+  // G22/G23: Load employment status from backend
+  const loadEmploymentStatus = async () => {
+    try {
+      const response = await restClient.get('/api/candidate/profile/career-dial/employment-status');
+      if (response.data && response.data.employment_status) {
+        setEmploymentStatus(response.data.employment_status);
+      }
+    } catch (error) {
+      console.error('Failed to load employment status:', error);
+    }
+  };
+
+  // G22/G23: Update employment status via backend
+  const updateEmploymentStatus = async (status: string) => {
+    setIsUpdatingStatus(true);
+    const previousStatus = employmentStatus;
+    setEmploymentStatus(status); // Optimistic update
+    try {
+      await restClient.put('/api/candidate/profile/career-dial/employment-status', {
+        employment_status: status
+      });
+      toast({
+        title: 'Employment Status Updated',
+        description: 'Your employment status has been saved.'
+      });
+    } catch (error) {
+      console.error('Failed to update employment status:', error);
+      setEmploymentStatus(previousStatus); // Revert on error
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update employment status.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const requestDataExport = async () => {
@@ -198,6 +243,50 @@ export const PrivacyDashboard: React.FC = () => {
           Privacy Protected
         </Badge>
       </div>
+
+      {/* G22/G23: Employment Status / Career Visibility */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5" />
+            Employment Status
+          </CardTitle>
+          <CardDescription>
+            Let recruiters know your current career status. This helps match you with the right opportunities.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {([
+            { value: 'job_seeker', label: 'Active Job Seeker', desc: 'Actively looking for new opportunities' },
+            { value: 'employed_open', label: 'Open to Opportunities', desc: 'Currently employed but open to hearing from recruiters' },
+            { value: 'employed_not_looking', label: 'Not Looking', desc: 'Currently employed and not interested in new roles' },
+            { value: 'freelancer', label: 'Freelancer', desc: 'Available for contract or freelance work' },
+          ] as const).map((option) => (
+            <button
+              key={option.value}
+              onClick={() => updateEmploymentStatus(option.value)}
+              disabled={isUpdatingStatus}
+              className={`flex items-center space-x-3 w-full p-3 border rounded-lg text-left transition-colors ${
+                employmentStatus === option.value
+                  ? 'border-primary bg-primary/5'
+                  : 'hover:bg-accent'
+              } ${isUpdatingStatus ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                employmentStatus === option.value ? 'border-primary' : 'border-muted-foreground'
+              }`}>
+                {employmentStatus === option.value && (
+                  <div className="h-2 w-2 rounded-full bg-primary" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">{option.label}</p>
+                <p className="text-sm text-muted-foreground">{option.desc}</p>
+              </div>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
       {/* Data Processing Consent */}
       <Card>

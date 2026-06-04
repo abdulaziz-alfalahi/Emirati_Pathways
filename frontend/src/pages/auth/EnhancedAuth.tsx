@@ -89,7 +89,13 @@ const EnhancedAuthPage: React.FC = () => {
     const uaePassError = searchParams.get('error');
     const uaePassMessage = searchParams.get('message');
     if (uaePassError) {
-      setError(uaePassMessage || 'UAE Pass authentication failed. Please try again.');
+      if (uaePassError === 'SOP1' || uaePassError === 'sop1') {
+        setError("Requestee is not eligible to use this service. Requestee's account is either not upgraded or have a visitor account. Please contact Emirati Human Development Platform to use the services.");
+      } else if (uaePassError === 'access_denied' || uaePassError === 'user_cancelled' || uaePassError === 'uaepass_denied') {
+        setError("User cancelled the login");
+      } else {
+        setError(uaePassMessage || 'UAE Pass authentication failed. Please try again.');
+      }
       // Clean the URL
       navigate('/auth', { replace: true });
     }
@@ -518,44 +524,25 @@ const EnhancedAuthPage: React.FC = () => {
 
                         {/* ── UAE PASS Login Button (Official Black Variant) ── */}
                         <div className="space-y-4 mb-6">
-                          <Button
+                          <button
                             id="uaepass-login-btn"
                             type="button"
                             onClick={handleUAEPassLogin}
                             disabled={uaePassLoading}
-                            className="w-full h-14 text-lg font-semibold rounded-xl
-                                       bg-[#1C1C1C] hover:bg-[#2a2a2a] text-white
-                                       shadow-lg hover:shadow-xl transition-all duration-200
-                                       flex items-center justify-center gap-3
-                                       border border-gray-700"
+                            className="w-full flex items-center justify-center transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                           >
                             {uaePassLoading ? (
-                              <Loader2 className="h-5 w-5 animate-spin" />
+                              <div className="h-[50px] w-[264px] flex items-center justify-center bg-gray-50 rounded-[12px] border border-gray-200">
+                                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                              </div>
                             ) : (
-                              <>
-                                {/* Official UAE Pass Green Fingerprint Logo */}
-                                <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <circle cx="50" cy="50" r="48" fill="url(#uaepass_gradient)" />
-                                  <defs>
-                                    <linearGradient id="uaepass_gradient" x1="0" y1="0" x2="100" y2="100">
-                                      <stop offset="0%" stopColor="#2ED573" />
-                                      <stop offset="100%" stopColor="#00B894" />
-                                    </linearGradient>
-                                  </defs>
-                                  {/* Fingerprint arcs */}
-                                  <path d="M50 25 C35 25, 22 38, 22 53 C22 60, 25 66, 30 70" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                                  <path d="M50 33 C39 33, 30 42, 30 53 C30 58, 32 62, 36 65" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                                  <path d="M50 41 C43 41, 38 47, 38 53 C38 57, 40 60, 43 62" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                                  <path d="M50 25 C65 25, 78 38, 78 53 C78 60, 75 66, 70 70" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                                  <path d="M50 33 C61 33, 70 42, 70 53 C70 58, 68 62, 64 65" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                                  <path d="M50 41 C57 41, 62 47, 62 53 C62 57, 60 60, 57 62" stroke="white" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-                                  {/* Center vertical line */}
-                                  <line x1="50" y1="25" x2="50" y2="53" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
-                                </svg>
-                                <span>Sign in using UAE PASS</span>
-                              </>
+                              <img 
+                                src="/uae-pass-en.svg" 
+                                alt="Sign in using UAE PASS" 
+                                className="h-[50px] w-[264px] object-contain drop-shadow-sm hover:drop-shadow-md transition-all rounded-[12px]"
+                              />
                             )}
-                          </Button>
+                          </button>
 
                           <p className="text-xs text-center text-gray-500">
                             Secure national digital identity verification

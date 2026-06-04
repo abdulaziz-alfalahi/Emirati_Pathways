@@ -1550,6 +1550,115 @@ def respond_to_offer(offer_id):
         
         conn.commit()
         
+        # ─── G5: Magic Metamorphosis ─── Auto-link candidate to company workspace
+        # ─── G7: NAFIS Placement ─── Update NAFIS status to 'placed' if applicable
+        if action == 'accept':
+            candidate_id_for_link = offer.get('candidate_id')
+            try:
+                metamorphosis_cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                
+                # Find the company_id via the job posting
+                jd_id = offer.get('jd_id') or offer.get('job_posting_id')
+                company_id = None
+                job_title_for_link = None
+                department_for_link = None
+                
+                if jd_id:
+                    # Try job_postings table first
+                    try:
+                        metamorphosis_cur.execute("""
+                            SELECT company_id, title, department FROM job_postings 
+                            WHERE id::text = %s OR jd_id::text = %s
+                            LIMIT 1
+                        """, (str(jd_id), str(jd_id)))
+                        jp = metamorphosis_cur.fetchone()
+                        if jp:
+                            company_id = jp.get('company_id')
+                            job_title_for_link = jp.get('title')
+                            department_for_link = jp.get('department')
+                    except Exception:
+                        conn.rollback()
+                    
+                    # Fallback: try job_descriptions table
+                    if not company_id:
+                        try:
+                            metamorphosis_cur.execute("""
+                                SELECT company_id, title as job_title FROM job_descriptions 
+                                WHERE id::text = %s OR jd_id::text = %s
+                                LIMIT 1
+                            """, (str(jd_id), str(jd_id)))
+                            jd = metamorphosis_cur.fetchone()
+                            if jd:
+                                company_id = jd.get('company_id')
+                                job_title_for_link = jd.get('job_title')
+                        except Exception:
+                            conn.rollback()
+                
+                if company_id and candidate_id_for_link:
+                    # Use position_title from offer as fallback
+                    if not job_title_for_link:
+                        job_title_for_link = offer.get('position_title') or 'Employee'
+                    
+                    # G5a: Insert into company_employees
+                    try:
+                        metamorphosis_cur.execute("""
+                            INSERT INTO company_employees 
+                                (company_id, user_id, job_title, department, employment_type, hired_via, start_date, status)
+                            VALUES (%s, %s, %s, %s, 'full_time', 'platform', CURRENT_DATE, 'active')
+                            ON CONFLICT (company_id, user_id) DO UPDATE SET 
+                                status = 'active', 
+                                job_title = COALESCE(EXCLUDED.job_title, company_employees.job_title),
+                                updated_at = NOW()
+                        """, (company_id, candidate_id_for_link, job_title_for_link, department_for_link))
+                        logger.info(f"G5 Metamorphosis: Linked candidate {candidate_id_for_link} to company {company_id}")
+                    except Exception as emp_err:
+                        logger.error(f"G5 Metamorphosis employee insert failed: {emp_err}")
+                        conn.rollback()
+                    
+                    # G5b: Set users.current_company_id
+                    try:
+                        metamorphosis_cur.execute(
+                            "UPDATE users SET current_company_id = %s WHERE id::text = %s",
+                            (company_id, str(candidate_id_for_link))
+                        )
+                        logger.info(f"G5 Metamorphosis: Set current_company_id={company_id} for user {candidate_id_for_link}")
+                    except Exception as uid_err:
+                        logger.error(f"G5 Metamorphosis current_company_id update failed: {uid_err}")
+                        conn.rollback()
+                    
+                    # G7: Update NAFIS job_seekers status to 'placed'
+                    try:
+                        metamorphosis_cur.execute("""
+                            UPDATE nafis_job_seekers SET status = 'placed', updated_at = NOW()
+                            WHERE user_id::text = %s 
+                               OR email = (SELECT email FROM users WHERE id::text = %s LIMIT 1)
+                        """, (str(candidate_id_for_link), str(candidate_id_for_link)))
+                        if metamorphosis_cur.rowcount > 0:
+                            logger.info(f"G7 NAFIS Placement: Marked candidate {candidate_id_for_link} as placed")
+                    except Exception as nafis_err:
+                        logger.warning(f"G7 NAFIS placement update skipped (table may not exist): {nafis_err}")
+                        conn.rollback()
+                    
+                    # G2: Sync job_applications status to 'accepted'
+                    try:
+                        metamorphosis_cur.execute("""
+                            UPDATE job_applications SET status = 'accepted', updated_at = NOW()
+                            WHERE user_id::text = %s AND job_id::text = %s AND status != 'accepted'
+                        """, (str(candidate_id_for_link), str(jd_id)))
+                    except Exception:
+                        conn.rollback()
+                    
+                    conn.commit()
+                    metamorphosis_cur.close()
+                else:
+                    logger.warning(f"G5 Metamorphosis: Could not resolve company_id for offer {offer_id} (jd_id={jd_id})")
+            except Exception as meta_err:
+                logger.error(f"G5/G7 Metamorphosis cascade failed (non-blocking): {meta_err}")
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+        
         logger.info(f"Candidate responded to offer {offer_id}: {action}")
         
         # Determine position title from offer data

@@ -33,6 +33,8 @@ export type UserRole =
   | 'government'
   | 'mentor'
   | 'assessor'
+  | 'board_member'
+  | 'operations_officer'
   // Phase 2-4 New Roles
   | 'advisor'
   | 'coach'
@@ -193,7 +195,9 @@ export const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   'operator': '/growth-operator-dashboard', // DB alias for growth_operator
   // Persona Dashboard Routes
   'employer': '/hr-dashboard', // Consolidated into HR Manager
-  'government': '/government-dashboard',
+  'government': '/operations-center',
+  'board_member': '/board-portal',
+  'operations_officer': '/operations-center',
   'mentor': '/mentor-dashboard',
   'assessor': '/assessor-dashboard',
   // Phase 2-4 New Role Routes
@@ -238,6 +242,8 @@ export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   // Persona Display Names
   'employer': 'Employer',
   'government': 'Government Official',
+  'board_member': 'EHDC Board Member',
+  'operations_officer': 'Platform Operations Officer',
   'mentor': 'Mentor',
   'assessor': 'Assessor',
   // Phase 2-4 Display Names
@@ -327,6 +333,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   // Persona Permissions
   'employer': ['manage_candidates', 'view_analytics', 'post_jobs', 'manage_positions'],
   'government': ['view_all_analytics', 'view_analytics', 'generate_reports'],
+  'board_member': ['view_all_analytics', 'view_analytics', 'generate_reports'],
+  'operations_officer': ['view_all_analytics', 'view_operations_center', 'view_analytics', 'generate_reports'],
   'mentor': ['view_analytics', 'manage_profile'],
   'assessor': ['view_analytics', 'manage_profile'],
   // Phase 2-4 Permissions

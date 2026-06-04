@@ -742,7 +742,7 @@ def match_candidates(jd_id):
                 experience_years,
                 job_title as current_position,
                 company as current_company,
-                'open_to_opportunities' as employment_status,
+                employment_status,
                 skills,
                 preferred_salary_min,
                 preferred_salary_max,
@@ -753,6 +753,7 @@ def match_candidates(jd_id):
             FROM users
             WHERE role = 'job_seeker'
                 AND is_active = true
+                AND is_visible = true
         """
         
         params = []
@@ -762,16 +763,18 @@ def match_candidates(jd_id):
             query += " AND id NOT IN %s"
             params.append(tuple(applicant_ids))
         
-        # Add employment status filter if specified
-        # Note: employment_status column does not exist on users table yet
-        # Skip this filter until the column is added
-        # if employment_status_filter:
-        #     if employment_status_filter.lower() == 'employed':
-        #         query += " AND employment_status IN ('employed', 'currently_employed')"
-        #     elif employment_status_filter.lower() == 'job_seeker':
-        #         query += " AND employment_status IN ('job_seeker', 'unemployed', 'actively_looking')"
-        #     elif employment_status_filter.lower() == 'open_to_opportunities':
-        #         query += " AND employment_status IN ('open_to_opportunities', 'passive', 'open')"
+        # G22/G23: Employment status filter for Stealth Headhunter
+        if employment_status_filter and employment_status_filter.lower() != 'all':
+            if employment_status_filter.lower() == 'job_seeker':
+                query += " AND employment_status = 'job_seeker'"
+            elif employment_status_filter.lower() == 'employed_open':
+                query += " AND employment_status = 'employed_open'"
+                query += " AND available_for_recruitment = true"
+            elif employment_status_filter.lower() == 'passive':
+                query += " AND employment_status IN ('employed_open', 'freelancer')"
+                query += " AND available_for_recruitment = true"
+            elif employment_status_filter.lower() == 'freelancer':
+                query += " AND employment_status = 'freelancer'"
         
         query += " LIMIT 1000"  # Limit to reasonable number for matching
         
@@ -980,6 +983,27 @@ def add_to_shortlist():
 
             row = dict(cursor.fetchone())
             conn.commit()
+
+            # G2: Sync job_applications.status → 'shortlisted'
+            try:
+                sync_cur = conn.cursor()
+                sync_cur.execute("""
+                    UPDATE job_applications 
+                    SET status = 'shortlisted', updated_at = NOW()
+                    WHERE (user_id::text = %s OR candidate_id::text = %s)
+                      AND (job_id::text = %s OR job_id::text = %s)
+                      AND status NOT IN ('accepted', 'withdrawn', 'offered')
+                """, (str(candidate_id), str(candidate_id), str(jd_id), str(job_id_int)))
+                if sync_cur.rowcount > 0:
+                    logger.info(f"G2: Synced job_applications status to 'shortlisted' for candidate {candidate_id}, job {jd_id}")
+                conn.commit()
+                sync_cur.close()
+            except Exception as sync_err:
+                logger.warning(f"G2: Application status sync failed (non-blocking): {sync_err}")
+                try:
+                    conn.rollback()
+                except:
+                    pass
 
             logger.info(f"Added candidate {candidate_id} to shortlist for JD {jd_id} (job_id={job_id_int})")
 
@@ -1339,6 +1363,79 @@ def save_jd(jd_id):
             logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
         
         conn.commit()
+
+        # ── G26: Demand Signal on Publish ──────────────────────────
+        if status == 'published':
+            try:
+                ds_conn = get_db_connection()
+                ds_cur = ds_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+                # Ensure demand_signals table exists
+                ds_cur.execute("""
+                    CREATE TABLE IF NOT EXISTS demand_signals (
+                        id SERIAL PRIMARY KEY,
+                        company_id TEXT NOT NULL UNIQUE,
+                        company_name TEXT,
+                        job_count INTEGER DEFAULT 1,
+                        sector TEXT,
+                        emirate TEXT,
+                        matching_candidates INTEGER DEFAULT 0,
+                        created_at TIMESTAMPTZ DEFAULT NOW(),
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                ds_conn.commit()
+
+                # Count published jobs for this company
+                ds_cur.execute(
+                    "SELECT COUNT(*) AS cnt FROM job_postings WHERE company_id = %s AND status = 'published'",
+                    (company_id,)
+                )
+                job_count_row = ds_cur.fetchone()
+                published_count = job_count_row['cnt'] if job_count_row else 1
+
+                # Upsert demand signal
+                ds_cur.execute("""
+                    INSERT INTO demand_signals (company_id, company_name, job_count, sector, emirate, created_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT (company_id) DO UPDATE SET
+                        job_count = %s,
+                        sector = COALESCE(EXCLUDED.sector, demand_signals.sector),
+                        emirate = COALESCE(EXCLUDED.emirate, demand_signals.emirate),
+                        updated_at = NOW()
+                """, (
+                    company_id, company_id, published_count,
+                    basic_info.get('department'), emirate,
+                    published_count,
+                ))
+                ds_conn.commit()
+
+                # Notify NAFIS / Growth Talent operators (first job only)
+                if published_count == 1:
+                    ds_cur.execute(
+                        "SELECT id FROM users WHERE role IN ('nafis_operator', 'growth_operator_talent')"
+                    )
+                    operator_rows = ds_cur.fetchall()
+                    for op in operator_rows:
+                        try:
+                            from backend.notification_helper import create_notification
+                            create_notification(
+                                user_id=op['id'],
+                                notification_type='demand_signal_new',
+                                title=f"New hiring demand: {company_id}",
+                                message=f"Company {company_id} published their first job ({basic_info.get('title', 'position')}). Review demand signals.",
+                                metadata={'company_id': company_id, 'jd_id': jd_id}
+                            )
+                        except Exception as notif_err:
+                            logger.warning(f"G26: Notification to operator {op['id']} failed: {notif_err}")
+
+                logger.info(f"G26: Demand signal upserted for company {company_id} (jobs={published_count})")
+                ds_cur.close()
+                ds_conn.close()
+            except Exception as ds_err:
+                logger.warning(f"G26: Demand signal creation failed (non-blocking): {ds_err}")
+        # ── End G26 ────────────────────────────────────────────────
+
         cur.close()
         conn.close()
         

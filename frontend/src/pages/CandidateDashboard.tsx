@@ -371,7 +371,7 @@ const CandidateDashboard: React.FC = () => {
 
         <div className="py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className="grid w-full grid-cols-7 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80">
+            <TabsList className={`grid w-full ${user?.company_id ? 'grid-cols-7' : 'grid-cols-6'} bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80`}>
               <TabsTrigger value="overview" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Overview', 'نظرة عامة')}</TabsTrigger>
               <TabsTrigger value="profile" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Profile & CV', 'الملف والسيرة')}</TabsTrigger>
               <TabsTrigger value="jobs" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{t('Job Matches', 'الوظائف المطابقة')}</TabsTrigger>
@@ -385,10 +385,12 @@ const CandidateDashboard: React.FC = () => {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="company" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
-                <Building2 className="h-3.5 w-3.5" style={{ marginInlineEnd: 4 }} />
-                {t('My Company', 'شركتي')}
-              </TabsTrigger>
+              {user?.company_id && (
+                <TabsTrigger value="company" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">
+                  <Building2 className="h-3.5 w-3.5" style={{ marginInlineEnd: 4 }} />
+                  {t('My Company', 'شركتي')}
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* ════════════════════════════════════════════════════════════
@@ -730,15 +732,17 @@ const CandidateDashboard: React.FC = () => {
               <Messages />
             </TabsContent>
 
-            <TabsContent value="company" className="space-y-6 mt-6">
-              <React.Suspense fallback={
-                <div className="flex items-center justify-center py-12">
-                  <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-                </div>
-              }>
-                <MyCompanyView />
-              </React.Suspense>
-            </TabsContent>
+            {user?.company_id && (
+              <TabsContent value="company" className="space-y-6 mt-6">
+                <React.Suspense fallback={
+                  <div className="flex items-center justify-center py-12">
+                    <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+                  </div>
+                }>
+                  <MyCompanyView />
+                </React.Suspense>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>

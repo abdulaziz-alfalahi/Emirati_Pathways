@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -36,7 +37,8 @@ import {
   Eye,
   Download,
   RefreshCw,
-  BookOpen
+  BookOpen,
+  Search
 } from 'lucide-react';
 import {
   Dialog,
@@ -118,6 +120,7 @@ interface MatchingResult {
   };
   is_applicant?: boolean;
   application_date?: string;
+  employment_status?: string;
 }
 
 interface AnalyticsData {
@@ -150,6 +153,12 @@ const CandidateMatching = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'matching' | 'shortlist'>('matching');
+
+  // G22/G23: Stealth Headhunter state
+  const [includePassiveTalent, setIncludePassiveTalent] = useState(false);
+  const [employmentStatusFilter, setEmploymentStatusFilter] = useState('all');
+  const [headhuntDialogOpen, setHeadhuntDialogOpen] = useState(false);
+  const [headhuntCandidate, setHeadhuntCandidate] = useState<MatchingResult | null>(null);
 
   // Advanced filter state
   const [filterExperience, setFilterExperience] = useState('any');
@@ -253,8 +262,10 @@ const CandidateMatching = () => {
       const jdId = jobToUse.jd_id || jobToUse.id;
       console.log('handleFindMatches - extracted jdId:', jdId);
 
+      // G22/G23: Pass employment status filter when passive talent is enabled
+      const statusFilter = includePassiveTalent ? employmentStatusFilter : null;
       const response = await restClient.post(`/api/recruiter/jd/${jdId}/match-candidates`, {
-        employment_status_filter: null,
+        employment_status_filter: statusFilter,
         top_n: 20
       });
 
@@ -314,7 +325,8 @@ const CandidateMatching = () => {
           },
           status: match.candidate.status, // preserve status if available
           is_applicant: match.is_applicant || match.candidate.is_applicant, // Check both levels for safety
-          application_date: match.application_date || match.candidate.application_date
+          application_date: match.application_date || match.candidate.application_date,
+          employment_status: match.candidate.employment_status || 'job_seeker'
         }));
 
         // Fetch existing shortlist status
@@ -731,6 +743,43 @@ const CandidateMatching = () => {
               )}
             </div>
           </div>
+
+          {/* G22/G23: Stealth Headhunter — Passive Talent Controls */}
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={includePassiveTalent}
+                  onCheckedChange={(checked) => {
+                    setIncludePassiveTalent(checked);
+                    if (!checked) setEmploymentStatusFilter('all');
+                  }}
+                />
+                <div>
+                  <label className="text-sm font-medium">Include Passive Talent</label>
+                  <p className="text-xs text-muted-foreground">Search employed candidates open to opportunities</p>
+                </div>
+              </div>
+
+              {includePassiveTalent && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Employment Status</label>
+                  <Select value={employmentStatusFilter} onValueChange={setEmploymentStatusFilter}>
+                    <SelectTrigger className="w-[200px] bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Candidates</SelectItem>
+                      <SelectItem value="job_seeker">Active Job Seeker</SelectItem>
+                      <SelectItem value="employed_open">Open to Opportunities</SelectItem>
+                      <SelectItem value="passive">All Passive Talent</SelectItem>
+                      <SelectItem value="freelancer">Freelancer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -906,6 +955,20 @@ const CandidateMatching = () => {
                                 APPLICANT
                               </Badge>
                             )}
+                            {/* G22/G23: Employment status badge for passive talent */}
+                            {!candidate.is_applicant && candidate.employment_status && candidate.employment_status !== 'job_seeker' && (
+                              <Badge className={candidate.employment_status === 'employed_open'
+                                ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                : candidate.employment_status === 'freelancer'
+                                  ? 'bg-cyan-500 text-white hover:bg-cyan-600'
+                                  : 'bg-slate-400 text-white hover:bg-slate-500'
+                              }>
+                                {candidate.employment_status === 'employed_open' ? 'Open to Opportunities'
+                                  : candidate.employment_status === 'freelancer' ? 'Freelancer'
+                                  : candidate.employment_status === 'employed_not_looking' ? 'Not Looking'
+                                  : candidate.employment_status}
+                              </Badge>
+                            )}
 
                             <div>
                               <div className="flex items-center gap-3">
@@ -1013,13 +1076,27 @@ const CandidateMatching = () => {
                         >
                           <Eye className="h-4 w-4 mr-2" /> Quick View
                         </Button>
-                        <Button
-                          variant="ghost"
-                          className="w-full text-slate-500 hover:text-slate-700"
-                          onClick={() => handleCandidateAction(candidate.candidate_id, 'message')}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-2" /> Message
-                        </Button>
+                        {/* G22/G23: Headhunt button for passive talent */}
+                        {candidate.employment_status && candidate.employment_status !== 'job_seeker' && !candidate.is_applicant ? (
+                          <Button
+                            variant="outline"
+                            className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                            onClick={() => {
+                              setHeadhuntCandidate(candidate);
+                              handleCandidateAction(candidate.candidate_id, 'message');
+                            }}
+                          >
+                            <Search className="h-4 w-4 mr-2" /> Headhunt
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            className="w-full text-slate-500 hover:text-slate-700"
+                            onClick={() => handleCandidateAction(candidate.candidate_id, 'message')}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" /> Message
+                          </Button>
+                        )}
                       </div>
                     </div>
 

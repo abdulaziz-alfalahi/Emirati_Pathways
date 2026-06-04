@@ -16,6 +16,7 @@ from functools import wraps
 import psycopg2
 import psycopg2.extras
 import os
+import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -134,11 +135,37 @@ def get_company_context(user_id, company_id):
         return None
 
 
-def require_workspace_access(permission=None):
+def _log_access_denied(user_id, company_id, permission):
+    """Log 403 workspace access denied events to admin_audit_log."""
+    try:
+        audit_conn = psycopg2.connect(DB_URL)
+        audit_cur = audit_conn.cursor()
+        audit_cur.execute("""
+            INSERT INTO admin_audit_log (user_id, action, details, created_at)
+            VALUES (%s, 'workspace_access_denied', %s, NOW())
+        """, (user_id, json.dumps({
+            'company_id': company_id,
+            'permission': permission,
+            'ip': request.remote_addr
+        })))
+        audit_conn.commit()
+        audit_cur.close()
+        audit_conn.close()
+    except Exception:
+        pass
+
+
+def require_workspace_access(permission=None, jwt_optional=False):
     """Decorator to enforce workspace-scoped access control.
     
     Extracts company_id from URL params, verifies user membership,
     and checks specific permission if provided.
+    
+    Args:
+        permission: Required permission string (e.g. 'workspace.view').
+        jwt_optional: If True, fall back to query-param user_id on GET
+                      requests when JWT is missing (backward compat).
+                      If False (default), JWT is strictly required.
     
     Sets g.company_context with user's role and permissions.
     """
@@ -151,11 +178,14 @@ def require_workspace_access(permission=None):
                 return jsonify({"error": "company_id is required"}), 400
 
             # Get authenticated user
+            user_id = None
             try:
-                verify_jwt_in_request(optional=True)
+                verify_jwt_in_request(optional=jwt_optional)
                 user_id = get_jwt_identity()
             except Exception:
-                user_id = request.args.get('user_id')
+                # Only fall back to query param for GET requests when jwt_optional
+                if jwt_optional and request.method == 'GET':
+                    user_id = request.args.get('user_id')
 
             if not user_id:
                 return jsonify({"error": "Authentication required"}), 401
@@ -163,12 +193,16 @@ def require_workspace_access(permission=None):
             # Get company context
             context = get_company_context(user_id, company_id)
             if not context:
+                _log_access_denied(user_id, company_id, permission)
+                logger.warning(f"Workspace access denied: user={user_id} company={company_id} perm={permission}")
                 return jsonify({
                     "error": "Access denied: you are not a member of this workspace"
                 }), 403
 
             # Check specific permission
             if permission and permission not in context['permissions']:
+                _log_access_denied(user_id, company_id, permission)
+                logger.warning(f"Workspace permission denied: user={user_id} company={company_id} perm={permission} role={context.get('role')}")
                 return jsonify({
                     "error": f"Access denied: requires '{permission}' permission"
                 }), 403

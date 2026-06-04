@@ -944,6 +944,8 @@ const UserManagerEnhanced: React.FC = () => {
     { id: 'educator', name: 'educator', display_name: 'Educator', description: 'Academic educator', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'parent', name: 'parent', display_name: 'Parent / Guardian', description: 'Parent or guardian of a student', permissions: ['view_dashboard'], is_system: true, user_count: 0, category: 'End Users' },
     { id: 'government', name: 'government', display_name: 'Government Official', description: 'Government entity representative', permissions: ['view_dashboard', 'view_analytics'], is_system: true, user_count: 0, category: 'End Users' },
+    { id: 'board_member', name: 'board_member', display_name: 'EHDC Board Member', description: 'EHDC Board strategic intelligence portal', permissions: ['view_dashboard', 'view_analytics'], is_system: true, user_count: 0, category: 'Government & Board' },
+    { id: 'operations_officer', name: 'operations_officer', display_name: 'Platform Operations Officer', description: 'Platform telemetry and operations command', permissions: ['view_dashboard', 'view_operations_center'], is_system: true, user_count: 0, category: 'Government & Board' },
     { id: 'student', name: 'student', display_name: 'Student', description: 'School or university student', permissions: ['view_dashboard', 'manage_profile'], is_system: true, user_count: 0, category: 'End Users' },
     // Phase 2-4 New Roles
     { id: 'advisor', name: 'advisor', display_name: 'Academic Advisor', description: 'Academic pathway advisor for students and job seekers', permissions: ['view_dashboard', 'manage_profile', 'view_analytics'], is_system: true, user_count: 0, category: 'Specialized Roles' },

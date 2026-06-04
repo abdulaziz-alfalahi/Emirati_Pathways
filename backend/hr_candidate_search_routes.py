@@ -15,6 +15,7 @@ from backend.db import get_db_connection
 import json
 import re
 from typing import Dict, List, Any
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

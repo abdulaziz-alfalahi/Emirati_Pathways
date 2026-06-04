@@ -15,7 +15,9 @@ import {
   BookOpen,
   UserCheck,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  Landmark,
+  Activity
 } from 'lucide-react';
 
 export interface RoleOption {
@@ -133,6 +135,34 @@ const roleOptions: RoleOption[] = [
       'Family career planning'
     ],
     color: 'bg-sky-500'
+  },
+  {
+    id: 'board_member',
+    title: 'EHDC Board Member',
+    description: 'Strategic oversight, KPI monitoring, and platform directives.',
+    icon: <Landmark className="h-8 w-8" />,
+    features: [
+      'Executive KPI scorecards',
+      'AI-generated insights',
+      'Strategic directive channel',
+      'Board meeting intelligence',
+      'Emiratisation overview'
+    ],
+    color: 'bg-slate-800'
+  },
+  {
+    id: 'operations_officer',
+    title: 'Operations Officer',
+    description: 'Deep operational monitoring of the platform and compliance tracking.',
+    icon: <Activity className="h-8 w-8" />,
+    features: [
+      'Real-time platform metrics',
+      'Compliance and policy tracking',
+      'Workforce analytics',
+      'Initiative management',
+      'Sector breakdowns'
+    ],
+    color: 'bg-teal-600'
   }
 ];
 

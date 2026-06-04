@@ -439,44 +439,239 @@ def delegate_approval_enhanced():
 @hr_dashboard_api_bp.route('/approvals/<approval_id>/approve', methods=['POST'])
 @optional_auth
 def approve_request(approval_id):
-    """Approve a pending request"""
+    """Approve a pending offer request — HR Manager canonical approval endpoint.
+    
+    G6: Consolidated with recruiter-side /offers/approvals/<id>/approve.
+    Both endpoints now use the same state machine:
+      1. Update offer_approval_requests.status → 'approved'
+      2. Update offers.status → 'approved'
+      3. Notify the recruiter who submitted the offer
+    """
     try:
         data = request.get_json() or {}
-        return jsonify({
-            'success': True,
-            'message': 'Request approved successfully',
-            'data': {
-                'approval_id': approval_id,
-                'status': 'approved',
-                'approved_by': data.get('approved_by', 'hr_manager'),
-                'comments': data.get('comments'),
-                'approved_at': datetime.now().isoformat()
-            }
-        })
+        approver_id = data.get('approved_by', data.get('approver_id', 1))
+        comments = data.get('comments', '')
+        
+        # Convert approver_id to int if string
+        if isinstance(approver_id, str):
+            try:
+                approver_id = int(approver_id)
+            except:
+                approver_id = 1
+        
+        offer_id = None
+        recruiter_id = None
+        position_title = None
+        
+        # Step 1: Update offer_approval_requests table
+        update_query = """
+            UPDATE offer_approval_requests
+            SET status = 'approved',
+                approved_by = %s,
+                approved_at = NOW(),
+                comments = %s,
+                updated_at = NOW()
+            WHERE id = %s::uuid
+            RETURNING offer_id, recruiter_id, position_title
+        """
+        result = execute_query(update_query, (approver_id, comments, approval_id), fetch_one=True)
+        
+        if result:
+            offer_id = result.get('offer_id')
+            recruiter_id = result.get('recruiter_id')
+            position_title = result.get('position_title', 'a position')
+        else:
+            # Fallback: approval_id might be the offer_id directly
+            logger.info(f"[G6 HR] No approval request found, treating {approval_id} as offer_id")
+            offer_id = approval_id
+        
+        # Step 2: Update the offer status to 'approved'
+        if offer_id:
+            offer_update_query = """
+                UPDATE offers
+                SET status = 'approved',
+                    updated_at = NOW()
+                WHERE id = %s::uuid
+                RETURNING id, offer_data, recruiter_id
+            """
+            offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
+            
+            if offer_result:
+                logger.info(f"[G6 HR] Offer {offer_id} approved by HR Manager {approver_id}")
+                
+                # Extract position_title from offer_data if needed
+                if not position_title:
+                    od = offer_result.get('offer_data') or {}
+                    if isinstance(od, str):
+                        try:
+                            import json
+                            od = json.loads(od)
+                        except:
+                            od = {}
+                    position_title = od.get('position_title') or od.get('job_title') or 'a position'
+                
+                if not recruiter_id:
+                    recruiter_id = offer_result.get('recruiter_id')
+                
+                # Step 3: Notify recruiter
+                if recruiter_id:
+                    try:
+                        import json
+                        notif_metadata = json.dumps({
+                            'offer_id': str(offer_id),
+                            'approval_id': str(approval_id),
+                            'position_title': position_title,
+                            'link': '/recruiter?tab=offers'
+                        })
+                        execute_query("""
+                            INSERT INTO notifications (user_id, type, title, content, metadata)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (
+                            str(recruiter_id), 'offer_approved',
+                            'Offer Approved',
+                            f'Your offer for {position_title} has been approved by HR Manager. You can now send it to the candidate.',
+                            notif_metadata
+                        ))
+                    except Exception as notif_err:
+                        logger.warning(f"[G6 HR] Notification failed: {notif_err}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Request approved successfully',
+                    'data': {
+                        'approval_id': approval_id,
+                        'offer_id': str(offer_id),
+                        'status': 'approved',
+                        'approved_by': approver_id,
+                        'comments': comments,
+                        'approved_at': datetime.now().isoformat()
+                    }
+                })
+            else:
+                return jsonify({'success': False, 'message': 'Offer not found'}), 404
+        else:
+            return jsonify({'success': False, 'message': 'Approval request not found'}), 404
+            
     except Exception as e:
-        logger.error(f"Failed to approve request: {e}")
+        logger.error(f"[G6 HR] Failed to approve request: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @hr_dashboard_api_bp.route('/approvals/<approval_id>/reject', methods=['POST'])
 @optional_auth
 def reject_request(approval_id):
-    """Reject a pending request"""
+    """Reject a pending offer request — HR Manager canonical rejection endpoint.
+    
+    G6: Consolidated with recruiter-side /offers/approvals/<id>/reject.
+    """
     try:
         data = request.get_json() or {}
-        return jsonify({
-            'success': True,
-            'message': 'Request rejected',
-            'data': {
-                'approval_id': approval_id,
-                'status': 'rejected',
-                'rejected_by': data.get('rejected_by', 'hr_manager'),
-                'reason': data.get('reason'),
-                'rejected_at': datetime.now().isoformat()
-            }
-        })
+        approver_id = data.get('rejected_by', data.get('approver_id', 1))
+        reason = data.get('reason', data.get('rejection_reason', ''))
+        comments = data.get('comments', '')
+        
+        if isinstance(approver_id, str):
+            try:
+                approver_id = int(approver_id)
+            except:
+                approver_id = 1
+        
+        offer_id = None
+        recruiter_id = None
+        position_title = None
+        
+        # Step 1: Update offer_approval_requests table
+        update_query = """
+            UPDATE offer_approval_requests
+            SET status = 'rejected',
+                approved_by = %s,
+                approved_at = NOW(),
+                rejection_reason = %s,
+                comments = %s,
+                updated_at = NOW()
+            WHERE id = %s::uuid
+            RETURNING offer_id, recruiter_id, position_title
+        """
+        result = execute_query(update_query, (approver_id, reason, comments, approval_id), fetch_one=True)
+        
+        if result:
+            offer_id = result.get('offer_id')
+            recruiter_id = result.get('recruiter_id')
+            position_title = result.get('position_title', 'a position')
+        else:
+            logger.info(f"[G6 HR] No approval request found, treating {approval_id} as offer_id")
+            offer_id = approval_id
+        
+        # Step 2: Update the offer status to 'rejected'
+        if offer_id:
+            offer_update_query = """
+                UPDATE offers
+                SET status = 'rejected',
+                    updated_at = NOW()
+                WHERE id = %s::uuid
+                RETURNING id, offer_data, recruiter_id
+            """
+            offer_result = execute_query(offer_update_query, (str(offer_id),), fetch_one=True)
+            
+            if offer_result:
+                logger.info(f"[G6 HR] Offer {offer_id} rejected by HR Manager {approver_id}")
+                
+                if not position_title:
+                    od = offer_result.get('offer_data') or {}
+                    if isinstance(od, str):
+                        try:
+                            import json
+                            od = json.loads(od)
+                        except:
+                            od = {}
+                    position_title = od.get('position_title') or od.get('job_title') or 'a position'
+                
+                if not recruiter_id:
+                    recruiter_id = offer_result.get('recruiter_id')
+                
+                # Step 3: Notify recruiter
+                if recruiter_id:
+                    try:
+                        import json
+                        reason_text = f' Reason: {reason}' if reason else ''
+                        notif_metadata = json.dumps({
+                            'offer_id': str(offer_id),
+                            'approval_id': str(approval_id),
+                            'position_title': position_title,
+                            'rejection_reason': reason,
+                            'link': '/recruiter?tab=offers'
+                        })
+                        execute_query("""
+                            INSERT INTO notifications (user_id, type, title, content, metadata)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (
+                            str(recruiter_id), 'offer_rejected',
+                            'Offer Rejected',
+                            f'Your offer for {position_title} has been rejected by HR Manager.{reason_text}',
+                            notif_metadata
+                        ))
+                    except Exception as notif_err:
+                        logger.warning(f"[G6 HR] Rejection notification failed: {notif_err}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Request rejected',
+                    'data': {
+                        'approval_id': approval_id,
+                        'offer_id': str(offer_id),
+                        'status': 'rejected',
+                        'rejected_by': approver_id,
+                        'reason': reason,
+                        'rejected_at': datetime.now().isoformat()
+                    }
+                })
+            else:
+                return jsonify({'success': False, 'message': 'Offer not found'}), 404
+        else:
+            return jsonify({'success': False, 'message': 'Approval request not found'}), 404
+            
     except Exception as e:
-        logger.error(f"Failed to reject request: {e}")
+        logger.error(f"[G6 HR] Failed to reject request: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -587,6 +782,19 @@ def add_to_shortlist(job_id):
             (job_id, candidate_id, hr_user_id, notes),
             return_id=True
         )
+        
+        # G2: Sync job_applications.status → 'shortlisted'
+        try:
+            execute_query("""
+                UPDATE job_applications 
+                SET status = 'shortlisted', updated_at = NOW()
+                WHERE (user_id::text = %s OR candidate_id::text = %s)
+                  AND job_id::text = %s
+                  AND status NOT IN ('accepted', 'withdrawn', 'offered')
+            """, (str(candidate_id), str(candidate_id), str(job_id)))
+            logger.info(f"G2: Synced job_applications status to 'shortlisted' for candidate {candidate_id}, job {job_id}")
+        except Exception as sync_err:
+            logger.warning(f"G2: Application status sync failed (non-blocking): {sync_err}")
         
         return jsonify({
             'success': True,

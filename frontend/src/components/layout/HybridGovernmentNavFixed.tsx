@@ -9,6 +9,7 @@ import { NotificationBell } from '@/components/notifications/NotificationSystem'
 import { AccessibilityToolbar } from '@/components/accessibility/AccessibilityToolbar';
 import { normalizeRole, getDashboardRoute, ROLE_DISPLAY_NAMES } from '@/types/auth';
 import { useNavigate } from 'react-router-dom';
+import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
 
 interface HybridGovernmentNavProps {
   showAuthButtons?: boolean;
@@ -51,6 +52,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
   const navigate = useNavigate();
+  const { flags } = useFeatureFlags();
 
   // Get user role from authenticated user, fallback to prop
   const userRole = user?.role || propUserRole;
@@ -399,8 +401,13 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 onMouseEnter={() => handleDropdownEnter(group.id)}
                 onMouseLeave={handleDropdownLeave}
               >
-                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium`}>
+                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
                   <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
+                  {group.featureFlagKey && flags[group.featureFlagKey] === false && (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                      {isRTL ? 'قريباً' : 'Coming Soon'}
+                    </span>
+                  )}
                   <ChevronDown className="h-4 w-4" />
                 </button>
 
@@ -412,23 +419,33 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                         <p className="text-sm text-slate-600">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
                       </div>
                       <div className="grid grid-cols-1 gap-2">
-                        {group.items.map((item) => (
+                        {group.items.map((item) => {
+                          const isItemDisabled = item.featureFlagKey && flags[item.featureFlagKey] === false;
+                          const itemName = t(itemKeyByHref[item.href]?.name || '', item.name);
+                          const itemDesc = t(itemKeyByHref[item.href]?.desc || '', item.description);
+                          return (
                           <Link
                             key={item.name}
-                            to={item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href}
-                            className="flex flex-row items-start gap-3 p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group"
+                            to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
+                            className={`flex flex-row items-start gap-3 p-3 rounded-xl transition-colors group ${isItemDisabled ? 'opacity-60 hover:bg-slate-50' : 'hover:bg-[#F0F7F7]'}`}
                           >
-                            <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
+                            <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isItemDisabled ? 'text-slate-400' : 'text-[#006E6D]'}`} />
                             <div className="flex-1">
-                              <div className="font-medium text-[#1A1A1A] group-hover:text-[#006E6D]">
+                              <div className={`font-medium flex items-center ${isItemDisabled ? 'text-slate-500' : 'text-[#1A1A1A] group-hover:text-[#006E6D]'}`}>
                                 {t(itemKeyByHref[item.href]?.name || '', item.name)}
+                                {isItemDisabled && (
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                                    {isRTL ? 'قريباً' : 'Coming Soon'}
+                                  </span>
+                                )}
                               </div>
                               <div className="text-sm text-slate-600 line-clamp-2">
                                 {t(itemKeyByHref[item.href]?.desc || '', item.description)}
                               </div>
                             </div>
                           </Link>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -467,22 +484,37 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
 
               {filteredNavigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
-                  <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center`}>
+                  <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
                     <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
                     {t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}
+                    {group.featureFlagKey && flags[group.featureFlagKey] === false && (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                        {isRTL ? 'قريباً' : 'Coming Soon'}
+                      </span>
+                    )}
                   </h3>
                   <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
-                    {group.items.slice(0, 4).map((item) => (
+                    {group.items.slice(0, 4).map((item) => {
+                      const isItemDisabled = item.featureFlagKey && flags[item.featureFlagKey] === false;
+                      const itemName = t(itemKeyByHref[item.href]?.name || '', item.name);
+                      const itemDesc = t(itemKeyByHref[item.href]?.desc || '', item.description);
+                      return (
                       <Link
                         key={item.name}
-                        to={item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href}
-                        className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#6B7280] hover:text-[#006E6D] transition-colors py-1`}
+                        to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
+                        className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 transition-colors py-1 ${isItemDisabled ? 'opacity-60 text-slate-400' : 'text-[#6B7280] hover:text-[#006E6D]'}`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <item.icon className="h-4 w-4" />
                         <span className="text-sm">{t(itemKeyByHref[item.href]?.name || '', item.name)}</span>
+                        {isItemDisabled && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+                            {isRTL ? 'قريباً' : 'Coming Soon'}
+                          </span>
+                        )}
                       </Link>
-                    ))}
+                      );
+                    })}
                     {group.items.length > 4 && (
                       <Link
                         to={`/${group.id}`}

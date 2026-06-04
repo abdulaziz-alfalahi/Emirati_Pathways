@@ -123,6 +123,7 @@ def ensure_tables(conn):
             status VARCHAR(20) DEFAULT 'waiting',
             category VARCHAR(50) DEFAULT 'general',
             initial_message TEXT DEFAULT '',
+            metadata JSONB DEFAULT '{}',
             started_at TIMESTAMP DEFAULT NOW(),
             accepted_at TIMESTAMP,
             ended_at TIMESTAMP,
@@ -130,6 +131,11 @@ def ensure_tables(conn):
             ticket_id INTEGER REFERENCES support_tickets(id),
             rating INTEGER DEFAULT 0
         );
+        -- Add metadata column if it doesn't exist (idempotent migration)
+        DO $$ BEGIN
+            ALTER TABLE live_chat_sessions ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+        EXCEPTION WHEN others THEN NULL;
+        END $$;
         CREATE INDEX IF NOT EXISTS idx_tickets_status ON support_tickets(status);
         CREATE INDEX IF NOT EXISTS idx_tickets_assigned ON support_tickets(assigned_to);
         CREATE INDEX IF NOT EXISTS idx_content_status ON content_submissions(status);
@@ -607,6 +613,13 @@ def start_live_chat():
     category = data.get('category', 'general')
     initial_message = data.get('message', '')
 
+    # Context metadata from the chat initiator
+    chat_metadata = {
+        'user_role': data.get('user_role', ''),
+        'current_route': data.get('current_route', ''),
+        'entity_id': data.get('entity_id', ''),
+    }
+
     conn = get_db()
     if not conn: return jsonify({"error": "Database unavailable"}), 503
     try:
@@ -646,9 +659,9 @@ def start_live_chat():
             conversation_id = f"livechat_{user_id}_unassigned_{int(__import__('time').time())}"
 
         cur.execute("""
-            INSERT INTO live_chat_sessions (user_id, agent_id, conversation_id, status, category, initial_message)
-            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, started_at
-        """, (user_id, agent_id, conversation_id, status, category, initial_message))
+            INSERT INTO live_chat_sessions (user_id, agent_id, conversation_id, status, category, initial_message, metadata)
+            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, started_at
+        """, (user_id, agent_id, conversation_id, status, category, initial_message, json.dumps(chat_metadata)))
         row = cur.fetchone()
         session_id = row['id']
         started_at = row['started_at'].isoformat() if row.get('started_at') else None
@@ -676,6 +689,7 @@ def start_live_chat():
                     'message': initial_message,
                     'started_at': started_at,
                     'agent_id': agent_id,
+                    'metadata': chat_metadata,
                 })
         except Exception as se:
             logger.warning(f"Socket emit failed: {se}")
@@ -697,6 +711,7 @@ def start_live_chat():
             "agent_id": agent_id,
             "agent_name": agent_name,
             "started_at": started_at,
+            "metadata": chat_metadata,
         }), 201
     except Exception as e:
         conn.rollback(); conn.close()

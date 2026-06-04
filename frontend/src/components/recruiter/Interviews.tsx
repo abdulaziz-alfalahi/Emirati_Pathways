@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from "@/components/ui/label";
-import { Video, Calendar, Clock, Loader2, FileVideo, Sparkles, X, MoreVertical, Edit, BarChart3, ArrowLeft } from 'lucide-react';
+import { Video, Calendar, Clock, Loader2, FileVideo, Sparkles, X, MoreVertical, Edit, BarChart3, ArrowLeft, ClipboardCopy, Star } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { getPrefixedDisplayName } from '@/utils/nameUtils';
 import InterviewAnalytics from './interviews/InterviewAnalytics';
+import InterviewScorecard from './InterviewScorecard';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -31,6 +32,7 @@ export default function RecruiterInterviews() {
   const [activeSession, setActiveSession] = useState<any>(null); // If set, show VideoRoom
   const [isAnalysisLoading, setIsAnalysisLoading] = useState<string | null>(null);
   const [analyticsSession, setAnalyticsSession] = useState<any>(null);
+  const [scorecardSession, setScorecardSession] = useState<any>(null);
 
   // Schedule Dialog
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -100,6 +102,17 @@ export default function RecruiterInterviews() {
     navigator.clipboard.writeText(link);
     toast.success("Guest link copied to clipboard");
   };
+
+  // G20: Scorecard view
+  if (scorecardSession) {
+    return (
+      <InterviewScorecard
+        interviewId={scorecardSession.id}
+        interviewTitle={scorecardSession.title || scorecardSession.job_title || 'Interview'}
+        onBack={() => setScorecardSession(null)}
+      />
+    );
+  }
 
   // Cancel Dialog State
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -280,6 +293,19 @@ export default function RecruiterInterviews() {
                         </Button>
                       )}
 
+                      {/* G20: Copy Guest Link */}
+                      {session.guest_token && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10"
+                          title="Copy Guest Link"
+                          onClick={() => handleCopyLink(session.guest_token)}
+                        >
+                          <ClipboardCopy className="h-4 w-4 text-slate-600" />
+                        </Button>
+                      )}
+
                       <Button
                         variant="outline"
                         size="icon"
@@ -300,9 +326,17 @@ export default function RecruiterInterviews() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setScorecardSession(session)}>
+                            <Star className="mr-2 h-4 w-4" /> Scorecard
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setAnalyticsSession(session)}>
                             <BarChart3 className="mr-2 h-4 w-4" /> View Analytics
                           </DropdownMenuItem>
+                          {session.guest_token && (
+                            <DropdownMenuItem onClick={() => handleCopyLink(session.guest_token)}>
+                              <ClipboardCopy className="mr-2 h-4 w-4" /> Copy Guest Link
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => openRescheduleDialog(session)}>
                             <Edit className="mr-2 h-4 w-4" /> Reschedule
                           </DropdownMenuItem>

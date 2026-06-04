@@ -11,11 +11,13 @@ export interface NavItem {
   type?: 'separator';
   label?: string;
   description?: string; // Add description property
+  featureFlagKey?: string; // Toggles page activity
 }
 
 export interface NavGroup {
   id: string;
   name: string;
   description?: string; // Add description property
+  featureFlagKey?: string; // Toggles group activity
   items: NavItem[];
 }

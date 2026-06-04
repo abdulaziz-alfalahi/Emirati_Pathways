@@ -6,7 +6,9 @@ import { restClient } from '@/utils/api';
 import UserManagerEnhanced from '@/components/admin/UserManagerEnhanced';
 import GrowthOperatorManagerEnhanced from '@/components/admin/GrowthOperatorManagerEnhanced';
 import AdminRoleRequests from '@/components/admin/AdminRoleRequests';
+import AuditLogTab from '@/components/admin/AuditLogTab';
 import AdminInterviews from '@/components/admin/AdminInterviews';
+import FeatureFlagsTab from '@/components/admin/FeatureFlagsTab';
 import Messages from '@/components/recruiter/Messages';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +19,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   Users, Briefcase, TrendingUp, Shield, AlertTriangle, CheckCircle, Clock,
   BarChart3, UserCheck, FileText, MessageSquare, Activity, Video, Loader2,
-  ClipboardCopy, RefreshCw, UserPlus, Send, Mail
+  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -359,7 +361,7 @@ const AdminDashboard = () => {
 
           <div className="container mx-auto px-4 py-8">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-9 gap-1 h-auto p-1 bg-muted/50 rounded-xl">
+              <TabsList className="grid w-full grid-cols-10 gap-1 h-auto p-1 bg-muted/50 rounded-xl">
                 <TabsTrigger value="overview" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Overview', 'نظرة عامة')}</TabsTrigger>
                 <TabsTrigger value="users" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Users', 'المستخدمون')}</TabsTrigger>
                 <TabsTrigger value="operators" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
@@ -369,6 +371,10 @@ const AdminDashboard = () => {
                 <TabsTrigger value="interviews" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <Video className="h-3.5 w-3.5" />
                   {b('Interviews', 'المقابلات')}
+                </TabsTrigger>
+                <TabsTrigger value="feature-flags" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Settings className="h-3.5 w-3.5" />
+                  Modules
                 </TabsTrigger>
                 <TabsTrigger value="feedback" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <MessageSquare className="h-3.5 w-3.5" />
@@ -381,6 +387,10 @@ const AdminDashboard = () => {
                 <TabsTrigger value="requests" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
                   <UserPlus className="h-3.5 w-3.5" />
                   {b('Requests', 'الطلبات')}
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm flex items-center gap-1">
+                  <Shield className="h-3.5 w-3.5" />
+                  {b('Audit Log', 'سجل التدقيق')}
                 </TabsTrigger>
                 <TabsTrigger value="system" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('System', 'النظام')}</TabsTrigger>
                 <TabsTrigger value="security" className="font-dubai-medium data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:shadow-none rounded-lg text-sm">{b('Security', 'الأمان')}</TabsTrigger>
@@ -816,6 +826,11 @@ ${JSON.stringify(item.metadata, null, 2)}
 
 
 
+              {/* Audit Log Tab (G13) */}
+              <TabsContent value="audit" className="space-y-6">
+                <AuditLogTab />
+              </TabsContent>
+
               {/* System Health Tab */}
               <TabsContent value="system" className="space-y-6">
                 <Card>
@@ -930,6 +945,10 @@ ${JSON.stringify(item.metadata, null, 2)}
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+              {/* Feature Flags Tab */}
+              <TabsContent value="feature-flags" className="space-y-6">
+                <FeatureFlagsTab />
               </TabsContent>
             </Tabs>
           </div>

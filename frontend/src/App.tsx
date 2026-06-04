@@ -100,6 +100,7 @@ const KnowledgeCampsPage = lazy(() => import('./pages/summer-camps'));
 const ScholarshipsPage = lazy(() => import('./pages/scholarships'));
 const GraduateProgramsPage = lazy(() => import('./pages/graduate-programs'));
 const LMSPage = lazy(() => import('./pages/lms'));
+const ComingSoonPage = lazy(() => import('@/pages/ComingSoonPage'));
 
 // Other key pages
 const AnalyticsPage3 = lazy(() => import('@/pages/analytics/AnalyticsPage2'));
@@ -139,7 +140,7 @@ const CommunityOperatorDashboard = lazy(() => import('@/pages/operator-dashboard
 const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboards/OperationsMonitoringCenter'));
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
-const CareerServicesOperatorDashboard = lazy(() => import('@/pages/CareerServicesOperatorDashboard'));
+const BoardPortal = lazy(() => import('@/pages/BoardPortal'));
 // Phase 2-4 New Role Dashboards
 const AdvisorDashboard = lazy(() => import('@/pages/AdvisorDashboard'));
 const CoachDashboard = lazy(() => import('@/pages/CoachDashboard'));
@@ -176,6 +177,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getAuthToken } from '@/utils/tokenUtils';
 import { NotificationProvider } from '@/components/notifications/NotificationSystem';
 import ConnectionBanner from '@/components/notifications/ConnectionBanner';
+import { FeatureFlagsProvider } from '@/components/common/FeatureFlagGuard';
 
 // App Content Component with bilingual support
 const AppContent: React.FC = () => {
@@ -574,16 +576,10 @@ const AppContent: React.FC = () => {
               <Route
                 path="/government-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['government', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['government', 'operations_officer', 'administrator']}>
                     <GovernmentDashboard />
                   </ProtectedRoute>
                 }
-              />
-
-              {/* Employer Dashboard removed — redirect to HR Dashboard */}
-              <Route
-                path="/employer-dashboard"
-                element={<Navigate to="/hr-dashboard" replace />}
               />
 
               {/* Resume Builder Routes */}
@@ -623,6 +619,11 @@ const AppContent: React.FC = () => {
               {/* Old /analytics-dashboard route removed — merged into /analytics */}
 
               {/* Old /communities-new route removed — merged into /communities */}
+
+              <Route
+                path="/coming-soon"
+                element={<ComingSoonPage />}
+              />
 
               <Route
                 path="/school-programs"
@@ -863,10 +864,10 @@ const AppContent: React.FC = () => {
                 element={<OperationsMonitoringCenter />}
               />
               <Route
-                path="/career-services-dashboard"
+                path="/board-portal"
                 element={
-                  <ProtectedRoute allowedRoles={['operator', 'growth_operator', 'growth_operator_company', 'administrator', 'admin']}>
-                    <CareerServicesOperatorDashboard />
+                  <ProtectedRoute allowedRoles={['board_member', 'administrator', 'admin']}>
+                    <BoardPortal />
                   </ProtectedRoute>
                 }
               />
@@ -1003,9 +1004,11 @@ const App: React.FC = () => {
         <AuthProvider>
           <LanguageProvider>
             <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-              <AppContent />
-              <Toaster />
-              <HotToaster position="top-center" />
+              <FeatureFlagsProvider>
+                <AppContent />
+                <Toaster />
+                <HotToaster position="top-center" />
+              </FeatureFlagsProvider>
             </ThemeProvider>
           </LanguageProvider>
         </AuthProvider>

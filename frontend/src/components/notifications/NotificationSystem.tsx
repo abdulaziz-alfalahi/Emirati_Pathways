@@ -166,6 +166,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
           // Join user specific room
           newSocket.emit('join', { room: userId });
 
+          // G12: Join dedicated notification push room
+          newSocket.emit('join_notification_room', { user_id: userId });
+
           // Also join a generic "global" or role-based room if needed
           if (userType) {
             newSocket.emit('join', { room: `role_${userType}` });
@@ -191,6 +194,27 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         console.log(`🔄 Reconnection attempt ${attempt}...`);
       });
 
+      // G12: Listen for real-time notification push from backend
+      newSocket.on('new_notification', (data: any) => {
+        console.log('🔔 Real-time notification received:', data);
+        if (data && data.title) {
+          // Add to notification list immediately (no poll wait)
+          const newNotif: Notification = {
+            id: data.id || `rt-${Date.now()}`,
+            notification_type: data.type || 'system',
+            title: data.title,
+            content: data.message || '',
+            metadata: data.metadata,
+            priority: data.priority || 'medium',
+            created_at: new Date().toISOString(),
+            read: false
+          };
+          setNotifications(prev => [newNotif, ...prev]);
+          setUnreadCount(prev => prev + 1);
+          showToastNotification(newNotif);
+        }
+      });
+
       setSocket(newSocket);
     } catch (error) {
       console.error('🔥 Critical WebSocket Initialization Error:', error);
@@ -203,6 +227,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         newSocket.off('disconnect');
         newSocket.off('connect_error');
         newSocket.off('reconnect_attempt');
+        newSocket.off('new_notification');
         newSocket.close();
       }
     };

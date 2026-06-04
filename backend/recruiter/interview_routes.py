@@ -680,3 +680,240 @@ def get_interviews_by_shortlist(shortlist_id):
             'error': str(e)
         }), 500
 
+
+# ─── G20: PANEL INTERVIEW ENDPOINTS ─────────────────────────────────────────
+
+
+@interview_bp.route('/my-panels', methods=['GET'])
+@jwt_required()
+def get_my_panels():
+    """
+    Get all interviews where the current user is listed as a panelist
+    in the interviewers JSONB array.
+    """
+    try:
+        current_user_id = str(get_jwt_identity())
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Search for current user ID in the interviewers JSONB array
+        # Supports both formats: [{"id": "123", ...}] and ["123"]
+        cur.execute("""
+            SELECT i.*,
+                   u.first_name as candidate_first_name,
+                   u.last_name as candidate_last_name,
+                   u.email as candidate_email,
+                   jp.title as job_title
+            FROM interview_schedules i
+            LEFT JOIN users u ON i.candidate_id::text = u.id::text
+            LEFT JOIN job_postings jp ON i.jd_id = jp.jd_id::text
+            WHERE i.interviewers IS NOT NULL
+              AND i.interviewers::text LIKE %s
+              AND i.recruiter_id::text != %s
+            ORDER BY i.scheduled_date DESC, i.scheduled_time DESC
+        """, (f'%{current_user_id}%', current_user_id))
+
+        interviews = [dict(row) for row in cur.fetchall()]
+        conn.close()
+
+        serialized = [serialize_interview(i) for i in interviews]
+
+        return jsonify({
+            'success': True,
+            'interviews': serialized,
+            'count': len(serialized)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching my panels: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@interview_bp.route('/<interview_id>/scorecard', methods=['POST'])
+@jwt_required()
+def submit_scorecard(interview_id):
+    """
+    Submit or update a panelist's scorecard for an interview.
+    Uses UPSERT (INSERT ... ON CONFLICT UPDATE) so a panelist can revise.
+
+    Request body:
+    {
+        "communication_score": 4,
+        "technical_score": 5,
+        "cultural_fit_score": 3,
+        "leadership_score": 4,
+        "overall_score": 4,
+        "notes": "Strong candidate overall",
+        "recommendation": "hire"
+    }
+    """
+    try:
+        data = request.get_json()
+        panelist_id = str(get_jwt_identity())
+
+        # Validate scores
+        score_fields = [
+            'communication_score', 'technical_score', 'cultural_fit_score',
+            'leadership_score', 'overall_score'
+        ]
+        for field in score_fields:
+            val = data.get(field)
+            if val is not None:
+                if not isinstance(val, int) or val < 1 or val > 5:
+                    return jsonify({
+                        'success': False,
+                        'error': f'{field} must be an integer between 1 and 5'
+                    }), 400
+
+        # Validate recommendation
+        valid_recommendations = ['hire', 'next_round', 'hold', 'reject', 'pending']
+        recommendation = data.get('recommendation', 'pending')
+        if recommendation not in valid_recommendations:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid recommendation. Must be one of: {valid_recommendations}'
+            }), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Ensure table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS interview_scorecards (
+                id SERIAL PRIMARY KEY,
+                interview_id VARCHAR(100) NOT NULL,
+                panelist_id VARCHAR(100) NOT NULL,
+                communication_score INTEGER CHECK (communication_score BETWEEN 1 AND 5),
+                technical_score INTEGER CHECK (technical_score BETWEEN 1 AND 5),
+                cultural_fit_score INTEGER CHECK (cultural_fit_score BETWEEN 1 AND 5),
+                leadership_score INTEGER CHECK (leadership_score BETWEEN 1 AND 5),
+                overall_score INTEGER CHECK (overall_score BETWEEN 1 AND 5),
+                notes TEXT,
+                recommendation VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(interview_id, panelist_id)
+            )
+        """)
+
+        # Upsert scorecard
+        cur.execute("""
+            INSERT INTO interview_scorecards (
+                interview_id, panelist_id,
+                communication_score, technical_score, cultural_fit_score,
+                leadership_score, overall_score,
+                notes, recommendation
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (interview_id, panelist_id)
+            DO UPDATE SET
+                communication_score = EXCLUDED.communication_score,
+                technical_score = EXCLUDED.technical_score,
+                cultural_fit_score = EXCLUDED.cultural_fit_score,
+                leadership_score = EXCLUDED.leadership_score,
+                overall_score = EXCLUDED.overall_score,
+                notes = EXCLUDED.notes,
+                recommendation = EXCLUDED.recommendation,
+                updated_at = NOW()
+            RETURNING id
+        """, (
+            interview_id,
+            panelist_id,
+            data.get('communication_score'),
+            data.get('technical_score'),
+            data.get('cultural_fit_score'),
+            data.get('leadership_score'),
+            data.get('overall_score'),
+            data.get('notes', ''),
+            recommendation
+        ))
+
+        result = cur.fetchone()
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'scorecard_id': result['id'] if result else None,
+            'message': 'Scorecard submitted successfully'
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error submitting scorecard: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@interview_bp.route('/<interview_id>/scorecards', methods=['GET'])
+@jwt_required()
+def get_scorecards(interview_id):
+    """
+    Get all scorecards for an interview, with aggregated averages.
+    Returns individual scorecards plus computed average scores.
+    """
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Get individual scorecards with panelist info
+        cur.execute("""
+            SELECT sc.*,
+                   u.first_name as panelist_first_name,
+                   u.last_name as panelist_last_name,
+                   u.email as panelist_email
+            FROM interview_scorecards sc
+            LEFT JOIN users u ON sc.panelist_id::text = u.id::text
+            WHERE sc.interview_id = %s
+            ORDER BY sc.created_at ASC
+        """, (interview_id,))
+
+        scorecards = [dict(row) for row in cur.fetchall()]
+
+        # Calculate aggregated averages
+        cur.execute("""
+            SELECT
+                ROUND(AVG(communication_score)::numeric, 1) as avg_communication,
+                ROUND(AVG(technical_score)::numeric, 1) as avg_technical,
+                ROUND(AVG(cultural_fit_score)::numeric, 1) as avg_cultural_fit,
+                ROUND(AVG(leadership_score)::numeric, 1) as avg_leadership,
+                ROUND(AVG(overall_score)::numeric, 1) as avg_overall,
+                COUNT(*) as total_scorecards
+            FROM interview_scorecards
+            WHERE interview_id = %s
+              AND overall_score IS NOT NULL
+        """, (interview_id,))
+
+        aggregation = dict(cur.fetchone() or {})
+        conn.close()
+
+        # Serialize datetime fields
+        for sc in scorecards:
+            for key in ['created_at', 'updated_at']:
+                if sc.get(key) and hasattr(sc[key], 'isoformat'):
+                    sc[key] = sc[key].isoformat()
+
+        return jsonify({
+            'success': True,
+            'scorecards': scorecards,
+            'aggregation': {
+                'avg_communication': float(aggregation.get('avg_communication') or 0),
+                'avg_technical': float(aggregation.get('avg_technical') or 0),
+                'avg_cultural_fit': float(aggregation.get('avg_cultural_fit') or 0),
+                'avg_leadership': float(aggregation.get('avg_leadership') or 0),
+                'avg_overall': float(aggregation.get('avg_overall') or 0),
+                'total_scorecards': int(aggregation.get('total_scorecards') or 0)
+            },
+            'count': len(scorecards)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching scorecards: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

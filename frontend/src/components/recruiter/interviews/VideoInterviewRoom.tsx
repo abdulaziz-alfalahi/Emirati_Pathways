@@ -3,19 +3,24 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, User, BrainCircuit, Activity, ShieldCheck } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, User, BrainCircuit, Activity, ShieldCheck, Eye } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { useSearchParams } from 'react-router-dom';
 
 interface VideoInterviewRoomProps {
     sessionId: string;
     onEnd: () => void;
+    isObserver?: boolean;
 }
 
-const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEnd }) => {
+const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEnd, isObserver: isObserverProp }) => {
     const { toast } = useToast();
+    const [searchParams] = useSearchParams();
+    // Support observer mode via prop OR via URL query param ?role=observer
+    const isObserver = isObserverProp ?? searchParams.get('role') === 'observer';
     const [isJoined, setIsJoined] = useState(false);
-    const [micOn, setMicOn] = useState(true);
-    const [cameraOn, setCameraOn] = useState(true);
+    const [micOn, setMicOn] = useState(!isObserver);
+    const [cameraOn, setCameraOn] = useState(!isObserver);
     const [analysis, setAnalysis] = useState<any>(null);
     const [elapsedTime, setElapsedTime] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -89,17 +94,24 @@ const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEn
                 <div className="mb-8 text-center">
                     <h2 className="text-2xl font-bold mb-2">Ready to join?</h2>
                     <p className="text-slate-400">Session ID: {sessionId}</p>
+                    {isObserver && (
+                        <Badge variant="outline" className="mt-3 border-amber-500/50 text-amber-400 bg-amber-500/10">
+                            <Eye className="h-3 w-3 mr-1" /> Observer Mode — View Only
+                        </Badge>
+                    )}
                 </div>
-                <div className="flex gap-4 mb-8">
-                    <Button variant={micOn ? "secondary" : "destructive"} size="icon" onClick={() => setMicOn(!micOn)} className="rounded-full h-12 w-12">
-                        {micOn ? <Mic /> : <MicOff />}
-                    </Button>
-                    <Button variant={cameraOn ? "secondary" : "destructive"} size="icon" onClick={() => setCameraOn(!cameraOn)} className="rounded-full h-12 w-12">
-                        {cameraOn ? <Video /> : <VideoOff />}
-                    </Button>
-                </div>
+                {!isObserver && (
+                    <div className="flex gap-4 mb-8">
+                        <Button variant={micOn ? "secondary" : "destructive"} size="icon" onClick={() => setMicOn(!micOn)} className="rounded-full h-12 w-12">
+                            {micOn ? <Mic /> : <MicOff />}
+                        </Button>
+                        <Button variant={cameraOn ? "secondary" : "destructive"} size="icon" onClick={() => setCameraOn(!cameraOn)} className="rounded-full h-12 w-12">
+                            {cameraOn ? <Video /> : <VideoOff />}
+                        </Button>
+                    </div>
+                )}
                 <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleJoin}>
-                    Join Interview
+                    {isObserver ? 'Join as Observer' : 'Join Interview'}
                 </Button>
             </div>
         );
@@ -136,15 +148,28 @@ const VideoInterviewRoom: React.FC<VideoInterviewRoomProps> = ({ sessionId, onEn
 
                     {/* Controls Overlay */}
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/80 p-3 rounded-full backdrop-blur-sm border border-slate-700">
-                        <Button variant={micOn ? "ghost" : "destructive"} size="icon" onClick={() => setMicOn(!micOn)} className="rounded-full text-white hover:bg-slate-700">
-                            {micOn ? <Mic /> : <MicOff />}
-                        </Button>
-                        <Button variant={cameraOn ? "ghost" : "destructive"} size="icon" onClick={() => setCameraOn(!cameraOn)} className="rounded-full text-white hover:bg-slate-700">
-                            {cameraOn ? <Video /> : <VideoOff />}
-                        </Button>
-                        <Button variant="destructive" size="icon" onClick={handleEndCall} className="rounded-full">
-                            <PhoneOff />
-                        </Button>
+                        {isObserver ? (
+                            <>
+                                <Badge variant="outline" className="border-amber-500/50 text-amber-400 bg-amber-500/10 px-3 py-1">
+                                    <Eye className="h-3 w-3 mr-1.5" /> Observer Mode
+                                </Badge>
+                                <Button variant="destructive" size="icon" onClick={handleEndCall} className="rounded-full">
+                                    <PhoneOff />
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button variant={micOn ? "ghost" : "destructive"} size="icon" onClick={() => setMicOn(!micOn)} className="rounded-full text-white hover:bg-slate-700">
+                                    {micOn ? <Mic /> : <MicOff />}
+                                </Button>
+                                <Button variant={cameraOn ? "ghost" : "destructive"} size="icon" onClick={() => setCameraOn(!cameraOn)} className="rounded-full text-white hover:bg-slate-700">
+                                    {cameraOn ? <Video /> : <VideoOff />}
+                                </Button>
+                                <Button variant="destructive" size="icon" onClick={handleEndCall} className="rounded-full">
+                                    <PhoneOff />
+                                </Button>
+                            </>
+                        )}
                     </div>
 
                     {/* Timer */}

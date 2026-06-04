@@ -13,6 +13,12 @@ except ImportError:
 from typing import List, Dict, Optional, Tuple
 import uuid
 import logging
+import secrets
+
+try:
+    from backend.notification_helper import create_notification
+except ImportError:
+    create_notification = None
 
 logger = logging.getLogger(__name__)
 
@@ -259,6 +265,7 @@ class InterviewSchedulingEngine:
             cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS reminder_sent_at TIMESTAMP")
             cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS cancellation_reason TEXT")
             cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP")
+            cur.execute("ALTER TABLE interview_schedules ADD COLUMN IF NOT EXISTS guest_token VARCHAR(64) UNIQUE")
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -320,6 +327,9 @@ class InterviewSchedulingEngine:
         else:
             interviewers = '[]'
         
+        # Generate a guest_token for guest/panel access links
+        guest_token = secrets.token_urlsafe(24)
+
         metadata = data.get('metadata', {})
         if isinstance(metadata, dict):
             metadata = json_module.dumps(metadata)
@@ -335,9 +345,9 @@ class InterviewSchedulingEngine:
                 interview_type, interview_round, interview_title,
                 scheduled_date, scheduled_time, duration_minutes, timezone,
                 location, meeting_link, meeting_platform,
-                interviewers, notes, internal_notes, metadata
+                interviewers, notes, internal_notes, metadata, guest_token
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
         """, (
             interview_id,
@@ -358,7 +368,8 @@ class InterviewSchedulingEngine:
             interviewers,
             data.get('notes', ''),
             data.get('internal_notes', ''),
-            metadata
+            metadata,
+            guest_token
         ))
         
         # Update candidate status in shortlist (use SAVEPOINT so failure doesn't poison the transaction)
@@ -427,6 +438,35 @@ class InterviewSchedulingEngine:
             )
         except Exception as e:
             self.logger.error(f"Failed to send interview notification to recruiter: {e}")
+
+        # G20: Send Panel Interview invitations to each interviewer
+        if create_notification:
+            raw_interviewers = data.get('interviewers', [])
+            if isinstance(raw_interviewers, str):
+                try:
+                    raw_interviewers = json_module.loads(raw_interviewers)
+                except Exception:
+                    raw_interviewers = []
+            for interviewer in raw_interviewers:
+                interviewer_id = interviewer.get('id') if isinstance(interviewer, dict) else str(interviewer)
+                if interviewer_id and str(interviewer_id) != str(data['recruiter_id']):
+                    try:
+                        create_notification(
+                            user_id=interviewer_id,
+                            notification_type='panel_invite',
+                            title='Panel Interview Invitation',
+                            message=f"You have been invited as a panelist for '{data.get('interview_title', 'Interview')}' — {job_title} on {data['scheduled_date']} at {data['scheduled_time']}.",
+                            metadata={
+                                'interview_id': interview_id,
+                                'interview_title': data.get('interview_title', 'Interview'),
+                                'job_title': job_title,
+                                'scheduled_at': f"{data['scheduled_date']} {data['scheduled_time']}",
+                                'role': 'panelist'
+                            }
+                        )
+                        self.logger.info(f"Panel invite notification sent to interviewer {interviewer_id}")
+                    except Exception as panel_err:
+                        self.logger.error(f"Failed to send panel invite to {interviewer_id}: {panel_err}")
         
         self.logger.info(f"Interview created: {interview_id}")
         return True, interview_id, "Interview scheduled successfully"

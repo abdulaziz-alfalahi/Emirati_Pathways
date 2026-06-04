@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Video, Clock, Loader2, Sparkles, Building } from 'lucide-react';
+import { Video, Clock, Loader2, Sparkles, Building, CheckCircle } from 'lucide-react';
 import { restClient } from '@/utils/api';
 import { VideoRoom } from '@/components/common/VideoRoom';
 import { toast } from 'sonner';
@@ -19,6 +19,24 @@ export default function CandidateInterviews() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeSession, setActiveSession] = useState<any>(null);
     const [showCancelled, setShowCancelled] = useState(false);
+    const [livekitUrl, setLivekitUrl] = useState<string>('');
+    const [livekitToken, setLivekitToken] = useState<string>('');
+    const [isConnecting, setIsConnecting] = useState(false);
+
+    // Get user data from localStorage
+    const getUserData = () => {
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                return {
+                    id: user.id || '',
+                    name: user.full_name || user.first_name || user.name || 'Candidate'
+                };
+            }
+        } catch {}
+        return { id: '', name: 'Candidate' };
+    };
 
     useEffect(() => {
         fetchSessions();
@@ -26,9 +44,8 @@ export default function CandidateInterviews() {
 
     const fetchSessions = async () => {
         try {
-            const userStr = localStorage.getItem('user');
-            const userId = userStr ? JSON.parse(userStr)?.id : '';
-            const res = await restClient.get(`/api/video-interview/sessions?role=candidate&candidate_id=${userId}`);
+            const userData = getUserData();
+            const res = await restClient.get(`/api/video-interview/sessions?role=candidate&candidate_id=${userData.id}`);
             // Normalize response (backend returns { success: true, sessions: [...] })
             if (res.data.success) {
                 setSessions(res.data.sessions || []);
@@ -43,23 +60,72 @@ export default function CandidateInterviews() {
         }
     };
 
-    const handleJoin = (session: any) => {
-        // TODO: Check if scheduled time is valid (allow 10 min early)
+    const handleJoin = async (session: any) => {
+        // G3: Acquire LiveKit token before rendering VideoRoom
+        const userData = getUserData();
+        setIsConnecting(true);
+        try {
+            const res = await restClient.post(`/api/video-interview/sessions/${session.id}/start`, {
+                user_id: userData.id,
+                user_name: userData.name,
+                role: 'candidate'
+            });
+            if (res.data.livekit_url && res.data.token) {
+                setLivekitUrl(res.data.livekit_url);
+                setLivekitToken(res.data.token);
+            }
+        } catch (err) {
+            console.warn('LiveKit token acquisition failed (session may still work):', err);
+        }
         setActiveSession(session);
+        setIsConnecting(false);
     };
 
     const handleEndCall = () => {
         setActiveSession(null);
+        setLivekitUrl('');
+        setLivekitToken('');
     };
 
+    const handleConfirm = async (session: any) => {
+        try {
+            const res = await restClient.put(`/api/video-interview/sessions/${session.id}/status`, {
+                status: 'accepted'
+            });
+            if (res.data?.success || res.status === 200) {
+                toast.success(t('Interview confirmed successfully', 'تم تأكيد المقابلة بنجاح'));
+                fetchSessions();
+            } else {
+                toast.error(res.data?.message || t('Failed to confirm interview', 'فشل تأكيد المقابلة'));
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(t('An error occurred while confirming', 'حدث خطأ أثناء التأكيد'));
+        }
+    };
+
+    if (isConnecting) {
+        return (
+            <div className="h-[calc(100vh-100px)] flex items-center justify-center bg-slate-900 rounded-lg">
+                <div className="text-center text-white">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                    <p>{t('Connecting to interview...', 'جاري الاتصال بالمقابلة...')}</p>
+                </div>
+            </div>
+        );
+    }
+
     if (activeSession) {
+        const userData = getUserData();
         return (
             <div className="h-[calc(100vh-100px)]">
                 <VideoRoom
                     sessionId={activeSession.id}
-                    userId="candidate-me"
-                    userName="Candidate"
+                    userId={userData.id}
+                    userName={userData.name}
                     onEndCall={handleEndCall}
+                    livekitUrl={livekitUrl}
+                    token={livekitToken}
                 />
             </div>
         );
@@ -136,6 +202,12 @@ export default function CandidateInterviews() {
                                             </div>
                                         )}
 
+                                        {session.status === 'scheduled' && (
+                                            <Button variant="outline" className="w-full mb-2 bg-green-50 text-green-700 hover:bg-green-100 border-green-200" onClick={() => handleConfirm(session)}>
+                                                <CheckCircle className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
+                                                {t('Confirm Attendance', 'تأكيد الحضور')}
+                                            </Button>
+                                        )}
                                         {session.status !== 'cancelled' && (
                                             <Button className="w-full" onClick={() => handleJoin(session)} disabled={session.status === 'completed'}>
                                                 <Video className="h-4 w-4" style={{ marginInlineEnd: 8 }} />

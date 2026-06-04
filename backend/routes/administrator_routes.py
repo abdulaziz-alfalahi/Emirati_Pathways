@@ -735,6 +735,8 @@ def get_roles():
             {'id': 'internship_coordinator', 'name': 'internship_coordinator', 'display_name': 'Internship Coordinator', 'description': 'Manages internship programs and student placements', 'permissions': ['view_dashboard', 'manage_profile', 'manage_candidates', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'training_center_rep', 'name': 'training_center_rep', 'display_name': 'Training Center Representative', 'description': 'Manages training center programs and enrollments', 'permissions': ['view_dashboard', 'manage_profile', 'manage_training', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
             {'id': 'call_center_agent', 'name': 'call_center_agent', 'display_name': 'Call Center Agent', 'description': 'Handles support tickets and user inquiries', 'permissions': ['view_dashboard', 'view_users', 'view_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
+            {'id': 'board_member', 'name': 'board_member', 'display_name': 'EHRDC Board Member', 'description': 'Board member of the Emirati Human Development Council', 'permissions': ['view_dashboard', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
+            {'id': 'operations_officer', 'name': 'operations_officer', 'display_name': 'Platform Operations Officer', 'description': 'Deep, detailed metrics for platform operations', 'permissions': ['view_operations_center', 'view_all_analytics'], 'is_system': True, 'category': 'Specialized Roles'},
         ]
         return jsonify({
             'status': 'success',

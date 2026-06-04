@@ -40,7 +40,7 @@ interface SupportChatState {
 }
 
 interface SupportChatActions {
-  startChat: (category: string, message: string) => Promise<void>;
+  startChat: (category: string, message: string, contextMeta?: { user_role?: string; current_route?: string; entity_id?: string }) => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   endChat: () => Promise<void>;
   rateChat: (rating: number) => Promise<void>;
@@ -83,7 +83,7 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
   stateRef.current = state;
 
   /* ── Start Chat ── */
-  const startChat = useCallback(async (category: string, message: string) => {
+  const startChat = useCallback(async (category: string, message: string, contextMeta?: { user_role?: string; current_route?: string; entity_id?: string }) => {
     if (!user) return;
     setState(prev => ({ ...prev, status: 'waiting', category }));
     try {
@@ -91,6 +91,9 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
         category,
         message,
         user_id: user.id,
+        user_role: contextMeta?.user_role || user.role || '',
+        current_route: contextMeta?.current_route || window.location.pathname,
+        entity_id: contextMeta?.entity_id || '',
       });
       const data = res.data;
       setState(prev => ({

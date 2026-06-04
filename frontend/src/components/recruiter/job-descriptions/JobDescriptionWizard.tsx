@@ -36,7 +36,8 @@ import {
   AlertTriangle,
   Users,
   Filter,
-  TrendingUp
+  TrendingUp,
+  Search
 } from 'lucide-react';
 import LocationPicker from '@/components/common/LocationPicker';
 import {
@@ -1416,6 +1417,19 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                 <Button variant="outline" onClick={handleSaveDraft} disabled={loading}>
                   <Save className="h-4 w-4 mr-2" />
                   {loading ? 'Saving...' : 'Save as Draft'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  disabled={loading || completionScore < 60}
+                  onClick={async () => {
+                    await handleSaveDraft();
+                    handleMatchCandidates();
+                    setShowMatchingDialog(true);
+                  }}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  {loading ? 'Saving...' : 'Save Draft & Headhunt'}
                 </Button>
                 <Button onClick={handlePublish} disabled={loading || completionScore < 60}>
                   <Send className="h-4 w-4 mr-2" />

@@ -19,6 +19,13 @@ def register_all_blueprints(app: Flask):
         logger.warning(f"⚠️ Auth routes not available: {e}")
 
     try:
+        from backend.routes.feature_flags_api import feature_flags_bp
+        app.register_blueprint(feature_flags_bp)
+        logger.info("✅ Feature flags routes registered")
+    except ImportError as e:
+        logger.warning(f"⚠️ Feature flags routes not available: {e}")
+
+    try:
         from backend.routes.company_team_routes import company_team_bp
         app.register_blueprint(company_team_bp, url_prefix='/api/company/team')
         logger.info("✅ Company Team routes registered")
@@ -207,6 +214,12 @@ def register_all_blueprints(app: Flask):
     except ImportError as e:
         logger.warning(f"⚠️ Recruiter Reports routes not available: {e}")
 
+    # 15. Board Portal
+    _register_safe(app, 'backend.routes.board_portal_routes', 'board_portal_bp', 'Board Portal')
+
+    # 16. Assessor Modules
+    _register_safe(app, 'backend.routes.assessor_routes', 'assessor_bp', 'Assessor Dashboard', url_prefix=None)
+    _register_safe(app, 'backend.assessment_analytics_qa_routes', 'assessment_analytics_qa_bp', 'Assessment Analytics & QA')
 
 
 def _register_safe(app, module_path, bp_name, display_name, url_prefix=None):

@@ -249,6 +249,8 @@ def list_sessions():
                             isched.notes,
                             isched.created_at,
                             isched.interview_round,
+                            isched.guest_token,
+                            isched.interviewers,
                             u.full_name as candidate_name,
                             u.first_name as candidate_first_name,
                             u.last_name as candidate_last_name,

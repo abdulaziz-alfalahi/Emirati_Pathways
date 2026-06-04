@@ -992,6 +992,196 @@ def get_security_stats():
         })
 
 
+# =====================================================
+# AUDIT LOG ENDPOINTS
+# =====================================================
+
+@admin_dashboard_bp.route('/audit-log', methods=['GET'])
+@optional_auth
+def get_audit_log():
+    """
+    Get paginated, filterable audit log entries.
+
+    Query params:
+        page (int): Page number, default 1
+        per_page (int): Items per page, default 50
+        action (str): Filter by action type
+        user_id (str): Filter by user id
+        start_date (str): ISO date lower bound
+        end_date (str): ISO date upper bound
+    """
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+        per_page = min(100, max(1, int(request.args.get('per_page', 50))))
+        action_filter = request.args.get('action')
+        user_id_filter = request.args.get('user_id')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        # Build dynamic WHERE clause
+        conditions = []
+        params: list = []
+
+        if action_filter:
+            conditions.append("l.action = %s")
+            params.append(action_filter)
+        if user_id_filter:
+            conditions.append("l.user_id = %s")
+            params.append(user_id_filter)
+        if start_date:
+            conditions.append("l.created_at >= %s")
+            params.append(start_date)
+        if end_date:
+            conditions.append("l.created_at <= %s")
+            params.append(end_date)
+
+        where_clause = ""
+        if conditions:
+            where_clause = "WHERE " + " AND ".join(conditions)
+
+        # Total count
+        count_query = f"SELECT COUNT(*) as total FROM admin_audit_log l {where_clause}"
+        count_result = execute_query(count_query, tuple(params) if params else None, fetch_one=True)
+        total = (count_result or {}).get('total', 0) or 0
+
+        # Paginated rows
+        offset = (page - 1) * per_page
+        data_query = f"""
+            SELECT
+                l.id,
+                l.user_id,
+                COALESCE(u.username, 'System') as username,
+                l.action,
+                l.resource_type,
+                l.resource_id,
+                l.details,
+                l.ip_address,
+                l.created_at
+            FROM admin_audit_log l
+            LEFT JOIN users u ON l.user_id = u.id
+            {where_clause}
+            ORDER BY l.created_at DESC
+            LIMIT %s OFFSET %s
+        """
+        data_params = list(params) + [per_page, offset]
+        rows = execute_query(data_query, tuple(data_params))
+
+        # Serialise datetime objects
+        entries = []
+        if rows:
+            for row in rows:
+                entry = dict(row)
+                if isinstance(entry.get('created_at'), datetime):
+                    entry['created_at'] = entry['created_at'].isoformat()
+                entries.append(entry)
+
+        return jsonify({
+            'success': True,
+            'data': entries,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': max(1, -(-total // per_page))  # ceil division
+            },
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get audit log: {e}")
+        return jsonify({
+            'success': True,
+            'data': [],
+            'pagination': {'page': 1, 'per_page': 50, 'total': 0, 'total_pages': 1},
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+
+@admin_dashboard_bp.route('/audit-log/stats', methods=['GET'])
+@optional_auth
+def get_audit_log_stats():
+    """
+    Return summary statistics for the audit log.
+
+    Returns counts grouped by action type, total events,
+    events today, and unauthorized-attempt count.
+    """
+    try:
+        # Total events
+        total_result = execute_query(
+            "SELECT COUNT(*) as total FROM admin_audit_log",
+            fetch_one=True
+        )
+        total_events = (total_result or {}).get('total', 0) or 0
+
+        # Events today
+        today_result = execute_query(
+            "SELECT COUNT(*) as today FROM admin_audit_log WHERE created_at::date = CURRENT_DATE",
+            fetch_one=True
+        )
+        events_today = (today_result or {}).get('today', 0) or 0
+
+        # Unauthorized attempts (action contains 'unauthorized' or 'denied')
+        unauth_result = execute_query(
+            """
+            SELECT COUNT(*) as unauth
+            FROM admin_audit_log
+            WHERE LOWER(action) LIKE '%%unauthorized%%'
+               OR LOWER(action) LIKE '%%denied%%'
+               OR LOWER(action) LIKE '%%forbidden%%'
+            """,
+            fetch_one=True
+        )
+        unauthorized_attempts = (unauth_result or {}).get('unauth', 0) or 0
+
+        # Role-change events
+        role_change_result = execute_query(
+            """
+            SELECT COUNT(*) as role_changes
+            FROM admin_audit_log
+            WHERE LOWER(action) LIKE '%%role%%'
+            """,
+            fetch_one=True
+        )
+        role_changes = (role_change_result or {}).get('role_changes', 0) or 0
+
+        # Counts grouped by action
+        action_counts = execute_query(
+            """
+            SELECT action, COUNT(*) as count
+            FROM admin_audit_log
+            GROUP BY action
+            ORDER BY count DESC
+            """
+        )
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_events': total_events,
+                'events_today': events_today,
+                'unauthorized_attempts': unauthorized_attempts,
+                'role_changes': role_changes,
+                'actions_breakdown': action_counts or []
+            },
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get audit log stats: {e}")
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_events': 0,
+                'events_today': 0,
+                'unauthorized_attempts': 0,
+                'role_changes': 0,
+                'actions_breakdown': []
+            },
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+
 # Register the blueprint function
 def register_admin_dashboard_routes(app):
     """Register admin dashboard routes with the Flask app"""

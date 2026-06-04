@@ -10,13 +10,17 @@ Multi-tenant workspace endpoints for:
 """
 
 from flask import Blueprint, request, jsonify, g
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 import psycopg2
 import psycopg2.extras
 import os
 import json
 import logging
 from functools import wraps
+from backend.workspace_middleware import require_workspace_access
+
+# Roles allowed for cross-company admin operations (provision, list)
+GROWTH_OPERATOR_ROLES = {'growth_operator_company', 'growth_operator', 'platform_administrator', 'super_user', 'admin'}
 
 logger = logging.getLogger(__name__)
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/api/workspace')
@@ -51,7 +55,7 @@ def serialize_row(row):
 # Actor: Growth Operator
 
 @workspace_bp.route('/provision', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def provision_workspace():
     """Provision a workspace for an existing company.
 
@@ -62,13 +66,23 @@ def provision_workspace():
     if not company_id:
         return jsonify({"error": "company_id is required"}), 400
 
-    provisioner_id = None
-    try:
-        provisioner_id = get_jwt_identity()
-    except Exception:
-        pass
-    if not provisioner_id:
-        provisioner_id = data.get('provisioner_id')
+    provisioner_id = get_jwt_identity()
+
+    # Verify the caller is a growth operator or platform admin
+    conn_check = get_db()
+    if conn_check:
+        try:
+            cur_check = conn_check.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur_check.execute("SELECT user_type FROM users WHERE id = %s", (provisioner_id,))
+            caller = cur_check.fetchone()
+            cur_check.close(); conn_check.close()
+            if not caller or caller['user_type'] not in GROWTH_OPERATOR_ROLES:
+                return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
+        except Exception:
+            conn_check.close()
+            return jsonify({"error": "Authorization check failed"}), 500
+    else:
+        return jsonify({"error": "Database unavailable"}), 503
 
     admin_user_id = data.get('admin_user_id')
     slug = data.get('slug')
@@ -139,7 +153,7 @@ def provision_workspace():
 # ─── WORKSPACE DETAILS ───────────────────────────────────────────────────────
 
 @workspace_bp.route('/<company_id>', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view', jwt_optional=True)
 def get_workspace(company_id):
     """Get workspace details for a company."""
     conn = get_db()
@@ -177,7 +191,7 @@ def get_workspace(company_id):
 # Actors: HR Manager, Recruiter
 
 @workspace_bp.route('/<company_id>/employees', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view', jwt_optional=True)
 def list_employees(company_id):
     """List employees of a company workspace."""
     status_filter = request.args.get('status', 'active')
@@ -218,7 +232,7 @@ def list_employees(company_id):
 
 
 @workspace_bp.route('/<company_id>/employees', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def add_employee(company_id):
     """Link an Emirati user to a company as an employee.
 
@@ -277,14 +291,30 @@ def add_employee(company_id):
 
 
 @workspace_bp.route('/<company_id>/employees/<int:user_id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.manage_employees')
 def remove_employee(company_id, user_id):
-    """Remove (terminate) an employee from a company workspace."""
+    """Remove (terminate) an employee from a company workspace.
+
+    Cascades side-effects (non-blocking):
+      1. Cancel active resource assignments
+      2. Remove team membership
+      3. Reset Career Dial visibility for NAFIS
+      4. Write admin audit log entry
+      5. Send notification to the terminated employee
+    """
+    caller_user_id = None
+    try:
+        caller_user_id = get_jwt_identity()
+    except Exception:
+        pass
+
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # ── Core termination ──────────────────────────────────────────────
         cur.execute("""
             UPDATE company_employees SET status = 'terminated', end_date = CURRENT_DATE, updated_at = NOW()
             WHERE company_id = %s AND user_id = %s AND status = 'active'
@@ -297,11 +327,99 @@ def remove_employee(company_id, user_id):
         # Clear user's current_company_id
         cur.execute("UPDATE users SET current_company_id = NULL WHERE id = %s AND current_company_id::text = %s", (user_id, company_id))
 
+        # Fetch company name for notification text
+        company_name = None
+        try:
+            cur.execute("SELECT company_name FROM companies WHERE id = %s", (company_id,))
+            row = cur.fetchone()
+            if row:
+                company_name = row['company_name']
+        except Exception as e:
+            logger.warning(f"Cascade: could not fetch company name for {company_id}: {e}")
+
         conn.commit()
+
+        # ── Cascade side-effects (each is non-blocking) ──────────────────
+
+        # 1. Cancel active / in-progress resource assignments
+        try:
+            cur.execute("""
+                UPDATE company_resource_assignments
+                SET status = 'cancelled', updated_at = NOW()
+                WHERE employee_id = %s::text
+                  AND company_id = %s::text
+                  AND status IN ('assigned', 'in_progress')
+            """, (str(user_id), str(company_id)))
+            cancelled_count = cur.rowcount
+            conn.commit()
+            logger.info(f"Cascade[remove_employee]: cancelled {cancelled_count} resource assignments for user {user_id} at company {company_id}")
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"Cascade[remove_employee]: failed to cancel resource assignments for user {user_id}: {e}")
+
+        # 2. Remove team membership
+        try:
+            cur.execute("""
+                DELETE FROM company_team_members
+                WHERE user_id = %s::text AND company_id = %s::text
+            """, (str(user_id), str(company_id)))
+            removed_memberships = cur.rowcount
+            conn.commit()
+            logger.info(f"Cascade[remove_employee]: removed {removed_memberships} team memberships for user {user_id} at company {company_id}")
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"Cascade[remove_employee]: failed to remove team membership for user {user_id}: {e}")
+
+        # 3. Reset Career Dial visibility (columns from P0 migration, may not exist yet)
+        try:
+            cur.execute("""
+                UPDATE users
+                SET is_visible = true, available_for_recruitment = true
+                WHERE id = %s
+            """, (user_id,))
+            conn.commit()
+            logger.info(f"Cascade[remove_employee]: reset career dial visibility for user {user_id}")
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"Cascade[remove_employee]: failed to reset career dial for user {user_id} (columns may not exist yet): {e}")
+
+        # 4. Write audit log entry
+        try:
+            audit_details = json.dumps({
+                "company_id": str(company_id),
+                "terminated_user_id": user_id,
+                "company_name": company_name,
+                "action_by": str(caller_user_id) if caller_user_id else None
+            })
+            cur.execute("""
+                INSERT INTO admin_audit_log (user_id, action, resource_type, resource_id, details)
+                VALUES (%s, 'employee_terminated', 'company_employee', %s, %s)
+            """, (str(caller_user_id) if caller_user_id else str(user_id), str(user_id), audit_details))
+            conn.commit()
+            logger.info(f"Cascade[remove_employee]: audit log written for termination of user {user_id} by {caller_user_id}")
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"Cascade[remove_employee]: failed to write audit log for user {user_id}: {e}")
+
+        # 5. Send notification to terminated employee
+        try:
+            notification_title = 'Employment Status Updated'
+            notification_content = f"Your employment at {company_name or 'your company'} has ended."
+            cur.execute("""
+                INSERT INTO notifications (user_id, type, title, content)
+                VALUES (%s, 'employment_ended', %s, %s)
+            """, (user_id, notification_title, notification_content))
+            conn.commit()
+            logger.info(f"Cascade[remove_employee]: notification sent to user {user_id} about termination from company {company_id}")
+        except Exception as e:
+            conn.rollback()
+            logger.warning(f"Cascade[remove_employee]: failed to send notification to user {user_id}: {e}")
+
         cur.close(); conn.close()
         return jsonify({"status": "terminated"}), 200
     except Exception as e:
         conn.rollback(); conn.close()
+        logger.error(f"remove_employee error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -309,7 +427,7 @@ def remove_employee(company_id, user_id):
 # Actors: HR Manager, Recruiter
 
 @workspace_bp.route('/<company_id>/resources', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view', jwt_optional=True)
 def list_resources(company_id):
     """List all resource assignments for a company workspace."""
     resource_type = request.args.get('type')
@@ -357,7 +475,7 @@ def list_resources(company_id):
 
 
 @workspace_bp.route('/<company_id>/resources', methods=['POST'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.assign_resources')
 def assign_resource(company_id):
     """Assign a resource (training, cert, mentor, coach) to an employee.
 
@@ -417,7 +535,7 @@ def assign_resource(company_id):
 
 
 @workspace_bp.route('/<company_id>/resources/<resource_id>', methods=['PUT'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.assign_resources')
 def update_resource(company_id, resource_id):
     """Update status or details of a resource assignment.
 
@@ -557,7 +675,7 @@ def my_company_view():
 # ─── WORKSPACE DASHBOARD STATS ───────────────────────────────────────────────
 
 @workspace_bp.route('/<company_id>/stats', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view', jwt_optional=True)
 def workspace_stats(company_id):
     """Get dashboard statistics for a company workspace."""
     conn = get_db()
@@ -629,13 +747,22 @@ def workspace_stats(company_id):
 # ─── LIST ALL WORKSPACES (for Growth Operator) ───────────────────────────────
 
 @workspace_bp.route('/list', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def list_workspaces():
     """List all provisioned workspaces (for Growth Operators)."""
+    caller_id = get_jwt_identity()
+    # Verify the caller is a growth operator or platform admin
     conn = get_db()
     if not conn:
         return jsonify({"error": "Database unavailable"}), 503
     try:
+        cur_check = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur_check.execute("SELECT user_type FROM users WHERE id = %s", (caller_id,))
+        caller = cur_check.fetchone()
+        cur_check.close()
+        if not caller or caller['user_type'] not in GROWTH_OPERATOR_ROLES:
+            conn.close()
+            return jsonify({"error": "Access denied: requires growth operator or admin role"}), 403
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("""
             SELECT c.id, c.company_name, c.industry, c.workspace_slug,
@@ -662,7 +789,7 @@ def list_workspaces():
 # ─── SEARCH EMIRATIS TO ADD AS EMPLOYEES ─────────────────────────────────────
 
 @workspace_bp.route('/<company_id>/search-candidates', methods=['GET'])
-@jwt_required(optional=True)
+@require_workspace_access('workspace.view', jwt_optional=True)
 def search_candidates(company_id):
     """Search for Emirati candidates that can be added as employees."""
     q = request.args.get('q', '')

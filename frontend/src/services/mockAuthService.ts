@@ -332,6 +332,13 @@ export class MockAuthService {
         return '/assessor-dashboard';
       case 'operator':
         return '/operator-dashboard';
+      case 'board_member':
+        return '/board-portal';
+      case 'operations_officer':
+      case 'growth_operator_monitoring':
+        return '/operations-center';
+      case 'government':
+        return '/operations-center';
       case 'admin':
       case 'administrator':
         return '/admin-dashboard';

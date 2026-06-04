@@ -344,6 +344,41 @@ def on_get_online_users():
     print(f"[Presence] get_online_users requested. Online: {list(online_users.keys())}")
     emit('online_users', {'users': list(online_users.keys())})
 
+# G12: Real-time notification push infrastructure
+@socketio.on('join_notification_room')
+def on_join_notification_room(data):
+    """User joins their personal notification room for real-time push."""
+    user_id = data.get('user_id')
+    if user_id:
+        room = f"notifications:{user_id}"
+        join_room(room)
+        logger.info(f"[G12] User {user_id} joined notification room {room}")
+
+def push_notification_to_user(user_id, event_type, payload):
+    """Push a real-time notification to a specific user via SocketIO.
+    
+    G12: This is the canonical way to push events to Recruiter/HR/Candidate.
+    Called from notification_helper.py and route handlers.
+    
+    Args:
+        user_id: The target user's ID (str or int)
+        event_type: Event name (e.g. 'new_notification', 'offer_approved', 'new_application')
+        payload: Dict with event data
+    """
+    try:
+        room = f"notifications:{str(user_id)}"
+        socketio.emit(event_type, payload, room=room)
+        # Also emit to user's direct SID if online
+        sid = online_users.get(str(user_id))
+        if sid:
+            socketio.emit(event_type, payload, to=sid)
+        logger.info(f"[G12] Pushed {event_type} to user {user_id}")
+    except Exception as e:
+        logger.warning(f"[G12] Failed to push notification: {e}")
+
+# Make push_notification accessible to other modules
+app.push_notification_to_user = push_notification_to_user
+
 
 # =====================================================
 # STATIC FILE SERVING
@@ -442,6 +477,7 @@ _additional_blueprints = [
     ('backend.recruiter.jd_routes_v2', 'jd_bp', None, 'Recruiter JD V2'),
     ('backend.routes.growth_routes', 'growth_bp', None, 'Growth Operator'),
     ('backend.routes.nafis_talent_routes', 'nafis_talent_bp', None, 'NAFIS Talent'),
+    ('backend.routes.demand_signal_routes', 'demand_signal_bp', None, 'NAFIS Demand Signals'),
     ('backend.recruiter.jd_upload_routes', 'jd_upload_routes', None, 'JD Upload'),
     ('backend.intelligence_routes', 'intelligence_bp', None, 'Intelligence Backbone'),
     ('backend.education_api_routes', 'education_bp', None, 'Education API'),
@@ -461,6 +497,7 @@ _additional_blueprints = [
     ('backend.platform_ops_routes', 'platform_ops_bp', None, 'Platform Operations'),
     ('backend.routes.workspace_routes', 'workspace_bp', None, 'Workspaces'),
     ('backend.routes.workspace_phase2_routes', 'workspace_phase2_bp', None, 'Workspace Phase 2'),
+    ('backend.routes.career_dial_routes', 'career_dial_bp', None, 'Career Dial'),
     ('backend.routes.uaepass_routes', 'uaepass_bp', None, 'UAE Pass Authentication'),
     # --- Blueprints migrated from recruiter_server.py ---
     ('backend.routes.profile.profile_readiness', 'profile_readiness_bp', None, 'Profile Readiness'),

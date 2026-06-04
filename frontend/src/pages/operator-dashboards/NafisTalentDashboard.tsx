@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { restClient } from '@/utils/api';
+import DemandSignalsTab from '@/components/nafis/DemandSignalsTab';
 import {
     Users, Upload, UserCheck, BarChart3, Settings, Search,
     CheckCircle, Clock, AlertTriangle, TrendingUp, FileText,
     ArrowUp, ArrowDown, Filter, Download, RefreshCw, Eye,
     Loader2, X, ChevronLeft, ChevronRight, Send, Mail,
-    ChevronDown, ChevronUp, RotateCcw
+    ChevronDown, ChevronUp, RotateCcw, Building2
 } from 'lucide-react';
 
 const brand = {
@@ -257,6 +258,7 @@ const NafisTalentDashboard: React.FC = () => {
         { id: 'overview', label: t('Overview', 'نظرة عامة'), icon: BarChart3 },
         { id: 'import', label: t('Bulk Import', 'استيراد جماعي'), icon: Upload },
         { id: 'audit', label: t('Profile Audit', 'تدقيق الملفات'), icon: UserCheck },
+        { id: 'demand', label: t('Demand Signals', 'إشارات الطلب'), icon: Building2 },
         { id: 'tracking', label: t('Placement Tracking', 'تتبع التوظيف'), icon: TrendingUp },
         { id: 'settings', label: t('Settings', 'الإعدادات'), icon: Settings },
     ];
@@ -1032,6 +1034,7 @@ const NafisTalentDashboard: React.FC = () => {
                 {activeTab === 'overview' && renderOverview()}
                 {activeTab === 'import' && renderBulkImport()}
                 {activeTab === 'audit' && renderProfileAudit()}
+                {activeTab === 'demand' && <DemandSignalsTab isRTL={isRTL} t={t} />}
                 {activeTab === 'tracking' && renderPlacementTracking()}
                 {activeTab === 'settings' && renderSettings()}
             </div>
