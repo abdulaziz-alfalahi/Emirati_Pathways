@@ -100,19 +100,29 @@ def api(method: str, path: str, token: str = None, **kwargs) -> requests.Respons
 
 
 def get_auth_token(phone: str = None, otp: str = None) -> str:
-    """Authenticate via phone OTP and return the access token."""
+    """Authenticate via UAE Pass Dev-Login and return the access token."""
     phone = phone or TEST_PHONE
-    otp = otp or MAGIC_OTP
 
-    # Step 1 — Request OTP
-    r = api('POST', '/api/auth/request-otp', json={'phone': phone})
-    if r.status_code not in (200, 201):
-        raise RuntimeError(f"OTP request failed ({r.status_code}): {r.text[:200]}")
+    # Step 1: Fetch available dev users to find the correct EID
+    r = api('GET', '/api/auth/uaepass/dev-login/users')
+    if r.status_code != 200:
+        raise RuntimeError(f"Failed to fetch dev users ({r.status_code}): {r.text[:200]}")
+    
+    users = r.json().get('users', [])
+    target_user = next((u for u in users if u.get('phone') == phone), None)
+    
+    if not target_user and users:
+        target_user = users[0]  # Fallback to first user
+        
+    if not target_user:
+        raise RuntimeError("No dev users available in the database for testing")
+        
+    user_id = target_user['id']
 
-    # Step 2 — Login with OTP
-    r = api('POST', '/api/auth/login-with-otp', json={'phone': phone, 'code': otp})
+    # Step 2: Login via dev-login bypass
+    r = api('POST', '/api/auth/uaepass/dev-login', json={'user_id': user_id})
     if r.status_code not in (200, 201):
-        raise RuntimeError(f"OTP verify failed ({r.status_code}): {r.text[:200]}")
+        raise RuntimeError(f"Dev login failed ({r.status_code}): {r.text[:200]}")
 
     data = r.json()
     token = (
