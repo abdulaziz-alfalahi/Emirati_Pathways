@@ -428,7 +428,7 @@ def get_profile():
                     logger.warning(f"Could not cross-ref growth_operator_assignments for profile: {go_err}")
             
             # Default Job Seeker role for UAE Nationals
-            nationality = user_data.get('nationality', '').upper()
+            nationality = (user_data.get('nationality') or '').upper()
             if nationality in ['UAE', 'AE', 'UNITED ARAB EMIRATES']:
                 if 'job_seeker' not in raw_secondary and user_data.get('role') != 'job_seeker':
                     raw_secondary.append('job_seeker')

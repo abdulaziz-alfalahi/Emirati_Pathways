@@ -826,3 +826,123 @@ def upload_photo():
             'success': False,
             'message': 'Failed to upload photo'
         }), 500
+
+@candidate_profile_bp.route('/crm-candidates', methods=['GET'])
+@jwt_required()
+def get_crm_candidates():
+    """Get all candidates for Career Services CRM"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        try:
+            cursor.execute("""
+                SELECT 
+                    u.id,
+                    u.emirates_id_enc as national_id,
+                    u.full_name,
+                    cp.call_status,
+                    cp.work_status,
+                    cp.counseling_remarks,
+                    cp.assigned_to
+                FROM users u
+                LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
+                WHERE u.role = 'candidate' OR u.user_type = 'candidate'
+                ORDER BY u.created_at DESC
+                LIMIT 500
+            """)
+            
+            candidates = cursor.fetchall()
+            
+            # Format the output for the frontend
+            formatted = []
+            for c in candidates:
+                formatted.append({
+                    'id': c['id'],
+                    'national_id': c['national_id'],
+                    'full_name': c['full_name'],
+                    'profile': {
+                        'call_status': c['call_status'],
+                        'work_status': c['work_status'],
+                        'counseling_remarks': c['counseling_remarks'],
+                        'assigned_to': c['assigned_to']
+                    }
+                })
+                
+            return jsonify({
+                'success': True,
+                'data': formatted
+            })
+            
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error getting CRM candidates: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get CRM candidates'
+        }), 500
+
+@candidate_profile_bp.route('/crm-candidates/<user_id>', methods=['PUT'])
+@jwt_required()
+def update_crm_candidate(user_id):
+    """Update CRM specific fields for a candidate"""
+    try:
+        data = request.get_json()
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        try:
+            cursor.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (user_id,))
+            exists = cursor.fetchone()
+            
+            if exists:
+                cursor.execute("""
+                    UPDATE candidate_profiles SET
+                        call_status = %s,
+                        work_status = %s,
+                        counseling_remarks = %s,
+                        assigned_to = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE user_id = %s
+                """, (
+                    data.get('callStatus'),
+                    data.get('workStatus'),
+                    data.get('remarks'),
+                    data.get('assignedTo'),
+                    user_id
+                ))
+            else:
+                cursor.execute("""
+                    INSERT INTO candidate_profiles (
+                        user_id, call_status, work_status, counseling_remarks, assigned_to
+                    ) VALUES (%s, %s, %s, %s, %s)
+                """, (
+                    user_id,
+                    data.get('callStatus'),
+                    data.get('workStatus'),
+                    data.get('remarks'),
+                    data.get('assignedTo')
+                ))
+                
+            conn.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Candidate updated successfully'
+            })
+            
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error updating CRM candidate: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update CRM candidate'
+        }), 500
+

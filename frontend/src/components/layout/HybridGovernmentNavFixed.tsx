@@ -101,7 +101,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   // Determine if user is an operator/admin who should see the operations nav
   const isOperatorRole = ['operator', 'growth_operator', 'growth_operator_company', 'growth_operator_candidate',
     'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship',
-    'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin'
+    'growth_operator_community', 'growth_operator_monitoring', 'career_services_operator', 'administrator', 'admin'
   ].includes(userRole.toLowerCase());
 
   // Filter nav groups — remove blocked items, then remove empty groups

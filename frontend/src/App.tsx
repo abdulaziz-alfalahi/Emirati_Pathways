@@ -140,6 +140,7 @@ const CommunityOperatorDashboard = lazy(() => import('@/pages/operator-dashboard
 const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboards/OperationsMonitoringCenter'));
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
+const CareerServicesDashboard = lazy(() => import('@/pages/operator-dashboards/CareerServicesDashboard'));
 const BoardPortal = lazy(() => import('@/pages/BoardPortal'));
 // Phase 2-4 New Role Dashboards
 const AdvisorDashboard = lazy(() => import('@/pages/AdvisorDashboard'));
@@ -495,6 +496,16 @@ const AppContent: React.FC = () => {
                 element={
                   <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin']}>
                     <GrowthOperatorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Career Services CRM Dashboard Route */}
+              <Route
+                path="/career-services-crm"
+                element={
+                  <ProtectedRoute allowedRoles={['operator', 'career_services_operator', 'admin', 'administrator']}>
+                    <CareerServicesDashboard />
                   </ProtectedRoute>
                 }
               />

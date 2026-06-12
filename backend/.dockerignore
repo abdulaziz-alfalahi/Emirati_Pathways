@@ -10,6 +10,7 @@ __pycache__/
 # Logs and debug output
 *.log
 *.txt
+!requirements.txt
 debug_*
 check_*
 inspect_*
