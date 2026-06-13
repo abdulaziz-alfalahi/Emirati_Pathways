@@ -241,6 +241,7 @@ export const navigationGroups: NavGroup[] = [
 ];
 
 // Operator-only nav group — shown via role-based filtering in HybridGovernmentNavFixed
+// Each item has allowedRoles to control per-item visibility within the dropdown
 export const operationsNavGroup: NavGroup = {
   id: 'operations',
   name: 'Operations',
@@ -250,31 +251,36 @@ export const operationsNavGroup: NavGroup = {
       name: 'Career Services',
       href: '/career-services-crm',
       description: 'Manage salary benchmarks, startups, internships & gigs',
-      icon: DollarSign
+      icon: DollarSign,
+      allowedRoles: ['career_services_operator', 'admin', 'platform_operator']
     },
     {
       name: 'Growth Dashboard',
       href: '/growth-operator-dashboard',
       description: 'Operator dashboard for platform growth',
-      icon: BarChart3
+      icon: BarChart3,
+      allowedRoles: ['growth_operator', 'admin', 'platform_operator']
     },
     {
       name: 'Demographics Analytics',
       href: '/demographics',
       description: 'Deep-dive analysis of the talent pool',
-      icon: Users
+      icon: Users,
+      allowedRoles: ['admin', 'platform_operator', 'board_member', 'compliance_auditor']
     },
     {
       name: 'Operations Monitoring',
       href: '/operations-center',
       description: 'System monitoring and live operational activity',
-      icon: Settings
+      icon: Settings,
+      allowedRoles: ['admin', 'platform_operator']
     },
     {
       name: 'Executive Impact',
       href: '/executive',
       description: 'High-level KPI tracking for Board Members',
-      icon: Award
+      icon: Award,
+      allowedRoles: ['board_member', 'admin', 'platform_operator']
     }
   ]
 };

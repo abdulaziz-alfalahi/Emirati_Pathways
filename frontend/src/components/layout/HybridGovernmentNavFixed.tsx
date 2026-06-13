@@ -99,20 +99,27 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const hiddenPaths = hiddenPathsByRole[userRole.toLowerCase()] || [];
 
   // Determine if user is an operator/admin who should see the operations nav
-  const isOperatorRole = ['operator', 'growth_operator', 'employer_relations', 'talent_operator',
+  const isOperatorRole = [
+    'operator', 'growth_operator', 'employer_relations', 'talent_operator',
     'education_operator', 'assessment_operator', 'mentorship_operator',
-    'community_operator', 'platform_operator', 'career_services_operator', 'admin', 'admin', 'board_member',
-    'platform_operator', 'platform_operator', 'compliance_auditor'
+    'community_operator', 'platform_operator', 'career_services_operator',
+    'admin', 'board_member', 'compliance_auditor'
   ].includes(userRole.toLowerCase());
 
-  // Filter nav groups — remove blocked items, then remove empty groups
+  // Filter nav groups — remove blocked items, apply role-based allowedRoles, then remove empty groups
   const filteredNavigationGroups = useMemo(() => {
     const baseGroups = isOperatorRole ? [...navigationGroups, operationsNavGroup] : navigationGroups;
-    if (!hiddenPaths.length) return baseGroups;
+    const role = userRole.toLowerCase();
     return baseGroups
       .map(group => ({
         ...group,
-        items: group.items.filter(item => !hiddenPaths.includes(item.href)),
+        items: group.items.filter(item => {
+          // Hide if path is blocked for this role
+          if (hiddenPaths.includes(item.href || '')) return false;
+          // If item has allowedRoles, only show if user's role is listed
+          if (item.allowedRoles && !item.allowedRoles.includes(role)) return false;
+          return true;
+        }),
       }))
       .filter(group => group.items.length > 0);
   }, [userRole, hiddenPaths.length, isOperatorRole]);
