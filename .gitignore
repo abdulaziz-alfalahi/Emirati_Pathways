@@ -208,3 +208,4 @@ users_list.txt
 !.env.template
 !.env.example
 !.env.production
+test_venv/
