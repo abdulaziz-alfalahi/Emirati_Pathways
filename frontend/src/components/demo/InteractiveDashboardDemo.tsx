@@ -54,7 +54,7 @@ const demoSteps: DemoStep[] = [
     description: 'Now let\'s see Sara\'s perspective - an HR Manager at Emirates NBD managing talent acquisition for 50+ positions.',
     targetSelector: '.dashboard-header',
     position: 'bottom',
-    dashboard: 'hr'
+    dashboard: 'employer_admin'
   },
   {
     id: 'recruitment-pipeline',
@@ -62,7 +62,7 @@ const demoSteps: DemoStep[] = [
     description: 'Track candidates through the entire hiring process with automated workflows and collaborative evaluation tools.',
     targetSelector: '.pipeline-section',
     position: 'right',
-    dashboard: 'hr'
+    dashboard: 'employer_admin'
   },
   {
     id: 'analytics-metrics',
@@ -70,7 +70,7 @@ const demoSteps: DemoStep[] = [
     description: 'Comprehensive analytics ensure Emiratization compliance while providing insights to improve recruitment strategies.',
     targetSelector: '.analytics-section',
     position: 'left',
-    dashboard: 'hr'
+    dashboard: 'employer_admin'
   },
   {
     id: 'recruiter-tools',
@@ -144,7 +144,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
       description: currentLanguage === 'ar' ? 
         "سارة سعيد من بنك الإمارات دبي الوطني تستخدم أدوات التوظيف المتقدمة لدينا لتبسيط عمليات التوظيف، وتحليل خطوط أنابيب المرشحين، وتحقيق معدلات نجاح رائعة في التوظيف. تدير سارة 156 عملية توظيف ناجحة هذا العام مع 24 بحث نشط ومتوسط وقت ملء الوظائف 30 يوماً فقط." :
         "Sara Saeed from Emirates NBD uses our advanced recruitment tools to streamline hiring processes, analyze candidate pipelines, and achieve remarkable placement success rates.",
-      dashboard: "hr"
+      dashboard: 'employer_admin'
     },
     {
       id: 4,
@@ -320,7 +320,7 @@ export const InteractiveDashboardDemo: React.FC<InteractiveDashboardDemoProps> =
           )}
 
           {/* HR Dashboard Preview */}
-          {currentStepData.dashboard === 'hr' && (
+          {currentStepData.dashboard === 'employer_admin' && (
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4">

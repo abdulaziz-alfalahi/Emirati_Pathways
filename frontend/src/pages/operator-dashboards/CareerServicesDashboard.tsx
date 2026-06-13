@@ -52,8 +52,17 @@ export default function CareerServicesDashboard() {
           name: user.full_name || user.first_name + ' ' + user.last_name,
           callStatus: user.profile?.call_status || 'Pending',
           workStatus: user.profile?.work_status || 'Unknown',
+          jobSeekerType: user.profile?.job_seeker_type || 'Unknown',
+          phone: user.phone || '-',
           remarks: user.profile?.counseling_remarks || '',
-          assignedTo: user.profile?.assigned_to || 'Unassigned'
+          assignedTo: user.profile?.assigned_to || 'Unassigned',
+          preferredLocations: user.profile?.preferred_locations || [],
+          preferredSector: user.profile?.preferred_sector || '',
+          preferredWorkSetup: user.profile?.preferred_work_setup || '',
+          preferredSchedule: user.profile?.preferred_schedule || '',
+          alternativePhone: user.profile?.alternative_phone || '',
+          unavailabilityReason: user.profile?.unavailability_reason || '',
+          rolePreferences: user.profile?.role_preferences || '',
         }));
         setCandidates(mapped.length > 0 ? mapped : getMockCandidates());
       } else {
@@ -83,10 +92,10 @@ export default function CareerServicesDashboard() {
   };
 
   const getMockCandidates = () => [
-    { id: 1, eid: '784197354932622', name: 'AFRA ALSAYAH', callStatus: 'Answered', workStatus: 'Working', remarks: 'Works at Private School', assignedTo: 'Career Services Op' },
-    { id: 2, eid: '784197706590581', name: 'AZIZA ALJASMI', callStatus: 'Answered', workStatus: 'Retired', remarks: 'Looking at AED 15K minimum. Lives in Al Warqa.', assignedTo: 'Unassigned' },
-    { id: 3, eid: '784200421903020', name: 'HAMAD BULGHUZOOZ', callStatus: 'Answered', workStatus: 'Not Working', remarks: 'Received updated CV', assignedTo: 'Fatima Al Mansoori' },
-    { id: 4, eid: '784200542824071', name: 'NOORA ALBLOOSHI', callStatus: 'No Answer', workStatus: 'Not Working', remarks: 'Contacted on 06 April 2026 - No Answer', assignedTo: 'Unassigned' },
+    { id: 1, eid: '784197354932622', name: 'AFRA ALSAYAH', phone: '0501112222', jobSeekerType: 'Fresh Graduate', callStatus: 'Answered', workStatus: 'Working', remarks: 'Works at Private School', assignedTo: 'Career Services Op' },
+    { id: 2, eid: '784197706590581', name: 'AZIZA ALJASMI', phone: '0503334444', jobSeekerType: 'Experienced', callStatus: 'Answered', workStatus: 'Retired', remarks: 'Looking at AED 15K minimum. Lives in Al Warqa.', assignedTo: 'Unassigned' },
+    { id: 3, eid: '784200421903020', name: 'HAMAD BULGHUZOOZ', phone: '0505556666', jobSeekerType: 'Experienced', callStatus: 'Answered', workStatus: 'Not Working', remarks: 'Received updated CV', assignedTo: 'Fatima Al Mansoori' },
+    { id: 4, eid: '784200542824071', name: 'NOORA ALBLOOSHI', phone: '0507778888', jobSeekerType: 'Fresh Graduate', callStatus: 'No Answer', workStatus: 'Not Working', remarks: 'Contacted on 06 April 2026 - No Answer', assignedTo: 'Unassigned' },
   ];
 
   const handleEditClick = (candidate: any) => {
@@ -95,7 +104,14 @@ export default function CareerServicesDashboard() {
       callStatus: candidate.callStatus,
       workStatus: candidate.workStatus,
       remarks: candidate.remarks,
-      assignedTo: candidate.assignedTo
+      assignedTo: candidate.assignedTo,
+      preferredLocations: candidate.preferredLocations || [],
+      preferredSector: candidate.preferredSector || 'none',
+      preferredWorkSetup: candidate.preferredWorkSetup || 'none',
+      preferredSchedule: candidate.preferredSchedule || 'none',
+      alternativePhone: candidate.alternativePhone || '',
+      unavailabilityReason: candidate.unavailabilityReason || 'none',
+      rolePreferences: candidate.rolePreferences || '',
     });
     setIsSheetOpen(true);
   };
@@ -104,10 +120,17 @@ export default function CareerServicesDashboard() {
     if (!editingCandidate) return;
     setIsSaving(true);
     try {
-      await restClient.put(`/api/profile/crm-candidates/${editingCandidate.id}`, editForm);
+      const payload = {
+        ...editForm,
+        preferredSector: editForm.preferredSector === 'none' ? null : editForm.preferredSector,
+        preferredWorkSetup: editForm.preferredWorkSetup === 'none' ? null : editForm.preferredWorkSetup,
+        preferredSchedule: editForm.preferredSchedule === 'none' ? null : editForm.preferredSchedule,
+        unavailabilityReason: editForm.unavailabilityReason === 'none' ? null : editForm.unavailabilityReason,
+      };
+      await restClient.put(`/api/profile/crm-candidates/${editingCandidate.id}`, payload);
       
       setCandidates(prev => prev.map(c => 
-        c.id === editingCandidate.id ? { ...c, ...editForm } : c
+        c.id === editingCandidate.id ? { ...c, ...payload } : c
       ));
       
       toast({ title: t('Saved successfully', 'تم الحفظ بنجاح') });
@@ -285,6 +308,8 @@ export default function CareerServicesDashboard() {
                   <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-100">
                     <tr>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Candidate', 'المرشح')}</th>
+                      <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Phone', 'الهاتف')}</th>
+                      <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Type', 'النوع')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Status', 'الحالة')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Assigned To', 'معين إلى')}</th>
                       <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">{t('Latest Remark', 'أحدث ملاحظة')}</th>
@@ -306,6 +331,12 @@ export default function CareerServicesDashboard() {
                               <div className="text-slate-500 text-xs mt-0.5">{candidate.eid}</div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-slate-600 font-medium">{candidate.phone}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge variant="outline" className="text-slate-600 bg-slate-50 border-slate-200">{candidate.jobSeekerType}</Badge>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
@@ -483,6 +514,79 @@ export default function CareerServicesDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* New Counseling Fields */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">{t('Preferred Locations', 'مواقع العمل المفضلة')}</label>
+                    <Input 
+                      value={(editForm.preferredLocations || []).join(', ')} 
+                      onChange={(e) => setEditForm({...editForm, preferredLocations: e.target.value.split(',').map(s => s.trim())})} 
+                      placeholder="Dubai, Abu Dhabi"
+                      className="bg-slate-50 border-slate-200 rounded-xl h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">{t('Preferred Sector', 'القطاع المفضل')}</label>
+                    <Select value={editForm.preferredSector} onValueChange={(val) => setEditForm({...editForm, preferredSector: val})}>
+                      <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11"><SelectValue placeholder="Select Sector" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="Gov">Government</SelectItem>
+                        <SelectItem value="Semi-Gov">Semi-Government</SelectItem>
+                        <SelectItem value="Private">Private</SelectItem>
+                        <SelectItem value="Schools">Schools</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">{t('Work Setup', 'نظام العمل')}</label>
+                      <Select value={editForm.preferredWorkSetup} onValueChange={(val) => setEditForm({...editForm, preferredWorkSetup: val})}>
+                        <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11"><SelectValue placeholder="Select Setup" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="On-Site">On-Site</SelectItem>
+                          <SelectItem value="Hybrid">Hybrid</SelectItem>
+                          <SelectItem value="Remote">Remote</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">{t('Schedule', 'الجدول')}</label>
+                      <Select value={editForm.preferredSchedule} onValueChange={(val) => setEditForm({...editForm, preferredSchedule: val})}>
+                        <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11"><SelectValue placeholder="Select Schedule" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="Full-Time">Full-Time</SelectItem>
+                          <SelectItem value="Part-Time">Part-Time</SelectItem>
+                          <SelectItem value="Shift-Based">Shift-Based</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">{t('Role Preferences', 'الأدوار المفضلة')}</label>
+                    <Input value={editForm.rolePreferences || ''} onChange={(e) => setEditForm({...editForm, rolePreferences: e.target.value})} placeholder="e.g. Admin, IT, HR" className="bg-slate-50 border-slate-200 rounded-xl h-11" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">{t('Alternative Phone', 'هاتف بديل')}</label>
+                      <Input value={editForm.alternativePhone || ''} onChange={(e) => setEditForm({...editForm, alternativePhone: e.target.value})} placeholder="e.g. 971500000000" className="bg-slate-50 border-slate-200 rounded-xl h-11" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">{t('Unavailability Reason', 'سبب عدم التوفر')}</label>
+                      <Select value={editForm.unavailabilityReason} onValueChange={(val) => setEditForm({...editForm, unavailabilityReason: val})}>
+                        <SelectTrigger className="w-full bg-slate-50 border-slate-200 rounded-xl h-11"><SelectValue placeholder="Select Reason" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="Studying">Studying</SelectItem>
+                          <SelectItem value="Medical Leave">Medical Leave</SelectItem>
+                          <SelectItem value="Invalid Number">Invalid Number</SelectItem>
+                          <SelectItem value="Opt-Out">Opt-Out</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-2 pt-2">

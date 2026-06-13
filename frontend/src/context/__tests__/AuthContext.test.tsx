@@ -142,7 +142,7 @@ describe('AuthContext', () => {
 
   test('signOut calls authService.logout and clears state', async () => {
     // Start with authenticated user
-    const mockUser = { id: 1, email: 'test@test.com', user_type: 'job_seeker' };
+    const mockUser = { id: 1, email: 'test@test.com', user_type: 'candidate' };
     vi.mocked(authService.isAuthenticated).mockReturnValue(true);
     vi.mocked(authService.getUser).mockReturnValue(mockUser);
     vi.mocked(authService.getProfile).mockRejectedValue(new Error('skip'));
@@ -167,7 +167,7 @@ describe('AuthContext', () => {
   });
 
   test('provides authenticated state when user exists', async () => {
-    const mockUser = { id: 1, email: 'test@test.com', user_type: 'job_seeker' };
+    const mockUser = { id: 1, email: 'test@test.com', user_type: 'candidate' };
     vi.mocked(authService.isAuthenticated).mockReturnValue(true);
     vi.mocked(authService.getUser).mockReturnValue(mockUser);
     vi.mocked(authService.getProfile).mockRejectedValue(new Error('skip'));

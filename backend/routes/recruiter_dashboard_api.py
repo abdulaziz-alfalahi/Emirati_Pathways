@@ -319,7 +319,7 @@ def get_jd_list_enhanced():
                 
                 # Get user's company_id and role details
                 user_company_id = None
-                is_admin = user_role in ('admin', 'administrator', 'super_admin')
+                is_admin = user_role in ('admin', 'admin', 'super_admin')
                 
                 if current_user_id and not is_admin:
                     try:
@@ -351,7 +351,7 @@ def get_jd_list_enhanced():
                 if is_admin:
                     # Admin sees all jobs
                     pass
-                elif user_role in ('hr_manager', 'hr') and user_company_id:
+                elif user_role in ('employer_admin', 'employer_admin') and user_company_id:
                      # HR Manager with Company: See all jobs for that company OR created by them
                      # NOTE: created_by is INTEGER but JWT IDs are UUIDs, so only filter by recruiter_id (VARCHAR)
                      filter_sql_new = " AND (jp.company_id = %s OR jp.recruiter_id = %s)"
@@ -1433,7 +1433,7 @@ def get_job_applicants_count():
             filter_legacy = "WHERE 1=0" 
             params_legacy = []
 
-        if user_role in ('hr_manager', 'admin', 'administrator', 'super_admin'):
+        if user_role in ('employer_admin', 'admin', 'admin', 'super_admin'):
              filter_new = "WHERE 1=1"
              filter_legacy = "WHERE 1=1"
              params_new = []

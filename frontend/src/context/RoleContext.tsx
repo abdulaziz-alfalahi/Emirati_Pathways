@@ -20,11 +20,11 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Get available roles from user's actual roles, with fallback to candidate
   const availableRoles: UserRole[] = user?.roles?.filter(role => 
     // Ensure the role is a valid UserRole type
-    ['candidate', 'administrator', 'super_user', 'private_sector_recruiter', 
+    ['candidate', 'admin', 'super_user', 'private_sector_recruiter', 
      'government_representative', 'educational_institution', 'mentor', 
      'career_advisor', 'school_student', 'university_student', 'jobseeker',
      'intern', 'full_time_employee', 'part_time_employee', 'gig_worker',
-     'lifelong_learner', 'entrepreneur', 'retiree', 'parent', 'training_center',
+     'lifelong_learner', 'entrepreneur', 'candidate', 'parent', 'training_center',
      'assessment_center', 'platform_operator', 'national_service_participant',
      'retiree_advocate'].includes(role)
   ) as UserRole[] || ['candidate'];

@@ -105,7 +105,7 @@ def create_app():
             
             # Mock user authentication (replace with real authentication)
             user_id = "user_123"  # This would come from your user database
-            user_type = "job_seeker"  # This would come from user profile
+            user_type = 'candidate'  # This would come from user profile
             
             # Create JWT token with notification-relevant claims
             additional_claims = {

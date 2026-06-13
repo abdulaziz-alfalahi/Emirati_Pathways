@@ -49,7 +49,7 @@ def create_approval_request():
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
@@ -107,7 +107,7 @@ def list_approval_requests():
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
@@ -221,7 +221,7 @@ def get_approval_request(req_id):
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
@@ -250,7 +250,7 @@ def approve_request(req_id):
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
         data = request.get_json() or {}
@@ -292,7 +292,7 @@ def reject_request(req_id):
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
         data = request.get_json() or {}

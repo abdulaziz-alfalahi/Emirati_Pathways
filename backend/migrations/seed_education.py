@@ -180,7 +180,7 @@ SCHOLARSHIPS = [
     {
         "title": "Talent33 STEM Excellence Scholarship",
         "title_ar": "منحة Talent33 للتميز في العلوم والتكنولوجيا",
-        "provider": "Dubai Government", "provider_type": "government",
+        "provider": "Dubai Government", "provider_type": 'compliance_auditor',
         "amount": 50000, "currency": "AED",
         "description": "Full scholarship for top Emirati students pursuing STEM degrees aligned with D33 economic priorities.",
         "description_ar": "منحة كاملة للطلاب الإماراتيين المتفوقين في تخصصات العلوم والتكنولوجيا.",
@@ -191,7 +191,7 @@ SCHOLARSHIPS = [
     {
         "title": "Emirati Women in Tech Scholarship",
         "title_ar": "منحة المرأة الإماراتية في التكنولوجيا",
-        "provider": "UAE Ministry of Education", "provider_type": "government",
+        "provider": "UAE Ministry of Education", "provider_type": 'compliance_auditor',
         "amount": 40000, "currency": "AED",
         "description": "Scholarship for Emirati women pursuing technology and engineering degrees.",
         "description_ar": "منحة للنساء الإماراتيات الملتحقات بتخصصات التكنولوجيا والهندسة.",
@@ -202,7 +202,7 @@ SCHOLARSHIPS = [
     {
         "title": "Future Leaders Scholarship",
         "title_ar": "منحة قادة المستقبل",
-        "provider": "Mohammed bin Rashid Fund", "provider_type": "government",
+        "provider": "Mohammed bin Rashid Fund", "provider_type": 'compliance_auditor',
         "amount": 60000, "currency": "AED",
         "description": "Prestigious scholarship for exceptional students demonstrating leadership potential in any field.",
         "description_ar": "منحة مرموقة للطلاب المتميزين الذين يظهرون إمكانات قيادية في أي مجال.",
@@ -224,7 +224,7 @@ SCHOLARSHIPS = [
     {
         "title": "Healthcare Heroes Scholarship",
         "title_ar": "منحة أبطال الرعاية الصحية",
-        "provider": "Abu Dhabi Health Authority", "provider_type": "government",
+        "provider": "Abu Dhabi Health Authority", "provider_type": 'compliance_auditor',
         "amount": 45000, "currency": "AED",
         "description": "Full tuition scholarship for students pursuing medical and healthcare degrees.",
         "description_ar": "منحة رسوم دراسية كاملة للطلاب الملتحقين بتخصصات الطب والرعاية الصحية.",

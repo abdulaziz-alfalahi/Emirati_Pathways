@@ -146,7 +146,7 @@ TEST_CANDIDATES = [
         "job_title": "Junior Developer",
         "company": "Sharjah Startups",
         "skills": ["Python", "Flask"],               # 1/6 (only Python matches)
-        "employment_status": "job_seeker",
+        "employment_status": 'candidate',
     },
     {
         # ── CANDIDATE E ── No match (expect ~15-25)

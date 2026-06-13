@@ -30,6 +30,15 @@ class CandidateProfile(db.Model):
     expected_salary_range = Column(String(100))
     notice_period = Column(String(50))
     
+    # Counseling CRM Structured Fields
+    preferred_locations = Column(JSON)
+    preferred_sector = Column(String(50))
+    preferred_work_setup = Column(String(50))
+    preferred_schedule = Column(String(50))
+    alternative_phone = Column(String(50))
+    unavailability_reason = Column(String(100))
+    role_preferences = Column(String(255))
+    
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

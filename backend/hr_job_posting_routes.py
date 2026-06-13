@@ -257,7 +257,7 @@ def get_job_postings():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -460,7 +460,7 @@ def create_job_postings_batch():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json() or {}
         jobs = data.get('jobs', [])
@@ -559,7 +559,7 @@ def create_job_posting():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -738,7 +738,7 @@ def upload_job_document(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         if 'file' not in request.files:
@@ -967,7 +967,7 @@ def update_job_posting(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -1091,7 +1091,7 @@ def publish_job_posting(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -1179,7 +1179,7 @@ def publish_and_match(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1227,7 +1227,7 @@ def publish_and_match(job_id):
                     u.experience_years, u.preferred_salary_min, u.preferred_salary_max,
                     u.preferred_location, u.is_uae_national, u.skills, u.last_login
                 FROM users u
-                WHERE u.role = 'job_seeker' AND u.is_active = true
+                WHERE u.role = 'candidate' AND u.is_active = true
                 LIMIT 500
             """)
             candidates = [dict(r) for r in cursor.fetchall()]
@@ -1323,7 +1323,7 @@ def add_to_shortlist(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         payload = request.get_json() or {}
@@ -1369,7 +1369,7 @@ def add_to_shortlist(job_id):
                 return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
 
             # Ensure candidate exists and is a candidate
-            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'job_seeker'", (candidate_id,))
+            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'candidate'", (candidate_id,))
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Candidate not found'}), 404
 
@@ -1400,7 +1400,7 @@ def remove_from_shortlist(job_id, candidate_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1440,7 +1440,7 @@ def check_compliance(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -1498,7 +1498,7 @@ def get_job_templates():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -1562,7 +1562,7 @@ def create_job_template():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'hr_manager', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         data = request.get_json() or {}

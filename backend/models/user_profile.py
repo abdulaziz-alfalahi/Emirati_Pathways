@@ -45,7 +45,7 @@ class EmploymentStatus(Enum):
     """Current Employment Status"""
     EMPLOYED = "employed"
     UNEMPLOYED = "unemployed"
-    STUDENT = "student"
+    STUDENT = 'candidate'
     FREELANCER = "freelancer"
     ENTREPRENEUR = "entrepreneur"
     RETIRED = "retired"

@@ -9,7 +9,7 @@ const HomePage: React.FC = () => {
   const { user } = useAuth();
   
   // Check if user is a student based on email (simplified for now)
-  const isStudent = user?.email && user.email.includes('student');
+  const isStudent = user?.email && user.email.includes('candidate');
 
   return (
     <Layout>

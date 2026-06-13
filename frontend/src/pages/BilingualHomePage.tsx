@@ -150,7 +150,7 @@ const BilingualHomePage: React.FC = () => {
   /* ---- data ---- */
   const personas = [
     {
-      id: 'job_seeker',
+      id: 'candidate',
       title: translations.personas?.jobSeeker?.title || 'Job Seeker',
       description: translations.personas?.jobSeeker?.description || 'Find your dream career with AI-powered job matching and personalized career guidance',
       icon: Users,
@@ -183,7 +183,7 @@ const BilingualHomePage: React.FC = () => {
       getStarted: translations.personas?.recruiter?.getStarted || 'Get Started as Recruiter',
     },
     {
-      id: 'hr_manager',
+      id: 'employer_admin',
       title: translations.personas?.hrManager?.title || 'HR Manager',
       description: translations.personas?.hrManager?.description || 'Oversee workforce planning, compliance, and organizational development strategies',
       icon: Building2,
@@ -199,7 +199,7 @@ const BilingualHomePage: React.FC = () => {
       getStarted: translations.personas?.hrManager?.getStarted || 'Get Started as HR Manager',
     },
     {
-      id: 'educator',
+      id: 'training_provider',
       title: translations.personas?.educator?.title || 'Educator',
       description: translations.personas?.educator?.description || 'Enhance student outcomes with curriculum management and industry integration',
       icon: GraduationCap,

@@ -161,11 +161,11 @@ const OnboardingWrapper: React.FC<OnboardingWrapperProps> = ({ hasCompletedOnboa
                     onChange={(e) => setFormData(prev => ({...prev, skillLevel: e.target.value}))}
                   >
                     <option value="">Select your current stage</option>
-                    <option value="student">Student</option>
+                    <option value='candidate'>Student</option>
                     <option value="graduate">Recent Graduate</option>
                     <option value="professional">Professional</option>
                     <option value="manager">Manager/Leader</option>
-                    <option value="retiree">Retiree</option>
+                    <option value='candidate'>Retiree</option>
                   </select>
                 </div>
               </div>

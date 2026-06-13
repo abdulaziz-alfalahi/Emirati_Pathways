@@ -48,7 +48,7 @@ describe('Advanced Features Frontend Components', () => {
 
     describe('ResponsiveLayout', () => {
         it('renders the responsive layout with sidebar on desktop', () => {
-            render(<ResponsiveLayout userType="job_seeker"><div>Test Content</div></ResponsiveLayout>);
+            render(<ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>);
             expect(screen.getByText('Dashboard')).toBeInTheDocument();
             expect(screen.getByText('Test Content')).toBeInTheDocument();
         });
@@ -56,7 +56,7 @@ describe('Advanced Features Frontend Components', () => {
         it('renders the responsive layout with a mobile menu button on smaller screens', () => {
             // Mock window width
             Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
-            render(<ResponsiveLayout userType="job_seeker"><div>Test Content</div></ResponsiveLayout>);
+            render(<ResponsiveLayout userType='candidate'><div>Test Content</div></ResponsiveLayout>);
             expect(screen.getByText('EJ Platform')).toBeInTheDocument(); // Mobile title
             expect(screen.queryByText('Dashboard')).not.toBeInTheDocument(); // Sidebar not visible
         });

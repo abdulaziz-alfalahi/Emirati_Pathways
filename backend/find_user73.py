@@ -51,7 +51,7 @@ if app:
     cur.execute("""
         SELECT id::text, email, user_type
         FROM users
-        WHERE user_type IN ('job_seeker', 'candidate')
+        WHERE user_type IN ('candidate', 'candidate')
         ORDER BY id DESC
         LIMIT 10
     """)

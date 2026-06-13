@@ -28,14 +28,14 @@ class CVTemplate(Enum):
     CREATIVE = "creative"
     ACADEMIC = "academic"
     UAE_CORPORATE = "uae_corporate"
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
 
 class Industry(Enum):
     FINANCE = "finance"
     HEALTHCARE = "healthcare"
     TECHNOLOGY = "technology"
     EDUCATION = "education"
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
     ENERGY = "energy"
     TOURISM = "tourism"
     REAL_ESTATE = "real_estate"
@@ -183,7 +183,7 @@ class CVBuilderEngine:
             "healthcare": "Healthcare & Medical Services",
             "technology": "Information Technology",
             "education": "Education & Training",
-            "government": "Government & Public Sector",
+            'compliance_auditor': "Government & Public Sector",
             "energy": "Energy & Utilities",
             "tourism": "Tourism & Hospitality",
             "real_estate": "Real Estate & Construction",
@@ -547,7 +547,7 @@ class CVBuilderEngine:
             CVTemplate.GOVERNMENT: {
                 "color_primary": "#1B4F72",
                 "color_secondary": "#2E86AB",
-                "layout": "government",
+                "layout": 'compliance_auditor',
                 "header_style": "official"
             }
         }

@@ -221,7 +221,7 @@ export const JobApplicantsView: React.FC<JobApplicantsViewProps> = ({ job, onBac
           console.error('Error parsing user role', e);
         }
 
-        if (role === 'hr_manager' || role === 'hr') {
+        if (role === 'employer_admin' || role === 'employer_admin') {
           navigate(`/hr-dashboard?tab=messages&conversationId=${conversationId}`);
         } else {
           navigate(`/recruiter?tab=messages&conversationId=${conversationId}`);

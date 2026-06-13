@@ -5,7 +5,7 @@ import json
 import numpy as np
 
 def migrate_crm_data():
-    master_file = '/home/aalfalahi.d/Downloads/Main Master File - 01 June\'26.xlsx'
+    master_file = '/app/master_file.xlsx'
     
     print(f"Reading {master_file}...")
     df = pd.read_excel(master_file, sheet_name='Master')
@@ -14,8 +14,9 @@ def migrate_crm_data():
     # Convert NaNs to None
     df = df.replace({np.nan: None})
 
-    print("Connecting to database...")
-    conn = psycopg2.connect('postgresql://dghr_prod:AZS%23%24167%402026@10.228.145.66:5454/dghr_prod')
+    # Connect to local docker postgres
+    # Use standard DB_NAME=emirati_journey
+    conn = psycopg2.connect("postgresql://dghr_prod:AZS%23%24167%402026@db:5432/emirati_journey")
     cur = conn.cursor()
 
     print("Adding columns to candidate_profiles if they do not exist...")

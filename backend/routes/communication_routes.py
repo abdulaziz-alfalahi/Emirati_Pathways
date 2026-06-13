@@ -192,8 +192,8 @@ def create_conversation():
                   other_ids = [p for p in participants if p != current_user_id]
                   if other_ids:
                       other_id = other_ids[0]
-                      if sender_role == 'recruiter': participant_roles[other_id] = 'job_seeker'
-                      elif sender_role == 'job_seeker': participant_roles[other_id] = 'recruiter'
+                      if sender_role == 'recruiter': participant_roles[other_id] = 'candidate'
+                      elif sender_role == 'candidate': participant_roles[other_id] = 'recruiter'
 
         conversation = communication_service.create_conversation(
             participants=participants,

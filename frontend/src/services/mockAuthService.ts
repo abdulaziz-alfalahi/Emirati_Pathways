@@ -47,8 +47,8 @@ export const TEST_USERS: Record<string, MockUser> = {
     first_name: 'Zara',
     last_name: 'Saeed',
     full_name: 'Zara Saeed',
-    user_type: 'hr_manager',
-    role: 'hr_manager',
+    user_type: 'employer_admin',
+    role: 'employer_admin',
     phone: '+971512345678',
     emirate: 'Abu Dhabi',
     nationality: 'UAE',
@@ -65,8 +65,8 @@ export const TEST_USERS: Record<string, MockUser> = {
     first_name: 'Omar',
     last_name: 'Al Rashid',
     full_name: 'Omar Al Rashid',
-    user_type: 'hr_recruiter', // Updated to match backend
-    role: 'hr_recruiter', // Updated to match backend
+    user_type: 'recruiter', // Updated to match backend
+    role: 'recruiter', // Updated to match backend
     phone: '+971513456789',
     emirate: 'Sharjah',
     nationality: 'UAE',
@@ -99,8 +99,8 @@ export const TEST_USERS: Record<string, MockUser> = {
     first_name: 'Growth',
     last_name: 'Operator',
     full_name: 'Growth Operator',
-    user_type: 'growth_operator_company',
-    role: 'growth_operator_company',
+    user_type: 'employer_relations',
+    role: 'employer_relations',
     phone: '+971519998888',
     emirate: 'Dubai',
     nationality: 'UAE',
@@ -316,15 +316,15 @@ export class MockAuthService {
 
     switch (type) {
       case 'candidate':
-      case 'job_seeker':
+      case 'candidate':
         return '/candidate-dashboard';
-      case 'hr_manager':
-      case 'hr':
+      case 'employer_admin':
+      case 'employer_admin':
         return '/hr-dashboard';
       case 'recruiter':
-      case 'hr_recruiter':
+      case 'recruiter':
         return '/recruiter-dashboard';
-      case 'educator':
+      case 'training_provider':
         return '/educator-dashboard';
       case 'mentor':
         return '/mentor-dashboard';
@@ -333,14 +333,14 @@ export class MockAuthService {
       case 'operator':
         return '/operator-dashboard';
       case 'board_member':
-        return '/board-portal';
-      case 'operations_officer':
-      case 'growth_operator_monitoring':
+        return '/executive';
+      case 'platform_operator':
+      case 'platform_operator':
         return '/operations-center';
-      case 'government':
+      case 'compliance_auditor':
         return '/operations-center';
       case 'admin':
-      case 'administrator':
+      case 'admin':
         return '/admin-dashboard';
       default:
         return '/candidate-dashboard';

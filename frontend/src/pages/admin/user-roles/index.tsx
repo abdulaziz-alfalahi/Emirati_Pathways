@@ -40,7 +40,7 @@ const UserRolesAdminPage: React.FC = React.memo(() => {
 
   // Check if user has admin permissions
   const isAuthorized = useMemo(() => 
-    hasRole('administrator') || hasRole('super_user'), 
+    hasRole('admin') || hasRole('super_user'), 
     [hasRole]
   );
 

@@ -47,7 +47,7 @@ class JDAnalyticsEngine:
                 'avg_match_score': 85.0,
                 'conversion_rate': 0.15
             },
-            'government': {
+            'compliance_auditor': {
                 'avg_applications_per_jd': 120.0,
                 'avg_time_to_fill': 45.0,
                 'avg_quality_score': 75.0,

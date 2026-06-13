@@ -25,7 +25,7 @@ const RoleSwitcher: React.FC = () => {
 
   const getRoleDisplayName = (role: UserRole): string => {
     const roleNames: Record<UserRole, string> = {
-      'administrator': 'Administrator',
+      'admin': 'Administrator',
       'super_user': 'Super User',
       'private_sector_recruiter': 'Employer/Recruiter',
       'government_representative': 'Government Representative',
@@ -42,7 +42,7 @@ const RoleSwitcher: React.FC = () => {
       'gig_worker': 'Gig Worker',
       'lifelong_learner': 'Lifelong Learner',
       'entrepreneur': 'Entrepreneur',
-      'retiree': 'Retiree',
+      'candidate': 'Retiree',
       'parent': 'Parent',
       'training_center': 'Training Center',
       'assessment_center': 'Assessment Center',
@@ -56,7 +56,7 @@ const RoleSwitcher: React.FC = () => {
 
   const getRoleIcon = (role: UserRole): string => {
     const roleIcons: Record<string, string> = {
-      'administrator': '⚙️',
+      'admin': '⚙️',
       'super_user': '👑',
       'private_sector_recruiter': '💼',
       'government_representative': '🏛️',
@@ -73,7 +73,7 @@ const RoleSwitcher: React.FC = () => {
       'gig_worker': '🚀',
       'lifelong_learner': '📖',
       'entrepreneur': '💡',
-      'retiree': '🌅'
+      'candidate': '🌅'
     };
     
     return roleIcons[role] || '👤';

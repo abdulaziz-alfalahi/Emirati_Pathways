@@ -36,7 +36,7 @@ export const mockAdminUser: User = {
 
 // Mock roles
 export const mockUserRoles = ['user'];
-export const mockAdminRoles = ['administrator', 'user'];
+export const mockAdminRoles = ['admin', 'user'];
 
 // Mock MFA data
 export const mockMFAFactor: MFAFactor = {

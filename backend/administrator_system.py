@@ -225,15 +225,15 @@ class AdministratorSystem:
             system_roles = self._execute_query(role_query)
             
             # Build Normalization Maps
-            # 1. Display Name -> Slug (e.g., "HR Manager" -> "hr_manager")
+            # 1. Display Name -> Slug (e.g., "HR Manager" -> 'employer_admin')
             # 2. Known Legacy Overrides
             norm_map = {r['display_name']: r['name'] for r in system_roles}
             norm_map.update({
                 'HR/Recruiter': 'recruiter',
-                'HR Manager': 'hr_manager',
-                'Job Seeker': 'job_seeker',
-                'candidate': 'job_seeker',   # Legacy: normalize 'candidate' → 'job_seeker'
-                'Candidate': 'job_seeker',
+                'HR Manager': 'employer_admin',
+                'Job Seeker': 'candidate',
+                'candidate': 'candidate',   # Legacy: normalize 'candidate' → 'candidate'
+                'Candidate': 'candidate',
             })
             
             system_slugs = {r['name'] for r in system_roles}
@@ -601,7 +601,7 @@ class AdministratorSystem:
             ))  # dict.fromkeys preserves order and deduplicates
             
             # The first role in the requested list becomes primary
-            primary_role = roles[0] if roles else original_role or 'job_seeker'
+            primary_role = roles[0] if roles else original_role or 'candidate'
             
             update_role_query = """
                 UPDATE users 

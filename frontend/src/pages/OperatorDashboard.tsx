@@ -27,9 +27,9 @@ const OperatorDashboard = () => {
     const operatorType = React.useMemo(() => {
         const roles = [user?.role, ...(user?.roles || []), ...(user?.secondary_roles || [])].filter(Boolean);
         return {
-            isCompanyOps: roles.some(r => r === 'growth_operator_company'),
-            isCandidateOps: roles.some(r => r === 'growth_operator_candidate'),
-            isMonitoringOps: roles.some(r => r === 'growth_operator_monitoring'),
+            isCompanyOps: roles.some(r => r === 'employer_relations'),
+            isCandidateOps: roles.some(r => r === 'talent_operator'),
+            isMonitoringOps: roles.some(r => r === 'platform_operator'),
             isLegacyOps: roles.some(r => r === 'growth_operator')
         };
     }, [user]);

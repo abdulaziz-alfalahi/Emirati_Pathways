@@ -1,7 +1,7 @@
 
 import { Json } from '@/integrations/supabase/types';
 
-export type CollaboratorRole = 'owner' | 'trainer' | 'mentor' | 'employer' | 'evaluator' | 'viewer';
+export type CollaboratorRole = 'owner' | 'trainer' | 'mentor' | 'employer_admin' | 'evaluator' | 'viewer';
 
 export type AssessmentTemplateStatus = 'draft' | 'published' | 'archived';
 

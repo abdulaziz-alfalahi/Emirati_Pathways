@@ -459,7 +459,7 @@ class MentorAnalyticsDashboard:
                 'technology': 87.3,
                 'finance': 82.1,
                 'healthcare': 79.8,
-                'government': 85.6,
+                'compliance_auditor': 85.6,
                 'education': 88.2,
                 'consulting': 81.4
             }

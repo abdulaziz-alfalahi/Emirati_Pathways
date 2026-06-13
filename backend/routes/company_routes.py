@@ -321,7 +321,7 @@ def add_company_user():
         role = data.get('role')
         
         # Validate role
-        valid_roles = ['admin', 'hr', 'recruiter']
+        valid_roles = ['admin', 'employer_admin', 'recruiter']
         if role not in valid_roles:
             return jsonify({
                 'success': False,

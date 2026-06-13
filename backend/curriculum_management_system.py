@@ -1331,7 +1331,7 @@ class CurriculumManagementSystem:
             "technology": ["Programming", "AI/ML", "Cybersecurity", "Cloud Computing"],
             "finance": ["Islamic Finance", "Fintech", "Risk Management", "Compliance"],
             "healthcare": ["Digital Health", "Telemedicine", "Health Informatics"],
-            "government": ["Digital Government", "Smart Cities", "Public Policy"]
+            'compliance_auditor': ["Digital Government", "Smart Cities", "Public Policy"]
         }
     
     def _initialize_assessment_rubrics(self) -> Dict[str, Any]:

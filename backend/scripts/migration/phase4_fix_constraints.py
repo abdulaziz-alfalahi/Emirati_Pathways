@@ -44,8 +44,8 @@ try_sql("Drop users_user_type_check",
 try_sql("Add updated user_type constraint", """
     ALTER TABLE users ADD CONSTRAINT users_user_type_check 
     CHECK (user_type IN (
-        'job_seeker', 'student', 'guardian', 'educator', 'assessor',
-        'mentor', 'recruiter', 'hr_manager', 'retiree', 'operator', 'administrator'
+        'candidate', 'candidate', 'parent', 'training_provider', 'assessor',
+        'mentor', 'recruiter', 'employer_admin', 'candidate', 'operator', 'admin'
     ))
 """)
 
@@ -67,8 +67,8 @@ if not existing:
     try_sql("Add updated role constraint", """
         ALTER TABLE users ADD CONSTRAINT users_role_check 
         CHECK (role IN (
-            'job_seeker', 'student', 'guardian', 'educator', 'assessor',
-            'mentor', 'recruiter', 'hr_manager', 'retiree', 'operator', 'administrator'
+            'candidate', 'candidate', 'parent', 'training_provider', 'assessor',
+            'mentor', 'recruiter', 'employer_admin', 'candidate', 'operator', 'admin'
         ))
     """)
 

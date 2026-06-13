@@ -57,7 +57,7 @@ export const getDashboardComponentByUserProfile = (
     }
     
     // Then check for general student
-    if (user.email.includes('student')) {
+    if (user.email.includes('candidate')) {
       console.log("Email-based rendering: StudentDashboard");
       return <StudentDashboard activeTab={activeTab} />;
     }
@@ -82,7 +82,7 @@ export const getDashboardComponentByUserProfile = (
       return <RecruiterDashboard activeTab={activeTab} />;
     }
     
-    if (user.email.includes('retiree')) {
+    if (user.email.includes('candidate')) {
       console.log("Email-based rendering: RetireeDashboard");
       return <RetireeDashboard activeTab={activeTab} />;
     }
@@ -94,7 +94,7 @@ export const getDashboardComponentByUserProfile = (
   }
 
   // Check based on active role
-  if (activeRole === 'administrator' || activeRole === 'super_user') {
+  if (activeRole === 'admin' || activeRole === 'super_user') {
     console.log("Rendering AdminDashboard for role:", activeRole);
     return <AdminDashboard activeTab={activeTab} />;
   }
@@ -129,7 +129,7 @@ export const getDashboardComponentByUserProfile = (
     return <EntrepreneurDashboard activeTab={activeTab} />;
   }
   
-  if (activeRole === 'retiree' || activeRole === 'retiree_advocate') {
+  if (activeRole === 'candidate' || activeRole === 'retiree_advocate') {
     console.log("Rendering RetireeDashboard for role:", activeRole);
     return <RetireeDashboard activeTab={activeTab} />;
   }
@@ -183,7 +183,7 @@ export const getDashboardComponentByUserProfile = (
       return <EducationalInstitutionDashboard activeTab={activeTab} />;
     }
     
-    if (user.email.includes('retiree')) {
+    if (user.email.includes('candidate')) {
       console.log("Email-based fallback: RetireeDashboard");
       return <RetireeDashboard activeTab={activeTab} />;
     }

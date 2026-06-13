@@ -38,14 +38,14 @@ const MessagesPage: React.FC = () => {
   const { user } = useAuth();
 
   // Redirect Recruiters to their Dashboard
-  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'hr_recruiter' || user?.user_type === 'hr_recruiter') {
+  if (user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.role === 'recruiter' || user?.user_type === 'recruiter') {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversationId') || params.get('conversation');
     return <Navigate to={`/recruiter?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`} replace />;
   }
 
   // Redirect HR Managers to their Dashboard
-  if (user?.role === 'hr_manager' || user?.user_type === 'hr_manager' || user?.role === 'hr' || user?.user_type === 'hr') {
+  if (user?.role === 'employer_admin' || user?.user_type === 'employer_admin' || user?.role === 'employer_admin' || user?.user_type === 'employer_admin') {
     const params = new URLSearchParams(window.location.search);
     const conversationId = params.get('conversationId') || params.get('conversation');
     return <Navigate to={`/hr-dashboard?tab=messages${conversationId ? `&conversationId=${conversationId}` : ''}`} replace />;
@@ -330,7 +330,7 @@ const MessagesPage: React.FC = () => {
     switch (role) {
       case 'recruiter': return <Briefcase className="h-3 w-3" />;
       case 'mentor': return <Star className="h-3 w-3" />;
-      case 'employer': return <Building className="h-3 w-3" />;
+      case 'employer_admin': return <Building className="h-3 w-3" />;
       default: return <User className="h-3 w-3" />;
     }
   };
@@ -339,7 +339,7 @@ const MessagesPage: React.FC = () => {
     switch (role) {
       case 'recruiter': return 'bg-blue-100 text-blue-800';
       case 'mentor': return 'bg-purple-100 text-purple-800';
-      case 'employer': return 'bg-green-100 text-green-800';
+      case 'employer_admin': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };

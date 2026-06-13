@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 
 // Create mock functions at module scope
 const mockSignOut = vi.fn().mockResolvedValue(undefined);
-const mockGetUserRole = vi.fn(() => 'job_seeker');
+const mockGetUserRole = vi.fn(() => 'candidate');
 const mockSwitchRole = vi.fn();
 
 // Mock useAuth
@@ -104,7 +104,7 @@ describe('UserMenu', () => {
         id: 1,
         email: 'ahmed@example.com',
         full_name: 'Ahmed Al Maktoum',
-        user_type: 'job_seeker',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
     }));
@@ -124,7 +124,7 @@ describe('UserMenu', () => {
         id: 1,
         email: 'fatima@example.com',
         full_name: 'Fatima Bin Rashid',
-        user_type: 'job_seeker',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
     }));
@@ -140,7 +140,7 @@ describe('UserMenu', () => {
         id: 1,
         email: 'test@example.com',
         full_name: 'Test User',
-        user_type: 'job_seeker',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
     }));
@@ -169,7 +169,7 @@ describe('UserMenu', () => {
         id: 1,
         email: 'test@example.com',
         full_name: 'Test User',
-        user_type: 'job_seeker',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
     }));
@@ -193,7 +193,7 @@ describe('UserMenu', () => {
         id: 1,
         email: 'test@example.com',
         full_name: 'Test User',
-        user_type: 'job_seeker',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
     }));
@@ -225,7 +225,7 @@ describe('UserMenu', () => {
         id: 1,
         email: 'test@example.com',
         full_name: 'Test User',
-        user_type: 'job_seeker',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
     }));
@@ -249,10 +249,10 @@ describe('UserMenu', () => {
       user: {
         id: 1,
         email: 'zayed@example.com',
-        user_type: 'student',
+        user_type: 'candidate',
       },
       isAuthenticated: true,
-      getUserRole: () => 'student',
+      getUserRole: () => 'candidate',
     }));
 
     renderUserMenu();

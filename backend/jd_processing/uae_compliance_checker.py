@@ -55,7 +55,7 @@ class UAEComplianceChecker:
                 'language_requirements': ['Arabic preferred', 'English required'],
                 'compliance_notes': 'Banking sector has specific Emiratization targets'
             },
-            'government': {
+            'compliance_auditor': {
                 'emiratization_quota': 100.0,  # Government positions prioritize UAE nationals
                 'required_certifications': ['Government clearance', 'Security clearance'],
                 'language_requirements': ['Arabic required', 'English required'],
@@ -119,7 +119,7 @@ class UAEComplianceChecker:
     def _load_sector_specific_rules(self) -> Dict[str, Dict[str, Any]]:
         """Load sector-specific compliance rules"""
         return {
-            'government': {
+            'compliance_auditor': {
                 'nationality_requirement': 'UAE nationals strongly preferred',
                 'security_clearance': 'Required for most positions',
                 'arabic_proficiency': 'Required',
@@ -613,7 +613,7 @@ class UAEComplianceChecker:
     def _assess_risk_level(self, score: float, sector: str) -> str:
         """Assess compliance risk level"""
         # Government and banking sectors have higher compliance requirements
-        high_risk_sectors = ['government', 'banking_finance']
+        high_risk_sectors = ['compliance_auditor', 'banking_finance']
         
         if sector in high_risk_sectors:
             if score < 70:

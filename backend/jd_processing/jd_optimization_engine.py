@@ -188,7 +188,7 @@ class JDOptimizationEngine:
                 'language_style': 'Professional and caring',
                 'must_include': ['Licensing requirements', 'Patient care focus', 'Medical standards']
             },
-            'government': {
+            'compliance_auditor': {
                 'key_elements': ['Public service', 'National development', 'Policy implementation'],
                 'optimization_focus': ['National impact', 'Public service', 'Career stability'],
                 'language_style': 'Formal and service-oriented',

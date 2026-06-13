@@ -653,7 +653,7 @@ def csv_process(company_id):
                     if not user and email:
                         cur.execute("""
                             INSERT INTO users (full_name, email, phone, user_type, created_at)
-                            VALUES (%s, %s, %s, 'job_seeker', NOW())
+                            VALUES (%s, %s, %s, 'candidate', NOW())
                             RETURNING id
                         """, (name, email, row.get(reverse_mapping.get('phone', ''), '')))
                         user = cur.fetchone()

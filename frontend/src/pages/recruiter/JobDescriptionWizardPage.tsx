@@ -81,7 +81,7 @@ const JobDescriptionWizardPage: React.FC = () => {
   const handleComplete = (jdId: string) => {
     console.log('JD created successfully:', jdId);
     const role = getUserRole();
-    if (role === 'hr_manager' || role === 'hr') {
+    if (role === 'employer_admin' || role === 'employer_admin') {
       navigate('/hr-dashboard?tab=positions');
     } else {
       navigate('/recruiter?tab=jobs');
@@ -90,7 +90,7 @@ const JobDescriptionWizardPage: React.FC = () => {
 
   const handleCancel = () => {
     const role = getUserRole();
-    if (role === 'hr_manager' || role === 'hr') {
+    if (role === 'employer_admin' || role === 'employer_admin') {
       navigate('/hr-dashboard?tab=positions');
     } else {
       navigate('/recruiter?tab=jobs');

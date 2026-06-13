@@ -40,7 +40,7 @@ describe('authService', () => {
     });
 
     test('contains job_seeker role', () => {
-      const jobSeeker = AVAILABLE_ROLES.find(r => r.id === 'job_seeker');
+      const jobSeeker = AVAILABLE_ROLES.find(r => r.id === 'candidate');
       expect(jobSeeker).toBeDefined();
       expect(jobSeeker!.name).toBe('Job Seeker');
       expect(jobSeeker!.dashboard).toBe('/candidate-dashboard');
@@ -53,24 +53,24 @@ describe('authService', () => {
     });
 
     test('contains student role', () => {
-      const student = AVAILABLE_ROLES.find(r => r.id === 'student');
+      const student = AVAILABLE_ROLES.find(r => r.id === 'candidate');
       expect(student).toBeDefined();
       expect(student!.name).toBe('Student');
       expect(student!.dashboard).toBe('/student-dashboard');
     });
 
     test('contains hr_manager role', () => {
-      const hr = AVAILABLE_ROLES.find(r => r.id === 'hr_manager');
+      const hr = AVAILABLE_ROLES.find(r => r.id === 'employer_admin');
       expect(hr).toBeDefined();
       expect(hr!.name).toBe('HR Manager');
     });
 
     test('contains educator, mentor, assessor, guardian roles', () => {
       const roleIds = AVAILABLE_ROLES.map(r => r.id);
-      expect(roleIds).toContain('educator');
+      expect(roleIds).toContain('training_provider');
       expect(roleIds).toContain('mentor');
       expect(roleIds).toContain('assessor');
-      expect(roleIds).toContain('guardian');
+      expect(roleIds).toContain('parent');
     });
 
     test('each role has id, name, description, and dashboard', () => {
@@ -108,7 +108,7 @@ describe('authService', () => {
     });
 
     test('returns parsed user object from localStorage', () => {
-      const mockUser = { id: 1, email: 'test@test.com', user_type: 'job_seeker' };
+      const mockUser = { id: 1, email: 'test@test.com', user_type: 'candidate' };
       localStorage.setItem('user', JSON.stringify(mockUser));
       expect(authService.getUser()).toEqual(mockUser);
     });
@@ -172,20 +172,20 @@ describe('authService', () => {
       localStorage.setItem('user', JSON.stringify({
         id: 1,
         email: 'test@test.com',
-        roles: ['hr_manager'],
+        roles: ['employer_admin'],
       }));
       const role = await authService.getUserRole();
-      expect(role).toBe('hr_manager');
+      expect(role).toBe('employer_admin');
     });
 
     test('returns role from stored user with user_type field', async () => {
       localStorage.setItem('user', JSON.stringify({
         id: 1,
         email: 'test@test.com',
-        user_type: 'student',
+        user_type: 'candidate',
       }));
       const role = await authService.getUserRole();
-      expect(role).toBe('student');
+      expect(role).toBe('candidate');
     });
 
     test('returns null when no user data exists', async () => {
@@ -197,7 +197,7 @@ describe('authService', () => {
 
   describe('getRoleMetadata', () => {
     test('returns metadata for valid role id', () => {
-      const metadata = authService.getRoleMetadata('job_seeker');
+      const metadata = authService.getRoleMetadata('candidate');
       expect(metadata).toBeDefined();
       expect(metadata!.name).toBe('Job Seeker');
     });
@@ -230,7 +230,7 @@ describe('authService', () => {
       localStorage.setItem('user', JSON.stringify({
         id: 1,
         email: 'test@test.com',
-        user_type: 'student',
+        user_type: 'candidate',
       }));
       const result = await authService.hasRole('recruiter');
       expect(result).toBe(false);

@@ -13,7 +13,7 @@ interface Persona {
 
 const personas: Persona[] = [
   {
-    id: 'student',
+    id: 'candidate',
     title: 'Educational Institution',
     description: 'Register your institution, upload student grades, and list scholarship opportunities and summer camps.',
     icon: <GraduationCap size={24} />,
@@ -34,14 +34,14 @@ const personas: Persona[] = [
     color: 'bg-purple-50 text-purple-600'
   },
   {
-    id: 'government',
+    id: 'compliance_auditor',
     title: 'Government Representatives',
     description: 'Manage national initiatives like Nafis and monitor Emiratization compliance across the private sector.',
     icon: <LineChart size={24} />,
     color: 'bg-red-50 text-red-600'
   },
   {
-    id: 'retiree',
+    id: 'candidate',
     title: 'Retiree Advocates',
     description: 'Engage retirees in community roles, share expertise, and organize legacy or volunteer projects.',
     icon: <Heart size={24} />,

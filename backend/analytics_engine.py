@@ -608,7 +608,7 @@ class EnhancedAnalyticsEngine:
     def _get_sector_distribution(self) -> Dict[str, Any]:
         """Get sector distribution analytics"""
         return {
-            'government': 42.5,
+            'compliance_auditor': 42.5,
             'banking_finance': 18.3,
             'healthcare': 12.7,
             'education': 10.2,

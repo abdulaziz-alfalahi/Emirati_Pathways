@@ -430,8 +430,8 @@ def get_profile():
             # Default Job Seeker role for UAE Nationals
             nationality = (user_data.get('nationality') or '').upper()
             if nationality in ['UAE', 'AE', 'UNITED ARAB EMIRATES']:
-                if 'job_seeker' not in raw_secondary and user_data.get('role') != 'job_seeker':
-                    raw_secondary.append('job_seeker')
+                if 'candidate' not in raw_secondary and user_data.get('role') != 'candidate':
+                    raw_secondary.append('candidate')
             
             profile_data['secondary_roles'] = raw_secondary
             profile_data['id'] = user_data.get('id')
@@ -653,9 +653,9 @@ def get_user_roles():
         roles_data = {
             'user_id': str(user_data['id']),
             'email': user_data['email'],
-            'role': user_data.get('role', 'job_seeker'),
-            'user_type': user_data.get('role', 'job_seeker'),
-            'permissions': get_role_permissions(user_data.get('role', 'job_seeker')),
+            'role': user_data.get('role', 'candidate'),
+            'user_type': user_data.get('role', 'candidate'),
+            'permissions': get_role_permissions(user_data.get('role', 'candidate')),
             'secondary_roles': user_data.get('secondary_roles', []),
             'is_active': user_data.get('is_active', True),
             'is_verified': user_data.get('is_verified', False)
@@ -721,7 +721,7 @@ def update_user_roles():
 def get_role_permissions(role: str) -> list:
     """Get permissions for a given role"""
     role_permissions = {
-        'job_seeker': [
+        'candidate': [
             'view_dashboard',
             'upload_cv',
             'apply_jobs',
@@ -729,7 +729,7 @@ def get_role_permissions(role: str) -> list:
             'edit_profile',
             'view_analytics'
         ],
-        'hr_manager': [
+        'employer_admin': [
             'view_dashboard',
             'view_candidates',
             'post_jobs',
@@ -738,7 +738,7 @@ def get_role_permissions(role: str) -> list:
             'conduct_interviews',
             'manage_team'
         ],
-        'hr_recruiter': [
+        'recruiter': [
             'view_dashboard',
             'view_candidates',
             'post_jobs',
@@ -754,7 +754,7 @@ def get_role_permissions(role: str) -> list:
             'view_analytics',
             'conduct_interviews'
         ],
-        'educator': [
+        'training_provider': [
             'view_dashboard',
             'manage_curriculum',
             'track_students',
@@ -781,7 +781,7 @@ def get_role_permissions(role: str) -> list:
             'manage_growth',
             'view_analytics'
         ],
-        'growth_operator_education': [
+        'education_operator': [
             'view_dashboard',
             'roles.approve_requests',
             'manage_institutions',
@@ -789,21 +789,21 @@ def get_role_permissions(role: str) -> list:
             'onboard_education',
             'view_analytics'
         ],
-        'growth_operator_company': [
+        'employer_relations': [
             'view_dashboard',
             'roles.approve_requests',
             'manage_companies',
             'onboard_employers',
             'view_analytics'
         ],
-        'growth_operator_mentorship': [
+        'mentorship_operator': [
             'view_dashboard',
             'roles.approve_requests',
             'manage_mentorship',
             'onboard_mentors',
             'view_analytics'
         ],
-        'growth_operator_assessment': [
+        'assessment_operator': [
             'view_dashboard',
             'roles.approve_requests',
             'manage_assessments',
@@ -818,7 +818,7 @@ def get_role_permissions(role: str) -> list:
             'system_configuration',
             'roles.approve_requests'
         ],
-        'administrator': [ # Alias for admin
+        'admin': [ # Alias for admin
             'view_dashboard',
             'manage_users',
             'manage_system',
@@ -826,7 +826,7 @@ def get_role_permissions(role: str) -> list:
             'system_configuration',
             'roles.approve_requests'
         ],
-        'nafis_talent_operator': [
+        'talent_operator': [
             'view_dashboard',
             'bulk_import_candidates',
             'manage_nafis_sync',
@@ -860,7 +860,7 @@ def get_role_permissions(role: str) -> list:
             'manage_community_events',
             'view_analytics'
         ],
-        'operations_monitor': [
+        'platform_operator': [
             'view_dashboard',
             'view_operations_center',
             'view_all_analytics',
@@ -873,7 +873,7 @@ def get_role_permissions(role: str) -> list:
         ]
     }
     
-    return role_permissions.get(role, role_permissions['job_seeker'])
+    return role_permissions.get(role, role_permissions['candidate'])
 
 # Error handlers
 @auth_bp.errorhandler(400)

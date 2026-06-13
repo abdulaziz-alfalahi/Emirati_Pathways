@@ -483,6 +483,7 @@ _additional_blueprints = [
     ('backend.education_api_routes', 'education_bp', None, 'Education API'),
     ('backend.career_services_routes', 'career_services_bp', None, 'Career Services'),
     ('backend.operations_routes', 'operations_bp', None, 'Operations Monitoring'),
+    ('backend.demographics_routes', 'demographics_bp', None, 'Demographics Analytics'),
     ('backend.skills_development_routes', 'skills_dev_bp', None, 'Skills & Development'),
     ('backend.community_mentorship_routes', 'community_mentorship_bp', None, 'Community & Mentorship'),
     ('backend.mentor_routes', 'mentor_bp', None, 'Mentor System'),
@@ -512,6 +513,7 @@ _additional_blueprints = [
     ('backend.recruiter.mentorship_routes', 'mentorship_bp', None, 'Recruiter Mentorship'),
     ('backend.routes.user_activity_api', 'user_activity_bp', None, 'User Activity'),
     ('backend.recruiter.analytics_routes', 'analytics_bp', '/api/recruiter', 'Recruiter Analytics'),
+    ('backend.routes.strategic_metrics_api', 'strategic_metrics_bp', None, 'Strategic Metrics'),
 ]
 
 for module_path, bp_name, url_prefix, label in _additional_blueprints:

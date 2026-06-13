@@ -63,7 +63,7 @@ class CandidateSearchEngine:
             LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
         """
         
-        where_conditions = ["u.role = 'job_seeker'"]
+        where_conditions = ["u.role = 'candidate'"]
         params = []
         joins = []
         
@@ -436,7 +436,7 @@ def search_candidates():
                 logger.error(f"Traceback: {traceback.format_exc()}")
                 return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
         
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
         
@@ -566,7 +566,7 @@ def get_candidate_details(candidate_id):
         user_role = claims.get('role', '') if claims else ''
         
         # Accept multiple role names for HR/Recruiter access
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({
                 'success': False, 
@@ -587,7 +587,7 @@ def get_candidate_details(candidate_id):
                     MAX(u.last_login) as last_activity
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.id = %s AND u.role = 'job_seeker'
+                WHERE u.id = %s AND u.role = 'candidate'
                 GROUP BY u.id
             """, (candidate_id,))
             
@@ -681,7 +681,7 @@ def match_candidates_to_job(job_id):
         current_user_id = get_jwt_identity()
         claims = get_jwt()
         user_role = claims.get('role', '') if claims else ''
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({'success': False, 'message': f'Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}'}), 403
         
@@ -736,7 +736,7 @@ def match_candidates_to_job(job_id):
                     COUNT(DISTINCT ja.id) as total_applications
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.role = 'job_seeker' AND u.is_active = true
+                WHERE u.role = 'candidate' AND u.is_active = true
                 GROUP BY u.id
                 ORDER BY u.last_login DESC NULLS LAST
                 LIMIT 100
@@ -821,7 +821,7 @@ def get_filter_options():
         user_role = claims.get('role', '') if claims else ''
         
         # Accept multiple role names for HR/Recruiter access
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({
                 'success': False, 
@@ -836,19 +836,19 @@ def get_filter_options():
             filter_options = {}
             
             # Emirates
-            cursor.execute("SELECT DISTINCT emirate FROM users WHERE role = 'job_seeker' AND emirate IS NOT NULL ORDER BY emirate")
+            cursor.execute("SELECT DISTINCT emirate FROM users WHERE role = 'candidate' AND emirate IS NOT NULL ORDER BY emirate")
             filter_options['emirates'] = [row['emirate'] for row in cursor.fetchall()]
             
             # Nationalities
-            cursor.execute("SELECT DISTINCT nationality FROM users WHERE role = 'job_seeker' AND nationality IS NOT NULL ORDER BY nationality")
+            cursor.execute("SELECT DISTINCT nationality FROM users WHERE role = 'candidate' AND nationality IS NOT NULL ORDER BY nationality")
             filter_options['nationalities'] = [row['nationality'] for row in cursor.fetchall()]
             
             # Education levels
-            cursor.execute("SELECT DISTINCT education_level FROM users WHERE role = 'job_seeker' AND education_level IS NOT NULL ORDER BY education_level")
+            cursor.execute("SELECT DISTINCT education_level FROM users WHERE role = 'candidate' AND education_level IS NOT NULL ORDER BY education_level")
             filter_options['education_levels'] = [row['education_level'] for row in cursor.fetchall()]
             
             # Experience ranges
-            cursor.execute("SELECT MIN(experience_years) as min_exp, MAX(experience_years) as max_exp FROM users WHERE role = 'job_seeker'")
+            cursor.execute("SELECT MIN(experience_years) as min_exp, MAX(experience_years) as max_exp FROM users WHERE role = 'candidate'")
             exp_range = cursor.fetchone()
             filter_options['experience_range'] = {
                 'min': exp_range['min_exp'] or 0,
@@ -859,7 +859,7 @@ def get_filter_options():
             cursor.execute("""
                 SELECT unnest(skills) as skill, COUNT(*) as skill_count
                 FROM users 
-                WHERE role = 'job_seeker' AND skills IS NOT NULL
+                WHERE role = 'candidate' AND skills IS NOT NULL
                 GROUP BY skill
                 ORDER BY skill_count DESC
                 LIMIT 20
@@ -874,7 +874,7 @@ def get_filter_options():
                     AVG(preferred_salary_min) as avg_min_salary,
                     AVG(preferred_salary_max) as avg_max_salary
                 FROM users 
-                WHERE role = 'job_seeker' AND preferred_salary_min IS NOT NULL
+                WHERE role = 'candidate' AND preferred_salary_min IS NOT NULL
             """)
             salary_stats = cursor.fetchone()
             filter_options['salary_ranges'] = {

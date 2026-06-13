@@ -86,7 +86,7 @@ class UAEMatchingCriteria:
         self.emirates_data = {
             EmirateType.ABU_DHABI: {
                 'population': 3100000,
-                'economic_focus': ['oil_gas', 'government', 'finance', 'tourism', 'renewable_energy'],
+                'economic_focus': ['oil_gas', 'compliance_auditor', 'finance', 'tourism', 'renewable_energy'],
                 'major_employers': ['ADNOC', 'Mubadala', 'ADIA', 'Government Entities'],
                 'business_districts': ['Downtown', 'Al Reem Island', 'Yas Island', 'Saadiyat Island'],
                 'cost_of_living_index': 85,
@@ -233,7 +233,7 @@ class UAEMatchingCriteria:
                 'arabic_importance': 0.5,
                 'cultural_sensitivity_importance': 0.9
             },
-            'government': {
+            'compliance_auditor': {
                 'priority': IndustryPriority.CRITICAL,
                 'growth_rate': 'stable',
                 'demand_level': 'medium',

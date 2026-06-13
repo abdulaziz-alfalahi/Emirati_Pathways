@@ -27,7 +27,7 @@ const ContentManagementPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<ContentType | 'all'>('all');
 
   // Check if user has admin permissions
-  const isAuthorized = hasRole('administrator') || hasRole('super_user');
+  const isAuthorized = hasRole('admin') || hasRole('super_user');
 
   useEffect(() => {
     if (!user) return;

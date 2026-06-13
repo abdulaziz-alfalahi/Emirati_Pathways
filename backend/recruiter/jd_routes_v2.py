@@ -658,7 +658,7 @@ def match_candidates(jd_id):
         data = request.get_json()
         
         # Get employment status filter
-        employment_status_filter = data.get('employment_status_filter')  # 'employed', 'job_seeker', 'open_to_opportunities', or None
+        employment_status_filter = data.get('employment_status_filter')  # 'employed', 'candidate', 'open_to_opportunities', or None
         top_n = data.get('top_n', 10)
         
         with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
@@ -751,7 +751,7 @@ def match_candidates(jd_id):
                 NULL as cv_url,
                 NULL as linkedin_url
             FROM users
-            WHERE role = 'job_seeker'
+            WHERE role = 'candidate'
                 AND is_active = true
                 AND is_visible = true
         """
@@ -765,8 +765,8 @@ def match_candidates(jd_id):
         
         # G22/G23: Employment status filter for Stealth Headhunter
         if employment_status_filter and employment_status_filter.lower() != 'all':
-            if employment_status_filter.lower() == 'job_seeker':
-                query += " AND employment_status = 'job_seeker'"
+            if employment_status_filter.lower() == 'candidate':
+                query += " AND employment_status = 'candidate'"
             elif employment_status_filter.lower() == 'employed_open':
                 query += " AND employment_status = 'employed_open'"
                 query += " AND available_for_recruitment = true"

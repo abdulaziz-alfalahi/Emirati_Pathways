@@ -535,31 +535,31 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     }
 
     // Navigation Logic
-    const isAdmin = user?.role === 'admin' || user?.role === 'administrator';
-    const isRecruiter = user?.role === 'recruiter' || user?.role === 'hr_recruiter' || user?.user_type === 'recruiter' || user?.user_type === 'hr_recruiter';
-    const isHRManager = user?.role === 'hr_manager' || user?.role === 'hr' || user?.user_type === 'hr_manager' || user?.user_type === 'hr';
+    const isAdmin = user?.role === 'admin' || user?.role === 'admin';
+    const isRecruiter = user?.role === 'recruiter' || user?.role === 'recruiter' || user?.user_type === 'recruiter' || user?.user_type === 'recruiter';
+    const isHRManager = user?.role === 'employer_admin' || user?.role === 'employer_admin' || user?.user_type === 'employer_admin' || user?.user_type === 'employer_admin';
     const userRole = user?.role || user?.user_type || '';
 
     // Operator role → dashboard path mapping
     // Use centralized map and add local-only entries not in ROLE_DASHBOARD_MAP
     const operatorDashboardMap: Record<string, string> = {
       'mentor': '/mentor-dashboard',
-      'educator': '/educator-dashboard',
+      'training_provider': '/educator-dashboard',
       'assessor': '/assessor-dashboard',
       'growth_operator': '/growth-operator-dashboard',
-      'growth_operator_candidate': '/growth-operator-dashboard',
-      'growth_operator_company': '/growth-operator-dashboard',
-      'growth_operator_education': '/growth-operator-dashboard',
-      'growth_operator_assessment': '/growth-operator-dashboard',
-      'growth_operator_mentorship': '/growth-operator-dashboard',
-      'growth_operator_community': '/growth-operator-dashboard',
-      'growth_operator_monitoring': '/growth-operator-dashboard',
+      'talent_operator': '/growth-operator-dashboard',
+      'employer_relations': '/growth-operator-dashboard',
+      'education_operator': '/growth-operator-dashboard',
+      'assessment_operator': '/growth-operator-dashboard',
+      'mentorship_operator': '/growth-operator-dashboard',
+      'community_operator': '/growth-operator-dashboard',
+      'platform_operator': '/growth-operator-dashboard',
       'operator': '/growth-operator-dashboard',
       'call_center_agent': '/call-center-dashboard',
       'advisor': '/advisor-dashboard',
       'coach': '/coach-dashboard',
       'internship_coordinator': '/internship-coordinator-dashboard',
-      'training_center_rep': '/training-center-dashboard',
+      'training_provider': '/training-center-dashboard',
     };
     // Fallback: any growth_operator_* sub-role not in the map → growth-operator-dashboard
     const operatorDashboard = operatorDashboardMap[userRole]
@@ -629,7 +629,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
         text.includes('live chat') || text.includes('ticket');
 
       if (isFeedback) {
-        if (user?.role === 'admin' || user?.role === 'administrator') {
+        if (user?.role === 'admin' || user?.role === 'admin') {
           navigate('/admin-dashboard?tab=feedback');
         } else {
           // New logic: Trigger Feedback Widget via Deep Link

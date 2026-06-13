@@ -26,7 +26,7 @@ const ScholarshipsFilter: React.FC<ScholarshipsFilterProps> = ({
   searchQuery
 }) => {
   const providerTypes = [
-    { id: 'government', label: 'Government' },
+    { id: 'compliance_auditor', label: 'Government' },
     { id: 'university', label: 'University' },
     { id: 'private_sector', label: 'Private Sector' }
   ];

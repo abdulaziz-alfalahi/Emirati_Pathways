@@ -55,7 +55,7 @@ const ServiceCards: React.FC = () => {
     icon: <Compass size={24} />,
     path: '/job-matching'
   }, {
-    id: 'retiree',
+    id: 'candidate',
     title: 'Retiree Services',
     description: 'Access specialized services and opportunities designed to support UAE citizens during their retirement journey.',
     icon: <Briefcase size={24} />,

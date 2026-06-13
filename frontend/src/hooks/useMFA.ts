@@ -22,7 +22,7 @@ export const useMFA = () => {
 
   // Determine MFA requirement based on user roles
   const getMFARequirement = useCallback((): MFARequirement => {
-    const adminRoles = ['administrator', 'super_user', 'platform_operator'];
+    const adminRoles = ['admin', 'super_user', 'platform_operator'];
     const sensitiveRoles = ['training_center', 'assessment_center', 'recruiter'];
     
     if (roles.some(role => adminRoles.includes(role))) {

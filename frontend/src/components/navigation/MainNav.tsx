@@ -89,7 +89,7 @@ const MainNav: React.FC<MainNavProps> = ({ navGroups }) => {
                         'Analytics': 'analytics',
                         'Financial Planning': 'financialPlanning',
                         'Thought Leadership': 'thoughtLeadership',
-                        'Retiree Services': 'retiree'
+                        'Retiree Services': 'candidate'
                       };
                       return nameToKeyMap[itemName] || itemName.toLowerCase().replace(/\s+/g, '');
                     };

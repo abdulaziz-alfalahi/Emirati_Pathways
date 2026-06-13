@@ -54,12 +54,12 @@ const RecruiterJobs: React.FC = () => {
   const userType = user.user_type || user.role || '';
 
   // Check if user is HR Manager (to unify theme)
-  const isHrManager = userType === 'hr_manager' || (roles && (roles.includes('hr_manager') || roles.includes('hr')));
+  const isHrManager = userType === 'employer_admin' || (roles && (roles.includes('employer_admin') || roles.includes('employer_admin')));
 
   const isRecruiter = (roles && (roles.includes('private_sector_recruiter') || roles.includes('recruiter'))) ||
     userType === 'recruiter' ||
-    userType === 'hr_manager' ||
-    userType === 'hr_recruiter' ||
+    userType === 'employer_admin' ||
+    userType === 'recruiter' ||
     (user?.email && user.email.includes('recruit'));
 
   // Redirect to dashboard if not a recruiter

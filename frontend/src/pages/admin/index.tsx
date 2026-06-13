@@ -274,7 +274,7 @@ const AdminDashboard: React.FC = () => {
       case 'admin': return 'bg-red-100 text-red-800';
       case 'recruiter': return 'bg-blue-100 text-blue-800';
       case 'mentor': return 'bg-purple-100 text-purple-800';
-      case 'employer': return 'bg-green-100 text-green-800';
+      case 'employer_admin': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -579,7 +579,7 @@ const AdminDashboard: React.FC = () => {
                       <SelectItem value="candidate">Candidate</SelectItem>
                       <SelectItem value="recruiter">Recruiter</SelectItem>
                       <SelectItem value="mentor">Mentor</SelectItem>
-                      <SelectItem value="employer">Employer</SelectItem>
+                      <SelectItem value='employer_admin'>Employer</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>

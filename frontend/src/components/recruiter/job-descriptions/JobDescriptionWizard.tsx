@@ -1308,7 +1308,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               </SelectTrigger>
               <SelectContent className="z-[1000]">
                 <SelectItem value="all">All Candidates</SelectItem>
-                <SelectItem value="job_seeker">Job Seekers Only</SelectItem>
+                <SelectItem value='candidate'>Job Seekers Only</SelectItem>
                 <SelectItem value="employed">Currently Employed</SelectItem>
                 <SelectItem value="open_to_opportunities">Open to Opportunities</SelectItem>
               </SelectContent>

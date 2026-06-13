@@ -174,7 +174,7 @@ def send_notification():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         data = request.get_json()
@@ -250,7 +250,7 @@ def broadcast_notification():
             return jsonify({'error': 'Invalid notification type'}), 400
         
         notification_system = get_notification_system()
-        persona_types = data.get('persona_types', ['job_seeker', 'hr_recruiter', 'mentor', 'educator'])
+        persona_types = data.get('persona_types', ['candidate', 'recruiter', 'mentor', 'training_provider'])
         
         # Broadcast to specified personas
         for persona_type in persona_types:
@@ -396,7 +396,7 @@ def send_job_application_update():
         claims = get_jwt()
         sender_type = claims.get('user_type', '')
         
-        if sender_type not in ['hr_recruiter', 'admin']:
+        if sender_type not in ['recruiter', 'admin']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         data = request.get_json()
@@ -432,7 +432,7 @@ def send_job_alert():
         claims = get_jwt()
         sender_type = claims.get('user_type', '')
         
-        if sender_type not in ['hr_recruiter', 'admin']:
+        if sender_type not in ['recruiter', 'admin']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         data = request.get_json()

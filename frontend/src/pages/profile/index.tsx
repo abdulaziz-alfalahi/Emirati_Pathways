@@ -22,7 +22,7 @@ const ProfilePage = () => {
     }
 
     // Redirect candidates to new Profile Studio
-    if (!isLoading && user && ['job_seeker', 'candidate', 'student'].includes((user.role || '').toLowerCase())) {
+    if (!isLoading && user && ['candidate', 'candidate', 'candidate'].includes((user.role || '').toLowerCase())) {
       navigate('/candidate/profile/identity');
     }
   }, [user, isLoading, navigate]);

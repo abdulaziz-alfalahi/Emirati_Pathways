@@ -294,7 +294,7 @@ def get_user_statistics():
             'users_by_role': {
                 'candidate': 850,
                 'recruiter': 120,
-                'hr_manager': 45,
+                'employer_admin': 45,
                 'growth_operator': 15,
                 'platform_administrator': 5,
                 'mentor': 42,

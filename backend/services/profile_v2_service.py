@@ -251,7 +251,7 @@ class ProfileV2Service:
                 'Healthcare': ['medical', 'nurse', 'doctor', 'health', 'clinic', 'pharmacy'],
                 'Education': ['teacher', 'professor', 'school', 'university', 'academic', 'training'],
                 'Construction': ['construction', 'civil', 'architect', 'site', 'engineering'],
-                'Government': ['government', 'public', 'ministry', 'municipality', 'federal'],
+                'Government': ['compliance_auditor', 'public', 'ministry', 'municipality', 'federal'],
                 'Tourism': ['hotel', 'tourism', 'hospitality', 'travel', 'events']
             }
             

@@ -37,7 +37,7 @@ export const useSecurity = () => {
 
   // Check if user has admin privileges for security monitoring
   const canAccessSecurityData = roles.some(role => 
-    ['administrator', 'super_user', 'platform_operator'].includes(role)
+    ['admin', 'super_user', 'platform_operator'].includes(role)
   );
 
   // Log security event

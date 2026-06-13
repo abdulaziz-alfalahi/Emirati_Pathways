@@ -555,7 +555,7 @@ def ensure_feedback_table_exist():
                 {
                     'id': '101',
                     'user_id': 'student_01',
-                    'role': 'student',
+                    'role': 'candidate',
                     'type': 'bug',
                     'status': 'open',
                     'message': 'Cannot upload PDF resume in CV builder. It says "Invalid format" even for .pdf files.',
@@ -577,7 +577,7 @@ def ensure_feedback_table_exist():
                 {
                     'id': '103',
                     'user_id': 'student_22',
-                    'role': 'student',
+                    'role': 'candidate',
                     'type': 'general',
                     'status': 'resolved',
                     'message': 'The new dashboard layout is much cleaner and easier to use. Thanks!',
@@ -610,7 +610,7 @@ def ensure_feedback_table_exist():
                 {
                     'id': '106',
                     'user_id': 'student_88',
-                    'role': 'student',
+                    'role': 'candidate',
                     'type': 'general',
                     'status': 'open',
                     'message': 'Found a typo in the Arabic translation of the "Career Path" section.',
@@ -621,7 +621,7 @@ def ensure_feedback_table_exist():
                 {
                     'id': '107',
                     'user_id': 'u971545515515.359acd61@emirati-pathway.temp',
-                    'role': 'student',
+                    'role': 'candidate',
                     'type': 'bug',
                     'status': 'open',
                     'message': 'Unable to save profile changes when internet connection is unstable.',
@@ -632,7 +632,7 @@ def ensure_feedback_table_exist():
                 {
                     'id': '108',
                     'user_id': 'u971545515515.359acd61@emirati-pathway.temp',
-                    'role': 'student',
+                    'role': 'candidate',
                     'type': 'feature',
                     'status': 'pending',
                     'message': 'Requesting dark mode support for the mobile view.',
@@ -856,9 +856,9 @@ def update_feedback_status(feedback_id):
                     # Determine role-based link
                     user_role = feedback_item.get('role', 'candidate')
                     base_url = '/candidate-dashboard'
-                    if user_role in ['recruiter', 'hr_recruiter', 'employer']:
+                    if user_role in ['recruiter', 'recruiter', 'employer_admin']:
                         base_url = '/recruiter-dashboard'
-                    elif user_role in ['admin', 'administrator']:
+                    elif user_role in ['admin', 'admin']:
                         base_url = '/admin-dashboard'
                         
                     target_link = f"{base_url}?action=feedback_history"

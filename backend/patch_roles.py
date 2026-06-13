@@ -38,7 +38,7 @@ def patch_roles():
         print("✅ Roles patched successfully!")
         
         # Verify
-        cursor.execute("SELECT name FROM admin_roles WHERE name IN ('hr_manager', 'guardian', 'recruiter')")
+        cursor.execute("SELECT name FROM admin_roles WHERE name IN ('employer_admin', 'parent', 'recruiter')")
         found = [row[0] for row in cursor.fetchall()]
         print(f"🔎 Found roles in DB: {found}")
         

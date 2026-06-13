@@ -265,7 +265,7 @@ class TestUAEPassLoginSimulation:
         email = email or self.TEST_EMAIL
         cur.execute("""
             INSERT INTO users (id, email, first_name, last_name, role, uaepass_uuid)
-            VALUES (%s, %s, 'Test', 'EID', 'job_seeker', %s)
+            VALUES (%s, %s, 'Test', 'EID', 'candidate', %s)
             ON CONFLICT (id) DO NOTHING
         """, (eid, email, uaepass_uuid))
 

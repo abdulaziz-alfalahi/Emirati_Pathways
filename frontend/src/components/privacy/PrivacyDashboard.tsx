@@ -54,7 +54,7 @@ export const PrivacyDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // G22/G23: Employment Status state
-  const [employmentStatus, setEmploymentStatus] = useState('job_seeker');
+  const [employmentStatus, setEmploymentStatus] = useState('candidate');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   const { user } = useAuth();
@@ -257,7 +257,7 @@ export const PrivacyDashboard: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {([
-            { value: 'job_seeker', label: 'Active Job Seeker', desc: 'Actively looking for new opportunities' },
+            { value: 'candidate', label: 'Active Job Seeker', desc: 'Actively looking for new opportunities' },
             { value: 'employed_open', label: 'Open to Opportunities', desc: 'Currently employed but open to hearing from recruiters' },
             { value: 'employed_not_looking', label: 'Not Looking', desc: 'Currently employed and not interested in new roles' },
             { value: 'freelancer', label: 'Freelancer', desc: 'Available for contract or freelance work' },

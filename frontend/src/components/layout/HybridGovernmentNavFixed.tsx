@@ -99,9 +99,10 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const hiddenPaths = hiddenPathsByRole[userRole.toLowerCase()] || [];
 
   // Determine if user is an operator/admin who should see the operations nav
-  const isOperatorRole = ['operator', 'growth_operator', 'growth_operator_company', 'growth_operator_candidate',
-    'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship',
-    'growth_operator_community', 'growth_operator_monitoring', 'career_services_operator', 'administrator', 'admin'
+  const isOperatorRole = ['operator', 'growth_operator', 'employer_relations', 'talent_operator',
+    'education_operator', 'assessment_operator', 'mentorship_operator',
+    'community_operator', 'platform_operator', 'career_services_operator', 'admin', 'admin', 'board_member',
+    'platform_operator', 'platform_operator', 'compliance_auditor'
   ].includes(userRole.toLowerCase());
 
   // Filter nav groups — remove blocked items, then remove empty groups
@@ -143,16 +144,13 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
   const getRoleDisplayName = (role: string): string => {
     const roleMapEn: Record<string, string> = {
       'candidate': 'Job Seeker',
-      'job_seeker': 'Job Seeker',
-      'hr_recruiter': 'Recruiter',
       'recruiter': 'Recruiter',
-      'hr_manager': 'HR Manager',
+      'employer_admin': 'HR Manager',
       'parent': 'Parent',
       'mentor': 'Mentor',
       'assessor': 'Assessor',
       'operator': 'Operator',
       'admin': 'Administrator',
-      'administrator': 'Administrator',
       'training_center': 'Training Center',
       'educational_institution': 'Educational Institution',
       'government_entity': 'Government Entity',
@@ -160,21 +158,18 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       'advisor': 'Academic Advisor',
       'coach': 'Career Coach',
       'internship_coordinator': 'Internship Coordinator',
-      'training_center_rep': 'Training Center',
+      'training_provider': 'Training Center',
       'call_center_agent': 'Call Center Agent',
     };
     const roleMapAr: Record<string, string> = {
       'candidate': 'باحث عن عمل',
-      'job_seeker': 'باحث عن عمل',
-      'hr_recruiter': 'مسؤول توظيف',
       'recruiter': 'مسؤول توظيف',
-      'hr_manager': 'مدير الموارد البشرية',
+      'employer_admin': 'مدير الموارد البشرية',
       'parent': 'ولي أمر',
       'mentor': 'مرشد',
       'assessor': 'مُقيّم',
       'operator': 'مشغّل',
       'admin': 'مسؤول النظام',
-      'administrator': 'مسؤول النظام',
       'training_center': 'مركز تدريب',
       'educational_institution': 'مؤسسة تعليمية',
       'government_entity': 'جهة حكومية',
@@ -182,7 +177,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       'advisor': 'مستشار أكاديمي',
       'coach': 'مدرب مهني',
       'internship_coordinator': 'منسق تدريب عملي',
-      'training_center_rep': 'مركز تدريب',
+      'training_provider': 'مركز تدريب',
       'call_center_agent': 'موظف مركز اتصال',
     };
     const roleMap = isRTL ? roleMapAr : roleMapEn;

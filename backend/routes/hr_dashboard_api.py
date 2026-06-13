@@ -946,7 +946,7 @@ def get_team_members():
                     email,
                     full_name
                 FROM users
-                WHERE role IN ('hr_manager', 'recruiter', 'hr', 'hiring_manager')
+                WHERE role IN ('employer_admin', 'recruiter', 'employer_admin', 'hiring_manager')
                 AND is_active = true
                 ORDER BY full_name
             """
@@ -1036,7 +1036,7 @@ def search_candidates():
             query += " LEFT JOIN (SELECT NULL as candidate_id) js ON 1=0 "
 
         query += """
-            WHERE (u.role = 'job_seeker' OR u.role IS NULL)
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
         """
         
@@ -1108,7 +1108,7 @@ def search_candidates():
             SELECT COUNT(DISTINCT u.id) as total
             FROM users u
             LEFT JOIN cv_data cv ON u.id = cv.user_id
-            WHERE (u.role = 'job_seeker' OR u.role IS NULL)
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
             AND u.is_active = true
         """
         total_result = execute_query(count_query, fetch_one=True)

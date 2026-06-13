@@ -23,7 +23,7 @@ export const CollaboratorInsightsChart: React.FC<CollaboratorInsightsChartProps>
       case 'owner': return '#8b5cf6';
       case 'trainer': return '#3b82f6';
       case 'mentor': return '#10b981';
-      case 'employer': return '#f59e0b';
+      case 'employer_admin': return '#f59e0b';
       case 'evaluator': return '#6b7280';
       case 'viewer': return '#9ca3af';
       default: return '#6b7280';

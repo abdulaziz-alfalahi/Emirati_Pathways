@@ -50,7 +50,7 @@ export type Emirate =
 
 export type Sector = 
   | 'banking_finance' 
-  | 'government' 
+  | 'compliance_auditor' 
   | 'oil_gas' 
   | 'education' 
   | 'healthcare' 

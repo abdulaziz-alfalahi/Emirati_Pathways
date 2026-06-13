@@ -138,6 +138,8 @@ const EducationOperatorDashboard = lazy(() => import('@/pages/operator-dashboard
 const ProfessionalDevDashboard = lazy(() => import('@/pages/operator-dashboards/ProfessionalDevDashboard'));
 const CommunityOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/CommunityOperatorDashboard'));
 const OperationsMonitoringCenter = lazy(() => import('@/pages/operator-dashboards/OperationsMonitoringCenter'));
+const DemographicsAnalytics = lazy(() => import('@/pages/operator-dashboards/DemographicsAnalytics'));
+const ExecutiveDashboard = lazy(() => import('@/pages/operator-dashboards/ExecutiveDashboard'));
 const AssessmentOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/AssessmentOperatorDashboard'));
 const MentorshipOperatorDashboard = lazy(() => import('@/pages/operator-dashboards/MentorshipOperatorDashboard'));
 const CareerServicesDashboard = lazy(() => import('@/pages/operator-dashboards/CareerServicesDashboard'));
@@ -246,7 +248,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/candidate-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'retiree']}>
+                  <ProtectedRoute allowedRoles={['candidate', 'candidate', 'candidate']}>
                     <CandidateDashboard />
                   </ProtectedRoute>
                 }
@@ -256,7 +258,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/candidate/profile/*"
                 element={
-                  <ProtectedRoute allowedRoles={['candidate', 'job_seeker', 'retiree', 'recruiter', 'hr_manager', 'hr_recruiter', 'hr']}>
+                  <ProtectedRoute allowedRoles={['candidate', 'candidate', 'candidate', 'recruiter', 'employer_admin', 'recruiter', 'employer_admin']}>
                     <ProfileStudioPage />
                   </ProtectedRoute>
                 }
@@ -264,7 +266,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/student-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['student']}>
+                  <ProtectedRoute allowedRoles={['candidate']}>
                     <StudentDashboard />
                   </ProtectedRoute>
                 }
@@ -272,7 +274,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/guardian-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['parent', 'guardian']}>
+                  <ProtectedRoute allowedRoles={['parent', 'parent']}>
                     <ParentDashboardPage />
                   </ProtectedRoute>
                 }
@@ -280,7 +282,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/recruiter/*"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_manager', 'hr_recruiter']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin', 'recruiter']}>
                     <RecruiterDashboard />
                   </ProtectedRoute>
                 }
@@ -304,7 +306,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/hr-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['hr_manager', 'hr']}>
+                  <ProtectedRoute allowedRoles={['employer_admin', 'employer_admin']}>
                     <HRDashboard />
                   </ProtectedRoute>
                 }
@@ -413,7 +415,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/recruiter/shortlist/:jdId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter', 'hr_manager', 'hr', 'administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'recruiter', 'employer_admin', 'employer_admin', 'admin', 'admin']}>
                     <ShortlistPage />
                   </ProtectedRoute>
                 }
@@ -422,7 +424,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/candidate-profile/:candidateId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_recruiter', 'hr_manager', 'hr', 'administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'recruiter', 'employer_admin', 'employer_admin', 'admin', 'admin']}>
                     <CandidateProfilePage />
                   </ProtectedRoute>
                 }
@@ -458,7 +460,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/recruiter-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr', 'hr_manager']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin', 'employer_admin']}>
                     <RecruiterDashboard />
                   </ProtectedRoute>
                 }
@@ -476,7 +478,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/admin-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['admin', 'admin']}>
                     <AdminDashboard />
                   </ProtectedRoute>
                 }
@@ -486,7 +488,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/growth-operator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'talent_operator', 'employer_relations', 'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator', 'platform_operator', 'admin', 'admin']}>
                     <GrowthOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -494,7 +496,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/growth-operator-dashboard/:domain"
                 element={
-                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'growth_operator_candidate', 'growth_operator_company', 'growth_operator_education', 'growth_operator_assessment', 'growth_operator_mentorship', 'growth_operator_community', 'growth_operator_monitoring', 'administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['growth_operator', 'operator', 'talent_operator', 'employer_relations', 'education_operator', 'assessment_operator', 'mentorship_operator', 'community_operator', 'platform_operator', 'admin', 'admin']}>
                     <GrowthOperatorDashboard />
                   </ProtectedRoute>
                 }
@@ -504,7 +506,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/career-services-crm"
                 element={
-                  <ProtectedRoute allowedRoles={['operator', 'career_services_operator', 'admin', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['operator', 'career_services_operator', 'admin', 'admin']}>
                     <CareerServicesDashboard />
                   </ProtectedRoute>
                 }
@@ -513,7 +515,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/admin/school-programs"
                 element={
-                  <ProtectedRoute allowedRoles={['administrator', 'admin', 'khda_staff', 'content_manager']}>
+                  <ProtectedRoute allowedRoles={['admin', 'admin', 'khda_staff', 'content_manager']}>
                     <SchoolProgramsAdminAPI />
                   </ProtectedRoute>
                 }
@@ -522,7 +524,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/admin/role-requests"
                 element={
-                  <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                  <ProtectedRoute allowedRoles={['admin', 'admin']}>
                     <RoleRequestsPage />
                   </ProtectedRoute>
                 }
@@ -531,7 +533,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/educator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['educator']}>
+                  <ProtectedRoute allowedRoles={['training_provider']}>
                     <EducatorDashboard />
                   </ProtectedRoute>
                 }
@@ -549,7 +551,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/advisor-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['advisor', 'admin', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['advisor', 'admin', 'admin']}>
                     <AdvisorDashboard />
                   </ProtectedRoute>
                 }
@@ -558,7 +560,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/coach-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['coach', 'admin', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['coach', 'admin', 'admin']}>
                     <CoachDashboard />
                   </ProtectedRoute>
                 }
@@ -567,7 +569,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/guardian-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['parent', 'guardian']}>
+                  <ProtectedRoute allowedRoles={['parent', 'parent']}>
                     <ParentDashboardPage />
                   </ProtectedRoute>
                 }
@@ -587,7 +589,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/government-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['government', 'operations_officer', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['compliance_auditor', 'platform_operator', 'admin']}>
                     <GovernmentDashboard />
                   </ProtectedRoute>
                 }
@@ -597,7 +599,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/cv-builder"
                 element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate', 'retiree']}>
+                  <ProtectedRoute allowedRoles={['candidate', 'candidate', 'candidate']}>
                     <AutoFillCVBuilder />
                   </ProtectedRoute>
                 }
@@ -693,7 +695,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/applications"
                 element={
-                  <ProtectedRoute allowedRoles={['job_seeker', 'candidate', 'retiree']}>
+                  <ProtectedRoute allowedRoles={['candidate', 'candidate', 'candidate']}>
                     <Applications />
                   </ProtectedRoute>
                 }
@@ -875,18 +877,30 @@ const AppContent: React.FC = () => {
                 element={<OperationsMonitoringCenter />}
               />
               <Route
-                path="/board-portal"
+                path="demographics"
                 element={
-                  <ProtectedRoute allowedRoles={['board_member', 'administrator', 'admin']}>
-                    <BoardPortal />
+                  <ProtectedRoute allowedRoles={['board_member', 'admin', 'admin', 'platform_operator', 'compliance_auditor', 'platform_operator']}>
+                    <DemographicsAnalytics />
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="executive"
+                element={
+                  <ProtectedRoute allowedRoles={['board_member', 'admin', 'admin', 'platform_operator', 'compliance_auditor', 'platform_operator']}>
+                    <ExecutiveDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/board-portal"
+                element={<Navigate to="/executive" replace />}
               />
 
               <Route
                 path="/internship-coordinator-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['internship_coordinator', 'admin', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['internship_coordinator', 'admin', 'admin']}>
                     <InternshipCoordinatorDashboard />
                   </ProtectedRoute>
                 }
@@ -895,7 +909,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/training-center-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['training_center_rep', 'admin', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['training_provider', 'admin', 'admin']}>
                     <TrainingCenterDashboard />
                   </ProtectedRoute>
                 }
@@ -904,7 +918,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/call-center-dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['call_center_agent', 'admin', 'administrator']}>
+                  <ProtectedRoute allowedRoles={['call_center_agent', 'admin', 'admin']}>
                     <CallCenterDashboard />
                   </ProtectedRoute>
                 }
@@ -914,7 +928,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/workspace/:companyId"
                 element={
-                  <ProtectedRoute allowedRoles={['recruiter', 'hr_manager', 'hr', 'hr_recruiter', 'growth_operator', 'growth_operator_company', 'admin', 'administrator', 'job_seeker', 'candidate', 'seeker', 'employee']}>
+                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin', 'employer_admin', 'recruiter', 'growth_operator', 'employer_relations', 'admin', 'admin', 'candidate', 'candidate', 'seeker', 'employee']}>
                     <WorkspaceLayout />
                   </ProtectedRoute>
                 }

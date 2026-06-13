@@ -82,7 +82,7 @@ export const MatchingPreferences: React.FC = () => {
                 <SelectItem value="technology">Technology</SelectItem>
                 <SelectItem value="finance">Finance</SelectItem>
                 <SelectItem value="healthcare">Healthcare</SelectItem>
-                <SelectItem value="government">Government</SelectItem>
+                <SelectItem value='compliance_auditor'>Government</SelectItem>
                 <SelectItem value="education">Education</SelectItem>
               </SelectContent>
             </Select>

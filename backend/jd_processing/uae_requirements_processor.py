@@ -26,7 +26,7 @@ class UAERegion(Enum):
 
 class IndustryType(Enum):
     """UAE industry types with specific requirements"""
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
     BANKING_FINANCE = "banking_finance"
     OIL_GAS = "oil_gas"
     HEALTHCARE = "healthcare"
@@ -381,7 +381,7 @@ class UAERequirementsProcessor:
         
         # Industry detection patterns
         industry_patterns = {
-            IndustryType.GOVERNMENT: ['government', 'ministry', 'federal', 'public sector', 'municipality'],
+            IndustryType.GOVERNMENT: ['compliance_auditor', 'ministry', 'federal', 'public sector', 'municipality'],
             IndustryType.BANKING_FINANCE: ['bank', 'finance', 'financial', 'investment', 'insurance'],
             IndustryType.OIL_GAS: ['oil', 'gas', 'petroleum', 'energy', 'adnoc', 'enoc'],
             IndustryType.HEALTHCARE: ['hospital', 'medical', 'healthcare', 'clinic', 'doctor'],
@@ -755,7 +755,7 @@ class UAERequirementsProcessor:
         alignment = {}
         
         industry_keywords = {
-            IndustryType.GOVERNMENT: ['government', 'public', 'ministry', 'federal'],
+            IndustryType.GOVERNMENT: ['compliance_auditor', 'public', 'ministry', 'federal'],
             IndustryType.BANKING_FINANCE: ['bank', 'finance', 'financial', 'investment'],
             IndustryType.TECHNOLOGY: ['software', 'tech', 'digital', 'it'],
             IndustryType.HEALTHCARE: ['medical', 'health', 'hospital', 'clinic'],

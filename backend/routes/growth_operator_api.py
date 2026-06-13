@@ -78,7 +78,7 @@ def get_domain_stats(domain: str) -> dict:
                     COUNT(*) FILTER (WHERE is_active = true) as active,
                     COUNT(*) FILTER (WHERE created_at >= %s) as new_this_week
                 FROM users
-                WHERE role = 'job_seeker' OR role IS NULL
+                WHERE role = 'candidate' OR role IS NULL
             """
             result = execute_query(query, (last_week,), fetch_one=True)
             if result:
@@ -269,7 +269,7 @@ def list_candidates():
                 cv.id as cv_id
             FROM users u
             LEFT JOIN cv_data cv ON u.id = cv.user_id AND cv.is_visible = true
-            WHERE (u.role = 'job_seeker' OR u.role IS NULL)
+            WHERE (u.role = 'candidate' OR u.role IS NULL)
         """
         params = []
         
@@ -291,7 +291,7 @@ def list_candidates():
         # Get total count
         count_query = """
             SELECT COUNT(*) as total FROM users 
-            WHERE (role = 'job_seeker' OR role IS NULL)
+            WHERE (role = 'candidate' OR role IS NULL)
         """
         total = execute_query(count_query, fetch_one=True)
         

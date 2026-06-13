@@ -138,7 +138,7 @@ export const SupportChatProvider: React.FC<{ children: React.ReactNode }> = ({ c
         recipient_id: stateRef.current.agentId,
         content: text,
         message_type: 'text',
-        sender_role: user.role || 'job_seeker',
+        sender_role: user.role || 'candidate',
       });
     } catch (err) {
       console.error('Failed to send chat message', err);

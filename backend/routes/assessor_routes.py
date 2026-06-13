@@ -79,7 +79,7 @@ def create_assessment_template():
 
 @assessor_bp.route('/templates', methods=['GET'])
 @jwt_required()
-@require_role(['assessor', 'admin', 'hr_recruiter'])
+@require_role(['assessor', 'admin', 'recruiter'])
 def get_assessment_templates():
     """Get assessment templates with optional filters"""
     try:
@@ -198,7 +198,7 @@ def create_assessment():
 
 @assessor_bp.route('/assessments', methods=['GET'])
 @jwt_required()
-@require_role(['assessor', 'admin', 'hr_recruiter'])
+@require_role(['assessor', 'admin', 'recruiter'])
 def get_assessments():
     """Get assessments with optional filters"""
     try:
@@ -333,7 +333,7 @@ def create_competency_model():
 
 @assessor_bp.route('/competencies', methods=['GET'])
 @jwt_required()
-@require_role(['assessor', 'admin', 'hr_recruiter', 'mentor', 'educator'])
+@require_role(['assessor', 'admin', 'recruiter', 'mentor', 'training_provider'])
 def get_competency_models():
     """Get competency models with optional filters"""
     try:

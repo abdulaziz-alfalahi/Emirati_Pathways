@@ -3,15 +3,15 @@
 export type CitizenPhase = 'education' | 'career' | 'professional' | 'lifelong';
 
 export type CitizenLifecycleStage = 
-  | 'student'           // Education Pathway
+  | 'candidate'           // Education Pathway
   | 'graduate'          // Transition from Education to Career
-  | 'job_seeker'        // Career Entry - Job Searching
+  | 'candidate'        // Career Entry - Job Searching
   | 'early_career'      // Career Entry - First Jobs
   | 'mid_career'        // Professional Growth
   | 'senior_career'     // Professional Growth - Leadership
   | 'entrepreneur'      // Professional Growth - Business
   | 'mentor'            // Lifelong Engagement - Giving Back
-  | 'retiree'           // Lifelong Engagement - Post Career
+  | 'candidate'           // Lifelong Engagement - Post Career
   | 'volunteer';        // Lifelong Engagement - Community Service
 
 export interface CitizenJourneyProfile {
@@ -447,7 +447,7 @@ export interface BenchmarkComparison {
 export interface ExternalSystemIntegration {
   id: string;
   system_name: string;
-  system_type: 'educational_institution' | 'employer' | 'training_provider' | 'certification_body' | 'government_agency';
+  system_type: 'educational_institution' | 'employer_admin' | 'training_provider' | 'certification_body' | 'government_agency';
   integration_status: 'active' | 'inactive' | 'pending' | 'error';
   data_sync_frequency: 'real_time' | 'daily' | 'weekly' | 'monthly';
   supported_data_types: DataType[];

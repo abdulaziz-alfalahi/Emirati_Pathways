@@ -23,7 +23,7 @@ interface ResumeTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'corporate' | 'creative' | 'technical' | 'government' | 'academic' | 'executive';
+  category: 'corporate' | 'creative' | 'technical' | 'compliance_auditor' | 'academic' | 'executive';
   preview: string;
   features: string[];
   rating: number;
@@ -78,7 +78,7 @@ const ResumeTemplateSelector: React.FC<ResumeTemplateSelectorProps> = ({
       id: 'government-formal',
       name: 'Government Formal',
       description: 'Structured format for government and public sector positions',
-      category: 'government',
+      category: 'compliance_auditor',
       preview: '/template-previews/government-formal.png',
       features: ['Formal Structure', 'Security Clearance Section', 'Compliance Ready'],
       rating: 4.6,
@@ -168,7 +168,7 @@ const ResumeTemplateSelector: React.FC<ResumeTemplateSelectorProps> = ({
               <SelectItem value="corporate">Corporate</SelectItem>
               <SelectItem value="creative">Creative</SelectItem>
               <SelectItem value="technical">Technical</SelectItem>
-              <SelectItem value="government">Government</SelectItem>
+              <SelectItem value='compliance_auditor'>Government</SelectItem>
               <SelectItem value="academic">Academic</SelectItem>
               <SelectItem value="executive">Executive</SelectItem>
             </SelectContent>

@@ -19,25 +19,25 @@ import { getDashboardRoute, UserRole, normalizeRole, ROLE_DISPLAY_NAMES } from '
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 const ROLE_DISPLAY_NAMES_AR: Record<string, string> = {
-  'job_seeker': 'باحث عن عمل',
+  'candidate': 'باحث عن عمل',
   'candidate': 'مرشح',
-  'student': 'طالب',
-  'hr_manager': 'مدير الموارد البشرية',
-  'hr': 'مدير الموارد البشرية',
+  'candidate': 'طالب',
+  'employer_admin': 'مدير الموارد البشرية',
+  'employer_admin': 'مدير الموارد البشرية',
   'recruiter': 'مسؤول توظيف',
-  'hr_recruiter': 'موارد بشرية / توظيف',
-  'educator': 'معلم',
-  'guardian': 'ولي أمر',
+  'recruiter': 'موارد بشرية / توظيف',
+  'training_provider': 'معلم',
   'parent': 'ولي أمر',
-  'administrator': 'مسؤول النظام',
+  'parent': 'ولي أمر',
+  'admin': 'مسؤول النظام',
   'admin': 'مسؤول النظام',
   'growth_operator': 'مشغّل النمو',
-  'growth_operator_candidate': 'مشغّل نمو المرشحين',
-  'growth_operator_company': 'مشغّل نمو الشركات',
-  'growth_operator_education': 'مشغّل نمو التعليم',
-  'growth_operator_assessment': 'مشغّل نمو التقييم',
-  'growth_operator_mentorship': 'مشغّل نمو الإرشاد',
-  'growth_operator_community': 'مشغّل نمو المجتمع',
+  'talent_operator': 'مشغّل نمو المرشحين',
+  'employer_relations': 'مشغّل نمو الشركات',
+  'education_operator': 'مشغّل نمو التعليم',
+  'assessment_operator': 'مشغّل نمو التقييم',
+  'mentorship_operator': 'مشغّل نمو الإرشاد',
+  'community_operator': 'مشغّل نمو المجتمع',
   'mentor': 'مرشد',
   'assessor': 'مُقيّم',
 };
@@ -95,7 +95,7 @@ const UserMenu: React.FC = () => {
 
   const handleDashboardNavigation = async () => {
     try {
-      const dashboardPath = await getDashboardRoute(getUserRole() || 'job_seeker');
+      const dashboardPath = await getDashboardRoute(getUserRole() || 'candidate');
       navigate(dashboardPath);
     } catch (error) {
       console.error('Dashboard navigation error:', error);
@@ -127,19 +127,19 @@ const UserMenu: React.FC = () => {
 
   const getRoleIcon = (role: string): string => {
     const roleIcons: Record<string, string> = {
-      'job_seeker': '🔍',
       'candidate': '🔍',
-      'hr_manager': '👥',
-      'hr': '👥',
+      'candidate': '🔍',
+      'employer_admin': '👥',
+      'employer_admin': '👥',
       'recruiter': '💼',
-      'administrator': '⚙️',
+      'admin': '⚙️',
       'admin': '⚙️',
       'mentor': '🎓',
     };
     return roleIcons[normalizeRole(role) as string] || '👤';
   };
 
-  const currentRole = getUserRole() || 'job_seeker';
+  const currentRole = getUserRole() || 'candidate';
 
   return (
     <DropdownMenu>
@@ -247,7 +247,7 @@ const UserMenu: React.FC = () => {
 
         <DropdownMenuItem
           onClick={() => {
-            if (['job_seeker', 'candidate', 'student'].includes(currentRole.toLowerCase())) {
+            if (['candidate', 'candidate', 'candidate'].includes(currentRole.toLowerCase())) {
               navigate('/candidate/profile/identity');
             } else {
               navigate('/profile');

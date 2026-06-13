@@ -326,7 +326,7 @@ const CandidateMatching = () => {
           status: match.candidate.status, // preserve status if available
           is_applicant: match.is_applicant || match.candidate.is_applicant, // Check both levels for safety
           application_date: match.application_date || match.candidate.application_date,
-          employment_status: match.candidate.employment_status || 'job_seeker'
+          employment_status: match.candidate.employment_status || 'candidate'
         }));
 
         // Fetch existing shortlist status
@@ -770,7 +770,7 @@ const CandidateMatching = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Candidates</SelectItem>
-                      <SelectItem value="job_seeker">Active Job Seeker</SelectItem>
+                      <SelectItem value='candidate'>Active Job Seeker</SelectItem>
                       <SelectItem value="employed_open">Open to Opportunities</SelectItem>
                       <SelectItem value="passive">All Passive Talent</SelectItem>
                       <SelectItem value="freelancer">Freelancer</SelectItem>
@@ -956,7 +956,7 @@ const CandidateMatching = () => {
                               </Badge>
                             )}
                             {/* G22/G23: Employment status badge for passive talent */}
-                            {!candidate.is_applicant && candidate.employment_status && candidate.employment_status !== 'job_seeker' && (
+                            {!candidate.is_applicant && candidate.employment_status && candidate.employment_status !== 'candidate' && (
                               <Badge className={candidate.employment_status === 'employed_open'
                                 ? 'bg-amber-500 text-white hover:bg-amber-600'
                                 : candidate.employment_status === 'freelancer'
@@ -1077,7 +1077,7 @@ const CandidateMatching = () => {
                           <Eye className="h-4 w-4 mr-2" /> Quick View
                         </Button>
                         {/* G22/G23: Headhunt button for passive talent */}
-                        {candidate.employment_status && candidate.employment_status !== 'job_seeker' && !candidate.is_applicant ? (
+                        {candidate.employment_status && candidate.employment_status !== 'candidate' && !candidate.is_applicant ? (
                           <Button
                             variant="outline"
                             className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800"

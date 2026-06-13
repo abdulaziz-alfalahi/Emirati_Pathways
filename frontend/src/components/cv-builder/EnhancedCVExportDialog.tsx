@@ -36,7 +36,7 @@ interface CVScore {
 
 interface ExportOptions {
   format: 'pdf' | 'docx' | 'txt';
-  template: 'government' | 'corporate' | 'creative' | 'technical' | 'academic' | 'modern';
+  template: 'compliance_auditor' | 'corporate' | 'creative' | 'technical' | 'academic' | 'modern';
   includeAIRecommendations: boolean;
   includeScoreAnalysis: boolean;
   includeCoverLetter: boolean;

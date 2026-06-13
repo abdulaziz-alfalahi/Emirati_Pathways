@@ -8,7 +8,7 @@ from app import create_app
 SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
 
 
-def make_token(user_id=1, role="hr_recruiter"):
+def make_token(user_id=1, role='recruiter'):
     payload = {"sub": user_id, "role": role, "iat": int(time.time()), "exp": int(time.time()) + 3600}
     return jwt.encode(payload, SECRET, algorithm="HS256")
 

@@ -3,8 +3,14 @@ from datetime import datetime, timedelta
 import logging
 from psycopg2.extras import RealDictCursor
 from db import get_db_connection
-from auth_routes_enhanced import optional_auth
+from functools import wraps
 
+def optional_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Allow requests without auth to proceed
+        return f(*args, **kwargs)
+    return decorated_function
 logger = logging.getLogger(__name__)
 
 board_portal_bp = Blueprint('board_portal', __name__, url_prefix='/api/board')
@@ -40,7 +46,7 @@ def get_scorecards():
         total_candidates_query = "SELECT COUNT(*) as count FROM users WHERE role IN ('candidate', 'job_seeker')"
         total_candidates = execute_query(total_candidates_query, fetch_one=True)['count']
 
-        total_companies_query = "SELECT COUNT(*) as count FROM company_workspaces"
+        total_companies_query = "SELECT COUNT(*) as count FROM companies"
         total_companies = execute_query(total_companies_query, fetch_one=True)['count']
 
         total_offers_query = "SELECT COUNT(*) as count FROM offers"

@@ -841,10 +841,19 @@ def get_crm_candidates():
                     u.id,
                     u.emirates_id_enc as national_id,
                     u.full_name,
+                    u.phone,
                     cp.call_status,
                     cp.work_status,
+                    cp.job_seeker_type,
                     cp.counseling_remarks,
-                    cp.assigned_to
+                    cp.assigned_to,
+                    cp.preferred_locations,
+                    cp.preferred_sector,
+                    cp.preferred_work_setup,
+                    cp.preferred_schedule,
+                    cp.alternative_phone,
+                    cp.unavailability_reason,
+                    cp.role_preferences
                 FROM users u
                 LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
                 WHERE u.role = 'candidate' OR u.user_type = 'candidate'
@@ -861,11 +870,20 @@ def get_crm_candidates():
                     'id': c['id'],
                     'national_id': c['national_id'],
                     'full_name': c['full_name'],
+                    'phone': c['phone'],
                     'profile': {
                         'call_status': c['call_status'],
                         'work_status': c['work_status'],
+                        'job_seeker_type': c['job_seeker_type'],
                         'counseling_remarks': c['counseling_remarks'],
-                        'assigned_to': c['assigned_to']
+                        'assigned_to': c['assigned_to'],
+                        'preferred_locations': c['preferred_locations'],
+                        'preferred_sector': c['preferred_sector'],
+                        'preferred_work_setup': c['preferred_work_setup'],
+                        'preferred_schedule': c['preferred_schedule'],
+                        'alternative_phone': c['alternative_phone'],
+                        'unavailability_reason': c['unavailability_reason'],
+                        'role_preferences': c['role_preferences']
                     }
                 })
                 
@@ -899,6 +917,11 @@ def update_crm_candidate(user_id):
             cursor.execute("SELECT id FROM candidate_profiles WHERE user_id = %s", (user_id,))
             exists = cursor.fetchone()
             
+            import json
+            preferred_locations = data.get('preferredLocations')
+            if preferred_locations is not None:
+                preferred_locations = json.dumps(preferred_locations)
+
             if exists:
                 cursor.execute("""
                     UPDATE candidate_profiles SET
@@ -906,6 +929,13 @@ def update_crm_candidate(user_id):
                         work_status = %s,
                         counseling_remarks = %s,
                         assigned_to = %s,
+                        preferred_locations = %s,
+                        preferred_sector = %s,
+                        preferred_work_setup = %s,
+                        preferred_schedule = %s,
+                        alternative_phone = %s,
+                        unavailability_reason = %s,
+                        role_preferences = %s,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE user_id = %s
                 """, (
@@ -913,19 +943,34 @@ def update_crm_candidate(user_id):
                     data.get('workStatus'),
                     data.get('remarks'),
                     data.get('assignedTo'),
+                    preferred_locations,
+                    data.get('preferredSector'),
+                    data.get('preferredWorkSetup'),
+                    data.get('preferredSchedule'),
+                    data.get('alternativePhone'),
+                    data.get('unavailabilityReason'),
+                    data.get('rolePreferences'),
                     user_id
                 ))
             else:
                 cursor.execute("""
                     INSERT INTO candidate_profiles (
-                        user_id, call_status, work_status, counseling_remarks, assigned_to
-                    ) VALUES (%s, %s, %s, %s, %s)
+                        user_id, call_status, work_status, counseling_remarks, assigned_to,
+                        preferred_locations, preferred_sector, preferred_work_setup, preferred_schedule, alternative_phone, unavailability_reason, role_preferences
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     user_id,
                     data.get('callStatus'),
                     data.get('workStatus'),
                     data.get('remarks'),
-                    data.get('assignedTo')
+                    data.get('assignedTo'),
+                    preferred_locations,
+                    data.get('preferredSector'),
+                    data.get('preferredWorkSetup'),
+                    data.get('preferredSchedule'),
+                    data.get('alternativePhone'),
+                    data.get('unavailabilityReason'),
+                    data.get('rolePreferences')
                 ))
                 
             conn.commit()

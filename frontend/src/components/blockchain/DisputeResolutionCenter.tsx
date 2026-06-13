@@ -29,7 +29,7 @@ const DisputeResolutionCenter: React.FC = () => {
     disputeType: 'incorrect_info'
   });
 
-  const isAdmin = roles.includes('administrator') || roles.includes('super_user');
+  const isAdmin = roles.includes('admin') || roles.includes('super_user');
   const canReview = isAdmin || roles.includes('training_center') || roles.includes('educational_institution');
 
   useEffect(() => {

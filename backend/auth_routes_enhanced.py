@@ -17,25 +17,25 @@ auth_bp = Blueprint('auth', __name__)
 # Available roles configuration
 AVAILABLE_ROLES = [
     {
-        'id': 'job_seeker',
+        'id': 'candidate',
         'name': 'Job Seeker',
         'description': 'Find your dream career with AI-powered job matching',
         'dashboard': '/candidate-dashboard'
     },
     {
-        'id': 'student',
+        'id': 'candidate',
         'name': 'Student',
         'description': 'Access student resources, academic tracking, and career guidance',
         'dashboard': '/student-dashboard'
     },
     {
-        'id': 'hr_recruiter',
+        'id': 'recruiter',
         'name': 'HR / Recruiter',
         'description': 'Streamline hiring with advanced recruitment tools',
         'dashboard': '/recruiter'
     },
     {
-        'id': 'educator',
+        'id': 'training_provider',
         'name': 'Educator',
         'description': 'Enhance student outcomes with curriculum management',
         'dashboard': '/educator-dashboard'
@@ -56,14 +56,14 @@ AVAILABLE_ROLES = [
 
 # Role mapping for backward compatibility
 ROLE_MAPPING = {
-    'job_seeker': 'job_seeker',
-    'hr_manager': 'hr_recruiter',
-    'recruiter': 'hr_recruiter',
-    'hr_recruiter': 'hr_recruiter',
-    'educator': 'educator',
+    'candidate': 'candidate',
+    'employer_admin': 'recruiter',
+    'recruiter': 'recruiter',
+    'recruiter': 'recruiter',
+    'training_provider': 'training_provider',
     'mentor': 'mentor',
     'assessor': 'assessor',
-    'administrator': 'administrator'  # Special admin role
+    'admin': 'admin'  # Special admin role
 }
 
 def validate_email(email):
@@ -147,7 +147,7 @@ def register():
         normalized_role = normalize_role(user_type)
         role_info = get_role_info(normalized_role)
         
-        if not role_info and normalized_role != 'administrator':
+        if not role_info and normalized_role != 'admin':
             return jsonify({
                 'success': False,
                 'message': f'Invalid role: {user_type}'
@@ -232,8 +232,8 @@ def login():
             'last_name': 'Al Emirati',
             'phone': '+971511234567',
             'emirate': 'Dubai',
-            'user_type': 'job_seeker',
-            'primary_role': 'job_seeker',
+            'user_type': 'candidate',
+            'primary_role': 'candidate',
             'secondary_roles': [],
             'is_verified': True
         }
@@ -329,7 +329,7 @@ def update_roles():
         
         # Validate primary role
         normalized_primary = normalize_role(primary_role)
-        if not get_role_info(normalized_primary) and normalized_primary != 'administrator':
+        if not get_role_info(normalized_primary) and normalized_primary != 'admin':
             return jsonify({
                 'success': False,
                 'message': f'Invalid primary role: {primary_role}'
@@ -339,7 +339,7 @@ def update_roles():
         normalized_secondary = []
         for role in secondary_roles:
             normalized_role = normalize_role(role)
-            if get_role_info(normalized_role) or normalized_role == 'administrator':
+            if get_role_info(normalized_role) or normalized_role == 'admin':
                 normalized_secondary.append(normalized_role)
             else:
                 return jsonify({
@@ -404,8 +404,8 @@ def get_profile():
             'last_name': 'Al Emirati',
             'phone': '+971511234567',
             'emirate': 'Dubai',
-            'user_type': 'job_seeker',
-            'primary_role': 'job_seeker',
+            'user_type': 'candidate',
+            'primary_role': 'candidate',
             'secondary_roles': [],
             'is_verified': True,
             'created_at': '2024-01-01T00:00:00Z',

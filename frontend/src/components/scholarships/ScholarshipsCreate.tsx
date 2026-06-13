@@ -150,7 +150,7 @@ const ScholarshipsCreate: React.FC<ScholarshipsCreateProps> = ({ onSuccess }) =>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="government">Government</SelectItem>
+                  <SelectItem value='compliance_auditor'>Government</SelectItem>
                   <SelectItem value="university">University</SelectItem>
                   <SelectItem value="private_sector">Private Sector</SelectItem>
                 </SelectContent>

@@ -812,7 +812,7 @@ ${JSON.stringify(item.metadata, null, 2)}
 
               {/* Messaging Tab */}
               <TabsContent value="messaging" className="space-y-6">
-                <Messages senderRole="administrator" showNewConversation />
+                <Messages senderRole='admin' showNewConversation />
               </TabsContent>
 
               {/* Role Requests Tab */}

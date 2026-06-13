@@ -28,7 +28,7 @@ def distribute_job(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
+        if claims and claims.get("role") not in ('recruiter', "admin"):
             return jsonify({"success": False, "message": "Insufficient permissions"}), 403
         data = request.get_json() or {}
         targets = data.get("targets") or []  # e.g., ["linkedin", "indeed"]
@@ -77,7 +77,7 @@ def list_job_distribution(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get("role") not in ("hr_recruiter", "admin"):
+        if claims and claims.get("role") not in ('recruiter', "admin"):
             return jsonify({"success": False, "message": "Insufficient permissions"}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

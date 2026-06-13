@@ -259,10 +259,22 @@ export const operationsNavGroup: NavGroup = {
       icon: BarChart3
     },
     {
-      name: 'Operations Center',
+      name: 'Demographics Analytics',
+      href: '/demographics',
+      description: 'Deep-dive analysis of the talent pool',
+      icon: Users
+    },
+    {
+      name: 'Operations Monitoring',
       href: '/operations-center',
-      description: 'System monitoring and operations',
+      description: 'System monitoring and live operational activity',
       icon: Settings
+    },
+    {
+      name: 'Executive Impact',
+      href: '/executive',
+      description: 'High-level KPI tracking for Board Members',
+      icon: Award
     }
   ]
 };

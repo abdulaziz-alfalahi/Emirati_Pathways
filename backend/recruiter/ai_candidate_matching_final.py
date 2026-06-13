@@ -82,7 +82,7 @@ class AICandidateMatchingEngineFinal:
             jd_data: Job description data
             candidates: List of candidate profiles
             employment_status_filter: Filter by employment status 
-                                     ('employed', 'job_seeker', 'open_to_opportunities', None for all)
+                                     ('employed', 'candidate', 'open_to_opportunities', None for all)
             top_n: Number of top candidates to return (default: 10)
         
         Returns:
@@ -172,15 +172,15 @@ class AICandidateMatchingEngineFinal:
         
         filtered = []
         for candidate in candidates:
-            candidate_status = candidate.get('employment_status', 'job_seeker').lower()
+            candidate_status = candidate.get('employment_status', 'candidate').lower()
             
             # Handle different status values
             if status_filter.lower() == 'employed':
                 if candidate_status in ['employed', 'currently_employed']:
                     filtered.append(candidate)
             
-            elif status_filter.lower() == 'job_seeker':
-                if candidate_status in ['job_seeker', 'unemployed', 'actively_looking']:
+            elif status_filter.lower() == 'candidate':
+                if candidate_status in ['candidate', 'unemployed', 'actively_looking']:
                     filtered.append(candidate)
             
             elif status_filter.lower() == 'open_to_opportunities':

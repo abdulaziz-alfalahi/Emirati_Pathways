@@ -51,7 +51,7 @@ class EmploymentStatus(Enum):
 class CandidateEmploymentStatus(Enum):
     """Candidate employment status for filtering"""
     EMPLOYED = "employed"
-    JOB_SEEKER = "job_seeker"
+    JOB_SEEKER = 'candidate'
     OPEN_TO_OPPORTUNITIES = "open_to_opportunities"
     NOT_LOOKING = "not_looking"
 
@@ -186,7 +186,7 @@ class Candidate:
     experience_years: int = 0
     current_position: Optional[str] = None
     current_company: Optional[str] = None
-    employment_status: str = "job_seeker"
+    employment_status: str = 'candidate'
     skills: List[str] = field(default_factory=list)
     preferred_salary_min: Optional[float] = None
     preferred_salary_max: Optional[float] = None

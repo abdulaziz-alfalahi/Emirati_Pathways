@@ -218,7 +218,7 @@ def accept_invitation(token):
         "phone": "...",
         "email": "...",
         "position_title": "...",
-        "role": "recruiter" | "hr_manager"
+        "role": "recruiter" | 'employer_admin'
     }
     Returns JWT tokens for auto-login.
     """

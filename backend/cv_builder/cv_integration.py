@@ -345,7 +345,7 @@ class CVJobMatcher:
             return 'Technology'
         elif any(keyword in company for keyword in ['hospital', 'medical', 'health', 'clinic']):
             return 'Healthcare'
-        elif any(keyword in company for keyword in ['government', 'ministry', 'authority', 'municipality']):
+        elif any(keyword in company for keyword in ['compliance_auditor', 'ministry', 'authority', 'municipality']):
             return 'Government'
         elif any(keyword in company for keyword in ['hotel', 'tourism', 'travel', 'hospitality']):
             return 'Tourism & Hospitality'

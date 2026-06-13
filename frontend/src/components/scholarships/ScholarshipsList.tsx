@@ -101,7 +101,7 @@ const ScholarshipsList: React.FC<ScholarshipsListProps> = ({
 
   const getProviderTypeColor = (type: string) => {
     switch (type) {
-      case 'government':
+      case 'compliance_auditor':
         return 'bg-green-100 text-green-800';
       case 'university':
         return 'bg-blue-100 text-blue-800';

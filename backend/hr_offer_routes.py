@@ -62,7 +62,7 @@ def list_offers():
             claims = get_jwt()
             user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
@@ -188,7 +188,7 @@ def create_offer():
             claims = get_jwt()
             user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
@@ -285,7 +285,7 @@ def get_offer(offer_id):
             claims = get_jwt()
             user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 
@@ -347,7 +347,7 @@ def send_offer(offer_id):
             claims = get_jwt()
             user_role = claims.get('role', '') if claims else ''
 
-        allowed_roles = ['hr', 'recruiter', 'hr_recruiter', 'admin', 'hr_manager']
+        allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
             return jsonify({"success": False, "message": f"Insufficient permissions. Required role: HR/Recruiter. Your role: {user_role}"}), 403
 

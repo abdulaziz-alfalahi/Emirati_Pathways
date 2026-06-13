@@ -189,10 +189,10 @@ def seed_taxonomy(cur):
         ("soft_problem_solving", "Problem Solving", "حل المشكلات", "core", "Cognitive", 0.8),
         ("soft_presentation", "Presentation Skills", "مهارات العرض", "core", "Communication", 0.7),
         # Government & Public Sector
-        ("gov_policy", "Public Policy Analysis", "تحليل السياسات العامة", "government", "Policy", 0.8),
-        ("gov_governance", "Corporate Governance", "الحوكمة المؤسسية", "government", "Governance", 0.85),
-        ("gov_emiratization", "Emiratization Strategy", "استراتيجية التوطين", "government", "National Programs", 0.9),
-        ("gov_smart_gov", "Smart Government", "الحكومة الذكية", "government", "Digital Transformation", 0.85),
+        ("gov_policy", "Public Policy Analysis", "تحليل السياسات العامة", 'compliance_auditor', "Policy", 0.8),
+        ("gov_governance", "Corporate Governance", "الحوكمة المؤسسية", 'compliance_auditor', "Governance", 0.85),
+        ("gov_emiratization", "Emiratization Strategy", "استراتيجية التوطين", 'compliance_auditor', "National Programs", 0.9),
+        ("gov_smart_gov", "Smart Government", "الحكومة الذكية", 'compliance_auditor', "Digital Transformation", 0.85),
         # Hospitality & Tourism (UAE-critical)
         ("hosp_management", "Hospitality Management", "إدارة الضيافة", "hospitality", "Management", 0.8),
         ("hosp_tourism", "Tourism Development", "تطوير السياحة", "hospitality", "Tourism", 0.75),

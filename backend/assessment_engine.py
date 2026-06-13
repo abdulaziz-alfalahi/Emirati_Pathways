@@ -59,7 +59,7 @@ class IndustryCategory(Enum):
     FINANCE = "finance"
     HEALTHCARE = "healthcare"
     EDUCATION = "education"
-    GOVERNMENT = "government"
+    GOVERNMENT = 'compliance_auditor'
     ENGINEERING = "engineering"
     BUSINESS = "business"
     MARKETING = "marketing"

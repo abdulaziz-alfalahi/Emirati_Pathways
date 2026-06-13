@@ -53,11 +53,11 @@ def main():
         ("Backup users role data",
          "CREATE TABLE IF NOT EXISTS _backup_users_roles AS SELECT id, email, role, user_type FROM users"),
         
-        ("Migrate 'candidate' → 'job_seeker' in role column",
-         "UPDATE users SET role = 'job_seeker' WHERE role = 'candidate'"),
+        ("Migrate 'candidate' → 'candidate' in role column",
+         "UPDATE users SET role = 'candidate' WHERE role = 'candidate'"),
         
-        ("Migrate 'admin' → 'administrator' in role column",
-         "UPDATE users SET role = 'administrator' WHERE role = 'admin'"),
+        ("Migrate 'admin' → 'admin' in role column",
+         "UPDATE users SET role = 'admin' WHERE role = 'admin'"),
          
         ("Migrate 'growth_operator' → 'operator' in role column",
          "UPDATE users SET role = 'operator' WHERE role = 'growth_operator'"),

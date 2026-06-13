@@ -66,7 +66,7 @@ def get_dashboard_data():
         user_type = claims.get('user_type', '')
         
         # Allow access for admin, hr_recruiter, and educator personas
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges for analytics access'}), 403
         
         analytics_engine = get_analytics_engine()
@@ -94,7 +94,7 @@ def get_employment_trends():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         # Get query parameters
@@ -129,7 +129,7 @@ def get_emiratization_progress():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         analytics_engine = get_analytics_engine()
@@ -156,7 +156,7 @@ def get_user_engagement():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         # Get query parameters
@@ -191,7 +191,7 @@ def get_predictive_insights():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         analytics_engine = get_analytics_engine()
@@ -218,7 +218,7 @@ def get_insights_summary():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         analytics_engine = get_analytics_engine()
@@ -274,7 +274,7 @@ def get_uae_vision_benchmarks():
         claims = get_jwt()
         user_type = claims.get('user_type', '')
         
-        if user_type not in ['admin', 'hr_recruiter', 'educator']:
+        if user_type not in ['admin', 'recruiter', 'training_provider']:
             return jsonify({'error': 'Insufficient privileges'}), 403
         
         analytics_engine = get_analytics_engine()

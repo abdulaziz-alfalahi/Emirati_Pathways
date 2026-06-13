@@ -268,7 +268,7 @@ def get_interviews():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -394,7 +394,7 @@ def schedule_interview():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -561,7 +561,7 @@ def get_interview_details(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
@@ -674,7 +674,7 @@ def reschedule_interview(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -788,7 +788,7 @@ def cancel_interview(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -883,7 +883,7 @@ def get_interviewer_availability(interviewer_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -963,7 +963,7 @@ def submit_interview_feedback(interview_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         data = request.get_json()
         
@@ -1061,7 +1061,7 @@ def get_interview_calendar():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         # Get query parameters
@@ -1237,7 +1237,7 @@ def run_interview_reminders():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         body = request.get_json() or {}
         window_hours = int(body.get('window_hours', 24))

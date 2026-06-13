@@ -41,7 +41,7 @@ def create_hr_profile():
         # Store profile data
         profile_data[profile_id] = {
             'id': profile_id,
-            'type': 'hr_recruiter',
+            'type': 'recruiter',
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat(),
             **data
@@ -152,7 +152,7 @@ def create_educator_profile():
         # Store profile data
         profile_data[profile_id] = {
             'id': profile_id,
-            'type': 'educator',
+            'type': 'training_provider',
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat(),
             **data
@@ -374,8 +374,8 @@ def get_profile_stats():
             'total_institutions': len(institution_data),
             'total_certifications': len(certification_data),
             'profile_types': {
-                'hr_recruiter': len([p for p in profile_data.values() if p.get('type') == 'hr_recruiter']),
-                'educator': len([p for p in profile_data.values() if p.get('type') == 'educator']),
+                'recruiter': len([p for p in profile_data.values() if p.get('type') == 'recruiter']),
+                'training_provider': len([p for p in profile_data.values() if p.get('type') == 'training_provider']),
                 'assessor': len([p for p in profile_data.values() if p.get('type') == 'assessor'])
             }
         }

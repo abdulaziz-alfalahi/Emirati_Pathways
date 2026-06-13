@@ -22,7 +22,7 @@ def recruiter_summary():
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'hr_manager', 'administrator'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
 
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

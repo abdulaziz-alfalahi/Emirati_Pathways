@@ -275,7 +275,7 @@ const JDAnalyticsDashboard: React.FC = () => {
             <option value="technology">Technology</option>
             <option value="banking">Banking & Finance</option>
             <option value="healthcare">Healthcare</option>
-            <option value="government">Government</option>
+            <option value='compliance_auditor'>Government</option>
             <option value="education">Education</option>
             <option value="oil-gas">Oil & Gas</option>
           </select>

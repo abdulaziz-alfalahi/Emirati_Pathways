@@ -38,7 +38,7 @@ interface RoleSelectionProps {
 
 const roleOptions: RoleOption[] = [
   {
-    id: 'job_seeker',
+    id: 'candidate',
     title: 'Job Seeker',
     description: 'Find your dream career with AI-powered job matching and career development tools.',
     icon: <User className="h-8 w-8" />,
@@ -53,7 +53,7 @@ const roleOptions: RoleOption[] = [
     popular: true
   },
   {
-    id: 'hr_manager',
+    id: 'employer_admin',
     title: 'HR Manager',
     description: 'Oversee workforce planning, approve offers, and manage your organization\'s talent strategy.',
     icon: <Building2 className="h-8 w-8" />,
@@ -81,7 +81,7 @@ const roleOptions: RoleOption[] = [
     color: 'bg-green-500'
   },
   {
-    id: 'educator',
+    id: 'training_provider',
     title: 'Educator',
     description: 'Enhance student outcomes with curriculum management and career guidance tools.',
     icon: <GraduationCap className="h-8 w-8" />,
@@ -123,7 +123,7 @@ const roleOptions: RoleOption[] = [
     color: 'bg-red-500'
   },
   {
-    id: 'guardian',
+    id: 'parent',
     title: 'Guardian / Parent',
     description: 'Monitor your child\'s career journey, approve internships, and connect with educators.',
     icon: <ShieldCheck className="h-8 w-8" />,
@@ -151,7 +151,7 @@ const roleOptions: RoleOption[] = [
     color: 'bg-slate-800'
   },
   {
-    id: 'operations_officer',
+    id: 'platform_operator',
     title: 'Operations Officer',
     description: 'Deep operational monitoring of the platform and compliance tracking.',
     icon: <Activity className="h-8 w-8" />,

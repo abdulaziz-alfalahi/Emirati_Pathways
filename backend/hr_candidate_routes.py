@@ -62,7 +62,7 @@ def get_candidate_profile_hr(candidate_id):
                     (SELECT MAX(submitted_at) FROM job_applications ja WHERE ja.candidate_id = u.id) as last_application_date
                 FROM users u
                 LEFT JOIN candidate_profiles p ON u.id = p.user_id
-                WHERE u.id = %s AND u.role IN ('candidate', 'job_seeker')
+                WHERE u.id = %s AND u.role IN ('candidate', 'candidate')
             """, (candidate_id,))
             
             candidate = cursor.fetchone()

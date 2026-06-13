@@ -20,7 +20,7 @@ from functools import wraps
 from backend.workspace_middleware import require_workspace_access
 
 # Roles allowed for cross-company admin operations (provision, list)
-GROWTH_OPERATOR_ROLES = {'growth_operator_company', 'growth_operator', 'platform_administrator', 'super_user', 'admin'}
+GROWTH_OPERATOR_ROLES = {'employer_relations', 'growth_operator', 'platform_administrator', 'super_user', 'admin'}
 
 logger = logging.getLogger(__name__)
 workspace_bp = Blueprint('workspace', __name__, url_prefix='/api/workspace')
@@ -808,7 +808,7 @@ def search_candidates(company_id):
             LEFT JOIN company_employees ce ON ce.user_id = u.id 
                 AND ce.company_id = %s AND ce.status = 'active'
             WHERE (u.full_name ILIKE %s OR u.email ILIKE %s)
-            AND u.user_type IN ('job_seeker', 'candidate')
+            AND u.user_type IN ('candidate', 'candidate')
             ORDER BY u.full_name
             LIMIT 20
         """, (company_id, f"%{q}%", f"%{q}%"))

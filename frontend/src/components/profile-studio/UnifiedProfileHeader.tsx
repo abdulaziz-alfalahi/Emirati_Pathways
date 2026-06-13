@@ -126,26 +126,26 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
 
     // Helper Configuration
     const roleConfigs: Record<string, any> = {
-        'job_seeker': { label: 'Job Seeker', icon: User, color: 'bg-teal-500' },
-        'student': { label: 'Student', icon: GraduationCap, color: 'bg-teal-500' },
+        'candidate': { label: 'Job Seeker', icon: User, color: 'bg-teal-500' },
+        'candidate': { label: 'Student', icon: GraduationCap, color: 'bg-teal-500' },
         'recruiter': { label: 'HR Recruiter', icon: Users, color: 'bg-green-500' }, // Updated Label
-        'hr_manager': { label: 'HR Manager', icon: Users, color: 'bg-green-600' }, // Added
-        'educator': { label: 'Educator', icon: GraduationCap, color: 'bg-purple-500' },
+        'employer_admin': { label: 'HR Manager', icon: Users, color: 'bg-green-600' }, // Added
+        'training_provider': { label: 'Educator', icon: GraduationCap, color: 'bg-purple-500' },
         'mentor': { label: 'Mentor', icon: AlertCircle, color: 'bg-orange-500' }, // Added (Icon placeholder)
         'assessor': { label: 'Assessor', icon: CheckCircle, color: 'bg-red-500' }, // Added
-        'guardian': { label: 'Guardian', icon: Shield, color: 'bg-slate-500' } // Added
+        'parent': { label: 'Guardian', icon: Shield, color: 'bg-slate-500' } // Added
     };
 
     const getRoleConfigKey = (role: string) => {
         const normalized = normalizeRole(role) as string;
-        if (normalized === 'candidate') return 'job_seeker';
-        if (normalized === 'hr/recruiter' || normalized === 'hr_recruiter') return 'recruiter';
+        if (normalized === 'candidate') return 'candidate';
+        if (normalized === 'hr/recruiter' || normalized === 'recruiter') return 'recruiter';
         return normalized;
     };
 
     const getCurrentRoleConfig = () => {
         const configKey = getRoleConfigKey(currentUser.primaryRole);
-        return roleConfigs[configKey] || roleConfigs['job_seeker'];
+        return roleConfigs[configKey] || roleConfigs['candidate'];
     };
 
     const handleRoleSwitch = async (newRole: string) => {
@@ -165,9 +165,9 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         // redirect based on role
         const normalized = getRoleConfigKey(newRole);
         let path = '/candidate-dashboard';
-        if (normalized === 'hr_manager' || normalized === 'recruiter') path = '/recruiter-dashboard';
-        else if (normalized === 'educator') path = '/educator-dashboard';
-        else if (normalized === 'student') path = '/student-dashboard';
+        if (normalized === 'employer_admin' || normalized === 'recruiter') path = '/recruiter-dashboard';
+        else if (normalized === 'training_provider') path = '/educator-dashboard';
+        else if (normalized === 'candidate') path = '/student-dashboard';
         else if (normalized === 'admin') path = '/admin-dashboard';
 
         navigate(path);

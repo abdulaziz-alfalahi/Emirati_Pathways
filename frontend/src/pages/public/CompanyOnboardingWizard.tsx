@@ -53,7 +53,7 @@ const CompanyOnboardingWizard: React.FC = () => {
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [positionTitle, setPositionTitle] = useState('');
-    const [role, setRole] = useState<'recruiter' | 'hr_manager'>('recruiter');
+    const [role, setRole] = useState<'recruiter' | 'employer_admin'>('recruiter');
 
     // Step 3 — OTP
     const [otpSent, setOtpSent] = useState(false);
@@ -169,7 +169,7 @@ const CompanyOnboardingWizard: React.FC = () => {
 
     // ─── Navigate to dashboard ───
     const goToDashboard = () => {
-        const dash = role === 'hr_manager' ? '/hr-dashboard' : '/recruiter-dashboard';
+        const dash = role === 'employer_admin' ? '/hr-dashboard' : '/recruiter-dashboard';
         navigate(dash);
     };
 
@@ -370,7 +370,7 @@ const CompanyOnboardingWizard: React.FC = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 6 }}>
                                 {([
                                     { value: 'recruiter', label: 'Recruiter', desc: 'Post jobs, source & assess candidates', icon: <User size={20} /> },
-                                    { value: 'hr_manager', label: 'HR Manager', desc: 'Manage hiring pipeline & team', icon: <Briefcase size={20} /> },
+                                    { value: 'employer_admin', label: 'HR Manager', desc: 'Manage hiring pipeline & team', icon: <Briefcase size={20} /> },
                                 ] as const).map(opt => (
                                     <button
                                         key={opt.value}
@@ -519,7 +519,7 @@ const CompanyOnboardingWizard: React.FC = () => {
                             Your account has been created for <strong>{invitation?.company_name}</strong>
                         </p>
                         <p style={{ color: colors.textSecondary, fontSize: 14, margin: '0 0 28px' }}>
-                            Role: <strong style={{ color: colors.primary }}>{role === 'hr_manager' ? 'HR Manager' : 'Recruiter'}</strong>
+                            Role: <strong style={{ color: colors.primary }}>{role === 'employer_admin' ? 'HR Manager' : 'Recruiter'}</strong>
                         </p>
 
                         <button onClick={goToDashboard} style={{ ...primaryBtnStyle, padding: '14px 36px', fontSize: 16 }}>

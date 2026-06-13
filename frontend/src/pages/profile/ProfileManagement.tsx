@@ -208,7 +208,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
 
   // Consolidated Role Configurations
   const roleConfigs: Record<string, any> = {
-    'job_seeker': {
+    'candidate': {
       label: 'Job Seeker',
       icon: User,
       color: 'bg-blue-500',
@@ -219,7 +219,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         skills: () => <CandidateStudioPointer section="skills" />
       }
     },
-    'student': {
+    'candidate': {
       label: 'Student',
       icon: GraduationCap,
       color: 'bg-teal-500',
@@ -241,7 +241,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         preferences: RecruiterPreferences
       }
     },
-    'hr_manager': {
+    'employer_admin': {
       label: 'HR Manager',
       icon: Users,
       color: 'bg-green-600',
@@ -253,7 +253,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         team: () => <div>Team Management</div>
       }
     },
-    'educator': {
+    'training_provider': {
       label: 'Educator',
       icon: GraduationCap,
       color: 'bg-purple-500',
@@ -286,7 +286,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         methodology: () => <div>Assessment Methodology</div>
       }
     },
-    'guardian': {
+    'parent': {
       label: 'Guardian',
       icon: Shield,
       color: 'bg-slate-500',
@@ -301,15 +301,15 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   // Helper to normalize role keys for config lookup 
   const getRoleConfigKey = (role: string) => {
     const normalized = normalizeRole(role) as string;
-    if (normalized === 'candidate') return 'job_seeker';
+    if (normalized === 'candidate') return 'candidate';
     // Map variations to the config key 'recruiter'
-    if (normalized === 'hr/recruiter' || normalized === 'hr_recruiter') return 'recruiter';
+    if (normalized === 'hr/recruiter' || normalized === 'recruiter') return 'recruiter';
     return normalized;
   };
 
   const getCurrentRoleConfig = () => {
     const configKey = getRoleConfigKey(currentUser.primaryRole);
-    return roleConfigs[configKey] || roleConfigs['job_seeker'];
+    return roleConfigs[configKey] || roleConfigs['candidate'];
   };
 
   const handleRoleSwitch = (newRole: string) => {
@@ -702,7 +702,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                     {/* Explicitly render ProfileForm for Job Seeker to avoid re-mounting issues */}
                     {currentUser.primaryRole === 'Job Seeker' && tab === 'personal' ? (
                       <CandidateStudioPointer section="identity" />
-                    ) : currentUser.primaryRole === 'student' && tab === 'personal' ? (
+                    ) : currentUser.primaryRole === 'candidate' && tab === 'personal' ? (
                       <StudentProfileForm
                         initialData={candidateData}
                         onSave={async (data) => {
@@ -771,7 +771,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
               <div className="space-y-4">
                 {currentUser.secondaryRoles.map(role => {
                   const configKey = getRoleConfigKey(role);
-                  const config = roleConfigs[configKey] || roleConfigs['job_seeker'];
+                  const config = roleConfigs[configKey] || roleConfigs['candidate'];
                   const Icon = config?.icon || User;
                   const displayName = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 

@@ -94,13 +94,13 @@ const UserManager: React.FC = () => {
     'user_admin',
     'content_editor',
     'content_reviewer',
-    'job_seeker',
+    'candidate',
     'recruiter',
-    'hr_manager',
+    'employer_admin',
     'mentor',
-    'educator',
-    'student',
-    'guardian',
+    'training_provider',
+    'candidate',
+    'parent',
     'assessor'
   ]);
 
@@ -328,10 +328,10 @@ const UserManager: React.FC = () => {
       'user_admin': 'bg-blue-100 text-blue-800',
       'content_editor': 'bg-green-100 text-green-800',
       'content_reviewer': 'bg-yellow-100 text-yellow-800',
-      'job_seeker': 'bg-indigo-100 text-indigo-800',
-      'hr_recruiter': 'bg-pink-100 text-pink-800',
+      'candidate': 'bg-indigo-100 text-indigo-800',
+      'recruiter': 'bg-pink-100 text-pink-800',
       'mentor': 'bg-orange-100 text-orange-800',
-      'educator': 'bg-teal-100 text-teal-800',
+      'training_provider': 'bg-teal-100 text-teal-800',
       'assessor': 'bg-cyan-100 text-cyan-800'
     };
     return colors[role] || 'bg-gray-100 text-gray-800';

@@ -131,7 +131,7 @@ export default function RecruiterCandidatesPage() {
             const userStr = localStorage.getItem('user');
             if (userStr) {
               const u = JSON.parse(userStr);
-              if (u.role === 'hr_manager' || u.role === 'hr' || u.user_type === 'hr_manager') {
+              if (u.role === 'employer_admin' || u.role === 'employer_admin' || u.user_type === 'employer_admin') {
                 navigate('/hr-dashboard');
                 return;
               }

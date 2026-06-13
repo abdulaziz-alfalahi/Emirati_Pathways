@@ -7340,7 +7340,7 @@ export type Database = {
       booth_type:
         | "company"
         | "university"
-        | "government"
+        | 'compliance_auditor'
         | "training_center"
         | "startup"
       certificate_status: "pending" | "issued" | "revoked"
@@ -7397,7 +7397,7 @@ export type Database = {
         | "jobseeker"
         | "lifelong_learner"
         | "entrepreneur"
-        | "retiree"
+        | 'candidate'
         | "educational_institution"
         | "parent"
         | "private_sector_recruiter"
@@ -7407,7 +7407,7 @@ export type Database = {
         | "assessment_center"
         | "mentor"
         | "career_advisor"
-        | "administrator"
+        | 'admin'
         | "super_user"
         | "platform_operator"
       verification_status: "verified" | "pending" | "revoked"
@@ -7549,7 +7549,7 @@ export const Constants = {
       booth_type: [
         "company",
         "university",
-        "government",
+        'compliance_auditor',
         "training_center",
         "startup",
       ],
@@ -7613,7 +7613,7 @@ export const Constants = {
         "jobseeker",
         "lifelong_learner",
         "entrepreneur",
-        "retiree",
+        'candidate',
         "educational_institution",
         "parent",
         "private_sector_recruiter",
@@ -7623,7 +7623,7 @@ export const Constants = {
         "assessment_center",
         "mentor",
         "career_advisor",
-        "administrator",
+        'admin',
         "super_user",
         "platform_operator",
       ],

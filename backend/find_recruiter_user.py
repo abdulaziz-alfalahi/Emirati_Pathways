@@ -26,7 +26,7 @@ def find_recruiter():
         cur.execute("""
             SELECT id, email, role, first_name, last_name, password_hash
             FROM users 
-            WHERE role IN ('recruiter', 'hr_recruiter', 'hr')
+            WHERE role IN ('recruiter', 'recruiter', 'employer_admin')
             LIMIT 5;
         """)
         

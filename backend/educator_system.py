@@ -27,7 +27,7 @@ class EducatorRole(Enum):
     """Educator role types"""
     TEACHER = "teacher"
     COUNSELOR = "counselor"
-    ADMINISTRATOR = "administrator"
+    ADMINISTRATOR = 'admin'
     COORDINATOR = "coordinator"
     PRINCIPAL = "principal"
 
@@ -209,7 +209,7 @@ class EducatorSystem:
             return {
                 "success": True,
                 "educator_id": educator_id,
-                "educator": asdict(educator),
+                'training_provider': asdict(educator),
                 "message": "Educator profile created successfully"
             }
             
@@ -264,7 +264,7 @@ class EducatorSystem:
             return {
                 "success": True,
                 "student_id": student_id,
-                "student": asdict(student),
+                'candidate': asdict(student),
                 "ai_recommendations": ai_recommendations,
                 "message": "Student profile created successfully with AI career guidance"
             }
@@ -408,7 +408,7 @@ class EducatorSystem:
                 "alerts": [
                     {
                         "type": "academic_concern",
-                        "student": "Omar Al Rashid",
+                        'candidate': "Omar Al Rashid",
                         "message": "GPA dropped below 2.5",
                         "severity": "high"
                     }

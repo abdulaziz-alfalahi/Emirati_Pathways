@@ -165,12 +165,12 @@ def seed_sample_data(conn):
         (uid(2), 'Job application status unknown', 'Applied to 4 positions 2 weeks ago, all still showing "Under Review". User wants update.', 'jobs', 'medium', 'in_progress', 'whatsapp'),
         (uid(3), 'Password reset not working', 'OTP not arriving on WhatsApp. User tried 5 times. Phone number verified as correct.', 'account', 'high', 'open', 'phone'),
         (uid(4), 'Training certificate not appearing', 'Completed "Digital Marketing Fundamentals" course but certificate not in profile.', 'training', 'medium', 'in_progress', 'email'),
-        (uid(5), 'Request for employer partnership info', 'HR manager from ADNOC wants info on employer partnership program and onboarding process.', 'employer', 'low', 'open', 'email'),
+        (uid(5), 'Request for employer partnership info', 'HR manager from ADNOC wants info on employer partnership program and onboarding process.', 'employer_admin', 'low', 'open', 'email'),
         (uid(6), 'Interview scheduling conflict', 'Received two interview invitations for the same time slot. Needs to reschedule one.', 'jobs', 'high', 'in_progress', 'whatsapp'),
         (uid(0), 'Profile data incorrect after update', 'Updated phone number and education, but old data still displays. Possible sync issue.', 'account', 'medium', 'resolved', 'in_app'),
         (uid(1), 'Mentorship program enrollment', 'User wants to enroll in the mentorship program but cannot find the registration page.', 'general', 'low', 'resolved', 'phone'),
         (uid(2), 'Assessment results not loading', 'Skills assessment completed yesterday but results page shows spinner indefinitely.', 'technical', 'urgent', 'open', 'phone'),
-        (uid(3), 'Emiratization target question', 'Company HR asking how emiratization targets are calculated on the compliance dashboard.', 'employer', 'low', 'resolved', 'email'),
+        (uid(3), 'Emiratization target question', 'Company HR asking how emiratization targets are calculated on the compliance dashboard.', 'employer_admin', 'low', 'resolved', 'email'),
         (uid(4), 'Cannot upload documents', 'File upload fails with "413 Request Entity Too Large" error for a 15MB certificate scan.', 'technical', 'medium', 'open', 'whatsapp'),
     ]
     for t in tickets:
@@ -218,7 +218,7 @@ def seed_sample_data(conn):
         ('Employer Partnership Onboarding', 'استقطاب شراكات أصحاب العمل',
          'To onboard a new employer:\n1. Direct them to the Growth Operator who manages company onboarding.\n2. Provide the magic link process: HR manager receives an SMS with a unique onboarding link.\n3. Required docs: Trade license, company profile, HR contact details.\n4. Timeline: Onboarding typically completes within 3 business days.',
          'لاستقطاب صاحب عمل جديد:\n1. وجههم إلى مشغل النمو الذي يدير استقطاب الشركات.\n2. قدم عملية الرابط السحري.',
-         'employer', '["employer", "onboarding", "partnership", "company"]'),
+         'employer_admin', '['employer_admin', "onboarding", "partnership", "company"]'),
         ('Platform Navigation Help', 'مساعدة في التنقل في المنصة',
          'Key pages for candidates:\n- /dashboard — Main candidate dashboard\n- /jobs — Job listings and search\n- /cv-builder — Create and manage CVs\n- /training — Available training programs\n- /assessments — Skills assessments\n\nFor employers:\n- /recruiter-dashboard — Recruiter workspace\n- /recruiter/jobs — Manage job postings',
          'الصفحات الرئيسية للمرشحين:\n- /dashboard — لوحة تحكم المرشح الرئيسية\n- /jobs — قوائم الوظائف والبحث',

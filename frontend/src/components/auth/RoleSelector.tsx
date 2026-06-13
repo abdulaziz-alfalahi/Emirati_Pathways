@@ -32,7 +32,7 @@ const personaOptions: PersonaOption[] = [
   
   // Family & Community
   { value: 'parent', label: 'Parent', category: 'Family & Community' },
-  { value: 'retiree', label: 'Retiree', category: 'Family & Community' },
+  { value: 'candidate', label: 'Retiree', category: 'Family & Community' },
   { value: 'retiree_advocate', label: 'Retiree Advocate', category: 'Family & Community' },
   
   // Organizations
@@ -48,7 +48,7 @@ const personaOptions: PersonaOption[] = [
   
   // Platform Management
   { value: 'platform_operator', label: 'Platform Operator', category: 'Platform Management' },
-  { value: 'administrator', label: 'Platform Administrator', category: 'Platform Management' },
+  { value: 'admin', label: 'Platform Administrator', category: 'Platform Management' },
   { value: 'super_user', label: 'Super User', category: 'Platform Management' },
 ];
 

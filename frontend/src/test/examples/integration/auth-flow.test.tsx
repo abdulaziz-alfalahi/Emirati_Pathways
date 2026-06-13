@@ -141,11 +141,11 @@ describe('Authentication Flow Integration', () => {
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
-        data: { role: 'administrator' },
+        data: { role: 'admin' },
         error: null,
       }),
       maybeSingle: vi.fn().mockResolvedValue({
-        data: { role: 'administrator' },
+        data: { role: 'admin' },
         error: null,
       }),
     } as any);

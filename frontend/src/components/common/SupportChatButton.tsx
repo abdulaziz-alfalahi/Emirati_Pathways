@@ -72,7 +72,7 @@ const CATEGORIES = [
   { id: 'account',   emoji: '🔐', en: 'Account & Login',          ar: 'الحساب وتسجيل الدخول' },
   { id: 'jobs',      emoji: '💼', en: 'Jobs & Applications',      ar: 'الوظائف والطلبات' },
   { id: 'training',  emoji: '🎓', en: 'Training & Certificates',  ar: 'التدريب والشهادات' },
-  { id: 'employer',  emoji: '🏢', en: 'Employer Services',        ar: 'خدمات أصحاب العمل' },
+  { id: 'employer_admin',  emoji: '🏢', en: 'Employer Services',        ar: 'خدمات أصحاب العمل' },
 ];
 
 /* ══════════════════════════════════════════════

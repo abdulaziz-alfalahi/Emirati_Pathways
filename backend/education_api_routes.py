@@ -360,7 +360,7 @@ def create_scholarship():
             data.get('description', ''),
             data.get('description_ar', ''),
             data.get('provider', data.get('provider_name', '')),
-            data.get('provider_type', 'government'),
+            data.get('provider_type', 'compliance_auditor'),
             data.get('amount'),
             data.get('currency', data.get('coverage_type', 'AED')),
             data.get('application_deadline', data.get('deadline')),

@@ -188,7 +188,7 @@ class AdvancedAnalyticsEngine:
             
             # Generate sample user activities
             activity_types = ["login", "job_search", "profile_update", "application_submit", "message_send", "course_enroll", "mentor_session"]
-            user_types = ["job_seeker", "hr_recruiter", "mentor", "educator"]
+            user_types = ['candidate', 'recruiter', "mentor", 'training_provider']
             
             user_activities_data = []
             for i in range(5000):

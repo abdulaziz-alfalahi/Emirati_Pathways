@@ -60,6 +60,7 @@ const OperationsMonitoringCenter: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
     const [currentTime, setCurrentTime] = useState(new Date());
     const [data, setData] = useState<OpsData | null>(null);
+    const [funnelData, setFunnelData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -72,9 +73,16 @@ const OperationsMonitoringCenter: React.FC = () => {
         const fetchStats = async () => {
             try {
                 setLoading(true);
-                const res = await restClient.get('/api/operations/stats');
+                const [res, liveRes] = await Promise.all([
+                    restClient.get('/api/operations/stats'),
+                    restClient.get('/api/metrics/operations-live')
+                ]);
+                
                 if (res.data?.success && res.data?.data) {
                     setData(res.data.data);
+                }
+                if (liveRes.data?.success && liveRes.data?.data) {
+                    setFunnelData(liveRes.data.data.funnel_analytics);
                 }
             } catch (e: any) {
                 console.error('Operations stats error:', e);
@@ -438,18 +446,29 @@ const OperationsMonitoringCenter: React.FC = () => {
                             <div style={{ color: c.textMuted, fontSize: 13, textAlign: 'center', padding: 20 }}>{t('No recent activity', 'لا يوجد نشاط حديث')}</div>
                         )}
 
-                        {/* Role Distribution Mini */}
-                        {Object.keys(data.role_distribution).length > 0 && (
+                        {/* Funnel Analytics */}
+                        {funnelData && (
                             <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${c.cardBorder}` }}>
-                                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>{t('Users by Role', 'المستخدمون حسب الدور')}</div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                    {Object.entries(data.role_distribution).slice(0, 8).map(([role, cnt]) => (
-                                        <div key={role} style={{
-                                            fontSize: 11, padding: '3px 10px', borderRadius: 12,
-                                            background: `${c.accent}15`, color: c.textSecondary,
-                                            border: `1px solid ${c.cardBorder}`
-                                        }}>
-                                            {role.replace(/_/g, ' ')} <strong style={{ color: c.textPrimary }}>{cnt}</strong>
+                                <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>{t('Conversion Funnel', 'قمع التحويل')}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {[
+                                        { label: t('Signups', 'التسجيلات'), value: funnelData.signups, color: c.accent },
+                                        { label: t('Profile Completion', 'إكمال الملف'), value: funnelData.profile_completion, color: c.purple },
+                                        { label: t('Job Applications', 'طلبات التوظيف'), value: funnelData.job_applications, color: c.green }
+                                    ].map((step, idx, arr) => (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <div style={{ width: 100, fontSize: 11, color: c.textSecondary }}>{step.label}</div>
+                                            <div style={{ flex: 1, background: c.cardBorder, height: 24, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
+                                                <div style={{ 
+                                                    width: `${Math.max(5, (step.value / arr[0].value) * 100)}%`, 
+                                                    background: step.color, 
+                                                    height: '100%', 
+                                                    transition: 'width 1s ease',
+                                                    display: 'flex', alignItems: 'center', paddingLeft: 12
+                                                }}>
+                                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{step.value.toLocaleString()}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

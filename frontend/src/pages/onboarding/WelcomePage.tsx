@@ -15,7 +15,7 @@ import {
 // Define the roles for selection
 const ROLES = [
     {
-        id: 'job_seeker',
+        id: 'candidate',
         title: 'Job Seeker',
         description: 'Find your dream job and advance your career.',
         icon: Briefcase,
@@ -23,7 +23,7 @@ const ROLES = [
         borderColor: 'border-blue-200'
     },
     {
-        id: 'student',
+        id: 'candidate',
         title: 'Student',
         description: 'Apply for scholarships, internships, and programs.',
         icon: GraduationCap,
@@ -31,7 +31,7 @@ const ROLES = [
         borderColor: 'border-purple-200'
     },
     {
-        id: 'educator',
+        id: 'training_provider',
         title: 'Educator',
         description: 'Manage curriculum and track student progress.',
         icon: BookOpen,
@@ -75,8 +75,8 @@ const WelcomePage: React.FC = () => {
 
         try {
             const metadata: any = {};
-            if (selectedRole === 'educator') metadata.institution_name = institutionName;
-            if (selectedRole === 'student') metadata.university_name = institutionName; // Reusing state var for simplicity
+            if (selectedRole === 'training_provider') metadata.institution_name = institutionName;
+            if (selectedRole === 'candidate') metadata.university_name = institutionName; // Reusing state var for simplicity
             if (selectedRole === 'recruiter') metadata.company_name = companyName;
 
             // Call API to update role with metadata
@@ -101,7 +101,7 @@ const WelcomePage: React.FC = () => {
 
     const getRoleDetailsForm = () => {
         switch (selectedRole) {
-            case 'student':
+            case 'candidate':
                 return (
                     <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -116,7 +116,7 @@ const WelcomePage: React.FC = () => {
                         />
                     </div>
                 );
-            case 'educator':
+            case 'training_provider':
                 return (
                     <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">

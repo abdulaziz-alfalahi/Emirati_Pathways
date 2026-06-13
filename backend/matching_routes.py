@@ -26,7 +26,7 @@ def get_top_vacancies():
             {
                 "id": "vac_001",
                 "title": "AI Strategy Specialist - Dubai Future Foundation",
-                "employer": "Dubai Future Foundation",
+                'employer_admin': "Dubai Future Foundation",
                 "match_score": 98,
                 "location": "Dubai, UAE",
                 "salary_range": "AED 35,000 - 45,000",
@@ -35,7 +35,7 @@ def get_top_vacancies():
             {
                 "id": "vac_002",
                 "title": "Digital Transformation Lead",
-                "employer": "RTA (Roads & Transport Authority)",
+                'employer_admin': "RTA (Roads & Transport Authority)",
                 "match_score": 95,
                 "location": "Dubai, UAE",
                 "salary_range": "AED 40,000 - 55,000",
@@ -44,7 +44,7 @@ def get_top_vacancies():
              {
                 "id": "vac_003",
                 "title": "Smart City Architect",
-                "employer": "Digital Dubai",
+                'employer_admin': "Digital Dubai",
                 "match_score": 92,
                 "location": "Dubai, UAE",
                 "salary_range": "AED 30,000 - 42,000",
@@ -53,7 +53,7 @@ def get_top_vacancies():
             {
                 "id": "vac_004",
                 "title": "Sustainability Program Manager",
-                "employer": "Masdar",
+                'employer_admin': "Masdar",
                 "match_score": 88,
                 "location": "Abu Dhabi, UAE",
                 "salary_range": "AED 38,000 - 50,000",
@@ -62,7 +62,7 @@ def get_top_vacancies():
             {
                 "id": "vac_005",
                 "title": "Emiratization Consultant",
-                "employer": "MOHRE",
+                'employer_admin': "MOHRE",
                 "match_score": 85,
                 "location": "Dubai, UAE",
                 "salary_range": "AED 25,000 - 35,000",

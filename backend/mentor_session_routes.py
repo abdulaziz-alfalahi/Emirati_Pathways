@@ -412,7 +412,7 @@ def get_session_details(session_id):
         
         has_access = (
             (user_role == 'mentor' and session.mentor_id == mentor_id) or
-            (user_role == 'job_seeker' and session.mentee_user_id == current_user_id)
+            (user_role == 'candidate' and session.mentee_user_id == current_user_id)
         )
         
         if not has_access:
@@ -587,7 +587,7 @@ def get_session_analytics():
                 analytics = scheduler.get_session_analytics(mentor_id=mentor_id)
             else:
                 analytics = {}
-        elif user_role == 'job_seeker':
+        elif user_role == 'candidate':
             # Get mentee analytics
             analytics = scheduler.get_session_analytics(mentee_id=current_user_id)
         else:

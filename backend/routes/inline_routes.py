@@ -576,7 +576,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                 samples = [
                     {
                         'title': 'Software Engineer',
-                        'employer': 'Emirates Tech',
+                        'employer_admin': 'Emirates Tech',
                         'location': 'Dubai, UAE',
                         'description': 'Build and maintain web applications in React and Node.js.',
                         'requirements': ['react', 'node', 'typescript', 'api'],
@@ -584,7 +584,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Data Analyst',
-                        'employer': 'Dubai Analytics Lab',
+                        'employer_admin': 'Dubai Analytics Lab',
                         'location': 'Dubai, UAE',
                         'description': 'Analyze datasets and build BI dashboards.',
                         'requirements': ['sql', 'python', 'excel'],
@@ -592,7 +592,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'IT Security Specialist',
-                        'employer': 'Zayed University',
+                        'employer_admin': 'Zayed University',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Implement security policies and monitor incidents.',
                         'requirements': ['security', 'siem', 'network'],
@@ -600,7 +600,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Project Manager',
-                        'employer': 'ADNOC',
+                        'employer_admin': 'ADNOC',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Lead cross-functional projects and deliver on time.',
                         'requirements': ['project management', 'communications'],
@@ -608,7 +608,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Mobile App Developer',
-                        'employer': 'Careem',
+                        'employer_admin': 'Careem',
                         'location': 'Dubai, UAE',
                         'description': 'Develop and maintain mobile applications.',
                         'requirements': ['flutter', 'kotlin', 'swift'],
@@ -616,7 +616,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Cloud Engineer',
-                        'employer': 'Etisalat',
+                        'employer_admin': 'Etisalat',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Manage cloud infrastructure and CI/CD.',
                         'requirements': ['aws', 'docker', 'kubernetes'],
@@ -624,7 +624,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Business Analyst',
-                        'employer': 'Dubai Tourism',
+                        'employer_admin': 'Dubai Tourism',
                         'location': 'Dubai, UAE',
                         'description': 'Gather requirements and document business processes.',
                         'requirements': ['requirements', 'process mapping'],
@@ -632,7 +632,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'AI Researcher',
-                        'employer': 'Mohammed bin Zayed University of AI',
+                        'employer_admin': 'Mohammed bin Zayed University of AI',
                         'location': 'Abu Dhabi, UAE',
                         'description': 'Research AI models and publish results.',
                         'requirements': ['python', 'ml', 'deep learning'],
@@ -640,7 +640,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Frontend Developer',
-                        'employer': 'Noon',
+                        'employer_admin': 'Noon',
                         'location': 'Dubai, UAE',
                         'description': 'Build responsive UIs in React/Vue.',
                         'requirements': ['react', 'html', 'css'],
@@ -648,7 +648,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                     },
                     {
                         'title': 'Backend Developer',
-                        'employer': 'Talabat',
+                        'employer_admin': 'Talabat',
                         'location': 'Dubai, UAE',
                         'description': 'Design REST APIs and microservices.',
                         'requirements': ['node', 'java', 'rest'],
@@ -669,7 +669,7 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
                         VALUES (%s::uuid, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
                         """,
                         (
-                            v['id'], v['title'], v.get('employer'), v.get('location'), v.get('description'),
+                            v['id'], v['title'], v.get('employer_admin'), v.get('location'), v.get('description'),
                             json.dumps(v.get('requirements', [])), json.dumps(v.get('tags', []))
                         ),
                         fetch_all=False
@@ -1462,7 +1462,7 @@ Return only the JSON object, no additional text."""
 
             user_id = data.get('user_id')
             email = data.get('email')
-            role = data.get('role', 'job_seeker')
+            role = data.get('role', 'candidate')
 
             if not user_id:
                 return jsonify({

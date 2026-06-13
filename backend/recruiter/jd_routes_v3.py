@@ -147,7 +147,7 @@ def match_candidates(jd_id):
                 NULL as cv_url,
                 NULL as linkedin_url
             FROM users
-            WHERE role = 'job_seeker'
+            WHERE role = 'candidate'
                 AND is_active = true
             LIMIT 100
         """

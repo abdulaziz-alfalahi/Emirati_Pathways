@@ -484,7 +484,7 @@ const VideoInterviewPage = () => {
 
     const handleEndSession = () => {
         const role = user?.role || user?.user_type || '';
-        if (role === 'hr_manager' || role === 'hr') {
+        if (role === 'employer_admin' || role === 'employer_admin') {
             navigate('/hr-dashboard?tab=interviews');
         } else {
             navigate('/recruiter/interviews');

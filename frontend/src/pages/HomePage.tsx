@@ -20,7 +20,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 const HomePage: React.FC = () => {
   const personas = [
     {
-      id: 'job_seeker',
+      id: 'candidate',
       title: 'Job Seeker',
       description: 'Find your dream career with AI-powered job matching and personalized career guidance',
       icon: Users,
@@ -28,14 +28,14 @@ const HomePage: React.FC = () => {
       popular: true
     },
     {
-      id: 'hr_recruiter',
+      id: 'recruiter',
       title: 'HR / Recruiter',
       description: 'Streamline hiring with advanced recruitment tools and candidate analytics',
       icon: Building2,
       features: ['Talent Pipeline', 'Video Interviews', 'Analytics Dashboard', 'Compliance Tools']
     },
     {
-      id: 'educator',
+      id: 'training_provider',
       title: 'Educator',
       description: 'Enhance student outcomes with curriculum management and industry integration',
       icon: GraduationCap,

@@ -61,11 +61,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 4 --bind 0.0.0.0:5005 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile - wsgi:app
     restart: unless-stopped
     env_file: ./backend/.env
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-emirati_user}:${DB_PASSWORD}@db:5432/emirati_journey
-      DB_HOST: db
       REDIS_URL: redis://redis:6379/0
       USE_REDIS: "true"
     ports:
@@ -87,7 +86,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8089:80"
     depends_on:
       - backend
     networks:

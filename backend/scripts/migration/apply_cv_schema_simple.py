@@ -112,7 +112,7 @@ try:
             'government-executive',
             'Government Executive',
             'Professional template designed for UAE government positions and leadership roles',
-            'government',
+            'compliance_auditor',
             '{"colors": {"primary": "#1e40af", "secondary": "#374151", "accent": "#059669"}, "fonts": {"title_size": 26, "heading_size": 18, "body_size": 11}, "layout": "traditional", "features": ["D33 Aligned", "Leadership Focus", "Government Style"]}'::jsonb
         ),
         (

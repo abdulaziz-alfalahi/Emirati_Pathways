@@ -140,7 +140,7 @@ const InterviewPreparationPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('simulator.setup.industry')}</label>
               <div className="grid grid-cols-2 gap-2">
-                {['banking', 'technology', 'healthcare', 'government'].map((industry) => (
+                {['banking', 'technology', 'healthcare', 'compliance_auditor'].map((industry) => (
                   <Badge key={industry} variant="outline" className="justify-center">
                     {t(`industries.${industry}`)}
                   </Badge>

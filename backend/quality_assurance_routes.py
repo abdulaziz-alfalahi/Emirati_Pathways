@@ -30,7 +30,7 @@ def _conn_string() -> str:
 @jwt_required()
 def qa_health():
     claims = get_jwt()
-    if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+    if claims and claims.get('role') not in ('recruiter', 'admin'):
         return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
     result = health_check(_conn_string())
     return jsonify({"success": True, "data": result}), 200
@@ -41,7 +41,7 @@ def qa_health():
 def assessor_bias(assessor_id: int):
     try:
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         date_from = request.args.get("from")
         date_to = request.args.get("to")
@@ -67,7 +67,7 @@ def assessor_bias(assessor_id: int):
 def assessor_dashboard(assessor_id: int):
     try:
         claims = get_jwt()
-        if claims and claims.get('role') not in ('hr_recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         system = QualityAssuranceSystem(_conn_string())
         system.connect_db()

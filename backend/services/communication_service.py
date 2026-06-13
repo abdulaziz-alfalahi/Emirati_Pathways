@@ -618,8 +618,8 @@ class CommunicationService:
                     # Infer recipient role if not provided but sender role is known
                     if sender_role and not recipient_role:
                         if sender_role == 'recruiter':
-                            recipient_role = 'job_seeker'
-                        elif sender_role == 'job_seeker':
+                            recipient_role = 'candidate'
+                        elif sender_role == 'candidate':
                             recipient_role = 'recruiter'
                     
                     roles = {}
@@ -649,8 +649,8 @@ class CommunicationService:
                    # Update Recipient Role (Infer)
                    recipient_role = None
                    if sender_role == 'recruiter':
-                        recipient_role = 'job_seeker'
-                   elif sender_role == 'job_seeker':
+                        recipient_role = 'candidate'
+                   elif sender_role == 'candidate':
                         recipient_role = 'recruiter'
                    
                    if recipient_role:
@@ -782,13 +782,13 @@ class CommunicationService:
                 params = [user_id]
                 
                 if role:
-                    # Map equivalent role names: frontend may send 'candidate' but DB stores 'job_seeker'
+                    # Map equivalent role names: frontend may send 'candidate' but DB stores 'candidate'
                     role_variants = {
-                        'candidate': ['candidate', 'job_seeker', 'jobseeker'],
-                        'job_seeker': ['candidate', 'job_seeker', 'jobseeker'],
-                        'jobseeker': ['candidate', 'job_seeker', 'jobseeker'],
-                        'recruiter': ['recruiter', 'hr_manager'],
-                        'hr_manager': ['recruiter', 'hr_manager'],
+                        'candidate': ['candidate', 'candidate', 'jobseeker'],
+                        'candidate': ['candidate', 'candidate', 'jobseeker'],
+                        'jobseeker': ['candidate', 'candidate', 'jobseeker'],
+                        'recruiter': ['recruiter', 'employer_admin'],
+                        'employer_admin': ['recruiter', 'employer_admin'],
                     }
                     roles_to_match = role_variants.get(role, [role])
                     placeholders = ', '.join(['%s'] * len(roles_to_match))

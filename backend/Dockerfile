@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code (filtered by .dockerignore)
 COPY . .
 
+# Create symlink for "backend." imports
+RUN ln -s /app /backend
+
 # Create upload directory
 RUN mkdir -p /app/uploads
 
