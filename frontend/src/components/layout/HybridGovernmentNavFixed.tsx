@@ -103,7 +103,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
     'operator', 'growth_operator', 'employer_relations', 'talent_operator',
     'education_operator', 'assessment_operator', 'mentorship_operator',
     'community_operator', 'platform_operator', 'career_services_operator',
-    'admin', 'compliance_auditor'
+    'admin', 'board_member', 'compliance_auditor'
   ].includes(userRole.toLowerCase());
 
   // Filter nav groups — remove blocked items, apply role-based allowedRoles, then remove empty groups

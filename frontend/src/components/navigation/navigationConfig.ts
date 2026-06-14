@@ -281,6 +281,13 @@ export const operationsNavGroup: NavGroup = {
       description: 'High-level KPI tracking for Board Members',
       icon: Award,
       allowedRoles: ['admin', 'platform_operator']
+    },
+    {
+      name: 'Service Catalog',
+      href: '/service-catalog',
+      description: 'EHRDC service guide, gap analysis & platform alignment',
+      icon: BookOpen,
+      allowedRoles: ['admin', 'board_member', 'compliance_auditor', 'platform_operator']
     }
   ]
 };
