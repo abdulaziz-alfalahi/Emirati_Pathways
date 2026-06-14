@@ -38,7 +38,12 @@
         "platformPath": "/candidate/profile/identity",
         "gapNotes": "المنصة تستخدم استوديو الملف الشخصي (Profile Studio) بدلاً من منشئ سيرة ذاتية مستقل. المسار /cv-builder يوجّه تلقائياً إلى /candidate/profile/identity. تتوفر 3 مسارات: /cv-builder، /resume-builder، /cv-upload. تم تحديث الدليل ليعكس الواقع.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج تحسين المحتوى المهني بالذكاء الاصطناعي",
+        "relatedForms": "/cv-builder, /resume-builder, /cv-upload"
       },
       {
         "code": "CS-02",
@@ -70,7 +75,12 @@
         "platformPath": "/career-hub",
         "gapNotes": "تم دمج استكشاف الصناعات ضمن مركز المسار المهني الموحّد (/career-hub) الذي يجمع: التخطيط المهني، الإرشاد المهني، محاكاة المسار، واستكشاف الصناعات. المسار /industry-exploration يوجّه تلقائياً إلى /career-hub.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج توصية المسارات المهنية",
+        "relatedForms": "/industry-exploration, /career-planning-hub"
       }
     ]
   },
@@ -110,7 +120,13 @@
         "platformPath": "/career-hub",
         "gapNotes": "تم دمج الإرشاد المهني ضمن مركز المسار المهني الموحّد (/career-hub). المسار /career-advisory يوجّه تلقائياً إلى /career-hub. تتوفر لوحتان للمتخصصين: /advisor-dashboard و /coach-dashboard.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "advisor",
+          "candidate"
+        ],
+        "aiModel": "نموذج التوصية والتحليل المهني",
+        "relatedForms": "/career-advisory, /advisor-dashboard"
       },
       {
         "code": "CG-02",
@@ -142,7 +158,12 @@
         "platformPath": "/career-hub",
         "gapNotes": "تم دمج محاكاة المسار المهني ضمن مركز المسار المهني الموحّد (/career-hub). المسار /career-simulator يوجّه تلقائياً إلى /career-hub.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج محاكاة المسار المهني بالذكاء الاصطناعي",
+        "relatedForms": "/career-simulator"
       }
     ]
   },
@@ -184,7 +205,13 @@
         "platformPath": "/training",
         "gapNotes": "المنصة تتضمن 4 تبويبات (البرامج المتاحة، شهاداتي، تقييماتي، شركاء التدريب) بدلاً من مسار خطي. يتوفر ربط تلقائي بجواز السفر المهني (/credentials?tab=passport) ولوحة تحكم لمقدمي التدريب (/training-center-dashboard) ونظام إدارة التعلم (/lms). تم تحديث الدليل ليعكس الواقع.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate",
+          "training_provider"
+        ],
+        "aiModel": "نموذج توصية البرامج التدريبية",
+        "relatedForms": "/training, /training-center-dashboard, /credentials"
       },
       {
         "code": "TD-02",
@@ -216,7 +243,12 @@
         "platformPath": "/digital-skills",
         "gapNotes": "المسار /digital-skills-development يوجّه تلقائياً إلى /training. المسار /digital-skills هو المسار المستقل النشط. يتوفر نظام إدارة التعلم (/lms) كقناة إضافية.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج تقييم المهارات الرقمية",
+        "relatedForms": "/digital-skills, /digital-skills-development, /lms"
       }
     ]
   },
@@ -258,7 +290,12 @@
         "platformPath": "/job-matching",
         "gapNotes": "المنصة تتضمن 4 تبويبات (مطابقات AI، محفوظة، طلباتي، توصيات) مع تحليل المسافة والتنقل وتقييم قوة الملف الشخصي. تتوفر خدمة المقابلات المرئية كخطوة متكاملة. تم تحديث الدليل ليعكس الواقع.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج مطابقة الوظائف بالذكاء الاصطناعي",
+        "relatedForms": "/job-matching, /applications, /candidate-dashboard"
       },
       {
         "code": "EJ-02",
@@ -289,7 +326,12 @@
         "platformPath": "/applications",
         "gapNotes": "المنصة تتضمن نظام تتبع طلبات متكامل مع إشعارات فورية.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج تتبع الطلبات الذكي",
+        "relatedForms": "/applications, /candidate-dashboard"
       },
       {
         "code": "EJ-03",
@@ -320,7 +362,14 @@
         "platformPath": "/recruiter/video-interview",
         "gapNotes": "خدمة مفعّلة بالكامل في المنصة مع تحليل ذكاء اصطناعي. لم تُذكر في الدليل الأصلي.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate",
+          "recruiter",
+          "employer_admin"
+        ],
+        "aiModel": "نموذج تحليل المقابلات بالذكاء الاصطناعي",
+        "relatedForms": "/recruiter/video-interview/:sessionId, /guest/interview/:token"
       },
       {
         "code": "EJ-04",
@@ -352,7 +401,12 @@
         "platformPath": "/gig-marketplace",
         "gapNotes": "خدمة مفعّلة في المنصة لم تُذكر في الدليل الأصلي.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج مطابقة المشاريع والمهارات",
+        "relatedForms": "/gig-marketplace"
       }
     ]
   },
@@ -396,7 +450,13 @@
         "platformPath": "/recruiter",
         "gapNotes": "المنصة تتضمن لوحة تحكم شاملة بـ 7 تبويبات و13 مسار فرعي بدلاً من 3 خطوات في الدليل الأصلي. تتوفر أدوات متقدمة: منشئ الوصف الوظيفي بالذكاء الاصطناعي، قوالب جاهزة، مطابقة ذكية، مقابلات مرئية، تحليلات، رفع دفعات، سلسلة موافقات، وتوزيع خارجي. تم تحديث الدليل ليعكس الواقع.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "recruiter",
+          "employer_admin"
+        ],
+        "aiModel": "نموذج بناء الوصف الوظيفي والمطابقة",
+        "relatedForms": "/recruiter/jobs, /recruiter/jd-builder, /recruiter/candidates"
       },
       {
         "code": "ER-02",
@@ -434,7 +494,13 @@
         "platformPath": "/workspace/:companyId",
         "gapNotes": "المنصة تتضمن 11 وحدة فرعية في مساحة عمل الشركة بدلاً من 5 خطوات في الدليل الأصلي. تم تحديث الدليل ليعكس الواقع.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "employer_admin",
+          "recruiter"
+        ],
+        "aiModel": "نموذج تحليل التوطين والأداء",
+        "relatedForms": "/workspace/:companyId, /hr-dashboard"
       },
       {
         "code": "ER-03",
@@ -465,7 +531,14 @@
         "platformPath": "/government-dashboard?tab=compliance",
         "gapNotes": "تم دمج متابعة مؤشرات التوطين ضمن اللوحة الحكومية كتبويب الامتثال. يتوفر أيضاً على مستوى الشركة (/workspace/:companyId/emiratisation) ولوحة نافس المستقلة (/nafis-talent-dashboard). المسار /emiratization-tracker يوجّه تلقائياً.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "employer_admin",
+          "recruiter",
+          "talent_operator"
+        ],
+        "aiModel": "نموذج تحليل التوطين والتنبؤ",
+        "relatedForms": "/emiratization-tracker, /nafis-talent-dashboard"
       }
     ]
   },
@@ -504,7 +577,12 @@
         "platformPath": "/credentials?tab=passport",
         "gapNotes": "تم دمج جواز السفر المهني ضمن مركز الاعتمادات الموحّد (/credentials) كتبويب. المسار /career-passport يوجّه تلقائياً إلى /credentials?tab=passport.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج التحقق والتوثيق الذكي",
+        "relatedForms": "/career-passport, /credentials, /blockchain-credentials"
       },
       {
         "code": "DC-02",
@@ -535,7 +613,12 @@
         "platformPath": "/credentials",
         "gapNotes": "المنصة تتضمن دعم Blockchain للشهادات.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج التقييم والاعتماد الذكي",
+        "relatedForms": "/credentials, /professional-certifications, /blockchain-credentials"
       }
     ]
   },
@@ -575,7 +658,12 @@
         "platformPath": "/career-hub",
         "gapNotes": "تم توحيد التخطيط المهني ضمن مركز المسار المهني الموحّد (/career-hub) الذي يجمع 4 خدمات في صفحة واحدة شاملة. المسار /career-planning-hub يوجّه تلقائياً إلى /career-hub.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج التخطيط المهني الذكي",
+        "relatedForms": "/career-planning-hub, /career-hub"
       },
       {
         "code": "CP-02",
@@ -606,7 +694,12 @@
         "platformPath": "/financial-planning",
         "gapNotes": "خدمة مفعّلة في المنصة لم تُذكر في الدليل الأصلي.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج التخطيط المالي الذكي",
+        "relatedForms": "/financial-planning"
       }
     ]
   },
@@ -646,7 +739,13 @@
         "platformPath": "/mentorship",
         "gapNotes": "المنصة تتضمن منظومة إرشاد متكاملة: محرك مطابقة بالذكاء الاصطناعي، جدولة جلسات، متابعة التقدم، نظام تواصل، لوحة تحكم للموجّه، ولوحة للمشغل. الخلفية تتضمن 8+ ملفات مسارات مخصصة للإرشاد.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "mentor",
+          "candidate"
+        ],
+        "aiModel": "نموذج مطابقة الموجهين والمستفيدين",
+        "relatedForms": "/mentorship, /mentor-dashboard"
       },
       {
         "code": "EN-02",
@@ -677,7 +776,13 @@
         "platformPath": "/assessments",
         "gapNotes": "المنصة تتضمن منظومة تقييم متكاملة: لوحة تحكم للمقيّم (/assessor-dashboard)، ذكاء اصطناعي للتقييمات، إطار تحقق من الكفاءات، ونظام ضمان جودة. الخلفية تتضمن محركات متقدمة بحجم إجمالي يتجاوز 132KB.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "assessor",
+          "candidate"
+        ],
+        "aiModel": "نموذج التقييم والتحليل الذكي",
+        "relatedForms": "/assessments, /assessor-dashboard"
       }
     ]
   },
@@ -717,7 +822,14 @@
         "platformPath": "/school-programs",
         "gapNotes": "المنصة تتضمن 5 صفحات للبرامج التعليمية: /school-programs، /university-programs، /scholarships، /graduate-programs، /knowledge-camps. يتوفر أيضاً لوحة إدارية (/admin/school-programs) مع واجهة برمجة متكاملة.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate",
+          "parent",
+          "training_provider"
+        ],
+        "aiModel": "نموذج توصية البرامج التعليمية",
+        "relatedForms": "/school-programs, /university-programs, /scholarships"
       },
       {
         "code": "SP-02",
@@ -748,7 +860,12 @@
         "platformPath": "/guardian-dashboard",
         "gapNotes": "خدمة مفعّلة مع دور مستقل (guardian/parent) ولوحة تحكم مخصصة.",
         "isNew": true,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "parent"
+        ],
+        "aiModel": "نموذج متابعة المسار التعليمي",
+        "relatedForms": "/guardian-dashboard"
       }
     ]
   },
@@ -787,7 +904,14 @@
         "platformPath": "/communities",
         "gapNotes": "تم دمج القيادة الفكرية (/thought-leadership) وقصص النجاح (/share-success-stories) ضمن صفحة المجتمعات الموحّدة (/communities). كلا المسارين يوجّهان تلقائياً إلى /communities.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate",
+          "mentor",
+          "training_provider"
+        ],
+        "aiModel": "نموذج توصية المجتمعات",
+        "relatedForms": "/communities, /messages"
       },
       {
         "code": "CM-02",
@@ -818,7 +942,13 @@
         "platformPath": "/communities",
         "gapNotes": "تم دمج التوجيه المجتمعي والقيادة الفكرية ضمن صفحة المجتمعات الموحّدة (/communities). المسار /thought-leadership يوجّه تلقائياً إلى /communities. تتوفر صفحة مستقلة لتنمية الشباب (/youth-development).",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate",
+          "mentor"
+        ],
+        "aiModel": "نموذج توصية المحتوى المجتمعي",
+        "relatedForms": "/thought-leadership, /share-success-stories, /youth-development"
       }
     ]
   },
@@ -857,7 +987,13 @@
         "platformPath": "/call-center-dashboard",
         "gapNotes": "المنصة تتضمن لوحة تحكم مخصصة لوكيل مركز الاتصال (/call-center-dashboard).",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "call_center_agent",
+          "admin"
+        ],
+        "aiModel": "نموذج الدعم الذكي التلقائي",
+        "relatedForms": "/call-center-dashboard"
       },
       {
         "code": "TS-02",
@@ -890,7 +1026,13 @@
         "platformPath": "/admin/role-requests",
         "gapNotes": "المنصة تدعم 11 دوراً قابلاً للطلب ومعالجة عبر واجهة إدارية. يتوفر أيضاً مدير المستخدمين (/admin/user-roles) لإدارة الأدوار النشطة. الخلفية تتضمن role_routes.py (23KB). تم تحديث الدليل ليعكس الواقع.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "admin",
+          "platform_operator"
+        ],
+        "aiModel": "نموذج التحقق من الأهلية",
+        "relatedForms": "/admin/role-requests, /admin/user-roles"
       }
     ]
   },
@@ -929,7 +1071,12 @@
         "platformPath": "/call-center-dashboard",
         "gapNotes": "المنصة تتضمن نظام رسائل متكامل (/messages) للتواصل الداخلي.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "call_center_agent"
+        ],
+        "aiModel": "نموذج الرد الذكي التلقائي",
+        "relatedForms": "مركز الاتصال"
       },
       {
         "code": "GI-02",
@@ -961,7 +1108,13 @@
         "platformPath": "/call-center-dashboard",
         "gapNotes": "المنصة تتضمن مكون ملاحظات عالمي (FeedbackWidget) متاح في جميع الصفحات بالإضافة إلى معالجة الشكاوى عبر مركز الاتصال.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "call_center_agent",
+          "admin"
+        ],
+        "aiModel": "نموذج تصنيف الشكاوى الذكي",
+        "relatedForms": "مركز الاتصال، البريد الإلكتروني"
       }
     ]
   },
@@ -1000,7 +1153,13 @@
         "platformPath": "/government-dashboard",
         "gapNotes": "المنصة تتضمن لوحة تحكم حكومية (/government-dashboard) للتنسيق المؤسسي.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "compliance_auditor",
+          "admin"
+        ],
+        "aiModel": "",
+        "relatedForms": "القنوات المؤسسية"
       },
       {
         "code": "IP-02",
@@ -1033,7 +1192,12 @@
         "platformPath": "/startup-launchpad",
         "gapNotes": "المنصة تتضمن /startup-launchpad للشركات الناشئة و /national-service لخدمة الوطن.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate"
+        ],
+        "aiModel": "نموذج توصية المبادرات",
+        "relatedForms": "/startup-launchpad, /national-service"
       }
     ]
   },
@@ -1072,7 +1236,14 @@
         "platformPath": "/student-dashboard",
         "gapNotes": "المنصة تتضمن لوحات تحكم منفصلة للطالب والمعلم وولي الأمر.",
         "isNew": false,
-        "isCorrection": false
+        "isCorrection": false,
+        "platformRoles": [
+          "candidate",
+          "parent",
+          "training_provider"
+        ],
+        "aiModel": "",
+        "relatedForms": "/student-dashboard, /guardian-dashboard, /educator-dashboard"
       }
     ]
   }
