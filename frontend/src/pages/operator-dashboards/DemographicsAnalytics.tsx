@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import {
     PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -132,7 +133,11 @@ const DemographicsAnalytics: React.FC = () => {
             minHeight: '100vh', background: c.bg, overflow: 'auto',
             fontFamily: "'Inter', -apple-system, sans-serif"
         }}>
+            {/* ─── Platform Navigation ─── */}
+            <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={() => {}} />
+
             {/* ─── Header ─────────────────────────────────────────── */}
+            <div style={{ paddingTop: 64 }} /> {/* spacer for fixed nav */}
             <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '16px 24px', borderBottom: `1px solid ${c.cardBorder}`,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import {
     Activity, Users, Building2, GraduationCap, Briefcase,
     TrendingUp, BarChart3, Flag, Clock, CheckCircle,
@@ -167,7 +168,11 @@ const OperationsMonitoringCenter: React.FC = () => {
             minHeight: '100vh', background: c.bg, overflow: 'auto',
             fontFamily: "'Inter', -apple-system, sans-serif"
         }}>
+            {/* ─── Platform Navigation ─── */}
+            <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={() => {}} />
+
             {/* ─── Header Bar ─────────────────────────────────────────── */}
+            <div style={{ paddingTop: 64 }} /> {/* spacer for fixed nav */}
             <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '10px 24px', borderBottom: `1px solid ${c.cardBorder}`,
