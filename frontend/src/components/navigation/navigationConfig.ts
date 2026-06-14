@@ -266,7 +266,7 @@ export const operationsNavGroup: NavGroup = {
       href: '/demographics',
       description: 'Deep-dive analysis of the talent pool',
       icon: Users,
-      allowedRoles: ['admin', 'platform_operator', 'board_member', 'compliance_auditor']
+      allowedRoles: ['admin', 'platform_operator', 'compliance_auditor']
     },
     {
       name: 'Operations Monitoring',
@@ -280,7 +280,7 @@ export const operationsNavGroup: NavGroup = {
       href: '/executive',
       description: 'High-level KPI tracking for Board Members',
       icon: Award,
-      allowedRoles: ['board_member', 'admin', 'platform_operator']
+      allowedRoles: ['admin', 'platform_operator']
     }
   ]
 };

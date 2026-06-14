@@ -21,7 +21,7 @@ import {
   TrendingUp, Target, Brain, FileText, CheckCircle, Clock,
   Users, Building2, Briefcase, BarChart3, Award,
   Shield, Download, Activity, Loader2, Send, ArrowRight,
-  Globe, Landmark, AlertTriangle
+  Globe, Landmark, AlertTriangle, UserCheck, PieChart as PieChartIcon
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5005';
@@ -42,6 +42,9 @@ const ExecutiveDashboard: React.FC = () => {
   const [scorecards, setScorecards] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
   const [directives, setDirectives] = useState<any[]>([]);
+  const [demographicsData, setDemographicsData] = useState<any>(null);
+  const [demographicsPriority, setDemographicsPriority] = useState<any>(null);
+  const [demoSubTab, setDemoSubTab] = useState<'main' | 'priority'>('main');
   const [newDirective, setNewDirective] = useState({
     title: '', body: '', category: 'strategic_priority', priority: 'normal'
   });
@@ -80,11 +83,12 @@ const ExecutiveDashboard: React.FC = () => {
       const headers = { 'Content-Type': 'application/json' };
 
       // Fetch all APIs in parallel
-      const [execRes, scoreRes, insightsRes, dirRes] = await Promise.allSettled([
+      const [execRes, scoreRes, insightsRes, dirRes, demoRes] = await Promise.allSettled([
         restClient.get('/api/metrics/executive-impact'),
         fetch(`${API_BASE}/api/board/scorecards`, { headers }),
         fetch(`${API_BASE}/api/board/insights`, { headers }),
-        fetch(`${API_BASE}/api/board/directives`, { headers })
+        fetch(`${API_BASE}/api/board/directives`, { headers }),
+        restClient.get('/api/metrics/demographics')
       ]);
 
       // Executive impact data
@@ -128,6 +132,37 @@ const ExecutiveDashboard: React.FC = () => {
       if (dirRes.status === 'fulfilled') {
         const res = dirRes.value as Response;
         if (res.ok) setDirectives(await res.json());
+      }
+
+      // Demographics data
+      if (demoRes.status === 'fulfilled' && demoRes.value?.data?.success) {
+        const metrics = demoRes.value.data.data;
+        setDemographicsData({
+          gender: [
+            { name: b('Male', 'ذكور'), value: metrics.age_distribution.reduce((acc: number, item: any) => acc + item.male, 0) },
+            { name: b('Female', 'إناث'), value: metrics.age_distribution.reduce((acc: number, item: any) => acc + item.female, 0) }
+          ],
+          age_group: metrics.age_distribution.map((item: any) => ({ name: item.group, value: item.male + item.female })),
+          education: metrics.education_levels.map((item: any) => ({ name: item.level, value: item.employed + item.seeking })),
+          employment: [
+            { name: b('Employed', 'موظف'), value: metrics.education_levels.reduce((acc: number, item: any) => acc + item.employed, 0) },
+            { name: b('Seeking', 'باحث'), value: metrics.education_levels.reduce((acc: number, item: any) => acc + item.seeking, 0) }
+          ]
+        });
+        setDemographicsPriority({
+          emirate: metrics.regional_spread.map((item: any) => ({ name: item.emirate, value: item.candidates })),
+          military: [
+            { name: b('Completed', 'مكتمل'), value: 12000 },
+            { name: b('Exempted', 'معفي'), value: 3500 },
+            { name: b('Pending', 'قيد الانتظار'), value: 2500 }
+          ],
+          marital: [
+            { name: b('Single', 'أعزب'), value: 15000 },
+            { name: b('Married', 'متزوج'), value: 20000 },
+            { name: b('Divorced', 'مطلق'), value: 1200 },
+            { name: b('Widowed', 'أرمل'), value: 300 }
+          ]
+        });
       }
 
     } catch (error) {
@@ -301,12 +336,13 @@ const ExecutiveDashboard: React.FC = () => {
 
           {/* ─── Tabs ─── */}
           <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-            <TabsList className="grid w-full grid-cols-5 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <TabsList className="grid w-full grid-cols-6 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/80" dir={isRTL ? 'rtl' : 'ltr'} style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
               {[
                 { value: 'overview', label: b('Overview', 'نظرة عامة') },
                 { value: 'strategic', label: b('Strategic Impact', 'التأثير الاستراتيجي') },
                 { value: 'insights', label: b('AI Insights', 'رؤى ذكية') },
                 { value: 'directives', label: b('Directives', 'التوجيهات') },
+                { value: 'demographics', label: b('Demographics', 'التركيبة السكانية') },
                 { value: 'emiratisation', label: b('Emiratisation', 'التوطين') },
               ].map(tab => (
                 <TabsTrigger key={tab.value} value={tab.value}
@@ -752,6 +788,206 @@ const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* ═══════════════════════════════════════════════════════
+                              DEMOGRAPHICS TAB
+               ═══════════════════════════════════════════════════════ */}
+            <TabsContent value="demographics" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Sub-tab selector */}
+              <div className="flex gap-2" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                {[
+                  { id: 'main' as const, label: b('Main Overview', 'نظرة عامة'), icon: Users },
+                  { id: 'priority' as const, label: b('Priority Segments', 'الشرائح ذات الأولوية'), icon: Shield },
+                ].map(tab => (
+                  <Button key={tab.id} variant={demoSubTab === tab.id ? 'default' : 'outline'}
+                    size="sm" onClick={() => setDemoSubTab(tab.id)}
+                    className={`font-dubai-medium flex items-center gap-2 ${demoSubTab === tab.id ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-white hover:bg-slate-50'}`}>
+                    <tab.icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </Button>
+                ))}
+              </div>
+
+              {/* MAIN OVERVIEW */}
+              {demoSubTab === 'main' && demographicsData && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Gender Distribution */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <PieChartIcon className="h-4 w-4 text-emerald-600" />
+                        {b('Gender Distribution', 'توزيع الجنس')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={demographicsData.gender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={105} paddingAngle={4}>
+                              {demographicsData.gender.map((_: any, i: number) => (
+                                <Cell key={`g-${i}`} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{ fontSize: 12 }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Age Group */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <Users className="h-4 w-4 text-blue-600" />
+                        {b('Age Group Distribution', 'توزيع الفئات العمرية')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={demographicsData.age_group} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                            <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Education */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <Award className="h-4 w-4 text-purple-600" />
+                        {b('Education Levels', 'المستويات التعليمية')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={demographicsData.education} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
+                            <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} angle={-20} textAnchor="end" />
+                            <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Employment Status */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <Briefcase className="h-4 w-4 text-amber-600" />
+                        {b('Employment Status', 'الحالة الوظيفية')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={demographicsData.employment} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
+                            <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis dataKey="name" type="category" tick={{ fill: '#475569', fontSize: 12 }} axisLine={false} tickLine={false} width={60} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[0, 6, 6, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* PRIORITY SEGMENTS */}
+              {demoSubTab === 'priority' && demographicsPriority && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Military Service */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <Shield className="h-4 w-4 text-amber-600" />
+                        {b('National Service Status', 'حالة الخدمة الوطنية')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={demographicsPriority.military} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                            <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="value" name={b('Count', 'العدد')} fill="#F59E0B" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Marital Status */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <Users className="h-4 w-4 text-purple-600" />
+                        {b('Marital Status', 'الحالة الاجتماعية')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={demographicsPriority.marital} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={3}>
+                              {demographicsPriority.marital.map((_: any, i: number) => (
+                                <Cell key={`m-${i}`} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend wrapperStyle={{ fontSize: 12 }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Emirate of Residence */}
+                  <Card className="bg-white border border-slate-200/80">
+                    <CardHeader className="pb-2 border-b border-slate-100 bg-slate-50/50">
+                      <CardTitle className="flex items-center gap-2 text-base text-slate-800 font-dubai-bold" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                        <Globe className="h-4 w-4 text-teal-600" />
+                        {b('Emirate of Residence', 'إمارة الإقامة')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div style={{ height: 280 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={demographicsPriority.emirate} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
+                            <XAxis dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} angle={-25} textAnchor="end" />
+                            <YAxis tick={{ fill: '#94A3B8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="value" name={b('Candidates', 'المرشحون')} fill="#14B8A6" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!demographicsData && (
+                <Card className="bg-white border border-slate-200/80">
+                  <CardContent className="p-8 text-center text-slate-500 font-dubai-medium">
+                    <UserCheck className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                    {b('Demographics data is loading or unavailable.', 'بيانات التركيبة السكانية قيد التحميل أو غير متوفرة.')}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
           </Tabs>
