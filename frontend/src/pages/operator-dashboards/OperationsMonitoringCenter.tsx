@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
-import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import {
     Activity, Users, Building2, GraduationCap, Briefcase,
     TrendingUp, BarChart3, Flag, Clock, CheckCircle,
@@ -56,6 +56,7 @@ interface OpsData {
 }
 
 const OperationsMonitoringCenter: React.FC = () => {
+    const navigate = useNavigate();
     const { language } = useLanguage();
     const isRTL = language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
@@ -168,11 +169,7 @@ const OperationsMonitoringCenter: React.FC = () => {
             minHeight: '100vh', background: c.bg, overflow: 'auto',
             fontFamily: "'Inter', -apple-system, sans-serif"
         }}>
-            {/* ─── Platform Navigation ─── */}
-            <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={() => {}} />
-
             {/* ─── Header Bar ─────────────────────────────────────────── */}
-            <div style={{ paddingTop: 64 }} /> {/* spacer for fixed nav */}
             <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '10px 24px', borderBottom: `1px solid ${c.cardBorder}`,
@@ -191,6 +188,20 @@ const OperationsMonitoringCenter: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <button
+                        onClick={() => navigate(-1)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '6px 14px', borderRadius: 8,
+                            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                            color: '#CBD5E1', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                    >
+                        ← {isRTL ? 'العودة للمنصة' : 'Back to Platform'}
+                    </button>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.green, boxShadow: `0 0 8px ${c.green}` }} />
                         <span style={{ fontSize: 12, color: c.green, fontWeight: 600 }}>{t('ALL SYSTEMS OPERATIONAL', 'جميع الأنظمة تعمل')}</span>
