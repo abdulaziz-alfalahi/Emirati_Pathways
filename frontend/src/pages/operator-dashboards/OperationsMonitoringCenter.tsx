@@ -468,9 +468,9 @@ const OperationsMonitoringCenter: React.FC = () => {
                                 <div style={{ fontSize: 11, color: c.textMuted, textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>{t('Conversion Funnel', 'قمع التحويل')}</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                     {[
-                                        { label: t('Signups', 'التسجيلات'), value: funnelData.signups, color: c.accent },
-                                        { label: t('Profile Completion', 'إكمال الملف'), value: funnelData.profile_completion, color: c.purple },
-                                        { label: t('Job Applications', 'طلبات التوظيف'), value: funnelData.job_applications, color: c.green }
+                                        { label: t('Signups', 'التسجيلات'), value: funnelData.signups || 0, color: c.accent },
+                                        { label: t('Profile Completion', 'إكمال الملف'), value: funnelData.profile_completion || 0, color: c.purple },
+                                        { label: t('Job Applications', 'طلبات التوظيف'), value: funnelData.job_applications || 0, color: c.green }
                                     ].map((step, idx, arr) => (
                                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <div style={{ width: 100, fontSize: 11, color: c.textSecondary }}>{step.label}</div>
