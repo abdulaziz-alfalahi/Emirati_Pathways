@@ -40,7 +40,8 @@
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
-          "candidate"
+          "candidate",
+          "career_services_operator"
         ],
         "aiModel": "نموذج تحسين المحتوى المهني بالذكاء الاصطناعي",
         "relatedForms": "/cv-builder, /resume-builder, /cv-upload"
@@ -77,7 +78,8 @@
         "isNew": false,
         "isCorrection": false,
         "platformRoles": [
-          "candidate"
+          "candidate",
+          "career_services_operator"
         ],
         "aiModel": "نموذج توصية المسارات المهنية",
         "relatedForms": "/industry-exploration, /career-planning-hub"
@@ -123,7 +125,9 @@
         "isCorrection": false,
         "platformRoles": [
           "advisor",
-          "candidate"
+          "candidate",
+          "coach",
+          "career_services_operator"
         ],
         "aiModel": "نموذج التوصية والتحليل المهني",
         "relatedForms": "/career-advisory, /advisor-dashboard"
@@ -160,7 +164,8 @@
         "isNew": true,
         "isCorrection": false,
         "platformRoles": [
-          "candidate"
+          "candidate",
+          "career_services_operator"
         ],
         "aiModel": "نموذج محاكاة المسار المهني بالذكاء الاصطناعي",
         "relatedForms": "/career-simulator"
@@ -208,7 +213,9 @@
         "isCorrection": false,
         "platformRoles": [
           "candidate",
-          "training_provider"
+          "training_provider",
+          "board_member",
+          "internship_coordinator"
         ],
         "aiModel": "نموذج توصية البرامج التدريبية",
         "relatedForms": "/training, /training-center-dashboard, /credentials"
@@ -497,7 +504,10 @@
         "isCorrection": false,
         "platformRoles": [
           "employer_admin",
-          "recruiter"
+          "recruiter",
+          "growth_operator",
+          "employee",
+          "employer_relations"
         ],
         "aiModel": "نموذج تحليل التوطين والأداء",
         "relatedForms": "/workspace/:companyId, /hr-dashboard"
@@ -535,7 +545,10 @@
         "platformRoles": [
           "employer_admin",
           "recruiter",
-          "talent_operator"
+          "talent_operator",
+          "board_member",
+          "growth_operator",
+          "employer_relations"
         ],
         "aiModel": "نموذج تحليل التوطين والتنبؤ",
         "relatedForms": "/emiratization-tracker, /nafis-talent-dashboard"
@@ -742,7 +755,8 @@
         "isCorrection": false,
         "platformRoles": [
           "mentor",
-          "candidate"
+          "candidate",
+          "growth_operator"
         ],
         "aiModel": "نموذج مطابقة الموجهين والمستفيدين",
         "relatedForms": "/mentorship, /mentor-dashboard"
@@ -779,7 +793,8 @@
         "isCorrection": false,
         "platformRoles": [
           "assessor",
-          "candidate"
+          "candidate",
+          "growth_operator"
         ],
         "aiModel": "نموذج التقييم والتحليل الذكي",
         "relatedForms": "/assessments, /assessor-dashboard"
@@ -826,7 +841,8 @@
         "platformRoles": [
           "candidate",
           "parent",
-          "training_provider"
+          "training_provider",
+          "internship_coordinator"
         ],
         "aiModel": "نموذج توصية البرامج التعليمية",
         "relatedForms": "/school-programs, /university-programs, /scholarships"
@@ -908,7 +924,8 @@
         "platformRoles": [
           "candidate",
           "mentor",
-          "training_provider"
+          "training_provider",
+          "growth_operator"
         ],
         "aiModel": "نموذج توصية المجتمعات",
         "relatedForms": "/communities, /messages"
@@ -1029,7 +1046,8 @@
         "isCorrection": false,
         "platformRoles": [
           "admin",
-          "platform_operator"
+          "platform_operator",
+          "super_admin"
         ],
         "aiModel": "نموذج التحقق من الأهلية",
         "relatedForms": "/admin/role-requests, /admin/user-roles"
@@ -1156,7 +1174,8 @@
         "isCorrection": false,
         "platformRoles": [
           "compliance_auditor",
-          "admin"
+          "admin",
+          "board_member"
         ],
         "aiModel": "",
         "relatedForms": "القنوات المؤسسية"

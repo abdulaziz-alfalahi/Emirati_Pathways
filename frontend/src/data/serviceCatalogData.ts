@@ -170,6 +170,55 @@ export const roleLabels: Record<string, { en: string; ar: string; descEN: string
     descAR: 'المشغّلون المسؤولون عن متابعة التوطين وبرامج نافس للمواهب.',
     icon: '🇦🇪',
   },
+  board_member: {
+    en: 'Board Member',
+    ar: 'عضو مجلس الإدارة',
+    descEN: 'Executive board members accessing strategic dashboards, analytics, and governance reports.',
+    descAR: 'أعضاء مجلس الإدارة الذين يطلعون على لوحات القيادة الاستراتيجية والتقارير والتحليلات.',
+    icon: '👔',
+  },
+  growth_operator: {
+    en: 'Growth Operator',
+    ar: 'مشغّل النمو',
+    descEN: 'Operators managing growth domains including employer relations, education, assessments, mentorship, and community operations.',
+    descAR: 'المشغّلون المسؤولون عن مجالات النمو بما في ذلك علاقات أصحاب العمل والتعليم والتقييم والإرشاد والمجتمعات.',
+    icon: '📈',
+  },
+  internship_coordinator: {
+    en: 'Internship Coordinator',
+    ar: 'منسق التدريب العملي',
+    descEN: 'Coordinators managing internship programs, placements, and student-employer matching.',
+    descAR: 'المنسقون المسؤولون عن برامج التدريب العملي والتوظيف ومطابقة الطلاب بأصحاب العمل.',
+    icon: '🎒',
+  },
+  super_admin: {
+    en: 'Super Administrator',
+    ar: 'مسؤول النظام الأعلى',
+    descEN: 'Top-level administrator with full system access including role management and security configuration.',
+    descAR: 'المسؤول الأعلى بصلاحيات كاملة بما في ذلك إدارة الأدوار وإعدادات الأمان.',
+    icon: '🔑',
+  },
+  career_services_operator: {
+    en: 'Career Services Operator',
+    ar: 'مشغّل الخدمات المهنية',
+    descEN: 'Operators managing career services CRM, job verification, and candidate pipeline.',
+    descAR: 'المشغّلون المسؤولون عن إدارة علاقات العملاء المهنية والتحقق من الوظائف ومسار المرشحين.',
+    icon: '🗂️',
+  },
+  employee: {
+    en: 'Employee',
+    ar: 'موظف',
+    descEN: 'Active employees accessing workspace, training, and company resources.',
+    descAR: 'الموظفون النشطون الذين يصلون إلى مساحة العمل والتدريب وموارد الشركة.',
+    icon: '👷',
+  },
+  employer_relations: {
+    en: 'Employer Relations Officer',
+    ar: 'مسؤول علاقات أصحاب العمل',
+    descEN: 'Officers managing employer partnerships, workspace access, and growth operator coordination.',
+    descAR: 'المسؤولون عن إدارة شراكات أصحاب العمل والوصول لمساحات العمل والتنسيق مع مشغلي النمو.',
+    icon: '🤝',
+  },
 };
 
 /** Deduplicated list of all roles across all services */
