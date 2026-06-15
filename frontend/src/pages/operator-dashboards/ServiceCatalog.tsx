@@ -70,8 +70,13 @@ const statusMeta: Record<string, { color: string; bg: string; labelEN: string; l
   active:     { color: '#059669', bg: '#d1fae5', labelEN: 'Active',     labelAR: 'مفعّل' },
   partial:    { color: '#d97706', bg: '#fef3c7', labelEN: 'Partial',    labelAR: 'جزئي' },
   gap:        { color: '#dc2626', bg: '#fee2e2', labelEN: 'Gap',        labelAR: 'فجوة' },
-  correction: { color: '#9333ea', bg: '#f3e8ff', labelEN: 'Correction', labelAR: 'تصحيح' },
+  correction: { color: '#7c3aed', bg: '#ede9fe', labelEN: 'Correction', labelAR: 'تصحيح' },
 };
+
+/* Platform design tokens */
+const TEAL = '#006E6D';
+const TEAL_LIGHT = '#ecfdf5';
+const TEAL_600 = '#059669';
 
 const tabDefs = [
   { key: 'overview',  en: 'Overview',                           ar: 'نظرة عامة' },
@@ -108,17 +113,21 @@ const Field: React.FC<{ label: string; value: string }> = ({ label, value }) => 
   );
 };
 
-const StatCard: React.FC<{ value: number | string; label: string; color: string; iconEl?: React.ReactNode; small?: boolean }> = ({ value, label, color, iconEl, small }) => (
+const StatCard: React.FC<{ value: number | string; label: string; color: string; iconEl?: React.ReactNode; small?: boolean; border?: string }> = ({ value, label, color, iconEl, small, border }) => (
   <div style={{
-    background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14,
-    padding: small ? '14px 16px' : '20px 22px', flex: 1, minWidth: small ? 140 : 180,
-    borderInlineStart: `4px solid ${color}`, display: 'flex', flexDirection: 'column', gap: 4,
+    background: '#fff', border: `1px solid ${border || '#e2e8f0'}`, borderRadius: 12,
+    padding: small ? '14px 18px' : '18px 22px', flex: 1, minWidth: small ? 140 : 180,
+    display: 'flex', flexDirection: 'column', gap: 6,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    transition: 'box-shadow 0.2s, transform 0.2s',
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      {iconEl}
-      <span style={{ fontSize: small ? 28 : 40, fontWeight: 800, color }}>{value}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div>
+        <div style={{ fontSize: small ? 11 : 12, fontWeight: 500, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{label}</div>
+        <span style={{ fontSize: small ? 24 : 32, fontWeight: 800, color: '#0f172a' }}>{value}</span>
+      </div>
+      {iconEl && <div style={{ padding: small ? 8 : 10, background: `${color}12`, borderRadius: 12 }}>{iconEl}</div>}
     </div>
-    <span style={{ fontSize: small ? 11 : 13, color: '#64748b', fontWeight: 500 }}>{label}</span>
   </div>
 );
 
@@ -165,40 +174,43 @@ const ServiceCatalog: React.FC = () => {
 
   /* ─── RENDER ────────────────────────────────────────────────────── */
   return (
-    <div style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Inter, system-ui, sans-serif', background: '#f8fafc', minHeight: '100vh', textAlign: isRTL ? 'right' : 'left' }}>
+    <div style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Dubai, Inter, system-ui, sans-serif', background: '#FAFBFC', minHeight: '100vh', textAlign: isRTL ? 'right' : 'left' }}>
       {/* ─── Header ─── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '16px 28px' }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '14px 28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1400, margin: '0 auto' }}>
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={() => navigate('/dashboard')} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: '#475569', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 1px 2px rgba(0,0,0,0.04)', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+          >
             {isRTL ? '→' : '←'} {t('Back to Platform', 'العودة للمنصة')}
           </button>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{t('EHRDC Service Catalog', 'دليل خدمات منصة تنمية الموارد البشرية')}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{t('Emirati Human Resources Development Council', 'مجلس تنمية الموارد البشرية الإماراتية')}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{t('EHRDC Service Catalog', 'دليل خدمات منصة تنمية الموارد البشرية')}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{t('Emirati Human Resources Development Council', 'مجلس تنمية الموارد البشرية الإماراتية')}</div>
           </div>
-          <button onClick={toggleLanguage} style={{ background: '#0e4a8a', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 700, letterSpacing: 0.5, transition: 'background 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#1e5faa'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#0e4a8a'; }}
+          <button onClick={toggleLanguage} style={{ background: TEAL_LIGHT, color: TEAL, border: `1px solid ${TEAL}30`, borderRadius: 10, padding: '8px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600, transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = TEAL; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = TEAL_LIGHT; e.currentTarget.style.color = TEAL; }}
           >
             {isRTL ? 'EN' : 'عربي'}
           </button>
         </div>
       </div>
 
-      {/* ─── Tab Bar ─── */}
-      <div style={{ background: '#0e4a8a', padding: '0 28px' }}>
-        <div style={{ display: 'flex', gap: 0, maxWidth: 1400, margin: '0 auto', overflowX: 'auto' }}>
+      {/* ─── Tab Bar (matches platform white tab style) ─── */}
+      <div style={{ background: '#fff', padding: '8px 28px 0', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', gap: 4, maxWidth: 1400, margin: '0 auto', overflowX: 'auto' }}>
           {tabDefs.map(td => (
             <button key={td.key} onClick={() => setActiveTab(td.key)}
               style={{
-                background: activeTab === td.key ? 'rgba(255,255,255,0.15)' : 'transparent',
-                color: activeTab === td.key ? '#fff' : 'rgba(255,255,255,0.6)',
-                border: 'none', borderBottom: activeTab === td.key ? '3px solid #fff' : '3px solid transparent',
-                padding: '14px 24px', cursor: 'pointer', fontSize: 14, fontWeight: activeTab === td.key ? 700 : 500,
-                whiteSpace: 'nowrap', transition: 'all 0.2s',
+                background: activeTab === td.key ? TEAL_LIGHT : 'transparent',
+                color: activeTab === td.key ? TEAL : '#64748b',
+                border: 'none', borderBottom: activeTab === td.key ? `2px solid ${TEAL}` : '2px solid transparent',
+                padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: activeTab === td.key ? 700 : 500,
+                whiteSpace: 'nowrap', transition: 'all 0.15s', borderRadius: '8px 8px 0 0',
               }}
-              onMouseEnter={e => { if (activeTab !== td.key) e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
-              onMouseLeave={e => { if (activeTab !== td.key) e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+              onMouseEnter={e => { if (activeTab !== td.key) { e.currentTarget.style.color = '#334155'; e.currentTarget.style.background = '#f8fafc'; } }}
+              onMouseLeave={e => { if (activeTab !== td.key) { e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'transparent'; } }}
             >
               {t(td.en, td.ar)}
             </button>
@@ -214,7 +226,7 @@ const ServiceCatalog: React.FC = () => {
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             {/* Hero Stats */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color="#0e4a8a" iconEl={<IconClipboard color="#0e4a8a" size={28} />} />
+              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color=TEAL iconEl={<IconClipboard color=TEAL size={28} />} />
               <StatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} color="#059669" iconEl={<IconCheck color="#059669" size={28} />} />
               <StatCard value={serviceStats.partialServices} label={t('Partial Coverage', 'تغطية جزئية')} color="#d97706" iconEl={<IconAlert color="#d97706" size={28} />} />
               <StatCard value={serviceStats.gapServices} label={t('Gap (Needs Dev)', 'فجوة (تحتاج تطوير)')} color="#dc2626" iconEl={<IconCircle color="#dc2626" size={28} />} />
@@ -225,7 +237,7 @@ const ServiceCatalog: React.FC = () => {
               <StatCard small value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمات')} color="#6366f1" iconEl={<IconFolder color="#6366f1" size={22} />} />
               <StatCard small value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} color="#0d9488" iconEl={<IconSparkle color="#0d9488" size={22} />} />
               <StatCard small value={aiModelCount} label={t('AI Models', 'نماذج ذكاء اصطناعي')} color="#9333ea" iconEl={<IconCpu color="#9333ea" size={22} />} />
-              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color="#0e4a8a" iconEl={<IconUsers color="#0e4a8a" size={22} />} />
+              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color=TEAL iconEl={<IconUsers color=TEAL size={22} />} />
             </div>
 
             {/* Coverage Donut + Group Bar Chart side by side */}
@@ -283,7 +295,7 @@ const ServiceCatalog: React.FC = () => {
 
             {/* Key Findings */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, borderTop: '4px solid #059669' }}>
+              <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, borderTop: '4px solid #059669' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconChart color="#059669" size={18} /> {t('Coverage Rate', 'معدل التغطية')}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', marginBottom: 8 }}>{coverageRate}%</div>
                 <div style={{ height: 8, background: '#e2e8f0', borderRadius: 4 }}>
@@ -291,12 +303,12 @@ const ServiceCatalog: React.FC = () => {
                 </div>
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>{t(`${serviceStats.activeServices} of ${serviceStats.totalServices} services fully active`, `${serviceStats.activeServices} من ${serviceStats.totalServices} خدمة مفعّلة بالكامل`)}</div>
               </div>
-              <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, borderTop: '4px solid #6366f1' }}>
+              <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, borderTop: '4px solid #6366f1' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconShuffle color="#6366f1" size={18} /> {t('IA Consolidation', 'الدمج والتوحيد')}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#6366f1', marginBottom: 8 }}>5</div>
                 <div style={{ fontSize: 12, color: '#64748b' }}>{t('Major route consolidations unifying 12+ paths into 5 canonical pages', 'عمليات دمج رئيسية توحّد 12+ مساراً في 5 صفحات أساسية')}</div>
               </div>
-              <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, borderTop: '4px solid #9333ea' }}>
+              <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, borderTop: '4px solid #9333ea' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconCpu color="#9333ea" size={18} /> {t('AI Integration', 'تكامل الذكاء الاصطناعي')}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#9333ea', marginBottom: 8 }}>{aiModelCount}</div>
                 <div style={{ fontSize: 12, color: '#64748b' }}>{t('AI models powering platform intelligence across services', 'نموذج ذكاء اصطناعي يعمل عبر خدمات المنصة')}</div>
@@ -310,7 +322,7 @@ const ServiceCatalog: React.FC = () => {
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             {/* Mini stats */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-              <StatCard small value={serviceStats.totalServices} label={t('Total', 'الإجمالي')} color="#0e4a8a" />
+              <StatCard small value={serviceStats.totalServices} label={t('Total', 'الإجمالي')} color=TEAL />
               <StatCard small value={serviceStats.activeServices} label={t('Active', 'مفعّل')} color="#059669" />
               <StatCard small value={serviceStats.partialServices} label={t('Partial', 'جزئي')} color="#d97706" />
               <StatCard small value={serviceStats.gapServices} label={t('Gap', 'فجوة')} color="#dc2626" />
@@ -329,7 +341,7 @@ const ServiceCatalog: React.FC = () => {
                 <button key={f.key} onClick={() => setStatusFilter(f.key)}
                   style={{
                     padding: '6px 16px', borderRadius: 20, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    background: statusFilter === f.key ? '#0e4a8a' : '#fff',
+                    background: statusFilter === f.key ? TEAL : '#fff',
                     color: statusFilter === f.key ? '#fff' : '#64748b',
                   }}>{t(f.en, f.ar)}</button>
               ))}
@@ -341,12 +353,12 @@ const ServiceCatalog: React.FC = () => {
             <div style={{ display: 'flex', gap: 20 }}>
               {/* Sidebar */}
               <div style={{ width: 250, flexShrink: 0 }}>
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
                   <div style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' }}>
                     {t('SERVICE GROUPS', 'مجموعات الخدمات')}
                   </div>
                   <div onClick={() => setSelectedGroup(null)}
-                    style={{ padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontWeight: selectedGroup === null ? 700 : 500, background: selectedGroup === null ? '#eff6ff' : 'transparent', color: selectedGroup === null ? '#0e4a8a' : '#334155', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    style={{ padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontWeight: selectedGroup === null ? 700 : 500, background: selectedGroup === null ? TEAL_LIGHT : 'transparent', color: selectedGroup === null ? TEAL : '#334155', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>{t('All Services', 'جميع الخدمات')}</span>
                     <span style={{ fontSize: 11, background: '#e2e8f0', borderRadius: 10, padding: '2px 8px' }}>{allServices.length}</span>
                   </div>
@@ -373,9 +385,9 @@ const ServiceCatalog: React.FC = () => {
                     const st = sm(s);
                     return (
                       <div key={s.code} onClick={() => setSelectedService(s)}
-                        style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, cursor: 'pointer', transition: 'all 0.15s', borderTop: `3px solid ${color}` }}
+                        style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, cursor: 'pointer', transition: 'all 0.15s', borderTop: `3px solid ${color}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                         onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'none'; }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color, background: `${color}12`, borderRadius: 6, padding: '3px 8px' }}>{s.code}</span>
@@ -474,8 +486,8 @@ const ServiceCatalog: React.FC = () => {
                             {s.platformRoles.map(r => {
                               const rl = roleLabels[r];
                               return (
-                                <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, fontSize: 12, color: '#1e40af' }}>
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', background: '#0e4a8a', color: '#fff', fontSize: 10, fontWeight: 700 }}>{(rl?.en || r).charAt(0)}</span>
+                                <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: TEAL_LIGHT, border: '1px solid #a7f3d0', borderRadius: 10, fontSize: 12, color: '' }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', background: TEAL, color: '#fff', fontSize: 10, fontWeight: 700 }}>{(rl?.en || r).charAt(0)}</span>
                                   <span style={{ fontWeight: 600 }}>{rl ? t(rl.en, rl.ar) : r}</span>
                                 </div>
                               );
@@ -521,16 +533,16 @@ const ServiceCatalog: React.FC = () => {
                 return (
                   <div key={role} onClick={() => setSelectedRole(selected ? null : role)}
                     style={{
-                      background: selected ? '#eff6ff' : '#fff', border: selected ? '2px solid #0e4a8a' : '1px solid #e2e8f0',
-                      borderRadius: 14, padding: 18, cursor: 'pointer', transition: 'all 0.15s',
+                      background: selected ? TEAL_LIGHT : '#fff', border: selected ? `2px solid ${TEAL}` : '1px solid #e2e8f0',
+                      borderRadius: 12, padding: 18, cursor: 'pointer', transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => { if (!selected) e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
                     onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8, fontSize: 20, fontWeight: 800, color: '#0e4a8a' }}>{(rl?.en || role).charAt(0)}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: TEAL_LIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8, fontSize: 20, fontWeight: 800, color: TEAL }}>{(rl?.en || role).charAt(0)}</div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{rl ? t(rl.en, rl.ar) : role}</div>
                     <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 10, minHeight: 36 }}>{rl ? t(rl.descEN, rl.descAR) : ''}</div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#0e4a8a', background: '#eff6ff', borderRadius: 10, padding: '3px 10px' }}>{count} {t('services', 'خدمة')}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: TEAL, background: TEAL_LIGHT, borderRadius: 10, padding: '3px 10px' }}>{count} {t('services', 'خدمة')}</span>
                   </div>
                 );
               })}
@@ -542,10 +554,10 @@ const ServiceCatalog: React.FC = () => {
               const services = roleServiceMap[selectedRole] || [];
               return (
                 <div style={{ marginBottom: 32 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, padding: '12px 18px', background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#eff6ff', color: '#0e4a8a', fontSize: 16, fontWeight: 800 }}>{(rl?.en || selectedRole).charAt(0)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, padding: '12px 18px', background: TEAL_LIGHT, borderRadius: 12, border: '1px solid #a7f3d0' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: TEAL_LIGHT, color: TEAL, fontSize: 16, fontWeight: 800 }}>{(rl?.en || selectedRole).charAt(0)}</span>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#0e4a8a' }}>{rl ? t(rl.en, rl.ar) : selectedRole}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: TEAL }}>{rl ? t(rl.en, rl.ar) : selectedRole}</div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>{t(`${services.length} services accessible`, `${services.length} خدمة متاحة`)}</div>
                     </div>
                   </div>
@@ -574,7 +586,7 @@ const ServiceCatalog: React.FC = () => {
             })()}
 
             {/* Role-Service Heatmap Matrix */}
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, overflowX: 'auto' }}>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, overflowX: 'auto' }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>{t('Role-Service Access Matrix', 'مصفوفة وصول الأدوار للخدمات')}</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
@@ -611,7 +623,7 @@ const ServiceCatalog: React.FC = () => {
                             </td>
                           );
                         })}
-                        <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: '#0e4a8a' }}>{roleSvcs.length}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: TEAL }}>{roleSvcs.length}</td>
                       </tr>
                     );
                   })}
@@ -631,7 +643,7 @@ const ServiceCatalog: React.FC = () => {
                 { label: t('Partial', 'جزئي'), value: serviceStats.partialServices, total: serviceStats.totalServices, color: '#d97706' },
                 { label: t('Gap', 'فجوة'), value: serviceStats.gapServices, total: serviceStats.totalServices, color: '#dc2626' },
               ].map(x => (
-                <div key={x.label} style={{ flex: 1, minWidth: 200, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, borderInlineStart: `4px solid ${x.color}` }}>
+                <div key={x.label} style={{ flex: 1, minWidth: 200, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, borderInlineStart: `4px solid ${x.color}` }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>{x.label}</div>
                   <div style={{ fontSize: 32, fontWeight: 800, color: x.color, margin: '4px 0' }}>{x.value}</div>
                   <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3 }}>
@@ -643,7 +655,7 @@ const ServiceCatalog: React.FC = () => {
             </div>
 
             {/* Service-Platform Mapping Table */}
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, overflowX: 'auto', marginBottom: 28 }}>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20, overflowX: 'auto', marginBottom: 28 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>{t('Service-Platform Mapping', 'مصفوفة ربط الخدمات بالمنصة')}</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
@@ -685,7 +697,7 @@ const ServiceCatalog: React.FC = () => {
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><IconShuffle color="#6366f1" size={20} /> {t('IA Consolidation Report', 'تقرير الدمج والتوحيد')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
                 {consolidations.map((c, i) => (
-                  <div key={i} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, borderTop: '3px solid #6366f1' }}>
+                  <div key={i} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, borderTop: '3px solid #6366f1' }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>{t(c.title, c.titleAR)}</div>
                     <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>{t('Canonical route:', 'المسار الأساسي:')}</div>
                     <code style={{ fontSize: 12, color: '#059669', background: '#d1fae5', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>{c.canonical}</code>
@@ -701,7 +713,7 @@ const ServiceCatalog: React.FC = () => {
             </div>
 
             {/* AI Model Coverage */}
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><IconCpu color="#9333ea" size={20} /> {t('AI Model Coverage', 'تغطية نماذج الذكاء الاصطناعي')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 10 }}>
                 {allServices.map(s => (
