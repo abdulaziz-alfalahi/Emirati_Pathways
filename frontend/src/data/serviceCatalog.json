@@ -44,7 +44,30 @@
           "career_services_operator"
         ],
         "aiModel": "نموذج تحسين المحتوى المهني بالذكاء الاصطناعي",
-        "relatedForms": "/cv-builder, /resume-builder, /cv-upload"
+        "relatedForms": "/cv-builder, /resume-builder, /cv-upload",
+        "nameEN": "Resume & Profile Builder",
+        "descriptionEN": "Enables users to create a professional resume through the platform, including entering personal data, qualifications, skills, and experience. Users can leverage AI suggestions to improve content quality.",
+        "goalEN": "Enable users to create a professional and comprehensive resume that reflects their qualifications and experience, increasing their chances of securing suitable employment.",
+        "targetEN": "Job seekers, students, graduates, and employers wishing to review resume templates.",
+        "conditionsEN": "1) An active account on the platform. 2) Complete basic profile data. 3) Ability to enter personal and professional information accurately.",
+        "documentsEN": "No external documents required; data is entered directly through the platform. Certificates and supporting documents can be uploaded optionally.",
+        "channelsEN": "Primary channel: Profile Studio (/candidate/profile/*) through 6 stages. Alternative paths: /cv-builder (auto-redirect), /resume-builder (auto-redirect), /cv-upload (upload ready CV). Supporting channels: mobile app, call center.",
+        "durationEN": "Can be completed in a single session (30-60 minutes).",
+        "feesEN": "No fees.",
+        "outputsEN": "1) A professional resume ready for download. 2) An updated profile on the platform across 6 sections.",
+        "limitationsEN": "1) Output accuracy depends on the quality of entered data. 2) AI suggestion quality may vary across different specializations. 3) Resume template design is currently limited.",
+        "partnersEN": "Employers, training centers, and educational institutions.",
+        "kpisEN": "1) Number of resumes created. 2) Profile completion rate. 3) User satisfaction. 4) Download rate.",
+        "gapNotesEN": "The platform uses Profile Studio instead of a standalone CV builder.",
+        "aiModelEN": "AI Professional Content Enhancement Model",
+        "stepsEN": [
+          "Log in to the platform and select Resume Builder service (/cv-builder)",
+          "Automatic redirect to Profile Studio",
+          "Enter personal information, qualifications, and experience through 6 stages",
+          "Review AI-powered content suggestions",
+          "Finalize and download the professional resume",
+          "Updated profile is automatically reflected across the platform"
+        ]
       },
       {
         "code": "CS-02",
@@ -82,9 +105,32 @@
           "career_services_operator"
         ],
         "aiModel": "نموذج توصية المسارات المهنية",
-        "relatedForms": "/industry-exploration, /career-planning-hub"
+        "relatedForms": "/industry-exploration, /career-planning-hub",
+        "nameEN": "Industry & Career Path Explorer",
+        "descriptionEN": "Allows users to explore different industries and sectors, learn about available career paths, and understand the requirements of each path in terms of skills and qualifications.",
+        "goalEN": "Help users explore career opportunities and understand the requirements of each career path to make informed career decisions.",
+        "targetEN": "Students, graduates, job seekers, and career changers looking for new opportunities.",
+        "conditionsEN": "1) An active account on the platform. 2) Basic profile data entered.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Career Hub (/career-hub) - main exploration interface.",
+        "durationEN": "Open-ended; users can browse at their own pace.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Personalized career path recommendations. 2) Industry insights and requirements overview.",
+        "limitationsEN": "1) Recommendations depend on profile completeness. 2) Some emerging industries may not be fully covered yet.",
+        "partnersEN": "Industry bodies, educational institutions, and professional associations.",
+        "kpisEN": "1) Number of explorations. 2) User engagement time. 3) Conversion to training enrollment.",
+        "gapNotesEN": "Fully integrated into the Career Hub.",
+        "aiModelEN": "AI Career Path Analysis Engine",
+        "stepsEN": [
+          "Navigate to Career Hub (/career-hub)",
+          "Browse industries and sectors",
+          "View career path details including required skills",
+          "Compare different career paths",
+          "Save preferred paths to profile"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Career Pathway Services"
   },
   {
     "code": "CG",
@@ -130,7 +176,29 @@
           "career_services_operator"
         ],
         "aiModel": "نموذج التوصية والتحليل المهني",
-        "relatedForms": "/career-advisory, /advisor-dashboard"
+        "relatedForms": "/career-advisory, /advisor-dashboard",
+        "nameEN": "Career & Academic Counseling",
+        "descriptionEN": "Enables users to receive professional career and academic guidance from certified counselors on the platform.",
+        "goalEN": "Provide professional career and academic counseling through certified advisors to guide users toward optimal career decisions.",
+        "targetEN": "Students, graduates, job seekers, and professionals seeking career development.",
+        "conditionsEN": "1) An active account. 2) Completed career interests profile.",
+        "documentsEN": "No documents required; career assessment results may be referenced.",
+        "channelsEN": "Career Hub (/career-hub) - advisory module.",
+        "durationEN": "Advisory sessions last 30-60 minutes; scheduling required.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Personalized career guidance report. 2) Recommended action plan.",
+        "limitationsEN": "1) Advisor availability varies by specialization. 2) Follow-up scheduling depends on demand.",
+        "partnersEN": "Certified career counselors and educational institutions.",
+        "kpisEN": "1) Number of counseling sessions. 2) User satisfaction. 3) Career outcome improvements.",
+        "gapNotesEN": "Consolidated into Career Hub as advisory module.",
+        "aiModelEN": "AI Career Counseling Assistant",
+        "stepsEN": [
+          "Access career counseling through Career Hub",
+          "Complete career interests assessment",
+          "Schedule session with certified advisor",
+          "Attend advisory session",
+          "Receive personalized guidance report and action plan"
+        ]
       },
       {
         "code": "CG-02",
@@ -168,9 +236,33 @@
           "career_services_operator"
         ],
         "aiModel": "نموذج محاكاة المسار المهني بالذكاء الاصطناعي",
-        "relatedForms": "/career-simulator"
+        "relatedForms": "/career-simulator",
+        "nameEN": "Career Path Simulator",
+        "descriptionEN": "Allows users to simulate different career paths, explore their outcomes, and use insights to make informed career decisions.",
+        "goalEN": "Enable users to visualize and compare potential career trajectories before committing to a path.",
+        "targetEN": "Students, graduates, and professionals exploring career transitions.",
+        "conditionsEN": "1) An active account. 2) Basic career profile data.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Career Hub (/career-hub) - simulation module.",
+        "durationEN": "15-30 minutes per simulation session.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Career trajectory visualization. 2) Skills gap analysis. 3) Recommended development plan.",
+        "limitationsEN": "1) Simulation accuracy depends on market data currency. 2) Limited to mapped career paths.",
+        "partnersEN": "Industry research firms and labor market data providers.",
+        "kpisEN": "1) Number of simulations run. 2) User engagement. 3) Conversion to training enrollment.",
+        "gapNotesEN": "Integrated into Career Hub.",
+        "aiModelEN": "AI Career Simulation Engine",
+        "stepsEN": [
+          "Access Career Path Simulator from Career Hub",
+          "Select industry and career interest areas",
+          "Run career path simulation",
+          "Review projected outcomes and requirements",
+          "Compare multiple career paths",
+          "Export simulation results"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Career Guidance Services"
   },
   {
     "code": "TD",
@@ -218,7 +310,29 @@
           "internship_coordinator"
         ],
         "aiModel": "نموذج توصية البرامج التدريبية",
-        "relatedForms": "/training, /training-center-dashboard, /credentials"
+        "relatedForms": "/training, /training-center-dashboard, /credentials",
+        "nameEN": "Training Program Enrollment",
+        "descriptionEN": "Enables users to browse, select, and enroll in certified training programs offered by approved training providers on the platform.",
+        "goalEN": "Provide a streamlined pathway for users to discover and enroll in professional development and training programs.",
+        "targetEN": "Job seekers, employees, students, and professionals seeking skill development.",
+        "conditionsEN": "1) An active account. 2) Meet program prerequisites if any.",
+        "documentsEN": "May vary by program; typically qualifications and ID verification.",
+        "channelsEN": "Training Hub (/training) - program catalog and enrollment.",
+        "durationEN": "Enrollment takes 5-10 minutes; programs vary in duration.",
+        "feesEN": "Varies by program; some are government-subsidized.",
+        "outputsEN": "1) Enrollment confirmation. 2) Training schedule. 3) Certificate upon completion.",
+        "limitationsEN": "1) Program availability varies by season. 2) Some programs have capacity limits.",
+        "partnersEN": "Certified training providers, educational institutions, and industry bodies.",
+        "kpisEN": "1) Enrollment rate. 2) Completion rate. 3) Post-training employment rate.",
+        "gapNotesEN": "Fully active on the platform.",
+        "aiModelEN": "AI Training Recommendation Engine",
+        "stepsEN": [
+          "Browse available training programs on Training Hub",
+          "Filter by industry, skill, or certification type",
+          "Review program details and prerequisites",
+          "Submit enrollment application",
+          "Receive confirmation and access training materials"
+        ]
       },
       {
         "code": "TD-02",
@@ -255,9 +369,32 @@
           "candidate"
         ],
         "aiModel": "نموذج تقييم المهارات الرقمية",
-        "relatedForms": "/digital-skills, /digital-skills-development, /lms"
+        "relatedForms": "/digital-skills, /digital-skills-development, /lms",
+        "nameEN": "Digital Skills Development",
+        "descriptionEN": "Provides interactive courses and workshops for developing digital and technology skills essential for the modern workforce.",
+        "goalEN": "Bridge the digital skills gap and prepare users for technology-driven careers.",
+        "targetEN": "All users seeking to develop or upgrade their digital capabilities.",
+        "conditionsEN": "1) An active account on the platform.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Digital Skills Hub (/digital-skills) - self-paced learning platform.",
+        "durationEN": "Self-paced; courses range from 2-40 hours.",
+        "feesEN": "No fees for most courses.",
+        "outputsEN": "1) Digital skill certificates. 2) Updated skill profile. 3) Career readiness badges.",
+        "limitationsEN": "1) Some advanced courses require prerequisite completion. 2) Content is primarily in Arabic.",
+        "partnersEN": "Technology companies, educational platforms, and certification bodies.",
+        "kpisEN": "1) Course completion rate. 2) Skill assessment scores. 3) User engagement metrics.",
+        "gapNotesEN": "Active with dedicated Digital Skills section.",
+        "aiModelEN": "Adaptive Learning AI System",
+        "stepsEN": [
+          "Access Digital Skills Hub",
+          "Take initial skills assessment",
+          "Receive personalized learning path",
+          "Complete interactive courses and exercises",
+          "Earn certificates and badges"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Training & Development"
   },
   {
     "code": "EJ",
@@ -302,7 +439,29 @@
           "candidate"
         ],
         "aiModel": "نموذج مطابقة الوظائف بالذكاء الاصطناعي",
-        "relatedForms": "/job-matching, /applications, /candidate-dashboard"
+        "relatedForms": "/job-matching, /applications, /candidate-dashboard",
+        "nameEN": "Job Search & Application",
+        "descriptionEN": "Enables users to search for job opportunities, filter by criteria, and submit applications directly through the platform.",
+        "goalEN": "Connect job seekers with relevant employment opportunities through an intelligent matching system.",
+        "targetEN": "Job seekers, recent graduates, and professionals looking for new opportunities.",
+        "conditionsEN": "1) An active account. 2) Completed profile and resume.",
+        "documentsEN": "Resume and relevant certificates.",
+        "channelsEN": "Job Matching Hub (/job-matching) - AI-powered job search.",
+        "durationEN": "Varies; job search is ongoing, applications take 5-15 minutes each.",
+        "feesEN": "No fees for job seekers.",
+        "outputsEN": "1) Job match results. 2) Application confirmations. 3) Interview invitations.",
+        "limitationsEN": "1) Match quality depends on profile completeness. 2) Some employers may have external application processes.",
+        "partnersEN": "Employers across public and private sectors.",
+        "kpisEN": "1) Number of applications submitted. 2) Match acceptance rate. 3) Placement rate.",
+        "gapNotesEN": "Fully active with AI matching.",
+        "aiModelEN": "AI Job Matching Algorithm",
+        "stepsEN": [
+          "Access Job Matching Hub",
+          "Set search criteria and preferences",
+          "Review AI-recommended job matches",
+          "Submit applications to selected positions",
+          "Track application status"
+        ]
       },
       {
         "code": "EJ-02",
@@ -338,7 +497,29 @@
           "candidate"
         ],
         "aiModel": "نموذج تتبع الطلبات الذكي",
-        "relatedForms": "/applications, /candidate-dashboard"
+        "relatedForms": "/applications, /candidate-dashboard",
+        "nameEN": "Application Management",
+        "descriptionEN": "Provides tools for users to track, manage, and follow up on their job applications across the platform.",
+        "goalEN": "Give users full visibility and control over their application pipeline.",
+        "targetEN": "Active job seekers with pending applications.",
+        "conditionsEN": "1) Active account. 2) At least one submitted application.",
+        "documentsEN": "No additional documents required.",
+        "channelsEN": "Applications Dashboard (/applications) - centralized tracking.",
+        "durationEN": "Ongoing; real-time updates.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Application status updates. 2) Interview scheduling notifications. 3) Offer management.",
+        "limitationsEN": "1) Status updates depend on employer response times. 2) Some external applications may not sync automatically.",
+        "partnersEN": "Employers and HR systems.",
+        "kpisEN": "1) Application response rate. 2) Average time to hiring decision. 3) User engagement.",
+        "gapNotesEN": "Fully active.",
+        "aiModelEN": "Application Tracking AI System",
+        "stepsEN": [
+          "View all applications on Applications Dashboard",
+          "Filter by status (pending, reviewed, interview, offer)",
+          "Respond to interview invitations",
+          "Review and manage offers",
+          "Provide feedback on application experience"
+        ]
       },
       {
         "code": "EJ-03",
@@ -376,7 +557,29 @@
           "employer_admin"
         ],
         "aiModel": "نموذج تحليل المقابلات بالذكاء الاصطناعي",
-        "relatedForms": "/recruiter/video-interview/:sessionId, /guest/interview/:token"
+        "relatedForms": "/recruiter/video-interview/:sessionId, /guest/interview/:token",
+        "nameEN": "AI Video Interviews",
+        "descriptionEN": "Provides AI-powered video interview tools for conducting, recording, and analyzing candidate interviews remotely.",
+        "goalEN": "Streamline the interview process using AI-assisted video technology for both candidates and employers.",
+        "targetEN": "Job seekers preparing for interviews, recruiters, and employer admins.",
+        "conditionsEN": "1) Active account. 2) Camera and microphone access. 3) Scheduled interview or practice session.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Video Interview Hub (/recruiter/video-interview) - AI-powered interview platform.",
+        "durationEN": "15-45 minutes per interview session.",
+        "feesEN": "No fees for candidates; employer plans vary.",
+        "outputsEN": "1) Recorded interview. 2) AI analysis report. 3) Skills assessment scores.",
+        "limitationsEN": "1) Requires stable internet connection. 2) AI analysis is supplementary to human judgment.",
+        "partnersEN": "HR technology providers and recruitment firms.",
+        "kpisEN": "1) Number of interviews conducted. 2) Interview completion rate. 3) Hiring conversion rate.",
+        "gapNotesEN": "Fully active with AI analysis.",
+        "aiModelEN": "AI Interview Analysis Engine",
+        "stepsEN": [
+          "Schedule or join video interview session",
+          "Complete AI-guided interview",
+          "Receive real-time feedback (practice mode)",
+          "Review AI analysis report",
+          "Share results with potential employers"
+        ]
       },
       {
         "code": "EJ-04",
@@ -413,9 +616,32 @@
           "candidate"
         ],
         "aiModel": "نموذج مطابقة المشاريع والمهارات",
-        "relatedForms": "/gig-marketplace"
+        "relatedForms": "/gig-marketplace",
+        "nameEN": "Freelance & Gig Marketplace",
+        "descriptionEN": "A marketplace connecting freelancers with short-term project opportunities and gig work across various industries.",
+        "goalEN": "Enable flexible work arrangements and connect talent with project-based opportunities.",
+        "targetEN": "Freelancers, part-time workers, students, and employers with project-based needs.",
+        "conditionsEN": "1) Active account. 2) Completed skills profile.",
+        "documentsEN": "Portfolio or work samples (optional but recommended).",
+        "channelsEN": "Gig Marketplace (/gig-marketplace) - project listing and bidding platform.",
+        "durationEN": "Projects vary from hours to months.",
+        "feesEN": "Platform service fee may apply to completed projects.",
+        "outputsEN": "1) Project matches. 2) Contract agreements. 3) Payment processing. 4) Reviews and ratings.",
+        "limitationsEN": "1) Project availability varies by industry. 2) Payment terms set by project scope.",
+        "partnersEN": "SMEs, startups, and enterprise clients.",
+        "kpisEN": "1) Number of projects posted. 2) Match rate. 3) Project completion rate. 4) User earnings.",
+        "gapNotesEN": "Active marketplace.",
+        "aiModelEN": "AI Freelance Matching Algorithm",
+        "stepsEN": [
+          "Browse available gig projects",
+          "Submit proposals for relevant projects",
+          "Negotiate terms and start project",
+          "Complete deliverables and submit for review",
+          "Receive payment and ratings"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Employment Services"
   },
   {
     "code": "ER",
@@ -463,7 +689,29 @@
           "employer_admin"
         ],
         "aiModel": "نموذج بناء الوصف الوظيفي والمطابقة",
-        "relatedForms": "/recruiter/jobs, /recruiter/jd-builder, /recruiter/candidates"
+        "relatedForms": "/recruiter/jobs, /recruiter/jd-builder, /recruiter/candidates",
+        "nameEN": "Job Posting & Management",
+        "descriptionEN": "Enables employers to create, publish, and manage job postings, and review candidate applications through the platform.",
+        "goalEN": "Provide employers with efficient tools to advertise positions and manage the recruitment pipeline.",
+        "targetEN": "Recruiters, HR professionals, and employer administrators.",
+        "conditionsEN": "1) Verified employer account. 2) Company profile completed.",
+        "documentsEN": "Company registration and verification documents.",
+        "channelsEN": "Recruiter Dashboard (/recruiter) - job management interface.",
+        "durationEN": "5-15 minutes to create a posting; management is ongoing.",
+        "feesEN": "No fees for standard postings.",
+        "outputsEN": "1) Published job listings. 2) Candidate application pipeline. 3) Hiring analytics.",
+        "limitationsEN": "1) Posting visibility depends on plan level. 2) Some verification steps required for first-time employers.",
+        "partnersEN": "Government entities and private sector employers.",
+        "kpisEN": "1) Number of jobs posted. 2) Application-to-hire ratio. 3) Time to fill.",
+        "gapNotesEN": "Fully active.",
+        "aiModelEN": "AI Job Description Optimizer",
+        "stepsEN": [
+          "Access Recruiter Dashboard",
+          "Create new job posting with requirements",
+          "AI suggests optimizations for better reach",
+          "Publish and manage applications",
+          "Schedule interviews and make hiring decisions"
+        ]
       },
       {
         "code": "ER-02",
@@ -510,7 +758,29 @@
           "employer_relations"
         ],
         "aiModel": "نموذج تحليل التوطين والأداء",
-        "relatedForms": "/workspace/:companyId, /hr-dashboard"
+        "relatedForms": "/workspace/:companyId, /hr-dashboard",
+        "nameEN": "Company Workspace Management",
+        "descriptionEN": "Provides company administrators with tools to manage their organizational workspace, including employee data, compliance, and workforce analytics.",
+        "goalEN": "Centralize company workforce management and compliance tracking in one workspace.",
+        "targetEN": "Employer admins, HR managers, and company executives.",
+        "conditionsEN": "1) Verified company account. 2) Admin role assignment.",
+        "documentsEN": "Company registration, trade license, and employee records.",
+        "channelsEN": "Workspace Dashboard (/workspace/:companyId) - company management portal.",
+        "durationEN": "Ongoing workspace usage.",
+        "feesEN": "No fees for basic features.",
+        "outputsEN": "1) Workforce analytics dashboard. 2) Compliance reports. 3) Employee management tools.",
+        "limitationsEN": "1) Advanced analytics require premium features. 2) Data import from external HR systems may require configuration.",
+        "partnersEN": "Government regulatory bodies and HR technology providers.",
+        "kpisEN": "1) Company onboarding rate. 2) Compliance score. 3) Workforce data completeness.",
+        "gapNotesEN": "Fully active.",
+        "aiModelEN": "AI Workforce Analytics Engine",
+        "stepsEN": [
+          "Access company workspace",
+          "Manage employee records and roles",
+          "Review workforce analytics and reports",
+          "Monitor compliance indicators",
+          "Generate required regulatory reports"
+        ]
       },
       {
         "code": "ER-03",
@@ -551,9 +821,32 @@
           "employer_relations"
         ],
         "aiModel": "نموذج تحليل التوطين والتنبؤ",
-        "relatedForms": "/emiratization-tracker, /nafis-talent-dashboard"
+        "relatedForms": "/emiratization-tracker, /nafis-talent-dashboard",
+        "nameEN": "Emiratization Compliance Tracking",
+        "descriptionEN": "Monitors and tracks Emiratization targets, compliance metrics, and nationalization goals for organizations.",
+        "goalEN": "Ensure organizations meet Emiratization requirements and track progress toward nationalization targets.",
+        "targetEN": "Compliance auditors, employer admins, board members, and platform operators.",
+        "conditionsEN": "1) Verified company account. 2) Compliance auditor or admin role.",
+        "documentsEN": "Company Emiratization reports and workforce data.",
+        "channelsEN": "Government Dashboard (/government-dashboard?tab=compliance) - compliance monitoring.",
+        "durationEN": "Ongoing monitoring with periodic reporting.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Emiratization compliance dashboard. 2) Target tracking reports. 3) Regulatory alerts.",
+        "limitationsEN": "1) Data accuracy depends on employer reporting. 2) Some metrics have reporting lag.",
+        "partnersEN": "Government regulatory bodies (Nafis, MOHRE).",
+        "kpisEN": "1) Emiratization rate. 2) Compliance adherence. 3) Employer onboarding to compliance tracking.",
+        "gapNotesEN": "Active on government dashboard.",
+        "aiModelEN": "AI Emiratization Analytics Engine",
+        "stepsEN": [
+          "Access compliance tracking on Government Dashboard",
+          "View Emiratization targets and current status",
+          "Review detailed compliance metrics by company",
+          "Generate compliance reports",
+          "Receive alerts for compliance deviations"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Employer Services"
   },
   {
     "code": "DC",
@@ -595,7 +888,29 @@
           "candidate"
         ],
         "aiModel": "نموذج التحقق والتوثيق الذكي",
-        "relatedForms": "/career-passport, /credentials, /blockchain-credentials"
+        "relatedForms": "/career-passport, /credentials, /blockchain-credentials",
+        "nameEN": "Career Passport",
+        "descriptionEN": "A blockchain-secured digital credential that consolidates all career achievements, certifications, and skills into one verifiable document.",
+        "goalEN": "Provide a trusted, tamper-proof digital record of professional achievements accessible by employers and institutions.",
+        "targetEN": "Job seekers, professionals, and educational institutions.",
+        "conditionsEN": "1) Active account. 2) Completed career profile.",
+        "documentsEN": "Certificates and achievement records for verification.",
+        "channelsEN": "Credentials Center (/credentials?tab=passport) - blockchain credentials portal.",
+        "durationEN": "Initial setup 15-20 minutes; updates are ongoing.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Digital career passport. 2) QR-verifiable credentials. 3) Shareable achievement profile.",
+        "limitationsEN": "1) Credential verification depends on issuing institution integration. 2) Some legacy certificates may need manual entry.",
+        "partnersEN": "Educational institutions, certification bodies, and employers.",
+        "kpisEN": "1) Number of passports created. 2) Credentials verified. 3) Employer verification requests.",
+        "gapNotesEN": "Active with blockchain verification.",
+        "aiModelEN": "AI Credential Verification System",
+        "stepsEN": [
+          "Access Credentials Center",
+          "Select Career Passport tab",
+          "Upload or link certificates and achievements",
+          "System verifies and creates blockchain record",
+          "Share career passport with employers via QR code"
+        ]
       },
       {
         "code": "DC-02",
@@ -631,9 +946,32 @@
           "candidate"
         ],
         "aiModel": "نموذج التقييم والاعتماد الذكي",
-        "relatedForms": "/credentials, /professional-certifications, /blockchain-credentials"
+        "relatedForms": "/credentials, /professional-certifications, /blockchain-credentials",
+        "nameEN": "Professional Certifications & Credentials",
+        "descriptionEN": "Manages professional certifications, licenses, and credentials including tracking, renewal, and verification services.",
+        "goalEN": "Centralize management of all professional certifications with automated tracking and renewal reminders.",
+        "targetEN": "Certified professionals and credential holders.",
+        "conditionsEN": "1) Active account. 2) Professional credentials to register.",
+        "documentsEN": "Original certification documents for verification.",
+        "channelsEN": "Credentials Center (/credentials) - certification management portal.",
+        "durationEN": "5-10 minutes per certification entry.",
+        "feesEN": "No platform fees; certification fees set by issuing bodies.",
+        "outputsEN": "1) Centralized certification portfolio. 2) Renewal tracking. 3) Digital verification badges.",
+        "limitationsEN": "1) Not all certification bodies are currently integrated. 2) International certifications may require manual verification.",
+        "partnersEN": "Professional certification bodies and regulatory agencies.",
+        "kpisEN": "1) Number of certifications registered. 2) Renewal compliance rate. 3) Verification requests.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Certification Tracking System",
+        "stepsEN": [
+          "Access Credentials Center",
+          "Add new certification with details",
+          "Upload supporting documentation",
+          "System verifies and creates digital record",
+          "Receive renewal reminders and updates"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Certification Services"
   },
   {
     "code": "CP",
@@ -676,7 +1014,29 @@
           "candidate"
         ],
         "aiModel": "نموذج التخطيط المهني الذكي",
-        "relatedForms": "/career-planning-hub, /career-hub"
+        "relatedForms": "/career-planning-hub, /career-hub",
+        "nameEN": "Long-term Career Planning",
+        "descriptionEN": "Provides comprehensive career planning tools for mapping long-term career goals, identifying milestones, and creating actionable development plans.",
+        "goalEN": "Guide users in developing structured, long-term career plans aligned with their aspirations and market demands.",
+        "targetEN": "All career-focused users seeking structured development paths.",
+        "conditionsEN": "1) Active account. 2) Completed career interests profile.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Career Hub (/career-hub) - planning module.",
+        "durationEN": "Initial plan creation: 30-60 minutes; ongoing updates.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Personalized career development plan. 2) Milestone tracker. 3) Skill gap analysis.",
+        "limitationsEN": "1) Plan effectiveness depends on user engagement. 2) Labor market forecasts have inherent uncertainty.",
+        "partnersEN": "Career counselors and industry advisory boards.",
+        "kpisEN": "1) Plans created. 2) Milestone achievement rate. 3) Career progression metrics.",
+        "gapNotesEN": "Integrated into Career Hub.",
+        "aiModelEN": "AI Career Planning Assistant",
+        "stepsEN": [
+          "Access career planning in Career Hub",
+          "Set long-term career goals",
+          "AI generates recommended milestones",
+          "Create actionable development plan",
+          "Track progress and adjust goals"
+        ]
       },
       {
         "code": "CP-02",
@@ -712,9 +1072,32 @@
           "candidate"
         ],
         "aiModel": "نموذج التخطيط المالي الذكي",
-        "relatedForms": "/financial-planning"
+        "relatedForms": "/financial-planning",
+        "nameEN": "Financial Planning",
+        "descriptionEN": "Provides financial planning tools and resources to help users manage career-related financial decisions including salary benchmarking and benefits analysis.",
+        "goalEN": "Equip users with financial literacy and planning tools to make informed career and compensation decisions.",
+        "targetEN": "Job seekers, employees, and professionals managing career finances.",
+        "conditionsEN": "1) Active account.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Financial Planning Hub (/financial-planning) - financial tools portal.",
+        "durationEN": "Self-paced; ongoing usage.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Salary benchmark reports. 2) Financial planning templates. 3) Benefits comparison tools.",
+        "limitationsEN": "1) Salary data is based on reported figures. 2) Financial advice is educational, not professional advisory.",
+        "partnersEN": "Financial institutions and compensation research firms.",
+        "kpisEN": "1) Tool usage rate. 2) User satisfaction. 3) Financial literacy improvement.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Financial Advisory Model",
+        "stepsEN": [
+          "Access Financial Planning Hub",
+          "Run salary benchmarking analysis",
+          "Create personalized financial plan",
+          "Compare benefits packages",
+          "Track financial goals"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Career Planning Services"
   },
   {
     "code": "EN",
@@ -759,7 +1142,29 @@
           "growth_operator"
         ],
         "aiModel": "نموذج مطابقة الموجهين والمستفيدين",
-        "relatedForms": "/mentorship, /mentor-dashboard"
+        "relatedForms": "/mentorship, /mentor-dashboard",
+        "nameEN": "Mentorship Program",
+        "descriptionEN": "Connects users with experienced mentors for professional guidance, knowledge transfer, and career development support.",
+        "goalEN": "Facilitate meaningful mentorship relationships that accelerate career growth and professional development.",
+        "targetEN": "Mentees seeking guidance and experienced professionals willing to mentor.",
+        "conditionsEN": "1) Active account. 2) Completed profile with career interests.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Mentorship Hub (/mentorship) - mentor matching and session management.",
+        "durationEN": "Mentorship programs typically run 3-6 months.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Mentor-mentee matching. 2) Session scheduling. 3) Progress tracking. 4) Completion certificates.",
+        "limitationsEN": "1) Mentor availability varies by industry. 2) Matching depends on profile compatibility.",
+        "partnersEN": "Industry leaders, professional associations, and corporate mentorship programs.",
+        "kpisEN": "1) Active mentorship pairs. 2) Session completion rate. 3) Mentee career advancement.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Mentor Matching Algorithm",
+        "stepsEN": [
+          "Access Mentorship Hub",
+          "Complete mentorship preferences profile",
+          "AI matches you with compatible mentors",
+          "Schedule and attend mentorship sessions",
+          "Track goals and receive completion certificate"
+        ]
       },
       {
         "code": "EN-02",
@@ -797,9 +1202,32 @@
           "growth_operator"
         ],
         "aiModel": "نموذج التقييم والتحليل الذكي",
-        "relatedForms": "/assessments, /assessor-dashboard"
+        "relatedForms": "/assessments, /assessor-dashboard",
+        "nameEN": "Professional Assessment",
+        "descriptionEN": "Provides comprehensive skills and competency assessments conducted by certified assessors to evaluate professional readiness.",
+        "goalEN": "Offer objective, standardized assessments that help users understand their strengths and development areas.",
+        "targetEN": "Job seekers, employees, and professionals seeking skills validation.",
+        "conditionsEN": "1) Active account. 2) Relevant skills profile completed.",
+        "documentsEN": "May vary by assessment type.",
+        "channelsEN": "Assessment Center (/assessments) - assessment scheduling and results.",
+        "durationEN": "30-90 minutes per assessment depending on type.",
+        "feesEN": "Some assessments may have fees; many are free.",
+        "outputsEN": "1) Skills assessment report. 2) Competency scores. 3) Development recommendations.",
+        "limitationsEN": "1) Assessor availability varies. 2) Some specialized assessments have limited scheduling.",
+        "partnersEN": "Certified assessment bodies and professional evaluation firms.",
+        "kpisEN": "1) Assessments completed. 2) User skills improvement. 3) Employer acceptance of assessment results.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Assessment Analytics Engine",
+        "stepsEN": [
+          "Access Assessment Center",
+          "Browse available assessments",
+          "Schedule assessment with certified assessor",
+          "Complete assessment",
+          "Review results and development recommendations"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Mentoring & Guidance"
   },
   {
     "code": "SP",
@@ -845,7 +1273,29 @@
           "internship_coordinator"
         ],
         "aiModel": "نموذج توصية البرامج التعليمية",
-        "relatedForms": "/school-programs, /university-programs, /scholarships"
+        "relatedForms": "/school-programs, /university-programs, /scholarships",
+        "nameEN": "School & University Programs",
+        "descriptionEN": "Manages educational programs for schools and universities including curriculum alignment, student career readiness, and institutional partnerships.",
+        "goalEN": "Bridge the gap between education and employment by integrating career readiness into educational programs.",
+        "targetEN": "Educational institutions, students, internship coordinators, and parents.",
+        "conditionsEN": "1) Institutional partnership agreement. 2) Student enrollment on the platform.",
+        "documentsEN": "Institutional agreements and student enrollment data.",
+        "channelsEN": "School Programs Hub (/school-programs) - program management portal.",
+        "durationEN": "Academic year-based; ongoing program management.",
+        "feesEN": "Institutional fees may apply.",
+        "outputsEN": "1) Program enrollment tracking. 2) Student progress reports. 3) Career readiness metrics.",
+        "limitationsEN": "1) Program availability varies by institution. 2) Requires institutional partnership for full features.",
+        "partnersEN": "Schools, universities, KHDA, and educational authorities.",
+        "kpisEN": "1) Participating institutions. 2) Student enrollment. 3) Career readiness scores.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Educational Analytics Engine",
+        "stepsEN": [
+          "Institution registers on School Programs Hub",
+          "Set up educational programs and curriculum",
+          "Enroll students and track progress",
+          "Monitor career readiness indicators",
+          "Generate institutional reports"
+        ]
       },
       {
         "code": "SP-02",
@@ -881,9 +1331,32 @@
           "parent"
         ],
         "aiModel": "نموذج متابعة المسار التعليمي",
-        "relatedForms": "/guardian-dashboard"
+        "relatedForms": "/guardian-dashboard",
+        "nameEN": "Guardian & Student Services",
+        "descriptionEN": "Provides parents and guardians with tools to monitor student progress, educational pathways, and career development activities.",
+        "goalEN": "Empower guardians with visibility into their children's educational and career development journey.",
+        "targetEN": "Parents, guardians, and students.",
+        "conditionsEN": "1) Guardian account linked to student. 2) Student enrolled on platform.",
+        "documentsEN": "Guardian verification documents.",
+        "channelsEN": "Guardian Dashboard (/guardian-dashboard) - monitoring and oversight portal.",
+        "durationEN": "Ongoing access.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Student progress dashboard. 2) Activity notifications. 3) Career pathway reports.",
+        "limitationsEN": "1) Student privacy settings may limit some data visibility. 2) Requires student consent for detailed data.",
+        "partnersEN": "Educational institutions and family support services.",
+        "kpisEN": "1) Guardian engagement rate. 2) Student progress visibility. 3) Parent satisfaction.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Student Progress Tracking Model",
+        "stepsEN": [
+          "Access Guardian Dashboard",
+          "View linked student profiles",
+          "Monitor educational progress and activities",
+          "Receive notifications on key milestones",
+          "Review career pathway recommendations"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Educational Programs"
   },
   {
     "code": "CM",
@@ -928,7 +1401,29 @@
           "growth_operator"
         ],
         "aiModel": "نموذج توصية المجتمعات",
-        "relatedForms": "/communities, /messages"
+        "relatedForms": "/communities, /messages",
+        "nameEN": "Professional Communities",
+        "descriptionEN": "Provides a platform for professional networking, knowledge sharing, thought leadership, and community engagement across industries.",
+        "goalEN": "Build thriving professional communities that foster collaboration, innovation, and career growth.",
+        "targetEN": "All platform users interested in professional networking and communities.",
+        "conditionsEN": "1) Active account.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Communities Hub (/communities) - professional networking platform.",
+        "durationEN": "Ongoing community participation.",
+        "feesEN": "No fees for basic membership.",
+        "outputsEN": "1) Community membership. 2) Networking connections. 3) Knowledge sharing posts. 4) Event participation.",
+        "limitationsEN": "1) Community activity depends on member engagement. 2) Some premium communities may have access requirements.",
+        "partnersEN": "Industry associations, professional bodies, and corporate partners.",
+        "kpisEN": "1) Active communities. 2) Member engagement. 3) Knowledge sharing metrics.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Community Engagement Engine",
+        "stepsEN": [
+          "Access Communities Hub",
+          "Browse and join relevant communities",
+          "Participate in discussions and events",
+          "Share knowledge and insights",
+          "Build professional network"
+        ]
       },
       {
         "code": "CM-02",
@@ -965,9 +1460,32 @@
           "mentor"
         ],
         "aiModel": "نموذج توصية المحتوى المجتمعي",
-        "relatedForms": "/thought-leadership, /share-success-stories, /youth-development"
+        "relatedForms": "/thought-leadership, /share-success-stories, /youth-development",
+        "nameEN": "Community Guidance",
+        "descriptionEN": "Provides community-based guidance and peer support for career development through group activities and collaborative learning.",
+        "goalEN": "Create supportive community environments for shared learning and career guidance.",
+        "targetEN": "Users seeking peer support and collaborative learning opportunities.",
+        "conditionsEN": "1) Active account. 2) Community membership.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Communities Hub (/communities) - guidance and peer support module.",
+        "durationEN": "Ongoing participation.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Group guidance sessions. 2) Peer support connections. 3) Collaborative learning materials.",
+        "limitationsEN": "1) Group size limits may apply. 2) Facilitator availability varies.",
+        "partnersEN": "Community leaders and professional development organizations.",
+        "kpisEN": "1) Group participation rate. 2) Peer satisfaction. 3) Learning outcomes.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Peer Matching System",
+        "stepsEN": [
+          "Access community guidance module",
+          "Join relevant guidance groups",
+          "Participate in group sessions",
+          "Connect with peers for support",
+          "Track learning progress"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Community Services"
   },
   {
     "code": "TS",
@@ -1010,7 +1528,29 @@
           "admin"
         ],
         "aiModel": "نموذج الدعم الذكي التلقائي",
-        "relatedForms": "/call-center-dashboard"
+        "relatedForms": "/call-center-dashboard",
+        "nameEN": "Platform Technical Support",
+        "descriptionEN": "Provides comprehensive technical support for platform users including troubleshooting, guidance, and issue resolution through multiple channels.",
+        "goalEN": "Ensure users receive timely and effective technical support to maximize their platform experience.",
+        "targetEN": "All platform users experiencing technical issues.",
+        "conditionsEN": "1) Active account (or account creation assistance).",
+        "documentsEN": "No documents required; issue details may be needed.",
+        "channelsEN": "Call Center Dashboard (/call-center-dashboard) - support ticket management.",
+        "durationEN": "Response within 24 hours; resolution varies by complexity.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Support ticket resolution. 2) User guidance documentation. 3) Issue tracking records.",
+        "limitationsEN": "1) Complex issues may require escalation. 2) Response times vary by demand.",
+        "partnersEN": "Internal support teams and technology vendors.",
+        "kpisEN": "1) Ticket resolution rate. 2) Average response time. 3) User satisfaction.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Support Chatbot",
+        "stepsEN": [
+          "Contact support through Call Center or chat",
+          "Describe the technical issue",
+          "Receive AI-assisted troubleshooting guidance",
+          "Escalate to human agent if needed",
+          "Issue resolved and ticket closed"
+        ]
       },
       {
         "code": "TS-02",
@@ -1050,9 +1590,32 @@
           "super_admin"
         ],
         "aiModel": "نموذج التحقق من الأهلية",
-        "relatedForms": "/admin/role-requests, /admin/user-roles"
+        "relatedForms": "/admin/role-requests, /admin/user-roles",
+        "nameEN": "Role Request & Approval",
+        "descriptionEN": "Manages requests for specialized platform roles (advisor, assessor, mentor, etc.) including application, verification, and approval workflows.",
+        "goalEN": "Provide a structured process for users to apply for and receive specialized roles on the platform.",
+        "targetEN": "Users seeking specialized roles and administrators managing role approvals.",
+        "conditionsEN": "1) Active account. 2) Meet role-specific qualifications.",
+        "documentsEN": "Qualification certificates and professional experience documentation.",
+        "channelsEN": "Admin Role Requests (/admin/role-requests) - role management portal.",
+        "durationEN": "Application takes 10-15 minutes; approval within 3-5 business days.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Role application confirmation. 2) Verification status. 3) Role activation notification.",
+        "limitationsEN": "1) Approval timelines depend on verification requirements. 2) Some roles require periodic re-verification.",
+        "partnersEN": "Certification bodies and professional licensing authorities.",
+        "kpisEN": "1) Role applications. 2) Approval rate. 3) Processing time.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Credential Verification System",
+        "stepsEN": [
+          "Access Role Requests page",
+          "Select desired platform role",
+          "Submit application with qualifications",
+          "Undergo verification process",
+          "Receive role approval and activation"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Operational Support"
   },
   {
     "code": "GI",
@@ -1094,7 +1657,29 @@
           "call_center_agent"
         ],
         "aiModel": "نموذج الرد الذكي التلقائي",
-        "relatedForms": "مركز الاتصال"
+        "relatedForms": "مركز الاتصال",
+        "nameEN": "General Inquiries",
+        "descriptionEN": "Handles general inquiries about platform services, features, and usage through dedicated support channels.",
+        "goalEN": "Provide quick and accurate answers to user inquiries about platform capabilities and services.",
+        "targetEN": "All platform users and potential users.",
+        "conditionsEN": "No specific conditions; available to all.",
+        "documentsEN": "No documents required.",
+        "channelsEN": "Call Center Dashboard (/call-center-dashboard) - inquiry management.",
+        "durationEN": "Typical response within 1-4 hours.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Inquiry responses. 2) Service guidance. 3) FAQ updates.",
+        "limitationsEN": "1) Complex inquiries may require research time. 2) Specialized questions may need escalation.",
+        "partnersEN": "Internal support teams.",
+        "kpisEN": "1) Inquiry volume. 2) Response time. 3) Resolution rate. 4) User satisfaction.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Inquiry Response System",
+        "stepsEN": [
+          "Submit inquiry through call center or chat",
+          "AI provides initial response or guidance",
+          "Escalate to specialist if needed",
+          "Receive detailed response",
+          "Provide feedback on response quality"
+        ]
       },
       {
         "code": "GI-02",
@@ -1132,9 +1717,32 @@
           "admin"
         ],
         "aiModel": "نموذج تصنيف الشكاوى الذكي",
-        "relatedForms": "مركز الاتصال، البريد الإلكتروني"
+        "relatedForms": "مركز الاتصال، البريد الإلكتروني",
+        "nameEN": "Complaints, Feedback & Suggestions",
+        "descriptionEN": "Provides structured channels for users to submit complaints, share feedback, and propose suggestions for platform improvement.",
+        "goalEN": "Create a transparent feedback loop that drives continuous platform improvement based on user input.",
+        "targetEN": "All platform users.",
+        "conditionsEN": "1) Active account (recommended but not required for complaints).",
+        "documentsEN": "Supporting documentation for complaints if applicable.",
+        "channelsEN": "Call Center Dashboard (/call-center-dashboard) - feedback management system.",
+        "durationEN": "Acknowledgment within 24 hours; resolution varies.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Complaint tracking number. 2) Resolution updates. 3) Feedback acknowledgment.",
+        "limitationsEN": "1) Resolution timelines depend on complaint complexity. 2) Some suggestions may require review periods.",
+        "partnersEN": "Quality assurance teams and customer experience departments.",
+        "kpisEN": "1) Complaint resolution rate. 2) Average resolution time. 3) Suggestion implementation rate.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Sentiment Analysis & Routing System",
+        "stepsEN": [
+          "Submit complaint, feedback, or suggestion",
+          "Receive tracking number",
+          "AI categorizes and routes to appropriate team",
+          "Track resolution progress",
+          "Receive resolution notification and provide satisfaction rating"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Inquiry Services"
   },
   {
     "code": "IP",
@@ -1178,7 +1786,29 @@
           "board_member"
         ],
         "aiModel": "",
-        "relatedForms": "القنوات المؤسسية"
+        "relatedForms": "القنوات المؤسسية",
+        "nameEN": "Partner Coordination",
+        "descriptionEN": "Facilitates coordination and collaboration with partner organizations including government entities, private sector companies, and educational institutions.",
+        "goalEN": "Strengthen the partner ecosystem to deliver comprehensive career development services.",
+        "targetEN": "Government entities, private companies, educational institutions, and partnership managers.",
+        "conditionsEN": "1) Organizational account. 2) Partnership agreement.",
+        "documentsEN": "Partnership agreements and organizational credentials.",
+        "channelsEN": "Government Dashboard (/government-dashboard) - partner coordination portal.",
+        "durationEN": "Ongoing partnership management.",
+        "feesEN": "No platform fees; partnership terms vary.",
+        "outputsEN": "1) Partnership agreements. 2) Collaboration tracking. 3) Joint performance reports.",
+        "limitationsEN": "1) Requires formal partnership agreement. 2) Integration depth varies by partner.",
+        "partnersEN": "Government ministries, regulatory bodies, and private sector leaders.",
+        "kpisEN": "1) Active partnerships. 2) Joint program outcomes. 3) Partner satisfaction.",
+        "gapNotesEN": "Partially active; advanced coordination features under development.",
+        "aiModelEN": "",
+        "stepsEN": [
+          "Initiate partnership request",
+          "Complete partnership agreement process",
+          "Access partner coordination dashboard",
+          "Collaborate on joint programs",
+          "Review partnership performance metrics"
+        ]
       },
       {
         "code": "IP-02",
@@ -1216,9 +1846,32 @@
           "candidate"
         ],
         "aiModel": "نموذج توصية المبادرات",
-        "relatedForms": "/startup-launchpad, /national-service"
+        "relatedForms": "/startup-launchpad, /national-service",
+        "nameEN": "Initiative & Program Enrollment",
+        "descriptionEN": "Enables users to discover and enroll in specialized initiatives and programs offered by partner organizations.",
+        "goalEN": "Connect users with innovative programs and initiatives that complement standard career development services.",
+        "targetEN": "All platform users interested in specialized programs.",
+        "conditionsEN": "1) Active account. 2) Meet program-specific requirements.",
+        "documentsEN": "Varies by program.",
+        "channelsEN": "Startup Launchpad (/startup-launchpad) - initiative enrollment portal.",
+        "durationEN": "Enrollment 10-15 minutes; programs vary in duration.",
+        "feesEN": "Varies by program.",
+        "outputsEN": "1) Program enrollment. 2) Progress tracking. 3) Completion certificates.",
+        "limitationsEN": "1) Program availability is seasonal. 2) Capacity limits may apply.",
+        "partnersEN": "Innovation hubs, incubators, and government initiative bodies.",
+        "kpisEN": "1) Enrollments. 2) Completion rate. 3) Participant outcomes.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "AI Program Recommendation Engine",
+        "stepsEN": [
+          "Browse available initiatives and programs",
+          "Review program details and requirements",
+          "Submit enrollment application",
+          "Participate in program activities",
+          "Complete program and receive certification"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Partnership Services"
   },
   {
     "code": "EM",
@@ -1262,8 +1915,31 @@
           "training_provider"
         ],
         "aiModel": "",
-        "relatedForms": "/student-dashboard, /guardian-dashboard, /educator-dashboard"
+        "relatedForms": "/student-dashboard, /guardian-dashboard, /educator-dashboard",
+        "nameEN": "Early Career & Educational Pathway Tracking",
+        "descriptionEN": "Monitors and tracks early career and educational pathways for students and young professionals, providing guidance and intervention when needed.",
+        "goalEN": "Ensure early career entrants receive timely guidance and support to stay on track with their educational and professional goals.",
+        "targetEN": "Students, young professionals, educational institutions, and guardians.",
+        "conditionsEN": "1) Active account. 2) Enrolled in educational or early career program.",
+        "documentsEN": "Educational records and enrollment verification.",
+        "channelsEN": "Student Dashboard (/student-dashboard) - early career tracking portal.",
+        "durationEN": "Ongoing tracking throughout educational/early career phase.",
+        "feesEN": "No fees.",
+        "outputsEN": "1) Pathway progress dashboard. 2) Milestone tracking. 3) Intervention alerts. 4) Guidance recommendations.",
+        "limitationsEN": "1) Tracking accuracy depends on data input. 2) Some institutions may not fully integrate.",
+        "partnersEN": "Educational institutions, career counselors, and family support services.",
+        "kpisEN": "1) Students tracked. 2) Milestone achievement rate. 3) Intervention success rate. 4) Career readiness scores.",
+        "gapNotesEN": "Active.",
+        "aiModelEN": "",
+        "stepsEN": [
+          "Access Student Dashboard",
+          "View educational pathway progress",
+          "Monitor career readiness indicators",
+          "Receive guidance recommendations",
+          "Track milestones and achievements"
+        ]
       }
-    ]
+    ],
+    "nameEN": "Early Follow-up Services"
   }
 ]

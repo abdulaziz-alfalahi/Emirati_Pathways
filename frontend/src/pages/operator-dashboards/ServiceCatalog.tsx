@@ -64,15 +64,7 @@ const IconShuffle: React.FC<{ color: string; size?: number }> = ({ color, size }
 );
 
 /* ─── Constants ──────────────────────────────────────────────────── */
-const groupNameEN: Record<string, string> = {
-  CS: 'Career Pathway Services', CG: 'Career Guidance Services',
-  TD: 'Training & Development', EJ: 'Employment Services',
-  ER: 'Employer Services', DC: 'Certification Services',
-  CP: 'Career Planning Services', EN: 'Mentoring & Guidance',
-  SP: 'Educational Programs', CM: 'Community Services',
-  TS: 'Operational Support', GI: 'Inquiry Services',
-  IP: 'Partnership Services', EM: 'Early Follow-up Services',
-};
+/* groupNameEN map removed — now using g.nameEN from JSON */
 
 const statusMeta: Record<string, { color: string; bg: string; labelEN: string; labelAR: string }> = {
   active:     { color: '#059669', bg: '#d1fae5', labelEN: 'Active',     labelAR: 'مفعّل' },
@@ -136,6 +128,11 @@ const ServiceCatalog: React.FC = () => {
   const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
+  /** Translate a data field: given AR value and its EN counterpart */
+  const tf = (ar: string, en: string) => isRTL ? ar : (en || ar);
+  const gn = (g: ServiceGroup) => isRTL ? g.name : (g.nameEN || g.name);
+  const sn = (s: ServiceItem) => tf(s.name, s.nameEN);
+  const sd = (s: ServiceItem) => tf(s.description, s.descriptionEN);
 
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -152,7 +149,7 @@ const ServiceCatalog: React.FC = () => {
     else if (statusFilter !== 'all') list = list.filter(s => s.platformStatus === statusFilter);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(s => s.name.includes(q) || s.code.toLowerCase().includes(q) || s.description.includes(q));
+      list = list.filter(s => s.name.includes(q) || s.nameEN?.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || s.description.includes(q) || s.descriptionEN?.toLowerCase().includes(q));
     }
     return list;
   }, [selectedGroup, statusFilter, searchQuery]);
@@ -266,7 +263,7 @@ const ServiceCatalog: React.FC = () => {
                     return (
                       <div key={g.code} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 160, fontSize: 12, color: '#334155', fontWeight: 500, textAlign: isRTL ? 'right' : 'left', flexShrink: 0 }}>
-                          {isRTL ? g.name : (groupNameEN[g.code] || g.name)}
+                          {gn(g)}
                         </div>
                         <div style={{ flex: 1, height: 22, background: '#f1f5f9', borderRadius: 6, overflow: 'hidden' }}>
                           <div style={{
@@ -358,7 +355,7 @@ const ServiceCatalog: React.FC = () => {
                       style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 12, fontWeight: selectedGroup === g.code ? 700 : 400, background: selectedGroup === g.code ? `${g.color}10` : 'transparent', color: selectedGroup === g.code ? g.color : '#334155', borderBottom: '1px solid #f8fafc', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: g.color, flexShrink: 0 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isRTL ? g.name : (groupNameEN[g.code] || g.name)}</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gn(g)}</span>
                       </div>
                       <span style={{ fontSize: 10, background: `${g.color}18`, color: g.color, borderRadius: 10, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>{g.services.length}</span>
                     </div>
@@ -385,8 +382,8 @@ const ServiceCatalog: React.FC = () => {
                           <span style={{ fontSize: 10, fontWeight: 600, color: st.color, background: st.bg, borderRadius: 10, padding: '2px 8px' }}>{isRTL ? st.labelAR : st.labelEN}</span>
                           {s.isNew && <span style={{ fontSize: 10, fontWeight: 700, color: '#0d9488', background: '#ccfbf1', borderRadius: 10, padding: '2px 8px' }}>{t('New', 'جديد')}</span>}
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 6, lineHeight: 1.5 }}>{s.name}</div>
-                        <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{s.description}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 6, lineHeight: 1.5 }}>{sn(s)}</div>
+                        <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{sd(s)}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 11, color: '#94a3b8' }}>
                           <span><IconUsers color="#94a3b8" size={14} /> {s.platformRoles?.length || 0} {t('roles', 'أدوار')}</span>
                           {s.aiModel && <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconCpu color="#94a3b8" size={14} /> {t('AI', 'ذكاء اصطناعي')}</span>}
@@ -420,24 +417,24 @@ const ServiceCatalog: React.FC = () => {
                           <span style={{ fontSize: 11, fontWeight: 600, color: st.color, background: st.bg, borderRadius: 10, padding: '3px 10px' }}>{isRTL ? st.labelAR : st.labelEN}</span>
                           {s.isNew && <span style={{ fontSize: 10, fontWeight: 700, color: '#0d9488', background: '#ccfbf1', borderRadius: 10, padding: '2px 8px' }}>{t('New', 'جديد')}</span>}
                         </div>
-                        <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', lineHeight: 1.5 }}>{s.name}</div>
-                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{isRTL ? s.group : (groupNameEN[s.groupCode] || s.group)}</div>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a', lineHeight: 1.5 }}>{sn(s)}</div>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{tf(s.group, serviceGroups.find(g => g.code === s.groupCode)?.nameEN || s.group)}</div>
                       </div>
                       <button onClick={() => setSelectedService(null)} style={{ background: '#f8fafc', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                     </div>
                     <div style={{ padding: '20px 24px 40px' }}>
                       <Section title={t('Overview', 'نظرة عامة')}>
-                        <Field label={t('Description', 'الوصف')} value={s.description} />
-                        <Field label={t('Goal', 'الهدف')} value={s.goal} />
+                        <Field label={t('Description', 'الوصف')} value={tf(s.description, s.descriptionEN)} />
+                        <Field label={t('Goal', 'الهدف')} value={tf(s.goal, s.goalEN)} />
                       </Section>
                       <Section title={t('Target & Requirements', 'الفئة المستهدفة والمتطلبات')}>
-                        <Field label={t('Target Audience', 'الفئة المستهدفة')} value={s.target} />
-                        <Field label={t('Conditions', 'الشروط')} value={s.conditions} />
-                        <Field label={t('Required Documents', 'المستندات المطلوبة')} value={s.documents} />
+                        <Field label={t('Target Audience', 'الفئة المستهدفة')} value={tf(s.target, s.targetEN)} />
+                        <Field label={t('Conditions', 'الشروط')} value={tf(s.conditions, s.conditionsEN)} />
+                        <Field label={t('Required Documents', 'المستندات المطلوبة')} value={tf(s.documents, s.documentsEN)} />
                       </Section>
                       {s.steps?.length > 0 && (
-                        <Section title={t('Service Steps', 'خطوات الخدمة')}>
-                          {s.steps.map((step, i) => (
+                        <Section title={t('Steps', 'الخطوات')}>
+                          {(isRTL ? s.steps : (s.stepsEN || s.steps)).map((step, i) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: i < s.steps.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                               <div style={{ width: 24, height: 24, borderRadius: '50%', background: `${color}15`, color, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</div>
                               <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, paddingTop: 2 }}>{step}</div>
@@ -446,17 +443,17 @@ const ServiceCatalog: React.FC = () => {
                         </Section>
                       )}
                       <Section title={t('Delivery', 'آلية التقديم')}>
-                        <Field label={t('Channels', 'القنوات')} value={s.channels} />
-                        <Field label={t('Duration', 'المدة')} value={s.duration} />
-                        <Field label={t('Fees', 'الرسوم')} value={s.fees} />
+                        <Field label={t('Channels', 'القنوات')} value={tf(s.channels, s.channelsEN)} />
+                        <Field label={t('Duration', 'المدة')} value={tf(s.duration, s.durationEN)} />
+                        <Field label={t('Fees', 'الرسوم')} value={tf(s.fees, s.feesEN)} />
                       </Section>
                       <Section title={t('Outcomes', 'المخرجات')}>
-                        <Field label={t('Outputs', 'المخرجات')} value={s.outputs} />
-                        <Field label={t('Limitations', 'القيود')} value={s.limitations} />
+                        <Field label={t('Outputs', 'المخرجات')} value={tf(s.outputs, s.outputsEN)} />
+                        <Field label={t('Limitations', 'القيود')} value={tf(s.limitations, s.limitationsEN)} />
                       </Section>
                       <Section title={t('Stakeholders', 'أصحاب المصلحة')}>
-                        <Field label={t('Partners', 'الشركاء')} value={s.partners} />
-                        <Field label={t('KPIs', 'مؤشرات الأداء')} value={s.kpis} />
+                        <Field label={t('Partners', 'الشركاء')} value={tf(s.partners, s.partnersEN)} />
+                        <Field label={t('KPIs', 'مؤشرات الأداء')} value={tf(s.kpis, s.kpisEN)} />
                       </Section>
                       {/* AI & Intelligence */}
                       {s.aiModel && (
@@ -465,7 +462,7 @@ const ServiceCatalog: React.FC = () => {
                             <IconCpu color="#9333ea" size={28} />
                             <div>
                               <div style={{ fontSize: 11, fontWeight: 600, color: '#9333ea' }}>{t('AI Model', 'النموذج الذكي')}</div>
-                              <div style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>{s.aiModel}</div>
+                              <div style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>{tf(s.aiModel, s.aiModelEN)}</div>
                             </div>
                           </div>
                         </Section>
@@ -493,11 +490,11 @@ const ServiceCatalog: React.FC = () => {
                             <div style={{ width: 10, height: 10, borderRadius: '50%', background: st.color, boxShadow: `0 0 6px ${st.color}60` }} />
                             <span style={{ fontSize: 13, fontWeight: 700, color: st.color }}>{isRTL ? st.labelAR : st.labelEN}</span>
                           </div>
-                          {s.platformPath && <Field label={t('Path', 'المسار')} value={s.platformPath} />}
+                          {s.platformPath && <Field label={t('Path', 'مسار')} value={s.platformPath} />}
                           {s.relatedForms && <Field label={t('Related Forms', 'النماذج المرتبطة')} value={s.relatedForms} />}
                           {s.gapNotes && (
-                            <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.6)', borderRadius: 8, fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
-                              <span style={{ fontWeight: 600 }}>{t('Notes:', 'ملاحظات:')}</span> {s.gapNotes}
+                            <div style={{ fontSize: 12, color: '#64748b', fontStyle: 'italic', marginTop: 6 }}>
+                              <span style={{ fontWeight: 600 }}>{t('Notes:', 'ملاحظات:')}</span> {tf(s.gapNotes, s.gapNotesEN)}
                             </div>
                           )}
                         </div>
@@ -566,8 +563,8 @@ const ServiceCatalog: React.FC = () => {
                             <span style={{ fontSize: 11, fontWeight: 700, color: grp?.color, background: `${grp?.color}12`, borderRadius: 6, padding: '2px 6px' }}>{s.code}</span>
                             <span style={{ fontSize: 10, fontWeight: 600, color: st.color, background: st.bg, borderRadius: 8, padding: '2px 6px' }}>{isRTL ? st.labelAR : st.labelEN}</span>
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.4 }}>{s.name}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{isRTL ? s.group : (groupNameEN[s.groupCode] || s.group)}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', lineHeight: 1.4 }}>{sn(s)}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{tf(s.group, serviceGroups.find(g => g.code === s.groupCode)?.nameEN || s.group)}</div>
                         </div>
                       );
                     })}
@@ -667,15 +664,15 @@ const ServiceCatalog: React.FC = () => {
                         onMouseEnter={e => { e.currentTarget.style.background = `${st.bg}80`; }}
                         onMouseLeave={e => { e.currentTarget.style.background = `${st.bg}40`; }}>
                         <td style={{ padding: '8px 12px', fontWeight: 700, color: groupByCode(s.groupCode)?.color }}>{s.code}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 500, color: '#0f172a', maxWidth: 200 }}>{s.name}</td>
-                        <td style={{ padding: '8px 12px', color: '#64748b', fontSize: 11 }}>{isRTL ? s.group : (groupNameEN[s.groupCode] || s.group)}</td>
+                        <td style={{ padding: '8px 12px', fontWeight: 500, color: '#0f172a', maxWidth: 200 }}>{sn(s)}</td>
+                        <td style={{ padding: '8px 12px', color: '#64748b', fontSize: 11 }}>{tf(s.group, serviceGroups.find(g => g.code === s.groupCode)?.nameEN || s.group)}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                           <span style={{ fontSize: 10, fontWeight: 700, color: st.color, background: st.bg, borderRadius: 10, padding: '3px 10px' }}>{isRTL ? st.labelAR : st.labelEN}</span>
                         </td>
                         <td style={{ padding: '8px 12px' }}>
                           <code style={{ fontSize: 11, color: '#334155', background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>{s.platformPath}</code>
                         </td>
-                        <td style={{ padding: '8px 12px', fontSize: 11, color: '#64748b', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.gapNotes}>{s.gapNotes || '—'}</td>
+                        <td style={{ padding: '8px 12px', fontSize: 11, color: '#64748b', maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={tf(s.gapNotes, s.gapNotesEN)}>{tf(s.gapNotes, s.gapNotesEN) || '—'}</td>
                       </tr>
                     );
                   })}
@@ -711,9 +708,9 @@ const ServiceCatalog: React.FC = () => {
                   <div key={s.code} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, background: s.aiModel ? '#faf5ff' : '#f8fafc', border: `1px solid ${s.aiModel ? '#e9d5ff' : '#e2e8f0'}` }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: groupByCode(s.groupCode)?.color, minWidth: 45 }}>{s.code}</span>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sn(s)}</div>
                       <div style={{ fontSize: 11, color: s.aiModel ? '#9333ea' : '#cbd5e1', fontWeight: s.aiModel ? 500 : 400 }}>
-                        {s.aiModel || t('No AI model', 'لا يوجد نموذج ذكي')}
+                        {s.aiModel ? tf(s.aiModel, s.aiModelEN) : t('No AI model', 'لا يوجد نموذج ذكي')}
                       </div>
                     </div>
                   </div>

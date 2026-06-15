@@ -4,36 +4,53 @@
 export interface ServiceItem {
   code: string;
   name: string;
+  nameEN: string;
   group: string;
   groupCode: string;
   description: string;
+  descriptionEN: string;
   goal: string;
+  goalEN: string;
   target: string;
+  targetEN: string;
   conditions: string;
+  conditionsEN: string;
   documents: string;
+  documentsEN: string;
   steps: string[];
+  stepsEN: string[];
   channels: string;
+  channelsEN: string;
   duration: string;
+  durationEN: string;
   fees: string;
+  feesEN: string;
   outputs: string;
+  outputsEN: string;
   limitations: string;
+  limitationsEN: string;
   partners: string;
+  partnersEN: string;
   kpis: string;
+  kpisEN: string;
   platformStatus: 'active' | 'partial' | 'gap' | 'correction';
   platformModule: string;
   platformPath: string;
   gapNotes: string;
+  gapNotesEN: string;
   isNew: boolean;
   isCorrection: boolean;
   // New fields from Manus guide
   platformRoles: string[];
   aiModel: string;
+  aiModelEN: string;
   relatedForms: string;
 }
 
 export interface ServiceGroup {
   code: string;
   name: string;
+  nameEN: string;
   color: string;
   description: string;
   services: ServiceItem[];
