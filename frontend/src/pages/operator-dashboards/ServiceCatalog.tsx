@@ -6,6 +6,63 @@ import {
   allRoles, roleServiceMap, roleLabels, aiModelCount,
 } from '@/data/serviceCatalogData';
 
+/* ─── SVG Icon Components (replace emojis that don't render in Docker) ─── */
+const SvgIcon: React.FC<{ d: string; color: string; size?: number }> = ({ d, color, size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+
+const IconClipboard: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <SvgIcon d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" color={color} size={size} />
+);
+const IconCheck: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" />
+  </svg>
+);
+const IconAlert: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" />
+  </svg>
+);
+const IconCircle: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill={color} stroke="none">
+    <circle cx="12" cy="12" r="10" />
+  </svg>
+);
+const IconFolder: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <SvgIcon d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" color={color} size={size} />
+);
+const IconSparkle: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <SvgIcon d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3Z" color={color} size={size} />
+);
+const IconCpu: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="16" height="16" x="4" y="4" rx="2" /><rect width="6" height="6" x="9" y="9" rx="1" />
+    <path d="M15 2v2" /><path d="M15 20v2" /><path d="M2 15h2" /><path d="M2 9h2" />
+    <path d="M20 15h2" /><path d="M20 9h2" /><path d="M9 2v2" /><path d="M9 20v2" />
+  </svg>
+);
+const IconUsers: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+const IconChart: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
+  </svg>
+);
+const IconShuffle: React.FC<{ color: string; size?: number }> = ({ color, size }) => (
+  <svg width={size || 20} height={size || 20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
+    <path d="m18 2 4 4-4 4" /><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" />
+    <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" /><path d="m18 14 4 4-4 4" />
+  </svg>
+);
+
 /* ─── Constants ──────────────────────────────────────────────────── */
 const groupNameEN: Record<string, string> = {
   CS: 'Career Pathway Services', CG: 'Career Guidance Services',
@@ -59,14 +116,14 @@ const Field: React.FC<{ label: string; value: string }> = ({ label, value }) => 
   );
 };
 
-const StatCard: React.FC<{ value: number | string; label: string; color: string; icon?: string; small?: boolean }> = ({ value, label, color, icon, small }) => (
+const StatCard: React.FC<{ value: number | string; label: string; color: string; iconEl?: React.ReactNode; small?: boolean }> = ({ value, label, color, iconEl, small }) => (
   <div style={{
     background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14,
     padding: small ? '14px 16px' : '20px 22px', flex: 1, minWidth: small ? 140 : 180,
-    borderLeft: `4px solid ${color}`, display: 'flex', flexDirection: 'column', gap: 4,
+    borderInlineStart: `4px solid ${color}`, display: 'flex', flexDirection: 'column', gap: 4,
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      {icon && <span style={{ fontSize: small ? 18 : 24 }}>{icon}</span>}
+      {iconEl}
       <span style={{ fontSize: small ? 28 : 40, fontWeight: 800, color }}>{value}</span>
     </div>
     <span style={{ fontSize: small ? 11 : 13, color: '#64748b', fontWeight: 500 }}>{label}</span>
@@ -76,7 +133,7 @@ const StatCard: React.FC<{ value: number | string; label: string; color: string;
 /* ─── Main Component ─────────────────────────────────────────────── */
 const ServiceCatalog: React.FC = () => {
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const isRTL = language === 'ar';
   const t = (en: string, ar: string) => isRTL ? ar : en;
 
@@ -111,7 +168,7 @@ const ServiceCatalog: React.FC = () => {
 
   /* ─── RENDER ────────────────────────────────────────────────────── */
   return (
-    <div style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Inter, system-ui, sans-serif', background: '#f8fafc', minHeight: '100vh' }}>
+    <div style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: 'Inter, system-ui, sans-serif', background: '#f8fafc', minHeight: '100vh', textAlign: isRTL ? 'right' : 'left' }}>
       {/* ─── Header ─── */}
       <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '16px 28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1400, margin: '0 auto' }}>
@@ -122,7 +179,12 @@ const ServiceCatalog: React.FC = () => {
             <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{t('EHRDC Service Catalog', 'دليل خدمات منصة تنمية الموارد البشرية')}</div>
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{t('Emirati Human Resources Development Council', 'مجلس تنمية الموارد البشرية الإماراتية')}</div>
           </div>
-          <div style={{ width: 140 }} />
+          <button onClick={toggleLanguage} style={{ background: '#0e4a8a', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 700, letterSpacing: 0.5, transition: 'background 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#1e5faa'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#0e4a8a'; }}
+          >
+            {isRTL ? 'EN' : 'عربي'}
+          </button>
         </div>
       </div>
 
@@ -155,18 +217,18 @@ const ServiceCatalog: React.FC = () => {
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             {/* Hero Stats */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color="#0e4a8a" icon="📋" />
-              <StatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} color="#059669" icon="✅" />
-              <StatCard value={serviceStats.partialServices} label={t('Partial Coverage', 'تغطية جزئية')} color="#d97706" icon="⚠️" />
-              <StatCard value={serviceStats.gapServices} label={t('Gap (Needs Dev)', 'فجوة (تحتاج تطوير)')} color="#dc2626" icon="🔴" />
+              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color="#0e4a8a" iconEl={<IconClipboard color="#0e4a8a" size={28} />} />
+              <StatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} color="#059669" iconEl={<IconCheck color="#059669" size={28} />} />
+              <StatCard value={serviceStats.partialServices} label={t('Partial Coverage', 'تغطية جزئية')} color="#d97706" iconEl={<IconAlert color="#d97706" size={28} />} />
+              <StatCard value={serviceStats.gapServices} label={t('Gap (Needs Dev)', 'فجوة (تحتاج تطوير)')} color="#dc2626" iconEl={<IconCircle color="#dc2626" size={28} />} />
             </div>
 
             {/* Secondary Stats */}
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 32 }}>
-              <StatCard small value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمات')} color="#6366f1" icon="📁" />
-              <StatCard small value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} color="#0d9488" icon="🆕" />
-              <StatCard small value={aiModelCount} label={t('AI Models', 'نماذج ذكاء اصطناعي')} color="#9333ea" icon="🤖" />
-              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color="#0e4a8a" icon="👥" />
+              <StatCard small value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمات')} color="#6366f1" iconEl={<IconFolder color="#6366f1" size={22} />} />
+              <StatCard small value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} color="#0d9488" iconEl={<IconSparkle color="#0d9488" size={22} />} />
+              <StatCard small value={aiModelCount} label={t('AI Models', 'نماذج ذكاء اصطناعي')} color="#9333ea" iconEl={<IconCpu color="#9333ea" size={22} />} />
+              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color="#0e4a8a" iconEl={<IconUsers color="#0e4a8a" size={22} />} />
             </div>
 
             {/* Coverage Donut + Group Bar Chart side by side */}
@@ -210,7 +272,7 @@ const ServiceCatalog: React.FC = () => {
                           <div style={{
                             width: `${(g.services.length / maxCount) * 100}%`, height: '100%',
                             background: g.color, borderRadius: 6, transition: 'width 0.5s ease',
-                            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8,
+                            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingInlineEnd: 8,
                           }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{g.services.length}</span>
                           </div>
@@ -225,7 +287,7 @@ const ServiceCatalog: React.FC = () => {
             {/* Key Findings */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, borderTop: '4px solid #059669' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>📊 {t('Coverage Rate', 'معدل التغطية')}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconChart color="#059669" size={18} /> {t('Coverage Rate', 'معدل التغطية')}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', marginBottom: 8 }}>{coverageRate}%</div>
                 <div style={{ height: 8, background: '#e2e8f0', borderRadius: 4 }}>
                   <div style={{ width: `${coverageRate}%`, height: '100%', background: '#059669', borderRadius: 4 }} />
@@ -233,12 +295,12 @@ const ServiceCatalog: React.FC = () => {
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>{t(`${serviceStats.activeServices} of ${serviceStats.totalServices} services fully active`, `${serviceStats.activeServices} من ${serviceStats.totalServices} خدمة مفعّلة بالكامل`)}</div>
               </div>
               <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, borderTop: '4px solid #6366f1' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>🔀 {t('IA Consolidation', 'الدمج والتوحيد')}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconShuffle color="#6366f1" size={18} /> {t('IA Consolidation', 'الدمج والتوحيد')}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#6366f1', marginBottom: 8 }}>5</div>
                 <div style={{ fontSize: 12, color: '#64748b' }}>{t('Major route consolidations unifying 12+ paths into 5 canonical pages', 'عمليات دمج رئيسية توحّد 12+ مساراً في 5 صفحات أساسية')}</div>
               </div>
               <div style={{ flex: 1, minWidth: 250, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20, borderTop: '4px solid #9333ea' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>🤖 {t('AI Integration', 'تكامل الذكاء الاصطناعي')}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconCpu color="#9333ea" size={18} /> {t('AI Integration', 'تكامل الذكاء الاصطناعي')}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: '#9333ea', marginBottom: 8 }}>{aiModelCount}</div>
                 <div style={{ fontSize: 12, color: '#64748b' }}>{t('AI models powering platform intelligence across services', 'نموذج ذكاء اصطناعي يعمل عبر خدمات المنصة')}</div>
               </div>
@@ -326,9 +388,9 @@ const ServiceCatalog: React.FC = () => {
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 6, lineHeight: 1.5 }}>{s.name}</div>
                         <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{s.description}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 11, color: '#94a3b8' }}>
-                          <span>👥 {s.platformRoles?.length || 0} {t('roles', 'أدوار')}</span>
-                          {s.aiModel && <span>🤖 {t('AI', 'ذكاء اصطناعي')}</span>}
-                          <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>{t('View details →', 'عرض التفاصيل ←')}</span>
+                          <span><IconUsers color="#94a3b8" size={14} /> {s.platformRoles?.length || 0} {t('roles', 'أدوار')}</span>
+                          {s.aiModel && <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconCpu color="#94a3b8" size={14} /> {t('AI', 'ذكاء اصطناعي')}</span>}
+                          <span style={{ marginInlineStart: 'auto', fontSize: 11, color: '#94a3b8' }}>{t('View details →', 'عرض التفاصيل ←')}</span>
                         </div>
                       </div>
                     );
@@ -400,7 +462,7 @@ const ServiceCatalog: React.FC = () => {
                       {s.aiModel && (
                         <Section title={t('AI & Intelligence', 'الذكاء الاصطناعي والتحليل')}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 14, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10 }}>
-                            <span style={{ fontSize: 24 }}>🤖</span>
+                            <IconCpu color="#9333ea" size={28} />
                             <div>
                               <div style={{ fontSize: 11, fontWeight: 600, color: '#9333ea' }}>{t('AI Model', 'النموذج الذكي')}</div>
                               <div style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>{s.aiModel}</div>
@@ -416,7 +478,7 @@ const ServiceCatalog: React.FC = () => {
                               const rl = roleLabels[r];
                               return (
                                 <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, fontSize: 12, color: '#1e40af' }}>
-                                  <span>{rl?.icon || '👤'}</span>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', background: '#0e4a8a', color: '#fff', fontSize: 10, fontWeight: 700 }}>{(rl?.en || r).charAt(0)}</span>
                                   <span style={{ fontWeight: 600 }}>{rl ? t(rl.en, rl.ar) : r}</span>
                                 </div>
                               );
@@ -468,7 +530,7 @@ const ServiceCatalog: React.FC = () => {
                     onMouseEnter={e => { if (!selected) e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
                     onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>{rl?.icon || '👤'}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8, fontSize: 20, fontWeight: 800, color: '#0e4a8a' }}>{(rl?.en || role).charAt(0)}</div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{rl ? t(rl.en, rl.ar) : role}</div>
                     <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginBottom: 10, minHeight: 36 }}>{rl ? t(rl.descEN, rl.descAR) : ''}</div>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#0e4a8a', background: '#eff6ff', borderRadius: 10, padding: '3px 10px' }}>{count} {t('services', 'خدمة')}</span>
@@ -484,7 +546,7 @@ const ServiceCatalog: React.FC = () => {
               return (
                 <div style={{ marginBottom: 32 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, padding: '12px 18px', background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe' }}>
-                    <span style={{ fontSize: 28 }}>{rl?.icon || '👤'}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 10, background: '#eff6ff', color: '#0e4a8a', fontSize: 16, fontWeight: 800 }}>{(rl?.en || selectedRole).charAt(0)}</span>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: '#0e4a8a' }}>{rl ? t(rl.en, rl.ar) : selectedRole}</div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>{t(`${services.length} services accessible`, `${services.length} خدمة متاحة`)}</div>
@@ -496,7 +558,7 @@ const ServiceCatalog: React.FC = () => {
                       const st = sm(s);
                       return (
                         <div key={s.code} onClick={() => { setActiveTab('services'); setSelectedService(s); }}
-                          style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, cursor: 'pointer', borderLeft: `3px solid ${grp?.color || '#64748b'}` }}
+                          style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, cursor: 'pointer', borderInlineStart: `3px solid ${grp?.color || '#64748b'}` }}
                           onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
                           onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
                         >
@@ -520,7 +582,7 @@ const ServiceCatalog: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: '8px 10px', textAlign: isRTL ? 'right' : 'left', borderBottom: '2px solid #e2e8f0', color: '#64748b', fontWeight: 600, position: 'sticky', left: 0, background: '#fff', minWidth: 140 }}>{t('Role', 'الدور')}</th>
+                    <th style={{ padding: '8px 10px', textAlign: isRTL ? 'right' : 'left', borderBottom: '2px solid #e2e8f0', color: '#64748b', fontWeight: 600, position: 'sticky', insetInlineStart: 0, background: '#fff', minWidth: 140 }}>{t('Role', 'الدور')}</th>
                     {serviceGroups.map(g => (
                       <th key={g.code} style={{ padding: '6px 4px', textAlign: 'center', borderBottom: '2px solid #e2e8f0', color: g.color, fontWeight: 700, fontSize: 10, writingMode: 'vertical-rl', height: 80 }}>{g.code}</th>
                     ))}
@@ -535,8 +597,8 @@ const ServiceCatalog: React.FC = () => {
                       <tr key={role} style={{ borderBottom: '1px solid #f1f5f9' }}
                         onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                        <td style={{ padding: '8px 10px', fontWeight: 600, color: '#334155', position: 'sticky', left: 0, background: 'inherit', whiteSpace: 'nowrap' }}>
-                          {rl?.icon} {rl ? t(rl.en, rl.ar) : role}
+                        <td style={{ padding: '8px 10px', fontWeight: 600, color: '#334155', position: 'sticky', insetInlineStart: 0, background: 'inherit', whiteSpace: 'nowrap' }}>
+                          {(rl?.en || role).charAt(0)} {rl ? t(rl.en, rl.ar) : role}
                         </td>
                         {serviceGroups.map(g => {
                           const count = roleSvcs.filter(s => s.groupCode === g.code).length;
@@ -572,7 +634,7 @@ const ServiceCatalog: React.FC = () => {
                 { label: t('Partial', 'جزئي'), value: serviceStats.partialServices, total: serviceStats.totalServices, color: '#d97706' },
                 { label: t('Gap', 'فجوة'), value: serviceStats.gapServices, total: serviceStats.totalServices, color: '#dc2626' },
               ].map(x => (
-                <div key={x.label} style={{ flex: 1, minWidth: 200, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, borderLeft: `4px solid ${x.color}` }}>
+                <div key={x.label} style={{ flex: 1, minWidth: 200, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, borderInlineStart: `4px solid ${x.color}` }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>{x.label}</div>
                   <div style={{ fontSize: 32, fontWeight: 800, color: x.color, margin: '4px 0' }}>{x.value}</div>
                   <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3 }}>
@@ -623,7 +685,7 @@ const ServiceCatalog: React.FC = () => {
 
             {/* IA Consolidation Report */}
             <div style={{ marginBottom: 28 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>🔀 {t('IA Consolidation Report', 'تقرير الدمج والتوحيد')}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><IconShuffle color="#6366f1" size={20} /> {t('IA Consolidation Report', 'تقرير الدمج والتوحيد')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
                 {consolidations.map((c, i) => (
                   <div key={i} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 18, borderTop: '3px solid #6366f1' }}>
@@ -643,7 +705,7 @@ const ServiceCatalog: React.FC = () => {
 
             {/* AI Model Coverage */}
             <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 20 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14 }}>🤖 {t('AI Model Coverage', 'تغطية نماذج الذكاء الاصطناعي')}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}><IconCpu color="#9333ea" size={20} /> {t('AI Model Coverage', 'تغطية نماذج الذكاء الاصطناعي')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 10 }}>
                 {allServices.map(s => (
                   <div key={s.code} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, background: s.aiModel ? '#faf5ff' : '#f8fafc', border: `1px solid ${s.aiModel ? '#e9d5ff' : '#e2e8f0'}` }}>
