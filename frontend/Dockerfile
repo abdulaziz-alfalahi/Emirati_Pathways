@@ -6,10 +6,11 @@
 # Stage 1: Build the React app
 FROM node:20-alpine AS build
 WORKDIR /app
+ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 # Stage 2: Serve static files via Nginx
 FROM nginx:stable-alpine
