@@ -6,18 +6,10 @@
 # Stage 1: Build the React app
 FROM node:20-alpine AS build
 WORKDIR /app
-
-# Force NODE_ENV=development so npm ci installs devDependencies (vite, typescript)
-ENV NODE_ENV=development
-
 COPY package*.json ./
-RUN npm ci --production=false
-# Verify vite was actually installed
-RUN ls -la node_modules/.bin/vite && echo "✅ vite found"
-
+RUN npm ci
 COPY . .
-# Skip tsc (type-checking done locally); vite build catches syntax/import errors
-RUN node_modules/.bin/vite build
+RUN npx vite build
 
 # Stage 2: Serve static files via Nginx
 FROM nginx:stable-alpine
