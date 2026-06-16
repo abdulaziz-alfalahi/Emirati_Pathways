@@ -5,11 +5,10 @@ import { Power, Settings, AlertCircle, CheckCircle2, ExternalLink } from 'lucide
 import { useFeatureFlags } from '@/components/common/FeatureFlagGuard';
 import toast from 'react-hot-toast';
 
-// Maps feature-flag key_name → frontend route
+// Maps feature-flag key_name → frontend route (only flags with real pages)
 const FLAG_ROUTE_MAP: Record<string, string> = {
   page_job_matching: '/job-matching',
   page_interview_preparation: '/interview-preparation',
-  job_board: '/jobs',
   page_portfolio: '/portfolio',
   page_internships: '/internships',
   page_knowledge_camps: '/knowledge-camps',
@@ -37,12 +36,6 @@ const FLAG_ROUTE_MAP: Record<string, string> = {
   page_professional_certifications: '/professional-certifications',
   operations_center: '/operations-center',
   government_dashboard: '/executive',
-  assessment_center: '/assessment-center',
-  talent_matching: '/talent-matching',
-  nav_career_entry: '/',
-  nav_education_pathway: '/',
-  nav_lifelong_engagement: '/',
-  nav_professional_growth: '/',
 };
 
 interface FeatureFlag {
@@ -168,7 +161,7 @@ const FeatureFlagsTab: React.FC = () => {
             <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-medium">
               <span className="text-gray-400 font-mono">ID: {flag.key_name}</span>
               <div className="flex items-center gap-2">
-                {FLAG_ROUTE_MAP[flag.key_name] && FLAG_ROUTE_MAP[flag.key_name] !== '/' && (
+                {FLAG_ROUTE_MAP[flag.key_name] && (
                   <Link
                     to={FLAG_ROUTE_MAP[flag.key_name]}
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
