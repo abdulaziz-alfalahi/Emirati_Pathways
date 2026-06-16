@@ -7,9 +7,9 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci && echo "--- node_modules/.bin contents ---" && ls node_modules/.bin/ | head -30 && echo "--- vite check ---" && ls -la node_modules/.bin/vite
 COPY . .
-RUN npx vite build
+RUN node_modules/.bin/vite build
 
 # Stage 2: Serve static files via Nginx
 FROM nginx:stable-alpine
