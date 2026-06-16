@@ -226,7 +226,7 @@ const ServiceCatalog: React.FC = () => {
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             {/* Hero Stats */}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color=TEAL iconEl={<IconClipboard color=TEAL size={28} />} />
+              <StatCard value={serviceStats.totalServices} label={t('Total Services', 'إجمالي الخدمات')} color={TEAL} iconEl={<IconClipboard color={TEAL} size={28} />} />
               <StatCard value={serviceStats.activeServices} label={t('Active on Platform', 'مفعّلة على المنصة')} color="#059669" iconEl={<IconCheck color="#059669" size={28} />} />
               <StatCard value={serviceStats.partialServices} label={t('Partial Coverage', 'تغطية جزئية')} color="#d97706" iconEl={<IconAlert color="#d97706" size={28} />} />
               <StatCard value={serviceStats.gapServices} label={t('Gap (Needs Dev)', 'فجوة (تحتاج تطوير)')} color="#dc2626" iconEl={<IconCircle color="#dc2626" size={28} />} />
@@ -237,7 +237,7 @@ const ServiceCatalog: React.FC = () => {
               <StatCard small value={serviceStats.totalGroups} label={t('Service Groups', 'مجموعات الخدمات')} color="#6366f1" iconEl={<IconFolder color="#6366f1" size={22} />} />
               <StatCard small value={serviceStats.newServices} label={t('New Services', 'خدمات جديدة')} color="#0d9488" iconEl={<IconSparkle color="#0d9488" size={22} />} />
               <StatCard small value={aiModelCount} label={t('AI Models', 'نماذج ذكاء اصطناعي')} color="#9333ea" iconEl={<IconCpu color="#9333ea" size={22} />} />
-              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color=TEAL iconEl={<IconUsers color=TEAL size={22} />} />
+              <StatCard small value={allRoles.length} label={t('Platform Roles', 'أدوار المنصة')} color={TEAL} iconEl={<IconUsers color={TEAL} size={22} />} />
             </div>
 
             {/* Coverage Donut + Group Bar Chart side by side */}
@@ -322,7 +322,7 @@ const ServiceCatalog: React.FC = () => {
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             {/* Mini stats */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-              <StatCard small value={serviceStats.totalServices} label={t('Total', 'الإجمالي')} color=TEAL />
+              <StatCard small value={serviceStats.totalServices} label={t('Total', 'الإجمالي')} color={TEAL} />
               <StatCard small value={serviceStats.activeServices} label={t('Active', 'مفعّل')} color="#059669" />
               <StatCard small value={serviceStats.partialServices} label={t('Partial', 'جزئي')} color="#d97706" />
               <StatCard small value={serviceStats.gapServices} label={t('Gap', 'فجوة')} color="#dc2626" />

@@ -544,7 +544,6 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
     // Use centralized map and add local-only entries not in ROLE_DASHBOARD_MAP
     const operatorDashboardMap: Record<string, string> = {
       'mentor': '/mentor-dashboard',
-      'training_provider': '/educator-dashboard',
       'assessor': '/assessor-dashboard',
       'growth_operator': '/growth-operator-dashboard',
       'talent_operator': '/growth-operator-dashboard',
