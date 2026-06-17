@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import {
   Compass, Target, TrendingUp, Users, Briefcase, Award,
@@ -33,6 +34,16 @@ const brand = {
 
 const iconMap: Record<string, React.FC<any>> = { Cpu, Banknote, Lightbulb, Heart, Plane, ShoppingBag, Building2 };
 
+// Format number for display (e.g. 1500 → "1,500")
+const fmtNum = (n: number) => n.toLocaleString();
+
+// Format AED salary (e.g. 15000 → "AED 15K")
+const fmtSalary = (n: number) => {
+  if (n === 0) return '—';
+  if (n >= 1000) return `AED ${Math.round(n / 1000)}K`;
+  return `AED ${fmtNum(n)}`;
+};
+
 /* ──────────────────────── COMPONENT ──────────────────────── */
 
 const FunctionalCareerPlanningHub: React.FC = () => {
@@ -43,7 +54,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
   const ChevronIcon = isRTL ? ChevronLeft : ChevronRight;
 
   // ── API state ──
-  const [salaryData, setSalaryData] = useState<any>(null);
+  const [marketData, setMarketData] = useState<any>(null);
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
 
   // ── Industry data (from Industry Exploration API) ──
@@ -80,8 +91,8 @@ const FunctionalCareerPlanningHub: React.FC = () => {
       avgSalary: t('AED 100K–200K', '100–200 ألف د.إ'),
       topCompanies: ['HSBC', 'JPMorgan', 'Citibank', 'Goldman Sachs', 'Standard Chartered', 'Visa'],
       description: t(
-        'Driving financial innovation and Islamic banking excellence across the region.',
-        'قيادة الابتكار المالي والتميز في الصيرفة الإسلامية في المنطقة.'
+        'Driving financial innovation and world-class banking across the region.',
+        'قيادة الابتكار المالي والخدمات المصرفية العالمية في المنطقة.'
       ),
       skills: [
         t('Financial Analysis', 'التحليل المالي'),
@@ -217,11 +228,11 @@ const FunctionalCareerPlanningHub: React.FC = () => {
       } catch (e) { console.error('Error fetching industries:', e); }
     })();
 
-    // Fetch salary benchmarks
+    // Fetch real market data
     (async () => {
       try {
-        const res = await restClient.get('/api/career-services/salary-benchmarks');
-        if (!cancelled && res.data) setSalaryData(res.data);
+        const res = await restClient.get('/api/career-services/market-overview');
+        if (!cancelled && res.data) setMarketData(res.data);
       } catch { /* graceful fallback */ }
     })();
 
@@ -273,25 +284,35 @@ const FunctionalCareerPlanningHub: React.FC = () => {
     return matchSector && matchEmirate && matchSearch;
   });
 
+  /* ──────────────────────── REAL STATS ──────────────────────── */
+
+  const s = marketData?.stats;
+  const stats = [
+    { value: String(industries.length), label: t('Key Sectors', 'القطاعات الرئيسية'), icon: Building2 },
+    { value: s ? fmtNum(s.total_jobs) : '—', label: t('Job Postings', 'الإعلانات الوظيفية'), icon: Briefcase },
+    { value: s ? fmtNum(s.total_companies) : '—', label: t('Companies', 'الشركات'), icon: Users },
+    { value: s ? fmtSalary(s.avg_salary_max) : '—', label: t('Avg. Top Salary', 'أعلى متوسط راتب'), icon: DollarSign },
+  ];
+
   /* ──────────────────────── MARKET INSIGHTS DATA ──────────────────────── */
 
   const marketInsights = [
     {
       title: t('D33 & Talent33 Impact', 'أثر D33 وTalent33'),
       desc: t(
-        'Government initiatives driving 25% increase in tech-sector jobs',
-        'مبادرات حكومية تقود زيادة 25% في وظائف قطاع التكنولوجيا'
+        'Government initiatives driving growth in tech-sector jobs across the UAE.',
+        'مبادرات حكومية تقود النمو في وظائف قطاع التكنولوجيا في الإمارات.'
       ),
       Icon: Target,
-      trend: '+25%',
+      trend: s ? `${fmtNum(s.total_jobs)} ${t('jobs', 'وظيفة')}` : t('Growing', 'نمو'),
       trendBg: brand.green,
       trendColor: brand.greenText,
     },
     {
       title: t('Emiratisation Focus', 'التركيز على التوطين'),
       desc: t(
-        'Priority sectors offering enhanced opportunities for UAE Nationals',
-        'قطاعات ذات أولوية تقدم فرصاً معززة للمواطنين الإماراتيين'
+        'Priority sectors offering enhanced opportunities for UAE Nationals.',
+        'قطاعات ذات أولوية تقدم فرصاً معززة للمواطنين الإماراتيين.'
       ),
       Icon: Award,
       trend: t('Priority', 'أولوية'),
@@ -299,39 +320,32 @@ const FunctionalCareerPlanningHub: React.FC = () => {
       trendColor: brand.blueText,
     },
     {
-      title: t('Remote Work Growth', 'نمو العمل عن بُعد'),
+      title: t('Registered Companies', 'الشركات المسجلة'),
       desc: t(
-        'Flexible work arrangements rising 40% across all industries',
-        'ترتيبات العمل المرنة ترتفع 40% في جميع القطاعات'
+        'Active employers on the platform recruiting UAE talent.',
+        'أصحاب عمل نشطون على المنصة يستقطبون الكفاءات الإماراتية.'
       ),
-      Icon: Sparkles,
-      trend: '+40%',
+      Icon: Building2,
+      trend: s ? fmtNum(s.total_companies) : '—',
       trendBg: brand.purple,
       trendColor: brand.purpleText,
     },
     {
-      title: t('Skills Demand', 'الطلب على المهارات'),
+      title: t('Training Programs', 'البرامج التدريبية'),
       desc: t(
-        'AI, sustainability, and digital skills in highest demand',
-        'الذكاء الاصطناعي والاستدامة والمهارات الرقمية الأكثر طلباً'
+        'Courses and certifications available on the platform.',
+        'دورات وشهادات متاحة على المنصة.'
       ),
-      Icon: BarChart3,
-      trend: t('High', 'مرتفع'),
+      Icon: BookOpen,
+      trend: s ? fmtNum(s.training_programs) : '—',
       trendBg: brand.amber,
       trendColor: brand.amberText,
     },
   ];
 
-  /* ──────────────────────── TRENDING SECTORS ──────────────────────── */
+  /* ──────────────────────── RECENT JOBS ──────────────────────── */
 
-  const trendingSectors = [
-    { name: t('Artificial Intelligence', 'الذكاء الاصطناعي'), growth: '+25%', jobs: '1,200+' },
-    { name: t('Renewable Energy', 'الطاقة المتجددة'), growth: '+22%', jobs: '800+' },
-    { name: t('Fintech', 'التقنية المالية'), growth: '+20%', jobs: '950+' },
-    { name: t('Healthcare Tech', 'التقنية الصحية'), growth: '+18%', jobs: '650+' },
-    { name: t('Space Technology', 'تقنية الفضاء'), growth: '+30%', jobs: '300+' },
-    { name: t('Smart Cities', 'المدن الذكية'), growth: '+16%', jobs: '750+' },
-  ];
+  const recentJobs = marketData?.recent_jobs || [];
 
   /* ──────────────────────── RESOURCES ──────────────────────── */
 
@@ -342,15 +356,6 @@ const FunctionalCareerPlanningHub: React.FC = () => {
     { title: t('Skills Assessment', 'تقييم المهارات'), desc: t('Validate your skills with 500+ assessments across technical, leadership, and cognitive categories', 'تحقق من مهاراتك مع أكثر من 500 تقييم في فئات تقنية وقيادية ومعرفية'), Icon: Target, action: t('Take Assessments', 'ابدأ التقييمات'), href: '/assessments' },
     { title: t('Skill Development', 'تطوير المهارات'), desc: t('Find courses to enhance your capabilities', 'اعثر على دورات لتعزيز قدراتك'), Icon: BookOpen, action: t('Browse Courses', 'تصفح الدورات'), href: '/training' },
     { title: t('Networking Events', 'فعاليات التواصل'), desc: t('Connect with professionals in your field', 'تواصل مع المتخصصين في مجالك'), Icon: Users, action: t('Find Events', 'ابحث عن فعاليات'), href: '/communities' },
-  ];
-
-  /* ──────────────────────── STATS ──────────────────────── */
-
-  const stats = [
-    { value: '6', label: t('Key Sectors', 'القطاعات الرئيسية'), icon: Building2 },
-    { value: '9,900+', label: t('Open Positions', 'الوظائف المتاحة'), icon: Users },
-    { value: '+16%', label: t('Avg. Growth', 'متوسط النمو'), icon: TrendingUp },
-    { value: t('AED 100K+', '100 ألف+ د.إ'), label: t('Avg. Salary', 'متوسط الراتب'), icon: DollarSign },
   ];
 
   /* ════════════════════════════════════════════════════════════
@@ -536,12 +541,12 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                           <Award style={{ width: 13, height: 13 }} /> {t('In-Demand Skills', 'المهارات المطلوبة')}
                         </h4>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {ind.skills.map((s, i) => (
+                          {ind.skills.map((sk, i) => (
                             <span key={i} style={{
                               padding: '4px 12px', borderRadius: 12, fontSize: 12, fontWeight: 500,
                               background: brand.primarySurface, color: brand.primary,
                             }}>
-                              {s}
+                              {sk}
                             </span>
                           ))}
                         </div>
@@ -564,20 +569,22 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* CTA button */}
-                      <button
-                        onClick={e => { e.stopPropagation(); }}
+                      {/* CTA button — links to job matching */}
+                      <Link
+                        to={`/job-matching?industry=${encodeURIComponent(ind.name)}`}
+                        onClick={e => e.stopPropagation()}
                         style={{
-                          width: '100%', padding: '11px 0', borderRadius: 12,
+                          display: 'flex', width: '100%', padding: '11px 0', borderRadius: 12,
                           background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600,
                           border: 'none', cursor: 'pointer', transition: 'background 150ms',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          alignItems: 'center', justifyContent: 'center', gap: 6,
+                          textDecoration: 'none',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = brand.primaryDark}
                         onMouseLeave={e => e.currentTarget.style.background = brand.primary}
                       >
                         {t('Explore Career Opportunities', 'استكشف الفرص الوظيفية')} <ChevronIcon style={{ width: 16, height: 16 }} />
-                      </button>
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -590,78 +597,111 @@ const FunctionalCareerPlanningHub: React.FC = () => {
   );
 
   /* ════════════════════════════════════════════════════════════
-     TAB 2: JOB MARKET (Trending Sectors)
+     TAB 2: JOB MARKET (Real data from platform)
      ════════════════════════════════════════════════════════════ */
   const marketTab = (
     <div>
       <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-        {t('UAE Job Market Insights', 'رؤى سوق العمل الإماراتي')}
+        {t('UAE Job Market — Platform Data', 'سوق العمل الإماراتي — بيانات المنصة')}
       </h2>
       <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
         {t(
-          'Real-time data on job opportunities, salary trends, and market demand across the UAE.',
-          'بيانات آنية عن الفرص الوظيفية واتجاهات الرواتب وطلب السوق في الإمارات.'
+          'Real-time data from job postings and companies registered on the platform.',
+          'بيانات آنية من الإعلانات الوظيفية والشركات المسجلة على المنصة.'
         )}
       </p>
 
-      {/* Trending sectors grid */}
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Trending Sectors', 'القطاعات الرائجة')}</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
-        {trendingSectors.map((sector, i) => (
-          <div
-            key={i}
-            style={{
-              background: '#fff', borderRadius: 14, border: `1px solid ${brand.border}`,
-              padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-              transition: 'border-color 150ms, box-shadow 150ms',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
-          >
-            <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, marginBottom: 10 }}>{sector.name}</h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: brand.green, color: brand.greenText }}>{sector.growth}</span>
-              <span style={{ fontSize: 12, color: brand.textSecondary }}>{sector.jobs} {t('jobs', 'وظيفة')}</span>
-            </div>
+      {/* Platform stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {[
+          { label: t('Total Job Postings', 'إجمالي الإعلانات الوظيفية'), value: s ? fmtNum(s.total_jobs) : '—', bg: brand.blue, color: brand.blueText },
+          { label: t('Active Vacancies', 'الشواغر النشطة'), value: s ? fmtNum(s.active_jobs) : '—', bg: brand.green, color: brand.greenText },
+          { label: t('Registered Companies', 'الشركات المسجلة'), value: s ? fmtNum(s.total_companies) : '—', bg: brand.purple, color: brand.purpleText },
+          { label: t('Registered Users', 'المستخدمون المسجلون'), value: s ? fmtNum(s.registered_users) : '—', bg: brand.amber, color: brand.amberText },
+        ].map((kpi, i) => (
+          <div key={i} style={{
+            padding: 18, borderRadius: 14, background: '#fff',
+            border: `1px solid ${brand.border}`, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: kpi.color, marginBottom: 4 }}>{kpi.value}</div>
+            <div style={{ fontSize: 12, color: brand.textSecondary }}>{kpi.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Key takeaways */}
-      <div style={{ padding: 24, borderRadius: 16, background: brand.primarySurface, border: `1px solid ${brand.border}` }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Key Takeaways', 'أبرز النقاط')}</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-          {[
-            { label: t('Total sector jobs tracked', 'إجمالي الوظائف المتتبّعة'), value: '9,900+' },
-            { label: t('Average sector growth rate', 'متوسط معدل نمو القطاعات'), value: '+16%' },
-            { label: t('Industries with Emiratisation quotas', 'قطاعات بحصص توطين'), value: t('4 of 6', '4 من 6') },
-            { label: t('New roles created (2025)', 'وظائف جديدة (2025)'), value: '3,200+' },
-          ].map((kpi, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: brand.primary, flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: brand.textPrimary }}>{kpi.value}</div>
-                <div style={{ fontSize: 12, color: brand.textSecondary }}>{kpi.label}</div>
+      {/* Jobs by department */}
+      {(marketData?.jobs_by_department || []).length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Jobs by Department', 'الوظائف حسب القسم')}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+            {(marketData?.jobs_by_department || []).map((dept: any, i: number) => (
+              <div
+                key={i}
+                style={{
+                  background: '#fff', borderRadius: 14, border: `1px solid ${brand.border}`,
+                  padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  transition: 'border-color 150ms, box-shadow 150ms',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = brand.primary; e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = brand.border; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
+              >
+                <h4 style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary, marginBottom: 10 }}>{dept.department}</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: brand.green, color: brand.greenText }}>
+                    {fmtNum(dept.count)} {t('posts', 'إعلان')}
+                  </span>
+                  <span style={{ fontSize: 12, color: brand.textSecondary }}>
+                    {fmtNum(dept.vacancies)} {t('vacancies', 'شاغر')}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Recent job postings */}
+      {recentJobs.length > 0 && (
+        <div style={{ padding: 24, borderRadius: 16, background: brand.primarySurface, border: `1px solid ${brand.border}` }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 16 }}>{t('Recent Job Postings', 'أحدث الإعلانات الوظيفية')}</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {recentJobs.map((job: any, i: number) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < recentJobs.length - 1 ? `1px solid ${brand.border}` : 'none' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: brand.primary, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: brand.textPrimary }}>{job.title}</div>
+                  <div style={{ fontSize: 12, color: brand.textSecondary }}>
+                    {job.company_name || job.department || '—'} • {job.emirate || 'UAE'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No data fallback */}
+      {!s && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: brand.textSecondary }}>
+          <BarChart3 style={{ width: 48, height: 48, margin: '0 auto 16px', opacity: 0.4 }} />
+          <p style={{ fontSize: 14 }}>{t('Loading market data…', 'جارٍ تحميل بيانات السوق…')}</p>
+        </div>
+      )}
     </div>
   );
 
   /* ════════════════════════════════════════════════════════════
-     TAB 3: MARKET INSIGHTS (D33, Emiratisation Focus, etc.)
+     TAB 3: MARKET INSIGHTS
      ════════════════════════════════════════════════════════════ */
   const insightsTab = (
     <div>
       <h2 style={{ fontSize: 20, fontWeight: 600, color: brand.textPrimary, marginBottom: 8 }}>
-        {t('Strategic Market Intelligence', 'الاستخبارات الاستراتيجية للسوق')}
+        {t('Platform Intelligence', 'ذكاء المنصة')}
       </h2>
       <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
         {t(
-          'Key trends and opportunities shaping the UAE job market for nationals.',
-          'أبرز الاتجاهات والفرص التي تشكّل سوق العمل الإماراتي للمواطنين.'
+          'Key metrics and opportunities from the Emirati Gateway platform.',
+          'مؤشرات رئيسية وفرص من منصة البوابة الإماراتية.'
         )}
       </p>
 
@@ -737,8 +777,8 @@ const FunctionalCareerPlanningHub: React.FC = () => {
       </h2>
       <p style={{ fontSize: 14, color: brand.textSecondary, marginBottom: 24, lineHeight: 1.6 }}>
         {t(
-          'Leading private sector companies actively recruiting UAE Nationals with dedicated Emiratisation programs.',
-          'شركات القطاع الخاص الرائدة تستقطب الكوادر الإماراتية عبر برامج توطين مخصصة.'
+          'Key sectors actively recruiting UAE Nationals through dedicated Emiratisation programs.',
+          'قطاعات رئيسية تستقطب الكوادر الإماراتية عبر برامج توطين مخصصة.'
         )}
       </p>
 
@@ -747,11 +787,11 @@ const FunctionalCareerPlanningHub: React.FC = () => {
           {
             title: t('Technology & Digital', 'التكنولوجيا والرقمنة'),
             quota: t('10% annual increase', 'زيادة سنوية 10%'),
-            roles: t('2,500+ positions', '2,500+ وظيفة'),
+            roles: s ? `${fmtNum(s.total_jobs)} ${t('platform postings', 'إعلان على المنصة')}` : t('Growing', 'متنامٍ'),
             programs: [
-              t('Microsoft UAE National Program', 'برنامج مايكروسوفت للكوادر الوطنية'),
-              t('Google Cloud Emiratisation', 'توطين جوجل كلاود'),
-              t('SAP Young Professional Program', 'برنامج SAP للمهنيين الشباب'),
+              t('Technology sector graduate programs', 'برامج الخريجين في قطاع التكنولوجيا'),
+              t('Cloud & AI specialist tracks', 'مسارات تخصص السحابة والذكاء الاصطناعي'),
+              t('Digital transformation initiatives', 'مبادرات التحول الرقمي'),
             ],
             catBg: brand.blue,
             catColor: brand.blueText,
@@ -759,11 +799,11 @@ const FunctionalCareerPlanningHub: React.FC = () => {
           {
             title: t('Banking & Finance', 'المصارف والتمويل'),
             quota: t('4% annual target', 'مستهدف سنوي 4%'),
-            roles: t('1,800+ positions', '1,800+ وظيفة'),
+            roles: t('High demand', 'طلب مرتفع'),
             programs: [
-              t('HSBC UAE National Graduate Program', 'برنامج HSBC لخريجي الإمارات'),
-              t('JPMorgan Emirati Talent Initiative', 'مبادرة JPMorgan للكفاءات الإماراتية'),
-              t('Standard Chartered Emiratisation', 'برنامج توطين ستاندرد تشارترد'),
+              t('Banking sector graduate schemes', 'برامج تدريب الخريجين في القطاع المصرفي'),
+              t('Islamic finance specialist tracks', 'مسارات تخصص التمويل الإسلامي'),
+              t('Fintech innovation programs', 'برامج ابتكار التقنية المالية'),
             ],
             catBg: brand.green,
             catColor: brand.greenText,
@@ -771,11 +811,11 @@ const FunctionalCareerPlanningHub: React.FC = () => {
           {
             title: t('Energy & Industrial', 'الطاقة والصناعة'),
             quota: t('15% Emiratisation', 'توطين 15%'),
-            roles: t('1,200+ positions', '1,200+ وظيفة'),
+            roles: t('Expanding', 'متوسع'),
             programs: [
-              t('Shell UAE Graduate Program', 'برنامج شل لخريجي الإمارات'),
-              t('Baker Hughes Engineers Program', 'برنامج مهندسي بيكر هيوز'),
-              t('Siemens Energy National Development', 'برنامج سيمنز للتطوير الوطني'),
+              t('Energy sector engineering programs', 'برامج الهندسة في قطاع الطاقة'),
+              t('Renewable energy specialist tracks', 'مسارات تخصص الطاقة المتجددة'),
+              t('National development training schemes', 'برامج التدريب للتطوير الوطني'),
             ],
             catBg: brand.amber,
             catColor: brand.amberText,
@@ -783,11 +823,11 @@ const FunctionalCareerPlanningHub: React.FC = () => {
           {
             title: t('Consulting & Professional Services', 'الاستشارات والخدمات المهنية'),
             quota: t('Growing demand', 'طلب متزايد'),
-            roles: t('800+ positions', '800+ وظيفة'),
+            roles: t('Emerging', 'ناشئ'),
             programs: [
-              t('McKinsey UAE National Program', 'برنامج ماكنزي للكوادر الوطنية'),
-              t('Deloitte Emirati Development', 'برنامج ديلويت للتطوير الإماراتي'),
-              t('PwC National Talent Program', 'برنامج PwC للمواهب الوطنية'),
+              t('Management consulting development programs', 'برامج تطوير الاستشارات الإدارية'),
+              t('Professional services talent tracks', 'مسارات المواهب في الخدمات المهنية'),
+              t('Emirati leadership accelerators', 'مسرّعات القيادة الإماراتية'),
             ],
             catBg: brand.purple,
             catColor: brand.purpleText,
@@ -878,9 +918,8 @@ const FunctionalCareerPlanningHub: React.FC = () => {
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: brand.textPrimary, marginBottom: 6 }}>{r.title}</h3>
             <p style={{ fontSize: 13, color: brand.textSecondary, lineHeight: 1.5, marginBottom: 16 }}>{r.desc}</p>
-            <a
-              href={r.href}
-              onClick={e => { e.stopPropagation(); }}
+            <Link
+              to={r.href}
               style={{
                 display: 'block', width: '100%', padding: '10px 0', borderRadius: 12,
                 background: brand.primary, color: '#fff', fontSize: 14, fontWeight: 600,
@@ -891,7 +930,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
               onMouseLeave={e => e.currentTarget.style.background = brand.primary}
             >
               {r.action}
-            </a>
+            </Link>
           </div>
         ))}
       </div>
