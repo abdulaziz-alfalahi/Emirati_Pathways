@@ -42,16 +42,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (allowedRoles.length > 0) {
     const userRole = getUserRole();
 
-    // Check if user has any of the allowed roles
-    // Normalize role for comparison (handle "Job Seeker" vs 'candidate' vs "candidate")
-    const normalizeRole = (r: string) => {
-      const lower = r.toLowerCase();
-      if (lower === 'job seeker' || lower === 'candidate') return 'candidate';
-      if (lower === 'hr/recruiter' || lower === 'hr recruiter') return 'recruiter';
-      if (lower === 'hr manager' || lower === 'employer_admin') return 'employer_admin';
-      return lower;
-    };
-
     const userRoleNormalized = normalizeRole(userRole || '');
 
     // Administrators can access any route

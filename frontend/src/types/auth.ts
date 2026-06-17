@@ -217,7 +217,24 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 export const normalizeRole = (role: string): UserRole | string => {
   if (!role) return '';
   const lowerRole = role.toLowerCase().trim();
-  if (lowerRole === 'employer_admin') return 'employer_admin';
+  
+  // Map aliases to standard internal role IDs
+  if (['admin', 'administrator', 'super_admin', 'platform_administrator', 'system_administrator'].includes(lowerRole)) {
+    return 'admin';
+  }
+  if (['candidate', 'job seeker', 'job_seeker', 'jobseeker'].includes(lowerRole)) {
+    return 'candidate';
+  }
+  if (['employer_admin', 'hr manager', 'hr_manager'].includes(lowerRole)) {
+    return 'employer_admin';
+  }
+  if (['recruiter', 'hr recruiter', 'hr_recruiter', 'hr/recruiter'].includes(lowerRole)) {
+    return 'recruiter';
+  }
+  if (['training_provider', 'training_center', 'training provider'].includes(lowerRole)) {
+    return 'training_provider';
+  }
+  
   return lowerRole.replace(/\s+/g, '_');
 };
 
