@@ -8,6 +8,7 @@ import ProfileManagement from './ProfileManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Settings } from 'lucide-react';
+import { normalizeRole } from '@/types/auth';
 
 const ProfilePage = () => {
   const { user, isLoading } = useAuth();
@@ -19,11 +20,22 @@ const ProfilePage = () => {
     // If no user, redirect to login
     if (!isLoading && !user) {
       navigate('/auth');
+      return;
     }
 
-    // Redirect candidates to new Profile Studio
-    if (!isLoading && user && ['candidate', 'candidate', 'candidate'].includes((user.role || '').toLowerCase())) {
-      navigate('/candidate/profile/identity');
+    // Redirect anyone with candidate role to new Profile Studio
+    if (!isLoading && user) {
+      const rawRoles = [
+        ...(user.roles || []),
+        user.user_type,
+        user.role,
+        ...(user.secondary_roles || [])
+      ].filter(Boolean);
+      const hasCandidateRole = rawRoles.some(r => normalizeRole(r as string) === 'candidate');
+
+      if (hasCandidateRole) {
+        navigate('/candidate/profile/identity');
+      }
     }
   }, [user, isLoading, navigate]);
 

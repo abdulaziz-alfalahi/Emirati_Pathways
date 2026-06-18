@@ -219,7 +219,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         skills: () => <CandidateStudioPointer section="skills" />
       }
     },
-    'candidate': {
+    'student': {
       label: 'Student',
       icon: GraduationCap,
       color: 'bg-teal-500',
@@ -700,9 +700,9 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                 <TabsContent key={tab} value={tab}>
                   <div className="space-y-6">
                     {/* Explicitly render ProfileForm for Job Seeker to avoid re-mounting issues */}
-                    {currentUser.primaryRole === 'Job Seeker' && tab === 'personal' ? (
+                    {['job_seeker', 'candidate'].includes(normalizeRole(currentUser.primaryRole) as string) && tab === 'personal' ? (
                       <CandidateStudioPointer section="identity" />
-                    ) : currentUser.primaryRole === 'candidate' && tab === 'personal' ? (
+                    ) : normalizeRole(currentUser.primaryRole) === 'student' && tab === 'personal' ? (
                       <StudentProfileForm
                         initialData={candidateData}
                         onSave={async (data) => {

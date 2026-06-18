@@ -41,7 +41,7 @@ interface UnifiedProfileHeaderProps {
 
 import { RoleRequestDialog } from '@/components/profile/RoleRequestDialog';
 import { useAuth } from '@/context/AuthContext';
-import { normalizeRole } from '@/types/auth';
+import { normalizeRole, getDashboardRoute } from '@/types/auth';
 
 export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ initialProfile, cvUploaded = false }) => {
     const { toast } = useToast();
@@ -127,13 +127,12 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
     // Helper Configuration
     const roleConfigs: Record<string, any> = {
         'candidate': { label: 'Job Seeker', icon: User, color: 'bg-teal-500' },
-        'candidate': { label: 'Student', icon: GraduationCap, color: 'bg-teal-500' },
-        'recruiter': { label: 'HR Recruiter', icon: Users, color: 'bg-green-500' }, // Updated Label
-        'employer_admin': { label: 'HR Manager', icon: Users, color: 'bg-green-600' }, // Added
-        'training_provider': { label: 'Educator', icon: GraduationCap, color: 'bg-purple-500' },
-        'mentor': { label: 'Mentor', icon: AlertCircle, color: 'bg-orange-500' }, // Added (Icon placeholder)
-        'assessor': { label: 'Assessor', icon: CheckCircle, color: 'bg-red-500' }, // Added
-        'parent': { label: 'Guardian', icon: Shield, color: 'bg-slate-500' } // Added
+        'recruiter': { label: 'Recruiter', icon: Users, color: 'bg-green-500' },
+        'employer_admin': { label: 'Employer', icon: Users, color: 'bg-green-600' },
+        'training_provider': { label: 'Training Center', icon: GraduationCap, color: 'bg-purple-500' },
+        'mentor': { label: 'Mentor', icon: AlertCircle, color: 'bg-orange-500' },
+        'assessor': { label: 'Assessor', icon: CheckCircle, color: 'bg-red-500' },
+        'parent': { label: 'Parent', icon: Shield, color: 'bg-slate-500' }
     };
 
     const getRoleConfigKey = (role: string) => {
@@ -163,13 +162,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
         }
 
         // redirect based on role
-        const normalized = getRoleConfigKey(newRole);
-        let path = '/candidate-dashboard';
-        if (normalized === 'employer_admin' || normalized === 'recruiter') path = '/recruiter-dashboard';
-        else if (normalized === 'training_provider') path = '/educator-dashboard';
-        else if (normalized === 'candidate') path = '/student-dashboard';
-        else if (normalized === 'admin') path = '/admin-dashboard';
-
+        const path = getDashboardRoute(newRole);
         navigate(path);
 
         toast({

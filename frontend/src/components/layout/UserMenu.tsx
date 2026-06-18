@@ -20,16 +20,10 @@ import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 const ROLE_DISPLAY_NAMES_AR: Record<string, string> = {
   'candidate': 'باحث عن عمل',
-  'candidate': 'مرشح',
-  'candidate': 'طالب',
-  'employer_admin': 'مدير الموارد البشرية',
-  'employer_admin': 'مدير الموارد البشرية',
+  'employer_admin': 'صاحب عمل',
   'recruiter': 'مسؤول توظيف',
-  'recruiter': 'موارد بشرية / توظيف',
-  'training_provider': 'معلم',
+  'training_provider': 'مركز تدريب',
   'parent': 'ولي أمر',
-  'parent': 'ولي أمر',
-  'admin': 'مسؤول النظام',
   'admin': 'مسؤول النظام',
   'growth_operator': 'مشغّل النمو',
   'talent_operator': 'مشغّل نمو المرشحين',
@@ -128,11 +122,8 @@ const UserMenu: React.FC = () => {
   const getRoleIcon = (role: string): string => {
     const roleIcons: Record<string, string> = {
       'candidate': '🔍',
-      'candidate': '🔍',
-      'employer_admin': '👥',
       'employer_admin': '👥',
       'recruiter': '💼',
-      'admin': '⚙️',
       'admin': '⚙️',
       'mentor': '🎓',
     };
@@ -247,7 +238,15 @@ const UserMenu: React.FC = () => {
 
         <DropdownMenuItem
           onClick={() => {
-            if (['candidate', 'candidate', 'candidate'].includes(currentRole.toLowerCase())) {
+            const rawRoles = [
+              ...(user.roles || []),
+              user.user_type,
+              user.role,
+              ...(user.secondary_roles || [])
+            ].filter(Boolean);
+            const hasCandidateRole = rawRoles.some(r => normalizeRole(r as string) === 'candidate');
+
+            if (hasCandidateRole) {
               navigate('/candidate/profile/identity');
             } else {
               navigate('/profile');
