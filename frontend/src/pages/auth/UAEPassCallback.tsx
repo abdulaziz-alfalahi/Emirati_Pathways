@@ -14,7 +14,7 @@
  *   5. Redirects to the appropriate dashboard (or /welcome for new users)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { authService } from '@/services/authService';
@@ -25,9 +25,15 @@ const UAEPassCallback: React.FC = () => {
   const { setUser } = useAuth();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Completing authentication...');
+  const timeoutRef = useRef<any>(null);
 
   useEffect(() => {
     handleCallback();
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
   const handleCallback = async () => {
@@ -44,6 +50,19 @@ const UAEPassCallback: React.FC = () => {
       const returnUrl = params.get('return_url');
 
       if (!accessToken || !userId) {
+        // Safe fallback: check if we are already authenticated in localStorage
+        const storedToken = localStorage.getItem('access_token');
+        const storedUser = localStorage.getItem('user');
+        if (storedToken && storedUser) {
+          console.log('Already authenticated (tokens in storage), redirecting...');
+          try {
+            const dashboardRoute = await authService.getDashboardRoute();
+            navigate(dashboardRoute, { replace: true });
+          } catch {
+            navigate('/candidate-dashboard', { replace: true });
+          }
+          return;
+        }
         throw new Error('Missing authentication data from UAE Pass');
       }
 
@@ -72,6 +91,7 @@ const UAEPassCallback: React.FC = () => {
       if (!userData) {
         userData = {
           id: userId,
+          email: `${userId}@uaepass.local`,
           role: role || 'candidate',
           user_type: role || 'candidate',
           is_new_user: isNewUser,
@@ -93,7 +113,7 @@ const UAEPassCallback: React.FC = () => {
       window.history.replaceState(null, '', '/auth/uaepass/callback');
 
       // Redirect based on user status
-      setTimeout(async () => {
+      timeoutRef.current = setTimeout(async () => {
         if (isNewUser) {
           // New users go to welcome/role selection
           navigate('/welcome', { replace: true });
@@ -117,7 +137,7 @@ const UAEPassCallback: React.FC = () => {
       setMessage(error.message || 'Authentication failed. Please try again.');
 
       // Redirect back to login after showing error
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         navigate('/auth?error=callback_failed', { replace: true });
       }, 3000);
     }

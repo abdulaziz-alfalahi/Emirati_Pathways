@@ -465,13 +465,11 @@ class AuthService {
       switch (role?.toLowerCase()) {
         case 'employer_admin':
         case 'hr manager':
-        case 'employer_admin':
           console.log('AuthService: Routing to HR Dashboard (legacy)');
           return '/hr-dashboard';
         case 'recruiter':
           console.log('AuthService: Routing to Recruiter Dashboard (legacy)');
           return '/recruiter-dashboard';
-        case 'admin':
         case 'admin':
           console.log('AuthService: Routing to Admin Dashboard (legacy)');
           return '/admin-dashboard';
@@ -479,11 +477,8 @@ class AuthService {
           console.log('AuthService: Routing to Student Dashboard (legacy fallback)');
           return '/student-dashboard';
         case 'parent':
-        case 'parent':
           console.log('AuthService: Routing to Guardian Dashboard (legacy)');
           return '/guardian-dashboard';
-        case 'candidate':
-        case 'candidate':
         case 'job seeker':
         default:
           console.log('AuthService: Routing to Candidate Dashboard (default)');
