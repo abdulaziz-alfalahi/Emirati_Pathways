@@ -61,6 +61,7 @@ import {
 
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import { useDebounceValue } from '@/hooks/use-debounced-search';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -306,7 +307,6 @@ const getRoleColor = (role: string): string => {
     'platform_operator': 'bg-blue-100 text-blue-800 border-blue-200',
     'candidate': 'bg-cyan-100 text-cyan-800 border-cyan-200',
     'mentor': 'bg-orange-100 text-orange-800 border-orange-200',
-    'training_provider': 'bg-teal-100 text-teal-800 border-teal-200',
     'assessor': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'advisor': 'bg-sky-100 text-sky-800 border-sky-200',
     'coach': 'bg-violet-100 text-violet-800 border-violet-200',
@@ -314,8 +314,7 @@ const getRoleColor = (role: string): string => {
     'training_provider': 'bg-lime-100 text-lime-800 border-lime-200',
     'call_center_agent': 'bg-rose-100 text-rose-800 border-rose-200',
     'compliance_auditor': 'bg-slate-100 text-slate-800 border-slate-200',
-    'parent': 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
-    'candidate': 'bg-cyan-100 text-cyan-800 border-cyan-200'
+    'parent': 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200'
   };
   return colors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
@@ -381,6 +380,7 @@ const UserManagerEnhanced: React.FC = () => {
 
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounceValue(searchTerm, 300);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<UserFilters>({
     status: 'all',
@@ -451,10 +451,10 @@ const UserManagerEnhanced: React.FC = () => {
   // EFFECTS
   // ============================================
 
-  // Fetch users on mount and when filters change
+  // Fetch users on mount and when filters or search change
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, itemsPerPage, filters, sortConfig]);
+  }, [currentPage, itemsPerPage, filters, sortConfig, debouncedSearchTerm]);
 
   // Fetch roles on mount
   useEffect(() => {
@@ -508,7 +508,7 @@ const UserManagerEnhanced: React.FC = () => {
         sort_dir: sortConfig.direction
       };
 
-      if (searchTerm) params.search = searchTerm;
+      if (debouncedSearchTerm) params.search = debouncedSearchTerm;
       if (filters.status !== 'all') params.status = filters.status;
       if (filters.role) params.role = filters.role;
       if (filters.department) params.department = filters.department;
@@ -994,8 +994,8 @@ const UserManagerEnhanced: React.FC = () => {
     let result = [...users];
 
     // Apply search
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       result = result.filter(u => {
         const username = (u.username || '').toLowerCase();
         const email = (u.email || '').toLowerCase();
@@ -1017,7 +1017,7 @@ const UserManagerEnhanced: React.FC = () => {
     }
 
     return result;
-  }, [users, searchTerm]);
+  }, [users, debouncedSearchTerm]);
 
   // ============================================
   // RENDER
