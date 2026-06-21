@@ -58,7 +58,8 @@ def submit_feedback():
             message=data.get('message'),
             type=data.get('type', 'bug'),
             console_logs=data.get('consoleLogs', []), 
-            metadata=data.get('metadata', {})
+            metadata=data.get('metadata', {}),
+            screenshot=data.get('screenshot')
         )
         
         Feedback.save(feedback)

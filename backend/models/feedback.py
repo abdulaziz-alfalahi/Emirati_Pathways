@@ -9,7 +9,7 @@ DATA_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'fe
 os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
 
 class Feedback:
-    def __init__(self, user_id, role, message, type, console_logs=None, metadata=None):
+    def __init__(self, user_id, role, message, type, console_logs=None, metadata=None, screenshot=None):
         self.id = str(uuid.uuid4())
         self.user_id = user_id
         self.role = role
@@ -17,6 +17,7 @@ class Feedback:
         self.type = type  # 'bug' or 'feature'
         self.console_logs = console_logs
         self.metadata = metadata
+        self.screenshot = screenshot
         self.status = 'open'
         self.created_at = datetime.utcnow().isoformat()
 
@@ -29,6 +30,7 @@ class Feedback:
             'type': self.type,
             'console_logs': self.console_logs,
             'metadata': self.metadata,
+            'screenshot': self.screenshot,
             'status': self.status,
             'created_at': self.created_at
         }

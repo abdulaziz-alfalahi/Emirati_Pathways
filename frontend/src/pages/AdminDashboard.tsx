@@ -17,9 +17,17 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Users, Briefcase, TrendingUp, Shield, AlertTriangle, CheckCircle, Clock,
   BarChart3, UserCheck, FileText, MessageSquare, Activity, Video, Loader2,
-  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings
+  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings, Eye
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -35,6 +43,12 @@ const AdminDashboard = () => {
   // Derive tab from URL or default to "overview"
   const activeTab = searchParams.get("tab") || "overview";
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Feedback detail viewer states
+  const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warning'>('all');
+  const [logSearch, setLogSearch] = useState('');
 
   // Handler for UI tab changes
   const handleTabChange = (value: string) => {
@@ -737,13 +751,25 @@ const AdminDashboard = () => {
                                 <td className="p-3 text-xs text-muted-foreground">
                                   {new Date(item.created_at).toLocaleString()}
                                 </td>
-                                <td className="p-3">
+                                <td className="p-3 font-dubai-medium">
                                   <div className="flex items-center space-x-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white font-medium"
+                                      onClick={() => {
+                                        setSelectedFeedback(item);
+                                        setIsDetailsOpen(true);
+                                      }}
+                                    >
+                                      <Eye className="h-3 w-3 mr-1" /> View Details
+                                    </Button>
+
                                     {item.status !== 'resolved' && (
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-8 text-xs border-green-200 hover:bg-green-50 text-green-700"
+                                        className="h-8 text-xs border-green-200 hover:bg-green-50 text-green-700 font-medium"
                                         onClick={() => updateFeedbackStatus(item.id, 'resolved')}
                                       >
                                         <CheckCircle className="h-3 w-3 mr-1" /> Resolve
@@ -752,7 +778,7 @@ const AdminDashboard = () => {
                                     <Button
                                       size="sm"
                                       variant="secondary"
-                                      className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                                      className="h-8 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium"
                                       onClick={() => {
                                         const text = `
 **Feedback Report**
@@ -793,6 +819,282 @@ ${JSON.stringify(item.metadata, null, 2)}
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Feedback Detail Inspection Dialog */}
+                <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+                  <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto font-dubai">
+                    {selectedFeedback && (
+                      <>
+                        <DialogHeader>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={selectedFeedback.type === 'bug' ? 'destructive' : 'secondary'}>
+                              {selectedFeedback.type?.toUpperCase()}
+                            </Badge>
+                            <Badge variant={selectedFeedback.status === 'resolved' ? 'outline' : 'default'} className={selectedFeedback.status === 'resolved' ? 'text-green-600 border-green-600' : 'bg-blue-600'}>
+                              {selectedFeedback.status ? selectedFeedback.status.toUpperCase() : 'OPEN'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {new Date(selectedFeedback.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <DialogTitle className="text-xl font-bold text-slate-900 leading-snug">
+                            {selectedFeedback.metadata?.title || 'Feedback Report'}
+                          </DialogTitle>
+                          <DialogDescription className="text-xs text-slate-500 font-mono">
+                            ID: {selectedFeedback.id}
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 my-4">
+                          {/* Left Side: Report Message & Screenshot */}
+                          <div className="space-y-4">
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Description</h4>
+                              <div className="bg-slate-50 border p-3 rounded-lg text-sm text-slate-800 whitespace-pre-wrap min-h-[100px] leading-relaxed">
+                                {selectedFeedback.message}
+                              </div>
+                            </div>
+
+                            {selectedFeedback.metadata?.reproSteps && (
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Steps to Reproduce</h4>
+                                <pre className="bg-slate-50 border p-3 rounded-lg text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed">
+                                  {selectedFeedback.metadata.reproSteps}
+                                </pre>
+                              </div>
+                            )}
+
+                            {selectedFeedback.screenshot && (
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex justify-between items-center">
+                                  <span>Viewport Screenshot</span>
+                                  <a 
+                                    href={selectedFeedback.screenshot} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                                  >
+                                    View Full Size
+                                  </a>
+                                </h4>
+                                <div className="border rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center max-h-[320px] shadow-sm cursor-pointer hover:opacity-95 transition-opacity">
+                                  <img 
+                                    src={selectedFeedback.screenshot} 
+                                    alt="Feedback Screenshot" 
+                                    className="max-h-[320px] w-full object-contain"
+                                    onClick={() => {
+                                      const newTab = window.open();
+                                      if (newTab) {
+                                        newTab.document.write(`<img src="${selectedFeedback.screenshot}" style="max-width:100%; height:auto;" />`);
+                                        newTab.document.title = `Feedback Screenshot - ${selectedFeedback.id}`;
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Side: Diagnostics & Metadata */}
+                          <div className="space-y-4 flex flex-col">
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Diagnostic Context</h4>
+                              <div className="bg-slate-50 border rounded-lg p-3 text-xs space-y-2 leading-relaxed">
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Page URL:</span>
+                                  <a 
+                                    href={selectedFeedback.pageUrl || '#'} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="col-span-2 text-teal-600 hover:underline truncate"
+                                  >
+                                    {selectedFeedback.pageUrl || 'N/A'}
+                                  </a>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Path:</span>
+                                  <span className="col-span-2 font-mono truncate">{selectedFeedback.metadata?.path || 'N/A'}</span>
+                                </div>
+                                {selectedFeedback.metadata?.queryParams && (
+                                  <div className="grid grid-cols-3 gap-1">
+                                    <span className="text-slate-500 font-medium">Query Params:</span>
+                                    <span className="col-span-2 font-mono truncate">{selectedFeedback.metadata.queryParams}</span>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">User Role:</span>
+                                  <span className="col-span-2 font-medium text-slate-800">{selectedFeedback.role || 'guest'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">User Email:</span>
+                                  <span className="col-span-2 text-slate-800">{selectedFeedback.metadata?.userEmail || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Resolution:</span>
+                                  <span className="col-span-2 text-slate-800">{selectedFeedback.metadata?.screenSize || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Language:</span>
+                                  <span className="col-span-2 text-slate-800">{selectedFeedback.metadata?.language || 'N/A'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">Network Status:</span>
+                                  <span className="col-span-2">
+                                    <Badge variant="outline" className={selectedFeedback.metadata?.isOnline === 'online' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}>
+                                      {selectedFeedback.metadata?.isOnline || 'online'}
+                                    </Badge>
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-slate-500 font-medium">User Agent:</span>
+                                  <span className="col-span-2 text-[10px] text-slate-600 font-mono break-all max-h-12 overflow-y-auto" title={selectedFeedback.metadata?.userAgent}>
+                                    {selectedFeedback.metadata?.userAgent || 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Console Logs section */}
+                            <div className="flex-1 flex flex-col min-h-[220px]">
+                              <div className="flex justify-between items-center mb-1">
+                                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Console & Crash Logs</h4>
+                                <div className="flex gap-1 text-[10px]">
+                                  <button 
+                                    className={`px-1.5 py-0.5 rounded border ${logFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                                    onClick={() => setLogFilter('all')}
+                                  >
+                                    All
+                                  </button>
+                                  <button 
+                                    className={`px-1.5 py-0.5 rounded border ${logFilter === 'error' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                    onClick={() => setLogFilter('error')}
+                                  >
+                                    Errors
+                                  </button>
+                                  <button 
+                                    className={`px-1.5 py-0.5 rounded border ${logFilter === 'warning' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-600 hover:bg-amber-100'}`}
+                                    onClick={() => setLogFilter('warning')}
+                                  >
+                                    Warns
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="relative flex-1 flex flex-col border rounded-lg overflow-hidden">
+                                <input 
+                                  type="text"
+                                  placeholder="Search logs..."
+                                  className="w-full bg-slate-900 border-b border-slate-800 text-slate-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-0 font-mono"
+                                  value={logSearch}
+                                  onChange={(e) => setLogSearch(e.target.value)}
+                                />
+                                <div className="flex-1 bg-slate-950 text-slate-100 font-mono text-[11px] p-3 overflow-y-auto h-[160px] leading-relaxed whitespace-pre-wrap select-text">
+                                  {Array.isArray(selectedFeedback.console_logs) && selectedFeedback.console_logs.length > 0 ? (
+                                    (() => {
+                                      const filtered = selectedFeedback.console_logs.filter((log: string) => {
+                                        const matchFilter = 
+                                          logFilter === 'all' ? true :
+                                          logFilter === 'error' ? (log.includes('[ERROR]') || log.includes('[CRASH]')) :
+                                          logFilter === 'warning' ? log.includes('[WARN]') : true;
+                                        const matchSearch = logSearch.trim() === '' ? true : log.toLowerCase().includes(logSearch.toLowerCase());
+                                        return matchFilter && matchSearch;
+                                      });
+                                      
+                                      return filtered.length > 0 ? (
+                                        filtered.map((log: string, idx: number) => {
+                                          const isError = log.includes('[ERROR]') || log.includes('[CRASH]') || log.includes('[RUNTIME CRASH]');
+                                          const isWarn = log.includes('[WARN]');
+                                          return (
+                                            <div key={idx} className={`border-b border-slate-900/50 pb-1 mb-1 last:border-b-0 ${isError ? 'text-red-400' : isWarn ? 'text-amber-300' : 'text-slate-300'}`}>
+                                              {log}
+                                            </div>
+                                          );
+                                        })
+                                      ) : (
+                                        <div className="text-slate-500 italic text-center py-4">No matching logs found.</div>
+                                      );
+                                    })()
+                                  ) : (
+                                    <div className="text-slate-500 italic text-center py-4">No console logs captured.</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <DialogFooter className="border-t pt-4">
+                          <div className="flex justify-between items-center w-full">
+                            <div className="flex gap-2">
+                              {selectedFeedback.status !== 'resolved' ? (
+                                <Button
+                                  type="button"
+                                  className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                                  onClick={async () => {
+                                    await updateFeedbackStatus(selectedFeedback.id, 'resolved');
+                                    setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'resolved' } : null);
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" /> Mark as Resolved
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="border-slate-300 hover:bg-slate-50 text-slate-700 font-medium"
+                                  onClick={async () => {
+                                    await updateFeedbackStatus(selectedFeedback.id, 'open');
+                                    setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'open' } : null);
+                                  }}
+                                >
+                                  Reopen Report
+                                </Button>
+                              )}
+                              
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium"
+                                onClick={() => {
+                                  const text = `
+**Feedback Report**
+ID: ${selectedFeedback.id}
+User: ${selectedFeedback.role} (ID: ${selectedFeedback.user_id})
+Type: ${selectedFeedback.type}
+Page: ${selectedFeedback.metadata?.path || selectedFeedback.pageUrl || 'N/A'}
+Date: ${new Date(selectedFeedback.created_at).toLocaleString()}
+
+**Message:**
+${selectedFeedback.message}
+
+**Console Logs:**
+\`\`\`
+${Array.isArray(selectedFeedback.console_logs) ? selectedFeedback.console_logs.join('\n') : JSON.stringify(selectedFeedback.console_logs || [])}
+\`\`\`
+
+**Metadata:**
+${JSON.stringify(selectedFeedback.metadata, null, 2)}
+                                                          `.trim();
+                                  navigator.clipboard.writeText(text);
+                                  toast({
+                                    title: "Copied",
+                                    description: "Feedback report copied to clipboard",
+                                  });
+                                }}
+                              >
+                                <ClipboardCopy className="h-4 w-4 mr-2" /> Copy for Dev
+                              </Button>
+                            </div>
+                            
+                            <Button type="button" variant="outline" className="font-medium" onClick={() => setIsDetailsOpen(false)}>
+                              Close
+                            </Button>
+                          </div>
+                        </DialogFooter>
+                      </>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
               {/* User Management Tab */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 import {
     MessageSquare,
     X,
@@ -49,6 +50,11 @@ export const FeedbackWidget = () => {
     const { user, isAuthenticated } = useAuth();
     const { toast } = useToast();
     const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+    
+    // Screenshot States
+    const [includeScreenshot, setIncludeScreenshot] = useState(true);
+    const [screenshot, setScreenshot] = useState<string | null>(null);
+    const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
 
     // Deep linking support
     const [searchParams] = useSearchParams();
@@ -68,7 +74,7 @@ export const FeedbackWidget = () => {
         }
     }, [searchParams]);
 
-    // Capture console logs (simple version)
+    // Capture console logs and global runtime crashes
     useEffect(() => {
         if (!isAuthenticated) return;
 
@@ -76,41 +82,113 @@ export const FeedbackWidget = () => {
         const originalWarn = console.warn;
         const originalLog = console.log;
 
-        const captureLog = (level: string, args: any[]) => {
+        const captureLog = (level: string, messageStr: string) => {
+            // Use setTimeout to avoid state updates during render
+            setTimeout(() => {
+                setConsoleLogs(prev => [`[${level}] ${messageStr}`, ...prev].slice(0, 50));
+            }, 0);
+        };
+
+        console.error = (...args) => {
             try {
                 const logMsg = args.map(arg =>
                     typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
                 ).join(' ');
-
-                // Use setTimeout to avoid state updates during render (if log happens during render)
-                setTimeout(() => {
-                    setConsoleLogs(prev => [`[${level}] ${logMsg}`, ...prev].slice(0, 50));
-                }, 0);
-            } catch (e) {
-                // ignore circular structure errors etc
-            }
-        };
-
-        console.error = (...args) => {
-            captureLog('ERROR', args);
+                captureLog('ERROR', logMsg);
+            } catch (e) {}
             originalError.apply(console, args);
         };
+        
         console.warn = (...args) => {
-            captureLog('WARN', args);
+            try {
+                const logMsg = args.map(arg =>
+                    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+                ).join(' ');
+                captureLog('WARN', logMsg);
+            } catch (e) {}
             originalWarn.apply(console, args);
         };
-        // Optional: capture logs too, might be noisy
-        // console.log = (...args) => {
-        //   captureLog('LOG', args);
-        //   originalLog.apply(console, args);
-        // };
+
+        const handleGlobalError = (event: ErrorEvent) => {
+            const errorMsg = `[RUNTIME CRASH] ${event.message || 'Unknown error'} at ${event.filename || 'unknown'}:${event.lineno || 0}:${event.colno || 0}`;
+            captureLog('CRASH', errorMsg);
+        };
+
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const reason = event.reason;
+            let logMsg = '';
+            if (reason instanceof Error) {
+                logMsg = reason.stack || reason.message;
+            } else {
+                try {
+                    logMsg = typeof reason === 'object' ? JSON.stringify(reason) : String(reason);
+                } catch (e) {
+                    logMsg = String(reason);
+                }
+            }
+            captureLog('REJECTION', logMsg);
+        };
+
+        window.addEventListener('error', handleGlobalError);
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
         return () => {
             console.error = originalError;
             console.warn = originalWarn;
             console.log = originalLog;
+            window.removeEventListener('error', handleGlobalError);
+            window.removeEventListener('unhandledrejection', handleUnhandledRejection);
         };
     }, [isAuthenticated]);
+
+    // Capture screenshot function
+    const capturePageScreenshot = async () => {
+        setIsCapturingScreenshot(true);
+        setScreenshot(null);
+        
+        const dialogContent = document.querySelector('[role="dialog"]');
+        const overlayEl = document.querySelector('.fixed.inset-0.z-50'); 
+        
+        const elementsToHide: HTMLElement[] = [];
+        if (dialogContent) elementsToHide.push(dialogContent as HTMLElement);
+        if (overlayEl) elementsToHide.push(overlayEl as HTMLElement);
+        
+        elementsToHide.forEach(el => {
+            el.style.visibility = 'hidden';
+        });
+        
+        try {
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            await new Promise(resolve => setTimeout(resolve, 100)); // small delay for transition
+            
+            const canvas = await html2canvas(document.body, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 0.75,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            
+            const base64Image = canvas.toDataURL('image/jpeg', 0.6);
+            setScreenshot(base64Image);
+        } catch (err) {
+            console.error('Failed to capture page screenshot', err);
+        } finally {
+            elementsToHide.forEach(el => {
+                el.style.visibility = 'visible';
+            });
+            setIsCapturingScreenshot(false);
+        }
+    };
+
+    // Auto-capture screenshot on open/type changes
+    useEffect(() => {
+        if (isOpen && type === 'bug' && includeScreenshot) {
+            capturePageScreenshot();
+        } else if (!isOpen) {
+            setScreenshot(null);
+        }
+    }, [isOpen, type, includeScreenshot]);
 
     // Fetch history when tab changes to 'history'
     useEffect(() => {
@@ -148,7 +226,14 @@ export const FeedbackWidget = () => {
                 path: window.location.pathname,
                 title,
                 severity,
-                reproSteps
+                reproSteps,
+                userEmail: user?.email || 'N/A',
+                userId: user?.id || 'N/A',
+                userRole: user?.role || 'N/A',
+                queryParams: window.location.search,
+                isOnline: navigator.onLine ? 'online' : 'offline',
+                language: navigator.language,
+                referrer: document.referrer || 'direct'
             };
 
             // Format message for immediate visibility
@@ -165,7 +250,8 @@ export const FeedbackWidget = () => {
                 type,
                 pageUrl: window.location.href,
                 consoleLogs,
-                metadata
+                metadata,
+                screenshot: includeScreenshot ? screenshot : null
             });
 
             toast({
@@ -180,6 +266,7 @@ export const FeedbackWidget = () => {
             setSeverity('medium');
             setType('bug');
             setConsoleLogs([]); // Clear logs after send
+            setScreenshot(null);
 
             // Switch to history tab to show progress
             setActiveTab('history');
@@ -209,7 +296,7 @@ export const FeedbackWidget = () => {
     return (
         <>
             {/* Floating Trigger Button */}
-            <div className="fixed bottom-24 right-6 z-50 group">
+            <div className="fixed bottom-24 right-6 z-50 group feedback-trigger-btn">
                 {/* Pulse effect ring */}
                 <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping opacity-75 group-hover:opacity-100 duration-1000" />
 
@@ -333,6 +420,83 @@ export const FeedbackWidget = () => {
                                         />
                                     </div>
                                 )}
+
+                                {/* Screenshot Toggle & Preview */}
+                                <div className="grid grid-cols-4 items-start gap-4">
+                                    <Label htmlFor="screenshot" className="text-right pt-1 text-xs font-semibold text-muted-foreground uppercase">
+                                        Screenshot
+                                    </Label>
+                                    <div className="col-span-3 space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                id="include-screenshot"
+                                                checked={includeScreenshot}
+                                                onChange={(e) => {
+                                                    setIncludeScreenshot(e.target.checked);
+                                                    if (e.target.checked && !screenshot && !isCapturingScreenshot) {
+                                                        capturePageScreenshot();
+                                                    }
+                                                }}
+                                                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                            />
+                                            <label htmlFor="include-screenshot" className="text-xs text-muted-foreground font-medium select-none cursor-pointer">
+                                                Include screenshot of the current page
+                                            </label>
+                                        </div>
+                                        
+                                        {includeScreenshot && (
+                                            <div className="relative border rounded-md overflow-hidden bg-slate-50 h-24 flex items-center justify-center group/screenshot">
+                                                {isCapturingScreenshot ? (
+                                                    <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1">
+                                                        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                                                        <span>Capturing page...</span>
+                                                    </div>
+                                                ) : screenshot ? (
+                                                    <>
+                                                        <img 
+                                                            src={screenshot} 
+                                                            alt="Page snapshot" 
+                                                            className="h-full w-full object-cover transition-transform duration-200 group-hover/screenshot:scale-105"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/screenshot:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="h-7 text-[10px] px-2 py-0 bg-white hover:bg-slate-100 text-black border-none"
+                                                                onClick={capturePageScreenshot}
+                                                            >
+                                                                Retake
+                                                            </Button>
+                                                            <a
+                                                                href={screenshot}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="h-7 text-[10px] px-2 py-1 bg-white text-black rounded hover:bg-slate-100 flex items-center justify-center font-medium"
+                                                            >
+                                                                View
+                                                            </a>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="flex flex-col items-center justify-center text-xs text-muted-foreground gap-1 p-2 text-center">
+                                                        <span className="text-[10px] text-amber-600">Failed to capture canvas.</span>
+                                                        <Button 
+                                                            type="button" 
+                                                            size="sm" 
+                                                            variant="outline" 
+                                                            className="h-6 text-[10px] mt-1" 
+                                                            onClick={capturePageScreenshot}
+                                                        >
+                                                            Retry Capture
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                                 <div className="grid grid-cols-4 items-center gap-4">
                                     <Label className="text-right text-xs text-muted-foreground">
