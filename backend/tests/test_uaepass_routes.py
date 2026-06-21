@@ -30,7 +30,9 @@ for p in (_root_dir, _backend_dir):
         sys.path.insert(0, p)
 
 from app import create_app
-from backend.routes.uaepass_routes import uaepass_bp, _pending_states, _cleanup_stale_states
+from backend.routes.uaepass_routes import (
+    uaepass_bp, _pending_states, _cleanup_stale_states, _find_or_create_user
+)
 
 
 SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
@@ -226,3 +228,48 @@ class TestCleanupStaleStates:
         _pending_states.clear()
         _cleanup_stale_states()  # should not raise
         assert len(_pending_states) == 0
+
+
+# ── Unit: _find_or_create_user ─────────────────────────────────────
+
+@pytest.mark.unit
+class TestFindOrCreateUser:
+    """Tests for _find_or_create_user database operations."""
+
+    @patch("backend.routes.uaepass_routes._get_db")
+    def test_find_or_create_user_synthetic_eid(self, mock_get_db):
+        """Verify _find_or_create_user generates a synthetic EID correctly using dict cursor."""
+        mock_cursor = MagicMock()
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_get_db.return_value = mock_conn
+
+        # Mock results
+        # 1. First SELECT uaepass_uuid -> None (new user)
+        # 2. Second SELECT email -> None (not found)
+        # 3. Third SELECT MAX(CAST(...)) -> {'max_seq': 42}
+        # 4. Fourth INSERT RETURNING * -> {'id': '784000000000430', 'role': 'candidate'}
+        mock_cursor.fetchone.side_effect = [
+            None,                  # SELECT uaepass_uuid (not found)
+            None,                  # SELECT email (not found)
+            {'max_seq': 42},       # SELECT MAX(CAST(...)) (max synthetic sequence)
+            {'id': '784000000000430', 'role': 'candidate'} # INSERT RETURNING * (new user data)
+        ]
+
+        profile = {
+            'uaepass_uuid': '6f5b3da6-3fe1-453a-81e3-aa3c5291a125',
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com'
+        }
+
+        user_data, is_new = _find_or_create_user(profile)
+
+        assert is_new is True
+        assert user_data['id'] == '784000000000430'
+        
+        # Verify SELECT MAX(...) query was executed
+        assert mock_cursor.execute.call_count >= 2
+        # Verify connection committed
+        mock_conn.commit.assert_called_once()
+

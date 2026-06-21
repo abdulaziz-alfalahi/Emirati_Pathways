@@ -469,11 +469,11 @@ def _find_or_create_user(profile: dict) -> tuple:
             # Use advisory lock to prevent race condition under concurrent registration
             cursor.execute("SELECT pg_advisory_xact_lock(784000)")  # Lock ID for EID generation
             cursor.execute("""
-                SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
+                SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER)) AS max_seq
                 FROM users WHERE id LIKE '7840000%'
             """)
             row = cursor.fetchone()
-            max_seq = row[0] if row and row[0] else 0
+            max_seq = row['max_seq'] if row and row.get('max_seq') else 0
             eid_for_pk = f"784{'0000'}{max_seq + 1:07d}{'0'}"
 
         # Encrypt EID before storage in the enc column (backward compat)
