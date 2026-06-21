@@ -996,12 +996,24 @@ const UserManagerEnhanced: React.FC = () => {
     // Apply search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(u =>
-        u.username.toLowerCase().includes(term) ||
-        u.email.toLowerCase().includes(term) ||
-        u.full_name.toLowerCase().includes(term) ||
-        u.id.toString().includes(term)
-      );
+      result = result.filter(u => {
+        const username = (u.username || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const fullName = (u.full_name || '').toLowerCase();
+        const firstName = (u.first_name || '').toLowerCase();
+        const lastName = (u.last_name || '').toLowerCase();
+        const idStr = String(u.id || '').toLowerCase();
+        const formattedEid = formatEID(u.id);
+        const eidStr = formattedEid ? formattedEid.toLowerCase() : '';
+
+        return username.includes(term) ||
+          email.includes(term) ||
+          fullName.includes(term) ||
+          firstName.includes(term) ||
+          lastName.includes(term) ||
+          idStr.includes(term) ||
+          eidStr.includes(term);
+      });
     }
 
     return result;
