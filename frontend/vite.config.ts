@@ -27,8 +27,8 @@ export default defineConfig({
     host: true,
     cors: true,
     allowedHosts: [
-      '2415733d5eb0.ngrok.app',
-      'archdiocesan-complimentarily-marianna.ngrok-free.dev'
+      'stg-emirati.ehrdc.gov.ae',
+      'emirati.ehrdc.gov.ae'
     ],
     proxy: {
       '/api': {

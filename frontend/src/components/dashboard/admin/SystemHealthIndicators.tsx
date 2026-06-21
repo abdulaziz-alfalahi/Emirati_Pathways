@@ -56,6 +56,14 @@ export const SystemHealthIndicators: React.FC<SystemHealthIndicatorsProps> = ({ 
       lastCheck: new Date().toLocaleTimeString(),
       description: 'System logging and monitoring services',
       icon: Server
+    },
+    {
+      name: 'Wildcard SSL Certificate (*.ehrdc.gov.ae)',
+      status: 'healthy',
+      uptime: 'Valid',
+      lastCheck: new Date().toLocaleTimeString(),
+      description: 'Verified successfully. Expiration Date: November 21, 2026.',
+      icon: Shield
     }
   ];
 
