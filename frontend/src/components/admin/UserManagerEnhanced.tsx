@@ -57,6 +57,7 @@ import {
   FileSpreadsheet,
   UserCheck,
   Key,
+  CreditCard,
 
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
@@ -73,6 +74,8 @@ interface User {
   username: string;
   email: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   roles: string[];
   is_active: boolean;
   last_login?: string;
@@ -315,6 +318,34 @@ const getRoleColor = (role: string): string => {
     'candidate': 'bg-cyan-100 text-cyan-800 border-cyan-200'
   };
   return colors[role] || 'bg-gray-100 text-gray-800 border-gray-200';
+};
+
+// ============================================
+// HELPERS
+// ============================================
+
+/**
+ * Helper to format Emirates ID (EID) from 15-digit number to 784-0000-0000000-0 format
+ */
+const formatEID = (id: any): string | null => {
+  if (!id) return null;
+  const idStr = String(id).trim();
+  if (/^\d{15}$/.test(idStr)) {
+    return idStr.replace(/^(\d{3})(\d{4})(\d{7})(\d{1})$/, '$1-$2-$3-$4');
+  }
+  return null;
+};
+
+/**
+ * Helper to get a robust display name for a user
+ */
+const getUserDisplayName = (user: User): string => {
+  if (user.full_name && user.full_name.trim()) return user.full_name;
+  const parts = [];
+  if (user.first_name) parts.push(user.first_name);
+  if (user.last_name) parts.push(user.last_name);
+  if (parts.length > 0) return parts.join(' ');
+  return user.username || 'User';
 };
 
 // ============================================
@@ -1297,11 +1328,14 @@ const UserManagerEnhanced: React.FC = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
-                          {(user.full_name || 'User').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          {getUserDisplayName(user).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.full_name}</div>
+                          <div className="text-sm font-medium text-gray-900">{getUserDisplayName(user)}</div>
                           <div className="text-sm text-gray-500">{user.email}</div>
+                          {formatEID(user.id) && (
+                            <div className="text-xs text-gray-400 mt-0.5 font-mono">EID: {formatEID(user.id)}</div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1682,7 +1716,7 @@ const UserManagerEnhanced: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Edit User: {selectedUser.full_name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Edit User: {getUserDisplayName(selectedUser)}</h3>
               <button onClick={() => { setShowEditModal(false); setSelectedUser(null); resetForm(); }} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
@@ -1855,11 +1889,14 @@ const UserManagerEnhanced: React.FC = () => {
               {/* Profile Header */}
               <div className="flex items-start gap-6 mb-6">
                 <div className="flex-shrink-0 h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                  {(selectedUser.full_name || 'User').split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  {getUserDisplayName(selectedUser).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-xl font-bold text-gray-900">{selectedUser.full_name}</h4>
+                  <h4 className="text-xl font-bold text-gray-900">{getUserDisplayName(selectedUser)}</h4>
                   <p className="text-gray-500">{selectedUser.email}</p>
+                  {formatEID(selectedUser.id) && (
+                    <p className="text-xs text-gray-400 mt-1 font-mono">EID: {formatEID(selectedUser.id)}</p>
+                  )}
                   <div className="flex items-center gap-2 mt-2">
                     {selectedUser.is_active ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -1901,6 +1938,15 @@ const UserManagerEnhanced: React.FC = () => {
                         <p className="text-sm text-gray-900">{selectedUser.username}</p>
                       </div>
                     </div>
+                    {formatEID(selectedUser.id) && (
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Emirates ID</p>
+                          <p className="text-sm text-gray-900 font-mono">{formatEID(selectedUser.id)}</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center gap-3">
                       <Mail className="w-4 h-4 text-gray-400" />
                       <div>
@@ -1998,7 +2044,7 @@ const UserManagerEnhanced: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Activity & Sessions: {selectedUser.full_name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Activity & Sessions: {getUserDisplayName(selectedUser)}</h3>
               <button onClick={() => { setShowActivityModal(false); setSelectedUser(null); }} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
