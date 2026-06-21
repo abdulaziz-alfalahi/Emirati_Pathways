@@ -152,12 +152,22 @@ set_env_vars() {
     case "$ENV" in
         appdev)
             export FLASK_ENV=development
-            export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            if [ -f "${REPO_DIR}/backend/.env" ] && grep -q "^FRONTEND_URL=" "${REPO_DIR}/backend/.env"; then
+                local env_val=$(grep "^FRONTEND_URL=" "${REPO_DIR}/backend/.env" | cut -d'=' -f2- | tr -d '\r')
+                export FRONTEND_URL="$env_val"
+            else
+                export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            fi
             log "FLASK_ENV=development, FRONTEND_URL=$FRONTEND_URL"
             ;;
         appqa)
             export FLASK_ENV=development
-            export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            if [ -f "${REPO_DIR}/backend/.env" ] && grep -q "^FRONTEND_URL=" "${REPO_DIR}/backend/.env"; then
+                local env_val=$(grep "^FRONTEND_URL=" "${REPO_DIR}/backend/.env" | cut -d'=' -f2- | tr -d '\r')
+                export FRONTEND_URL="$env_val"
+            else
+                export FRONTEND_URL="http://$(hostname -I | awk '{print $1}'):${FRONTEND_PORT}"
+            fi
             log "FLASK_ENV=development (QA), FRONTEND_URL=$FRONTEND_URL"
             ;;
         production)
