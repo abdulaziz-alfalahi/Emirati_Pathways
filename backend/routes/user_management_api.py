@@ -223,15 +223,21 @@ def list_users():
         params = []
         
         if search:
+            cleaned_search = search.replace('-', '')
             query += """
                 AND (
                     u.username ILIKE %s 
                     OR u.email ILIKE %s 
                     OR u.full_name ILIKE %s
+                    OR u.first_name ILIKE %s
+                    OR u.last_name ILIKE %s
+                    OR CAST(u.id AS TEXT) ILIKE %s
+                    OR CAST(u.id AS TEXT) ILIKE %s
                 )
             """
             search_param = f"%{search}%"
-            params.extend([search_param] * 3)
+            cleaned_param = f"%{cleaned_search}%"
+            params.extend([search_param, search_param, search_param, search_param, search_param, search_param, cleaned_param])
         
         if role:
             query += " AND u.role = %s"
@@ -261,10 +267,21 @@ def list_users():
         count_params = []
         
         if search:
+            cleaned_search = search.replace('-', '')
             count_query += """
-                AND (u.username ILIKE %s OR u.email ILIKE %s OR u.full_name ILIKE %s)
+                AND (
+                    u.username ILIKE %s 
+                    OR u.email ILIKE %s 
+                    OR u.full_name ILIKE %s
+                    OR u.first_name ILIKE %s
+                    OR u.last_name ILIKE %s
+                    OR CAST(u.id AS TEXT) ILIKE %s
+                    OR CAST(u.id AS TEXT) ILIKE %s
+                )
             """
-            count_params.extend([f"%{search}%"] * 3)
+            search_param = f"%{search}%"
+            cleaned_param = f"%{cleaned_search}%"
+            count_params.extend([search_param, search_param, search_param, search_param, search_param, search_param, cleaned_param])
         
         if role:
             count_query += " AND u.role = %s"
