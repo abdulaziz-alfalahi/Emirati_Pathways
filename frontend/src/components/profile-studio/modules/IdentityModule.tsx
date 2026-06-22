@@ -31,7 +31,8 @@ export const IdentityModule = () => {
         phone: '',
         location: '',
         latitude: undefined as number | undefined,
-        longitude: undefined as number | undefined
+        longitude: undefined as number | undefined,
+        english_proficiency: 'conversational'
     });
 
     useEffect(() => {
@@ -87,7 +88,8 @@ export const IdentityModule = () => {
                     phone: contact.phone || '',
                     location: contact.location || '',
                     latitude: lat,
-                    longitude: lng
+                    longitude: lng,
+                    english_proficiency: res.data.english_proficiency || 'conversational'
                 });
             }
         } catch (e) {
@@ -146,6 +148,7 @@ export const IdentityModule = () => {
                 location: formData.location,
                 latitude: formData.latitude,
                 longitude: formData.longitude,
+                english_proficiency: formData.english_proficiency,
                 contact: {
                     phone: formData.phone,
                     location: formData.location,
@@ -311,6 +314,23 @@ export const IdentityModule = () => {
                                     className="w-full p-2 border border-input rounded-md bg-background"
                                     placeholder={t('e.g. Downtown Dubai, UAE', 'مثال: وسط دبي، الإمارات')}
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-muted-foreground">{t('English Proficiency', 'مستوى اللغة الإنجليزية')}</label>
+                                <select
+                                    value={formData.english_proficiency}
+                                    onChange={(e) => setFormData({ ...formData, english_proficiency: e.target.value })}
+                                    disabled={!isEditing}
+                                    className="w-full p-2 border border-input rounded-md bg-background text-foreground focus:border-teal-500 outline-none disabled:opacity-75"
+                                >
+                                    <option value="conversational">{t('Basic / Conversational', 'أساسي / محادثة')}</option>
+                                    <option value="professional">{t('Professional / Fluent', 'مهني / طليق')}</option>
+                                    <option value="native">{t('Native / Bilingual', 'أصلي / ثنائي اللغة')}</option>
+                                </select>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {t('Used for AI matching. Fluent/Native awards a 25 point bonus, Conversational awards 15 points.', 'يُستخدم للمطابقة بالذكاء الاصطناعي. المستوى الطليق/الأصلي يمنح ٢٥ نقطة إضافية، والمحادثة تمنح ١٥ نقطة.')}
+                                </p>
                             </div>
 
                             <div className="p-4 bg-teal-50 rounded-lg border border-teal-100">

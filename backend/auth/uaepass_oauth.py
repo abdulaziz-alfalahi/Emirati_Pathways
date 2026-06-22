@@ -53,7 +53,7 @@ class UAEPassConfig:
             self.authorize_url = 'https://stg-id.uaepass.ae/idshub/authorize'
             self.logout_url = 'https://stg-id.uaepass.ae/idshub/logout'
 
-        self.scope = 'openid'
+        self.scope = os.getenv('UAEPASS_SCOPE', 'openid urn:uae:digitalid:profile:general')
         self.response_type = 'code'
         self.acr_values = 'urn:safelayer:tws:policies:authentication:level:low'
 

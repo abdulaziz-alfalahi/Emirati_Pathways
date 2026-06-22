@@ -507,7 +507,8 @@ def ensure_feedback_table_exist():
                 metadata JSONB,
                 console_logs JSONB,
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                screenshot TEXT
             )
             """,
             fetch_all=False
@@ -527,7 +528,7 @@ def ensure_feedback_table_exist():
              count = count_res.get('cnt', 0) if isinstance(count_res, dict) else count_res[0]
         else:
              count = 0
-
+ 
         if int(count) == 0:
             logger.info("Seeding feedback table with initial data...")
             
@@ -544,6 +545,17 @@ def ensure_feedback_table_exist():
                 if not cursor.fetchone():
                     logger.info("Adding missing column 'resolution_notes' to feedback table")
                     cursor.execute("ALTER TABLE feedback ADD COLUMN resolution_notes TEXT;")
+                    conn.commit()
+
+                # Check screenshot
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name='feedback' AND column_name='screenshot'
+                """)
+                if not cursor.fetchone():
+                    logger.info("Adding missing column 'screenshot' to feedback table")
+                    cursor.execute("ALTER TABLE feedback ADD COLUMN screenshot TEXT;")
                     conn.commit()
             conn.close()
 
@@ -779,8 +791,8 @@ def submit_feedback():
         
         execute_query(
             """
-            INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP)
+            INSERT INTO feedback (id, user_id, role, type, status, message, metadata, console_logs, created_at, screenshot)
+            VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP, %s)
             """,
             (
                 feedback_id,
@@ -790,7 +802,8 @@ def submit_feedback():
                 'open',
                 data.get('message'),
                 json.dumps(data.get('metadata', {})),
-                json.dumps(data.get('consoleLogs', []))
+                json.dumps(data.get('consoleLogs', [])),
+                data.get('screenshot')
             ),
             fetch_all=False
         )

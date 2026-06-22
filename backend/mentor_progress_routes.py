@@ -889,3 +889,155 @@ def update_milestone_status(milestone_id):
             'error': 'Failed to update milestone status',
             'details': str(e)
         }), 500
+
+@mentor_progress_bp.route('/incentives', methods=['GET'])
+@jwt_required()
+def get_mentor_incentives():
+    """Get points, tier, and history for the active mentor"""
+    try:
+        current_user_id = get_jwt_identity()
+        user_role = get_user_role(current_user_id)
+        if user_role != 'mentor':
+            return jsonify({'error': 'Only mentors can view incentives', 'code': 'INVALID_ROLE'}), 403
+
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Get mentor profile details
+                cursor.execute("SELECT id, incentive_points, incentive_tier FROM mentor_profiles WHERE user_id = %s", (str(current_user_id),))
+                mentor = cursor.fetchone()
+                if not mentor:
+                    return jsonify({'error': 'Mentor profile not found', 'code': 'MENTOR_PROFILE_NOT_FOUND'}), 404
+                
+                # Fetch history
+                cursor.execute("""
+                    SELECT id, action_type, points_awarded, reference_id, created_at
+                    FROM mentor_incentive_logs
+                    WHERE mentor_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT 100
+                """, (mentor['id'],))
+                logs = cursor.fetchall()
+                
+                # Format dates
+                for log in logs:
+                    if log['created_at']:
+                        log['created_at'] = log['created_at'].isoformat()
+                        
+                return jsonify({
+                    'success': True,
+                    'incentive_points': mentor['incentive_points'] or 0,
+                    'incentive_tier': mentor['incentive_tier'] or 'bronze',
+                    'history': logs
+                }), 200
+    except Exception as e:
+        logger.error(f"Error fetching mentor incentives: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@mentor_progress_bp.route('/pending-verifications', methods=['GET'])
+@jwt_required()
+def get_pending_verifications():
+    """Get pending skill verifications from candidate portfolios"""
+    try:
+        current_user_id = get_jwt_identity()
+        user_role = get_user_role(current_user_id)
+        if user_role != 'mentor':
+            return jsonify({'error': 'Only mentors can access verifications', 'code': 'INVALID_ROLE'}), 403
+
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Fetch all unverified skills and link them to their candidate & matching portfolio project
+                cursor.execute("""
+                    SELECT 
+                        cs.id as skill_id, 
+                        cs.user_id as candidate_user_id, 
+                        cs.name as skill_name, 
+                        cs.level as skill_level,
+                        cs.category as skill_category,
+                        u.full_name as candidate_name,
+                        u.email as candidate_email,
+                        p.id as project_id,
+                        p.title as project_title,
+                        p.description as project_description,
+                        p.project_url,
+                        p.completion_date
+                    FROM candidate_skills cs
+                    JOIN users u ON cs.user_id::varchar = u.id::varchar
+                    LEFT JOIN portfolio_projects p ON cs.user_id::varchar = p.user_id::varchar 
+                        AND p.skills_demonstrated::jsonb @> jsonb_build_array(cs.name)
+                    WHERE cs.is_verified = false
+                    ORDER BY cs.id DESC;
+                """)
+                rows = cursor.fetchall()
+                
+                # Format date
+                for row in rows:
+                    if row['completion_date']:
+                        row['completion_date'] = row['completion_date'].isoformat()
+                        
+                return jsonify({
+                    'success': True,
+                    'pending': rows
+                }), 200
+    except Exception as e:
+        logger.error(f"Error getting pending verifications: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@mentor_progress_bp.route('/verify-skill', methods=['POST'])
+@jwt_required()
+def verify_candidate_skill():
+    """Verify or reject a candidate's portfolio skill and award points to the mentor"""
+    try:
+        current_user_id = get_jwt_identity()
+        user_role = get_user_role(current_user_id)
+        if user_role != 'mentor':
+            return jsonify({'error': 'Only mentors can verify skills', 'code': 'INVALID_ROLE'}), 403
+            
+        data = request.get_json()
+        if not data or 'skill_id' not in data or 'is_approved' not in data:
+            return jsonify({'error': 'skill_id and is_approved are required', 'code': 'MISSING_FIELDS'}), 400
+            
+        skill_id = data['skill_id']
+        is_approved = data['is_approved']
+        
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Get mentor profile ID
+                cursor.execute("SELECT id FROM mentor_profiles WHERE user_id = %s", (str(current_user_id),))
+                mentor_row = cursor.fetchone()
+                if not mentor_row:
+                    return jsonify({'error': 'Mentor profile not found', 'code': 'MENTOR_PROFILE_NOT_FOUND'}), 404
+                mentor_id = mentor_row[0]
+                
+                # Verify skill exists and get name
+                cursor.execute("SELECT name, user_id FROM candidate_skills WHERE id = %s", (skill_id,))
+                skill_row = cursor.fetchone()
+                if not skill_row:
+                    return jsonify({'error': 'Skill not found', 'code': 'SKILL_NOT_FOUND'}), 404
+                skill_name, candidate_user_id = skill_row
+                
+                if is_approved:
+                    # Update skill to verified
+                    cursor.execute("""
+                        UPDATE candidate_skills 
+                        SET is_verified = true, assessment_score = 100
+                        WHERE id = %s
+                    """, (skill_id,))
+                    
+                    # Award 20 points to the mentor
+                    from mentor_incentive_helper import award_mentor_points
+                    award_mentor_points(conn, cursor, mentor_id, 20, 'skill_verified', str(skill_id))
+                    
+                    message = f"Skill '{skill_name}' verified successfully! +20 points awarded."
+                else:
+                    # If rejected, delete the skill from active candidate_skills
+                    cursor.execute("DELETE FROM candidate_skills WHERE id = %s", (skill_id,))
+                    message = f"Skill '{skill_name}' rejected and removed from candidate profile."
+                
+                conn.commit()
+                return jsonify({
+                    'success': True,
+                    'message': message
+                }), 200
+    except Exception as e:
+        logger.error(f"Error verifying skill: {e}")
+        return jsonify({'error': str(e)}), 500

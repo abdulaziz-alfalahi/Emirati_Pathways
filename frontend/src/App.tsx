@@ -512,6 +512,14 @@ const AppContent: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/career-services-dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['operator', 'career_services_operator', 'admin', 'admin']}>
+                    <CareerServicesDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/admin/school-programs"

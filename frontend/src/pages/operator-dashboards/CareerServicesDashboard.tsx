@@ -46,24 +46,35 @@ export default function CareerServicesDashboard() {
     try {
       const res = await restClient.get('/api/profile/crm-candidates');
       if (res.data?.success && res.data?.data) {
-        const mapped = res.data.data.map((user: any) => ({
-          id: user.id,
-          eid: user.national_id || user.id_number || '-',
-          name: user.full_name || user.first_name + ' ' + user.last_name,
-          callStatus: user.profile?.call_status || 'Pending',
-          workStatus: user.profile?.work_status || 'Unknown',
-          jobSeekerType: user.profile?.job_seeker_type || 'Unknown',
-          phone: user.phone || '-',
-          remarks: user.profile?.counseling_remarks || '',
-          assignedTo: user.profile?.assigned_to || 'Unassigned',
-          preferredLocations: user.profile?.preferred_locations || [],
-          preferredSector: user.profile?.preferred_sector || '',
-          preferredWorkSetup: user.profile?.preferred_work_setup || '',
-          preferredSchedule: user.profile?.preferred_schedule || '',
-          alternativePhone: user.profile?.alternative_phone || '',
-          unavailabilityReason: user.profile?.unavailability_reason || '',
-          rolePreferences: user.profile?.role_preferences || '',
-        }));
+        const mapped = res.data.data.map((user: any) => {
+          const profile = user.profile || {};
+          const first = user.first_name || '';
+          const last = user.last_name || '';
+          const fallbackName = [first, last].filter(Boolean).join(' ');
+          
+          return {
+            id: user.id,
+            eid: user.national_id || user.id_number || '-',
+            name: user.full_name || fallbackName || t('Unnamed Candidate', 'مرشح بدون اسم'),
+            callStatus: profile.call_status || 'Pending',
+            workStatus: profile.work_status || 'Unknown',
+            jobSeekerType: profile.job_seeker_type || 'Unknown',
+            phone: user.phone || '-',
+            remarks: profile.counseling_remarks || '',
+            assignedTo: profile.assigned_to || 'Unassigned',
+            preferredLocations: Array.isArray(profile.preferred_locations)
+              ? profile.preferred_locations
+              : (typeof profile.preferred_locations === 'string'
+                  ? [profile.preferred_locations]
+                  : []),
+            preferredSector: profile.preferred_sector || '',
+            preferredWorkSetup: profile.preferred_work_setup || '',
+            preferredSchedule: profile.preferred_schedule || '',
+            alternativePhone: profile.alternative_phone || '',
+            unavailabilityReason: profile.unavailability_reason || '',
+            rolePreferences: profile.role_preferences || '',
+          };
+        });
         setCandidates(mapped.length > 0 ? mapped : getMockCandidates());
       } else {
         setCandidates(getMockCandidates());
@@ -105,7 +116,11 @@ export default function CareerServicesDashboard() {
       workStatus: candidate.workStatus,
       remarks: candidate.remarks,
       assignedTo: candidate.assignedTo,
-      preferredLocations: candidate.preferredLocations || [],
+      preferredLocations: Array.isArray(candidate.preferredLocations)
+        ? candidate.preferredLocations
+        : (typeof candidate.preferredLocations === 'string'
+            ? candidate.preferredLocations.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : []),
       preferredSector: candidate.preferredSector || 'none',
       preferredWorkSetup: candidate.preferredWorkSetup || 'none',
       preferredSchedule: candidate.preferredSchedule || 'none',
@@ -144,9 +159,17 @@ export default function CareerServicesDashboard() {
 
   // Filtering Logic
   const filteredCandidates = useMemo(() => {
+    const cleanSearch = searchTerm.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     return candidates.filter(c => {
-      const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            c.eid.includes(searchTerm);
+      const candidateName = c.name ? String(c.name) : '';
+      const candidateEid = c.eid ? String(c.eid) : '';
+      
+      const cleanName = candidateName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanEid = candidateEid.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      const matchesSearch = !cleanSearch || 
+                            cleanName.includes(cleanSearch) || 
+                            cleanEid.includes(cleanSearch);
       const matchesCallStatus = callStatusFilter === 'All' || c.callStatus === callStatusFilter;
       const matchesWorkStatus = workStatusFilter === 'All' || c.workStatus === workStatusFilter;
       return matchesSearch && matchesCallStatus && matchesWorkStatus;
@@ -155,14 +178,11 @@ export default function CareerServicesDashboard() {
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
+  const activePage = Math.min(currentPage, Math.max(1, totalPages));
   const paginatedCandidates = filteredCandidates.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (activePage - 1) * itemsPerPage,
+    activePage * itemsPerPage
   );
-
-  useEffect(() => {
-    setCurrentPage(1); // Reset page on filter change
-  }, [searchTerm, callStatusFilter, workStatusFilter]);
 
   // KPIs
   const totalCount = candidates.length;
@@ -180,8 +200,11 @@ export default function CareerServicesDashboard() {
   };
 
   const getInitials = (name: string) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    if (!name || typeof name !== 'string') return 'U';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    const cleanedParts = parts.filter(p => p.toLowerCase() !== 'undefined' && p.toLowerCase() !== 'null');
+    if (cleanedParts.length === 0) return 'U';
+    return cleanedParts.map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
   return (
@@ -254,11 +277,11 @@ export default function CareerServicesDashboard() {
                   placeholder={t('Search by name or EID...', 'ابحث بالاسم أو الهوية...')}
                   className={`pl-10 ${isRTL ? 'pr-10 pl-3' : 'pl-10'} bg-slate-50 border-slate-200 rounded-xl focus-visible:ring-[#006E6D]`}
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 />
               </div>
               <div className="flex w-full md:w-auto gap-3">
-                <Select value={callStatusFilter} onValueChange={setCallStatusFilter}>
+                <Select value={callStatusFilter} onValueChange={(val) => { setCallStatusFilter(val); setCurrentPage(1); }}>
                   <SelectTrigger className="w-full md:w-[160px] bg-slate-50 border-slate-200 rounded-xl">
                     <SelectValue placeholder="Call Status" />
                   </SelectTrigger>
@@ -271,7 +294,7 @@ export default function CareerServicesDashboard() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={workStatusFilter} onValueChange={setWorkStatusFilter}>
+                <Select value={workStatusFilter} onValueChange={(val) => { setWorkStatusFilter(val); setCurrentPage(1); }}>
                   <SelectTrigger className="w-full md:w-[160px] bg-slate-50 border-slate-200 rounded-xl">
                     <SelectValue placeholder="Work Status" />
                   </SelectTrigger>

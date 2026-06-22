@@ -144,6 +144,7 @@ def update_identity():
         if 'expected_salary' in data: profile.expected_salary_range = data['expected_salary']
         if 'relocation' in data: profile.willing_to_relocate = data['relocation']
         if 'notice_period' in data: profile.notice_period = data['notice_period']
+        if 'english_proficiency' in data: profile.english_proficiency = data['english_proficiency']
         
         db.session.commit()
         return jsonify({'success': True, 'data': profile.to_dict()}), 200

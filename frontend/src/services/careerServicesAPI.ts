@@ -161,7 +161,7 @@ export async function getSalaryBenchmarks(filters?: {
 
 // ─── Portfolio ──────────────────────────────────────────
 
-export async function getPortfolio(userId: number): Promise<PortfolioProject[]> {
+export async function getPortfolio(userId: string | number): Promise<PortfolioProject[]> {
     const resp = await restClient.get(`/api/career-services/portfolio/${userId}`);
     return resp.data?.projects || [];
 }

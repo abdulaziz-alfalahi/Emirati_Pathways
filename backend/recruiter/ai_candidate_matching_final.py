@@ -244,7 +244,16 @@ class AICandidateMatchingEngineFinal:
                 'experience': candidate.get('experience', []),
                 'education': candidate.get('education', []),
                 'skills': candidate.get('skills', []),
-                'experience_years': candidate.get('experience_years', 0)
+                'experience_years': candidate.get('experience_years', 0),
+                'english_proficiency': candidate.get('english_proficiency', 'conversational'),
+                'preferences': {
+                    'target_roles': candidate.get('compass_target_roles', []),
+                    'willing_to_relocate': candidate.get('compass_willing_to_relocate', False),
+                    'expected_salary_range': candidate.get('compass_expected_salary_range', ''),
+                    'notice_period': candidate.get('compass_notice_period', ''),
+                    'preferred_location': candidate.get('compass_preferred_location', ''),
+                    'english_proficiency': candidate.get('english_proficiency', 'conversational')
+                }
             }
             
             # Convert JD to format expected by matching engine
@@ -447,19 +456,71 @@ class AICandidateMatchingEngineFinal:
                 except ValueError:
                     pass
             
-            # Location matching (10 points)
+            # Location & Relocation matching (10 points)
             jd_emirate = jd_data.get('basic_info', {}).get('emirate', '').lower()
             candidate_emirate = candidate.get('emirate', '').lower()
+            preferred_loc = str(candidate.get('compass_preferred_location') or '').lower()
+            willing_relocate = candidate.get('compass_willing_to_relocate', False)
             
-            if jd_emirate and candidate_emirate:
-                if jd_emirate == candidate_emirate:
+            location_score = 5
+            if jd_emirate:
+                if candidate_emirate and jd_emirate == candidate_emirate:
                     location_score = 10
                     strengths.append("Located in same emirate")
+                elif preferred_loc and jd_emirate in preferred_loc:
+                    location_score = 10
+                    strengths.append("Vacancy matches preferred work city")
+                elif willing_relocate:
+                    location_score = 10
+                    strengths.append("Willing to relocate")
                 else:
-                    location_score = 5
-                
-                score += location_score
-                breakdown['location'] = location_score
+                    concerns.append("Location mismatch (different emirate and unwilling to relocate)")
+            
+            score += location_score
+            breakdown['location'] = location_score
+            
+            # Career Compass Preferences (Salary, Target Roles)
+            # 1. Salary Check
+            expected_salary = candidate.get('compass_expected_salary_range')
+            comp = jd_data.get('compensation', {})
+            jd_max = comp.get('salary_max')
+            
+            if expected_salary and jd_max:
+                try:
+                    # Clean and parse expected minimum salary
+                    s_txt = str(expected_salary).lower().replace(',', '').replace('aed', '').strip()
+                    min_expected = 0
+                    if '-' in s_txt:
+                        min_expected = int(float(s_txt.split('-')[0].strip()))
+                    elif '+' in s_txt:
+                        min_expected = int(float(s_txt.replace('+', '').strip()))
+                    elif s_txt.isdigit():
+                        min_expected = int(s_txt)
+                        
+                    if min_expected > 0:
+                        if min_expected <= jd_max:
+                            strengths.append("Salary expectations align with vacancy budget")
+                        else:
+                            # Mismatch penalty: reduce score and flag concern
+                            score -= 10
+                            concerns.append(f"Expected salary ({expected_salary}) exceeds vacancy maximum budget ({jd_max} AED)")
+                except Exception as sal_err:
+                    self.logger.warning(f"Error parsing expected salary in rule match: {sal_err}")
+            
+            # 2. Target Roles Check
+            target_roles = candidate.get('compass_target_roles', [])
+            jd_title = jd_data.get('basic_info', {}).get('title', '').lower()
+            if target_roles and jd_title:
+                matched_role = None
+                for role in target_roles:
+                    if isinstance(role, str):
+                        role_clean = role.lower().strip()
+                        if role_clean and (role_clean in jd_title or jd_title in role_clean):
+                            matched_role = role
+                            break
+                if matched_role:
+                    score += 5  # Bonus points for aligned target role
+                    strengths.append(f"Target role aligns with vacancy ({matched_role})")
             
             # UAE National preference (5 points)
             if candidate.get('is_uae_national', False):
@@ -468,7 +529,7 @@ class AICandidateMatchingEngineFinal:
                 strengths.append("UAE National")
             
             return {
-                'overall_score': min(score, 100),
+                'overall_score': max(0.0, min(score, 100)),
                 'breakdown': breakdown,
                 'matching_skills': matching_skills,
                 'missing_skills': missing_skills,

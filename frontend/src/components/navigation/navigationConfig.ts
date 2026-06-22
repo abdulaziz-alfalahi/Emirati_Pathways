@@ -249,7 +249,7 @@ export const operationsNavGroup: NavGroup = {
   items: [
     {
       name: 'Career Services',
-      href: '/career-services-crm',
+      href: '/career-services-dashboard',
       description: 'Manage salary benchmarks, startups, internships & gigs',
       icon: DollarSign,
       allowedRoles: ['career_services_operator', 'admin', 'platform_operator']

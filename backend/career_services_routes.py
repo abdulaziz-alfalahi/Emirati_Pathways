@@ -827,7 +827,7 @@ def get_financial_projections():
 # PORTFOLIO
 # ═══════════════════════════════════════════════════════════
 
-@career_services_bp.route('/portfolio/<int:user_id>', methods=['GET'])
+@career_services_bp.route('/portfolio/<user_id>', methods=['GET'])
 def get_portfolio(user_id):
     """Get user's portfolio projects."""
     conn = get_db()
@@ -882,10 +882,38 @@ def add_portfolio_project():
         project_id = cur.fetchone()[0]
         conn.commit()
 
-        # Auto-update skill graph: mark skills as "proven"
+        # Auto-update skill graph: mark skills as "proven" in active profile (candidate_skills) and legacy user_skills
         skills = data.get('skills_demonstrated', [])
         if skills:
             for skill_name in skills:
+                # 1. Sync to active profile candidate_skills table
+                try:
+                    cur.execute("""
+                        SELECT id, level FROM candidate_skills 
+                        WHERE user_id = %s AND LOWER(name) = LOWER(%s)
+                    """, (str(user_id), skill_name.strip()))
+                    existing = cur.fetchone()
+                    if existing:
+                        # Progressive Validation: Upgrade to intermediate if beginner, keep unverified for mentor dashboard
+                        if str(existing[1]).lower() == 'beginner':
+                            cur.execute("""
+                                UPDATE candidate_skills SET level = 'intermediate', is_verified = false
+                                WHERE id = %s
+                            """, (existing[0],))
+                    else:
+                        # Get category from taxonomy if possible
+                        cur.execute("SELECT category FROM skill_taxonomy WHERE LOWER(name) = LOWER(%s) LIMIT 1", (skill_name.strip(),))
+                        tax_row = cur.fetchone()
+                        category = tax_row[0] if tax_row else 'Portfolio'
+                        
+                        cur.execute("""
+                            INSERT INTO candidate_skills (user_id, name, level, category, is_verified)
+                            VALUES (%s, %s, 'intermediate', %s, false)
+                        """, (str(user_id), skill_name.strip(), category))
+                except Exception as inner_e:
+                    logger.warning(f"Failed to sync portfolio skill '{skill_name}' to candidate_skills: {inner_e}")
+
+                # 2. Legacy user_skills table sync (fails silently if table is not migrated)
                 try:
                     cur.execute("""
                         INSERT INTO user_skills (user_id, skill_id, proficiency_level, source)

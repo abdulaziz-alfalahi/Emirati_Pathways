@@ -32,6 +32,7 @@ export interface CandidateProfile {
         notice_period: string;
     };
     assessments: Assessment[];
+    english_proficiency?: string;
 }
 
 export interface Assessment {

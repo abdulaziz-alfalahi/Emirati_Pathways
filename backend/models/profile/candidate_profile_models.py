@@ -18,6 +18,7 @@ class CandidateProfile(db.Model):
     latitude = Column(db.Float)
     longitude = Column(db.Float)
     nationality = Column(String(100), default='UAE')
+    english_proficiency = Column(String(50), default='conversational')
     dob = Column(DateTime, nullable=True)
     
     # Rich Media
@@ -94,6 +95,7 @@ class CandidateProfile(db.Model):
                 'full_name': self.full_name or 'User', # Fallback to 'User' only if empty
                 'headline': self.headline,
                 'bio': self.bio,
+                'english_proficiency': self.english_proficiency or 'conversational',
                 'contact': {
                     'phone': masked_phone,
                     'location': self.location,

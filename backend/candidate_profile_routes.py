@@ -841,6 +841,8 @@ def get_crm_candidates():
                     u.id,
                     u.emirates_id_enc as national_id,
                     u.full_name,
+                    u.first_name,
+                    u.last_name,
                     u.phone,
                     cp.call_status,
                     cp.work_status,
@@ -866,10 +868,18 @@ def get_crm_candidates():
             # Format the output for the frontend
             formatted = []
             for c in candidates:
+                full_name = c['full_name']
+                if not full_name:
+                    first = c['first_name'] or ''
+                    last = c['last_name'] or ''
+                    full_name = f"{first} {last}".strip() or 'Unnamed Candidate'
+                    
                 formatted.append({
                     'id': c['id'],
                     'national_id': c['national_id'],
-                    'full_name': c['full_name'],
+                    'full_name': full_name,
+                    'first_name': c['first_name'],
+                    'last_name': c['last_name'],
                     'phone': c['phone'],
                     'profile': {
                         'call_status': c['call_status'],

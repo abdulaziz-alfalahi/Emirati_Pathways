@@ -309,6 +309,75 @@ def uaepass_profile():
         }), 500
 
 
+def _migrate_user_id(cursor, old_id: str, new_id: str):
+    """
+    Migrate a user's primary key ID from old_id to new_id,
+    cascading the change to all referencing tables manually.
+    """
+    logger.info(f"Migrating user ID from synthetic {old_id} to real {new_id}...")
+    
+    # 1. Fetch the user's original data
+    cursor.execute("SELECT * FROM users WHERE id = %s", (old_id,))
+    user_row = cursor.fetchone()
+    if not user_row:
+        logger.error(f"User {old_id} not found for migration")
+        return
+    user_data = dict(user_row)
+    
+    # 2. Update the old user's unique fields to prevent unique constraint violation
+    temp_suffix = f"_tmp_{secrets.token_hex(4)}"
+    cursor.execute("""
+        UPDATE users SET
+            username = CASE WHEN username IS NOT NULL THEN username || %s ELSE NULL END,
+            email = CASE WHEN email IS NOT NULL THEN email || %s ELSE NULL END,
+            uaepass_uuid = CASE WHEN uaepass_uuid IS NOT NULL THEN uaepass_uuid || %s ELSE NULL END
+        WHERE id = %s
+    """, (temp_suffix, temp_suffix, temp_suffix, old_id))
+    
+    # 3. Insert the new user with new_id and original values
+    columns = list(user_data.keys())
+    placeholders = [f"%({col})s" for col in columns]
+    insert_data = user_data.copy()
+    insert_data['id'] = new_id
+    
+    # Ensure raw values are used for unique fields
+    insert_data['username'] = user_data['username']
+    insert_data['email'] = user_data['email']
+    insert_data['uaepass_uuid'] = user_data['uaepass_uuid']
+    
+    query_insert = f"INSERT INTO users ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+    cursor.execute(query_insert, insert_data)
+    
+    # 4. Get all tables referencing users(id)
+    cursor.execute("""
+        SELECT
+            tc.table_name, 
+            kcu.column_name
+        FROM 
+            information_schema.table_constraints AS tc 
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+              AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name='users';
+    """)
+    fks = cursor.fetchall()
+    
+    # 5. Update referencing tables
+    for tab_name, col_name in fks:
+        try:
+            cursor.execute(f"UPDATE {tab_name} SET {col_name} = %s WHERE {col_name} = %s", (new_id, old_id))
+            logger.info(f"Updated reference in table {tab_name}.{col_name} from {old_id} to {new_id}")
+        except Exception as e:
+            logger.warning(f"Could not update reference in table {tab_name}.{col_name}: {e}")
+        
+    # 6. Delete old user record
+    cursor.execute("DELETE FROM users WHERE id = %s", (old_id,))
+    logger.info(f"Migration from {old_id} to {new_id} completed successfully")
+
+
 def _find_or_create_user(profile: dict) -> tuple:
     """
     Find existing user by uaepass_uuid, or create a new one.
@@ -322,6 +391,11 @@ def _find_or_create_user(profile: dict) -> tuple:
     conn = _get_db()
     conn.autocommit = False
 
+    raw_eid = profile.get('emirates_id', '')
+    eid_encrypted = ''
+    if raw_eid:
+        eid_encrypted = _encrypt_eid(raw_eid)
+
     try:
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -333,9 +407,23 @@ def _find_or_create_user(profile: dict) -> tuple:
         existing = cursor.fetchone()
 
         if existing:
+            user_id_to_update = existing['id']
+            # If existing user has a synthetic ID but we now have a real EID, migrate it!
+            if existing['id'].startswith('7840000') and raw_eid and is_valid_eid(raw_eid):
+                real_eid_pk = strip_eid_hyphens(raw_eid)
+                if existing['id'] != real_eid_pk:
+                    _migrate_user_id(cursor, existing['id'], real_eid_pk)
+                    user_id_to_update = real_eid_pk
+
             # Update profile with latest UAE Pass data
             cursor.execute("""
                 UPDATE users SET
+                    first_name = COALESCE(NULLIF(%s, ''), first_name),
+                    last_name = COALESCE(NULLIF(%s, ''), last_name),
+                    full_name = COALESCE(NULLIF(%s, ''), full_name),
+                    email = COALESCE(NULLIF(%s, ''), email),
+                    phone = COALESCE(NULLIF(%s, ''), phone),
+                    emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
                     fullname_ar = COALESCE(%s, fullname_ar),
                     nationality = COALESCE(%s, nationality),
                     nationality_ar = COALESCE(%s, nationality_ar),
@@ -349,13 +437,19 @@ def _find_or_create_user(profile: dict) -> tuple:
                 WHERE id = %s
                 RETURNING *
             """, (
+                profile.get('first_name'),
+                profile.get('last_name'),
+                profile.get('full_name'),
+                profile.get('email'),
+                profile.get('phone'),
+                eid_encrypted,
                 profile.get('fullname_ar'),
                 profile.get('nationality'),
                 profile.get('nationality_ar'),
                 profile.get('id_type'),
                 profile.get('uaepass_usertype'),
                 profile.get('title_en'),
-                existing['id']
+                user_id_to_update
             ))
 
             updated = cursor.fetchone()
@@ -363,7 +457,7 @@ def _find_or_create_user(profile: dict) -> tuple:
             cursor.close()
             conn.close()
 
-            logger.info(f"Existing user found and updated: {existing['id']}")
+            logger.info(f"Existing user found and updated: {user_id_to_update}")
             return dict(updated), False
 
         # 2. Try to find by email (link existing account)
@@ -375,10 +469,23 @@ def _find_or_create_user(profile: dict) -> tuple:
             email_match = cursor.fetchone()
 
             if email_match:
+                user_id_to_update = email_match['id']
+                # If email-matched user has a synthetic ID but we now have a real EID, migrate it!
+                if email_match['id'].startswith('7840000') and raw_eid and is_valid_eid(raw_eid):
+                    real_eid_pk = strip_eid_hyphens(raw_eid)
+                    if email_match['id'] != real_eid_pk:
+                        _migrate_user_id(cursor, email_match['id'], real_eid_pk)
+                        user_id_to_update = real_eid_pk
+
                 # Link UAE Pass to existing account
                 cursor.execute("""
                     UPDATE users SET
                         uaepass_uuid = %s,
+                        first_name = COALESCE(NULLIF(%s, ''), first_name),
+                        last_name = COALESCE(NULLIF(%s, ''), last_name),
+                        full_name = COALESCE(NULLIF(%s, ''), full_name),
+                        phone = COALESCE(NULLIF(%s, ''), phone),
+                        emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
                         fullname_ar = COALESCE(%s, fullname_ar),
                         nationality_ar = COALESCE(%s, nationality_ar),
                         id_type = COALESCE(%s, id_type),
@@ -392,12 +499,17 @@ def _find_or_create_user(profile: dict) -> tuple:
                     RETURNING *
                 """, (
                     profile['uaepass_uuid'],
+                    profile.get('first_name'),
+                    profile.get('last_name'),
+                    profile.get('full_name'),
+                    profile.get('phone'),
+                    eid_encrypted,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
                     profile.get('uaepass_usertype'),
                     profile.get('title_en'),
-                    email_match['id']
+                    user_id_to_update
                 ))
 
                 linked = cursor.fetchone()
@@ -407,7 +519,7 @@ def _find_or_create_user(profile: dict) -> tuple:
 
                 logger.info(
                     f"Linked UAE Pass to existing user: "
-                    f"{email_match['id']} (email match)"
+                    f"{user_id_to_update} (email match)"
                 )
                 return dict(linked), False
 
@@ -421,10 +533,22 @@ def _find_or_create_user(profile: dict) -> tuple:
             phone_match = cursor.fetchone()
 
             if phone_match:
+                user_id_to_update = phone_match['id']
+                # If phone-matched user has a synthetic ID but we now have a real EID, migrate it!
+                if phone_match['id'].startswith('7840000') and raw_eid and is_valid_eid(raw_eid):
+                    real_eid_pk = strip_eid_hyphens(raw_eid)
+                    if phone_match['id'] != real_eid_pk:
+                        _migrate_user_id(cursor, phone_match['id'], real_eid_pk)
+                        user_id_to_update = real_eid_pk
+
                 cursor.execute("""
                     UPDATE users SET
                         uaepass_uuid = %s,
+                        first_name = COALESCE(NULLIF(%s, ''), first_name),
+                        last_name = COALESCE(NULLIF(%s, ''), last_name),
+                        full_name = COALESCE(NULLIF(%s, ''), full_name),
                         email = COALESCE(NULLIF(%s, ''), email),
+                        emirates_id_enc = COALESCE(NULLIF(%s, ''), emirates_id_enc),
                         fullname_ar = COALESCE(%s, fullname_ar),
                         nationality_ar = COALESCE(%s, nationality_ar),
                         id_type = COALESCE(%s, id_type),
@@ -438,13 +562,17 @@ def _find_or_create_user(profile: dict) -> tuple:
                     RETURNING *
                 """, (
                     profile['uaepass_uuid'],
-                    profile.get('email', ''),
+                    profile.get('first_name'),
+                    profile.get('last_name'),
+                    profile.get('full_name'),
+                    profile.get('email'),
+                    eid_encrypted,
                     profile.get('fullname_ar'),
                     profile.get('nationality_ar'),
                     profile.get('id_type'),
                     profile.get('uaepass_usertype'),
                     profile.get('title_en'),
-                    phone_match['id']
+                    user_id_to_update
                 ))
 
                 linked = cursor.fetchone()
@@ -454,13 +582,12 @@ def _find_or_create_user(profile: dict) -> tuple:
 
                 logger.info(
                     f"Linked UAE Pass to existing user: "
-                    f"{phone_match['id']} (phone match)"
+                    f"{user_id_to_update} (phone match)"
                 )
                 return dict(linked), False
 
         # 4. Create new user
         # Determine the user's EID for the primary key
-        raw_eid = profile.get('emirates_id', '')
         eid_for_pk = ''
         if raw_eid and is_valid_eid(raw_eid):
             eid_for_pk = strip_eid_hyphens(raw_eid)

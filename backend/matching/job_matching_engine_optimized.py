@@ -280,7 +280,8 @@ class EnhancedJobMatchingEngine:
             'skills': processed_skills,
             'languages': cv_data.get('languages', []),
             'certifications': cv_data.get('certifications', []),
-            'nationality': cv_data.get('nationality', '')
+            'nationality': cv_data.get('nationality', ''),
+            'preferences': cv_data.get('preferences', {})
         }
     
     def _extract_jd_info(self, jd_data: Dict) -> Dict:
@@ -310,7 +311,8 @@ class EnhancedJobMatchingEngine:
             'responsibilities': jd_data.get('responsibilities', []),
             'benefits': jd_data.get('benefits', []),
             'industry': jd_data.get('industry', ''),
-            'employment_type': jd_data.get('basic_info', {}).get('job_type') or jd_data.get('employment_type', 'full-time')
+            'employment_type': jd_data.get('basic_info', {}).get('job_type') or jd_data.get('employment_type', 'full-time'),
+            'compensation': jd_data.get('compensation', {})
         }
     
     def _gemini_analysis(self, cv_info: Dict, jd_info: Dict) -> Dict:
@@ -343,28 +345,47 @@ class EnhancedJobMatchingEngine:
     
     def _create_gemini_prompt(self, cv_info: Dict, jd_info: Dict) -> str:
         """Create optimized prompt for AI Engine PRO"""
+        prefs = cv_info.get('preferences', {})
+        prefs_str = ""
+        if prefs:
+            prefs_str = f"""
+- Target Roles: {prefs.get('target_roles', [])}
+- Expected Salary Range: {prefs.get('expected_salary_range', '')}
+- Notice Period: {prefs.get('notice_period', '')}
+- Preferred Location: {prefs.get('preferred_location', '')}
+- Willing to Relocate: {prefs.get('willing_to_relocate', False)}
+"""
+        compensation = jd_info.get('compensation', {})
+        comp_str = ""
+        if compensation:
+            comp_str = f"""
+- Monthly Salary Range: {compensation.get('salary_min', 'N/A')} - {compensation.get('salary_max', 'N/A')} {compensation.get('salary_currency', 'AED')}
+"""
         return f"""
-Analyze this CV-Job match for the UAE job market with cultural and professional context:
+Analyze this CV-Job match for the UAE job market with cultural and professional context. You must evaluate the candidate's career preferences and salary expectations against the job budget and location constraints:
 
 CV CANDIDATE:
 - Name: {cv_info['name']}
 - Location: {cv_info['location']}
 - Experience: {json.dumps(cv_info['experience'][:3], indent=2)}
 - Skills: {json.dumps(cv_info['skills'], indent=2)}
-- Languages: {cv_info['languages']}
+- Languages: {cv_info['languages']}{f'''
+- Preferences (Career Compass):{prefs_str}''' if prefs_str else ''}
 
 JOB POSITION:
 - Title: {jd_info['title']}
 - Company: {jd_info['company']}
 - Location: {jd_info['location']}
-- Requirements: {json.dumps(jd_info['requirements'], indent=2)}
+- Requirements: {json.dumps(jd_info['requirements'], indent=2)}{f'''
+- Compensation/Salary:{comp_str}''' if comp_str else ''}
 
 UAE CONTEXT CONSIDERATIONS:
 - Cultural fit for UAE business environment
-- Arabic language importance for this role
+- English language importance for this private sector role (scoring should prioritize candidate's English proficiency as they are native Arabic speakers)
 - Local market experience value
 - Emirate-specific preferences
 - Industry alignment with UAE Vision 2071
+- Salary/Location preference alignment (raise a gap if candidate expected salary exceeds job budget maximum, or if candidate is not willing to relocate and locations differ)
 
 Provide analysis in JSON format:
 {{
@@ -564,7 +585,7 @@ Provide analysis in JSON format:
         
         # Language recommendations
         if scores.get('language_compatibility_score', 0) < 80:
-            recommendations.append("Improve Arabic language proficiency for UAE market")
+            recommendations.append("Improve English language proficiency for UAE private sector")
         
         # Location recommendations
         if scores.get('location_preference_score', 0) < 90:

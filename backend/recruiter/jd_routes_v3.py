@@ -127,28 +127,35 @@ def match_candidates(jd_id):
         
         query = """
             SELECT 
-                id as candidate_id,
-                id as user_id,
-                first_name,
-                last_name,
-                email,
-                phone,
-                emirate,
-                nationality,
-                is_uae_national,
-                education_level,
-                experience_years,
-                job_title as current_position,
-                company as current_company,
+                u.id as candidate_id,
+                u.id as user_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.phone,
+                u.emirate,
+                u.nationality,
+                u.is_uae_national,
+                u.education_level,
+                u.experience_years,
+                u.job_title as current_position,
+                u.company as current_company,
                 'open_to_opportunities' as employment_status,
-                skills,
-                preferred_salary_min,
-                preferred_salary_max,
+                u.skills,
+                u.preferred_salary_min,
+                u.preferred_salary_max,
                 NULL as cv_url,
-                NULL as linkedin_url
-            FROM users
-            WHERE role = 'candidate'
-                AND is_active = true
+                NULL as linkedin_url,
+                cp.target_roles as compass_target_roles,
+                cp.willing_to_relocate as compass_willing_to_relocate,
+                cp.expected_salary_range as compass_expected_salary_range,
+                cp.notice_period as compass_notice_period,
+                cp.location as compass_preferred_location,
+                cp.english_proficiency
+            FROM users u
+            LEFT JOIN candidate_profiles cp ON u.id::varchar = cp.user_id
+            WHERE u.role = 'candidate'
+                AND u.is_active = true
             LIMIT 100
         """
         cur.execute(query)
