@@ -68,14 +68,33 @@ export const EducationPathwayLayout: React.FC<EducationPathwayLayoutProps> = ({
   academicYear,
   embedded = false,
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [tabFade, setTabFade] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+
+  // Extract initial values from query parameters if present
+  const queryParams = React.useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const initialTab = queryParams.get('tab') || defaultTab;
+  const initialSearch = queryParams.get('search') || '';
+
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [tabFade, setTabFade] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const tabBarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
+
+  // Sync state if query parameters change
+  useEffect(() => {
+    const tab = queryParams.get('tab');
+    if (tab && tabs.some(t => t.id === tab)) {
+      setActiveTab(tab);
+    }
+    const search = queryParams.get('search');
+    if (search !== null) {
+      setSearchQuery(search);
+    }
+  }, [queryParams, tabs]);
+
 
   /* Tab transition: brief fade-in on tab change */
   const handleTabChange = (tabId: string) => {
