@@ -181,6 +181,7 @@ interface JDData {
     latitude?: number | null;
     longitude?: number | null;
     remote_option: boolean;
+    application_deadline?: string;
   };
   description: string;
   description_arabic?: string;
@@ -274,18 +275,30 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       console.log('Loading initial data:', initialData);
       console.log('Requirements from initial data:', initialData.requirements);
       return {
-        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
-        basic_info: initialData.basic_info || {
+        jd_id: (initialJdId && initialJdId !== 'undefined') ? initialJdId : ((initialData.metadata?.jd_id && initialData.metadata?.jd_id !== 'undefined') ? initialData.metadata.jd_id : ((initialData.jd_id && initialData.jd_id !== 'undefined') ? initialData.jd_id : undefined)),
+        basic_info: initialData.basic_info ? {
+          title: initialData.basic_info.title || '',
+          title_arabic: initialData.basic_info.title_arabic || '',
+          department: initialData.basic_info.department || '',
+          job_type: initialData.basic_info.job_type || 'full_time',
+          job_level: initialData.basic_info.job_level || 'mid',
+          emirate: initialData.basic_info.emirate || '',
+          city: initialData.basic_info.city || '',
+          latitude: initialData.basic_info.latitude ?? null,
+          longitude: initialData.basic_info.longitude ?? null,
+          remote_option: !!initialData.basic_info.remote_option,
+          application_deadline: initialData.basic_info.application_deadline || ''
+        } : {
           title: '',
           department: '',
           job_type: 'full_time',
           job_level: 'mid',
           emirate: '',
-
           city: '',
           latitude: null,
           longitude: null,
-          remote_option: false
+          remote_option: false,
+          application_deadline: ''
         },
         description: initialData.description || '',
         description_arabic: initialData.description_arabic || '',
@@ -304,11 +317,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         job_type: 'full_time',
         job_level: 'mid',
         emirate: '',
-
         city: '',
         latitude: null,
         longitude: null,
-        remote_option: false
+        remote_option: false,
+        application_deadline: ''
       },
       description: '',
       requirements: [],
@@ -331,10 +344,18 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     if (initialData) {
       console.log('Updating with loaded data:', initialData);
 
+      const cleanInitialJdId = initialJdId && initialJdId !== 'undefined' ? initialJdId : undefined;
+      const cleanDataJdId = initialData.jd_id && initialData.jd_id !== 'undefined' ? initialData.jd_id : undefined;
+      const cleanMetadataJdId = initialData.metadata?.jd_id && initialData.metadata?.jd_id !== 'undefined' ? initialData.metadata?.jd_id : undefined;
+
       setJDData(prev => ({
         ...prev,
-        jd_id: initialJdId || initialData.metadata?.jd_id || initialData.jd_id,
-        basic_info: initialData.basic_info || prev.basic_info,
+        jd_id: cleanInitialJdId || cleanMetadataJdId || cleanDataJdId || prev.jd_id,
+        basic_info: initialData.basic_info ? {
+          ...prev.basic_info,
+          ...initialData.basic_info,
+          application_deadline: initialData.basic_info.application_deadline || prev.basic_info.application_deadline || ''
+        } : prev.basic_info,
         description: initialData.description || prev.description,
         description_arabic: initialData.description_arabic || prev.description_arabic,
         requirements: normalizeRequirements(initialData.requirements),
@@ -364,7 +385,10 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
 
       // Determine effective JD ID (Prop > URL > State)
-      const effectiveId = initialJdId || urlJdId || jdData.jd_id;
+      const cleanUrlJdId = urlJdId && urlJdId !== 'undefined' ? urlJdId : undefined;
+      const cleanInitialJdId = initialJdId && initialJdId !== 'undefined' ? initialJdId : undefined;
+      const cleanStateJdId = jdData.jd_id && jdData.jd_id !== 'undefined' ? jdData.jd_id : undefined;
+      const effectiveId = cleanInitialJdId || cleanUrlJdId || cleanStateJdId;
 
       if (effectiveId) {
         // If we have an ID but no data (and it's different from current), fetch it
@@ -377,17 +401,20 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               console.log('Fetched JD Data:', fetchedData);
               setJDData({
                 jd_id: effectiveId,
-                basic_info: fetchedData.basic_info || {
+                basic_info: fetchedData.basic_info ? {
+                  ...fetchedData.basic_info,
+                  application_deadline: fetchedData.basic_info.application_deadline || ''
+                } : {
                   title: '',
                   department: '',
                   job_type: 'full_time',
                   job_level: 'mid',
                   emirate: '',
-
                   city: '',
                   latitude: null,
                   longitude: null,
-                  remote_option: false
+                  remote_option: false,
+                  application_deadline: ''
                 },
                 description: fetchedData.description || '',
                 description_arabic: fetchedData.description_arabic || '',
@@ -409,7 +436,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
 
       // If no ID found anywhere, Create a new JD
-      if (!initialData && !urlJdId) {
+      if (!initialData && !cleanUrlJdId) {
         try {
           const response = await restClient.post('/api/recruiter/jd/create', {
             recruiter_id: recruiterId,
@@ -891,6 +918,19 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           })}
           label="Pin exact location on map"
           height="250px"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="application_deadline">Closing Date / Application Deadline</Label>
+        <Input
+          id="application_deadline"
+          type="date"
+          value={jdData.basic_info.application_deadline || ''}
+          onChange={(e) => setJDData({
+            ...jdData,
+            basic_info: { ...jdData.basic_info, application_deadline: e.target.value }
+          })}
         />
       </div>
 

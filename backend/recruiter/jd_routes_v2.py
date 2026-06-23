@@ -91,7 +91,8 @@ def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
             'city': jd_dict.get('city', ''),
             'latitude': jd_dict.get('latitude'),
             'longitude': jd_dict.get('longitude'),
-            'remote_option': jd_dict.get('remote_option', False)
+            'remote_option': jd_dict.get('remote_option', False),
+            'application_deadline': jd_dict.get('application_deadline').isoformat() if jd_dict.get('application_deadline') else None
         }
         
         # Build JD data structure expected by engine
@@ -148,6 +149,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 jd_id VARCHAR(100) UNIQUE NOT NULL,
                 recruiter_id VARCHAR(100) NOT NULL,
                 company_id VARCHAR(100) NOT NULL,
+                created_by VARCHAR(100),
                 title VARCHAR(500) NOT NULL,
                 title_arabic VARCHAR(500),
                 department VARCHAR(200),
@@ -158,6 +160,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 latitude DOUBLE PRECISION,
                 longitude DOUBLE PRECISION,
                 remote_option BOOLEAN DEFAULT FALSE,
+                application_deadline DATE,
                 description TEXT,
                 description_arabic TEXT,
                 requirements JSONB,
@@ -185,6 +188,20 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
         recruiter_id = metadata.get('recruiter_id', 'unknown')
         company_id = metadata.get('company_id', 'unknown')
         
+        # Parse and normalize application_deadline
+        deadline_str = basic_info.get('application_deadline')
+        deadline_val = None
+        if deadline_str and str(deadline_str).strip():
+            try:
+                deadline_cleaned = str(deadline_str).strip()
+                if 'T' in deadline_cleaned:
+                    deadline_val = datetime.fromisoformat(deadline_cleaned).date()
+                else:
+                    deadline_val = datetime.strptime(deadline_cleaned, '%Y-%m-%d').date()
+            except ValueError:
+                logger.warning(f"Invalid application_deadline format: {deadline_str}")
+                deadline_val = None
+
         # Check if JD already exists
         cur.execute("SELECT id FROM job_postings WHERE jd_id = %s", (jd_id,))
         existing = cur.fetchone()
@@ -203,6 +220,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     latitude = %s,
                     longitude = %s,
                     remote_option = %s,
+                    application_deadline = %s,
                     description = %s,
                     description_arabic = %s,
                     requirements = %s,
@@ -229,6 +247,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                deadline_val,
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
                 json.dumps(jd_data.get('requirements', [])),
@@ -250,12 +269,13 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                     jd_id, recruiter_id, company_id, created_by,
                     title, title_arabic, department, job_type, job_level,
                     emirate, city, latitude, longitude, remote_option,
+                    application_deadline,
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
                     status, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -273,6 +293,7 @@ def _save_jd_to_db(jd_id: str, jd_data: Dict[str, Any], status: str = 'draft') -
                 basic_info.get('latitude'),
                 basic_info.get('longitude'),
                 basic_info.get('remote_option', False),
+                deadline_val,
                 jd_data.get('description', ''),
                 jd_data.get('description_arabic', ''),
                 json.dumps(jd_data.get('requirements', [])),
@@ -1213,6 +1234,10 @@ def save_jd(jd_id):
         basic_info = jd_data.get('basic_info', {})
         metadata = jd_data.get('metadata', {})
         
+        app_deadline = basic_info.get('application_deadline')
+        if not app_deadline or app_deadline == '':
+            app_deadline = None
+        
         # Get recruiter_id and company_id from metadata or request data
         recruiter_id = metadata.get('recruiter_id') or data.get('recruiter_id')
         company_id = metadata.get('company_id') or data.get('company_id')
@@ -1302,6 +1327,7 @@ def save_jd(jd_id):
                     status = %s,
                     recruiter_id = %s,
                     company_id = %s,
+                    application_deadline = %s,
                     updated_at = CURRENT_TIMESTAMP,
                     published_at = CASE WHEN %s = 'published' AND published_at IS NULL 
                                        THEN CURRENT_TIMESTAMP 
@@ -1328,6 +1354,7 @@ def save_jd(jd_id):
                 status,
                 recruiter_id,
                 company_id,
+                app_deadline,
                 status,
                 jd_id
             ))
@@ -1343,9 +1370,9 @@ def save_jd(jd_id):
                     description, description_arabic,
                     requirements, responsibilities, benefits,
                     compensation, application_process, metadata,
-                    status, published_at
+                    status, application_deadline, published_at
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s = 'published' THEN CURRENT_TIMESTAMP ELSE NULL END
                 )
             """, (
@@ -1372,6 +1399,7 @@ def save_jd(jd_id):
                 json.dumps(jd_data.get('application_process', {})),
                 json.dumps(metadata),
                 status,
+                app_deadline,
                 status
             ))
             logger.info(f"Inserted new JD {jd_id} with status: {status}, recruiter_id: {recruiter_id}, location: {location}")
