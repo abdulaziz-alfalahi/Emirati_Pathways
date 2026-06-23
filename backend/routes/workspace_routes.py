@@ -822,3 +822,96 @@ def search_candidates(company_id):
     except Exception as e:
         conn.close()
         return jsonify({"error": str(e)}), 500
+
+
+# ─── WORKSPACE CAREER PROGRESSION ────────────────────────────────────────────
+
+@workspace_bp.route('/<company_id>/progression', methods=['GET'])
+@require_workspace_access('workspace.view', jwt_optional=True)
+def get_workspace_progression(company_id):
+    """Get career progression details for a company workspace."""
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT company_id, overview, overview_ar, 
+                   career_path, promotion_criteria, emiratisation_support
+            FROM company_career_progressions
+            WHERE company_id = %s
+        """, (company_id,))
+        row = cur.fetchone()
+        cur.close(); conn.close()
+
+        if not row:
+            # Return empty skeleton
+            return jsonify({
+                "progression": {
+                    "company_id": company_id,
+                    "overview": "",
+                    "overview_ar": "",
+                    "career_path": [],
+                    "promotion_criteria": [],
+                    "emiratisation_support": []
+                }
+            }), 200
+
+        res = dict(row)
+        for field in ('career_path', 'promotion_criteria', 'emiratisation_support'):
+            if isinstance(res.get(field), str):
+                try:
+                    res[field] = json.loads(res[field])
+                except:
+                    pass
+        return jsonify({"progression": res}), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@workspace_bp.route('/<company_id>/progression', methods=['PUT'])
+@require_workspace_access('workspace.view')
+def update_workspace_progression(company_id):
+    """Update career progression details for a company workspace."""
+    role = g.company_context['role']
+    if role not in ('admin', 'employer_admin', 'growth_operator'):
+        return jsonify({"error": "Access denied: requires admin or employer_admin role"}), 403
+
+    data = request.get_json(silent=True) or {}
+    overview = data.get('overview', '')
+    overview_ar = data.get('overview_ar', '')
+    career_path = data.get('career_path', [])
+    promotion_criteria = data.get('promotion_criteria', [])
+    emiratisation_support = data.get('emiratisation_support', [])
+
+    conn = get_db()
+    if not conn:
+        return jsonify({"error": "Database unavailable"}), 503
+    try:
+        cur = conn.cursor()
+        
+        career_path_json = json.dumps(career_path)
+        promo_json = json.dumps(promotion_criteria)
+        emiratisation_json = json.dumps(emiratisation_support)
+
+        cur.execute("""
+            INSERT INTO company_career_progressions 
+                (company_id, overview, overview_ar, career_path, promotion_criteria, emiratisation_support)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (company_id) DO UPDATE SET
+                overview = EXCLUDED.overview,
+                overview_ar = EXCLUDED.overview_ar,
+                career_path = EXCLUDED.career_path,
+                promotion_criteria = EXCLUDED.promotion_criteria,
+                emiratisation_support = EXCLUDED.emiratisation_support,
+                updated_at = NOW()
+        """, (company_id, overview, overview_ar, career_path_json, promo_json, emiratisation_json))
+        
+        conn.commit()
+        cur.close(); conn.close()
+        return jsonify({"success": True, "message": "Career progression updated successfully"}), 200
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({"error": str(e)}), 500
+

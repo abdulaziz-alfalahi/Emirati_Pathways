@@ -40,6 +40,22 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 env_path = os.path.join(script_dir, '.env')
 load_dotenv(env_path)
 
+# Automatically compile DATABASE_URL from individual DB_ connection details
+# to prevent connection failures in endpoints using the DATABASE_URL environment fallback.
+import urllib.parse
+if not os.environ.get('DATABASE_URL'):
+    db_user = os.environ.get('DB_USER', 'emirati_user')
+    db_pass = os.environ.get('DB_PASSWORD', 'emirati_secure_password')
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = os.environ.get('DB_PORT', '5432')
+    db_name = os.environ.get('DB_NAME', 'emirati_journey')
+    
+    encoded_user = urllib.parse.quote_plus(db_user)
+    encoded_pass = urllib.parse.quote_plus(db_pass)
+    
+    database_url = f"postgresql://{encoded_user}:{encoded_pass}@{db_host}:{db_port}/{db_name}"
+    os.environ['DATABASE_URL'] = database_url
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
