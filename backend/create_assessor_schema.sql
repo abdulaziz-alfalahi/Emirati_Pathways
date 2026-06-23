@@ -220,7 +220,7 @@ CREATE TABLE IF NOT EXISTS assessment_feedback (
     feedback_provider INTEGER REFERENCES users(id),
     overall_rating INTEGER CHECK (overall_rating BETWEEN 1 AND 5),
     process_clarity_rating INTEGER CHECK (process_clarity_rating BETWEEN 1 AND 5),
-    fairness_rating INTEGER CHECK (fairness_rating RATING BETWEEN 1 AND 5),
+    fairness_rating INTEGER CHECK (fairness_rating BETWEEN 1 AND 5),
     technical_quality_rating INTEGER CHECK (technical_quality_rating BETWEEN 1 AND 5),
     detailed_feedback TEXT,
     suggestions_for_improvement TEXT,

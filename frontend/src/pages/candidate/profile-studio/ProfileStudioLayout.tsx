@@ -181,6 +181,13 @@ export const ProfileStudioLayout = ({ children }: { children: React.ReactNode })
                             active={currentPath.includes('skills')}
                             isRTL={isRTL}
                         />
+                        <SidebarItem
+                            icon={Award}
+                            label={t('Assessment Centers', 'مراكز التقييم')}
+                            path="/candidate/profile/assessment-centers"
+                            active={currentPath.includes('assessment-centers')}
+                            isRTL={isRTL}
+                        />
                         <div className="w-full h-px bg-border my-2"></div>
                         <SidebarItem
                             icon={Award}

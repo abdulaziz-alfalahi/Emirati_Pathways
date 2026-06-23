@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import Messages from '@/components/recruiter/Messages';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { restClient } from '@/utils/api';
 import {
   ClipboardCheck,
   Users,
@@ -46,7 +47,8 @@ import {
   UserCheck,
   AlertCircle,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Loader2
 } from 'lucide-react';
 
 interface AssessorData {
@@ -163,6 +165,92 @@ const AssessorDashboard: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // State variables for candidates/applications
+  const [applications, setApplications] = useState<any[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [schedulingApp, setSchedulingApp] = useState<any | null>(null);
+  const [gradingApp, setGradingApp] = useState<any | null>(null);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [gradeScore, setGradeScore] = useState(80);
+  const [gradeFeedback, setGradeFeedback] = useState('');
+  const [skillsInput, setSkillsInput] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  const loadApplications = async () => {
+    setAppsLoading(true);
+    setActionError(null);
+    try {
+      const res = await restClient.get('/api/assessor/applications');
+      if (res.data?.success) {
+        setApplications(res.data.applications || []);
+      } else {
+        setActionError(res.data?.message || "Failed to fetch applications");
+      }
+    } catch (err: any) {
+      console.error("Error loading assessor applications:", err);
+      setActionError(err.response?.data?.message || err.message || "Failed to fetch applications");
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === 'candidates') {
+      loadApplications();
+    }
+  }, [activeTab]);
+
+  const handleSchedule = async (appId: string) => {
+    if (!scheduledDate) return;
+    try {
+      setActionError(null);
+      setActionSuccess(null);
+      const res = await restClient.put(`/api/assessor/applications/${appId}/schedule`, {
+        scheduled_at: new Date(scheduledDate).toISOString()
+      });
+      if (res.data?.success) {
+        setActionSuccess(t("Candidate scheduled successfully!", "تم جدولة المرشح بنجاح!"));
+        setSchedulingApp(null);
+        setScheduledDate('');
+        loadApplications();
+      } else {
+        setActionError(res.data?.message || "Failed to schedule candidate");
+      }
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || err.message || "Failed to schedule candidate");
+    }
+  };
+
+  const handleComplete = async (appId: string) => {
+    try {
+      setActionError(null);
+      setActionSuccess(null);
+      const skillsArray = skillsInput
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      const res = await restClient.post(`/api/assessor/applications/${appId}/complete`, {
+        score: gradeScore,
+        feedback: gradeFeedback,
+        skills_to_verify: skillsArray
+      });
+      if (res.data?.success) {
+        setActionSuccess(t("Evaluation completed and skills synced to portfolio!", "تم إكمال التقييم ومزامنة المهارات مع المحفظة!"));
+        setGradingApp(null);
+        setGradeFeedback('');
+        setSkillsInput('');
+        setGradeScore(80);
+        loadApplications();
+      } else {
+        setActionError(res.data?.message || "Failed to complete evaluation");
+      }
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || err.message || "Failed to complete evaluation");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50 font-dubai" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -468,24 +556,279 @@ const AssessorDashboard: React.FC = () => {
 
             {/* Candidates Tab */}
             <TabsContent value="candidates" className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardHeader>
-                  <CardTitle className="font-dubai-bold text-slate-900">{t('Candidate Management', 'إدارة المرشحين')}</CardTitle>
-                  <CardDescription className="font-dubai-medium text-slate-600">
-                    {t('Track and manage candidate assessments', 'تتبع وإدارة تقييمات المرشحين')}
-                  </CardDescription>
+              {actionError && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <AlertCircle size={16} />
+                  {actionError}
+                </div>
+              )}
+              {actionSuccess && (
+                <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <CheckCircle size={16} />
+                  {actionSuccess}
+                </div>
+              )}
+
+              <Card className="bg-white shadow-sm border border-slate-100">
+                <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4 pb-6">
+                  <div>
+                    <CardTitle className="font-dubai-bold text-slate-900 text-xl">
+                      {t('Assessment Applications', 'طلبات التقييم')}
+                    </CardTitle>
+                    <CardDescription className="font-dubai-medium text-slate-500 mt-1">
+                      {t('Manage applications, schedule sessions, and grade candidates to verify skills.', 'إدارة الطلبات، وجدولة الجلسات، وتقييم المرشحين للتحقق من المهارات.')}
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={loadApplications} 
+                    disabled={appsLoading} 
+                    variant="outline" 
+                    className="font-dubai-medium border-slate-200 text-slate-700 hover:bg-slate-50"
+                  >
+                    {appsLoading ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
+                    {t('Refresh List', 'تحديث القائمة')}
+                  </Button>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-12">
-                    <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('Candidate Management', 'إدارة المرشحين')}</h3>
-                    <p className="text-slate-500 mb-6 font-dubai-medium">{t('Track candidate progress and assessment results', 'تتبع تقدم المرشحين ونتائج التقييم')}</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-dubai-medium">
-                      {t('View All Candidates', 'عرض جميع المرشحين')}
-                    </Button>
-                  </div>
+                  {appsLoading && applications.length === 0 ? (
+                    <div className="flex justify-center items-center py-12">
+                      <Loader2 className="animate-spin text-teal-600" size={36} />
+                    </div>
+                  ) : applications.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-dubai-bold text-slate-900 mb-2">{t('No Applications Found', 'لم يتم العثور على طلبات')}</h3>
+                      <p className="text-slate-500 font-dubai-medium max-w-md mx-auto">
+                        {t('Candidates will appear here once they apply to assessments offered by your center.', 'سيظهر المرشحون هنا بمجرد تقديمهم للتقييمات التي يقدمها مركزك.')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse" dir={isRTL ? 'rtl' : 'ltr'}>
+                        <thead>
+                          <tr className="border-b border-slate-100 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            <th className="py-3 px-4 text-slate-500">{t('Candidate', 'المرشح')}</th>
+                            <th className="py-3 px-4 text-slate-500">{t('Assessment', 'التقييم')}</th>
+                            <th className="py-3 px-4 text-slate-500">{t('Date Applied', 'تاريخ التقديم')}</th>
+                            <th className="py-3 px-4 text-slate-500">{t('Status', 'الحالة')}</th>
+                            <th className="py-3 px-4 text-slate-500 text-right">{t('Actions', 'الإجراءات')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {applications.map((app) => (
+                            <tr key={app.id} className="hover:bg-slate-50/50 transition-colors text-sm">
+                              <td className="py-4 px-4">
+                                <div className="font-semibold text-slate-900">{app.candidate_name}</div>
+                                <div className="text-xs text-slate-500">{app.candidate_email}</div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="font-medium text-slate-900">{app.assessment_name}</div>
+                                <div className="text-xs text-slate-500">{app.duration_minutes} {t('mins', 'دقيقة')}</div>
+                              </td>
+                              <td className="py-4 px-4 text-slate-600">
+                                {new Date(app.applied_at).toLocaleDateString(isRTL ? 'ar-AE' : 'en-US')}
+                              </td>
+                              <td className="py-4 px-4">
+                                {app.status === 'completed' && (
+                                  <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {t('Completed', 'مكتمل')}
+                                  </Badge>
+                                )}
+                                {app.status === 'scheduled' && (
+                                  <div className="space-y-1">
+                                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200">
+                                      {t('Scheduled', 'مجدول')}
+                                    </Badge>
+                                    <div className="text-[10px] text-slate-500 font-medium">
+                                      {new Date(app.scheduled_at).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                )}
+                                {app.status === 'applied' && (
+                                  <Badge className="bg-amber-50 text-amber-700 border border-amber-200">
+                                    {t('Applied', 'تم التقديم')}
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex gap-2 justify-end">
+                                  {app.status === 'applied' && (
+                                    <Button
+                                      onClick={() => {
+                                        setSchedulingApp(app);
+                                        setScheduledDate('');
+                                      }}
+                                      size="sm"
+                                      className="bg-blue-600 hover:bg-blue-700 text-white font-dubai-medium text-xs h-8"
+                                    >
+                                      {t('Schedule', 'جدولة')}
+                                    </Button>
+                                  )}
+                                  {app.status === 'scheduled' && (
+                                    <Button
+                                      onClick={() => {
+                                        setGradingApp(app);
+                                        setGradeScore(80);
+                                        setGradeFeedback('');
+                                        // Auto-populate default suggested skills based on assessment templates
+                                        const defaultSkills = app.assessment_name.includes('Python')
+                                          ? 'Python, Software Engineering'
+                                          : 'Strategic Leadership, Communication';
+                                        setSkillsInput(defaultSkills);
+                                      }}
+                                      size="sm"
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium text-xs h-8"
+                                    >
+                                      {t('Grade & Sync', 'تقييم ومزامنة')}
+                                    </Button>
+                                  )}
+                                  {app.status === 'completed' && app.notes && (
+                                    <div className="text-xs text-slate-500 italic max-w-xs truncate text-right">
+                                      {app.notes}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {/* Schedule Modal */}
+              {schedulingApp && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full border border-slate-100 p-6 space-y-6 animate-in zoom-in-95 duration-200">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {t('Schedule Assessment', 'جدولة التقييم')}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {t('Set the date and time for candidate: ', 'حدد موعد وتاريخ تقييم المرشح: ')}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{schedulingApp.candidate_name}</span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                          {t('Date & Time', 'تاريخ ووقت الموعد')}
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          className="w-full border-slate-200 dark:border-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      <Button
+                        variant="outline"
+                        onClick={() => setSchedulingApp(null)}
+                        className="font-dubai-medium text-xs border-slate-200 text-slate-700"
+                      >
+                        {t('Cancel', 'إلغاء')}
+                      </Button>
+                      <Button
+                        onClick={() => handleSchedule(schedulingApp.id)}
+                        disabled={!scheduledDate}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-dubai-medium text-xs"
+                      >
+                        {t('Confirm Schedule', 'تأكيد الموعد')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Grade / Complete Modal */}
+              {gradingApp && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-lg w-full border border-slate-100 p-6 space-y-6 animate-in zoom-in-95 duration-200">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {t('Complete & Grade Assessment', 'إكمال وتقييم الاختبار')}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {t('Submit final evaluation for: ', 'تقديم التقييم النهائي لـ: ')}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{gradingApp.candidate_name}</span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Score Input */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            {t('Pass / Final Score (0 - 100)', 'الدرجة النهائية (0 - 100)')}
+                          </label>
+                          <span className="text-sm font-bold text-teal-600">{gradeScore}%</span>
+                        </div>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={gradeScore}
+                          onChange={(e) => setGradeScore(parseInt(e.target.value) || 0)}
+                          className="w-full border-slate-200 dark:border-slate-800"
+                        />
+                      </div>
+
+                      {/* Skills to Verify */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">
+                          {t('Skills to Verify & Sync to Portfolio', 'المهارات المراد إثباتها ومزامنتها في المحفظة')}
+                        </label>
+                        <Input
+                          type="text"
+                          placeholder="e.g. Python, SQL, Docker"
+                          value={skillsInput}
+                          onChange={(e) => setSkillsInput(e.target.value)}
+                          className="w-full border-slate-200 dark:border-slate-800"
+                        />
+                        <span className="text-[10px] text-slate-400 block mt-1">
+                          {t('Enter skills separated by commas. These will automatically appear as "Verified" badges in the candidate portfolio.', 'أدخل المهارات مفصولة بفواصل. ستظهر تلقائياً كـ "شارة موثقة" في محفظة المرشح.')}
+                        </span>
+                      </div>
+
+                      {/* Feedback Notes */}
+                      <div className="space-y-1">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                          {t('Feedback & Notes', 'التغذية الراجعة والملاحظات')}
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={gradeFeedback}
+                          onChange={(e) => setGradeFeedback(e.target.value)}
+                          placeholder={t('Write constructive evaluation notes here...', 'اكتب ملاحظات التقييم هنا...')}
+                          className="w-full text-sm rounded-lg border border-slate-200 dark:border-slate-800 p-2.5 bg-transparent focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                      <Button
+                        variant="outline"
+                        onClick={() => setGradingApp(null)}
+                        className="font-dubai-medium text-xs border-slate-200 text-slate-700"
+                      >
+                        {t('Cancel', 'إلغاء')}
+                      </Button>
+                      <Button
+                        onClick={() => handleComplete(gradingApp.id)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium text-xs"
+                      >
+                        {t('Submit Grade & Verify Skills', 'تقديم التقييم وتوثيق المهارات')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             {/* Performance Tab */}

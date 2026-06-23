@@ -119,6 +119,28 @@ def trigger_analysis(session_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@interview_bp.route('/assessors', methods=['GET'])
+@jwt_required()
+def get_assessors_for_panel():
+    try:
+        from backend.db import get_db_connection
+        from psycopg2.extras import RealDictCursor
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT u.id, u.full_name, u.email, u.role, ap.specialization, ap.certification_level
+            FROM users u
+            LEFT JOIN assessor_profiles ap ON u.id = ap.user_id::varchar
+            WHERE u.role = 'assessor' OR ap.id IS NOT NULL OR u.email LIKE '%recruiter%' OR u.role = 'recruiter'
+        """)
+        assessors = [dict(row) for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return jsonify({'success': True, 'data': assessors}), 200
+    except Exception as e:
+        logger.error(f"Error listing assessors for panel: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # Admin Monitoring Route
 @interview_bp.route('/monitor/active', methods=['GET'])
 @jwt_required()

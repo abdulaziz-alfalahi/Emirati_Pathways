@@ -115,6 +115,7 @@ const HRDashboard: React.FC = () => {
 
   // Team Member Selection for Interviews
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [assessorsList, setAssessorsList] = useState<any[]>([]);
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
@@ -170,6 +171,17 @@ const HRDashboard: React.FC = () => {
       }
     };
 
+    const fetchAssessors = async () => {
+      try {
+        const response = await restClient.get('/api/interviews/assessors');
+        if (response.data.success) {
+          setAssessorsList(response.data.data || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch assessors", error);
+      }
+    };
+
     const fetchJobs = async () => {
       try {
         const token = getAuthToken();
@@ -184,6 +196,7 @@ const HRDashboard: React.FC = () => {
     };
 
     fetchTeamMembers();
+    fetchAssessors();
     fetchJobs();
   }, []);
 
@@ -881,6 +894,30 @@ const HRDashboard: React.FC = () => {
                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                   >
                                     {member.full_name} <span className="text-xs text-slate-400">({member.role})</span>
+                                  </label>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Invite Accredited Assessors (Optional)</Label>
+                          <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                            {assessorsList.length === 0 ? (
+                              <p className="text-sm text-slate-500">No accredited assessors found.</p>
+                            ) : (
+                              assessorsList.map(assessor => (
+                                <div key={assessor.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`invite-${assessor.id}`}
+                                    checked={selectedAttendees.includes(assessor.id)}
+                                    onCheckedChange={() => handleAttendeeToggle(assessor.id)}
+                                  />
+                                  <label
+                                    htmlFor={`invite-${assessor.id}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {assessor.full_name} <span className="text-xs text-slate-400">({assessor.specialization || 'General Assessor'})</span>
                                   </label>
                                 </div>
                               ))
