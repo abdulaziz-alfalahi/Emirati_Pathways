@@ -18,6 +18,15 @@ git pull origin production-readiness
 
 echo "2. Building frontend production assets..."
 cd "$REPO_DIR/frontend"
+
+# Load NVM if available to ensure correct Node/npm version
+if [ -f "$HOME/.nvm/nvm.sh" ]; then
+    echo "Loading NVM..."
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    nvm use default || nvm use 20
+fi
+
 npm run build
 
 echo "3. Rebuilding & restarting docker-compose frontend (port 8089)..."
