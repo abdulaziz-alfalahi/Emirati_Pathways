@@ -1217,7 +1217,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="salary_min">Minimum Salary (AED)</Label>
+          <Label htmlFor="salary_min">Minimum Monthly Salary (AED)</Label>
           <Input
             id="salary_min"
             type="number"
@@ -1226,12 +1226,12 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               ...jdData,
               compensation: { ...jdData.compensation, salary_min: parseFloat(e.target.value) }
             })}
-            placeholder="e.g., 10000"
+            placeholder="e.g., 10000 (Monthly)"
           />
         </div>
 
         <div>
-          <Label htmlFor="salary_max">Maximum Salary (AED)</Label>
+          <Label htmlFor="salary_max">Maximum Monthly Salary (AED)</Label>
           <Input
             id="salary_max"
             type="number"
@@ -1240,14 +1240,14 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               ...jdData,
               compensation: { ...jdData.compensation, salary_max: parseFloat(e.target.value) }
             })}
-            placeholder="e.g., 15000"
+            placeholder="e.g., 15000 (Monthly)"
           />
         </div>
       </div>
 
       <Alert>
         <AlertDescription>
-          Providing a salary range helps attract qualified candidates and sets clear expectations.
+          Providing a monthly salary range helps attract qualified candidates and sets clear expectations.
         </AlertDescription>
       </Alert>
     </div>
