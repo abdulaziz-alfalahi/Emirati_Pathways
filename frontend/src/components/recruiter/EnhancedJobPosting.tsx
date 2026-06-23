@@ -483,22 +483,22 @@ const EnhancedJobPosting = () => {
               {!isEducationalOpportunity() && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="salary_min">Minimum Salary (AED)</Label>
+                    <Label htmlFor="salary_min">Minimum Monthly Salary (AED)</Label>
                     <Input
                       id="salary_min"
                       type="number"
-                      placeholder="e.g., 5000"
+                      placeholder="e.g., 10000 (Monthly)"
                       value={formData.salary_min || ''}
                       onChange={(e) => handleInputChange('salary_min', parseInt(e.target.value) || undefined)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="salary_max">Maximum Salary (AED)</Label>
+                    <Label htmlFor="salary_max">Maximum Monthly Salary (AED)</Label>
                     <Input
                       id="salary_max"
                       type="number"
-                      placeholder="e.g., 8000"
+                      placeholder="e.g., 15000 (Monthly)"
                       value={formData.salary_max || ''}
                       onChange={(e) => handleInputChange('salary_max', parseInt(e.target.value) || undefined)}
                     />

@@ -609,25 +609,25 @@ const CreateJobDialog = ({ isOpen, onOpenChange, onCreateJob }: CreateJobDialogP
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="min_salary">Minimum Salary (AED)</Label>
+                    <Label htmlFor="min_salary">Minimum Monthly Salary (AED)</Label>
                     <Input
                       id="min_salary"
                       type="number"
                       min="0"
                       value={formData.salary.min_salary || ''}
                       onChange={(e) => handleInputChange('salary.min_salary', parseInt(e.target.value) || null)}
-                      placeholder="15000"
+                      placeholder="e.g., 15000 (Monthly)"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="max_salary">Maximum Salary (AED)</Label>
+                    <Label htmlFor="max_salary">Maximum Monthly Salary (AED)</Label>
                     <Input
                       id="max_salary"
                       type="number"
                       min="0"
                       value={formData.salary.max_salary || ''}
                       onChange={(e) => handleInputChange('salary.max_salary', parseInt(e.target.value) || null)}
-                      placeholder="25000"
+                      placeholder="e.g., 25000 (Monthly)"
                     />
                   </div>
                   <div className="space-y-2">
