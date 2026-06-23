@@ -594,7 +594,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
     // Fetch industries from API
     (async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const API_BASE = import.meta.env.VITE_API_URL || '';
         const res = await fetch(`${API_BASE}/api/education/content/industries`);
         if (res.ok) {
           const data = await res.json();
@@ -680,7 +680,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
 
     (async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const API_BASE = import.meta.env.VITE_API_URL || '';
         const res = await fetch(`${API_BASE}/api/companies/progression?name=${encodeURIComponent(activeCompany.name)}`);
         if (!res.ok) {
           throw new Error('Failed to fetch progression');
@@ -973,7 +973,10 @@ const FunctionalCareerPlanningHub: React.FC = () => {
 
                   {/* Expanded details */}
                   {isExpanded && (
-                    <div style={{ borderTop: `1px solid ${brand.border}`, paddingTop: 16 }}>
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ borderTop: `1px solid ${brand.border}`, paddingTop: 16 }}
+                    >
                       {/* Top Employers */}
                       <div style={{ marginBottom: 14 }}>
                         <h4 style={{ fontSize: 12, fontWeight: 600, color: brand.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -983,32 +986,10 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                           {ind.topCompanies.map((c, i) => (
                             <button
                               key={i}
+                              className="company-badge-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveCompany({ name: c, sectorId: ind.id });
-                              }}
-                              style={{
-                                padding: '4px 12px',
-                                borderRadius: 12,
-                                fontSize: 12,
-                                fontWeight: 500,
-                                border: `1px solid ${brand.border}`,
-                                background: '#fff',
-                                color: brand.textPrimary,
-                                cursor: 'pointer',
-                                transition: 'all 150ms',
-                              }}
-                              onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = brand.primary;
-                                e.currentTarget.style.background = brand.primarySurface;
-                                e.currentTarget.style.color = brand.primary;
-                                e.currentTarget.style.transform = 'translateY(-1px)';
-                              }}
-                              onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = brand.border;
-                                e.currentTarget.style.background = '#fff';
-                                e.currentTarget.style.color = brand.textPrimary;
-                                e.currentTarget.style.transform = 'translateY(0)';
                               }}
                             >
                               {c}
