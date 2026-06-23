@@ -318,25 +318,29 @@ class JDBuilderEngine:
             Please write a compelling 3-4 paragraph introduction and role overview.
             Focus on the opportunity, company culture (professional, innovative), and impact of the role.
             Keep it under 400 words. Use professional business English suitable for the UAE market.
+            
+            Your response must be a JSON object with a single key "description" containing the generated job description text. Example:
+            {{
+                "description": "We are seeking a talented..."
+            }}
             """
             
             messages = [
-
-            
-                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON. No markdown, no code fences."},
-
-            
+                {"role": "system", "content": "You are an expert AI assistant for the UAE job market. Return ONLY raw, valid JSON matching the requested schema. No markdown, no code fences."},
                 {"role": "user", "content": prompt},
-
-            
             ]
 
-            
             response = chat_completion(task_type="generate", messages=messages, response_format={"type": "json_object"})
             
-            if response:
+            if response and isinstance(response, dict):
                 self.logger.info(f"Generated AI description for JD {jd_data['metadata']['jd_id']}")
-                return response.text
+                desc = response.get('description') or response.get('job_description') or response.get('text')
+                if not desc:
+                    for val in response.values():
+                        if isinstance(val, str):
+                            desc = val
+                            break
+                return desc or self._generate_placeholder_description(jd_data)
             else:
                 return self._generate_placeholder_description(jd_data)
             
