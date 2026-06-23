@@ -631,3 +631,84 @@ def get_company_stats():
             'message': 'Failed to retrieve company statistics'
         }), 500
 
+
+@company_bp.route('/progression', methods=['GET'])
+def get_company_progression():
+    """
+    Get career progression details for a company.
+    Query parameters:
+        name: Name of the company (case-insensitive, e.g. "Google", "Microsoft")
+        company_id: UUID of the company
+    """
+    name = request.args.get('name')
+    company_id = request.args.get('company_id')
+
+    if not name and not company_id:
+        return jsonify({
+            'success': False,
+            'message': 'Either company name or company_id is required'
+        }), 400
+
+    from backend.db_utils import execute_query
+
+    # Query progression
+    row = None
+    if company_id:
+        row = execute_query("""
+            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar, 
+                   cp.career_path, cp.promotion_criteria, cp.emiratisation_support
+            FROM company_career_progressions cp
+            JOIN companies c ON c.id = cp.company_id
+            WHERE cp.company_id = %s
+        """, (company_id,), fetch_one=True)
+    elif name:
+        # Normalize name: e.g. "Amazon (AWS)" -> "Amazon"
+        normalized_name = name.split('(')[0].strip()
+        row = execute_query("""
+            SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar, 
+                   cp.career_path, cp.promotion_criteria, cp.emiratisation_support
+            FROM company_career_progressions cp
+            JOIN companies c ON c.id = cp.company_id
+            WHERE c.name ILIKE %s OR c.company_name ILIKE %s
+        """, (normalized_name, normalized_name), fetch_one=True)
+
+        if not row:
+            # Try fuzzy/prefix match
+            row = execute_query("""
+                SELECT c.id as company_id, c.name, cp.overview, cp.overview_ar, 
+                       cp.career_path, cp.promotion_criteria, cp.emiratisation_support
+                FROM company_career_progressions cp
+                JOIN companies c ON c.id = cp.company_id
+                WHERE c.name ILIKE %s OR c.company_name ILIKE %s 
+                   OR %s ILIKE CONCAT(c.name, '%%')
+            """, (f"%{normalized_name}%", f"%{normalized_name}%", normalized_name), fetch_one=True)
+
+    if not row:
+        return jsonify({
+            'success': False,
+            'message': 'Career progression details not found for this company'
+        }), 404
+
+    # Ensure JSON structures are parsed properly
+    import json
+    for field in ('career_path', 'promotion_criteria', 'emiratisation_support'):
+        if isinstance(row.get(field), str):
+            try:
+                row[field] = json.loads(row[field])
+            except:
+                pass
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'company_id': row['company_id'],
+            'name': row['name'],
+            'overview': row['overview'],
+            'overview_ar': row['overview_ar'],
+            'career_path': row['career_path'],
+            'promotion_criteria': row['promotion_criteria'],
+            'emiratisation_support': row['emiratisation_support']
+        }
+    }), 200
+
+

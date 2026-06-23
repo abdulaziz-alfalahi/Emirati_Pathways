@@ -661,6 +661,64 @@ const FunctionalCareerPlanningHub: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeCompany, setActiveCompany] = useState<{ name: string; sectorId: string } | null>(null);
+  const [progressionLoading, setProgressionLoading] = useState(false);
+  const [progressionData, setProgressionData] = useState<{
+    overview: string;
+    careerPath: Array<{ title: string; duration: string; focus: string }>;
+    promotionCriteria: string[];
+    emiratisationSupport: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (!activeCompany) {
+      setProgressionData(null);
+      return;
+    }
+
+    let cancelled = false;
+    setProgressionLoading(true);
+
+    (async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const res = await fetch(`${API_BASE}/api/companies/progression?name=${encodeURIComponent(activeCompany.name)}`);
+        if (!res.ok) {
+          throw new Error('Failed to fetch progression');
+        }
+        const json = await res.json();
+        if (cancelled) return;
+
+        if (json.success && json.data) {
+          const d = json.data;
+          const transformed = {
+            overview: isRTL ? (d.overview_ar || d.overview) : d.overview,
+            careerPath: (d.career_path || []).map((cp: any) => ({
+              title: isRTL ? (cp.title.ar || cp.title.en) : cp.title.en,
+              duration: isRTL ? (cp.duration.ar || cp.duration.en) : cp.duration.en,
+              focus: isRTL ? (cp.focus.ar || cp.focus.en) : cp.focus.en,
+            })),
+            promotionCriteria: (d.promotion_criteria || []).map((pc: any) => 
+              isRTL ? (pc.ar || pc.en) : pc.en
+            ),
+            emiratisationSupport: (d.emiratisation_support || []).map((es: any) => 
+              isRTL ? (es.ar || es.en) : es.en
+            ),
+          };
+          setProgressionData(transformed);
+        } else {
+          setProgressionData(null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch company progression, falling back to static logic:', err);
+        if (!cancelled) setProgressionData(null);
+      } finally {
+        if (!cancelled) setProgressionLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [activeCompany, isRTL]);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1394,7 +1452,7 @@ const FunctionalCareerPlanningHub: React.FC = () => {
 
       {/* Modal */}
       {activeCompany && (() => {
-        const progression = getCompanyProgression(activeCompany.name, activeCompany.sectorId, t);
+        const progression = progressionData || getCompanyProgression(activeCompany.name, activeCompany.sectorId, t);
         return (
           <div
             style={{
@@ -1509,10 +1567,50 @@ const FunctionalCareerPlanningHub: React.FC = () => {
               </div>
 
               {/* Scrollable Content */}
-              <div
-                style={{
-                  padding: '28px',
-                  overflowY: 'auto',
+              {progressionLoading ? (
+                <div
+                  style={{
+                    padding: '64px 28px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 16,
+                    flex: 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      border: `3px solid ${brand.border}`,
+                      borderTopColor: brand.primary,
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  />
+                  <style>{`
+                    @keyframes spin {
+                      to { transform: rotate(360deg); }
+                    }
+                  `}</style>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: brand.textSecondary,
+                      fontWeight: 500,
+                      margin: 0,
+                    }}
+                  >
+                    {t('Loading career pathways...', 'جاري تحميل مسارات التطوير المهني...')}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      padding: '28px',
+                      overflowY: 'auto',
                   flex: 1,
                   display: 'flex',
                   flexDirection: 'column',
@@ -1804,7 +1902,9 @@ const FunctionalCareerPlanningHub: React.FC = () => {
                   <ChevronIcon style={{ width: 14, height: 14 }} />
                 </Link>
               </div>
-            </div>
+            </>
+          )}
+        </div>
           </div>
         );
       })()}

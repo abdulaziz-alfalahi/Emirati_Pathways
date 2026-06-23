@@ -500,6 +500,7 @@ _additional_blueprints = [
     ('backend.routes.workspace_phase2_routes', 'workspace_phase2_bp', None, 'Workspace Phase 2'),
     ('backend.routes.career_dial_routes', 'career_dial_bp', None, 'Career Dial'),
     ('backend.routes.uaepass_routes', 'uaepass_bp', None, 'UAE Pass Authentication'),
+    ('backend.routes.company_routes', 'company_bp', None, 'Companies'),
     # --- Blueprints migrated from recruiter_server.py ---
     ('backend.routes.profile.profile_readiness', 'profile_readiness_bp', None, 'Profile Readiness'),
     ('backend.hr_approval_routes', 'hr_approval_bp', None, 'HR Approval Workflow'),
