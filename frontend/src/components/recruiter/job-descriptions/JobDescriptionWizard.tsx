@@ -444,11 +444,15 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
             template: 'standard'
           });
 
-          if (response.data && response.data.success && response.data.jd_id) {
-            setJDData(prev => ({
-              ...prev,
-              jd_id: response.data.jd_id
-            }));
+          if (response.data && response.data.success) {
+            const newJdId = response.data.jd_id || response.data.data?.id;
+            if (newJdId && newJdId !== 'undefined') {
+              setJDData(prev => ({
+                ...prev,
+                jd_id: newJdId
+              }));
+              navigate(`/recruiter/jd-builder?jd_id=${newJdId}`, { replace: true });
+            }
           }
         } catch (error) {
           console.error('Failed to create JD:', error);
@@ -522,6 +526,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       return;
     }
 
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("Job description ID is missing or invalid. Please refresh and try again.");
+      return;
+    }
+
     if (mode === 'public') {
       handleAIGenerate('description');
       return;
@@ -564,8 +573,8 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handleSaveDraft = async () => {
-    if (!jdData.jd_id) {
-      toast.error("JD ID is missing. Please refresh the page and try again.");
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
       return;
     }
 
@@ -620,6 +629,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       if (onComplete) {
         onComplete(jdData);
       }
+      return;
+    }
+
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
       return;
     }
 
@@ -679,6 +693,11 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   };
 
   const handleMatchCandidates = async () => {
+    if (!jdData.jd_id || jdData.jd_id === 'undefined') {
+      toast.error("JD ID is missing or invalid. Please refresh the page and try again.");
+      return;
+    }
+
     setMatchingLoading(true);
     try {
       // Call match candidates API
