@@ -267,6 +267,26 @@ def create_jd_enhanced():
     try:
         data = request.get_json() or {}
         jd_id = f"jd_{uuid.uuid4().hex[:8]}"
+        
+        # Save draft placeholder to database so it exists when frontend queries it
+        recruiter_id = data.get('recruiter_id') or 'recruiter_default'
+        company_id = data.get('company_id') or 'company_default'
+        
+        insert_query = """
+            INSERT INTO job_postings (
+                jd_id, recruiter_id, company_id, title, status, created_at, updated_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+        """
+        execute_query(insert_query, (
+            jd_id,
+            recruiter_id,
+            company_id,
+            data.get('title', 'New Position'),
+            'draft'
+        ), fetch_all=False)
+        
         return jsonify({
             'success': True,
             'message': 'Job description created successfully',
