@@ -63,15 +63,29 @@ def admin_required(f):
                 return jsonify({'error': 'User not found'}), 401
             
             roles = user_details.get('roles') or []
+            if not isinstance(roles, list):
+                roles = [roles]
+            else:
+                roles = list(roles)
             
             # Check 'role' column from users table as well (for dev/simple users)
             if user_details.get('role'):
                 roles.append(user_details['role'])
+                
+            # Check secondary_roles column
+            secondary = user_details.get('secondary_roles') or []
+            if isinstance(secondary, list):
+                roles.extend(secondary)
+            elif isinstance(secondary, str):
+                try:
+                    roles.extend(json.loads(secondary))
+                except Exception:
+                    roles.append(secondary)
             
             logger.debug(f"User roles: {roles}")
                 
             # Allow admin or super_admin
-            admin_roles = {'admin', 'super_admin', 'platform_administrator', 'admin'}
+            admin_roles = {'admin', 'super_admin', 'platform_administrator', 'administrator'}
             if not admin_roles.intersection(roles):
                 logger.warning(f"Access denied for user {user_info['user_id']}. Roles: {roles}")
                 return jsonify({'error': 'Admin access required'}), 403
@@ -99,10 +113,24 @@ def permission_required(permission: str):
                 
                 # Check for admin roles to bypass specific permission checks
                 roles = user.get('roles', [])
+                if not isinstance(roles, list):
+                    roles = [roles]
+                else:
+                    roles = list(roles)
+
                 if user.get('role'):
                     roles.append(user['role'])
                     
-                admin_bypass_roles = {'super_admin', 'admin', 'platform_administrator', 'admin'}
+                secondary = user.get('secondary_roles') or []
+                if isinstance(secondary, list):
+                    roles.extend(secondary)
+                elif isinstance(secondary, str):
+                    try:
+                        roles.extend(json.loads(secondary))
+                    except Exception:
+                        roles.append(secondary)
+                    
+                admin_bypass_roles = {'super_admin', 'admin', 'platform_administrator', 'administrator'}
                 if admin_bypass_roles.intersection(roles):
                     return f(*args, **kwargs)
 

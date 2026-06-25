@@ -960,9 +960,9 @@ def get_security_stats():
 
         # Failed OTP attempts in last 24 h
         failed_query = """
-            SELECT COUNT(*) as failed
+            SELECT COALESCE(SUM(attempts), 0) as failed
             FROM otp_interactions
-            WHERE verified = FALSE AND created_at >= NOW() - INTERVAL '24 hours'
+            WHERE created_at >= NOW() - INTERVAL '24 hours'
         """
         failed = execute_query(failed_query, fetch_one=True)
 

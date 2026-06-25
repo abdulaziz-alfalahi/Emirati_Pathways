@@ -392,6 +392,50 @@ class AdministratorSystem:
             result = self._execute_query(query, (user_id,))
             if result:
                 user = result[0]
+                # Merge roles from database columns and join tables
+                final_roles = set()
+                if user.get('roles') and user['roles'] != [None]:
+                    final_roles.update([r for r in user['roles'] if r])
+                
+                # Fetch system roles for normalization
+                try:
+                    role_query = "SELECT name, display_name FROM admin_roles"
+                    system_roles = self._execute_query(role_query)
+                    norm_map = {r['display_name']: r['name'] for r in system_roles}
+                    system_slugs = {r['name'] for r in system_roles}
+                except Exception:
+                    norm_map = {}
+                    system_slugs = set()
+                
+                norm_map.update({
+                    'HR/Recruiter': 'recruiter',
+                    'HR Manager': 'employer_admin',
+                    'Job Seeker': 'candidate',
+                    'candidate': 'candidate',
+                    'Candidate': 'candidate',
+                })
+
+                secondary = user.get('secondary_roles') or []
+                if isinstance(secondary, str):
+                    try:
+                        secondary = json.loads(secondary)
+                    except Exception:
+                        secondary = [secondary]
+                
+                raw_roles = (secondary if isinstance(secondary, list) else []) + ([user.get('role')] if user.get('role') else [])
+                
+                for raw_role in raw_roles:
+                    if not raw_role: continue
+                    if raw_role in norm_map:
+                        norm_role = norm_map[raw_role]
+                    elif raw_role in system_slugs:
+                        norm_role = raw_role
+                    else:
+                        norm_role = raw_role
+                    final_roles.add(norm_role)
+                
+                user['roles'] = list(final_roles)
+
                 # Flatten permissions from ARRAY_AGG of JSONB arrays
                 if user.get('permissions'):
                     flat_perms = set()
