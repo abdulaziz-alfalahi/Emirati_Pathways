@@ -19,7 +19,7 @@ import {
   Shield, Download, Settings, Activity, Loader2, Send
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5005';
+import { restClient } from '@/utils/api';
 
 export default function BoardPortal() {
   const navigate = useNavigate();
@@ -77,17 +77,15 @@ export default function BoardPortal() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const headers = { 'Content-Type': 'application/json' };
-
       const [scoreRes, insightsRes, dirRes] = await Promise.all([
-        fetch(`${API_BASE}/api/board/scorecards`, { headers }),
-        fetch(`${API_BASE}/api/board/insights`, { headers }),
-        fetch(`${API_BASE}/api/board/directives`, { headers })
+        restClient.get('/api/board/scorecards'),
+        restClient.get('/api/board/insights'),
+        restClient.get('/api/board/directives')
       ]);
 
-      if (scoreRes.ok) setScorecards(await scoreRes.json());
-      if (insightsRes.ok) setInsights(await insightsRes.json());
-      if (dirRes.ok) setDirectives(await dirRes.json());
+      if (scoreRes.data) setScorecards(scoreRes.data);
+      if (insightsRes.data) setInsights(insightsRes.data);
+      if (dirRes.data) setDirectives(dirRes.data);
 
     } catch (error) {
       console.error('Error fetching board data:', error);
@@ -100,6 +98,29 @@ export default function BoardPortal() {
         active_companies: { value: '38', trend: '+5%', target: '50', status: 'good' },
         total_offers: { value: '156', trend: '+18%', target: '100', status: 'excellent' }
       });
+      setInsights([
+        {
+          id: 1,
+          title: 'Placement Rate Growth',
+          description: 'Abu Dhabi placement rate increased by 12%, driven primarily by the technology sector.',
+          severity: 'info',
+          theme: 'talent_supply'
+        },
+        {
+          id: 2,
+          title: 'Company Inactivity',
+          description: '3 major enterprise companies have not posted new roles in the last 30 days.',
+          severity: 'warning',
+          theme: 'company_demand'
+        },
+        {
+          id: 3,
+          title: 'Candidate Registration Surge',
+          description: '45 candidates completed their profile this week vs. 28 last week.',
+          severity: 'info',
+          theme: 'platform_health'
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -109,12 +130,8 @@ export default function BoardPortal() {
     if (!newDirective.title) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/board/directives`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDirective)
-      });
-      if (res.ok) {
+      const res = await restClient.post('/api/board/directives', newDirective);
+      if (res.status === 200 || res.status === 201) {
         setNewDirective({ title: '', body: '', category: 'strategic_priority', priority: 'normal' });
         fetchDashboardData();
       }

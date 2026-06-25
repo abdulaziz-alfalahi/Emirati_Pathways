@@ -771,65 +771,59 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           { category: 'core', description: `[AI] Collaborate with cross-functional teams` },
           { category: 'core', description: `[AI] Ensure high-quality deliverables` }
         ];
-        setJDData(prev => {
-          const current = Array.isArray(prev.responsibilities) ? prev.responsibilities : [];
-          const filteredNew = newItems.filter(item => 
-            !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
-          );
-          toast.dismiss();
-          if (filteredNew.length === 0) {
-            toast.error("Responsibilities already generated");
-            return prev;
-          }
-          toast.success('Content Generated');
-          return {
-            ...prev,
-            responsibilities: [...current, ...filteredNew]
-          };
-        });
+        const current = Array.isArray(jdData.responsibilities) ? jdData.responsibilities : [];
+        const filteredNew = newItems.filter(item => 
+          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
+        );
+        toast.dismiss();
+        if (filteredNew.length === 0) {
+          toast("Responsibilities already generated", { icon: 'ℹ️' });
+          return;
+        }
+        toast.success('Content Generated');
+        setJDData(prev => ({
+          ...prev,
+          responsibilities: [...(Array.isArray(prev.responsibilities) ? prev.responsibilities : []), ...filteredNew]
+        }));
       } else if (field === 'benefits') {
         const newItems = [
           { category: 'compensation', description: `[AI] Competitive compensation package` },
           { category: 'development', description: `[AI] Professional growth opportunities` },
           { category: 'perks', description: `[AI] Modern work environment` }
         ];
-        setJDData(prev => {
-          const current = Array.isArray(prev.benefits) ? prev.benefits : [];
-          const filteredNew = newItems.filter(item => 
-            !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
-          );
-          toast.dismiss();
-          if (filteredNew.length === 0) {
-            toast.error("Benefits already generated");
-            return prev;
-          }
-          toast.success('Content Generated');
-          return {
-            ...prev,
-            benefits: [...current, ...filteredNew]
-          };
-        });
+        const current = Array.isArray(jdData.benefits) ? jdData.benefits : [];
+        const filteredNew = newItems.filter(item => 
+          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
+        );
+        toast.dismiss();
+        if (filteredNew.length === 0) {
+          toast("Benefits already generated", { icon: 'ℹ️' });
+          return;
+        }
+        toast.success('Content Generated');
+        setJDData(prev => ({
+          ...prev,
+          benefits: [...(Array.isArray(prev.benefits) ? prev.benefits : []), ...filteredNew]
+        }));
       } else if (field === 'requirements') {
         const newItems = [
           { category: 'skills', description: `[AI] Relevant degree or equivalent experience`, is_required: true },
           { category: 'skills', description: `[AI] Strong communication skills`, is_required: true }
         ];
-        setJDData(prev => {
-          const current = Array.isArray(prev.requirements) ? prev.requirements : [];
-          const filteredNew = newItems.filter(item => 
-            !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
-          );
-          toast.dismiss();
-          if (filteredNew.length === 0) {
-            toast.error("Requirements already generated");
-            return prev;
-          }
-          toast.success('Content Generated');
-          return {
-            ...prev,
-            requirements: [...current, ...filteredNew]
-          };
-        });
+        const current = Array.isArray(jdData.requirements) ? jdData.requirements : [];
+        const filteredNew = newItems.filter(item => 
+          !current.some(c => c.description.toLowerCase().trim() === item.description.toLowerCase().trim())
+        );
+        toast.dismiss();
+        if (filteredNew.length === 0) {
+          toast("Requirements already generated", { icon: 'ℹ️' });
+          return;
+        }
+        toast.success('Content Generated');
+        setJDData(prev => ({
+          ...prev,
+          requirements: [...(Array.isArray(prev.requirements) ? prev.requirements : []), ...filteredNew]
+        }));
       }
     }, 1000);
   };

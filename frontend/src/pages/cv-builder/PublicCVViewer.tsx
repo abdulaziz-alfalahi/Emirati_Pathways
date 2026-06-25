@@ -12,7 +12,7 @@ const PublicCVViewer: React.FC = () => {
     useEffect(() => {
         const fetchCV = async () => {
             try {
-                const response = await fetch(`http://localhost:5005/api/cv/public/${id}`);
+                const response = await fetch(`/api/cv/public/${id}`);
                 const result = await response.json();
 
                 if (result.success && result.data) {

@@ -682,8 +682,12 @@ def match_candidates(jd_id):
         employment_status_filter = data.get('employment_status_filter')  # 'employed', 'candidate', 'open_to_opportunities', or None
         top_n = data.get('top_n', 10)
         
-        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
-             f.write(f"\n--- Request for JD {jd_id} ---\n")
+        debug_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'routes_debug.txt')
+        try:
+            with open(debug_file, 'a') as f:
+                 f.write(f"\n--- Request for JD {jd_id} ---\n")
+        except Exception as log_err:
+            logger.warning(f"Failed to write to debug file: {log_err}")
         
         # Retrieve JD from database
         jd_data = _get_jd_from_db(jd_id)
@@ -744,8 +748,8 @@ def match_candidates(jd_id):
                 FROM job_applications a
                 JOIN users u ON a.candidate_id = u.id
                 LEFT JOIN candidate_profiles cp ON u.id::varchar = cp.user_id
-                WHERE a.job_id = %s
-            """, (job_posting_int_id,))
+                WHERE a.job_id::text = %s::text
+            """, (str(job_posting_int_id),))
             applicants = [dict(c) for c in cur.fetchall()]
         
         # Get applicant IDs to exclude from general search (as integers)
@@ -827,10 +831,13 @@ def match_candidates(jd_id):
         
         print(f"DEBUG_PRINT: Matching request for JD {jd_id}", flush=True)
         
-        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
-             f.write(f"Applicants: {len(applicants)}\n")
-             f.write(f"Passive: {len(passive_candidates)}\n")
-             f.write(f"Total: {len(applicants) + len(passive_candidates)}\n")
+        try:
+            with open(debug_file, 'a') as f:
+                 f.write(f"Applicants: {len(applicants)}\n")
+                 f.write(f"Passive: {len(passive_candidates)}\n")
+                 f.write(f"Total: {len(applicants) + len(passive_candidates)}\n")
+        except Exception as log_err:
+            logger.warning(f"Failed to write to debug file: {log_err}")
         
         print(f"DEBUG_PRINT: Found {len(applicants)} applicants", flush=True)
         
@@ -928,15 +935,18 @@ def match_candidates(jd_id):
         matches = final_matches
         
         # Log payload
-        with open(r'c:\Users\user\Projects\Emirati_Pathway\Emirati_Pathways\backend\routes_debug.txt', 'a') as f:
-             f.write(f"Matches return count: {len(matches)}\n")
-             if matches:
-                 try:
-                     import json
-                     sample = matches[0]
-                     f.write(f"Sample Match Payload: {json.dumps(sample, default=str)}\n")
-                 except Exception as err:
-                     f.write(f"Error logging sample: {err}\n")
+        try:
+            with open(debug_file, 'a') as f:
+                 f.write(f"Matches return count: {len(matches)}\n")
+                 if matches:
+                     try:
+                         import json
+                         sample = matches[0]
+                         f.write(f"Sample Match Payload: {json.dumps(sample, default=str)}\n")
+                     except Exception as err:
+                         f.write(f"Error logging sample: {err}\n")
+        except Exception as log_err:
+            logger.warning(f"Failed to write to debug file: {log_err}")
 
         return jsonify({
             'success': True,

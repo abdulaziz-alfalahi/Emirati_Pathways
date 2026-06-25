@@ -123,7 +123,7 @@ const OurMission: React.FC = () => {
                             {/* Chairman Portrait */}
                             <div className="bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center p-0">
                                 <img
-                                    src="/chairman-portrait - Uploaded.png"
+                                    src="/sultan-al-mansoori.jpg"
                                     alt={t('H.E. Eng. Sultan bin Saeed Al Mansoori', 'معالي المهندس سلطان بن سعيد المنصوري')}
                                     className="w-full h-full object-cover object-top"
                                     style={{ minHeight: '280px' }}

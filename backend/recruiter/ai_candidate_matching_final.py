@@ -67,6 +67,14 @@ class AICandidateMatchingEngineFinal:
             self.matching_engine = None
         
         self.logger.info("AICandidateMatchingEngineFinal initialized")
+        
+    def _get_candidate_skills(self, candidate: Dict[str, Any]) -> List[str]:
+        skills_raw = candidate.get('skills')
+        if isinstance(skills_raw, list):
+            return [s for s in skills_raw if isinstance(s, str)]
+        elif isinstance(skills_raw, str):
+            return [s.strip() for s in skills_raw.replace('{','').replace('}','').split(',') if s.strip()]
+        return []
     
     def match_candidates_for_job(
         self,
@@ -232,27 +240,28 @@ class AICandidateMatchingEngineFinal:
     ) -> Dict[str, Any]:
         """Score candidate using AI matching engine"""
         try:
+            cleaned_skills = self._get_candidate_skills(candidate)
             # Prepare data for matching engine
             cv_data = {
                 'personal_info': {
-                    'full_name': f"{candidate.get('first_name', '')} {candidate.get('last_name', '')}",
-                    'email': candidate.get('email', ''),
-                    'phone': candidate.get('phone', ''),
-                    'emirate': candidate.get('emirate', ''),
-                    'nationality': candidate.get('nationality', '')
+                    'full_name': f"{candidate.get('first_name') or ''} {candidate.get('last_name') or ''}".strip(),
+                    'email': candidate.get('email') or '',
+                    'phone': candidate.get('phone') or '',
+                    'emirate': candidate.get('emirate') or '',
+                    'nationality': candidate.get('nationality') or ''
                 },
-                'experience': candidate.get('experience', []),
-                'education': candidate.get('education', []),
-                'skills': candidate.get('skills', []),
-                'experience_years': candidate.get('experience_years', 0),
-                'english_proficiency': candidate.get('english_proficiency', 'conversational'),
+                'experience': candidate.get('experience') or [],
+                'education': candidate.get('education') or [],
+                'skills': cleaned_skills,
+                'experience_years': candidate.get('experience_years') or 0,
+                'english_proficiency': candidate.get('english_proficiency') or 'conversational',
                 'preferences': {
-                    'target_roles': candidate.get('compass_target_roles', []),
-                    'willing_to_relocate': candidate.get('compass_willing_to_relocate', False),
-                    'expected_salary_range': candidate.get('compass_expected_salary_range', ''),
-                    'notice_period': candidate.get('compass_notice_period', ''),
-                    'preferred_location': candidate.get('compass_preferred_location', ''),
-                    'english_proficiency': candidate.get('english_proficiency', 'conversational')
+                    'target_roles': candidate.get('compass_target_roles') or [],
+                    'willing_to_relocate': bool(candidate.get('compass_willing_to_relocate')),
+                    'expected_salary_range': candidate.get('compass_expected_salary_range') or '',
+                    'notice_period': candidate.get('compass_notice_period') or '',
+                    'preferred_location': candidate.get('compass_preferred_location') or '',
+                    'english_proficiency': candidate.get('english_proficiency') or 'conversational'
                 }
             }
             
@@ -387,7 +396,7 @@ class AICandidateMatchingEngineFinal:
                 self.logger.debug("Required Skills: %s | Candidate Skills: %s", required_skills, candidate.get('skills', []))
 
             self.logger.info(f"Required skills: {required_skills}")
-            candidate_skills = [s.lower() for s in candidate.get('skills', []) if s is not None and isinstance(s, str)]
+            candidate_skills = [s.lower() for s in self._get_candidate_skills(candidate)]
             self.logger.info(f"Candidate skills: {candidate_skills}")
             
             if required_skills:
@@ -418,7 +427,7 @@ class AICandidateMatchingEngineFinal:
             
             # Experience matching (30 points)
             required_exp = self._extract_experience_requirement(jd_data)
-            candidate_exp = candidate.get('experience_years', 0)
+            candidate_exp = candidate.get('experience_years') or 0
             
             if required_exp:
                 if candidate_exp >= required_exp:
@@ -435,7 +444,7 @@ class AICandidateMatchingEngineFinal:
             
             # Education matching (15 points)
             required_education = self._extract_education_requirement(jd_data)
-            candidate_education = candidate.get('education_level', '').lower()
+            candidate_education = (candidate.get('education_level') or '').lower()
             
             education_levels = ['high_school', 'diploma', 'bachelor', 'master', 'phd']
             
@@ -457,10 +466,10 @@ class AICandidateMatchingEngineFinal:
                     pass
             
             # Location & Relocation matching (10 points)
-            jd_emirate = jd_data.get('basic_info', {}).get('emirate', '').lower()
-            candidate_emirate = candidate.get('emirate', '').lower()
+            jd_emirate = (jd_data.get('basic_info', {}).get('emirate') or '').lower()
+            candidate_emirate = (candidate.get('emirate') or '').lower()
             preferred_loc = str(candidate.get('compass_preferred_location') or '').lower()
-            willing_relocate = candidate.get('compass_willing_to_relocate', False)
+            willing_relocate = bool(candidate.get('compass_willing_to_relocate'))
             
             location_score = 5
             if jd_emirate:
