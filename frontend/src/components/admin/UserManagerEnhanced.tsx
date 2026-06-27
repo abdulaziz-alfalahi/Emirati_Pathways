@@ -415,6 +415,30 @@ const UserManagerEnhanced: React.FC = () => {
   // Roles
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
 
+  // Statistics state
+  const [stats, setStats] = useState<{
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    activeRoles: number;
+  }>({
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    activeRoles: 0
+  });
+
+  const uniqueRoles = useMemo(() => {
+    const seen = new Set<string>();
+    return availableRoles.filter(role => {
+      if (!role.name || seen.has(role.name)) {
+        return false;
+      }
+      seen.add(role.name);
+      return true;
+    });
+  }, [availableRoles]);
+
   // Activity logs
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [userSessions, setUserSessions] = useState<UserSession[]>([]);
@@ -530,6 +554,7 @@ const UserManagerEnhanced: React.FC = () => {
         setTotalUsers(50);
         setTotalPages(3);
       }
+      fetchUserStats();
     } catch (err) {
       console.error('Failed to fetch users:', err);
       setError('Failed to load users. Using sample data.');
@@ -551,6 +576,31 @@ const UserManagerEnhanced: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch roles:', err);
       setAvailableRoles(getDefaultRoles());
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await restClient.get('/api/admin/users/statistics');
+      if (response.data?.success && response.data?.data) {
+        const s = response.data.data;
+        let activeRolesCount = 0;
+        if (s.users_by_role) {
+          if (Array.isArray(s.users_by_role)) {
+            activeRolesCount = s.users_by_role.filter((r: any) => r.count > 0).length;
+          } else if (typeof s.users_by_role === 'object') {
+            activeRolesCount = Object.keys(s.users_by_role).filter((k: any) => s.users_by_role[k] > 0).length;
+          }
+        }
+        setStats({
+          totalUsers: s.total_users || 0,
+          activeUsers: s.active_users || 0,
+          inactiveUsers: s.inactive_users || 0,
+          activeRoles: activeRolesCount
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch user statistics:', err);
     }
   };
 
@@ -1052,7 +1102,7 @@ const UserManagerEnhanced: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers || totalUsers}</p>
             </div>
             <Users className="w-8 h-8 text-blue-500" />
           </div>
@@ -1062,7 +1112,7 @@ const UserManagerEnhanced: React.FC = () => {
             <div>
               <p className="text-sm text-gray-500">Active Users</p>
               <p className="text-2xl font-bold text-green-600">
-                {users.filter(u => u.is_active).length}
+                {stats.activeUsers}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-500" />
@@ -1073,7 +1123,7 @@ const UserManagerEnhanced: React.FC = () => {
             <div>
               <p className="text-sm text-gray-500">Inactive Users</p>
               <p className="text-2xl font-bold text-red-600">
-                {users.filter(u => !u.is_active).length}
+                {stats.inactiveUsers}
               </p>
             </div>
             <Ban className="w-8 h-8 text-red-500" />
@@ -1083,7 +1133,7 @@ const UserManagerEnhanced: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Active Roles</p>
-              <p className="text-2xl font-bold text-purple-600">{new Set(users.flatMap(u => u.roles)).size}</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.activeRoles}</p>
             </div>
             <Shield className="w-8 h-8 text-purple-500" />
           </div>
@@ -1164,7 +1214,7 @@ const UserManagerEnhanced: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Roles</option>
-                {availableRoles.map(role => (
+                {uniqueRoles.map(role => (
                   <option key={role.id} value={role.name}>{role.display_name}</option>
                 ))}
               </select>
@@ -1589,7 +1639,7 @@ const UserManagerEnhanced: React.FC = () => {
                   Roles <span className="text-red-500">*</span>
                 </label>
                 <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto grid grid-cols-2 gap-2">
-                  {availableRoles.map(role => (
+                  {uniqueRoles.map(role => (
                     <label key={role.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
@@ -1773,7 +1823,7 @@ const UserManagerEnhanced: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Roles</label>
                 <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto grid grid-cols-2 gap-2">
-                  {availableRoles.map(role => (
+                  {uniqueRoles.map(role => (
                     <label key={role.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                       <input
                         type="checkbox"
@@ -2164,7 +2214,7 @@ const UserManagerEnhanced: React.FC = () => {
                 Select roles to assign to all selected users. This will replace their existing roles.
               </p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {availableRoles.map(role => (
+                {uniqueRoles.map(role => (
                   <label key={role.id} className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
