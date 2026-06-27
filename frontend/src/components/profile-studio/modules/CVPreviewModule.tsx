@@ -84,44 +84,59 @@ export const CVPreviewModule = () => {
         switch (template) {
             case 'classic':
                 return {
-                    container: "font-serif text-gray-900 border-t-8 border-gray-800",
-                    header: "text-center border-b-2 border-gray-300 pb-6 mb-8",
-                    name: "text-3xl font-bold tracking-widest uppercase mb-2",
-                    sectionTitle: "text-lg font-bold border-b border-gray-300 mb-4 pb-1 uppercase tracking-widest",
-                    grid: "block space-y-8"
+                    container: "font-serif text-gray-900 border-t-8 border-gray-800 text-xs",
+                    header: "text-center border-b-2 border-gray-300 pb-4 mb-6",
+                    name: "text-2xl font-bold tracking-widest uppercase mb-1",
+                    sectionTitle: "text-sm font-bold border-b border-gray-300 mb-3 pb-1 uppercase tracking-widest",
+                    grid: "block space-y-6"
                 };
             case 'creative':
                 return {
-                    container: "font-sans text-gray-800 flex flex-row-reverse",
+                    container: "font-sans text-gray-800 flex flex-row-reverse text-xs",
                     header: "hidden",
-                    sidebar: "w-1/3 bg-purple-900 text-white p-6 min-h-full",
-                    main: "w-2/3 p-6",
-                    name: "text-3xl font-bold mb-4",
-                    sectionTitle: "text-purple-900 font-bold text-lg mb-3 uppercase tracking-wide",
+                    sidebar: "w-1/3 bg-purple-900 text-white p-4 min-h-full",
+                    main: "w-2/3 p-4",
+                    name: "text-2xl font-bold mb-2",
+                    sectionTitle: "text-purple-900 font-bold text-sm mb-2 uppercase tracking-wide border-b pb-0.5",
                     grid: "flex gap-0"
                 };
             case 'executive':
                 return {
-                    container: "font-sans text-slate-900",
-                    header: "bg-slate-900 text-white p-8 mb-8 -mx-[15mm] -mt-[15mm]",
-                    name: "text-4xl font-bold mb-2",
-                    subtext: "text-slate-300",
-                    sectionTitle: `text-slate-900 font-bold text-lg ${isRTL ? 'border-r-4 pr-3' : 'border-l-4 pl-3'} border-slate-900 mb-4 uppercase`,
-                    grid: "grid grid-cols-3 gap-8"
+                    container: "font-sans text-slate-900 text-xs",
+                    header: "bg-slate-900 text-white p-6 mb-6 -mx-[15mm] -mt-[15mm]",
+                    name: "text-2xl font-bold mb-1",
+                    subtext: "text-slate-300 text-sm",
+                    sectionTitle: `text-slate-900 font-bold text-sm ${isRTL ? 'border-r-4 pr-2' : 'border-l-4 pl-2'} border-slate-900 mb-3 uppercase`,
+                    grid: "grid grid-cols-3 gap-6"
                 };
             default:
                 return {
-                    container: "font-sans text-gray-900",
-                    header: "border-b border-gray-900 pb-6 mb-6",
-                    name: "text-4xl font-bold uppercase tracking-tight mb-2",
-                    sectionTitle: "text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 border-b pb-1",
-                    grid: "grid grid-cols-3 gap-8"
+                    container: "font-sans text-gray-900 text-xs",
+                    header: "border-b border-gray-900 pb-4 mb-4",
+                    name: "text-2xl font-bold uppercase tracking-tight mb-1",
+                    sectionTitle: "text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 border-b pb-0.5",
+                    grid: "grid grid-cols-3 gap-6"
                 };
         }
     };
 
     const styles = getTemplateStyles();
     const isCreative = template === 'creative';
+
+    const contactDetails = [
+        profile?.contact?.email,
+        profile?.contact?.phone,
+        profile?.contact?.location
+    ].filter(val => {
+        if (!val) return false;
+        const clean = val.trim();
+        return clean !== '' && 
+               clean !== '***@***.com' && 
+               clean !== '+971 *******' && 
+               !clean.includes('undefined');
+    });
+
+    const headlineText = profile?.headline || (profile?.bio ? profile.bio.slice(0, 100) + '...' : '');
 
     return (
         <div className="flex h-[calc(100vh-100px)]">
@@ -188,9 +203,9 @@ export const CVPreviewModule = () => {
                                     <div>
                                         <h3 className="font-bold border-b border-purple-700 pb-1 mb-2">{t('Contact', 'التواصل')}</h3>
                                         <div className="space-y-1 text-purple-100">
-                                            <p>{profile?.contact?.email}</p>
-                                            <p>{profile?.contact?.phone}</p>
-                                            <p>{profile?.contact?.location}</p>
+                                            {contactDetails.map((detail, idx) => (
+                                                <p key={idx}>{detail}</p>
+                                            ))}
                                         </div>
                                     </div>
 
@@ -243,16 +258,21 @@ export const CVPreviewModule = () => {
                                 <h1 className={styles.name}>
                                     {profile?.full_name || profile?.user?.fullname || t('My Name', 'اسمي')}
                                 </h1>
-                                <p className={`text-xl mb-4 ${styles.subtext || 'text-gray-600'}`}>
-                                    {profile?.headline || profile?.bio?.slice(0, 100) + '...'}
-                                </p>
-                                <div className={`flex gap-4 text-sm ${styles.subtext || 'text-gray-500'}`}>
-                                    <span>{profile?.contact?.email}</span>
-                                    <span>•</span>
-                                    <span>{profile?.contact?.phone}</span>
-                                    <span>•</span>
-                                    <span>{profile?.contact?.location}</span>
-                                </div>
+                                {headlineText && (
+                                    <p className={`text-sm mb-3 ${styles.subtext || 'text-gray-600'}`}>
+                                        {headlineText}
+                                    </p>
+                                )}
+                                {contactDetails.length > 0 && (
+                                    <div className={`flex gap-3 text-xs ${styles.subtext || 'text-gray-500'} flex-wrap ${template === 'classic' ? 'justify-center' : ''}`}>
+                                        {contactDetails.map((detail, idx) => (
+                                            <React.Fragment key={idx}>
+                                                {idx > 0 && <span>•</span>}
+                                                <span>{detail}</span>
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                )}
                             </header>
 
                             <main className={styles.grid}>
