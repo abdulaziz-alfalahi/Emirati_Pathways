@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { profileService, EducationEntry } from '@/services/profile/profileService';
-import { GraduationCap, Calendar, CheckCircle, Plus } from 'lucide-react';
+import { GraduationCap, Calendar, CheckCircle, Edit2, Plus, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 
 export const EducationModule = () => {
     const [education, setEducation] = useState<EducationEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
+    const [editId, setEditId] = useState<number | null>(null);
     const { language, isRTL } = useLanguage();
     const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
 
@@ -20,6 +21,51 @@ export const EducationModule = () => {
         grade: '',
         verification: { is_verified: false, source: 'self_reported' }
     });
+
+    const resetForm = () => {
+        setNewEntry({
+            institution: '',
+            degree: '',
+            field: '',
+            start_date: '',
+            end_date: '',
+            grade: '',
+            verification: { is_verified: false, source: 'self_reported' }
+        });
+        setEditId(null);
+    };
+
+    const handleEdit = (edu: EducationEntry) => {
+        setNewEntry({
+            institution: edu.institution || '',
+            degree: edu.degree || '',
+            field: edu.field || '',
+            start_date: edu.start_date ? edu.start_date.substring(0, 10) : '',
+            end_date: edu.end_date ? edu.end_date.substring(0, 10) : '',
+            grade: edu.grade || '',
+            verification: edu.verification || { is_verified: false, source: 'self_reported' }
+        });
+        setEditId(edu.id || null);
+        setShowAddForm(true);
+    };
+
+    const handleDelete = async (id?: number) => {
+        if (!id) return;
+        if (!window.confirm(t('Are you sure you want to delete this education entry?', 'هل أنت متأكد من حذف مؤهل التعليم هذا؟'))) {
+            return;
+        }
+        try {
+            const res = await profileService.deleteEducation(id);
+            if (res.success) {
+                loadEducation();
+            } else {
+                alert(res.message || t('Failed to delete education', 'فشل حذف التعليم'));
+            }
+        } catch (e) {
+            console.error(e);
+            alert(t('Failed to delete education', 'فشل حذف التعليم'));
+        }
+    };
 
     useEffect(() => {
         loadEducation();
@@ -40,20 +86,16 @@ export const EducationModule = () => {
 
     const handleSave = async () => {
         try {
-            await profileService.addEducation(newEntry);
+            if (editId) {
+                await profileService.updateEducation(editId, newEntry);
+            } else {
+                await profileService.addEducation(newEntry);
+            }
             setShowAddForm(false);
-            setNewEntry({
-                institution: '',
-                degree: '',
-                field: '',
-                start_date: '',
-                end_date: '',
-                grade: '',
-                verification: { is_verified: false, source: 'self_reported' }
-            });
+            resetForm();
             loadEducation();
         } catch (e) {
-            alert(t('Failed to save education', 'فشل حفظ التعليم'));
+            alert(editId ? t('Failed to update education', 'فشل تحديث التعليم') : t('Failed to save education', 'فشل حفظ التعليم'));
         }
     };
 
@@ -67,7 +109,10 @@ export const EducationModule = () => {
                     <p className="text-gray-500">{t('Manage your degrees and verify them with blockchain ID.', 'إدارة شهاداتك والتحقق منها بتقنية البلوكتشين.')}</p>
                 </div>
                 <button
-                    onClick={() => setShowAddForm(true)}
+                    onClick={() => {
+                        resetForm();
+                        setShowAddForm(true);
+                    }}
                     className="flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-colors shadow-md"
                 >
                     <Plus size={18} />
@@ -77,7 +122,9 @@ export const EducationModule = () => {
 
             {showAddForm && (
                 <div className="bg-white p-6 rounded-2xl shadow-lg border border-teal-100 animate-slide-down">
-                    <h3 className="font-bold text-lg mb-4">{t('Add Education', 'إضافة تعليم')}</h3>
+                    <h3 className="font-bold text-lg mb-4">
+                        {editId ? t('Edit Education', 'تعديل التعليم') : t('Add Education', 'إضافة تعليم')}
+                    </h3>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <input
                             placeholder={t('Institution (e.g. UAE University)', 'المؤسسة (مثال: جامعة الإمارات)')}
@@ -125,8 +172,21 @@ export const EducationModule = () => {
                         </div>
                     </div>
                     <div className="flex justify-end gap-3">
-                        <button onClick={() => setShowAddForm(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">{t('Cancel', 'إلغاء')}</button>
-                        <button onClick={handleSave} className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-sm">{t('Save', 'حفظ')}</button>
+                        <button 
+                            onClick={() => {
+                                resetForm();
+                                setShowAddForm(false);
+                            }} 
+                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        >
+                            {t('Cancel', 'إلغاء')}
+                        </button>
+                        <button 
+                            onClick={handleSave} 
+                            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-sm"
+                        >
+                            {editId ? t('Update', 'تحديث') : t('Save', 'حفظ')}
+                        </button>
                     </div>
                 </div>
             )}
@@ -149,8 +209,8 @@ export const EducationModule = () => {
                             </div>
                         </div>
 
-                        {/* Verification Badge */}
-                        <div className="flex items-center gap-2">
+                        {/* Verification Badge & Actions */}
+                        <div className="flex items-center gap-4">
                             {edu.verification?.is_verified ? (
                                 <span className="flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200 gap-1">
                                     <CheckCircle size={12} />
@@ -161,6 +221,24 @@ export const EducationModule = () => {
                                     {t('Request Verification', 'طلب التحقق')}
                                 </button>
                             )}
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                    onClick={() => handleEdit(edu)}
+                                    className="text-gray-400 hover:text-teal-600 transition-colors"
+                                    title={t('Edit', 'تعديل')}
+                                >
+                                    <Edit2 size={18} />
+                                </button>
+                                <button 
+                                    onClick={() => handleDelete(edu.id)}
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                    title={t('Delete', 'حذف')}
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}

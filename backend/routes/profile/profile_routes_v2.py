@@ -270,3 +270,52 @@ def update_experience(exp_id):
         logger.error(f"Error updating experience: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@profile_v2_bp.route('/education/<int:edu_id>', methods=['PUT'])
+@jwt_required()
+def update_education(edu_id):
+    """Update an existing education entry"""
+    try:
+        user_id = get_normalized_user_id(get_jwt_identity())
+        
+        edu = CandidateEducation.query.filter_by(id=edu_id, user_id=user_id).first()
+        if not edu:
+            return jsonify({'success': False, 'message': 'Education entry not found or access denied'}), 404
+        
+        data = request.json
+        if 'institution' in data: edu.institution = data['institution']
+        if 'degree' in data: edu.degree = data['degree']
+        if 'field' in data: edu.field_of_study = data['field']
+        if 'start_date' in data: edu.start_date = parse_date_safe(data.get('start_date'))
+        if 'end_date' in data: edu.end_date = parse_date_safe(data.get('end_date'))
+        if 'grade' in data: edu.grade = data['grade']
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Education updated successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error updating education: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@profile_v2_bp.route('/education/<int:edu_id>', methods=['DELETE'])
+@jwt_required()
+def delete_education(edu_id):
+    """Delete an education entry"""
+    try:
+        user_id = get_normalized_user_id(get_jwt_identity())
+        
+        edu = CandidateEducation.query.filter_by(id=edu_id, user_id=user_id).first()
+        if not edu:
+            return jsonify({'success': False, 'message': 'Education entry not found or access denied'}), 404
+        
+        db.session.delete(edu)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Education deleted successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error deleting education: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

@@ -197,5 +197,25 @@ export const profileService = {
             console.error('Error updating experience:', error);
             throw error;
         }
+    },
+
+    deleteEducation: async (id: number) => {
+        try {
+            const response = await axios.delete(`${API_URL}/education/${id}`, { headers: getHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting education:', error);
+            throw error;
+        }
+    },
+
+    updateEducation: async (id: number, entry: EducationEntry) => {
+        try {
+            const response = await axios.put(`${API_URL}/education/${id}`, entry, { headers: getHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating education:', error);
+            throw error;
+        }
     }
 };
