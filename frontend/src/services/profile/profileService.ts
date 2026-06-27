@@ -217,5 +217,22 @@ export const profileService = {
             console.error('Error updating education:', error);
             throw error;
         }
+    },
+
+    uploadVideoIntro: async (videoBlob: Blob) => {
+        try {
+            const formData = new FormData();
+            formData.append('video', videoBlob, 'video_intro.webm');
+            const response = await axios.post(`${API_URL}/video/upload`, formData, {
+                headers: {
+                    ...getHeaders(),
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error uploading video intro:', error);
+            throw error;
+        }
     }
 };

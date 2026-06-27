@@ -1,10 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime
 from backend.models.profile.candidate_profile_models import CandidateProfile, CandidateExperience, CandidateEducation, CandidateSkill, CandidateCertification, CandidateAssessment
 from backend.extensions import db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
 import uuid
+import os
 
 profile_v2_bp = Blueprint('profile_v2', __name__, url_prefix='/api/v2/profile') # New V2 Prefix
 logger = logging.getLogger(__name__)
@@ -145,6 +146,7 @@ def update_identity():
         if 'relocation' in data: profile.willing_to_relocate = data['relocation']
         if 'notice_period' in data: profile.notice_period = data['notice_period']
         if 'english_proficiency' in data: profile.english_proficiency = data['english_proficiency']
+        if 'video_intro_url' in data: profile.video_intro_url = data['video_intro_url']
         
         db.session.commit()
         return jsonify({'success': True, 'data': profile.to_dict()}), 200
@@ -317,5 +319,46 @@ def delete_education(edu_id):
         
     except Exception as e:
         logger.error(f"Error deleting education: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@profile_v2_bp.route('/video/upload', methods=['POST'])
+@jwt_required()
+def upload_video_intro():
+    """Upload candidate video introduction"""
+    try:
+        user_id = get_normalized_user_id(get_jwt_identity())
+        profile = CandidateProfile.query.filter_by(user_id=user_id).first()
+        if not profile: return jsonify({'success': False, 'message': 'Profile not found'}), 404
+        
+        if 'video' not in request.files:
+            return jsonify({'success': False, 'message': 'No video file found in request'}), 400
+            
+        file = request.files['video']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No selected file'}), 400
+            
+        # Secure filename and create uploads directory
+        # Let's save it under static/uploads/videos/
+        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'videos')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # We can name it user_id_video.webm or similar to avoid collision and clean up old videos
+        ext = os.path.splitext(file.filename)[1] or '.webm'
+        filename = f"{user_id}_video_intro{ext}"
+        file_path = os.path.join(upload_dir, filename)
+        
+        file.save(file_path)
+        
+        # Set the relative URL
+        video_url = f"/static/uploads/videos/{filename}"
+        profile.video_intro_url = video_url
+        db.session.commit()
+        
+        return jsonify({'success': True, 'video_url': video_url}), 200
+        
+    except Exception as e:
+        logger.error(f"Error uploading video intro: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500

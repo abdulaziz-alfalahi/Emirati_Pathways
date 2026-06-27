@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { profileService, CandidateProfile } from '@/services/profile/profileService';
-import { User, MapPin, Phone, Mail, Globe, Video, Upload, FileText, Car, Clock, Info } from 'lucide-react';
+import { User, MapPin, Phone, Mail, Globe, Video, Upload, FileText, Car, Clock, Info, X, Play, Square, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import LocationPicker from '@/components/common/LocationPicker';
 import { calculateHaversineDistance, estimateCommuteTime } from '@/utils/geoUtils';
@@ -15,6 +15,7 @@ export const IdentityModule = () => {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showVideoModal, setShowVideoModal] = useState(false);
     // CV Management State
     const [cvs, setCvs] = useState<any[]>([]);
     const [loadingCvs, setLoadingCvs] = useState(false);
@@ -447,17 +448,322 @@ export const IdentityModule = () => {
             </div>
 
             {/* Video Pitch */}
-            <div className="bg-card rounded-2xl p-8 border border-border flex items-center justify-between">
-                <div>
-                    <h3 className="text-xl font-bold text-foreground mb-2">{t('Video Introduction', 'المقدمة المرئية')}</h3>
-                    <p className="text-muted-foreground text-sm max-w-lg">
-                        {t('Stand out by recording a 60-second video pitch. Recruiters are 3x more likely to contact candidates with a video.', 'تميّز بتسجيل فيديو تعريفي مدته 60 ثانية. مسؤولو التوظيف أكثر احتمالاً بـ3 مرات للتواصل مع المرشحين الذين لديهم فيديو.')}
-                    </p>
+            <div className="bg-card rounded-2xl p-8 border border-border">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-foreground">{t('Video Introduction', 'المقدمة المرئية')}</h3>
+                        <p className="text-muted-foreground text-sm max-w-lg">
+                            {t('Stand out by recording a 60-second video pitch. Recruiters are 3x more likely to contact candidates with a video.', 'تميّز بتسجيل فيديو تعريفي مدته 60 ثانية. مسؤولو التوظيف أكثر احتمالاً بـ3 مرات للتواصل مع المرشحين الذين لديهم فيديو.')}
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => setShowVideoModal(true)}
+                        className="flex items-center justify-center gap-2 bg-background border border-border hover:bg-muted text-foreground px-6 py-3 rounded-full font-medium shadow-sm hover:shadow-md transition-all self-start md:self-auto"
+                    >
+                        <Video size={20} className="text-purple-600" />
+                        <span>{profile?.video_intro_url ? t('Re-record Video', 'إعادة تسجيل الفيديو') : t('Record Video', 'تسجيل فيديو')}</span>
+                    </button>
                 </div>
-                <button className="flex items-center gap-2 bg-background text-foreground px-6 py-3 rounded-full font-medium shadow-sm hover:shadow-md transition-shadow">
-                    <Video size={20} className="text-purple-600" />
-                    <span>{t('Record Video', 'تسجيل فيديو')}</span>
-                </button>
+
+                {profile?.video_intro_url && (
+                    <div className="mt-6 max-w-md bg-muted p-4 rounded-xl border border-border">
+                        <h4 className="text-sm font-semibold mb-3 text-foreground">{t('Your Current Video Pitch', 'فيديو تعريفي الحالي')}</h4>
+                        <video 
+                            src={profile.video_intro_url} 
+                            controls 
+                            className="w-full aspect-video rounded-lg shadow-sm border border-border bg-black"
+                        />
+                    </div>
+                )}
+            </div>
+
+            {showVideoModal && (
+                <VideoRecorderModal 
+                    onClose={() => setShowVideoModal(false)}
+                    onSave={async (blob) => {
+                        await profileService.uploadVideoIntro(blob);
+                        await loadProfile();
+                    }}
+                    t={t}
+                />
+            )}
+        </div>
+    );
+};
+
+interface VideoRecorderModalProps {
+    onClose: () => void;
+    onSave: (blob: Blob) => Promise<void>;
+    t: (en: string, ar: string) => string;
+}
+
+const VideoRecorderModal = ({ onClose, onSave, t }: VideoRecorderModalProps) => {
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const [recording, setRecording] = useState(false);
+    const [countdown, setCountdown] = useState(60);
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+    const [permissionStatus, setPermissionStatus] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const previewRef = useRef<HTMLVideoElement>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const startCamera = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 640, height: 480, facingMode: 'user' },
+                audio: true
+            });
+            setStream(mediaStream);
+            setPermissionStatus('granted');
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+            }
+        } catch (err: any) {
+            console.error("Camera access error:", err);
+            setPermissionStatus('denied');
+            setError(t(
+                "Could not access camera or microphone. Please ensure permissions are granted.",
+                "تعذر الوصول إلى الكاميرا أو الميكروفون. يرجى التأكد من منح الأذونات."
+            ));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        startCamera();
+        return () => {
+            stopCamera();
+        };
+    }, []);
+
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            setStream(null);
+        }
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+    };
+
+    const handleStartRecording = () => {
+        if (!stream) return;
+        setVideoUrl(null);
+        setRecordedBlob(null);
+
+        const options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        let recorder: MediaRecorder;
+        try {
+            recorder = new MediaRecorder(stream, options);
+        } catch (e) {
+            try {
+                recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            } catch (err) {
+                recorder = new MediaRecorder(stream);
+            }
+        }
+
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                chunks.push(event.data);
+            }
+        };
+
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            setRecordedBlob(blob);
+            const url = URL.createObjectURL(blob);
+            setVideoUrl(url);
+            if (previewRef.current) {
+                previewRef.current.src = url;
+            }
+        };
+
+        recorder.start(1000);
+        setMediaRecorder(recorder);
+        setRecording(true);
+        setCountdown(60);
+
+        timerRef.current = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current!);
+                    recorder.stop();
+                    setRecording(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const handleStopRecording = () => {
+        if (mediaRecorder && recording) {
+            mediaRecorder.stop();
+            setRecording(false);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        }
+    };
+
+    const handleReset = () => {
+        setVideoUrl(null);
+        setRecordedBlob(null);
+        setCountdown(60);
+        if (stream && videoRef.current) {
+            videoRef.current.srcObject = stream;
+        }
+    };
+
+    const handleSaveVideo = async () => {
+        if (!recordedBlob) return;
+        setUploading(true);
+        try {
+            await onSave(recordedBlob);
+            onClose();
+        } catch (err) {
+            setError(t("Failed to upload video introduction", "فشل رفع الفيديو التعريفي"));
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]">
+                {/* Header */}
+                <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-900">{t("Record Video Introduction", "تسجيل مقدمة مرئية")}</h3>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Main Content Area */}
+                <div className="p-6 flex-1 overflow-y-auto flex flex-col items-center justify-center">
+                    {error && (
+                        <div className="w-full bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 flex items-start gap-3 mb-4 text-sm">
+                            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                            <div>{error}</div>
+                        </div>
+                    )}
+
+                    {permissionStatus === 'prompt' && loading && (
+                        <div className="flex flex-col items-center py-12">
+                            <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mb-4" />
+                            <p className="text-gray-500 text-sm">{t("Requesting camera permission...", "جارٍ طلب إذن الكاميرا...")}</p>
+                        </div>
+                    )}
+
+                    {permissionStatus === 'denied' && (
+                        <div className="text-center py-8">
+                            <Video size={48} className="mx-auto text-gray-300 mb-3" />
+                            <p className="text-gray-600 mb-4 font-medium">{t("Camera Access Denied", "تم رفض الوصول للكاميرا")}</p>
+                            <button onClick={startCamera} className="bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 font-medium text-sm transition-colors">
+                                {t("Try Again", "إعادة المحاولة")}
+                            </button>
+                        </div>
+                    )}
+
+                    {permissionStatus === 'granted' && (
+                        <div className="w-full flex flex-col items-center">
+                            {/* Video Display */}
+                            <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-gray-200 shadow-inner">
+                                {!videoUrl ? (
+                                    <>
+                                        <video
+                                            ref={videoRef}
+                                            autoPlay
+                                            playsInline
+                                            muted
+                                            className="w-full h-full object-cover scale-x-[-1]"
+                                        />
+                                        {recording && (
+                                            <div className="absolute top-4 left-4 bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full flex items-center gap-2 font-medium tracking-wide">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shrink-0" />
+                                                <span>REC</span>
+                                                <span className="border-l border-white/20 pl-2 ml-1 text-red-400 font-mono">{countdown}s</span>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <video
+                                        ref={previewRef}
+                                        controls
+                                        className="w-full h-full object-cover"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Info instructions */}
+                            {!videoUrl && !recording && (
+                                <p className="text-xs text-gray-500 mt-3 text-center max-w-md">
+                                    {t(
+                                        "Position yourself in a well-lit room. Speak clearly about your experience and career goals.",
+                                        "ضع نفسك في غرفة مضاءة جيداً. تحدث بوضوح عن خبرتك وأهدافك المهنية."
+                                    )}
+                                </p>
+                            )}
+
+                            {/* Control Actions */}
+                            <div className="flex gap-4 mt-6">
+                                {!videoUrl ? (
+                                    !recording ? (
+                                        <button
+                                            onClick={handleStartRecording}
+                                            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-full font-medium transition-all shadow-md"
+                                        >
+                                            <Play size={18} fill="currentColor" />
+                                            <span>{t("Start Recording (60s)", "بدء التسجيل (٦٠ ثانية)")}</span>
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={handleStopRecording}
+                                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-medium transition-all shadow-md"
+                                        >
+                                            <Square size={18} fill="currentColor" />
+                                            <span>{t("Stop & Review", "إيقاف ومعاينة")}</span>
+                                        </button>
+                                    )
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={handleReset}
+                                            disabled={uploading}
+                                            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-3 rounded-full font-medium transition-all"
+                                        >
+                                            <RefreshCw size={18} />
+                                            <span>{t("Record Again", "إعادة التسجيل")}</span>
+                                        </button>
+                                        <button
+                                            onClick={handleSaveVideo}
+                                            disabled={uploading}
+                                            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-full font-medium transition-all shadow-md disabled:bg-teal-400"
+                                        >
+                                            {uploading ? (
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <Check size={18} />
+                                            )}
+                                            <span>{uploading ? t("Uploading...", "جارٍ الرفع...") : t("Save & Use Video", "حفظ واستخدام الفيديو")}</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
