@@ -4,14 +4,90 @@ import { Download, Layout, Printer, Share2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
+import { cvStorageService } from '@/services/cvStorageService';
+import toast from 'react-hot-toast';
 
 export const CVPreviewModule = () => {
     const [profile, setProfile] = useState<any>(null);
     const [template, setTemplate] = useState('modern');
     const [loading, setLoading] = useState(true);
+    const [sharing, setSharing] = useState(false);
     const cvRef = useRef<HTMLDivElement>(null);
     const { language, isRTL } = useLanguage();
     const t = (en: string, ar: string) => (language === 'ar' ? ar : en);
+
+    const handleShareLink = async () => {
+        setSharing(true);
+        try {
+            // 1. Fetch CV list
+            const listRes = await cvStorageService.listCVs();
+            let cvId = null;
+            if (listRes.success && listRes.data && listRes.data.length > 0) {
+                // Find visible CV or fallback to the first one
+                const visibleCV = listRes.data.find(c => c.is_visible) || listRes.data[0];
+                cvId = visibleCV.id;
+                if (!visibleCV.is_visible) {
+                    await cvStorageService.setVisible(cvId);
+                }
+            } else {
+                // 2. If no CV exists, create one from current profile
+                const personalInfo = {
+                    firstName: profile?.full_name?.split(' ')[0] || '',
+                    lastName: profile?.full_name?.split(' ').slice(1).join(' ') || '',
+                    email: profile?.contact?.email || '',
+                    phone: profile?.contact?.phone || '',
+                    location: profile?.contact?.location || '',
+                    nationality: profile?.nationality || 'UAE'
+                };
+
+                const cvData = {
+                    personalInfo,
+                    professionalSummary: profile?.bio || '',
+                    technicalSkills: profile?.skills?.map((s: any) => s.name) || [],
+                    softSkills: [],
+                    experience: profile?.experience?.map((exp: any) => ({
+                        jobTitle: exp.role || '',
+                        company: exp.company || '',
+                        location: exp.location || '',
+                        startDate: exp.start_date || '',
+                        endDate: exp.end_date || '',
+                        responsibilities: exp.description || ''
+                    })) || [],
+                    education: profile?.education?.map((edu: any) => ({
+                        degree: edu.degree || '',
+                        institution: edu.school || '',
+                        graduationYear: edu.graduation_year || '',
+                        field: edu.field_of_study || ''
+                    })) || []
+                };
+
+                const saveRes = await cvStorageService.saveCV({
+                    cvData,
+                    title: profile?.full_name ? `${profile.full_name}'s CV` : 'My CV',
+                    templateId: template
+                });
+
+                if (saveRes.success && saveRes.cv_id) {
+                    cvId = saveRes.cv_id;
+                    await cvStorageService.setVisible(cvId);
+                }
+            }
+
+            if (cvId) {
+                const shareUrl = `${window.location.origin}/cv/share/${cvId}`;
+                await navigator.clipboard.writeText(shareUrl);
+                toast.success(t('Shareable CV link copied to clipboard!', 'تم نسخ رابط السيرة الذاتية للمشاركة إلى الحافظة!'));
+            } else {
+                toast.error(t('Failed to generate share link', 'فشل إنشاء رابط المشاركة'));
+            }
+        } catch (err: any) {
+            console.error('Error sharing link:', err);
+            toast.error(t('An error occurred while sharing the link', 'حدث خطأ أثناء مشاركة الرابط'));
+        } finally {
+            setSharing(false);
+        }
+    };
+
 
     useEffect(() => {
         loadData();
@@ -180,9 +256,13 @@ export const CVPreviewModule = () => {
                         <Download size={18} />
                         <span>{t('Download PDF', 'تحميل PDF')}</span>
                     </button>
-                    <button className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50">
+                    <button
+                        onClick={handleShareLink}
+                        disabled={sharing}
+                        className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50"
+                    >
                         <Share2 size={18} />
-                        <span>{t('Share Link', 'مشاركة الرابط')}</span>
+                        <span>{sharing ? t('Sharing...', 'جاري المشاركة...') : t('Share Link', 'مشاركة الرابط')}</span>
                     </button>
                 </div>
             </div>

@@ -2212,7 +2212,7 @@ Return only the JSON object, no additional text."""
             # Check if visible
             query = """
                 SELECT
-                    id, title, template_name,
+                    id, user_id, title, template_name,
                     personal_info, professional_summary,
                     technical_skills, soft_skills,
                     work_experience, education,
@@ -2230,13 +2230,90 @@ Return only the JSON object, no additional text."""
                 return jsonify({'success': False, 'message': 'This CV is private'}), 403
 
             # Return data similar to list_cvs but detailed
+            cv_dict = dict(cv)
+
+            # Mask personal info contacts for external viewers (closed platform security)
+            pi = cv_dict.get('personal_info')
+            if pi:
+                import json
+                if isinstance(pi, str):
+                    try:
+                        pi = json.loads(pi)
+                    except Exception:
+                        pass
+                if isinstance(pi, dict):
+                    # Mask standard variations
+                    for key in ['email', 'phone', 'emailAddress', 'phoneNumber', 'email_address', 'phone_number']:
+                        if key in pi and pi[key]:
+                            pi[key] = '[Hidden - Closed Platform]'
+                    cv_dict['personal_info'] = pi
+
             return jsonify({
                 'success': True,
-                'data': cv
+                'data': cv_dict
             })
 
         except Exception as e:
             logger.error(f"Public CV fetch error: {e}")
+            return jsonify({'success': False, 'message': 'System error'}), 500
+
+    @_app.route('/api/cv/public/<cv_id>/contact', methods=['POST'])
+    def contact_public_cv(cv_id):
+        """Send message/notification to CV owner (No Auth Required)"""
+        try:
+            data = request.get_json() or {}
+            sender_name = data.get('sender_name', '').strip()
+            sender_company = data.get('sender_company', '').strip()
+            sender_email = data.get('sender_email', '').strip()
+            subject = data.get('subject', '').strip()
+            message = data.get('message', '').strip()
+
+            if not sender_name or not sender_email or not subject or not message:
+                return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+            # Get CV owner
+            query = "SELECT user_id, is_visible FROM user_cvs WHERE id = %s::uuid"
+            cv = execute_query(query, (cv_id,), fetch_one=True)
+
+            if not cv:
+                return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+            if not cv.get('is_visible'):
+                return jsonify({'success': False, 'message': 'This CV is private'}), 403
+
+            candidate_id = cv.get('user_id')
+            if not candidate_id:
+                return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+
+            # Create platform notification
+            from backend.notification_helper import create_notification
+            
+            notif_title = f"New inquiry: {subject}"
+            notif_message = f"You received an inquiry from {sender_name} at {sender_company} ({sender_email}): {message}"
+            metadata = {
+                'sender_name': sender_name,
+                'sender_company': sender_company,
+                'sender_email': sender_email,
+                'subject': subject,
+                'message': message,
+                'cv_id': cv_id
+            }
+
+            notif_id = create_notification(
+                user_id=candidate_id,
+                notification_type='cv_inquiry',
+                title=notif_title,
+                message=notif_message,
+                metadata=metadata
+            )
+
+            if notif_id:
+                return jsonify({'success': True, 'message': 'Message sent successfully'})
+            else:
+                return jsonify({'success': False, 'message': 'Failed to send message'}), 500
+
+        except Exception as e:
+            logger.error(f"Public CV contact error: {e}")
             return jsonify({'success': False, 'message': 'System error'}), 500
 
 

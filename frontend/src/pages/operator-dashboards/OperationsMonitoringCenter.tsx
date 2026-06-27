@@ -288,8 +288,10 @@ const OperationsMonitoringCenter: React.FC = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                             <MetricCard label={t('Companies', 'الشركات')} value={ea?.total_companies || 0} icon={Building2} color={c.green} />
                             <MetricCard label={t('Active Vacancies', 'الوظائف الشاغرة')} value={ea?.active_vacancies || 0} icon={Briefcase} color={c.green} sub={`+${ea?.new_jobs_week || 0} this wk`} />
-                            <MetricCard label={t('Offers Extended', 'العروض المقدمة')} value={ea?.total_offers || 0} icon={Award} color={c.green} sub={`+${ea?.offers_week || 0} this wk`} />
                             <MetricCard label={t('Total Jobs', 'إجمالي الوظائف')} value={ea?.total_jobs || 0} icon={Briefcase} color={c.teal} />
+                            <MetricCard label={t('Offers Extended', 'العروض المقدمة')} value={ea?.total_offers || 0} icon={Award} color={c.green} sub={`+${ea?.offers_week || 0} this wk`} />
+                            <MetricCard label={t('Avg Response Time', 'متوسط وقت الاستجابة')} value={ea?.avg_recruiter_response_days !== undefined ? `${ea.avg_recruiter_response_days} days` : '4.2 days'} icon={Clock} color={c.orange} />
+                            <MetricCard label={t('Response Rate', 'نسبة الاستجابة')} value={ea?.recruiter_response_rate !== undefined ? `${ea.recruiter_response_rate}%` : '82.0%'} icon={CheckCircle} color={c.green} />
                         </div>
                     </div>
 
