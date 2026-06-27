@@ -219,3 +219,25 @@ def add_education():
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@profile_v2_bp.route('/experience/<int:exp_id>', methods=['DELETE'])
+@jwt_required()
+def delete_experience(exp_id):
+    """Delete a work experience entry"""
+    try:
+        user_id = get_normalized_user_id(get_jwt_identity())
+        
+        # Make sure experience belongs to the current user
+        exp = CandidateExperience.query.filter_by(id=exp_id, user_id=user_id).first()
+        if not exp:
+            return jsonify({'success': False, 'message': 'Experience entry not found or access denied'}), 404
+        
+        db.session.delete(exp)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Experience deleted successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error deleting experience: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

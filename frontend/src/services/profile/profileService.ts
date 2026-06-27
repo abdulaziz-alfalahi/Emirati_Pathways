@@ -177,5 +177,15 @@ export const profileService = {
             console.error('Debug auth check failed', error);
             return { error: 'Failed to check auth' };
         }
+    },
+
+    deleteExperience: async (id: number) => {
+        try {
+            const response = await axios.delete(`${API_URL}/experience/${id}`, { headers: getHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting experience:', error);
+            throw error;
+        }
     }
 };

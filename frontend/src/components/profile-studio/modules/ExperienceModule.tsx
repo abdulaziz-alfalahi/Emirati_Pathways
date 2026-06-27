@@ -58,6 +58,24 @@ export const ExperienceModule = () => {
         }
     };
 
+    const handleDelete = async (id?: number) => {
+        if (!id) return;
+        if (!window.confirm(t('Are you sure you want to delete this experience?', 'هل أنت متأكد من حذف هذه الخبرة؟'))) {
+            return;
+        }
+        try {
+            const res = await profileService.deleteExperience(id);
+            if (res.success) {
+                loadExperience();
+            } else {
+                alert(res.message || t('Failed to delete experience', 'فشل حذف الخبرة'));
+            }
+        } catch (e) {
+            console.error(e);
+            alert(t('Failed to delete experience', 'فشل حذف الخبرة'));
+        }
+    };
+
     if (loading) return <div className="p-8">{t('Loading experience...', 'جارٍ تحميل الخبرات...')}</div>;
 
     return (
@@ -183,7 +201,11 @@ export const ExperienceModule = () => {
                                     {exp.description}
                                 </p>
                             </div>
-                            <button className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                                onClick={() => handleDelete(exp.id)}
+                                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title={t('Delete', 'حذف')}
+                            >
                                 <Trash2 size={18} />
                             </button>
                         </div>
