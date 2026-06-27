@@ -13,6 +13,7 @@ import Messages from '@/components/recruiter/Messages';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -107,10 +108,55 @@ const AdminDashboard = () => {
     security_score: 0, failed_logins_24h: 0, active_sessions: 0, verified_users_pct: 0
   });
 
+  const [missionVideoUrl, setMissionVideoUrl] = useState('https://www.youtube.com/embed/zTct6QW-V28');
+  const [savingVideoUrl, setSavingVideoUrl] = useState(false);
+
+  const loadMissionVideoUrl = async () => {
+    try {
+      const response = await restClient.get('/api/admin/settings');
+      if (response.data && response.data.status === 'success' && response.data.data.mission_video_url) {
+        setMissionVideoUrl(response.data.data.mission_video_url.value);
+      }
+    } catch (error) {
+      console.error("Failed to load mission video url setting:", error);
+    }
+  };
+
+  const handleSaveVideoUrl = async () => {
+    setSavingVideoUrl(true);
+    try {
+      const response = await restClient.put('/api/admin/settings/mission_video_url', { value: missionVideoUrl });
+      if (response.data && response.data.status === 'success') {
+        toast({
+          title: b("Setting Saved", "تم حفظ الإعداد"),
+          description: b("Mission video URL updated successfully.", "تم تحديث رابط فيديو الرسالة بنجاح."),
+        });
+      } else {
+        throw new Error(response.data?.message || 'Failed to save');
+      }
+    } catch (error) {
+      console.error("Failed to save mission video url setting:", error);
+      toast({
+        title: b("Error", "خطأ"),
+        description: b("Failed to update mission video URL.", "فشل تحديث رابط فيديو الرسالة."),
+        variant: "destructive",
+      });
+    } finally {
+      setSavingVideoUrl(false);
+    }
+  };
+
   // Load dashboard data on mount
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  // Load settings when system tab is active
+  useEffect(() => {
+    if (activeTab === 'system') {
+      loadMissionVideoUrl();
+    }
+  }, [activeTab]);
 
   const getUserDisplayName = () => {
     return user?.full_name || user?.email || 'Administrator';
@@ -1175,6 +1221,71 @@ ${JSON.stringify(selectedFeedback.metadata, null, 2)}
                         </CardContent>
                       </Card>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Our Mission Page Settings */}
+                <Card className="border-l-4 border-l-teal-500">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Video className="h-5 w-5 text-teal-600" />
+                      {b('Our Mission Page Settings', 'إعدادات صفحة رسالتنا')}
+                    </CardTitle>
+                    <CardDescription>
+                      {b('Configure the YouTube video to display on the public Our Mission page.', 'تكوين فيديو YouTube لعرضه على صفحة رسالتنا العامة.')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 font-dubai">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm font-semibold text-slate-700">
+                        {b('YouTube Embed URL', 'رابط تضمين YouTube')}
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          type="text"
+                          placeholder="https://www.youtube.com/embed/..."
+                          value={missionVideoUrl}
+                          onChange={(e) => setMissionVideoUrl(e.target.value)}
+                          className="flex-1 font-mono text-sm"
+                        />
+                        <Button 
+                          onClick={handleSaveVideoUrl} 
+                          disabled={savingVideoUrl || !missionVideoUrl}
+                          className="bg-teal-600 hover:bg-teal-700 text-white font-medium min-w-[120px]"
+                        >
+                          {savingVideoUrl ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              {b('Saving...', 'جاري الحفظ...')}
+                            </>
+                          ) : (
+                            b('Save Setting', 'حفظ الإعداد')
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {b('Note: The URL must be in the embed format, e.g., https://www.youtube.com/embed/VIDEO_ID', 'ملاحظة: يجب أن يكون الرابط بتنسيق التضمين، على سبيل المثال https://www.youtube.com/embed/VIDEO_ID')}
+                      </p>
+                    </div>
+
+                    {/* Live Preview */}
+                    {missionVideoUrl && (
+                      <div className="border rounded-xl p-4 bg-slate-50">
+                        <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                          {b('Video Embed Preview', 'معاينة تضمين الفيديو')}
+                        </h4>
+                        <div className="aspect-video max-w-lg mx-auto rounded-lg overflow-hidden border bg-black shadow-sm">
+                          <iframe
+                            className="w-full h-full"
+                            src={missionVideoUrl}
+                            title="Video preview"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

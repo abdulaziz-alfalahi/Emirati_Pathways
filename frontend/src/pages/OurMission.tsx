@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFixed';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
     Cpu,
     Globe,
@@ -63,8 +64,31 @@ const OurMission: React.FC = () => {
     const { i18n } = useTranslation();
     const { language, toggleLanguage } = useLanguage();
     const navigate = useNavigate();
+    const [isVideoOpen, setIsVideoOpen] = useState(false);
+    const [videoUrl, setVideoUrl] = useState('https://www.youtube.com/embed/zTct6QW-V28');
     const isRTL = i18n.language === 'ar';
     const t = (en: string, ar: string) => isRTL ? ar : en;
+
+    useEffect(() => {
+        const fetchVideoUrl = async () => {
+            try {
+                const response = await fetch('/api/public/settings/mission-video');
+                const data = await response.json();
+                if (data && data.success && data.video_url) {
+                    setVideoUrl(data.video_url);
+                }
+            } catch (error) {
+                console.error('Error fetching mission video URL:', error);
+            }
+        };
+        fetchVideoUrl();
+    }, []);
+
+    const getEmbedUrl = () => {
+        if (!videoUrl) return '';
+        const separator = videoUrl.includes('?') ? '&' : '?';
+        return `${videoUrl}${separator}autoplay=1`;
+    };
 
     const pillars = [
         {
@@ -190,7 +214,7 @@ const OurMission: React.FC = () => {
                         <Button
                             variant="outline"
                             className="border-slate-300 text-slate-700 hover:bg-slate-50 px-6 h-11 rounded-lg"
-                            onClick={() => navigate('/')}
+                            onClick={() => setIsVideoOpen(true)}
                         >
                             {t('Watch Mission Video', 'شاهد فيديو الرسالة')} <ExternalLink className="h-3.5 w-3.5" style={{ marginInlineStart: 8 }} />
                         </Button>
@@ -330,6 +354,25 @@ const OurMission: React.FC = () => {
                     </div>
                 </div>
             </footer>
+
+            <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none rounded-xl shadow-2xl">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>{t('EHRDC Mission Video', 'فيديو رسالة مجلس تنمية الموارد البشرية الإماراتية')}</DialogTitle>
+                        <DialogDescription>{t('Watch our strategic vision and mission details', 'شاهد تفاصيل رؤيتنا ورسالتنا الاستراتيجية')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="aspect-video w-full flex items-center justify-center">
+                        <iframe
+                            className="w-full h-full"
+                            src={getEmbedUrl()}
+                            title={t('EHRDC Mission Video', 'فيديو رسالة مجلس تنمية الموارد البشرية الإماراتية')}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                        ></iframe>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

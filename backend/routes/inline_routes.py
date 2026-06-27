@@ -2316,6 +2316,36 @@ Return only the JSON object, no additional text."""
             logger.error(f"Public CV contact error: {e}")
             return jsonify({'success': False, 'message': 'System error'}), 500
 
+    @_app.route('/api/public/settings/mission-video', methods=['GET'])
+    def get_public_mission_video():
+        """Retrieve the configured mission video URL (No Auth Required)"""
+        try:
+            query = "SELECT setting_value FROM admin_settings WHERE setting_key = 'mission_video_url'"
+            row = execute_query(query, fetch_one=True)
+            
+            video_url = "https://www.youtube.com/embed/zTct6QW-V28"
+            if row and row.get('setting_value') is not None:
+                import json
+                try:
+                    setting_val = row['setting_value']
+                    if isinstance(setting_val, str):
+                        video_url = json.loads(setting_val)
+                    else:
+                        video_url = setting_val
+                except Exception as val_err:
+                    logger.warning(f"Error parsing mission_video_url setting: {val_err}")
+                    if isinstance(row['setting_value'], str):
+                        video_url = row['setting_value']
+            
+            return jsonify({
+                'success': True,
+                'video_url': video_url
+            })
+        except Exception as e:
+            logger.error(f"Public settings fetch error: {e}")
+            return jsonify({'success': False, 'message': 'System error'}), 500
+
+
 
 
     # Legacy list_vacancies removed (replaced by newer version at end of file)

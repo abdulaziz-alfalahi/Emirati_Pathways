@@ -261,7 +261,8 @@ INSERT INTO admin_settings (setting_key, setting_value, setting_type, category, 
 ('password_min_length', '8', 'number', 'security', 'Minimum password length', FALSE),
 ('enable_2fa', 'true', 'boolean', 'security', 'Enable two-factor authentication', FALSE),
 ('content_auto_save_interval', '30', 'number', 'content', 'Auto-save interval in seconds', FALSE),
-('content_revision_limit', '50', 'number', 'content', 'Maximum number of content revisions to keep', FALSE)
+('content_revision_limit', '50', 'number', 'content', 'Maximum number of content revisions to keep', FALSE),
+('mission_video_url', '"https://www.youtube.com/embed/zTct6QW-V28"', 'string', 'general', 'YouTube embed URL for the mission video on the Our Mission page', TRUE)
 ON CONFLICT (setting_key) DO NOTHING;
 
 -- Create a function to update the updated_at timestamp
