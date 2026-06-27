@@ -241,3 +241,32 @@ def delete_experience(exp_id):
         logger.error(f"Error deleting experience: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@profile_v2_bp.route('/experience/<int:exp_id>', methods=['PUT'])
+@jwt_required()
+def update_experience(exp_id):
+    """Update an existing work experience entry"""
+    try:
+        user_id = get_normalized_user_id(get_jwt_identity())
+        
+        exp = CandidateExperience.query.filter_by(id=exp_id, user_id=user_id).first()
+        if not exp:
+            return jsonify({'success': False, 'message': 'Experience entry not found or access denied'}), 404
+        
+        data = request.json
+        if 'job_title' in data: exp.job_title = data['job_title']
+        if 'company' in data: exp.company = data['company']
+        if 'location' in data: exp.location = data['location']
+        if 'start_date' in data: exp.start_date = parse_date_safe(data['start_date'])
+        if 'end_date' in data: exp.end_date = parse_date_safe(data['end_date'])
+        if 'is_current' in data: exp.is_current = data['is_current']
+        if 'description' in data: exp.description = data['description']
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Experience updated successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error updating experience: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

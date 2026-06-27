@@ -187,5 +187,15 @@ export const profileService = {
             console.error('Error deleting experience:', error);
             throw error;
         }
+    },
+
+    updateExperience: async (id: number, entry: ExperienceEntry) => {
+        try {
+            const response = await axios.put(`${API_URL}/experience/${id}`, entry, { headers: getHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating experience:', error);
+            throw error;
+        }
     }
 };
