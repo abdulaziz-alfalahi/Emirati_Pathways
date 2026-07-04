@@ -61,6 +61,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        - http_proxy
+        - https_proxy
+        - HTTP_PROXY
+        - HTTPS_PROXY
     command: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 4 --bind 0.0.0.0:5005 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile - wsgi:app
     restart: unless-stopped
     env_file: ./backend/.env
@@ -84,6 +89,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - http_proxy
+        - https_proxy
+        - HTTP_PROXY
+        - HTTPS_PROXY
     restart: unless-stopped
     ports:
       - "8089:80"

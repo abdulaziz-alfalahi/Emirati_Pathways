@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/EnhancedLanguageContext';
 import {
-    PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
+    PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import {
     Activity, Users, PieChart as PieChartIcon, 
-    BarChart3, Loader2, AlertTriangle, UserCheck, ShieldAlert
+    BarChart3, Loader2, AlertTriangle, UserCheck, ShieldAlert, TrendingUp
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
 
@@ -26,6 +26,7 @@ const c = {
     textPrimary: '#F1F5F9',
     textSecondary: '#94A3B8',
     textMuted: '#64748B',
+    purpleGlow: 'rgba(139, 92, 246, 0.15)',
 };
 
 const COLORS = [c.accent, c.green, c.yellow, c.purple, c.orange, c.teal, c.pink, c.red];
@@ -37,67 +38,30 @@ const DemographicsAnalytics: React.FC = () => {
     const t = (en: string, ar: string) => isRTL ? ar : en;
 
     const [activeTab, setActiveTab] = useState<'main' | 'priority' | 'reachability'>('main');
+    const [selectedCut, setSelectedCut] = useState<string>('registered');
     
-    const [mainData, setMainData] = useState<any>(null);
-    const [priorityData, setPriorityData] = useState<any>(null);
-    
+    const [rawMetrics, setRawMetrics] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const fetchMainData = async () => {
+        const fetchDemographics = async () => {
             try {
                 const res = await restClient.get('/api/metrics/demographics');
                 if (res.data?.success && res.data?.data) {
-                    // Map the new mock data structure to what the charts expect
-                    const metrics = res.data.data;
-                    
-                    setMainData({
-                        gender: [
-                            { name: 'Male', value: metrics.age_distribution.reduce((acc: number, item: any) => acc + item.male, 0) },
-                            { name: 'Female', value: metrics.age_distribution.reduce((acc: number, item: any) => acc + item.female, 0) }
-                        ],
-                        age_group: metrics.age_distribution.map((item: any) => ({
-                            name: item.group,
-                            value: item.male + item.female
-                        })),
-                        education: metrics.education_levels.map((item: any) => ({
-                            name: item.level,
-                            value: item.employed + item.seeking
-                        })),
-                        employment: [
-                            { name: 'Employed', value: metrics.education_levels.reduce((acc: number, item: any) => acc + item.employed, 0) },
-                            { name: 'Seeking', value: metrics.education_levels.reduce((acc: number, item: any) => acc + item.seeking, 0) }
-                        ]
-                    });
-
-                    setPriorityData({
-                        emirate: metrics.regional_spread.map((item: any) => ({
-                            name: item.emirate,
-                            value: item.candidates
-                        })),
-                        military: [
-                            { name: 'Completed', value: 12000 },
-                            { name: 'Exempted', value: 3500 },
-                            { name: 'Pending', value: 2500 }
-                        ],
-                        marital: [
-                            { name: 'Single', value: 15000 },
-                            { name: 'Married', value: 20000 },
-                            { name: 'Divorced', value: 1200 },
-                            { name: 'Widowed', value: 300 }
-                        ]
-                    });
+                    setRawMetrics(res.data.data);
+                } else {
+                    setError('Failed to load demographics data structure');
                 }
             } catch (e: any) {
                 console.error(e);
                 setError(e.message || 'Failed to load');
+            } finally {
+                setLoading(false);
             }
         };
 
-        Promise.all([fetchMainData()]).finally(() => {
-            setLoading(false);
-        });
+        fetchDemographics();
     }, []);
 
     const TabButton = ({ id, label, icon: Icon }: any) => (
@@ -123,11 +87,14 @@ const DemographicsAnalytics: React.FC = () => {
             <div style={{ fontSize: 14, fontWeight: 700, color: c.textPrimary, marginBottom: 16, letterSpacing: 0.5 }}>
                 {title}
             </div>
-            <div style={{ height: 300, width: '100%' }}>
+            <div style={{ height: 280, width: '100%' }}>
                 {children}
             </div>
         </div>
     );
+
+    // Get current data cut statistics
+    const currentStats = rawMetrics ? rawMetrics[selectedCut] : null;
 
     return (
         <div dir={isRTL ? 'rtl' : 'ltr'} style={{
@@ -154,6 +121,38 @@ const DemographicsAnalytics: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Demographic Cut Dropdown */}
+                {rawMetrics && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 13, color: c.textSecondary, fontWeight: 500 }}>
+                            {t('Cohort Cut:', 'شريحة الكوادر:')}
+                        </span>
+                        <select
+                            value={selectedCut}
+                            onChange={(e) => setSelectedCut(e.target.value)}
+                            style={{
+                                background: c.cardBg,
+                                color: c.textPrimary,
+                                border: `1px solid ${c.cardBorder}`,
+                                padding: '8px 12px',
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                outline: 'none'
+                            }}
+                        >
+                            <option value="registered">{t('Registered Candidates (Master List)', 'المرشحون المسجلون (القائمة الرئيسية)')}</option>
+                            <option value="active">{t('Active Jobseekers (Total AJS)', 'الباحثون النشطون عن عمل (الإجمالي)')}</option>
+                            <option value="priority_1st">{t('1st Priority Candidates', 'المرشحون ذوو الأولوية الأولى')}</option>
+                            <option value="hatta">{t('Hatta Initiative Cohort', 'مبادرة أهالي حتا')}</option>
+                            <option value="cda">{t('CDA Initiative Cohort', 'مبادرة هيئة تنمية المجتمع')}</option>
+                            <option value="gdo">{t('GDO Initiative Cohort', 'مبادرة مكتب التطوير الحكومي')}</option>
+                            <option value="no_answer">{t('No Answer Candidates', 'المرشحون غير المجيبين')}</option>
+                        </select>
+                    </div>
+                )}
+
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <button
                         onClick={() => navigate(-1)}
@@ -170,33 +169,82 @@ const DemographicsAnalytics: React.FC = () => {
                         ← {isRTL ? 'العودة للمنصة' : 'Back to Platform'}
                     </button>
                     <TabButton id="main" label={t('Main Overview', 'نظرة عامة رئيسية')} icon={Users} />
-                    <TabButton id="priority" label={t('Priority Segments', 'الشرائح ذات الأولوية')} icon={ShieldAlert} />
-                    <TabButton id="reachability" label={t('Reachability', 'إمكانية الوصول')} icon={Activity} />
+                    <TabButton id="priority" label={t('Priority Details', 'تفاصيل الأولوية')} icon={ShieldAlert} />
+                    <TabButton id="reachability" label={t('System Tracking', 'تتبع النظام')} icon={Activity} />
                 </div>
             </div>
 
             {/* ─── Body ─────────────────────────────────────────── */}
-            {loading && !mainData ? (
+            {loading ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 100, gap: 12, color: c.textSecondary }}>
                     <Loader2 size={24} className="animate-spin" />
                     <span style={{ fontSize: 14 }}>{t('Loading analytics data...', 'جارٍ تحميل البيانات...')}</span>
                 </div>
-            ) : error && !mainData ? (
+            ) : error ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 100, gap: 12, color: c.red }}>
                     <AlertTriangle size={24} />
                     <span style={{ fontSize: 14 }}>{error}</span>
                 </div>
             ) : (
-                <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ padding: 24 }}>
                     
+                    {/* Cohort Stats Mini Header */}
+                    {currentStats && (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: 16,
+                            marginBottom: 20
+                        }}>
+                            <div style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 8, padding: 16 }}>
+                                <div style={{ fontSize: 12, color: c.textMuted, fontWeight: 600, textTransform: 'uppercase' }}>
+                                    {t('Cohort Total Size', 'حجم الشريحة الإجمالي')}
+                                </div>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: c.textPrimary, marginTop: 4 }}>
+                                    {currentStats.total.toLocaleString()}
+                                </div>
+                            </div>
+                            <div style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 8, padding: 16 }}>
+                                <div style={{ fontSize: 12, color: c.textMuted, fontWeight: 600, textTransform: 'uppercase' }}>
+                                    {t('Female Ratio', 'نسبة الإناث')}
+                                </div>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: c.pink, marginTop: 4 }}>
+                                    {currentStats.gender.find((g: any) => g.name === 'Female')?.value 
+                                        ? `${Math.round((currentStats.gender.find((g: any) => g.name === 'Female').value / currentStats.total) * 100)}%`
+                                        : '0%'
+                                    }
+                                </div>
+                            </div>
+                            <div style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 8, padding: 16 }}>
+                                <div style={{ fontSize: 12, color: c.textMuted, fontWeight: 600, textTransform: 'uppercase' }}>
+                                    {t('Male Ratio', 'نسبة الذكور')}
+                                </div>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: c.accent, marginTop: 4 }}>
+                                    {currentStats.gender.find((g: any) => g.name === 'Male')?.value 
+                                        ? `${Math.round((currentStats.gender.find((g: any) => g.name === 'Male').value / currentStats.total) * 100)}%`
+                                        : '0%'
+                                    }
+                                </div>
+                            </div>
+                            <div style={{ background: c.cardBg, border: `1px solid ${c.cardBorder}`, borderRadius: 8, padding: 16 }}>
+                                <div style={{ fontSize: 12, color: c.textMuted, fontWeight: 600, textTransform: 'uppercase' }}>
+                                    {t('Primary Location', 'الموقع الرئيسي')}
+                                </div>
+                                <div style={{ fontSize: 24, fontWeight: 700, color: c.green, marginTop: 4 }}>
+                                    {currentStats.location.length > 0 ? currentStats.location[0].name : '—'}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* TAB: MAIN OVERVIEW */}
-                    {activeTab === 'main' && mainData && (
-                        <>
+                    {activeTab === 'main' && currentStats && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                             <ChartCard title={t('Gender Distribution', 'توزيع الجنس')}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={mainData.gender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={110} paddingAngle={5}>
-                                            {mainData.gender.map((entry: any, index: number) => (
+                                        <Pie data={currentStats.gender} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={5}>
+                                            {currentStats.gender.map((entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -206,9 +254,9 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Age Group Status', 'حالة الفئة العمرية')}>
+                            <ChartCard title={t('Age Group Distribution', 'توزيع الفئات العمرية')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={mainData.age_group} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                    <BarChart data={currentStats.age_group} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                         <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <YAxis stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
@@ -217,10 +265,10 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Education Status', 'حالة التعليم')}>
+                            <ChartCard title={t('Education Level Distribution', 'توزيع المستويات التعليمية')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={mainData.education} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 10 }} angle={-25} textAnchor="end" height={60} />
+                                    <BarChart data={currentStats.education} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
                                         <YAxis stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
                                         <Bar dataKey="value" fill={c.green} radius={[4, 4, 0, 0]} />
@@ -228,26 +276,37 @@ const DemographicsAnalytics: React.FC = () => {
                                 </ResponsiveContainer>
                             </ChartCard>
 
-                            <ChartCard title={t('Employment Status', 'الحالة الوظيفية')}>
+                            <ChartCard title={t('Work Experience Years', 'سنوات الخبرة العملية')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={mainData.employment} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                                        <XAxis type="number" stroke={c.textMuted} />
-                                        <YAxis dataKey="name" type="category" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 11 }} width={120} />
+                                    <BarChart data={currentStats.experience} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
+                                        <YAxis stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
-                                        <Bar dataKey="value" fill={c.purple} radius={[0, 4, 4, 0]} />
+                                        <Bar dataKey="value" fill={c.purple} radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </ChartCard>
-                        </>
+
+                            <ChartCard title={t('Emirate of Residence', 'إمارة الإقامة')} style={{ gridColumn: '1 / -1' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={currentStats.location} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 11 }} angle={-20} textAnchor="end" height={50} />
+                                        <YAxis stroke={c.textMuted} />
+                                        <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
+                                        <Bar dataKey="value" fill={c.teal} radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartCard>
+                        </div>
                     )}
 
-                    {/* TAB: PRIORITY SEGMENTS */}
-                    {activeTab === 'priority' && priorityData && (
-                        <>
-                            <ChartCard title={t('Military Service Status', 'حالة الخدمة الوطنية')}>
+                    {/* TAB: PRIORITY DETAILS */}
+                    {activeTab === 'priority' && currentStats && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <ChartCard title={t('National Military Service Status', 'حالة الخدمة الوطنية')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={priorityData.military} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 12 }} />
+                                    <BarChart data={currentStats.military} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 11 }} angle={-15} textAnchor="end" height={50} />
                                         <YAxis stroke={c.textMuted} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
                                         <Bar dataKey="value" fill={c.orange} radius={[4, 4, 0, 0]} />
@@ -258,8 +317,8 @@ const DemographicsAnalytics: React.FC = () => {
                             <ChartCard title={t('Marital Status', 'الحالة الاجتماعية')}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie data={priorityData.marital} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={110} paddingAngle={2}>
-                                            {priorityData.marital.map((entry: any, index: number) => (
+                                        <Pie data={currentStats.marital} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
+                                            {currentStats.marital.map((entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -268,26 +327,62 @@ const DemographicsAnalytics: React.FC = () => {
                                     </PieChart>
                                 </ResponsiveContainer>
                             </ChartCard>
+                        </div>
+                    )}
 
-                            <ChartCard title={t('Emirate Of Residence', 'إمارة الإقامة')}>
+                    {/* TAB: SYSTEM TRACKING */}
+                    {activeTab === 'reachability' && rawMetrics && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            {/* Initiatives comparison */}
+                            <ChartCard title={t('EHRDC Initiatives Active Counts', 'أعداد المستفيدين النشطين من مبادرات الهيئة')}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={priorityData.emirate} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary, fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
+                                    <BarChart data={[
+                                        { name: t('Hatta Cohort', 'أهالي حتا'), value: rawMetrics.initiatives_totals.hatta },
+                                        { name: t('CDA Cohort', 'تنمية المجتمع'), value: rawMetrics.initiatives_totals.cda },
+                                        { name: t('GDO Cohort', 'التطوير الحكومي'), value: rawMetrics.initiatives_totals.gdo }
+                                    ]}>
+                                        <XAxis dataKey="name" stroke={c.textMuted} tick={{ fill: c.textSecondary }} />
                                         <YAxis stroke={c.textMuted} />
                                         <Tooltip cursor={{ fill: c.cardBorder }} contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
-                                        <Bar dataKey="value" fill={c.teal} radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="value" fill={c.accent} radius={[4, 4, 0, 0]}>
+                                            <Cell fill={c.teal} />
+                                            <Cell fill={c.purple} />
+                                            <Cell fill={c.accent} />
+                                        </Bar>
                                     </BarChart>
                                 </ResponsiveContainer>
                             </ChartCard>
-                        </>
-                    )}
 
-                    {/* TAB: REACHABILITY */}
-                    {activeTab === 'reachability' && (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 60, color: c.textMuted }}>
-                            <UserCheck size={48} color={c.textMuted} style={{ margin: '0 auto 16px' }} />
-                            <div style={{ fontSize: 18, fontWeight: 600 }}>{t('No Answer / GDO Tracking', 'تتبع الكوادر غير المجيبة')}</div>
-                            <div style={{ fontSize: 14, marginTop: 8 }}>{t('Module coming soon based on live CRM interactions.', 'ستتوفر قريباً بناءً على تفاعلات نظام إدارة العلاقات الحي.')}</div>
+                            {/* No Answer Candidates */}
+                            <ChartCard title={t('Contact Center Reachability Status', 'حالة استجابة الاتصال مع الكوادر')}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={[
+                                            { name: t('Answered Call', 'أجابوا على الاتصال'), value: rawMetrics.registered.total - rawMetrics.no_answer.total },
+                                            { name: t('No Answer / Pending', 'لم يجيبوا / قيد الانتظار'), value: rawMetrics.no_answer.total }
+                                        ]} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
+                                            <Cell fill={c.green} />
+                                            <Cell fill={c.red} />
+                                        </Pie>
+                                        <Tooltip contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </ChartCard>
+
+                            {/* Weekly Registrations Added vs Removed */}
+                            <ChartCard title={t('Weekly Intake Trend (Added vs Removed)', 'اتجاه التدفق الأسبوعي (المضاف مقابل المزال)')} style={{ gridColumn: '1 / -1' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={rawMetrics.growth.weekly} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                        <XAxis dataKey="date" stroke={c.textMuted} tick={{ fill: c.textSecondary }} />
+                                        <YAxis stroke={c.textMuted} />
+                                        <Tooltip contentStyle={{ backgroundColor: c.cardBg, borderColor: c.cardBorder, color: c.textPrimary }} />
+                                        <Legend />
+                                        <Area type="monotone" dataKey="added" name={t('Candidates Added', 'المرشحون المضافون')} stroke={c.green} fill={c.green} fillOpacity={0.15} strokeWidth={2} />
+                                        <Area type="monotone" dataKey="removed" name={t('Candidates Placed/Removed', 'المرشحون المعينون/المزالون')} stroke={c.red} fill={c.red} fillOpacity={0.1} strokeWidth={1.5} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </ChartCard>
                         </div>
                     )}
                 </div>
