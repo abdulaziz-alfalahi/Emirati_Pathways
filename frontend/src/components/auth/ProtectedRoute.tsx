@@ -53,7 +53,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const hasPermission = isAdmin || allowedRoles.some(allowed => {
       const allowedNorm = normalizeRole(allowed);
       return allowedNorm === userRoleNormalized ||
-        (user.roles && user.roles.some(r => normalizeRole(r) === allowedNorm));
+        (user.roles && user.roles.some(r => normalizeRole(r) === allowedNorm)) ||
+        (user.secondary_roles && user.secondary_roles.some(r => normalizeRole(r) === allowedNorm));
     });
 
     if (!hasPermission) {

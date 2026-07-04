@@ -72,20 +72,20 @@ def ensure_tables(conn):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS content_submissions (
             id SERIAL PRIMARY KEY,
-            submitted_by INTEGER REFERENCES users(id),
+            submitted_by VARCHAR(100) REFERENCES users(id),
             content_type VARCHAR(50) NOT NULL DEFAULT 'general',
             title TEXT NOT NULL DEFAULT '',
             body TEXT DEFAULT '',
             status VARCHAR(20) DEFAULT 'pending',
-            reviewed_by INTEGER REFERENCES users(id),
+            reviewed_by VARCHAR(100) REFERENCES users(id),
             review_notes TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT NOW()
         );
         CREATE TABLE IF NOT EXISTS support_tickets (
             id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
-            created_by_agent INTEGER REFERENCES users(id),
-            assigned_to INTEGER REFERENCES users(id),
+            user_id VARCHAR(100) REFERENCES users(id),
+            created_by_agent VARCHAR(100) REFERENCES users(id),
+            assigned_to VARCHAR(100) REFERENCES users(id),
             subject VARCHAR(500) NOT NULL DEFAULT '',
             description TEXT DEFAULT '',
             category VARCHAR(50) DEFAULT 'general',
@@ -99,7 +99,7 @@ def ensure_tables(conn):
         CREATE TABLE IF NOT EXISTS ticket_messages (
             id SERIAL PRIMARY KEY,
             ticket_id INTEGER REFERENCES support_tickets(id) ON DELETE CASCADE,
-            sender_id INTEGER REFERENCES users(id),
+            sender_id VARCHAR(100) REFERENCES users(id),
             message TEXT NOT NULL DEFAULT '',
             is_internal_note BOOLEAN DEFAULT false,
             created_at TIMESTAMP DEFAULT NOW()
@@ -112,13 +112,13 @@ def ensure_tables(conn):
             body_ar TEXT DEFAULT '',
             category VARCHAR(100) DEFAULT 'general',
             tags JSONB DEFAULT '[]',
-            created_by INTEGER REFERENCES users(id),
+            created_by VARCHAR(100) REFERENCES users(id),
             created_at TIMESTAMP DEFAULT NOW()
         );
         CREATE TABLE IF NOT EXISTS live_chat_sessions (
             id SERIAL PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
-            agent_id INTEGER REFERENCES users(id),
+            user_id VARCHAR(100) REFERENCES users(id),
+            agent_id VARCHAR(100) REFERENCES users(id),
             conversation_id VARCHAR(200),
             status VARCHAR(20) DEFAULT 'waiting',
             category VARCHAR(50) DEFAULT 'general',
@@ -218,7 +218,7 @@ def seed_sample_data(conn):
         ('Employer Partnership Onboarding', 'استقطاب شراكات أصحاب العمل',
          'To onboard a new employer:\n1. Direct them to the Growth Operator who manages company onboarding.\n2. Provide the magic link process: HR manager receives an SMS with a unique onboarding link.\n3. Required docs: Trade license, company profile, HR contact details.\n4. Timeline: Onboarding typically completes within 3 business days.',
          'لاستقطاب صاحب عمل جديد:\n1. وجههم إلى مشغل النمو الذي يدير استقطاب الشركات.\n2. قدم عملية الرابط السحري.',
-         'employer_admin', '['employer_admin', "onboarding", "partnership", "company"]'),
+         'employer_admin', '["employer_admin", "onboarding", "partnership", "company"]'),
         ('Platform Navigation Help', 'مساعدة في التنقل في المنصة',
          'Key pages for candidates:\n- /dashboard — Main candidate dashboard\n- /jobs — Job listings and search\n- /cv-builder — Create and manage CVs\n- /training — Available training programs\n- /assessments — Skills assessments\n\nFor employers:\n- /recruiter-dashboard — Recruiter workspace\n- /recruiter/jobs — Manage job postings',
          'الصفحات الرئيسية للمرشحين:\n- /dashboard — لوحة تحكم المرشح الرئيسية\n- /jobs — قوائم الوظائف والبحث',

@@ -231,7 +231,11 @@ class CandidateSearchEngine:
         # Experience matching (25 points)
         max_score += 25
         required_experience = job_requirements.get('min_experience', 0)
+        if required_experience is None:
+            required_experience = 0
         candidate_experience = candidate.get('experience_years', 0)
+        if candidate_experience is None:
+            candidate_experience = 0
         
         if candidate_experience >= required_experience:
             if candidate_experience >= required_experience + 2:
@@ -272,9 +276,23 @@ class CandidateSearchEngine:
         
         # Location matching (15 points)
         max_score += 15
-        job_location = job_requirements.get('location', '').lower()
-        candidate_location = candidate.get('preferred_location', '').lower()
-        candidate_emirate = candidate.get('emirate', '').lower()
+        job_location = job_requirements.get('location')
+        if job_location is None:
+            job_location = ''
+        else:
+            job_location = str(job_location).lower()
+
+        candidate_location = candidate.get('preferred_location')
+        if candidate_location is None:
+            candidate_location = ''
+        else:
+            candidate_location = str(candidate_location).lower()
+
+        candidate_emirate = candidate.get('emirate')
+        if candidate_emirate is None:
+            candidate_emirate = ''
+        else:
+            candidate_emirate = str(candidate_emirate).lower()
         
         if job_location in candidate_location or candidate_emirate in job_location:
             match_details['location_match'] = 15
@@ -287,13 +305,13 @@ class CandidateSearchEngine:
         
         # Skills matching (25 points)
         max_score += 25
-        required_skills = job_requirements.get('skills', [])
-        candidate_skills = candidate.get('skills', [])
+        required_skills = job_requirements.get('skills') or []
+        candidate_skills = candidate.get('skills') or []
         
         if required_skills and candidate_skills:
-            # Convert to lowercase for comparison
-            req_skills_lower = [skill.lower() for skill in required_skills]
-            cand_skills_lower = [skill.lower() for skill in candidate_skills]
+            # Convert to lowercase for comparison, ignoring None values
+            req_skills_lower = [str(skill).lower() for skill in required_skills if skill is not None]
+            cand_skills_lower = [str(skill).lower() for skill in candidate_skills if skill is not None]
             
             matched_skills = 0
             for req_skill in req_skills_lower:
@@ -315,7 +333,11 @@ class CandidateSearchEngine:
         # Salary expectations matching (10 points)
         max_score += 10
         job_salary_max = job_requirements.get('salary_max', 0)
+        if job_salary_max is None:
+            job_salary_max = 0
         candidate_salary_min = candidate.get('preferred_salary_min', 0)
+        if candidate_salary_min is None:
+            candidate_salary_min = 0
         
         if job_salary_max and candidate_salary_min:
             if candidate_salary_min <= job_salary_max:
@@ -587,7 +609,7 @@ def get_candidate_details(candidate_id):
                     MAX(u.last_login) as last_activity
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.id = %s AND u.role = 'candidate'
+                WHERE u.id::text = %s AND u.role = 'candidate'
                 GROUP BY u.id
             """, (candidate_id,))
             
@@ -616,7 +638,7 @@ def get_candidate_details(candidate_id):
                 FROM job_applications ja
                 LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
                 LEFT JOIN companies c ON jp.company_id::text = c.id::text
-                WHERE ja.candidate_id = %s
+                WHERE ja.candidate_id::text = %s
                 ORDER BY ja.submitted_at DESC
                 LIMIT 5
             """, (candidate_id,))
@@ -694,7 +716,7 @@ def match_candidates_to_job(job_id):
                 SELECT jp.*, hp.id as hr_profile_id
                 FROM job_postings jp
                 INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
+                WHERE jp.id::text = %s AND hp.user_id::text = %s
             """, (job_id, current_user_id))
             
             job = cursor.fetchone()

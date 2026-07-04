@@ -294,9 +294,8 @@ def get_recruiter_performance():
                 c.industry,
                 c.phone,
                 c.emirate,
-                c.status,
-                c.contact_email,
-                c.contact_phone
+                c.is_verified,
+                c.contact_email
             FROM companies c
             ORDER BY name ASC
         """)
@@ -378,7 +377,7 @@ def get_recruiter_performance():
         except Exception:
             conn.rollback()
             chat_replies = []
-
+ 
         chat_map = {}
         for row in chat_replies:
             rec_id = row['recruiter_id']
@@ -423,6 +422,8 @@ def get_recruiter_performance():
             # Flagged status: response rate < 50% or avg response time > 5 days or chat responsiveness < 70%
             flagged = (response_rate < 50.0) or (avg_response_days > 5.0) or (chat_responsiveness < 70.0)
             
+            status = 'verified' if comp['is_verified'] else 'pending'
+            
             report.append({
                 'id': comp_id,
                 'company_name': comp['name'] or comp['company_name'] or 'Private Enterprise',
@@ -436,7 +437,7 @@ def get_recruiter_performance():
                 'chat_responsiveness': chat_responsiveness,
                 'avg_chat_hours': avg_chat_hours or 2.5,
                 'flagged': flagged,
-                'status': comp['status']
+                'status': status
             })
             
         conn.close()

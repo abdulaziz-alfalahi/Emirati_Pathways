@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/context/AuthContext';
 // import { MockAuthProvider } from '@/context/MockAuthContext';
@@ -183,6 +183,12 @@ import { NotificationProvider } from '@/components/notifications/NotificationSys
 import ConnectionBanner from '@/components/notifications/ConnectionBanner';
 import { FeatureFlagsProvider } from '@/components/common/FeatureFlagGuard';
 
+// Government Dashboard Route Redirect to maintain query params
+const GovernmentRedirect: React.FC = () => {
+  const location = useLocation();
+  return <Navigate to={`/government-dashboard${location.search}`} replace />;
+};
+
 // App Content Component with bilingual support
 const AppContent: React.FC = () => {
   const { i18n } = useTranslation();
@@ -333,7 +339,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/recruiter/jd-builder"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['recruiter', 'employer_admin']}>
                     <JobDescriptionWizardPage />
                   </ProtectedRoute>
                 }
@@ -602,6 +608,11 @@ const AppContent: React.FC = () => {
                     <GovernmentDashboard />
                   </ProtectedRoute>
                 }
+              />
+
+              <Route
+                path="/government"
+                element={<GovernmentRedirect />}
               />
 
               {/* Resume Builder Routes */}

@@ -26,7 +26,7 @@ video_interview_bp = Blueprint('video_interview', __name__, url_prefix='/api/vid
 
 @video_interview_bp.route('/sessions/<session_id>/start', methods=['POST'])
 @jwt_required()
-def start_interview_session():
+def start_interview_session(session_id):
     """Start a video interview session"""
     try:
         user_id = get_jwt_identity()
@@ -52,7 +52,7 @@ def start_interview_session():
 
 @video_interview_bp.route('/sessions/<session_id>/end', methods=['POST'])
 @jwt_required()
-def end_interview_session():
+def end_interview_session(session_id):
     """End a video interview session"""
     try:
         user_id = get_jwt_identity()
@@ -83,7 +83,7 @@ def end_interview_session():
 
 @video_interview_bp.route('/sessions/<session_id>/analysis/realtime', methods=['POST'])
 @jwt_required()
-def process_realtime_analysis():
+def process_realtime_analysis(session_id):
     """Process real-time audio for AI analysis"""
     try:
         user_id = get_jwt_identity()
@@ -132,7 +132,7 @@ def process_realtime_analysis():
 
 @video_interview_bp.route('/sessions/<session_id>/analyze-transcript', methods=['POST'])
 @jwt_required()
-def analyze_transcript():
+def analyze_transcript(session_id):
     """Analyze interview transcript text using Qwen AI.
     
     Receives transcript chunks from:
@@ -260,7 +260,7 @@ Be objective and base scores on the actual transcript content. Consider UAE prof
 
 @video_interview_bp.route('/sessions/<session_id>/report', methods=['GET'])
 @jwt_required()
-def get_interview_report():
+def get_interview_report(session_id):
     """Get comprehensive AI-powered interview report"""
     try:
         user_id = get_jwt_identity()
@@ -280,7 +280,51 @@ def get_interview_report():
         logger.error(f"Error getting interview report: {e}")
         return jsonify({
             'success': False,
-            'error': 'Failed to get interview report',
+            'error': str(e)
+        }), 400
+@video_interview_bp.route('/sessions/<session_id>/recommendations', methods=['GET'])
+@jwt_required()
+def get_interview_recommendations(session_id):
+    """Get AI matched candidate growth recommendations for a completed session"""
+    try:
+        user_id = get_jwt_identity()
+        session_id = request.view_args['session_id']
+        
+        logger.info(f"Getting candidate recommendations for session {session_id}")
+        
+        from backend.db import get_db_connection
+        from psycopg2.extras import RealDictCursor
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT recommended_articles, recommended_trainings, recommended_mentors
+                    FROM candidate_interview_recommendations
+                    WHERE session_id = %s
+                """, (session_id,))
+                row = cur.fetchone()
+                if row:
+                    return jsonify({
+                        'success': True,
+                        'data': {
+                            'recommended_articles': row['recommended_articles'],
+                            'recommended_trainings': row['recommended_trainings'],
+                            'recommended_mentors': row['recommended_mentors']
+                        }
+                    }), 200
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': 'No recommendations found for this session'
+                    }), 404
+        finally:
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error getting interview recommendations: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get recommendations',
             'message': str(e)
         }), 500
 
@@ -290,7 +334,7 @@ def get_interview_report():
 
 @video_interview_bp.route('/sessions/<session_id>/recordings', methods=['GET'])
 @jwt_required()
-def get_session_recordings():
+def get_session_recordings(session_id):
     """Get secure access to session recordings"""
     try:
         user_id = get_jwt_identity()
@@ -314,7 +358,7 @@ def get_session_recordings():
         }), 500
 
 @video_interview_bp.route('/stream/<session_id>')
-def stream_interview_recording():
+def stream_interview_recording(session_id):
     """Stream interview recording with secure access"""
     try:
         session_id = request.view_args['session_id']

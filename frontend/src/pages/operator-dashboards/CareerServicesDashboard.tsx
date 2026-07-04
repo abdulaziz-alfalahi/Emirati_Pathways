@@ -28,7 +28,7 @@ export default function CareerServicesDashboard() {
   const [callStatusFilter, setCallStatusFilter] = useState('All');
   const [workStatusFilter, setWorkStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
 
   // Editing Sheet
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -44,7 +44,7 @@ export default function CareerServicesDashboard() {
   const fetchCandidates = async () => {
     setLoading(true);
     try {
-      const res = await restClient.get('/api/profile/crm-candidates');
+      const res = await restClient.get(`/api/profile/crm-candidates?_cb=${Date.now()}`);
       if (res.data?.success && res.data?.data) {
         const mapped = res.data.data.map((user: any) => {
           const profile = user.profile || {};

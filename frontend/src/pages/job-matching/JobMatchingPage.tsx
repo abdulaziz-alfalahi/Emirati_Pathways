@@ -10,6 +10,7 @@ import {
     Navigation, Car, CalendarDays
 } from 'lucide-react';
 import { restClient } from '@/utils/api';
+import JobApplicationDialog from '@/components/applications/JobApplicationDialog';
 
 // Brand tokens (unified with Education Pathway)
 const brand = {
@@ -48,6 +49,39 @@ const JobMatchingPage: React.FC = () => {
     const [activeSector, setActiveSector] = useState(0); // 0 = All
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
+    const [selectedJobForApplication, setSelectedJobForApplication] = useState<any>(null);
+
+    const handleApplyToJob = (job: any) => {
+        const formattedJob = {
+            id: String(job.id),
+            title: job.title,
+            company_name: job.company || job.company_name || 'Employer',
+            location: {
+                city: job.location || 'UAE',
+                emirate: 'UAE'
+            },
+            employment_type: job.type || 'Full-time',
+            experience_level: job.experienceLevel || 'Mid Level',
+            created_at: job.posted || new Date().toISOString(),
+            emiratization_priority: true,
+            description: job.description || job.desc || '',
+            required_skills: job.skills || []
+        };
+        setSelectedJobForApplication(formattedJob);
+        setIsApplicationDialogOpen(true);
+    };
+
+    const handleApplicationSubmitted = () => {
+        if (selectedJobForApplication) {
+            setJobs(prevJobs =>
+                prevJobs.map(j =>
+                    String(j.id) === String(selectedJobForApplication.id) ? { ...j, hasApplied: true } : j
+                )
+            );
+        }
+    };
+
     const colorPalette = [
         { bg: brand.blue, color: brand.blueText },
         { bg: brand.green, color: brand.greenText },
@@ -82,6 +116,9 @@ const JobMatchingPage: React.FC = () => {
             }
 
             return {
+                id: v.id,
+                hasApplied: !!v.hasApplied,
+                applicationStatus: v.applicationStatus || null,
                 title: v.title || t('Job Opportunity', 'فرصة عمل'),
                 company: v.company || v.company_name || t('Employer', 'جهة توظيف'),
                 location: v.location || t('UAE', 'الإمارات'),
@@ -91,6 +128,7 @@ const JobMatchingPage: React.FC = () => {
                 posted: rawDate ? new Date(rawDate).toLocaleDateString() : '',
                 daysAgo,
                 desc: v.description?.substring(0, 200) || '',
+                description: v.description || '',
                 skills: skills.length ? skills : [t('General', 'عام')],
                 sector: v.department || v.industry || t('Various', 'متنوع'),
                 featured: (v.matchScore || v.match_score || 0) >= 85,
@@ -361,18 +399,34 @@ const JobMatchingPage: React.FC = () => {
                                     ))}
                                 </div>
                                 <div style={{ display: 'flex', gap: 8 }}>
-                                    <button style={{
-                                        background: brand.primary, color: '#fff', border: 'none',
-                                        padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: 4,
-                                    }}>
-                                        <Send size={14} /> {t('Apply', 'قدّم')}
-                                    </button>
-                                    <button style={{
-                                        background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`,
-                                        padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: 4,
-                                    }}>
+                                    {job.hasApplied ? (
+                                        <button disabled style={{
+                                            background: '#DCFCE7', color: '#166534', border: 'none',
+                                            padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                                            display: 'flex', alignItems: 'center', gap: 4, cursor: 'not-allowed',
+                                        }}>
+                                            <CheckCircle size={14} /> {t('Applied', 'تم التقديم')}
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            onClick={() => handleApplyToJob(job)}
+                                            style={{
+                                                background: brand.primary, color: '#fff', border: 'none',
+                                                padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', gap: 4,
+                                            }}
+                                        >
+                                            <Send size={14} /> {t('Apply', 'قدّم')}
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={() => handleApplyToJob(job)}
+                                        style={{
+                                            background: '#fff', color: brand.textSecondary, border: `1px solid ${brand.border}`,
+                                            padding: '7px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: 4,
+                                        }}
+                                    >
                                         <Eye size={14} /> {t('View', 'عرض')}
                                     </button>
                                 </div>
@@ -415,12 +469,24 @@ const JobMatchingPage: React.FC = () => {
                                 <span style={{ background: brand.green, color: brand.greenText, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
                                     {job.match}% {t('Match', 'تطابق')}
                                 </span>
-                                <button style={{
-                                    background: brand.primary, color: '#fff', border: 'none',
-                                    padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                                }}>
-                                    {t('Apply', 'قدّم')}
-                                </button>
+                                {job.hasApplied ? (
+                                    <button disabled style={{
+                                        background: '#DCFCE7', color: '#166534', border: 'none',
+                                        padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'not-allowed',
+                                    }}>
+                                        {t('Applied', 'تم التقديم')}
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={() => handleApplyToJob(job)}
+                                        style={{
+                                            background: brand.primary, color: '#fff', border: 'none',
+                                            padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                        }}
+                                    >
+                                        {t('Apply', 'قدّم')}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

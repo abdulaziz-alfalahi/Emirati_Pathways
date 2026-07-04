@@ -21,7 +21,7 @@ from backend.db import get_db_connection
 user_activity_bp = Blueprint('user_activity', __name__)
 
 
-def generate_mock_activity(user_id: int, count: int = 20):
+def generate_mock_activity(user_id, count: int = 20):
     """Generate mock activity logs for a user."""
     actions = [
         ('login', 'User logged in successfully'),
@@ -57,7 +57,7 @@ def generate_mock_activity(user_id: int, count: int = 20):
     return activities
 
 
-def generate_mock_sessions(user_id: int):
+def generate_mock_sessions(user_id):
     """Generate mock active sessions for a user."""
     sessions = [
         {
@@ -97,7 +97,7 @@ def generate_mock_sessions(user_id: int):
     return sessions
 
 
-@user_activity_bp.route('/api/admin/users/<int:user_id>/activity', methods=['GET'])
+@user_activity_bp.route('/api/admin/users/<user_id>/activity', methods=['GET'])
 def get_user_activity(user_id):
     """
     Get activity logs and sessions for a specific user.
@@ -194,7 +194,7 @@ def terminate_session(session_id):
         }), 500
 
 
-@user_activity_bp.route('/api/admin/users/<int:user_id>/sessions', methods=['GET'])
+@user_activity_bp.route('/api/admin/users/<user_id>/sessions', methods=['GET'])
 def get_user_sessions(user_id):
     """
     Get all active sessions for a specific user.
@@ -213,7 +213,7 @@ def get_user_sessions(user_id):
         }), 500
 
 
-@user_activity_bp.route('/api/admin/users/<int:user_id>/sessions/terminate-all', methods=['POST'])
+@user_activity_bp.route('/api/admin/users/<user_id>/sessions/terminate-all', methods=['POST'])
 def terminate_all_sessions(user_id):
     """
     Terminate all sessions for a specific user except the current one.

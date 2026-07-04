@@ -808,6 +808,36 @@ def submit_feedback():
             fetch_all=False
         )
         
+        # Notify Admins using CommunicationService
+        try:
+            admins = execute_query("""
+                SELECT id FROM users 
+                WHERE role IN ('admin', 'super_user', 'platform_administrator')
+            """)
+            if admins:
+                from backend.services.communication_service import communication_service, NotificationType
+                
+                feedback_type = data.get('type', 'general')
+                feedback_type_label = "Bug Report" if feedback_type == 'bug' else "Feature Request"
+                feedback_msg = data.get('message') or ''
+                msg_preview = (feedback_msg[:50] + '...') if len(feedback_msg) > 50 else feedback_msg
+                
+                for admin in admins:
+                    communication_service.create_notification(
+                        user_id=str(admin['id']),
+                        notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
+                        metadata={
+                            'title': f"New {feedback_type_label}",
+                            'message': f"User {user_id or 'guest'} submitted feedback: {msg_preview}",
+                            'feedback_id': feedback_id,
+                            'type': feedback_type,
+                            'priority': 'high',
+                            'link': '/admin-dashboard?tab=feedback'
+                        }
+                    )
+        except Exception as notif_error:
+            logger.error(f"Failed to send admin notifications on SQL feedback submission: {notif_error}")
+        
         return jsonify({
             'success': True,
             'message': 'Feedback submitted successfully',
@@ -900,6 +930,51 @@ def update_feedback_status(feedback_id):
                 notification_status = 'failed'
                 notification_error = str(notif_err)
 
+        elif new_status and new_status.lower() == 'pending_clarification' and feedback_item and target_user_id:
+            try:
+                # Skip guest
+                if str(target_user_id).lower() != 'guest':
+                    from backend.services.communication_service import communication_service, NotificationType
+                    
+                    original_msg = feedback_item['message'] or ''
+                    msg_preview = (original_msg[:50] + '...') if len(original_msg) > 50 else original_msg
+                    
+                    logger.info(f"Sending clarification notification to user {target_user_id}")
+                    
+                    # Determine role-based link
+                    user_role = feedback_item.get('role', 'candidate')
+                    base_url = '/candidate-dashboard'
+                    if user_role in ['recruiter', 'recruiter', 'employer_admin']:
+                        base_url = '/recruiter-dashboard'
+                    elif user_role in ['admin', 'admin']:
+                        base_url = '/admin-dashboard'
+                        
+                    target_link = f"{base_url}?action=feedback_history"
+                    
+                    communication_service.create_notification(
+                        user_id=str(target_user_id),
+                        notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
+                        metadata={
+                            'title': 'Clarification Requested',
+                            'message': f"Our support team requested clarification on your reported feedback: '{resolution_notes or msg_preview}'",
+                            'feedback_id': feedback_id,
+                            'priority': 'high',
+                            'link': target_link,
+                            'type': 'feedback_clarification' 
+                        }
+                    )
+                    logger.info("Notification sent successfully")
+                    notification_status = 'sent'
+                else:
+                    logger.info("Skipping notification for guest user")
+                    notification_status = 'skipped_guest'
+            except Exception as notif_err:
+                logger.error(f"Failed to send clarification notification: {notif_err}")
+                import traceback
+                traceback.print_exc()
+                notification_status = 'failed'
+                notification_error = str(notif_err)
+
         cursor.close()
         conn.close()
                 
@@ -915,6 +990,46 @@ def update_feedback_status(feedback_id):
     except Exception as e:
         logger.error(f"Failed to update feedback status: {e}")
         return jsonify({'success': False, 'message': 'Failed to update feedback status'}), 500
+
+@feedback_bp.route('/<feedback_id>/clarify', methods=['POST'])
+@jwt_required(optional=True)
+def clarify_feedback(feedback_id):
+    """Submit clarification reply for feedback"""
+    try:
+        data = request.json
+        reply_msg = data.get('message')
+        
+        if not reply_msg:
+            return jsonify({'success': False, 'message': 'Message is required'}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # 1. Fetch current feedback details
+        cursor.execute("SELECT message, user_id FROM feedback WHERE id = %s", (feedback_id,))
+        feedback_item = cursor.fetchone()
+        
+        if not feedback_item:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'Feedback not found'}), 404
+            
+        # 2. Append reply to message
+        updated_message = f"{feedback_item['message']}\n\n[Clarification Reply]:\n{reply_msg}"
+        
+        # 3. Update feedback status back to 'open'
+        cursor.execute(
+            "UPDATE feedback SET status = 'open', message = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+            (updated_message, feedback_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Clarification reply submitted successfully'})
+    except Exception as e:
+        logger.error(f"Failed to submit clarification: {e}")
+        return jsonify({'success': False, 'message': 'Failed to submit clarification'}), 500
 
 
 # =====================================================

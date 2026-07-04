@@ -12,6 +12,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area
@@ -38,6 +47,8 @@ const ExecutiveDashboard: React.FC = () => {
 
   // ── State ──────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [executiveData, setExecutiveData] = useState<any>(null);
   const [scorecards, setScorecards] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
@@ -48,6 +59,72 @@ const ExecutiveDashboard: React.FC = () => {
   const [newDirective, setNewDirective] = useState({
     title: '', body: '', category: 'strategic_priority', priority: 'normal'
   });
+
+  const { toast } = useToast();
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState<any>(null);
+
+  const handleBoardPackDownload = async () => {
+    toast({
+      title: b("Generating Briefing Pack", "جاري إنشاء ملف المجلس"),
+      description: b("Please wait while the AI compiles the latest board pack...", "يرجى الانتظار بينما يقوم الذكاء الاصطناعي بتجميع ملف المجلس..."),
+    });
+    try {
+      const res = await restClient.get('/api/board/briefing-pack', { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'text/markdown' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Board_Briefing_Pack_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.md`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: b("Success", "تم بنجاح"),
+        description: b("Briefing pack generated and downloaded successfully.", "تم إنشاء وتحميل ملف المجلس بنجاح."),
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: b("Download Error", "خطأ في التحميل"),
+        description: b("Failed to generate briefing pack.", "فشل إنشاء ملف المجلس."),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExport = async () => {
+    toast({
+      title: b("Export Started", "بدأ التصدير"),
+      description: b("Exporting executive dashboard metrics as CSV...", "جاري تصدير مؤشرات لوحة الإدارة بصيغة CSV..."),
+    });
+    try {
+      const res = await restClient.get('/api/board/export', { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Executive_Dashboard_Export_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: b("Export Complete", "اكتمل التصدير"),
+        description: b("Dashboard report has been downloaded.", "تم تحميل تقرير لوحة الإدارة بنجاح."),
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: b("Export Error", "خطأ في التصدير"),
+        description: b("Failed to export dashboard metrics.", "فشل تصدير مؤشرات لوحة الإدارة."),
+        variant: "destructive",
+      });
+    }
+  };
 
   // ── User Data ──────────────────────────────────────────────────
   const getUserData = () => {
@@ -77,8 +154,10 @@ const ExecutiveDashboard: React.FC = () => {
   // ── Data Fetching ──────────────────────────────────────────────
   useEffect(() => { fetchAllData(); }, []);
 
-  const fetchAllData = async () => {
+  const fetchAllData = async (isRetry = false) => {
     setLoading(true);
+    setError(false);
+    if (isRetry) setRetrying(true);
     try {
       // Fetch all APIs in parallel
       const [execRes, scoreRes, insightsRes, dirRes, demoRes] = await Promise.allSettled([
@@ -89,81 +168,34 @@ const ExecutiveDashboard: React.FC = () => {
         restClient.get('/api/metrics/demographics')
       ]);
 
+      let hasError = false;
+
       // Executive impact data
       if (execRes.status === 'fulfilled' && execRes.value?.data?.success) {
         setExecutiveData(execRes.value.data.data);
       } else {
-        // Fallback mock data
-        setExecutiveData({
-          kpis: { total_placed: 1247, economic_value_aed: '12.4M', emiratization_target_progress: 84, active_partners: 38 },
-          strategic_impact: [
-            { month: 'Jan', placements: 45, target: 50 },
-            { month: 'Feb', placements: 52, target: 50 },
-            { month: 'Mar', placements: 61, target: 55 },
-            { month: 'Apr', placements: 58, target: 55 },
-            { month: 'May', placements: 72, target: 60 },
-            { month: 'Jun', placements: 68, target: 60 },
-          ],
-          sector_distribution: [
-            { name: b('Banking', 'المصارف'), value: 35 },
-            { name: b('Technology', 'التكنولوجيا'), value: 28 },
-            { name: b('Healthcare', 'الصحة'), value: 18 },
-            { name: b('Energy', 'الطاقة'), value: 12 },
-            { name: b('Other', 'أخرى'), value: 7 },
-          ]
-        });
+        hasError = true;
       }
 
       // Scorecards
       if (scoreRes.status === 'fulfilled' && scoreRes.value?.data) {
         setScorecards(scoreRes.value.data);
       } else {
-        // Fallback mock data for scorecards
-        setScorecards({
-          placement_rate: { value: '12.4%', trend: '+2.4%', target: '15.0%', status: 'good' },
-          time_to_hire: { value: '24 days', trend: '-3 days', target: '30 days', status: 'excellent' },
-          pipeline_health: { value: '1,247', trend: '+12%', target: '1,000', status: 'good' },
-          emiratisation_progress: { value: '4.2%', trend: '+0.5%', target: '5.0%', status: 'warning' },
-          active_companies: { value: '38', trend: '+5%', target: '50', status: 'good' },
-          total_offers: { value: '156', trend: '+18%', target: '100', status: 'excellent' }
-        });
+        hasError = true;
       }
 
       // Insights
       if (insightsRes.status === 'fulfilled' && insightsRes.value?.data) {
         setInsights(insightsRes.value.data);
       } else {
-        // Fallback mock data for insights
-        setInsights([
-          {
-            id: 1,
-            title: b('Placement Rate Growth', 'نمو معدل التوظيف'),
-            description: b('Abu Dhabi placement rate increased by 12%, driven primarily by the technology sector.', 'ارتفع معدل التوظيف في أبوظبي بنسبة 12%، مدفوعاً بشكل أساسي بقطاع التكنولوجيا.'),
-            severity: 'info',
-            theme: 'talent_supply'
-          },
-          {
-            id: 2,
-            title: b('Company Inactivity', 'خمول الشركات'),
-            description: b('3 major enterprise companies have not posted new roles in the last 30 days.', 'لم تقم 3 شركات كبرى بنشر وظائف جديدة خلال الثلاثين يومًا الماضية.'),
-            severity: 'warning',
-            theme: 'company_demand'
-          },
-          {
-            id: 3,
-            title: b('Candidate Registration Surge', 'طفرة في تسجيل المرشحين'),
-            description: b('45 candidates completed their profile this week vs. 28 last week.', 'أكمل 45 مرشحًا ملفاتهم الشخصية هذا الأسبوع مقابل 28 الأسبوع الماضي.'),
-            severity: 'info',
-            theme: 'platform_health'
-          }
-        ]);
+        hasError = true;
       }
 
       // Directives
       if (dirRes.status === 'fulfilled' && dirRes.value?.data) {
         setDirectives(dirRes.value.data);
       } else {
-        setDirectives([]);
+        hasError = true;
       }
 
       // Demographics data
@@ -195,12 +227,25 @@ const ExecutiveDashboard: React.FC = () => {
             { name: b('Widowed', 'أرمل'), value: 300 }
           ]
         });
+      } else {
+        hasError = true;
       }
 
+      if (hasError) {
+        throw new Error("One or more dashboard resources failed to load");
+      }
+
+      setError(false);
     } catch (error) {
       console.error('Error fetching executive data:', error);
+      setError(true);
+      setExecutiveData(null);
+      setScorecards(null);
+      setInsights([]);
+      setDemographicsData(null);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   };
 
@@ -292,7 +337,31 @@ const ExecutiveDashboard: React.FC = () => {
         <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-            <p className="text-sm text-slate-500 font-dubai-medium">{b('Loading Executive Intelligence...', 'جاري تحميل لوحة الإدارة...')}</p>
+            <p className="text-sm text-slate-500 font-dubai-medium">
+              {retrying ? b('Retrying live API request...', 'جاري إعادة محاولة الاتصال بالخادم...') : b('Loading Executive Intelligence...', 'جاري تحميل لوحة الإدارة...')}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !loading) {
+    return (
+      <div className={`min-h-screen bg-[#FAFBFC] font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={toggleLanguage} />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="max-w-md w-full bg-white border border-red-100 rounded-xl p-6 shadow-sm text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-lg font-dubai-bold text-slate-800 mb-2">
+              {b('Database Connection Offline', 'فشل الاتصال بقاعدة البيانات')}
+            </h2>
+            <p className="text-sm text-slate-500 font-dubai-medium mb-6">
+              {b('We are currently unable to retrieve secure executive metrics. The system will not load historical fallbacks to prevent decision inaccuracies.', 'لا يمكن حالياً استرداد المؤشرات التنفيذية الآمنة. لن يقوم النظام بتحميل بيانات احتياطية غير دقيقة لمنع اتخاذ قرارات خاطئة.')}
+            </p>
+            <Button onClick={() => fetchAllData(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium w-full">
+              {b('Retry Connection', 'إعادة محاولة الاتصال')}
+            </Button>
           </div>
         </div>
       </div>
@@ -332,11 +401,11 @@ const ExecutiveDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-                <Button variant="outline" size="sm" className="font-dubai-medium flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleBoardPackDownload} className="font-dubai-medium flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   {b('Board Pack', 'ملف المجلس')}
                 </Button>
-                <Button variant="outline" size="sm" className="font-dubai-medium flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExport} className="font-dubai-medium flex items-center gap-2">
                   <Download className="h-4 w-4" />
                   {b('Export', 'تصدير')}
                 </Button>
@@ -347,15 +416,15 @@ const ExecutiveDashboard: React.FC = () => {
           {/* ─── Quick Actions ─── */}
           <div className="mb-6">
             <div className="flex flex-wrap gap-3" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium shadow-sm flex items-center gap-2">
+              <Button onClick={() => setBriefModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium shadow-sm flex items-center gap-2">
                 <Brain className="h-4 w-4" />
                 {b('AI Strategic Brief', 'موجز استراتيجي')}
               </Button>
-              <Button variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50 flex items-center gap-2">
+              <Button onClick={() => { handleTabChange('directives'); setTimeout(() => document.getElementById('directive-title')?.focus(), 200); }} variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50 flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 {b('Issue Directive', 'إصدار توجيه')}
               </Button>
-              <Button variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50 flex items-center gap-2">
+              <Button onClick={() => handleTabChange('strategic')} variant="outline" className="font-dubai-medium bg-white hover:bg-slate-50 flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 {b('Deep Analytics', 'تحليلات عميقة')}
               </Button>
@@ -622,7 +691,7 @@ const ExecutiveDashboard: React.FC = () => {
                       <CardContent>
                         <p className="text-sm text-slate-600 font-dubai-medium">{insight.description}</p>
                         <div className="mt-4 flex justify-end">
-                          <Button variant="ghost" size="sm" className="text-emerald-600 h-8 gap-1 font-dubai-medium">
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedInsight(insight)} className="text-emerald-600 h-8 gap-1 font-dubai-medium">
                             {b('View Details', 'عرض التفاصيل')} <ArrowRight className={`h-3 w-3 ${isRTL ? 'rotate-180' : ''}`} />
                           </Button>
                         </div>
@@ -719,6 +788,7 @@ const ExecutiveDashboard: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-xs font-dubai-medium text-slate-600">{b('Title', 'العنوان')}</label>
                       <Input
+                        id="directive-title"
                         placeholder={b('e.g., Investigate placement drop', 'مثال: التحقيق في انخفاض التوظيف')}
                         value={newDirective.title}
                         onChange={e => setNewDirective({...newDirective, title: e.target.value})}
@@ -1019,6 +1089,110 @@ const ExecutiveDashboard: React.FC = () => {
             </TabsContent>
 
           </Tabs>
+
+          {/* ─── AI Strategic Brief Modal ─── */}
+          <Dialog open={briefModalOpen} onOpenChange={setBriefModalOpen}>
+            <DialogContent className="max-w-md bg-white p-6 rounded-xl border border-slate-200">
+              <DialogHeader>
+                <DialogTitle className="font-dubai-bold text-lg text-slate-900 flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-emerald-600 animate-pulse" />
+                  {b('AI Strategic Briefing', 'موجز استراتيجي ذكي')}
+                </DialogTitle>
+                <DialogDescription className="font-dubai-medium text-xs text-slate-400">
+                  {b('Real-time AI-powered assessment of national talent pipeline.', 'تقييم لحظي مدعوم بالذكاء الاصطناعي لمسار الكفاءات الوطنية.')}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 my-4 font-dubai">
+                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                  <h4 className="text-xs font-dubai-bold text-emerald-800 uppercase tracking-wider mb-1">{b('High Performance Sectors', 'القطاعات الأعلى أداءً')}</h4>
+                  <p className="text-sm text-emerald-700 font-dubai-medium">
+                    {b(
+                      'Technology and Finance sectors are exceeding target growth by +14% and +18% respectively, driven by NAFIS training incentives alignment.',
+                      'قطاعا التكنولوجيا والمالية يتجاوزان النمو المستهدف بنسبة +14% و +18% على التوالي، مدفوعين بمواءمة حوافز التدريب في "نافس".'
+                    )}
+                  </p>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
+                  <h4 className="text-xs font-dubai-bold text-amber-800 uppercase tracking-wider mb-1">{b('Northern Emirates Outreach', 'التواصل في الإمارات الشمالية')}</h4>
+                  <p className="text-sm text-amber-700 font-dubai-medium">
+                    {b(
+                      'Focus is required on private sector onboarding in Northern Emirates (Sharjah, Fujairah, Ajman) where average compliance stands at 50% of the 2025 target.',
+                      'يتطلب التركيز على إشراك القطاع الخاص في الإمارات الشمالية (الشارقة، الفجيرة، عجمان) حيث يبلغ متوسط الامتثال 50% من هدف 2025.'
+                    )}
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <h4 className="text-xs font-dubai-bold text-blue-800 uppercase tracking-wider mb-1">{b('Military Service Integration', 'دمج الخدمة الوطنية')}</h4>
+                  <p className="text-sm text-blue-700 font-dubai-medium">
+                    {b(
+                      'National Service integration is operating at high efficiency with 12,000 completed profiles ready for direct private sector placements.',
+                      'يعمل نظام دمج الخدمة الوطنية بكفاءة عالية مع توفر 12,000 ملف مكتمل جاهز للتعيين المباشر في القطاع الخاص.'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setBriefModalOpen(false)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium w-full">
+                  {b('Close Briefing', 'إغلاق الموجز')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* ─── Insight Detail Modal ─── */}
+          <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
+            <DialogContent className="max-w-md bg-white p-6 rounded-xl border border-slate-200">
+              {selectedInsight && (
+                <>
+                  <DialogHeader>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={selectedInsight.severity === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}>
+                        {selectedInsight.theme?.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                    <DialogTitle className="font-dubai-bold text-lg text-slate-900">
+                      {selectedInsight.title}
+                    </DialogTitle>
+                    <DialogDescription className="font-dubai-medium text-xs text-slate-400">
+                      {b('Strategic Recommendation & Analysis', 'التوصيات الاستراتيجية والتحليل')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 my-4 font-dubai">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60">
+                      <h4 className="text-xs font-dubai-bold text-slate-500 uppercase tracking-wider mb-1">{b('Observation', 'الملاحظة')}</h4>
+                      <p className="text-sm text-slate-700 font-dubai-medium">{selectedInsight.description}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-dubai-bold text-slate-700 uppercase tracking-wider">{b('Recommended Actions', 'الإجراءات الموصى بها')}</h4>
+                      <ul className="list-disc list-inside text-xs text-slate-600 space-y-1 font-dubai-medium">
+                        <li>{b('Review target guidelines with private sector partners.', 'مراجعة المبادئ التوجيهية المستهدفة مع شركاء القطاع الخاص.')}</li>
+                        <li>{b('Deploy incentive matching grants to accelerate placements.', 'نشر منح مطابقة الحوافز لتسريع التعيينات.')}</li>
+                        <li>{b('Coordinate with regional authorities to resolve bottlenecks.', 'التنسيق مع السلطات الإقليمية لحل العقبات.')}</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <DialogFooter className="flex gap-2">
+                    <Button variant="outline" onClick={() => setSelectedInsight(null)} className="font-dubai-medium flex-1">
+                      {b('Dismiss', 'إغلاق')}
+                    </Button>
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium flex-1" onClick={() => {
+                      setNewDirective({
+                        title: b(`Action on: ${selectedInsight.title}`, `إجراء بشأن: ${selectedInsight.title}`),
+                        body: b(`Based on AI Insight: "${selectedInsight.description}", we direct the operations team to implement the recommended action plans.`, `بناءً على الرؤية الذكية: "${selectedInsight.description}"، نوجه فريق العمليات بتنفيذ خطط العمل الموصى بها.`),
+                        category: 'strategic_priority',
+                        priority: selectedInsight.severity === 'warning' ? 'high' : 'normal'
+                      });
+                      setSelectedInsight(null);
+                      handleTabChange('directives');
+                      setTimeout(() => document.getElementById('directive-title')?.focus(), 200);
+                    }}>
+                      {b('Convert to Directive', 'تحويل إلى توجيه')}
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

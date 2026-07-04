@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDateFromString } from '@/utils/dateFormat';
+import { toast } from 'sonner';
 
 interface MatchBreakdown {
   skills_match?: number;
@@ -119,6 +120,37 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
   const [matchMessage, setMatchMessage] = useState('');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat?: number, long?: number }>({});
+  const [expandedJobDetails, setExpandedJobDetails] = useState<Set<string>>(new Set());
+
+  const toggleExpandedJob = (jobId: string) => {
+    setExpandedJobDetails(prev => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const loadSavedJobs = async () => {
+      if (!candidateProfile?.id) return;
+      try {
+        const response = await restClient.get('/api/candidate/saved-jobs', {
+          params: { user_id: candidateProfile?.id }
+        });
+        if (response.data.success && response.data.data) {
+          const savedIds = new Set<string>(response.data.data.map((job: any) => String(job.id || job.job_id)));
+          setBookmarkedJobs(savedIds);
+        }
+      } catch (err) {
+        console.error('Failed to load saved jobs:', err);
+      }
+    };
+    loadSavedJobs();
+  }, [candidateProfile]);
 
   // Error states
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +270,10 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
     setRetryCountdown(retryAfter);
   };
 
-  const handleBookmark = (jobId: string) => {
+  const handleBookmark = async (jobId: string) => {
+    const isBookmarked = bookmarkedJobs.has(jobId);
+    
+    // Optimistic UI update
     setBookmarkedJobs(prev => {
       const newSet = new Set(prev);
       if (newSet.has(jobId)) {
@@ -248,6 +283,30 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       }
       return newSet;
     });
+
+    try {
+      if (isBookmarked) {
+        await restClient.delete(`/api/jobs/${jobId}/unsave`, {
+          params: { user_id: candidateProfile?.id }
+        });
+      } else {
+        await restClient.post(`/api/jobs/${jobId}/save`, {
+          user_id: candidateProfile?.id
+        });
+      }
+    } catch (error) {
+      console.error('Error bookmarking job:', error);
+      // Rollback on failure
+      setBookmarkedJobs(prev => {
+        const newSet = new Set(prev);
+        if (isBookmarked) {
+          newSet.add(jobId);
+        } else {
+          newSet.delete(jobId);
+        }
+        return newSet;
+      });
+    }
   };
 
   const handleApply = async (jobId: string) => {
@@ -266,7 +325,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
       });
 
       if (response.data.success) {
-        alert(t('Application submitted successfully!', 'تم تقديم الطلب بنجاح!'));
+        toast.success(t('Application submitted successfully!', 'تم تقديم الطلب بنجاح!'));
       } else {
         // Rollback on failure
         setJobs(prevJobs =>
@@ -274,13 +333,13 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             job.id === jobId ? { ...job, hasApplied: false } : job
           )
         );
-        alert(response.data.message || t('Application failed', 'فشل تقديم الطلب'));
+        toast.error(response.data.message || t('Application failed', 'فشل تقديم الطلب'));
       }
     } catch (error: any) {
       console.error('Error applying to job:', error);
       if (error.response?.data?.message?.includes('already applied')) {
         // Keep the optimistic state — user already applied
-        alert(t('You have already applied for this job.', 'لقد قدمت بالفعل على هذه الوظيفة.'));
+        toast.info(t('You have already applied for this job.', 'لقد قدمت بالفعل على هذه الوظيفة.'));
       } else {
         // Rollback on network error
         setJobs(prevJobs =>
@@ -288,7 +347,7 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
             job.id === jobId ? { ...job, hasApplied: false } : job
           )
         );
-        alert(t('Failed to submit application. Please try again.', 'فشل تقديم الطلب. يرجى المحاولة مرة أخرى.'));
+        toast.error(t('Failed to submit application. Please try again.', 'فشل تقديم الطلب. يرجى المحاولة مرة أخرى.'));
       }
     }
   };
@@ -714,7 +773,42 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                       </Button>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-4">{job.description}</p>
+                    {expandedJobDetails.has(job.id) ? (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4 border text-sm mb-4">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-1">{t('Job Description', 'الوصف الوظيفي')}</h4>
+                          <p className="text-muted-foreground whitespace-pre-line">{job.description}</p>
+                        </div>
+                        {job.requirements && job.requirements.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-foreground mb-1">{t('Requirements', 'المتطلبات')}</h4>
+                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                              {job.requirements.map((req, idx) => {
+                                const reqText = typeof req === 'string'
+                                  ? req
+                                  : (req as any)?.description || (req as any)?.category || '';
+                                return <li key={idx}>{reqText}</li>;
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                        {job.benefits && job.benefits.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-foreground mb-1">{t('Benefits', 'المزايا')}</h4>
+                            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                              {job.benefits.map((benefit, idx) => <li key={idx}>{benefit}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-1">{t('Company Info', 'معلومات الشركة')}</h4>
+                          <p className="text-muted-foreground">{t('Company:', 'الشركة:')} {job.company}</p>
+                          <p className="text-muted-foreground">{t('Location:', 'الموقع:')} {job.location}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{job.description}</p>
+                    )}
 
                     {/* Match Breakdown (Expandable) */}
                     {job.matchBreakdown && cvLoaded && (
@@ -838,9 +932,9 @@ const JobMatches: React.FC<JobMatchesProps> = ({ candidateProfile }) => {
                     )}
 
                     <div className="flex justify-end space-x-2 pt-4 border-t">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => toggleExpandedJob(job.id)}>
                         <ExternalLink className="h-4 w-4" style={{ marginInlineEnd: 8 }} />
-                        {t('View Details', 'عرض التفاصيل')}
+                        {expandedJobDetails.has(job.id) ? t('Hide Details', 'إخفاء التفاصيل') : t('View Details', 'عرض التفاصيل')}
                       </Button>
                       {job.hasApplied ? (
                         <Badge className="bg-green-100 text-green-800 px-4 py-2 flex items-center">

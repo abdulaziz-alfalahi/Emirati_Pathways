@@ -35,6 +35,72 @@ jd_engine = get_jd_builder_engine()
 ai_matching = get_ai_matching_engine()
 
 
+def ensure_jd_tables_exist():
+    """Ensure job_postings and demand_signals tables exist at startup."""
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            # Create job_postings table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS job_postings (
+                    id SERIAL PRIMARY KEY,
+                    jd_id VARCHAR(100) UNIQUE NOT NULL,
+                    recruiter_id VARCHAR(100) NOT NULL,
+                    company_id VARCHAR(100) NOT NULL,
+                    title VARCHAR(500) NOT NULL,
+                    title_arabic VARCHAR(500),
+                    department VARCHAR(200),
+                    job_type VARCHAR(50),
+                    job_level VARCHAR(50),
+                    emirate VARCHAR(100),
+                    city VARCHAR(100),
+                    remote_option BOOLEAN DEFAULT FALSE,
+                    description TEXT,
+                    description_arabic TEXT,
+                    requirements JSONB,
+                    responsibilities JSONB,
+                    benefits JSONB,
+                    compensation JSONB,
+                    application_process JSONB,
+                    metadata JSONB,
+                    status VARCHAR(50) DEFAULT 'draft',
+                    views_count INTEGER DEFAULT 0,
+                    applications_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    published_at TIMESTAMP,
+                    closed_at TIMESTAMP
+                )
+            """)
+            
+            # Create demand_signals table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS demand_signals (
+                    id SERIAL PRIMARY KEY,
+                    company_id TEXT NOT NULL UNIQUE,
+                    company_name TEXT,
+                    job_count INTEGER DEFAULT 1,
+                    sector TEXT,
+                    emirate TEXT,
+                    matching_candidates INTEGER DEFAULT 0,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            """)
+            conn.commit()
+            logger.info("✅ Recruiter JD tables verified/created at startup")
+    except Exception as e:
+        logger.error(f"Failed to create JD tables: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+# Ensure tables exist on module load
+ensure_jd_tables_exist()
+
+
 
 
 def _get_jd_from_db(jd_id: str) -> Optional[Dict[str, Any]]:
@@ -1001,6 +1067,30 @@ def add_to_shortlist():
                 logger.warning(f"Column migration check: {mig_err}")
                 conn.rollback()
 
+            # Ensure unique constraint exists on shortlisted_candidates (job_id, candidate_id)
+            try:
+                cursor.execute("""
+                    SELECT conname FROM pg_constraint 
+                    WHERE conrelid = 'shortlisted_candidates'::regclass 
+                      AND contype = 'u' 
+                      AND pg_get_constraintdef(oid) LIKE '%job_id%' 
+                      AND pg_get_constraintdef(oid) LIKE '%candidate_id%'
+                """)
+                has_uq = cursor.fetchone()
+                if not has_uq:
+                    logger.info("Adding unique constraint on shortlisted_candidates (job_id, candidate_id)")
+                    # Delete any duplicate entries first
+                    cursor.execute("""
+                        DELETE FROM shortlisted_candidates a USING shortlisted_candidates b
+                        WHERE a.id < b.id AND a.job_id = b.job_id AND a.candidate_id = b.candidate_id
+                    """)
+                    cursor.execute("ALTER TABLE shortlisted_candidates ADD CONSTRAINT uq_shortlisted_candidates UNIQUE (job_id, candidate_id)")
+                    conn.commit()
+                    logger.info("✅ Unique constraint added to shortlisted_candidates")
+            except Exception as uq_err:
+                logger.warning(f"Unique constraint check failed: {uq_err}")
+                conn.rollback()
+
             # Look up integer job_postings.id from the UUID jd_id
             cursor.execute(
                 "SELECT id FROM job_postings WHERE jd_id = %s",
@@ -1035,10 +1125,10 @@ def add_to_shortlist():
                 sync_cur.execute("""
                     UPDATE job_applications 
                     SET status = 'shortlisted', updated_at = NOW()
-                    WHERE (user_id::text = %s OR candidate_id::text = %s)
+                    WHERE candidate_id::text = %s
                       AND (job_id::text = %s OR job_id::text = %s)
                       AND status NOT IN ('accepted', 'withdrawn', 'offered')
-                """, (str(candidate_id), str(candidate_id), str(jd_id), str(job_id_int)))
+                """, (str(candidate_id), str(jd_id), str(job_id_int)))
                 if sync_cur.rowcount > 0:
                     logger.info(f"G2: Synced job_applications status to 'shortlisted' for candidate {candidate_id}, job {jd_id}")
                 conn.commit()
@@ -1205,40 +1295,6 @@ def save_jd(jd_id):
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        # Check if job_postings table exists, create if not (don't drop existing table!)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS job_postings (
-                id SERIAL PRIMARY KEY,
-                jd_id VARCHAR(100) UNIQUE NOT NULL,
-                recruiter_id VARCHAR(100) NOT NULL,
-                company_id VARCHAR(100) NOT NULL,
-                title VARCHAR(500) NOT NULL,
-                title_arabic VARCHAR(500),
-                department VARCHAR(200),
-                job_type VARCHAR(50),
-                job_level VARCHAR(50),
-                emirate VARCHAR(100),
-                city VARCHAR(100),
-                remote_option BOOLEAN DEFAULT FALSE,
-                description TEXT,
-                description_arabic TEXT,
-                requirements JSONB,
-                responsibilities JSONB,
-                benefits JSONB,
-                compensation JSONB,
-                application_process JSONB,
-                metadata JSONB,
-                status VARCHAR(50) DEFAULT 'draft',
-                views_count INTEGER DEFAULT 0,
-                applications_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                published_at TIMESTAMP,
-                closed_at TIMESTAMP
-            )
-        """)
-        conn.commit()  # Commit table creation before using it
         
         # Extract data for database columns
         basic_info = jd_data.get('basic_info', {})
@@ -1418,25 +1474,11 @@ def save_jd(jd_id):
 
         # ── G26: Demand Signal on Publish ──────────────────────────
         if status == 'published':
+            ds_conn = None
+            ds_cur = None
             try:
                 ds_conn = get_db_connection()
                 ds_cur = ds_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-                # Ensure demand_signals table exists
-                ds_cur.execute("""
-                    CREATE TABLE IF NOT EXISTS demand_signals (
-                        id SERIAL PRIMARY KEY,
-                        company_id TEXT NOT NULL UNIQUE,
-                        company_name TEXT,
-                        job_count INTEGER DEFAULT 1,
-                        sector TEXT,
-                        emirate TEXT,
-                        matching_candidates INTEGER DEFAULT 0,
-                        created_at TIMESTAMPTZ DEFAULT NOW(),
-                        updated_at TIMESTAMPTZ DEFAULT NOW()
-                    )
-                """)
-                ds_conn.commit()
 
                 # Count published jobs for this company
                 ds_cur.execute(
@@ -1482,10 +1524,15 @@ def save_jd(jd_id):
                             logger.warning(f"G26: Notification to operator {op['id']} failed: {notif_err}")
 
                 logger.info(f"G26: Demand signal upserted for company {company_id} (jobs={published_count})")
-                ds_cur.close()
-                ds_conn.close()
             except Exception as ds_err:
                 logger.warning(f"G26: Demand signal creation failed (non-blocking): {ds_err}")
+                if ds_conn:
+                    ds_conn.rollback()
+            finally:
+                if ds_cur:
+                    ds_cur.close()
+                if ds_conn:
+                    ds_conn.close()
         # ── End G26 ────────────────────────────────────────────────
 
         cur.close()

@@ -39,6 +39,59 @@ import { format } from 'date-fns';
 
 import { useSearchParams } from 'react-router-dom';
 
+const ClarificationReplyForm = ({ feedbackId, onSuccess }: { feedbackId: string; onSuccess: () => void }) => {
+    const [reply, setReply] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSend = async () => {
+        if (!reply.trim()) return;
+        setIsSubmitting(true);
+        try {
+            await restClient.post(`/api/feedback/${feedbackId}/clarify`, {
+                message: reply
+            });
+            toast({
+                title: "Reply Sent",
+                description: "Your response has been sent to our support team.",
+            });
+            setReply('');
+            onSuccess();
+        } catch (err) {
+            console.error(err);
+            toast({
+                title: "Failed to Send",
+                description: "Unable to submit clarification response.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="space-y-2 mt-2">
+            <Textarea
+                placeholder="Type your response here..."
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                className="min-h-[60px] text-xs bg-white border-amber-200 focus-visible:ring-amber-500 focus-visible:border-amber-500"
+                disabled={isSubmitting}
+            />
+            <div className="flex justify-end">
+                <Button 
+                    size="sm" 
+                    className="h-7 text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                    onClick={handleSend}
+                    disabled={isSubmitting || !reply.trim()}
+                >
+                    {isSubmitting ? 'Sending...' : 'Send Response'}
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 export const FeedbackWidget = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState('');
@@ -289,6 +342,7 @@ export const FeedbackWidget = () => {
             case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
             case 'in_progress':
             case 'in progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'pending_clarification': return 'bg-amber-100 text-amber-800 border-amber-200';
             default: return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
@@ -544,7 +598,18 @@ export const FeedbackWidget = () => {
                                                         {format(new Date(item.created_at), 'MMM d, yyyy')}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm line-clamp-2" title={item.message}>{item.message}</p>
+                                                <p className="text-sm line-clamp-3 whitespace-pre-wrap" title={item.message}>{item.message}</p>
+                                                {item.status === 'pending_clarification' && item.resolution_notes && (
+                                                    <div className="bg-amber-50 border border-amber-200 rounded p-2.5 my-2 text-xs space-y-1">
+                                                        <div className="text-amber-800 font-medium">
+                                                            <strong>Support Request:</strong> {item.resolution_notes}
+                                                        </div>
+                                                        <ClarificationReplyForm 
+                                                            feedbackId={item.id} 
+                                                            onSuccess={fetchHistory} 
+                                                        />
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-end">
                                                     <Badge variant="secondary" className={`${getStatusColor(item.status)} uppercase text-[10px]`}>
                                                         {item.status}

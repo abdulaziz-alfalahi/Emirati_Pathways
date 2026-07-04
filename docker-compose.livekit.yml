@@ -21,7 +21,7 @@ services:
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     environment:
-      - LIVEKIT_KEYS=devkey:secret
+      - "LIVEKIT_KEYS=devkey: secret"
     restart: unless-stopped
     networks:
       - lk-net
@@ -30,7 +30,6 @@ services:
   livekit-egress:
     image: livekit/egress:latest
     environment:
-      - EGRESS_CONFIG_FILE=/etc/egress.yaml
       # LiveKit connection
       - LIVEKIT_URL=ws://livekit-server:7880
       - LIVEKIT_API_KEY=devkey

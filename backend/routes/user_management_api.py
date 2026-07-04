@@ -35,7 +35,7 @@ VALID_ROLES = [
     'talent_operator', 'employer_relations',
     'education_operator', 'assessment_operator',
     'mentorship_operator', 'community_operator',
-    'platform_operator'
+    'platform_operator', 'call_center_agent', 'operator', 'career_services_operator'
 ]
 
 def execute_query(query, params=None, fetch_one=False, fetch_all=True, return_id=False):
@@ -350,7 +350,7 @@ def list_users():
         })
 
 
-@user_management_bp.route('/users/<int:user_id>', methods=['GET'])
+@user_management_bp.route('/users/<user_id>', methods=['GET'])
 @optional_auth
 def get_user(user_id):
     """Get details of a specific user"""
@@ -522,7 +522,7 @@ def create_user():
         }), 500
 
 
-@user_management_bp.route('/users/<int:user_id>', methods=['PUT'])
+@user_management_bp.route('/users/<user_id>', methods=['PUT'])
 @optional_auth
 def update_user(user_id):
     """
@@ -598,7 +598,7 @@ def update_user(user_id):
         }), 500
 
 
-@user_management_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@user_management_bp.route('/users/<user_id>', methods=['DELETE'])
 @optional_auth
 def delete_user(user_id):
     """Delete a user (soft delete by deactivating)"""
@@ -631,7 +631,7 @@ def delete_user(user_id):
 # USER STATUS MANAGEMENT
 # =====================================================
 
-@user_management_bp.route('/users/<int:user_id>/activate', methods=['POST'])
+@user_management_bp.route('/users/<user_id>/activate', methods=['POST'])
 @optional_auth
 def activate_user(user_id):
     """Activate a user account"""
@@ -658,7 +658,7 @@ def activate_user(user_id):
         }), 500
 
 
-@user_management_bp.route('/users/<int:user_id>/suspend', methods=['POST'])
+@user_management_bp.route('/users/<user_id>/suspend', methods=['POST'])
 @optional_auth
 def suspend_user(user_id):
     """Suspend a user account"""
@@ -692,7 +692,7 @@ def suspend_user(user_id):
 # ROLE MANAGEMENT
 # =====================================================
 
-@user_management_bp.route('/users/<int:user_id>/roles', methods=['PUT'])
+@user_management_bp.route('/users/<user_id>/roles', methods=['PUT'])
 @optional_auth
 def update_user_roles(user_id):
     """

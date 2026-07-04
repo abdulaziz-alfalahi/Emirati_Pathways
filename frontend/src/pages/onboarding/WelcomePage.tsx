@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import authService, { LoginData } from '@/services/authService';
+import { restClient } from '@/utils/api';
 import {
     Briefcase,
     GraduationCap,
@@ -45,8 +46,30 @@ const ROLES = [
         icon: Users,
         color: 'bg-orange-50 text-orange-600',
         borderColor: 'border-orange-200'
+    },
+    {
+        id: 'operational_partner',
+        title: 'Operational Partner',
+        description: 'Manage Call Center operations or Career Services.',
+        icon: Users,
+        color: 'bg-indigo-50 text-indigo-600',
+        borderColor: 'border-indigo-200'
     }
 ];
+
+const isUAENational = (user: any) => {
+    if (!user) return false;
+    const nationality = (user.nationality || '').toUpperCase().trim();
+    const nationalityAr = (user.nationality_ar || '').trim();
+    return (
+        nationality === 'UAE' ||
+        nationality === 'ARE' ||
+        nationality.includes('EMIRAT') ||
+        nationality.includes('UNITED ARAB EMIRATES') ||
+        nationalityAr.includes('إمارات') ||
+        nationalityAr.includes('امارات')
+    );
+};
 
 const WelcomePage: React.FC = () => {
     const { user, refreshUser } = useAuth();
@@ -54,6 +77,66 @@ const WelcomePage: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [selectedSubRole, setSelectedSubRole] = useState<string | null>(null);
+    const [agencyName, setAgencyName] = useState('');
+    const [requestNotes, setRequestNotes] = useState('');
+    const [isRequestSubmitted, setIsRequestSubmitted] = useState(false);
+
+    const isNational = isUAENational(user);
+
+    useEffect(() => {
+        if (user && isNational) {
+            authService.getDashboardRoute().then((redirectPath) => {
+                navigate(redirectPath, { replace: true });
+            }).catch(() => {
+                navigate('/candidate-dashboard', { replace: true });
+            });
+        }
+    }, [user, isNational, navigate]);
+
+    if (isRequestSubmitted) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+                <div className="sm:mx-auto sm:w-full sm:max-w-md">
+                    <div className="bg-card py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-border text-center">
+                        <CheckCircle2 className="h-16 w-16 mx-auto text-teal-600 mb-4 animate-bounce" />
+                        <h2 className="text-2xl font-bold text-foreground mb-2">Request Submitted</h2>
+                        <p className="text-muted-foreground text-sm mb-6">
+                            Your request for <strong>{selectedSubRole === 'call_center_agent' ? 'Call Center Agent' : 'Career Services Operator'}</strong> role access has been submitted successfully.
+                        </p>
+                        <p className="text-muted-foreground text-xs bg-slate-50 p-3 rounded-lg border border-border mb-6">
+                            Agency: {agencyName}<br />
+                            A Platform Administrator will review and approve your access shortly.
+                        </p>
+                        <button
+                            onClick={async () => {
+                                await authService.logout();
+                                navigate('/auth');
+                            }}
+                            className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                        >
+                            Sign Out & Exit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (user && isNational) {
+        return (
+            <div className="min-h-screen bg-background flex flex-col justify-center items-center">
+                <div className="flex flex-col items-center space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
+                    <p className="text-muted-foreground text-sm">Redirecting to your dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const displayRoles = ROLES.filter(r => !(r.id === 'candidate' && r.title === 'Job Seeker'));
+
 
     // Metadata state based on role
     const [institutionName, setInstitutionName] = useState('');
@@ -74,6 +157,29 @@ const WelcomePage: React.FC = () => {
         setError(null);
 
         try {
+            if (selectedRole === 'operational_partner') {
+                if (!selectedSubRole) {
+                    setError("Please select call center or career services role.");
+                    setIsLoading(false);
+                    return;
+                }
+                if (!agencyName.trim()) {
+                    setError("Please provide your outsourcing agency name.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Submit role request to backend
+                await restClient.post('/api/roles/request', {
+                    role: selectedSubRole,
+                    notes: `Agency: ${agencyName}. Note: ${requestNotes}`,
+                    documents: {}
+                });
+
+                setIsRequestSubmitted(true);
+                return;
+            }
+
             const metadata: any = {};
             if (selectedRole === 'training_provider') metadata.institution_name = institutionName;
             if (selectedRole === 'candidate') metadata.university_name = institutionName; // Reusing state var for simplicity
@@ -146,6 +252,66 @@ const WelcomePage: React.FC = () => {
                         />
                     </div>
                 );
+            case 'operational_partner':
+                return (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-4 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Select Operational Role
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedSubRole('call_center_agent')}
+                                    className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                                        selectedSubRole === 'call_center_agent'
+                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-600'
+                                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    Call Center Agent
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedSubRole('career_services_operator')}
+                                    className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+                                        selectedSubRole === 'career_services_operator'
+                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-600'
+                                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    Career Services Operator
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Outsourcing Agency Name
+                            </label>
+                            <input
+                                type="text"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="e.g. Moro Hub, Teleperformance"
+                                value={agencyName}
+                                onChange={(e) => setAgencyName(e.target.value)}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Access Notes / Purpose
+                            </label>
+                            <textarea
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                placeholder="State the reason for access (e.g., call center agent onboarding)"
+                                value={requestNotes}
+                                onChange={(e) => setRequestNotes(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                );
             default:
                 return null;
         }
@@ -167,7 +333,7 @@ const WelcomePage: React.FC = () => {
                     <h2 className="text-lg font-semibold text-foreground mb-6">Select your primary role:</h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {ROLES.map((role) => {
+                        {displayRoles.map((role) => {
                             const Icon = role.icon;
                             const isSelected = selectedRole === role.id;
 

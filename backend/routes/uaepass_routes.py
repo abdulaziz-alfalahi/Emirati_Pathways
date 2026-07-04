@@ -15,6 +15,7 @@ import json
 import logging
 import secrets
 from datetime import datetime, timedelta
+from typing import Optional
 
 from flask import Blueprint, request, jsonify, redirect, session
 from flask_jwt_extended import (
@@ -31,8 +32,66 @@ logger = logging.getLogger(__name__)
 
 uaepass_bp = Blueprint('uaepass', __name__, url_prefix='/api/auth/uaepass')
 
-# In-memory state store (use Redis in production with >1 worker)
+# In-memory state store (fallback when Redis is not available)
 _pending_states: dict = {}
+_redis_client = None
+
+def _get_redis_client():
+    global _redis_client
+    if _redis_client is not None:
+        if _redis_client is False:
+            return None
+        return _redis_client
+        
+    redis_url = os.getenv('REDIS_URL')
+    if redis_url and redis_url.strip():
+        try:
+            import redis
+            client = redis.from_url(redis_url)
+            client.ping()
+            _redis_client = client
+            logger.info("✅ UAE Pass routes: Connected to Redis for state store")
+            return _redis_client
+        except Exception as e:
+            logger.warning(f"⚠️ UAE Pass routes: Redis connection failed: {e}")
+            _redis_client = False
+    else:
+        _redis_client = False
+    return None
+
+def _store_state(state: str, data: dict):
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            redis_client.setex(f"uaepass_state:{state}", 600, json.dumps(data))
+            return
+        except Exception as e:
+            logger.warning(f"Failed to set state in Redis: {e}")
+    # Fallback to local memory
+    data_copy = data.copy()
+    data_copy['created_at'] = datetime.utcnow()
+    _pending_states[state] = data_copy
+
+def _pop_state(state: str) -> Optional[dict]:
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            data_str = redis_client.get(f"uaepass_state:{state}")
+            if data_str:
+                redis_client.delete(f"uaepass_state:{state}")
+                if isinstance(data_str, bytes):
+                    data_str = data_str.decode('utf-8')
+                return json.loads(data_str)
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get/delete state in Redis: {e}")
+    # Fallback to local memory
+    state_data = _pending_states.pop(state, None)
+    if state_data:
+        # Exclude internal field
+        state_data.pop('created_at', None)
+    return state_data
+
 
 
 def _get_db():
@@ -88,10 +147,7 @@ def uaepass_login():
 
         # Store state for CSRF validation on callback
         return_url = request.args.get('return_url', '')
-        _pending_states[state] = {
-            'created_at': datetime.utcnow(),
-            'return_url': return_url
-        }
+        _store_state(state, {'return_url': return_url})
 
         # Clean up old states (> 10 minutes)
         _cleanup_stale_states()
@@ -154,7 +210,7 @@ def uaepass_callback():
         return redirect(f"{frontend_url}/auth?error=missing_params")
 
     # Validate state (CSRF protection)
-    state_data = _pending_states.pop(state, None)
+    state_data = _pop_state(state)
     if not state_data:
         logger.warning(f"Invalid or expired state token: {state[:16]}...")
         return redirect(f"{frontend_url}/auth?error=invalid_state")

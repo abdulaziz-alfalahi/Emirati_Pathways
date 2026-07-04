@@ -2157,14 +2157,46 @@ Return only the JSON object, no additional text."""
             if not cv:
                 return jsonify({'error': 'CV not found'}), 404
 
+            # Load parsed_data if available
+            parsed_data = cv.get('parsed_data')
+            if parsed_data:
+                import json as _json
+                if isinstance(parsed_data, str):
+                    try: parsed_data = _json.loads(parsed_data)
+                    except: parsed_data = {}
+            else:
+                parsed_data = {}
+
+            experience = safe_json_load(cv.get('work_experience'), [])
+            if not experience and parsed_data:
+                experience = parsed_data.get('work_experience') or parsed_data.get('experience') or []
+
+            education = safe_json_load(cv.get('education'), [])
+            if not education and parsed_data:
+                education = parsed_data.get('education') or []
+
+            tech_skills = safe_json_load(cv.get('technical_skills'), [])
+            if not tech_skills and parsed_data:
+                tech_skills = parsed_data.get('technical_skills') or parsed_data.get('skills', []) or []
+
+            soft_skills = safe_json_load(cv.get('soft_skills'), [])
+            if not soft_skills and parsed_data:
+                soft_skills = parsed_data.get('soft_skills') or []
+
+            summary = cv.get('professional_summary')
+            if not summary and parsed_data:
+                summary = parsed_data.get('professional_summary') or parsed_data.get('summary') or ''
+
+            skills = (tech_skills or []) + (soft_skills or [])
+
             cv_data = {
                 'metadata': {'title': cv['title'], 'cv_id': cv['id']},
                 'data': {
-                    'personal_info': safe_json_load(cv['personal_info'], {}),
-                    'professional_summary': cv['professional_summary'],
-                    'experience': safe_json_load(cv['work_experience'], []),
-                    'education': safe_json_load(cv['education'], []),
-                    'skills': (safe_json_load(cv['technical_skills'], []) or []) + (safe_json_load(cv['soft_skills'], []) or [])
+                    'personal_info': safe_json_load(cv.get('personal_info'), {}),
+                    'professional_summary': summary,
+                    'experience': experience,
+                    'education': education,
+                    'skills': skills
                 }
             }
 
@@ -2194,6 +2226,96 @@ Return only the JSON object, no additional text."""
 
         except Exception as e:
             logger.error(f"Export error: {e}")
+            traceback.print_exc()
+            return jsonify({'error': f"Export failed: {str(e)}"}), 500
+
+    @_app.route('/api/cv/user/<user_id>/export/<format>', methods=['GET'])
+    def export_user_cv_fixed(user_id, format):
+        try:
+            if format not in ['pdf', 'docx', 'json']:
+                return jsonify({'error': 'Invalid export format. Supported: pdf, docx, json'}), 400
+                
+            verify_jwt_in_request()
+
+            # Find the most recently updated CV for this user
+            cv = execute_query(
+                "SELECT * FROM user_cvs WHERE user_id::text = %s ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 1",
+                (user_id,),
+                fetch_one=True
+            )
+            if not cv:
+                return jsonify({'error': 'No CV found for this user'}), 404
+
+            cv_id = cv['id']
+            # Load parsed_data if available
+            parsed_data = cv.get('parsed_data')
+            if parsed_data:
+                import json as _json
+                if isinstance(parsed_data, str):
+                    try: parsed_data = _json.loads(parsed_data)
+                    except: parsed_data = {}
+            else:
+                parsed_data = {}
+
+            experience = safe_json_load(cv.get('work_experience'), [])
+            if not experience and parsed_data:
+                experience = parsed_data.get('work_experience') or parsed_data.get('experience') or []
+
+            education = safe_json_load(cv.get('education'), [])
+            if not education and parsed_data:
+                education = parsed_data.get('education') or []
+
+            tech_skills = safe_json_load(cv.get('technical_skills'), [])
+            if not tech_skills and parsed_data:
+                tech_skills = parsed_data.get('technical_skills') or parsed_data.get('skills', []) or []
+
+            soft_skills = safe_json_load(cv.get('soft_skills'), [])
+            if not soft_skills and parsed_data:
+                soft_skills = parsed_data.get('soft_skills') or []
+
+            summary = cv.get('professional_summary')
+            if not summary and parsed_data:
+                summary = parsed_data.get('professional_summary') or parsed_data.get('summary') or ''
+
+            skills = (tech_skills or []) + (soft_skills or [])
+
+            cv_data = {
+                'metadata': {'title': cv['title'], 'cv_id': cv['id']},
+                'data': {
+                    'personal_info': safe_json_load(cv.get('personal_info'), {}),
+                    'professional_summary': summary,
+                    'experience': experience,
+                    'education': education,
+                    'skills': skills
+                }
+            }
+
+            if format == 'json':
+                return jsonify({'success': True, 'cv_data': cv_data})
+
+            # PDF/DOCX Handling
+            from cv_builder.cv_export import CVExporter
+            exporter = CVExporter()
+
+            file_path = exporter.export_cv(cv_data, format)
+
+            if not file_path or not os.path.exists(file_path):
+                 return jsonify({'error': 'Export failed: File not created'}), 500
+
+            mime_types = {
+                'pdf': 'application/pdf',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            }
+
+            return send_file(
+                file_path,
+                mimetype=mime_types.get(format, 'application/octet-stream'),
+                as_attachment=True,
+                download_name=f"cv_{cv_id}.{format}"
+            )
+
+        except Exception as e:
+            logger.error(f"User CV export error: {e}")
             traceback.print_exc()
             return jsonify({'error': f"Export failed: {str(e)}"}), 500
 
@@ -2351,6 +2473,7 @@ Return only the JSON object, no additional text."""
     # Legacy list_vacancies removed (replaced by newer version at end of file)
 
     @_app.route('/api/matching/cv/<cv_id>/top-vacancies', methods=['GET'])
+    @jwt_required()
     def match_cv_top_vacancies(cv_id: str):
         """Return top-N matching vacancies for a specific CV using real job_postings."""
         try:
@@ -2360,9 +2483,16 @@ Return only the JSON object, no additional text."""
             type_filter = request.args.get('type', '').strip()
             experience_filter = request.args.get('experience', '').strip()
 
+            user_id = get_jwt_identity()
+
             cv = execute_query("SELECT * FROM user_cvs WHERE id = %s::uuid", (cv_id,), fetch_one=True)
             if not cv:
                 return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+            # Verify that the CV belongs to the logged-in candidate
+            if str(cv.get('user_id')).strip() != str(user_id).strip():
+                logger.warning(f"Unauthorized access attempt to CV {cv_id} by user {user_id}")
+                return jsonify({'success': False, 'message': 'Forbidden'}), 403
 
             cvk = _collect_cv_keywords(dict(cv))
             return _match_and_return(cvk, limit, search, location_filter, type_filter, experience_filter)

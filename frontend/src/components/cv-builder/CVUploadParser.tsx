@@ -131,7 +131,7 @@ const CVUploadParser: React.FC<CVUploadParserProps> = ({ onParsedData, className
       // Get auth token
       let authHeaders: Record<string, string> = {};
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+        const token = localStorage.getItem('access_token') || localStorage.getItem('token') || localStorage.getItem('authToken');
         if (token) {
           authHeaders['Authorization'] = `Bearer ${token}`;
         }

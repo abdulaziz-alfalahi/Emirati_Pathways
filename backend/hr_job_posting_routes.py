@@ -227,6 +227,51 @@ def ensure_job_postings_table_exists():
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
+def _is_valid_uuid(val):
+    if not val:
+        return False
+    import re
+    return bool(re.match(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$', str(val)))
+
+def _resolve_job(cursor, job_id, current_user_id):
+    """
+    Resolves job_id (can be numeric id or string jd_id) and checks permission.
+    Returns (job_row_dict, error_response_tuple).
+    If access is allowed, returns (job_row_dict, None).
+    """
+    from flask_jwt_extended import get_jwt
+    claims = get_jwt() or {}
+    user_role = claims.get('role', '')
+    
+    # 1. Fetch job
+    if str(job_id).isdigit():
+        cursor.execute("SELECT * FROM job_postings WHERE id = %s", (int(job_id),))
+    else:
+        cursor.execute("SELECT * FROM job_postings WHERE jd_id = %s", (job_id,))
+    job = cursor.fetchone()
+    if not job:
+        return None, (jsonify({'success': False, 'message': 'Job posting not found'}), 404)
+        
+    job_dict = dict(job)
+    
+    # 2. Check permission (admin bypass)
+    if user_role == 'admin':
+        return job_dict, None
+        
+    # Owner check (recruiter_id)
+    if job_dict.get('recruiter_id') and str(job_dict['recruiter_id']) == str(current_user_id):
+        return job_dict, None
+        
+    # Company check (hr_profile)
+    company_id = job_dict.get('company_id')
+    if company_id:
+        cursor.execute("SELECT company_id FROM hr_profiles WHERE user_id = %s", (current_user_id,))
+        hr_profile = cursor.fetchone()
+        if hr_profile and hr_profile.get('company_id') and str(hr_profile['company_id']) == str(company_id):
+            return job_dict, None
+            
+    return None, (jsonify({'success': False, 'message': 'Access denied'}), 403)
+
 def _uploads_dir() -> str:
     base_dir = os.getenv('JOB_DOCS_UPLOAD_DIR')
     if not base_dir:
@@ -361,13 +406,13 @@ def get_job_postings():
                     jp.remote_option,
                     jp.applications_count,
                     jp.views_count,
-                    COALESCE(c.name, jp.company_id, 'Unknown Company') as company_name,
+                    COALESCE(NULLIF(NULLIF(c.name, 'company_default'), 'unknown'), NULLIF(NULLIF(jp.company_id, 'company_default'), 'unknown'), 'Unknown Company') as company_name,
                     {user_display_name('created_by_name')},
                     COALESCE(app_counts.application_count, 0) as application_count,
                     COALESCE(app_counts.new_applications, 0) as new_applications
                 FROM job_postings jp
                 LEFT JOIN users u ON jp.recruiter_id::text = u.id::text
-                LEFT JOIN companies c ON jp.company_id::uuid = c.id
+                LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN (
                     SELECT 
                         job_id,
@@ -750,18 +795,14 @@ def upload_job_document(job_id):
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
-            # Verify ownership
-            cursor.execute(
-                """
-                SELECT jp.id
-                FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
-                """,
-                (job_id, current_user_id),
-            )
-            if not cursor.fetchone():
-                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+            # Verify ownership and resolve job
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
+            
+            if not _is_valid_uuid(job['jd_id']):
+                return jsonify({'success': False, 'message': 'Cannot upload documents for this job (invalid ID format)'}), 400
 
             filename = secure_filename(file.filename)
             stored_name = f"{uuid.uuid4().hex}_{filename}"
@@ -792,7 +833,7 @@ def upload_job_document(job_id):
                 RETURNING *
                 """,
                 (
-                    job_id,
+                    job['jd_id'],
                     current_user_id,
                     request.form.get('document_type'),
                     filename,
@@ -823,18 +864,24 @@ def list_job_documents(job_id):
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
-            cursor.execute(
-                """
-                SELECT jd.id, jd.document_type, jd.original_filename, jd.content_type, jd.size_bytes, jd.created_at
-                FROM job_documents jd
-                INNER JOIN job_postings jp ON jd.job_posting_id = jp.id
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jd.job_posting_id = %s AND hp.user_id = %s
-                ORDER BY jd.created_at DESC
-                """,
-                (job_id, current_user_id),
-            )
-            docs = [dict(r) for r in cursor.fetchall()]
+            # Verify ownership and resolve job
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
+
+            docs = []
+            if _is_valid_uuid(job['jd_id']):
+                cursor.execute(
+                    """
+                    SELECT jd.id, jd.document_type, jd.original_filename, jd.content_type, jd.size_bytes, jd.created_at
+                    FROM job_documents jd
+                    WHERE jd.job_posting_id = %s
+                    ORDER BY jd.created_at DESC
+                    """,
+                    (job['jd_id'],),
+                )
+                docs = [dict(r) for r in cursor.fetchall()]
             return jsonify({'success': True, 'data': docs})
         finally:
             cursor.close()
@@ -852,17 +899,23 @@ def delete_job_document(job_id, doc_id):
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
-            cursor.execute(
-                """
-                SELECT jd.*
-                FROM job_documents jd
-                INNER JOIN job_postings jp ON jd.job_posting_id = jp.id
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jd.id = %s AND jd.job_posting_id = %s AND hp.user_id = %s
-                """,
-                (doc_id, job_id, current_user_id),
-            )
-            doc = cursor.fetchone()
+            # Verify ownership and resolve job
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
+
+            doc = None
+            if _is_valid_uuid(job['jd_id']):
+                cursor.execute(
+                    """
+                    SELECT jd.*
+                    FROM job_documents jd
+                    WHERE jd.id = %s AND jd.job_posting_id = %s
+                    """,
+                    (doc_id, job['jd_id']),
+                )
+                doc = cursor.fetchone()
             if not doc:
                 return jsonify({'success': False, 'message': 'Document not found or access denied'}), 404
             # Delete DB record first
@@ -893,31 +946,31 @@ def get_job_posting(job_id):
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Get job posting with company verification
+            # Resolve job and verify ownership
+            job_dict, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job_dict['id']
+            
+            # Fetch additional fields like company_name, created_by_name, application_count
             cursor.execute(f"""
                 SELECT 
-                    jp.*,
                     c.name as company_name,
                     {user_display_name('created_by_name')},
                     COUNT(ja.id) as application_count
                 FROM job_postings jp
                 LEFT JOIN companies c ON jp.company_id::text = c.id::text
                 LEFT JOIN users u ON jp.created_by = u.id
-                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
-                LEFT JOIN job_applications ja ON jp.id::text = ja.job_id::text
-                WHERE jp.id = %s AND hp.user_id = %s
+                LEFT JOIN job_applications ja ON (jp.jd_id::text = ja.job_id::text OR jp.id::text = ja.job_id::text)
+                WHERE jp.id = %s
                 GROUP BY jp.id, c.name, u.full_name, u.first_name, u.last_name, u.email
-            """, (job_id, current_user_id))
+            """, (resolved_job_id,))
             
-            job = cursor.fetchone()
-            
-            if not job:
-                return jsonify({
-                    'success': False,
-                    'message': 'Job posting not found or access denied'
-                }), 404
-            
-            job_data = dict(job)
+            extra = cursor.fetchone()
+            if extra:
+                job_data = {**job_dict, **extra}
+            else:
+                job_data = job_dict
             
             # Parse JSONB fields
             jsonb_fields = ['requirements', 'responsibilities', 'benefits', 'tags', 'seo_keywords']
@@ -930,19 +983,33 @@ def get_job_posting(job_id):
                         job_data[field] = {}
             
             # Get detailed requirements
-            cursor.execute("""
-                SELECT * FROM job_requirements WHERE job_posting_id = %s ORDER BY requirement_type, requirement_name
-            """, (job_id,))
-            detailed_requirements = [dict(req) for req in cursor.fetchall()]
+            detailed_requirements = []
+            if _is_valid_uuid(job_data['jd_id']):
+                cursor.execute("""
+                    SELECT * FROM job_requirements WHERE job_posting_id = %s ORDER BY requirement_type, requirement_name
+                """, (job_data['jd_id'],))
+                detailed_requirements = [dict(req) for req in cursor.fetchall()]
             
             # Get detailed benefits
-            cursor.execute("""
-                SELECT * FROM job_benefits WHERE job_posting_id = %s ORDER BY benefit_category, benefit_name
-            """, (job_id,))
-            detailed_benefits = [dict(benefit) for benefit in cursor.fetchall()]
+            detailed_benefits = []
+            if _is_valid_uuid(job_data['jd_id']):
+                cursor.execute("""
+                    SELECT * FROM job_benefits WHERE job_posting_id = %s ORDER BY benefit_category, benefit_name
+                """, (job_data['jd_id'],))
+                detailed_benefits = [dict(benefit) for benefit in cursor.fetchall()]
             
             job_data['detailed_requirements'] = detailed_requirements
             job_data['detailed_benefits'] = detailed_benefits
+            
+            # Convert datetime/date, Decimal, UUID objects to strings
+            from datetime import date, datetime
+            from decimal import Decimal
+            from uuid import UUID
+            for key, value in job_data.items():
+                if isinstance(value, (datetime, date, Decimal, UUID)):
+                    job_data[key] = str(value)
+                    if isinstance(value, (datetime, date)):
+                        job_data[key] = value.isoformat()
             
             return jsonify({
                 'success': True,
@@ -975,18 +1042,11 @@ def update_job_posting(job_id):
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Verify ownership
-            cursor.execute("""
-                SELECT jp.id FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
-            """, (job_id, current_user_id))
-            
-            if not cursor.fetchone():
-                return jsonify({
-                    'success': False,
-                    'message': 'Job posting not found or access denied'
-                }), 404
+            # Verify ownership and resolve job
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
             
             # Run compliance check if content changed
             compliance_result = None
@@ -1035,7 +1095,7 @@ def update_job_posting(job_id):
                 update_values.append(compliance_result['is_compliant'])
             
             if update_fields:
-                update_values.append(job_id)
+                update_values.append(resolved_job_id)
                 
                 cursor.execute(f"""
                     UPDATE job_postings 
@@ -1091,26 +1151,18 @@ def publish_job_posting(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
-        
+            
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
             # Verify ownership and get job details
-            cursor.execute("""
-                SELECT jp.* FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
-            """, (job_id, current_user_id))
-            
-            job = cursor.fetchone()
-            if not job:
-                return jsonify({
-                    'success': False,
-                    'message': 'Job posting not found or access denied'
-                }), 404
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
             
             # Check if already published
             if job['status'] == 'published':
@@ -1145,7 +1197,7 @@ def publish_job_posting(job_id):
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                 RETURNING *
-            """, (expires_at, job_id))
+            """, (expires_at, resolved_job_id))
             
             published_job = cursor.fetchone()
             conn.commit()
@@ -1185,14 +1237,10 @@ def publish_and_match(job_id):
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             # Verify ownership and get job details
-            cursor.execute("""
-                SELECT jp.* FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
-            """, (job_id, current_user_id))
-            job = cursor.fetchone()
-            if not job:
-                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
 
             # Publish if needed
             if job['status'] != 'published':
@@ -1201,7 +1249,7 @@ def publish_and_match(job_id):
                     UPDATE job_postings 
                     SET status = 'published', published_at = CURRENT_TIMESTAMP, expires_at = %s, updated_at = CURRENT_TIMESTAMP
                     WHERE id = %s RETURNING *
-                """, (expires_at, job_id))
+                """, (expires_at, resolved_job_id))
                 job = cursor.fetchone()
                 conn.commit()
 
@@ -1251,7 +1299,7 @@ def publish_and_match(job_id):
             matched.sort(key=lambda m: m['match_score']['match_percentage'], reverse=True)
             top10 = matched[:10]
 
-            return jsonify({'success': True, 'data': {'job_posting': {'id': job['id'], 'title': job['title']}, 'top_matches': top10}})
+            return jsonify({'success': True, 'data': {'job_posting': {'id': str(job['id']), 'title': job['title']}, 'top_matches': top10}})
         finally:
             cursor.close(); conn.close()
     except Exception as e:
@@ -1269,17 +1317,10 @@ def get_job_shortlist(job_id):
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             # Verify HR ownership of the job
-            cursor.execute(
-                """
-                SELECT 1
-                FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id = hp.company_id
-                WHERE jp.id = %s AND hp.user_id = %s
-                """,
-                (job_id, current_user_id),
-            )
-            if not cursor.fetchone():
-                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
 
             # Fetch shortlist with basic candidate info
             cursor.execute(
@@ -1299,7 +1340,7 @@ def get_job_shortlist(job_id):
                 WHERE js.job_posting_id = %s
                 ORDER BY js.created_at DESC
                 """,
-                (job_id,),
+                (resolved_job_id,),
             )
             rows = [dict(r) for r in cursor.fetchall()]
 
@@ -1356,17 +1397,10 @@ def add_to_shortlist(job_id):
                 conn.commit()
 
             # Verify HR ownership of the job
-            cursor.execute(
-                """
-                SELECT 1
-                FROM job_postings jp
-                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text AND hp.user_id = %s
-                WHERE jp.id = %s AND (hp.user_id IS NOT NULL OR jp.recruiter_id = %s)
-                """,
-                (current_user_id, job_id, str(current_user_id)),
-            )
-            if not cursor.fetchone():
-                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
 
             # Ensure candidate exists and is a candidate
             cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'candidate'", (candidate_id,))
@@ -1382,7 +1416,7 @@ def add_to_shortlist(job_id):
                 DO UPDATE SET notes = EXCLUDED.notes
                 RETURNING job_posting_id, candidate_id, added_by, notes, created_at
                 """,
-                (job_id, candidate_id, current_user_id, notes),
+                (resolved_job_id, candidate_id, current_user_id, notes),
             )
             row = dict(cursor.fetchone())
             conn.commit()
@@ -1393,7 +1427,7 @@ def add_to_shortlist(job_id):
         logger.error(f"Error adding to shortlist: {str(e)}")
         return jsonify({'success': False, 'message': 'Failed to add to shortlist'}), 500
 
-@hr_job_posting_bp.route('/<job_id>/shortlist/<int:candidate_id>', methods=['DELETE'])
+@hr_job_posting_bp.route('/<job_id>/shortlist/<candidate_id>', methods=['DELETE'])
 @jwt_required()
 def remove_from_shortlist(job_id, candidate_id):
     """Remove a candidate from the shortlist for a job posting"""
@@ -1406,21 +1440,14 @@ def remove_from_shortlist(job_id, candidate_id):
         conn = get_db_connection(); cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             # Verify HR ownership
-            cursor.execute(
-                """
-                SELECT 1
-                FROM job_postings jp
-                LEFT JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text AND hp.user_id = %s
-                WHERE jp.id = %s AND (hp.user_id IS NOT NULL OR jp.recruiter_id = %s)
-                """,
-                (current_user_id, job_id, str(current_user_id)),
-            )
-            if not cursor.fetchone():
-                return jsonify({'success': False, 'message': 'Job posting not found or access denied'}), 404
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
 
             cursor.execute(
-                "DELETE FROM shortlisted_candidates WHERE job_id = %s AND candidate_id = %s",
-                (job_id, candidate_id),
+                "DELETE FROM job_shortlists WHERE job_posting_id = %s AND candidate_id = %s",
+                (resolved_job_id, candidate_id),
             )
             if cursor.rowcount == 0:
                 return jsonify({'success': False, 'message': 'Candidate not in shortlist'}), 404
@@ -1440,26 +1467,18 @@ def check_compliance(job_id):
     try:
         current_user_id = get_jwt_identity()
         claims = get_jwt()
-        if claims and claims.get('role') not in ('recruiter', 'admin'):
+        if claims and claims.get('role') not in ('recruiter', 'employer_admin', 'admin'):
             return jsonify({'success': False, 'message': 'Insufficient permissions'}), 403
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
-            # Get job posting
-            cursor.execute("""
-                SELECT jp.* FROM job_postings jp
-                INNER JOIN hr_profiles hp ON jp.company_id::text = hp.company_id::text
-                WHERE jp.id = %s AND hp.user_id = %s
-            """, (job_id, current_user_id))
-            
-            job = cursor.fetchone()
-            if not job:
-                return jsonify({
-                    'success': False,
-                    'message': 'Job posting not found or access denied'
-                }), 404
+            # Get job posting and verify ownership
+            job, err = _resolve_job(cursor, job_id, current_user_id)
+            if err:
+                return err
+            resolved_job_id = job['id']
             
             # Run compliance check
             job_data = dict(job)
@@ -1470,7 +1489,7 @@ def check_compliance(job_id):
                 UPDATE job_postings 
                 SET uae_compliance_checked = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
-            """, (compliance_result['is_compliant'], job_id))
+            """, (compliance_result['is_compliant'], resolved_job_id))
             
             conn.commit()
             

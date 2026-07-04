@@ -23,7 +23,7 @@ export default function JobDetailsPage() {
   const [fileList, setFileList] = useState<FileList | null>(null);
   const { toast } = useToast();
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
+  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const loadJob = async () => {

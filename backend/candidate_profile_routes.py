@@ -860,8 +860,8 @@ def get_crm_candidates():
                 LEFT JOIN candidate_profiles cp ON u.id = cp.user_id
                 WHERE u.role = 'candidate' OR u.user_type = 'candidate'
                 ORDER BY u.created_at DESC
-                LIMIT 500
-            """)
+                LIMIT 100000
+             """)
             
             candidates = cursor.fetchall()
             

@@ -870,6 +870,16 @@ def get_role_permissions(role: str) -> list:
             'view_dashboard',
             'manage_growth',
             'view_analytics'
+        ],
+        'career_services_operator': [
+            'view_dashboard',
+            'manage_growth',
+            'view_analytics'
+        ],
+        'call_center_agent': [
+            'view_dashboard',
+            'view_users',
+            'view_analytics'
         ]
     }
     

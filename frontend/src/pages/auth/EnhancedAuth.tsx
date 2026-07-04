@@ -505,65 +505,41 @@ const EnhancedAuthPage: React.FC = () => {
                 </Alert>
               )}
 
-              <Card className="max-w-4xl mx-auto shadow-xl border-0">
+              <Card className="max-w-md mx-auto shadow-xl border-0">
                 <CardContent className="p-8">
-                  <Tabs value={activeTab} onValueChange={handleTabChange}>
-                    <TabsList className="grid w-full grid-cols-2 mb-8">
-                      <TabsTrigger value="signin" className="text-lg py-3">Sign In</TabsTrigger>
-                      <TabsTrigger value="signup" className="text-lg py-3">Sign Up</TabsTrigger>
-                    </TabsList>
+                  <div className="text-center pb-6">
+                    <h2 className="text-2xl font-semibold tracking-tight">Welcome Back</h2>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Sign in securely with your UAE PASS identity
+                    </p>
+                  </div>
 
-                    <TabsContent value="signin">
-                      <div className="max-w-md mx-auto">
-                        <CardHeader className="text-center pb-6">
-                          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-                          <CardDescription>
-                            Sign in securely with your UAE PASS identity
-                          </CardDescription>
-                        </CardHeader>
-
-                        {/* ── UAE PASS Login Button (Official Black Variant) ── */}
-                        <div className="space-y-4 mb-6">
-                          <button
-                            id="uaepass-login-btn"
-                            type="button"
-                            onClick={handleUAEPassLogin}
-                            disabled={uaePassLoading}
-                            className="w-full flex items-center justify-center transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-                          >
-                            {uaePassLoading ? (
-                              <div className="h-[50px] w-[264px] flex items-center justify-center bg-gray-50 rounded-[12px] border border-gray-200">
-                                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                              </div>
-                            ) : (
-                              <img 
-                                src="/uae-pass-en.svg" 
-                                alt="Sign in using UAE PASS" 
-                                className="h-[50px] w-[264px] object-contain drop-shadow-sm hover:drop-shadow-md transition-all rounded-[12px]"
-                              />
-                            )}
-                          </button>
-
-                          <p className="text-xs text-center text-gray-500">
-                            Secure national digital identity verification
-                          </p>
+                  {/* ── UAE PASS Login Button (Official Black Variant) ── */}
+                  <div className="space-y-4 mb-6">
+                    <button
+                      id="uaepass-login-btn"
+                      type="button"
+                      onClick={handleUAEPassLogin}
+                      disabled={uaePassLoading}
+                      className="w-full flex items-center justify-center transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      {uaePassLoading ? (
+                        <div className="h-[50px] w-[264px] flex items-center justify-center bg-gray-50 rounded-[12px] border border-gray-200">
+                          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
                         </div>
-
-                        {/* ── Dev OTP Login (Development/Staging Only) ── */}
-                        {/* OTP Login has been deprecated in favor of the console developer bypass script */}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="signup">
-                      {/* Progress Indicator */}
-                      {signUpStep <= 3 && (
-                        <SignUpProgress currentStep={signUpStep} totalSteps={3} />
+                      ) : (
+                        <img 
+                          src="/uae-pass-en.svg" 
+                          alt="Sign in using UAE PASS" 
+                          className="h-[50px] w-[264px] object-contain drop-shadow-sm hover:drop-shadow-md transition-all rounded-[12px]"
+                        />
                       )}
+                    </button>
 
-                      {/* Sign Up Content */}
-                      {renderSignUpContent()}
-                    </TabsContent>
-                  </Tabs>
+                    <p className="text-xs text-center text-gray-500">
+                      Secure national digital identity verification
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 

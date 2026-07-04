@@ -71,10 +71,47 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       '/internships',      // candidate tool
       '/emiratization-tracker', // consolidated into gov dashboard
     ],
-    // Recruiter / HR: hide gov-only and some candidate tools
-    recruiter: ['/emiratization-tracker'],
-    hr_recruiter: ['/emiratization-tracker'],
-    hr_manager: ['/emiratization-tracker'],
+    // Recruiter / HR: hide gov-only and candidate-focused tools
+    recruiter: [
+      '/analytics',
+      '/cv-builder',
+      '/portfolio',
+      '/interview-preparation',
+      '/job-matching',
+      '/gig-marketplace',
+      '/internships',
+      '/emiratization-tracker',
+    ],
+    employer_admin: [
+      '/analytics',
+      '/cv-builder',
+      '/portfolio',
+      '/interview-preparation',
+      '/job-matching',
+      '/gig-marketplace',
+      '/internships',
+      '/emiratization-tracker',
+    ],
+    hr_recruiter: [
+      '/analytics',
+      '/cv-builder',
+      '/portfolio',
+      '/interview-preparation',
+      '/job-matching',
+      '/gig-marketplace',
+      '/internships',
+      '/emiratization-tracker',
+    ],
+    hr_manager: [
+      '/analytics',
+      '/cv-builder',
+      '/portfolio',
+      '/interview-preparation',
+      '/job-matching',
+      '/gig-marketplace',
+      '/internships',
+      '/emiratization-tracker',
+    ],
     // Operators: similar to government
     operator: [
       '/analytics',
@@ -280,12 +317,14 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
               </button>
 
               {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-              >
-                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                >
+                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
+              )}
 
               {/* Notification Bell - Added as per request (Global visibility) */}
               {isAuthenticated && user && (
@@ -393,77 +432,79 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
       </header>
 
       {/* Dedicated Navigation Bar */}
-      <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
-            {filteredNavigationGroups.map((group) => (
-              <div
-                key={group.id}
-                className="relative"
-                onMouseEnter={() => handleDropdownEnter(group.id)}
-                onMouseLeave={handleDropdownLeave}
-              >
-                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
-                  <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
-                  {group.featureFlagKey && flags[group.featureFlagKey] === false && (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
-                      {isRTL ? 'قريباً' : 'Coming Soon'}
-                    </span>
-                  )}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
+      {isAuthenticated && (
+        <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
+              {filteredNavigationGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="relative"
+                  onMouseEnter={() => handleDropdownEnter(group.id)}
+                  onMouseLeave={handleDropdownLeave}
+                >
+                  <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
+                    <span>{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</span>
+                    {group.featureFlagKey && flags[group.featureFlagKey] === false && (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                        {isRTL ? 'قريباً' : 'Coming Soon'}
+                      </span>
+                    )}
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
 
-                {activeDropdown === group.id && (
-                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} dir={isRTL ? 'rtl' : 'ltr'} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
-                    <div className="p-4">
-                      <div className="mb-3">
-                        <h3 className="font-semibold text-slate-900 text-lg">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
-                        <p className="text-sm text-slate-600">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-2">
-                        {group.items.map((item) => {
-                          const isItemDisabled = item.featureFlagKey && flags[item.featureFlagKey] === false;
-                          const itemName = t(itemKeyByHref[item.href]?.name || '', item.name);
-                          const itemDesc = t(itemKeyByHref[item.href]?.desc || '', item.description);
-                          return (
-                          <Link
-                            key={item.name}
-                            to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
-                            className={`flex flex-row items-start gap-3 p-3 rounded-xl transition-colors group ${isItemDisabled ? 'opacity-60 hover:bg-slate-50' : 'hover:bg-[#F0F7F7]'}`}
-                          >
-                            <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isItemDisabled ? 'text-slate-400' : 'text-[#006E6D]'}`} />
-                            <div className="flex-1">
-                              <div className={`font-medium flex items-center ${isItemDisabled ? 'text-slate-500' : 'text-[#1A1A1A] group-hover:text-[#006E6D]'}`}>
-                                {t(itemKeyByHref[item.href]?.name || '', item.name)}
-                                {isItemDisabled && (
-                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
-                                    {isRTL ? 'قريباً' : 'Coming Soon'}
-                                  </span>
-                                )}
+                  {activeDropdown === group.id && (
+                    <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} dir={isRTL ? 'rtl' : 'ltr'} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                      <div className="p-4">
+                        <div className="mb-3">
+                          <h3 className="font-semibold text-slate-900 text-lg">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.name || '', group.name)}</h3>
+                          <p className="text-sm text-slate-600">{t(groupKeyMap[group.id as keyof typeof groupKeyMap]?.desc || '', group.description)}</p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {group.items.map((item) => {
+                            const isItemDisabled = item.featureFlagKey && flags[item.featureFlagKey] === false;
+                            const itemName = t(itemKeyByHref[item.href]?.name || '', item.name);
+                            const itemDesc = t(itemKeyByHref[item.href]?.desc || '', item.description);
+                            return (
+                            <Link
+                              key={item.name}
+                              to={isItemDisabled ? `/coming-soon?module=${encodeURIComponent(itemName)}&desc=${encodeURIComponent(itemDesc)}` : (item.href === '/growth-operator-dashboard' ? getDashboardRoute(userRole) : item.href)}
+                              className={`flex flex-row items-start gap-3 p-3 rounded-xl transition-colors group ${isItemDisabled ? 'opacity-60 hover:bg-slate-50' : 'hover:bg-[#F0F7F7]'}`}
+                            >
+                              <item.icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isItemDisabled ? 'text-slate-400' : 'text-[#006E6D]'}`} />
+                              <div className="flex-1">
+                                <div className={`font-medium flex items-center ${isItemDisabled ? 'text-slate-500' : 'text-[#1A1A1A] group-hover:text-[#006E6D]'}`}>
+                                  {t(itemKeyByHref[item.href]?.name || '', item.name)}
+                                  {isItemDisabled && (
+                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                                      {isRTL ? 'قريباً' : 'Coming Soon'}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm text-slate-600 line-clamp-2">
+                                  {t(itemKeyByHref[item.href]?.desc || '', item.description)}
+                                </div>
                               </div>
-                              <div className="text-sm text-slate-600 line-clamp-2">
-                                {t(itemKeyByHref[item.href]?.desc || '', item.description)}
-                              </div>
-                            </div>
-                          </Link>
-                          );
-                        })}
+                            </Link>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            {/* Our Mission — standalone nav link */}
-            <Link
-              to="/our-mission"
-              className={`px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${currentPage === 'mission' ? 'bg-[#F0F7F7] text-[#006E6D]' : ''}`}
-            >
-              {t('nav_our_mission', isRTL ? 'رسالتنا' : 'Our Mission')}
-            </Link>
+                  )}
+                </div>
+              ))}
+              {/* Our Mission — standalone nav link */}
+              <Link
+                to="/our-mission"
+                className={`px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium ${currentPage === 'mission' ? 'bg-[#F0F7F7] text-[#006E6D]' : ''}`}
+              >
+                {t('nav_our_mission', isRTL ? 'رسالتنا' : 'Our Mission')}
+              </Link>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
@@ -484,7 +525,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                 </button>
               </div>
 
-              {filteredNavigationGroups.map((group) => (
+              {isAuthenticated && filteredNavigationGroups.map((group) => (
                 <div key={group.id} className="border-b border-slate-100 pb-4 last:border-b-0">
                   <h3 className={`font-semibold text-slate-900 mb-3 flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center ${group.featureFlagKey && flags[group.featureFlagKey] === false ? 'opacity-60' : ''}`}>
                     <span className={`w-3 h-3 bg-[#006E6D] rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
@@ -496,7 +537,7 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                     )}
                   </h3>
                   <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
-                    {group.items.slice(0, 4).map((item) => {
+                    {group.items.map((item) => {
                       const isItemDisabled = item.featureFlagKey && flags[item.featureFlagKey] === false;
                       const itemName = t(itemKeyByHref[item.href]?.name || '', item.name);
                       const itemDesc = t(itemKeyByHref[item.href]?.desc || '', item.description);
@@ -517,30 +558,22 @@ const HybridGovernmentNavFixed: React.FC<HybridGovernmentNavProps> = ({
                       </Link>
                       );
                     })}
-                    {group.items.length > 4 && (
-                      <Link
-                        to={`/${group.id}`}
-                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-[#006E6D] font-medium py-1`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <ChevronRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
-                        <span className="text-sm">{t('view_all_options', 'View all options')} ({group.items.length})</span>
-                      </Link>
-                    )}
                   </div>
                 </div>
               ))}
               {/* Our Mission — mobile nav link */}
-              <div className="border-b border-slate-100 pb-4">
-                <Link
-                  to="/our-mission"
-                  className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#374151] hover:text-[#006E6D] transition-colors py-1 font-semibold`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <span className={`w-3 h-3 bg-[#006E6D] rounded-full`}></span>
-                  <span>{t('nav_our_mission', isRTL ? 'رسالتنا' : 'Our Mission')}</span>
-                </Link>
-              </div>
+              {isAuthenticated && (
+                <div className="border-b border-slate-100 pb-4">
+                  <Link
+                    to="/our-mission"
+                    className={`flex ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'} items-center gap-2 text-[#374151] hover:text-[#006E6D] transition-colors py-1 font-semibold`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <span className={`w-3 h-3 bg-[#006E6D] rounded-full`}></span>
+                    <span>{t('nav_our_mission', isRTL ? 'رسالتنا' : 'Our Mission')}</span>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

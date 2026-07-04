@@ -109,6 +109,19 @@ def ensure_tables_exist():
                     UNIQUE(session_id, user_id)
                 )
             """)
+
+            # Create candidate_interview_recommendations table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS candidate_interview_recommendations (
+                    id SERIAL PRIMARY KEY,
+                    session_id VARCHAR(100) NOT NULL UNIQUE,
+                    candidate_id VARCHAR(100) NOT NULL,
+                    recommended_articles JSONB DEFAULT '[]',
+                    recommended_trainings JSONB DEFAULT '[]',
+                    recommended_mentors JSONB DEFAULT '[]',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
             
             conn.commit()
             
@@ -285,6 +298,7 @@ def list_sessions():
                 sessions = []
                 for row in rows:
                     session = dict(row)
+                    session['session_id'] = session['id']
                     # Normalize status
                     if session.get('status') == 'accepted':
                         session['status'] = 'confirmed'

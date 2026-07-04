@@ -32,6 +32,7 @@ import { useQuery } from '@tanstack/react-query';
 import { restClient } from '@/utils/api';
 import { Applicant } from './JobApplicantsView';
 import { CandidateDiscussionModal } from './CandidateDiscussionModal';
+import { toast } from 'sonner';
 
 interface RecruiterCandidateViewProps {
     applicant: Applicant;
@@ -50,7 +51,39 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
 }) => {
     // State for discussion modal
     const [showDiscussionModal, setShowDiscussionModal] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const { user } = useAuth();
+
+    const handleDownloadCV = async () => {
+        const candidateId = displayApplicant.candidate_id || applicant.candidate_id;
+        if (!candidateId) {
+            toast.error("No candidate ID found");
+            return;
+        }
+
+        setIsDownloading(true);
+        const toastId = toast.loading("Generating CV PDF, please wait...");
+        try {
+            const response = await restClient.get(`/api/cv/user/${candidateId}/export/pdf`, {
+                responseType: 'blob'
+            });
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `cv_${displayApplicant.candidate_name || candidateId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success("CV downloaded successfully", { id: toastId });
+        } catch (error) {
+            console.error("Failed to download CV:", error);
+            toast.error("Failed to download CV", { id: toastId });
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     // Fetch full profile details
     const { data: fullProfile, isLoading } = useQuery({
@@ -278,9 +311,14 @@ const RecruiterCandidateView: React.FC<RecruiterCandidateViewProps> = ({
                                     </div>
                                 )}
 
-                                <Button variant="outline" className="w-full mt-4">
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full mt-4"
+                                    onClick={handleDownloadCV}
+                                    disabled={isDownloading}
+                                >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Download CV
+                                    {isDownloading ? "Downloading..." : "Download CV"}
                                 </Button>
                             </CardContent>
                         </Card>

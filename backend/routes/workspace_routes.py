@@ -290,7 +290,7 @@ def add_employee(company_id):
         return jsonify({"error": str(e)}), 500
 
 
-@workspace_bp.route('/<company_id>/employees/<int:user_id>', methods=['DELETE'])
+@workspace_bp.route('/<company_id>/employees/<user_id>', methods=['DELETE'])
 @require_workspace_access('workspace.manage_employees')
 def remove_employee(company_id, user_id):
     """Remove (terminate) an employee from a company workspace.

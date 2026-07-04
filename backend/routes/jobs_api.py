@@ -263,20 +263,66 @@ def search_jobs():
         query = request.args.get('query', request.args.get('q', ''))
         location = request.args.get('location', '')
         
-        # Return mock search results
+        sql = """
+            SELECT 
+                jp.id,
+                jp.title,
+                c.name as company,
+                jp.location,
+                jp.employment_type as job_type,
+                jp.description,
+                jp.salary_range_min,
+                jp.salary_range_max,
+                jp.currency,
+                jp.status,
+                jp.created_at
+            FROM job_postings jp
+            LEFT JOIN companies c ON jp.company_id::text = c.id::text
+            WHERE jp.status IN ('active', 'published')
+        """
+        params = []
+        
+        if query:
+            sql += " AND (jp.title ILIKE %s OR jp.description ILIKE %s OR c.name ILIKE %s)"
+            search_term = f"%{query}%"
+            params.extend([search_term, search_term, search_term])
+            
+        if location:
+            sql += " AND jp.location ILIKE %s"
+            params.append(f"%{location}%")
+            
+        sql += " ORDER BY jp.created_at DESC LIMIT 50"
+        
+        jobs = execute_query(sql, tuple(params))
+        
+        # Format results
+        formatted_jobs = []
+        for job in (jobs or []):
+            salary = "Not specified"
+            if job.get('salary_range_min'):
+                curr = job.get('currency', 'AED')
+                salary = f"{curr} {job['salary_range_min']}"
+                if job.get('salary_range_max'):
+                    salary += f" - {job['salary_range_max']}"
+            job['salary_range'] = salary
+            
+            # Map score fallback if not computed by AI
+            job['match_score'] = 75
+            
+            if job.get('created_at') and hasattr(job['created_at'], 'isoformat'):
+                job['created_at'] = job['created_at'].isoformat()
+                
+            formatted_jobs.append(job)
+            
         return jsonify({
             'success': True,
-            'data': [
-                {'id': 1, 'title': 'Software Engineer', 'company': 'Tech Corp', 'location': 'Dubai', 'match_score': 95},
-                {'id': 2, 'title': 'Senior Developer', 'company': 'Innovation Inc', 'location': 'Abu Dhabi', 'match_score': 88},
-                {'id': 3, 'title': 'Full Stack Developer', 'company': 'Digital Solutions', 'location': 'Dubai', 'match_score': 82}
-            ],
+            'data': formatted_jobs,
             'query': query,
-            'total': 3
+            'total': len(formatted_jobs)
         })
     except Exception as e:
         logger.error(f"Failed to search jobs: {e}")
-        return jsonify({'success': True, 'data': [], 'query': '', 'total': 0})
+        return jsonify({'success': False, 'data': [], 'query': query, 'total': 0, 'error': str(e)})
 
 
 @jobs_bp.route('/<int:job_id>', methods=['GET'])
@@ -757,19 +803,40 @@ candidate_jobs_bp = Blueprint('candidate_jobs_api', __name__, url_prefix='/api/c
 def get_candidate_saved_jobs():
     """Get candidate's saved jobs"""
     try:
-        user_id = request.args.get('user_id', type=int)
+        try:
+            verify_jwt_in_request(optional=True)
+            user_id = get_jwt_identity()
+        except Exception:
+            user_id = None
+            
+        if not user_id:
+            user_id = request.args.get('user_id')
+            
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            
+        saved = execute_query(
+            """SELECT jp.id, jp.title, c.name as company, jp.location, sj.created_at as saved_at
+               FROM saved_jobs sj
+               LEFT JOIN job_postings jp ON sj.job_id = jp.id
+               LEFT JOIN companies c ON jp.company_id::text = c.id::text
+               WHERE sj.user_id::text = %s
+               ORDER BY sj.created_at DESC""",
+            (str(user_id),)
+        )
         
-        # Return mock data for now
+        # Convert date to string format
+        for item in (saved or []):
+            if item.get('saved_at') and hasattr(item['saved_at'], 'isoformat'):
+                item['saved_at'] = item['saved_at'].isoformat()
+                
         return jsonify({
             'success': True,
-            'data': [
-                {'id': 1, 'title': 'Software Engineer', 'company': 'Tech Corp', 'location': 'Dubai', 'saved_at': '2025-01-20'},
-                {'id': 2, 'title': 'Product Manager', 'company': 'Innovation Inc', 'location': 'Abu Dhabi', 'saved_at': '2025-01-18'}
-            ]
+            'data': saved or []
         })
     except Exception as e:
         logger.error(f"Failed to get saved jobs: {e}")
-        return jsonify({'success': True, 'data': []})
+        return jsonify({'success': False, 'data': [], 'error': str(e)})
 
 
 @candidate_jobs_bp.route('/applications', methods=['GET'])
@@ -777,20 +844,43 @@ def get_candidate_saved_jobs():
 def get_candidate_applications():
     """Get candidate's job applications"""
     try:
-        user_id = request.args.get('user_id', type=int)
+        try:
+            verify_jwt_in_request(optional=True)
+            user_id = get_jwt_identity()
+        except Exception:
+            user_id = None
+            
+        if not user_id:
+            user_id = request.args.get('user_id')
+            
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            
+        applications = execute_query(
+            """SELECT ja.id, ja.job_id, ja.status, ja.applied_at, ja.updated_at,
+                      jp.title as job_title, COALESCE(c.name, 'N/A') as company, jp.location
+               FROM job_applications ja
+               LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
+               LEFT JOIN companies c ON jp.company_id::text = c.id::text
+               WHERE ja.candidate_id::text = %s
+               ORDER BY ja.applied_at DESC""",
+            (str(user_id),)
+        )
         
-        # Return mock data for now
+        # Format dates
+        for app in (applications or []):
+            if app.get('applied_at') and hasattr(app['applied_at'], 'isoformat'):
+                app['applied_at'] = app['applied_at'].isoformat()
+            if app.get('updated_at') and hasattr(app['updated_at'], 'isoformat'):
+                app['updated_at'] = app['updated_at'].isoformat()
+                
         return jsonify({
             'success': True,
-            'data': [
-                {'id': 1, 'job_title': 'Software Engineer', 'company': 'Tech Corp', 'status': 'interview_scheduled', 'applied_at': '2025-01-15'},
-                {'id': 2, 'job_title': 'Data Analyst', 'company': 'Data Solutions', 'status': 'under_review', 'applied_at': '2025-01-18'},
-                {'id': 3, 'job_title': 'Product Manager', 'company': 'Innovation Inc', 'status': 'submitted', 'applied_at': '2025-01-20'}
-            ]
+            'data': applications or []
         })
     except Exception as e:
         logger.error(f"Failed to get applications: {e}")
-        return jsonify({'success': True, 'data': []})
+        return jsonify({'success': False, 'data': [], 'error': str(e)})
 
 
 @candidate_jobs_bp.route('/applications', methods=['POST'])

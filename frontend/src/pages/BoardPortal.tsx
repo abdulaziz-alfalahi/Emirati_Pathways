@@ -34,7 +34,8 @@ export default function BoardPortal() {
   const [scorecards, setScorecards] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
   const [directives, setDirectives] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   // New directive form state
   const [newDirective, setNewDirective] = useState({ title: '', body: '', category: 'strategic_priority', priority: 'normal' });
@@ -74,8 +75,10 @@ export default function BoardPortal() {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isRetry = false) => {
     setLoading(true);
+    setError(false);
+    if (isRetry) setRetrying(true);
     try {
       const [scoreRes, insightsRes, dirRes] = await Promise.all([
         restClient.get('/api/board/scorecards'),
@@ -83,46 +86,23 @@ export default function BoardPortal() {
         restClient.get('/api/board/directives')
       ]);
 
-      if (scoreRes.data) setScorecards(scoreRes.data);
-      if (insightsRes.data) setInsights(insightsRes.data);
-      if (dirRes.data) setDirectives(dirRes.data);
+      if (scoreRes && scoreRes.data) setScorecards(scoreRes.data);
+      else throw new Error("Scorecards metrics unavailable");
+
+      if (insightsRes && insightsRes.data) setInsights(insightsRes.data);
+      else throw new Error("Insights metrics unavailable");
+
+      if (dirRes && dirRes.data) setDirectives(dirRes.data);
+      else throw new Error("Directives list unavailable");
 
     } catch (error) {
       console.error('Error fetching board data:', error);
-      // Set fallback data
-      setScorecards({
-        placement_rate: { value: '12.4%', trend: '+2.4%', target: '15.0%', status: 'good' },
-        time_to_hire: { value: '24 days', trend: '-3 days', target: '30 days', status: 'excellent' },
-        pipeline_health: { value: '1,247', trend: '+12%', target: '1,000', status: 'good' },
-        emiratisation_progress: { value: '4.2%', trend: '+0.5%', target: '5.0%', status: 'warning' },
-        active_companies: { value: '38', trend: '+5%', target: '50', status: 'good' },
-        total_offers: { value: '156', trend: '+18%', target: '100', status: 'excellent' }
-      });
-      setInsights([
-        {
-          id: 1,
-          title: 'Placement Rate Growth',
-          description: 'Abu Dhabi placement rate increased by 12%, driven primarily by the technology sector.',
-          severity: 'info',
-          theme: 'talent_supply'
-        },
-        {
-          id: 2,
-          title: 'Company Inactivity',
-          description: '3 major enterprise companies have not posted new roles in the last 30 days.',
-          severity: 'warning',
-          theme: 'company_demand'
-        },
-        {
-          id: 3,
-          title: 'Candidate Registration Surge',
-          description: '45 candidates completed their profile this week vs. 28 last week.',
-          severity: 'info',
-          theme: 'platform_health'
-        }
-      ]);
+      setError(true);
+      setScorecards(null);
+      setInsights([]);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   };
 
@@ -186,7 +166,31 @@ export default function BoardPortal() {
         <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-            <p className="text-sm text-slate-500 font-dubai-medium">{b('Loading Executive Intelligence...', 'جاري تحميل لوحة الإدارة...')}</p>
+            <p className="text-sm text-slate-500 font-dubai-medium">
+              {retrying ? b('Retrying live API request...', 'جاري إعادة محاولة الاتصال بالخادم...') : b('Loading Executive Intelligence...', 'جاري تحميل لوحة الإدارة...')}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !loading) {
+    return (
+      <div className={`min-h-screen bg-[#FAFBFC] font-dubai ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <HybridGovernmentNavFixed showAuthButtons={true} currentLanguage={language} onLanguageToggle={toggleLanguage} />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          <div className="max-w-md w-full bg-white border border-red-100 rounded-xl p-6 shadow-sm text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-lg font-dubai-bold text-slate-800 mb-2">
+              {b('Database Connection Offline', 'فشل الاتصال بقاعدة البيانات')}
+            </h2>
+            <p className="text-sm text-slate-500 font-dubai-medium mb-6">
+              {b('We are currently unable to retrieve secure executive metrics. The system will not load historical fallbacks to prevent decision inaccuracies.', 'لا يمكن حالياً استرداد المؤشرات التنفيذية الآمنة. لن يقوم النظام بتحميل بيانات احتياطية غير دقيقة لمنع اتخاذ قرارات خاطئة.')}
+            </p>
+            <Button onClick={() => fetchDashboardData(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-dubai-medium w-full">
+              {b('Retry Connection', 'إعادة محاولة الاتصال')}
+            </Button>
           </div>
         </div>
       </div>

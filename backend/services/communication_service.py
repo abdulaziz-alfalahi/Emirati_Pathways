@@ -853,7 +853,7 @@ class CommunicationService:
                 row = cur.fetchone()
                 conn.commit()
                 
-                return Notification(
+                notification = Notification(
                     id=str(row['id']),
                     user_id=str(user_id),
                     notification_type=notification_type,
@@ -863,6 +863,24 @@ class CommunicationService:
                     metadata=metadata or {},
                     created_at=row['created_at']
                 )
+
+                # Real-time socket push
+                try:
+                    from flask import current_app
+                    push_fn = getattr(current_app, 'push_notification_to_user', None)
+                    if push_fn:
+                        push_fn(user_id, 'new_notification', {
+                            'id': str(row['id']),
+                            'type': notification_type.value,
+                            'title': title,
+                            'message': content,
+                            'metadata': metadata or {},
+                            'read': False
+                        })
+                except Exception as push_err:
+                    self.logger.debug(f"CommunicationService: SocketIO push skipped/failed: {push_err}")
+
+                return notification
         except Exception as e:
             conn.rollback()
             logger.error(f"Error creating notification: {e}")

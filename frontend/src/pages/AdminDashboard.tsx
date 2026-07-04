@@ -14,6 +14,7 @@ import HybridGovernmentNavFixed from '@/components/layout/HybridGovernmentNavFix
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -28,7 +29,7 @@ import {
 import {
   Users, Briefcase, TrendingUp, Shield, AlertTriangle, CheckCircle, Clock,
   BarChart3, UserCheck, FileText, MessageSquare, Activity, Video, Loader2,
-  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings, Eye
+  ClipboardCopy, RefreshCw, UserPlus, Send, Mail, Settings, Eye, HelpCircle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -50,6 +51,9 @@ const AdminDashboard = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [logFilter, setLogFilter] = useState<'all' | 'error' | 'warning'>('all');
   const [logSearch, setLogSearch] = useState('');
+  const [showClarificationInput, setShowClarificationInput] = useState(false);
+  const [clarificationNotes, setClarificationNotes] = useState('');
+  const [isSubmittingClarification, setIsSubmittingClarification] = useState(false);
 
   // Handler for UI tab changes
   const handleTabChange = (value: string) => {
@@ -776,9 +780,16 @@ const AdminDashboard = () => {
                                   </div>
                                 </td>
                                 <td className="p-3">
-                                  <Badge variant={item.status === 'resolved' ? 'outline' : 'default'} className={item.status === 'resolved' ? 'text-green-600 border-green-600' : 'bg-blue-600'}>
-                                    {item.status ? item.status.toUpperCase() : 'OPEN'}
-                                  </Badge>
+                                  {(() => {
+                                    const nStatus = item.status ? item.status.toLowerCase() : 'open';
+                                    if (nStatus === 'resolved') {
+                                      return <Badge variant="outline" className="text-green-600 border-green-600">RESOLVED</Badge>;
+                                    } else if (nStatus === 'pending_clarification') {
+                                      return <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0">NEED DETAIL</Badge>;
+                                    } else {
+                                      return <Badge className="bg-blue-600 text-white">OPEN</Badge>;
+                                    }
+                                  })()}
                                 </td>
                                 <td className="p-3 max-w-md">
                                   <p className="font-medium truncate">{item.message}</p>
@@ -867,17 +878,30 @@ ${JSON.stringify(item.metadata, null, 2)}
                 </Card>
 
                 {/* Feedback Detail Inspection Dialog */}
-                <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+                <Dialog open={isDetailsOpen} onOpenChange={(open) => {
+                  setIsDetailsOpen(open);
+                  if (!open) {
+                    setShowClarificationInput(false);
+                    setClarificationNotes('');
+                  }
+                }}>
                   <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto font-dubai">
                     {selectedFeedback && (
                       <>
                         <DialogHeader>
                           <div className="flex items-center gap-2 mb-1">
+                            {(() => {
+                              const nStatus = selectedFeedback.status ? selectedFeedback.status.toLowerCase() : 'open';
+                              if (nStatus === 'resolved') {
+                                return <Badge variant="outline" className="text-green-600 border-green-600">RESOLVED</Badge>;
+                              } else if (nStatus === 'pending_clarification') {
+                                return <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0">NEED DETAIL</Badge>;
+                              } else {
+                                return <Badge className="bg-blue-600 text-white">OPEN</Badge>;
+                              }
+                            })()}
                             <Badge variant={selectedFeedback.type === 'bug' ? 'destructive' : 'secondary'}>
                               {selectedFeedback.type?.toUpperCase()}
-                            </Badge>
-                            <Badge variant={selectedFeedback.status === 'resolved' ? 'outline' : 'default'} className={selectedFeedback.status === 'resolved' ? 'text-green-600 border-green-600' : 'bg-blue-600'}>
-                              {selectedFeedback.status ? selectedFeedback.status.toUpperCase() : 'OPEN'}
                             </Badge>
                             <span className="text-xs text-muted-foreground ml-auto">
                               {new Date(selectedFeedback.created_at).toLocaleString()}
@@ -900,6 +924,72 @@ ${JSON.stringify(item.metadata, null, 2)}
                                 {selectedFeedback.message}
                               </div>
                             </div>
+
+                            {selectedFeedback.status === 'pending_clarification' && selectedFeedback.resolution_notes && (
+                              <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm text-amber-800 leading-relaxed">
+                                <strong>Clarification Request Sent:</strong> {selectedFeedback.resolution_notes}
+                              </div>
+                            )}
+
+                            {showClarificationInput && (
+                              <div className="border border-amber-200 bg-amber-50/50 p-4 rounded-lg space-y-3 animate-in slide-in-from-top-2 duration-300">
+                                <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Clarification Request Message</h4>
+                                <Textarea
+                                  value={clarificationNotes}
+                                  onChange={(e) => setClarificationNotes(e.target.value)}
+                                  placeholder="Type your request for details here (e.g. 'Can you specify the browser/version and provide exact steps?')"
+                                  className="bg-white border-amber-200 focus:border-amber-500 min-h-[80px]"
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
+                                    onClick={() => {
+                                      setShowClarificationInput(false);
+                                      setClarificationNotes('');
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                                    onClick={async () => {
+                                      if (!clarificationNotes.trim()) return;
+                                      setIsSubmittingClarification(true);
+                                      try {
+                                        await restClient.put(`/api/feedback/${selectedFeedback.id}/status`, {
+                                          status: 'pending_clarification',
+                                          resolution_notes: clarificationNotes
+                                        });
+                                        setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'pending_clarification', resolution_notes: clarificationNotes } : null);
+                                        setShowClarificationInput(false);
+                                        setClarificationNotes('');
+                                        loadFeedbackList();
+                                        toast({
+                                          title: "Clarification Requested",
+                                          description: "Clarification request sent to the user successfully",
+                                        });
+                                      } catch (err) {
+                                        console.error(err);
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to request clarification",
+                                          variant: "destructive"
+                                        });
+                                      } finally {
+                                        setIsSubmittingClarification(false);
+                                      }
+                                    }}
+                                    disabled={isSubmittingClarification || !clarificationNotes.trim()}
+                                  >
+                                    {isSubmittingClarification && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                    Send Request
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
 
                             {selectedFeedback.metadata?.reproSteps && (
                               <div>
@@ -1073,16 +1163,28 @@ ${JSON.stringify(item.metadata, null, 2)}
                           <div className="flex justify-between items-center w-full">
                             <div className="flex gap-2">
                               {selectedFeedback.status !== 'resolved' ? (
-                                <Button
-                                  type="button"
-                                  className="bg-green-600 hover:bg-green-700 text-white font-medium"
-                                  onClick={async () => {
-                                    await updateFeedbackStatus(selectedFeedback.id, 'resolved');
-                                    setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'resolved' } : null);
-                                  }}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-2" /> Mark as Resolved
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    className="bg-green-600 hover:bg-green-700 text-white font-medium"
+                                    onClick={async () => {
+                                      await updateFeedbackStatus(selectedFeedback.id, 'resolved');
+                                      setSelectedFeedback((prev: any) => prev ? { ...prev, status: 'resolved' } : null);
+                                    }}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" /> Mark as Resolved
+                                  </Button>
+                                  {selectedFeedback.status !== 'pending_clarification' && !showClarificationInput && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="border-amber-300 hover:bg-amber-50 text-amber-700 font-medium"
+                                      onClick={() => setShowClarificationInput(true)}
+                                    >
+                                      <HelpCircle className="h-4 w-4 mr-2" /> Request Clarification
+                                    </Button>
+                                  )}
+                                </div>
                               ) : (
                                 <Button
                                   type="button"

@@ -238,15 +238,7 @@ const UserMenu: React.FC = () => {
 
         <DropdownMenuItem
           onClick={() => {
-            const rawRoles = [
-              ...(user.roles || []),
-              user.user_type,
-              user.role,
-              ...(user.secondary_roles || [])
-            ].filter(Boolean);
-            const hasCandidateRole = rawRoles.some(r => normalizeRole(r as string) === 'candidate');
-
-            if (hasCandidateRole) {
+            if (currentRole === 'candidate') {
               navigate('/candidate/profile/identity');
             } else {
               navigate('/profile');

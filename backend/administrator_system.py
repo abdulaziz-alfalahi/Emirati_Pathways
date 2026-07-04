@@ -1084,7 +1084,6 @@ class AdministratorSystem:
         except Exception as e:
             logger.error(f"Failed to get system metrics: {str(e)}")
             return []
-    
     # Settings Management
     
     def get_system_settings(self, category: str = None, 
@@ -1114,8 +1113,14 @@ class AdministratorSystem:
             
             settings = {}
             for row in results:
+                val = row['setting_value']
+                if isinstance(val, str):
+                    try:
+                        val = json.loads(val)
+                    except Exception:
+                        pass
                 settings[row['setting_key']] = {
-                    'value': json.loads(row['setting_value']),
+                    'value': val,
                     'type': row['setting_type'],
                     'category': row['category'],
                     'description': row['description'],
@@ -1128,13 +1133,20 @@ class AdministratorSystem:
             return {}
     
     def update_system_setting(self, setting_key: str, setting_value: Any, 
-                             admin_user_id: int) -> bool:
+                              admin_user_id: int) -> bool:
         """Update a system setting"""
         try:
             # Get current value for logging
             current_query = "SELECT setting_value FROM admin_settings WHERE setting_key = %s"
             current_result = self._execute_query(current_query, (setting_key,))
-            current_value = json.loads(current_result[0]['setting_value']) if current_result else None
+            current_value = None
+            if current_result and current_result[0]['setting_value'] is not None:
+                current_value = current_result[0]['setting_value']
+                if isinstance(current_value, str):
+                    try:
+                        current_value = json.loads(current_value)
+                    except Exception:
+                        pass
             
             # Update setting
             query = """

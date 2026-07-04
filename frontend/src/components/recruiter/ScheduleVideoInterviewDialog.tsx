@@ -133,8 +133,11 @@ export function ScheduleVideoInterviewDialog({
                 return response.data.data?.id || response.data.shortlist_id;
             }
             return null;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding to shortlist:", error);
+            if (error.response?.status === 409 && error.response.data?.shortlist_id) {
+                return error.response.data.shortlist_id;
+            }
             return null;
         }
     };
@@ -167,7 +170,7 @@ export function ScheduleVideoInterviewDialog({
                         }
                     } else if (initialCandidateId) {
                         let targetShortlistId = "";
-                        const match = shortlist.find((c: any) => c.candidate_id === initialCandidateId || c.shortlist_id === initialCandidateId);
+                        const match = shortlist.find((c: any) => String(c.candidate_id) === String(initialCandidateId) || String(c.shortlist_id) === String(initialCandidateId));
 
                         if (match) {
                             targetShortlistId = match.shortlist_id;

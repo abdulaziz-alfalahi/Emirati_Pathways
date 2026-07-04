@@ -46,7 +46,7 @@ import { normalizeRole, getDashboardRoute } from '@/types/auth';
 export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ initialProfile, cvUploaded = false }) => {
     const { toast } = useToast();
     const navigate = useNavigate();
-    const { switchRole, refreshUser } = useAuth();
+    const { switchRole, refreshUser, getUserRole } = useAuth();
 
     // Fetch holistic readiness from the backend
     const fetchReadinessScore = async (): Promise<number> => {
@@ -88,7 +88,7 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
 
                     setCurrentUser(prev => ({
                         ...prev,
-                        primaryRole: data.data.role || 'Job Seeker',
+                        primaryRole: getUserRole() || data.data.role || 'Job Seeker',
                         secondaryRoles: data.data.secondary_roles || []
                     }));
                 }
@@ -385,11 +385,11 @@ export const UnifiedProfileHeader: React.FC<UnifiedProfileHeaderProps> = ({ init
                         if (data.success) {
                             const allRoles = [data.data.role, ...(data.data.secondary_roles || [])].filter(Boolean);
                             setPossessedRoles(allRoles);
-                            setCurrentUser(prev => ({
-                                ...prev,
-                                primaryRole: data.data.role || 'Job Seeker',
-                                secondaryRoles: data.data.secondary_roles || []
-                            }));
+                             setCurrentUser(prev => ({
+                                 ...prev,
+                                 primaryRole: getUserRole() || data.data.role || 'Job Seeker',
+                                 secondaryRoles: data.data.secondary_roles || []
+                             }));
                         }
                     } catch (e) {
                         console.error('Failed to refresh roles after request', e);

@@ -66,7 +66,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { refreshUser } = useAuth();
+  const { switchRole, refreshUser, getUserRole } = useAuth();
   const [currentUser, setCurrentUser] = useState<UserProfile>({
     id: '1',
     firstName: 'Ahmed',
@@ -107,7 +107,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
           setCurrentUser(prev => ({
             ...prev,
             secondaryRoles: data.data.secondary_roles || [],
-            primaryRole: data.data.role // Sync primary role too
+            primaryRole: getUserRole() || data.data.role // Sync primary role too
           }));
         }
       } catch (error) {
@@ -164,8 +164,8 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
           lastName: apiData.last_name || prev.lastName,
           email: apiData.email || prev.email,
           profilePhotoUrl: apiData.profile_photo_url || prev.profilePhotoUrl,
-          // Sync role if backend returns it
-          primaryRole: apiData.role ? normalizeRole(apiData.role) : prev.primaryRole,
+          // Sync role using global active role as authoritative source
+          primaryRole: getUserRole() || (apiData.role ? normalizeRole(apiData.role) : prev.primaryRole),
           // Calculate completion if needed or use backend
           profileCompletion: apiData.profile_completion || prev.profileCompletion
         }));
@@ -178,7 +178,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
         variant: "destructive"
       });
     }
-  }, [currentUser.primaryRole, toast]);
+  }, [currentUser.primaryRole, getUserRole, toast]);
 
   useEffect(() => {
     fetchProfile();
@@ -312,12 +312,26 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
     return roleConfigs[configKey] || roleConfigs['candidate'];
   };
 
-  const handleRoleSwitch = (newRole: string) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      primaryRole: newRole
-    }));
-    setActiveTab('overview');
+  const handleRoleSwitch = async (newRole: string) => {
+    try {
+      await switchRole(newRole);
+      setCurrentUser(prev => ({
+        ...prev,
+        primaryRole: newRole
+      }));
+      setActiveTab('overview');
+      toast({
+        title: "Role Switched",
+        description: `Active persona switched to ${newRole}`,
+      });
+    } catch (error) {
+      console.error("Failed to switch role:", error);
+      toast({
+        title: "Switch Failed",
+        description: "Could not switch active persona.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleProfileUpdate = async () => {
@@ -507,7 +521,7 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                       setPossessedRoles(allRoles);
                       setCurrentUser(prev => ({
                         ...prev,
-                        primaryRole: data.data.role || 'Job Seeker',
+                        primaryRole: getUserRole() || data.data.role || 'Job Seeker',
                         secondaryRoles: data.data.secondary_roles || []
                       }));
                     }
@@ -730,6 +744,39 @@ const ProfileManagement: React.FC<ProfileManagementProps> = ({ userProfile }) =>
                     ) : roleConfig.components[tab as keyof typeof roleConfig.components] ? (
                       React.createElement(roleConfig.components[tab as keyof typeof roleConfig.components], {
                         onProfileUpdate: handleProfileUpdate,
+                        onComplete: async (data: any) => {
+                          setIsSaving(true);
+                          try {
+                            if (tab === 'company') {
+                              await handleProfileUpdate();
+                            } else if (tab === 'institution') {
+                              const response = await restClient.put('/api/auth/profile', {
+                                ...data,
+                                role: 'training_provider',
+                                update_type: 'institution'
+                              });
+                              if (response.data.success) {
+                                await handleProfileUpdate();
+                              } else {
+                                throw new Error(response.data.message || 'Failed to save');
+                              }
+                            }
+                            setActiveTab('overview');
+                            toast({
+                              title: "Setup Completed",
+                              description: "Your profile has been saved successfully.",
+                            });
+                          } catch (error: any) {
+                            console.error('Error saving profile:', error);
+                            toast({
+                              title: "Error",
+                              description: error.message || "Failed to save profile changes.",
+                              variant: "destructive"
+                            });
+                          } finally {
+                            setIsSaving(false);
+                          }
+                        },
                         initialData: candidateData // Provide loaded data to component
                       })
                     ) : (

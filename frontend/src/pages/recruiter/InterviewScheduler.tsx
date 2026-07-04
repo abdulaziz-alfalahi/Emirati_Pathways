@@ -21,7 +21,7 @@ export default function InterviewSchedulerPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showVideoRoom, setShowVideoRoom] = useState(false);
 
-  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || '';
+  const token = (window as any).HR_TOKEN || localStorage.getItem('HR_TOKEN') || localStorage.getItem('access_token') || localStorage.getItem('token') || '';
   const H = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const schedule = async () => {

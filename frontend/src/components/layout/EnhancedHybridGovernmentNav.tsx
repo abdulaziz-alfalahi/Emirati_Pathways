@@ -4,6 +4,7 @@ import { ArrowRight, Menu, X, ChevronDown, ChevronRight, Globe, Phone, Mail } fr
 import { navigationGroups } from '@/components/navigation/navigationConfig';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
 
 interface EnhancedHybridGovernmentNavProps {
   showAuthButtons?: boolean;
@@ -20,6 +21,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { language, setLanguage, isRTL } = useLanguage();
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
 
   const handleLanguageToggle = () => {
     setLanguage(language === 'en' ? 'ar' : 'en');
@@ -90,12 +92,14 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
             {/* Navigation Actions */}
             <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
               {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-              >
-                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                >
+                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
+              )}
 
               {showAuthButtons ? (
                 <>
@@ -137,62 +141,64 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
       </header>
 
       {/* Dedicated Navigation Bar */}
-      <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
-            {navigationGroups.map((group) => (
-              <div
-                key={group.id}
-                className="relative"
-                onMouseEnter={() => setActiveDropdown(group.id)}
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium`}>
-                  <span>{t(`nav_${group.id}`, group.name)}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
+      {isAuthenticated && (
+        <nav className="bg-white text-[#374151] border-b border-[#E2E5E9]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className={`hidden lg:flex items-center justify-center space-x-8 ${isRTL ? 'space-x-reverse' : ''} h-14`}>
+              {navigationGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="relative"
+                  onMouseEnter={() => setActiveDropdown(group.id)}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-1 ${isRTL ? 'space-x-reverse' : ''} px-4 py-2 rounded-xl text-[#374151] hover:bg-[#F0F7F7] hover:text-[#006E6D] transition-colors font-medium`}>
+                    <span>{t(`nav_${group.id}`, group.name)}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
 
-                {activeDropdown === group.id && (
-                  <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
-                    <div className="p-4">
-                      <div className="mb-3">
-                        <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>
-                          {t(`nav_${group.id}`, group.name)}
-                        </h3>
-                        <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
-                          {t(`nav_${group.id}_desc`, group.description)}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-2">
-                        {group.items.map((item) => (
-                          <Link
-                            key={item.name}
-                            to={item.href}
-                            className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group`}
-                          >
-                            <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
-                            <div className={isRTL ? 'text-right' : 'text-left'}>
-                              <div className="font-medium text-[#1A1A1A] group-hover:text-[#006E6D]">
-                                {t(`nav_item_${item.name.toLowerCase().replace(/\\s+/g, '_')}`, item.name)}
+                  {activeDropdown === group.id && (
+                    <div className={`absolute top-full ${isRTL ? 'right-0' : 'left-0'} mt-1 w-80 bg-white rounded-2xl border border-[#E2E5E9] z-50`} style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                      <div className="p-4">
+                        <div className="mb-3">
+                          <h3 className={`font-semibold text-slate-900 text-lg ${isRTL ? 'text-right' : 'text-left'}`}>
+                            {t(`nav_${group.id}`, group.name)}
+                          </h3>
+                          <p className={`text-sm text-slate-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                            {t(`nav_${group.id}_desc`, group.description)}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {group.items.map((item) => (
+                            <Link
+                              key={item.name}
+                              to={item.href}
+                              className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 rounded-xl hover:bg-[#F0F7F7] transition-colors group`}
+                            >
+                              <item.icon className="h-5 w-5 text-[#006E6D] mt-0.5 flex-shrink-0" />
+                              <div className={isRTL ? 'text-right' : 'text-left'}>
+                                <div className="font-medium text-[#1A1A1A] group-hover:text-[#006E6D]">
+                                  {t(`nav_item_${item.name.toLowerCase().replace(/\s+/g, '_')}`, item.name)}
+                                </div>
+                                <div className="text-sm text-slate-600 line-clamp-2">
+                                  {t(`nav_item_${item.name.toLowerCase().replace(/\s+/g, '_')}_desc`, item.description)}
+                                </div>
                               </div>
-                              <div className="text-sm text-slate-600 line-clamp-2">
-                                {t(`nav_item_${item.name.toLowerCase().replace(/\\s+/g, '_')}_desc`, item.description)}
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       {/* Mobile Navigation Menu */}
-      {isMobileMenuOpen && (
+      {isAuthenticated && isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-b border-slate-200 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="space-y-4">
@@ -203,7 +209,7 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                     {t(`nav_${group.id}`, group.name)}
                   </h3>
                   <div className={`grid grid-cols-1 gap-2 ${isRTL ? 'mr-5' : 'ml-5'}`}>
-                    {group.items.slice(0, 4).map((item) => (
+                    {group.items.map((item) => (
                       <Link
                         key={item.name}
                         to={item.href}
@@ -212,22 +218,10 @@ const EnhancedHybridGovernmentNav: React.FC<EnhancedHybridGovernmentNavProps> = 
                       >
                         <item.icon className="h-4 w-4" />
                         <span className="text-sm">
-                          {t(`nav_item_${item.name.toLowerCase().replace(/\\s+/g, '_')}`, item.name)}
+                          {t(`nav_item_${item.name.toLowerCase().replace(/\s+/g, '_')}`, item.name)}
                         </span>
                       </Link>
                     ))}
-                    {group.items.length > 4 && (
-                      <Link
-                        to={`/${group.id}`}
-                        className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-center space-x-2 ${isRTL ? 'space-x-reverse' : ''} text-[#006E6D] font-medium py-1`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <ChevronRight className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''}`} />
-                        <span className="text-sm">
-                          {t('view_all_options', `View all ${group.items.length} options`)}
-                        </span>
-                      </Link>
-                    )}
                   </div>
                 </div>
               ))}

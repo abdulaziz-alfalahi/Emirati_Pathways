@@ -21,7 +21,7 @@ hr_candidate_bp = Blueprint('hr_candidate', __name__, url_prefix='/api/hr/candid
 # REMOVED: hr_dashboard_api.search_candidates (registered first via blueprint).
 
 
-@hr_candidate_bp.route('/<int:candidate_id>', methods=['GET'])
+@hr_candidate_bp.route('/<candidate_id>', methods=['GET'])
 @jwt_required()
 def get_candidate_profile_hr(candidate_id):
     """
@@ -62,7 +62,7 @@ def get_candidate_profile_hr(candidate_id):
                     (SELECT MAX(submitted_at) FROM job_applications ja WHERE ja.candidate_id = u.id) as last_application_date
                 FROM users u
                 LEFT JOIN candidate_profiles p ON u.id = p.user_id
-                WHERE u.id = %s AND u.role IN ('candidate', 'candidate')
+                WHERE u.id::text = %s AND u.role IN ('candidate', 'candidate')
             """, (candidate_id,))
             
             candidate = cursor.fetchone()
@@ -91,7 +91,7 @@ def get_candidate_profile_hr(candidate_id):
                 cursor.execute("""
                     SELECT parsed_data, work_experience, education
                     FROM user_cvs
-                    WHERE user_id = %s
+                    WHERE user_id::text = %s
                     ORDER BY updated_at DESC NULLS LAST, created_at DESC
                     LIMIT 1
                 """, (candidate_id,))
@@ -136,9 +136,9 @@ def get_candidate_profile_hr(candidate_id):
                         COALESCE(jp.title, jd.title) as job_title,
                         COALESCE(jp.company_id::text, jd.company) as company_name
                     FROM job_applications ja
-                    LEFT JOIN job_postings jp ON ja.job_id = jp.id
-                    LEFT JOIN job_descriptions jd ON ja.job_id = jd.id
-                    WHERE ja.candidate_id = %s
+                    LEFT JOIN job_postings jp ON ja.job_id = jp.id::text
+                    LEFT JOIN job_descriptions jd ON ja.job_id = jd.id::text
+                    WHERE ja.candidate_id::text = %s
                     ORDER BY ja.submitted_at DESC
                     LIMIT 5
                 """, (candidate_id,))

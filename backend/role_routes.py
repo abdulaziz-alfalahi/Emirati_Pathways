@@ -27,6 +27,8 @@ ROLE_OPERATOR_MAP = {
     'Assessor':         ['assessment_operator'],
     'Guardian':         ['admin', 'admin'],
     'Growth Operator':  ['admin', 'admin'],
+    'call_center_agent': ['admin', 'admin'],
+    'career_services_operator': ['admin', 'admin'],
 }
 
 
@@ -116,8 +118,8 @@ def submit_role_request():
             # Directly add to secondary_roles without creating a request
             cur.execute("""
                 UPDATE users 
-                SET secondary_roles = array_append(COALESCE(secondary_roles, '{}'), %s)
-                WHERE id = %s AND (secondary_roles IS NULL OR NOT (%s = ANY(secondary_roles)))
+                SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) || jsonb_build_array(%s)
+                WHERE id = %s AND (secondary_roles IS NULL OR NOT jsonb_exists(secondary_roles, %s))
             """, (requested_role, user_id, requested_role))
             conn.commit()
             
@@ -161,12 +163,13 @@ def submit_role_request():
             params = []
             for op_role in operator_roles:
                 role_conditions.append("role = %s")
-                role_conditions.append("%s = ANY(secondary_roles)")
+                role_conditions.append("jsonb_exists(COALESCE(secondary_roles, '[]'::jsonb), %s)")
                 params.extend([op_role, op_role])
             
             # Always include admin as fallback
-            if 'admin' not in operator_roles and 'admin' not in operator_roles:
-                role_conditions.append("role IN ('admin', 'admin')")
+            if 'admin' not in operator_roles:
+                role_conditions.append("role = 'admin'")
+                role_conditions.append("jsonb_exists(COALESCE(secondary_roles, '[]'::jsonb), 'admin')")
             
             where_clause = " OR ".join(role_conditions)
             cur.execute(f"SELECT id FROM users WHERE {where_clause}", params)
@@ -254,7 +257,7 @@ def get_all_requests():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Check permissions
-        cur.execute("SELECT role FROM users WHERE id = %s", (current_user_id,))
+        cur.execute("SELECT role, secondary_roles FROM users WHERE id = %s", (current_user_id,))
         user = cur.fetchone()
         
         if not user:
@@ -262,7 +265,12 @@ def get_all_requests():
             
         # Helper import here to avoid circular dependency if possible, or move helper to common
         from backend.routes.auth_routes import get_role_permissions
-        perms = get_role_permissions(user['role'])
+        
+        all_roles = [user['role']] + (user['secondary_roles'] or [])
+        perms = []
+        for r in all_roles:
+            if r:
+                perms.extend(get_role_permissions(r))
         
         if 'roles.approve_requests' not in perms and 'admin' not in perms and 'admin' not in perms:
              return jsonify({'success': False, 'message': 'Permission denied'}), 403
@@ -305,7 +313,7 @@ def action_request(request_id):
 
         # Check permissions
         current_user_id = get_jwt_identity()
-        cur.execute("SELECT role FROM users WHERE id = %s", (current_user_id,))
+        cur.execute("SELECT role, secondary_roles FROM users WHERE id = %s", (current_user_id,))
         user_row = cur.fetchone()
         
         if not user_row:
@@ -313,7 +321,12 @@ def action_request(request_id):
 
         # Helper import here to avoid circular dependency
         from backend.routes.auth_routes import get_role_permissions
-        perms = get_role_permissions(user_row['role'])
+        
+        all_roles = [user_row['role']] + (user_row['secondary_roles'] or [])
+        perms = []
+        for r in all_roles:
+            if r:
+                perms.extend(get_role_permissions(r))
         
         if 'roles.approve_requests' not in perms and 'admin' not in perms and 'admin' not in perms:
              return jsonify({'success': False, 'message': 'Permission denied'}), 403
@@ -346,8 +359,8 @@ def action_request(request_id):
             # Use array_append to add to list if not exists, handling NULLs
             cur.execute("""
                 UPDATE users 
-                SET secondary_roles = array_append(COALESCE(secondary_roles, '{}'), %s)
-                WHERE id = %s AND (secondary_roles IS NULL OR NOT (%s = ANY(secondary_roles)))
+                SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) || jsonb_build_array(%s)
+                WHERE id = %s AND (secondary_roles IS NULL OR NOT jsonb_exists(secondary_roles, %s))
             """, (role_to_add, user_id, role_to_add))
             
         conn.commit()
@@ -535,8 +548,8 @@ def operator_action_request(request_id):
             role_to_add = req['requested_role']
             cur.execute("""
                 UPDATE users 
-                SET secondary_roles = array_append(COALESCE(secondary_roles, '{}'), %s)
-                WHERE id = %s AND (secondary_roles IS NULL OR NOT (%s = ANY(secondary_roles)))
+                SET secondary_roles = COALESCE(secondary_roles, '[]'::jsonb) || jsonb_build_array(%s)
+                WHERE id = %s AND (secondary_roles IS NULL OR NOT jsonb_exists(secondary_roles, %s))
             """, (role_to_add, user_id, role_to_add))
         
         conn.commit()

@@ -149,15 +149,42 @@ class VideoInterviewEngine:
                     
                     session = cur.fetchone()
                     if not session:
-                        raise ValueError("Interview session not found or access denied")
+                        # Fallback for interview_schedules
+                        cur.execute("""
+                            SELECT 
+                                id,
+                                interview_id,
+                                candidate_id,
+                                recruiter_id as interviewer_id,
+                                status,
+                                duration_minutes,
+                                interview_type,
+                                COALESCE(NULLIF(meeting_link, ''), interview_id) as room_id
+                            FROM interview_schedules
+                            WHERE interview_id = %s AND (recruiter_id = %s OR candidate_id = %s)
+                        """, (session_id, user_id, user_id))
+                        row = cur.fetchone()
+                        if row:
+                            session = dict(row)
+                            if '/' in session['room_id']:
+                                session['room_id'] = session['room_id'].split('/')[-1]
+                        else:
+                            raise ValueError("Interview session not found or access denied")
                     
                     # Update session status
-                    if session['status'] == InterviewStatus.SCHEDULED.value:
-                        cur.execute("""
-                            UPDATE video_interview_sessions 
-                            SET status = %s, started_at = %s
-                            WHERE id = %s
-                        """, (InterviewStatus.IN_PROGRESS.value, datetime.now(), session_id))
+                    if session['status'] == 'scheduled' or session['status'] == InterviewStatus.SCHEDULED.value:
+                        if 'interview_id' in session:
+                            cur.execute("""
+                                UPDATE interview_schedules
+                                SET status = 'in_progress', updated_at = NOW()
+                                WHERE interview_id = %s
+                            """, (session_id,))
+                        else:
+                            cur.execute("""
+                                UPDATE video_interview_sessions 
+                                SET status = %s, started_at = %s
+                                WHERE id = %s
+                            """, (InterviewStatus.IN_PROGRESS.value, datetime.now(), session_id))
                         conn.commit()
                     
                     # Generate LiveKit tokens
@@ -196,7 +223,7 @@ class VideoInterviewEngine:
         try:
             with self.get_db_connection() as conn:
                 with conn.cursor() as cur:
-                    # Update session status
+                    # Update session status in video_interview_sessions first
                     cur.execute("""
                         UPDATE video_interview_sessions 
                         SET status = %s, ended_at = %s
@@ -210,7 +237,15 @@ class VideoInterviewEngine:
                     ))
                     
                     if cur.rowcount == 0:
-                        return False
+                        # Fallback for interview_schedules
+                        cur.execute("""
+                            UPDATE interview_schedules 
+                            SET status = 'completed', updated_at = NOW()
+                            WHERE interview_id = %s AND (recruiter_id = %s OR candidate_id = %s)
+                        """, (session_id, user_id, user_id))
+                        
+                        if cur.rowcount == 0:
+                            return False
                     
                     conn.commit()
                     
@@ -227,17 +262,8 @@ class VideoInterviewEngine:
     def _trigger_post_interview_processing(self, session_id: str):
         """Trigger post-interview AI analysis and processing"""
         try:
-            # This would typically be handled by a background task queue
-            # For now, we'll simulate the process
             logger.info(f"Triggering post-interview processing for session {session_id}")
-            
-            # In a real implementation, this would:
-            # 1. Download the recorded video from Agora
-            # 2. Extract audio for speech-to-text
-            # 3. Run AI analysis on transcript and video
-            # 4. Generate comprehensive interview report
-            # 5. Store results in database
-            
+            self.generate_interview_report(session_id)
         except Exception as e:
             logger.error(f"Error in post-interview processing: {e}")
 
@@ -297,16 +323,42 @@ class VideoInterviewEngine:
                                u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
                                {user_display_name('interviewer_display_name', 'u2')}
                         FROM video_interview_sessions vis
-                        JOIN job_applications ja ON vis.application_id = ja.id
-                        JOIN jobs j ON ja.job_id = j.id
-                        JOIN users u1 ON vis.candidate_id = u1.id
-                        JOIN users u2 ON vis.interviewer_id = u2.id
+                        JOIN job_applications ja ON vis.application_id::text = ja.id::text
+                        JOIN job_postings j ON (ja.job_id::text = j.id::text OR ja.job_id::text = j.jd_id::text)
+                        JOIN users u1 ON vis.candidate_id::text = u1.id::text
+                        JOIN users u2 ON vis.interviewer_id::text = u2.id::text
                         WHERE vis.id = %s
                     """, (session_id,))
                     
                     session = cur.fetchone()
                     if not session:
+                        cur.execute(f"""
+                            SELECT 
+                                isched.interview_id as id,
+                                isched.candidate_id,
+                                isched.recruiter_id as interviewer_id,
+                                isched.duration_minutes,
+                                isched.interview_type,
+                                isched.scheduled_date as scheduled_time,
+                                isched.status,
+                                jp.title as job_title,
+                                u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
+                                {user_display_name('candidate_display_name', 'u1')},
+                                u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
+                                {user_display_name('interviewer_display_name', 'u2')}
+                            FROM interview_schedules isched
+                            LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
+                            LEFT JOIN users u1 ON isched.candidate_id::text = u1.id::text
+                            LEFT JOIN users u2 ON isched.recruiter_id::text = u2.id::text
+                            WHERE isched.interview_id = %s
+                        """, (session_id,))
+                        session = cur.fetchone()
+                        
+                    if not session:
                         raise ValueError("Interview session not found")
+                    
+                    if session.get('status') != 'completed':
+                        raise ValueError("Interview has not been completed yet")
                     
                     # Generate AI report using Qwen / DashScope
                     if _qwen_available:
@@ -315,18 +367,28 @@ class VideoInterviewEngine:
                         report = self._generate_mock_report(session)
                     
                     # Store report in database
-                    cur.execute("""
-                        INSERT INTO interview_reports (
-                            session_id, report_data, generated_at
-                        ) VALUES (%s, %s, %s)
-                        ON CONFLICT (session_id) DO UPDATE SET
-                        report_data = EXCLUDED.report_data,
-                        generated_at = EXCLUDED.generated_at
-                    """, (session_id, json.dumps(report), datetime.now()))
+                    cur.execute("SELECT id FROM interview_reports WHERE session_id = %s", (session_id,))
+                    if cur.fetchone():
+                        cur.execute("""
+                            UPDATE interview_reports 
+                            SET report_data = %s, generated_at = %s
+                            WHERE session_id = %s
+                        """, (json.dumps(report), datetime.now(), session_id))
+                    else:
+                        cur.execute("""
+                            INSERT INTO interview_reports (session_id, report_data, generated_at)
+                            VALUES (%s, %s, %s)
+                        """, (session_id, json.dumps(report), datetime.now()))
+                    
+                    # Generate AI recommendations for candidate
+                    self.generate_ai_recommendations(session_id, session['candidate_id'], session)
                     
                     conn.commit()
                     return report
                     
+        except ValueError as e:
+            logger.error(f"Validation error generating interview report: {e}")
+            raise
         except Exception as e:
             logger.error(f"Error generating interview report: {e}")
             return {'error': 'Failed to generate report'}
@@ -477,6 +539,176 @@ class VideoInterviewEngine:
 # REMOVED: interview_sessions_api.list_sessions (registered first via blueprint).
 
 
+    def seed_recommendation_resources(self):
+        """Seed courses and additional mentors if tables are empty"""
+        try:
+            with self.get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    # Check courses count
+                    cur.execute("SELECT COUNT(*) FROM courses")
+                    if cur.fetchone()[0] == 0:
+                        logger.info("Seeding courses for recommendations...")
+                        courses_to_seed = [
+                            ('c0000001-c000-c000-c000-c00000000001', 'Introduction to Software Engineering', 'Learn the basics of Python, algorithms, and software development methodologies.', 4, 'technology', 'en'),
+                            ('c0000002-c000-c000-c000-c00000000002', 'UAE Labour Law and Professional Ethics', 'Understand the regulatory frameworks, worker rights, and workplace etiquette in the UAE.', 2, 'legal', 'en'),
+                            ('c0000003-c000-c000-c000-c00000000003', 'AI and Machine Learning Foundations', 'A comprehensive overview of deep learning, data science, and AI systems.', 6, 'technology', 'en'),
+                            ('c0000004-c000-c000-c000-c00000000004', 'Effective Business Communication', 'Master presentation skills, email writing, and professional communication standards.', 3, 'business', 'en')
+                        ]
+                        for cid, name, desc, weeks, area, lang in courses_to_seed:
+                            cur.execute("""
+                                INSERT INTO courses (id, course_name, course_description, duration_weeks, subject_area, language, is_active, is_published)
+                                VALUES (%s, %s, %s, %s, %s, %s, true, true)
+                                ON CONFLICT DO NOTHING
+                            """, (cid, name, desc, weeks, area, lang))
+                        conn.commit()
+                        logger.info("Seeding courses complete.")
+                        
+                    # Check if we need more mentors in mentor_profiles
+                    cur.execute("SELECT COUNT(*) FROM mentor_profiles")
+                    if cur.fetchone()[0] <= 1:
+                        logger.info("Seeding additional mentors for recommendations...")
+                        cur.execute("SELECT id, full_name FROM users WHERE role = 'mentor' LIMIT 5")
+                        mentors = cur.fetchall()
+                        if not mentors:
+                            dummy_mentors = [
+                                ('784000000000910', 'Fatima Al Mansoori', 'fatima.mentor@ehrdc.gov.ae', 'mentor'),
+                                ('784000000000920', 'Zayed Al Nahyan', 'zayed.mentor@ehrdc.gov.ae', 'mentor')
+                            ]
+                            for uid, name, email, role in dummy_mentors:
+                                cur.execute("""
+                                    INSERT INTO users (id, full_name, email, role, password_hash)
+                                    VALUES (%s, %s, %s, %s, 'pbkdf2:sha256:dummy')
+                                    ON CONFLICT (id) DO NOTHING
+                                """, (uid, name, email, role))
+                            conn.commit()
+                            cur.execute("SELECT id, full_name FROM users WHERE role = 'mentor' LIMIT 5")
+                            mentors = cur.fetchall()
+                            
+                        for mid, mname in mentors:
+                            mp_id = str(uuid.uuid4())
+                            prof_title = "Senior HR Consultant" if "Fatima" in mname else "Executive Career Coach"
+                            industry = "Human Resources" if "Fatima" in mname else "Leadership Development"
+                            cur.execute("""
+                                INSERT INTO mentor_profiles (id, user_id, professional_title, industry, is_available, is_verified, expertise_areas)
+                                VALUES (%s, %s, %s, %s, true, true, '["HR", "Career Guidance"]')
+                                ON CONFLICT DO NOTHING
+                            """, (mp_id, mid, prof_title, industry))
+                        conn.commit()
+                        logger.info("Seeding mentors complete.")
+        except Exception as e:
+            logger.error(f"Error seeding recommendation resources: {e}")
+
+    def generate_ai_recommendations(self, session_id: str, candidate_id: str, session: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate AI matched recommendations for the candidate"""
+        self.seed_recommendation_resources()
+        
+        articles = []
+        courses = []
+        mentors = []
+        
+        try:
+            with self.get_db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT id, title_en, title_ar, category FROM knowledge_base_articles LIMIT 10")
+                    articles = [dict(r) for r in cur.fetchall()]
+                    
+                    cur.execute("SELECT id, course_name, course_description FROM courses WHERE is_active = true LIMIT 10")
+                    courses = [dict(r) for r in cur.fetchall()]
+                    
+                    cur.execute("""
+                        SELECT mp.id, mp.user_id, u.full_name, mp.professional_title, mp.expertise_areas 
+                        FROM mentor_profiles mp 
+                        JOIN users u ON mp.user_id::text = u.id::text
+                        WHERE mp.is_available = true LIMIT 10
+                    """)
+                    mentors = [dict(r) for r in cur.fetchall()]
+        except Exception as db_err:
+            logger.error(f"Error fetching resources for recommendations: {db_err}")
+            
+        articles_str = json.dumps(articles, indent=2)
+        courses_str = json.dumps(courses, indent=2)
+        mentors_str = json.dumps(mentors, indent=2)
+        
+        fallback_recs = {
+            "recommended_articles": [{"id": articles[0]["id"], "title": articles[0]["title_en"]} if articles else {}],
+            "recommended_trainings": [{"id": str(courses[0]["id"]), "course_name": courses[0]["course_name"]} if courses else {}],
+            "recommended_mentors": [{"id": mentors[0]["user_id"], "full_name": mentors[0]["full_name"], "title": mentors[0]["professional_title"]} if mentors else {}]
+        }
+        
+        if not _qwen_available:
+            logger.info("Qwen not available, returning fallback recommendations")
+            self._save_recommendations(session_id, candidate_id, fallback_recs)
+            return fallback_recs
+            
+        try:
+            prompt = f"""
+            You are an AI-powered Career Placement Advisor in the UAE. 
+            A candidate has just finished a video interview for the position: {session.get('job_title', 'Software Engineer')}.
+            
+            Select the most relevant growth resources for this candidate from the platform databases below.
+            You must choose ONLY from the resources provided. Match them based on the candidate's potential weaknesses or preparation needs.
+            
+            AVAILABLE ARTICLES:
+            {articles_str}
+            
+            AVAILABLE TRAINING COURSES:
+            {courses_str}
+            
+            AVAILABLE MENTORS:
+            {mentors_str}
+            
+            Return a JSON object containing selected resources. Match the schema exactly:
+            {{
+                "recommended_articles": [
+                    {{ "id": <selected article id>, "title": "<selected article title>" }}
+                ],
+                "recommended_trainings": [
+                    {{ "id": "<selected course id>", "course_name": "<selected course name>" }}
+                ],
+                "recommended_mentors": [
+                    {{ "id": "<selected mentor user_id>", "full_name": "<selected mentor name>", "title": "<selected mentor title>" }}
+                ]
+            }}
+            """
+            
+            messages = [
+                {"role": "system", "content": "You are a professional career guidance assistant. Return ONLY raw, valid JSON matching the requested schema. Do not write text outside the JSON."},
+                {"role": "user", "content": prompt}
+            ]
+            
+            response = chat_completion(task_type="interview", messages=messages, response_format={"type": "json_object"})
+            
+            self._save_recommendations(session_id, candidate_id, response)
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error generating AI recommendations: {e}")
+            self._save_recommendations(session_id, candidate_id, fallback_recs)
+            return fallback_recs
+
+    def _save_recommendations(self, session_id: str, candidate_id: str, recs: Dict[str, Any]):
+        """Save recommendations to candidate_interview_recommendations table"""
+        try:
+            with self.get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    recommended_articles = json.dumps(recs.get("recommended_articles", []))
+                    recommended_trainings = json.dumps(recs.get("recommended_trainings", []))
+                    recommended_mentors = json.dumps(recs.get("recommended_mentors", []))
+                    
+                    cur.execute("""
+                        INSERT INTO candidate_interview_recommendations (
+                            session_id, candidate_id, recommended_articles, recommended_trainings, recommended_mentors
+                        ) VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (session_id) DO UPDATE SET
+                            recommended_articles = EXCLUDED.recommended_articles,
+                            recommended_trainings = EXCLUDED.recommended_trainings,
+                            recommended_mentors = EXCLUDED.recommended_mentors
+                    """, (session_id, candidate_id, recommended_articles, recommended_trainings, recommended_mentors))
+                    conn.commit()
+                    logger.info(f"Saved recommendations for session {session_id}")
+        except Exception as e:
+            logger.error(f"Error saving recommendations to DB: {e}")
+
     def get_session_recordings(self, session_id: str, user_id: str) -> Dict[str, Any]:
         """Get secure access to session recordings"""
         try:
@@ -489,6 +721,19 @@ class VideoInterviewEngine:
                     """, (session_id, user_id, user_id))
                     
                     session = cur.fetchone()
+                    if not session:
+                        # Fallback for interview_schedules
+                        cur.execute("""
+                            SELECT 
+                                interview_id as id,
+                                recruiter_id as interviewer_id,
+                                candidate_id,
+                                NULL as recording_id
+                            FROM interview_schedules 
+                            WHERE interview_id = %s AND (recruiter_id = %s OR candidate_id = %s)
+                        """, (session_id, user_id, user_id))
+                        session = cur.fetchone()
+                        
                     if not session:
                         raise ValueError("Session not found or access denied")
                     

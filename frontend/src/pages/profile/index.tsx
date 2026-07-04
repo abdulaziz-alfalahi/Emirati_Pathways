@@ -23,17 +23,10 @@ const ProfilePage = () => {
       return;
     }
 
-    // Redirect anyone with candidate role to new Profile Studio
+    // Redirect anyone with active candidate role to new Profile Studio
     if (!isLoading && user) {
-      const rawRoles = [
-        ...(user.roles || []),
-        user.user_type,
-        user.role,
-        ...(user.secondary_roles || [])
-      ].filter(Boolean);
-      const hasCandidateRole = rawRoles.some(r => normalizeRole(r as string) === 'candidate');
-
-      if (hasCandidateRole) {
+      const currentRole = normalizeRole(user.role || user.user_type || 'candidate');
+      if (currentRole === 'candidate') {
         navigate('/candidate/profile/identity');
       }
     }

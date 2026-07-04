@@ -521,6 +521,19 @@ def recommended_jobs():
 
         if db:
             try:
+                # Fetch applied job IDs
+                applied_job_ids = set()
+                if user_id:
+                    cur = db.cursor()
+                    cur.execute("""
+                        SELECT job_id, status 
+                        FROM job_applications 
+                        WHERE candidate_id = %s
+                    """, (str(user_id),))
+                    for row in cur.fetchall():
+                        if row[1] not in ['withdrawn', 'rejected']:
+                            applied_job_ids.add(str(row[0]))
+
                 cur = db.cursor()
                 cur.execute("""
                     SELECT id, title, company_id, location, description, requirements, status, salary_range
@@ -538,6 +551,8 @@ def recommended_jobs():
                     skill_hits = sum(1 for sk in user_skill_names if sk and sk in req_text)
                     match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
 
+                    job_id = str(job.get('id'))
+
                     if skill_hits > 0 or len(user_skill_names) == 0:
                         matched_jobs.append({
                             "id": job.get('id'),
@@ -548,7 +563,8 @@ def recommended_jobs():
                             "match_score": match_score,
                             "type": "Full-time",
                             "skill_overlap": skill_hits,
-                            "source": "live"
+                            "source": "live",
+                            "hasApplied": job_id in applied_job_ids
                         })
 
                 matched_jobs.sort(key=lambda j: j['match_score'], reverse=True)

@@ -139,7 +139,7 @@ export const getDashboardComponentByUserProfile = (
     return <MentorDashboard activeTab={activeTab} />;
   }
   
-  if (activeRole === 'training_center') {
+  if (activeRole === 'training_center' || activeRole === 'training_provider') {
     console.log("Rendering TrainingCenterDashboard for role:", activeRole);
     return <TrainingCenterDashboard activeTab={activeTab} />;
   }

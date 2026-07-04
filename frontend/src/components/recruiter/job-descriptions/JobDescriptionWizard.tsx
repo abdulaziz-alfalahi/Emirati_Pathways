@@ -232,26 +232,44 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [completionScore, setCompletionScore] = useState(0);
 
-  // Helper to normalize generic list data
-  const normalizeList = (data: any) => {
+  // Helper to normalize generic list data into objects
+  const normalizeList = (data: any, defaultCategory: string = 'core') => {
     if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (typeof data === 'string') {
-      // Try to string split if it looks like a pipe-separated list (common in this app)
-      if (data.includes('|')) return data.split('|').filter(Boolean);
-      return [data];
+    
+    let rawList: any[] = [];
+    if (Array.isArray(data)) {
+      rawList = data;
+    } else if (typeof data === 'string') {
+      if (data.includes('|')) {
+        rawList = data.split('|').filter(Boolean);
+      } else {
+        rawList = [data];
+      }
     }
-    return [];
+    
+    // Map list items to objects
+    return rawList.map(item => {
+      if (item && typeof item === 'object') {
+        return {
+          description: item.description || '',
+          category: item.category || defaultCategory
+        };
+      }
+      return {
+        description: String(item || ''),
+        category: defaultCategory
+      };
+    });
   };
 
   // Helper to normalize requirements data
   const normalizeRequirements = (reqs: any) => {
     if (!reqs) return [];
-    if (Array.isArray(reqs)) return reqs;
-    if (typeof reqs === 'string') return []; // Invalid for requirements array
-
-    // Convert object format to array
-    if (typeof reqs === 'object') {
+    
+    let rawReqs: any[] = [];
+    if (Array.isArray(reqs)) {
+      rawReqs = reqs;
+    } else if (typeof reqs === 'object') {
       const normalized: any[] = [];
       const r = reqs as any;
       if (r.skills && Array.isArray(r.skills)) {
@@ -267,7 +285,21 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }
       if (normalized.length > 0) return normalized;
     }
-    return [];
+    
+    return rawReqs.map(item => {
+      if (item && typeof item === 'object') {
+        return {
+          category: item.category || 'skills',
+          description: item.description || '',
+          is_required: item.is_required !== undefined ? !!item.is_required : true
+        };
+      }
+      return {
+        category: 'skills',
+        description: String(item || ''),
+        is_required: true
+      };
+    });
   };
 
   const [jdData, setJDData] = useState<JDData>(() => {
@@ -303,8 +335,8 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         description: initialData.description || '',
         description_arabic: initialData.description_arabic || '',
         requirements: normalizeRequirements(initialData.requirements),
-        responsibilities: normalizeList(initialData.responsibilities),
-        benefits: normalizeList(initialData.benefits),
+        responsibilities: normalizeList(initialData.responsibilities, 'core'),
+        benefits: normalizeList(initialData.benefits, 'perks'),
         compensation: initialData.compensation || {
           salary_currency: 'AED'
         }
@@ -352,15 +384,23 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
         ...prev,
         jd_id: cleanInitialJdId || cleanMetadataJdId || cleanDataJdId || prev.jd_id,
         basic_info: initialData.basic_info ? {
-          ...prev.basic_info,
-          ...initialData.basic_info,
+          title: initialData.basic_info.title || prev.basic_info.title || '',
+          title_arabic: initialData.basic_info.title_arabic || prev.basic_info.title_arabic || '',
+          department: initialData.basic_info.department || prev.basic_info.department || '',
+          job_type: initialData.basic_info.job_type || prev.basic_info.job_type || 'full_time',
+          job_level: initialData.basic_info.job_level || prev.basic_info.job_level || 'mid',
+          emirate: initialData.basic_info.emirate || prev.basic_info.emirate || '',
+          city: initialData.basic_info.city || prev.basic_info.city || '',
+          latitude: initialData.basic_info.latitude ?? prev.basic_info.latitude ?? null,
+          longitude: initialData.basic_info.longitude ?? prev.basic_info.longitude ?? null,
+          remote_option: initialData.basic_info.remote_option !== undefined ? !!initialData.basic_info.remote_option : prev.basic_info.remote_option,
           application_deadline: initialData.basic_info.application_deadline || prev.basic_info.application_deadline || ''
         } : prev.basic_info,
         description: initialData.description || prev.description,
         description_arabic: initialData.description_arabic || prev.description_arabic,
         requirements: normalizeRequirements(initialData.requirements),
-        responsibilities: normalizeList(initialData.responsibilities),
-        benefits: normalizeList(initialData.benefits),
+        responsibilities: normalizeList(initialData.responsibilities, 'core'),
+        benefits: normalizeList(initialData.benefits, 'perks'),
         compensation: initialData.compensation || prev.compensation
       }));
     }
@@ -402,7 +442,16 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
               setJDData({
                 jd_id: effectiveId,
                 basic_info: fetchedData.basic_info ? {
-                  ...fetchedData.basic_info,
+                  title: fetchedData.basic_info.title || '',
+                  title_arabic: fetchedData.basic_info.title_arabic || '',
+                  department: fetchedData.basic_info.department || '',
+                  job_type: fetchedData.basic_info.job_type || 'full_time',
+                  job_level: fetchedData.basic_info.job_level || 'mid',
+                  emirate: fetchedData.basic_info.emirate || '',
+                  city: fetchedData.basic_info.city || '',
+                  latitude: fetchedData.basic_info.latitude ?? null,
+                  longitude: fetchedData.basic_info.longitude ?? null,
+                  remote_option: !!fetchedData.basic_info.remote_option,
                   application_deadline: fetchedData.basic_info.application_deadline || ''
                 } : {
                   title: '',
@@ -418,9 +467,9 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                 },
                 description: fetchedData.description || '',
                 description_arabic: fetchedData.description_arabic || '',
-                requirements: fetchedData.requirements || [],
-                responsibilities: fetchedData.responsibilities || [],
-                benefits: fetchedData.benefits || [],
+                requirements: normalizeRequirements(fetchedData.requirements),
+                responsibilities: normalizeList(fetchedData.responsibilities, 'core'),
+                benefits: normalizeList(fetchedData.benefits, 'perks'),
                 compensation: fetchedData.compensation || { salary_currency: 'AED' },
                 metadata: fetchedData.metadata
               });
