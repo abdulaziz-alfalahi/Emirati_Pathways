@@ -53,7 +53,8 @@ def get_candidate_profile_hr(candidate_id):
                     COALESCE(NULLIF(u.preferred_location, ''), CASE WHEN strpos(LOWER(p.target_roles::text), 'dubai') > 0 THEN 'Dubai' WHEN strpos(LOWER(p.target_roles::text), 'abu dhabi') > 0 THEN 'Abu Dhabi' WHEN strpos(LOWER(p.target_roles::text), 'sharjah') > 0 THEN 'Sharjah' ELSE '' END, 'Flexible') as preferred_location,
                     COALESCE(u.experience_years, (SELECT COALESCE(SUM(EXTRACT(YEAR FROM AGE(COALESCE(end_date, CURRENT_DATE), start_date))), 0) FROM candidate_experience_entries WHERE user_id = u.id::varchar), 0) as experience_years,
                     COALESCE(u.education_level, (SELECT CASE WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'phd') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'doctor') > 0 THEN 'PhD' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'master') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'emba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'mba') > 0 THEN 'Master' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'bachelor') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'bsc') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'ba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'degree') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'eng') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'hnd') > 0 THEN 'Bachelor' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'diploma') > 0 THEN 'Diploma' ELSE 'Bachelor' END FROM candidate_education_entries WHERE user_id = u.id::varchar)) as education_level,
-                    COALESCE(u.skills, (SELECT array_agg(name) FROM candidate_skills WHERE user_id = u.id::varchar), ARRAY[]::varchar[]) as skills,
+                    u.skills as user_skills,
+                    (SELECT array_agg(name) FROM candidate_skills WHERE user_id = u.id::varchar) as skills_array,
                     p.bio,
                     p.headline,
                     p.notice_period,
@@ -77,9 +78,19 @@ def get_candidate_profile_hr(candidate_id):
             # Format Candidate Data
             candidate_data = dict(candidate)
             
-            # Skills might be an array or None
-            if candidate_data.get('skills') is None:
-                candidate_data['skills'] = []
+            # Resolve skills array safely from JSONB user_skills or subquery skills_array
+            skills_list = []
+            if candidate_data.get('skills_array'):
+                skills_list = candidate_data['skills_array']
+            elif candidate_data.get('user_skills'):
+                us = candidate_data['user_skills']
+                if isinstance(us, list):
+                    skills_list = us
+                elif isinstance(us, str):
+                    try:
+                        skills_list = json.loads(us)
+                    except: pass
+            candidate_data['skills'] = skills_list
             
             # Parse expected salary from expected_salary_range (Career Compass)
             expected_salary = candidate_data.get('expected_salary_range')
