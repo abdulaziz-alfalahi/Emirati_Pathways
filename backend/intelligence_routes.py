@@ -440,7 +440,7 @@ def profile_snapshot():
         if not all_skills and db:
             try:
                 cur = db.cursor()
-                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s OR user_id = %s", (str(user_id), int(user_id) if isinstance(user_id, (int, str)) and str(user_id).isdigit() else 0))
+                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s", (str(user_id),))
                 c_skills = cur.fetchall()
                 if c_skills:
                     for name, category, level in c_skills:
@@ -464,6 +464,9 @@ def profile_snapshot():
                     all_skills = skill_graph.get_user_skills(user_id)
             except Exception as e:
                 logger.warning(f"Error auto-syncing user skills: {e}")
+                if db:
+                    try: db.rollback()
+                    except: pass
 
         top_skills = sorted(all_skills, key=lambda s: s.get('demand_score', 0), reverse=True)[:8]
         skill_sources = {}
@@ -475,6 +478,9 @@ def profile_snapshot():
         try:
             gap_result = skill_graph.analyze_skill_gaps(user_id)
         except Exception:
+            if db:
+                try: db.rollback()
+                except: pass
             gap_result = {"gaps": [], "readiness_score": 0, "target_role": "Market Demand", "total_required": 0, "skills_met": 0, "gaps_found": 0}
         top_gaps = gap_result.get('gaps', [])[:5]
 
@@ -486,12 +492,18 @@ def profile_snapshot():
                 max_per_type=3
             )
         except Exception:
+            if db:
+                try: db.rollback()
+                except: pass
             rec_result = {"recommendations": [], "quick_wins": [], "long_term": []}
 
         # 4. Career stage
         try:
             stage_result = lifecycle.get_user_stage(user_id)
         except Exception:
+            if db:
+                try: db.rollback()
+                except: pass
             stage_result = {"current_stage": "exploration", "progress_pct": 0}
 
         # 5. AI Career Insight — generate a personalized text
@@ -551,7 +563,7 @@ def recommended_jobs():
         if not user_skills and db:
             try:
                 cur = db.cursor()
-                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s OR user_id = %s", (str(user_id), int(user_id) if isinstance(user_id, (int, str)) and str(user_id).isdigit() else 0))
+                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s", (str(user_id),))
                 c_skills = cur.fetchall()
                 if c_skills:
                     for name, category, level in c_skills:
