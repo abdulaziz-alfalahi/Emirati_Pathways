@@ -430,10 +430,41 @@ def profile_snapshot():
     try:
         from flask import g
         user_id = g.user_id
+        db = get_db()
         skill_graph, recommendation, lifecycle = _get_engines()
 
         # 1. User skills summary
         all_skills = skill_graph.get_user_skills(user_id)
+
+        # Auto-sync legacy user_skills from candidate_skills if empty
+        if not all_skills and db:
+            try:
+                cur = db.cursor()
+                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s OR user_id = %s", (str(user_id), int(user_id) if isinstance(user_id, (int, str)) and str(user_id).isdigit() else 0))
+                c_skills = cur.fetchall()
+                if c_skills:
+                    for name, category, level in c_skills:
+                        skill_id = name.lower().replace(' ', '_').replace('-', '_')
+                        proficiency = 'intermediate'
+                        if level:
+                            l_lower = level.lower()
+                            if 'expert' in l_lower: proficiency = 'expert'
+                            elif 'advanced' in l_lower: proficiency = 'advanced'
+                            elif 'intermediate' in l_lower: proficiency = 'intermediate'
+                            elif 'beginner' in l_lower: proficiency = 'beginner'
+                            elif 'novice' in l_lower: proficiency = 'novice'
+                        skill_graph.add_user_skill(
+                            user_id=user_id,
+                            skill_id=skill_id,
+                            skill_name=name,
+                            proficiency=proficiency,
+                            source='self_reported'
+                        )
+                    # Re-fetch after sync
+                    all_skills = skill_graph.get_user_skills(user_id)
+            except Exception as e:
+                logger.warning(f"Error auto-syncing user skills: {e}")
+
         top_skills = sorted(all_skills, key=lambda s: s.get('demand_score', 0), reverse=True)[:8]
         skill_sources = {}
         for s in all_skills:
@@ -515,6 +546,36 @@ def recommended_jobs():
 
         # Get user skills
         user_skills = skill_graph.get_user_skills(user_id)
+
+        # Auto-sync legacy user_skills from candidate_skills if empty
+        if not user_skills and db:
+            try:
+                cur = db.cursor()
+                cur.execute("SELECT name, category, level FROM candidate_skills WHERE user_id = %s OR user_id = %s", (str(user_id), int(user_id) if isinstance(user_id, (int, str)) and str(user_id).isdigit() else 0))
+                c_skills = cur.fetchall()
+                if c_skills:
+                    for name, category, level in c_skills:
+                        skill_id = name.lower().replace(' ', '_').replace('-', '_')
+                        proficiency = 'intermediate'
+                        if level:
+                            l_lower = level.lower()
+                            if 'expert' in l_lower: proficiency = 'expert'
+                            elif 'advanced' in l_lower: proficiency = 'advanced'
+                            elif 'intermediate' in l_lower: proficiency = 'intermediate'
+                            elif 'beginner' in l_lower: proficiency = 'beginner'
+                            elif 'novice' in l_lower: proficiency = 'novice'
+                        skill_graph.add_user_skill(
+                            user_id=user_id,
+                            skill_id=skill_id,
+                            skill_name=name,
+                            proficiency=proficiency,
+                            source='self_reported'
+                        )
+                    # Re-fetch after sync
+                    user_skills = skill_graph.get_user_skills(user_id)
+            except Exception as e:
+                logger.warning(f"Error auto-syncing user skills in recommended-jobs: {e}")
+
         user_skill_names = set(s.get('skill_name', '').lower() for s in user_skills)
 
         matched_jobs = []
@@ -547,7 +608,18 @@ def recommended_jobs():
 
                 for job in rows:
                     # Score based on skill overlap with requirements
-                    req_text = (job.get('requirements') or '').lower() + ' ' + (job.get('description') or '').lower()
+                    req_list = job.get('requirements') or []
+                    req_strings = []
+                    if isinstance(req_list, list):
+                        for r in req_list:
+                            if isinstance(r, dict):
+                                req_strings.append(r.get('description', ''))
+                            elif isinstance(r, str):
+                                req_strings.append(r)
+                    elif isinstance(req_list, str):
+                        req_strings.append(req_list)
+                    req_text = ' '.join(req_strings).lower() + ' ' + (job.get('description') or '').lower()
+
                     skill_hits = sum(1 for sk in user_skill_names if sk and sk in req_text)
                     match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
 
