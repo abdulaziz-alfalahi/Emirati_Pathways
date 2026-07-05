@@ -489,9 +489,7 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-3 space-y-3">
-                      {(recommendedJobs.length > 0 ? recommendedJobs.slice(0, 3) : [
-                        { title: t('Senior Project Manager', 'مدير مشاريع أول'), company: t('Emirates Group', 'مجموعة الإمارات'), salary: t('AED 35k–45k', '35-45 ألف درهم'), match_score: 94, type: t('Full-time', 'دوام كامل'), location: 'Dubai', source: 'curated' as const },
-                      ]).map((job, i) => (
+                      {recommendedJobs.length > 0 ? recommendedJobs.slice(0, 3).map((job, i) => (
                         <div key={i} className="p-4 rounded-lg border border-slate-100 hover:border-teal-200 hover:shadow-sm transition-all cursor-pointer group">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
@@ -526,7 +524,14 @@ const CandidateDashboard: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-center py-6 text-slate-400">
+                          <p className="text-sm">{t('Upload your CV to get personalized job recommendations', 'ارفع سيرتك الذاتية للحصول على توصيات وظيفية مخصصة')}</p>
+                          <Button variant="link" size="sm" className="text-teal-600 mt-1" onClick={() => setActiveTab('jobs')}>
+                            {t('Browse All Jobs', 'تصفح جميع الوظائف')} →
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 

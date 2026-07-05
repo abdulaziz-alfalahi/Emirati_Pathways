@@ -536,9 +536,9 @@ def recommended_jobs():
 
                 cur = db.cursor()
                 cur.execute("""
-                    SELECT id, title, company_id, location, description, requirements, status, salary_range
+                    SELECT id, title, company_id, location, description, requirements, status, salary_range, employment_type
                     FROM job_postings 
-                    WHERE status IN ('active', 'open', 'Active', 'Open')
+                    WHERE status IN ('published', 'active', 'open', 'Active', 'Open', 'Published')
                     ORDER BY created_at DESC
                     LIMIT 50
                 """)
@@ -554,14 +554,17 @@ def recommended_jobs():
                     job_id = str(job.get('id'))
 
                     if skill_hits > 0 or len(user_skill_names) == 0:
+                        company = job.get('company_id') or 'UAE Employer'
+                        if company.lower() in ('unknown', 'null', ''):
+                            company = 'UAE Employer'
                         matched_jobs.append({
                             "id": job.get('id'),
                             "title": job.get('title', 'Untitled'),
-                            "company": job.get('company_id', 'UAE Employer'),
+                            "company": company,
                             "location": job.get('location', 'UAE'),
                             "salary": job.get('salary_range') or 'Competitive',
                             "match_score": match_score,
-                            "type": "Full-time",
+                            "type": job.get('employment_type') or 'Full-time',
                             "skill_overlap": skill_hits,
                             "source": "live",
                             "hasApplied": job_id in applied_job_ids
