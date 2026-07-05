@@ -144,8 +144,8 @@ class VideoInterviewEngine:
                     # Get session details
                     cur.execute("""
                         SELECT * FROM video_interview_sessions 
-                        WHERE id = %s AND (interviewer_id = %s OR candidate_id = %s)
-                    """, (session_id, user_id, user_id))
+                        WHERE (id = %s OR room_id = %s) AND (interviewer_id = %s OR candidate_id = %s)
+                    """, (session_id, session_id, user_id, user_id))
                     
                     session = cur.fetchone()
                     if not session:
@@ -161,8 +161,8 @@ class VideoInterviewEngine:
                                 interview_type,
                                 COALESCE(NULLIF(meeting_link, ''), interview_id) as room_id
                             FROM interview_schedules
-                            WHERE interview_id = %s AND (recruiter_id = %s OR candidate_id = %s)
-                        """, (session_id, user_id, user_id))
+                            WHERE (interview_id = %s OR meeting_link LIKE %s) AND (recruiter_id = %s OR candidate_id = %s)
+                        """, (session_id, f"%{session_id}%", user_id, user_id))
                         row = cur.fetchone()
                         if row:
                             session = dict(row)
@@ -178,18 +178,16 @@ class VideoInterviewEngine:
                                 UPDATE interview_schedules
                                 SET status = 'in_progress', updated_at = NOW()
                                 WHERE interview_id = %s
-                            """, (session_id,))
+                            """, (session['interview_id'],))
                         else:
                             cur.execute("""
                                 UPDATE video_interview_sessions 
                                 SET status = %s, started_at = %s
                                 WHERE id = %s
-                            """, (InterviewStatus.IN_PROGRESS.value, datetime.now(), session_id))
+                            """, (InterviewStatus.IN_PROGRESS.value, datetime.now(), session['id']))
                         conn.commit()
                     
                     # Generate LiveKit tokens
-                    # We pass the user_id as identity, but we don't have the user name easily here. 
-                    # We'll use role+id as name, or let the frontend pass it.
                     interviewer_token = self.generate_livekit_token(
                         session['room_id'], session['interviewer_id'], "Interviewer"
                     )
@@ -202,7 +200,7 @@ class VideoInterviewEngine:
                     user_token = interviewer_token if user_role == 'interviewer' else candidate_token
                     
                     return {
-                        'session_id': session_id,
+                        'session_id': session.get('interview_id') or session.get('id') or session_id,
                         'room_id': session['room_id'],
                         'livekit_url': self.livekit_url,
                         'token': user_token,
@@ -227,10 +225,11 @@ class VideoInterviewEngine:
                     cur.execute("""
                         UPDATE video_interview_sessions 
                         SET status = %s, ended_at = %s
-                        WHERE id = %s AND (interviewer_id = %s OR candidate_id = %s)
+                        WHERE (id = %s OR room_id = %s) AND (interviewer_id = %s OR candidate_id = %s)
                     """, (
                         InterviewStatus.COMPLETED.value,
                         datetime.now(),
+                        session_id,
                         session_id,
                         user_id,
                         user_id
@@ -241,18 +240,26 @@ class VideoInterviewEngine:
                         cur.execute("""
                             UPDATE interview_schedules 
                             SET status = 'completed', updated_at = NOW()
-                            WHERE interview_id = %s AND (recruiter_id = %s OR candidate_id = %s)
-                        """, (session_id, user_id, user_id))
+                            WHERE (interview_id = %s OR meeting_link LIKE %s) AND (recruiter_id = %s OR candidate_id = %s)
+                        """, (session_id, f"%{session_id}%", user_id, user_id))
                         
                         if cur.rowcount == 0:
                             return False
                     
                     conn.commit()
                     
-                    # Trigger post-interview processing
-                    self._trigger_post_interview_processing(session_id)
+                    # Resolve actual interview_id for report generation
+                    actual_id = session_id
+                    if not session_id.startswith('int_'):
+                        cur.execute("SELECT interview_id FROM interview_schedules WHERE meeting_link LIKE %s LIMIT 1", (f"%{session_id}%",))
+                        row = cur.fetchone()
+                        if row:
+                            actual_id = row[0]
                     
-                    logger.info(f"Ended interview session {session_id}")
+                    # Trigger post-interview processing
+                    self._trigger_post_interview_processing(actual_id)
+                    
+                    logger.info(f"Ended interview session {session_id} (resolved to {actual_id})")
                     return True
                     
         except Exception as e:
@@ -307,10 +314,7 @@ class VideoInterviewEngine:
                 "Candidate demonstrates strong technical knowledge",
                 "Clear communication style",
                 "Shows enthusiasm for the role"
-            ]
-        )
-
-    def generate_interview_report(self, session_id: str) -> Dict[str, Any]:
+            ]    def generate_interview_report(self, session_id: str) -> Dict[str, Any]:
         """Generate comprehensive AI-powered interview report"""
         try:
             with self.get_db_connection() as conn:
@@ -318,17 +322,17 @@ class VideoInterviewEngine:
                     # Get session details
                     cur.execute(f"""
                         SELECT vis.*, ja.job_id, j.title as job_title,
-                               u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
-                               {user_display_name('candidate_display_name', 'u1')},
-                               u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
-                               {user_display_name('interviewer_display_name', 'u2')}
+                                u1.first_name as candidate_first_name, u1.last_name as candidate_last_name,
+                                {user_display_name('candidate_display_name', 'u1')},
+                                u2.first_name as interviewer_first_name, u2.last_name as interviewer_last_name,
+                                {user_display_name('interviewer_display_name', 'u2')}
                         FROM video_interview_sessions vis
                         JOIN job_applications ja ON vis.application_id::text = ja.id::text
                         JOIN job_postings j ON (ja.job_id::text = j.id::text OR ja.job_id::text = j.jd_id::text)
                         JOIN users u1 ON vis.candidate_id::text = u1.id::text
                         JOIN users u2 ON vis.interviewer_id::text = u2.id::text
-                        WHERE vis.id = %s
-                    """, (session_id,))
+                        WHERE vis.id = %s OR vis.room_id = %s
+                    """, (session_id, session_id))
                     
                     session = cur.fetchone()
                     if not session:
@@ -350,8 +354,8 @@ class VideoInterviewEngine:
                             LEFT JOIN job_postings jp ON isched.jd_id = jp.jd_id::text
                             LEFT JOIN users u1 ON isched.candidate_id::text = u1.id::text
                             LEFT JOIN users u2 ON isched.recruiter_id::text = u2.id::text
-                            WHERE isched.interview_id = %s
-                        """, (session_id,))
+                            WHERE isched.interview_id = %s OR isched.meeting_link LIKE %s
+                        """, (session_id, f"%{session_id}%"))
                         session = cur.fetchone()
                         
                     if not session:
@@ -367,21 +371,22 @@ class VideoInterviewEngine:
                         report = self._generate_mock_report(session)
                     
                     # Store report in database
-                    cur.execute("SELECT id FROM interview_reports WHERE session_id = %s", (session_id,))
+                    actual_session_id = session.get('interview_id') or session.get('id') or session_id
+                    cur.execute("SELECT id FROM interview_reports WHERE session_id = %s", (actual_session_id,))
                     if cur.fetchone():
                         cur.execute("""
                             UPDATE interview_reports 
                             SET report_data = %s, generated_at = %s
                             WHERE session_id = %s
-                        """, (json.dumps(report), datetime.now(), session_id))
+                        """, (json.dumps(report), datetime.now(), actual_session_id))
                     else:
                         cur.execute("""
                             INSERT INTO interview_reports (session_id, report_data, generated_at)
                             VALUES (%s, %s, %s)
-                        """, (session_id, json.dumps(report), datetime.now()))
+                        """, (actual_session_id, json.dumps(report), datetime.now()))
                     
                     # Generate AI recommendations for candidate
-                    self.generate_ai_recommendations(session_id, session['candidate_id'], session)
+                    self.generate_ai_recommendations(actual_session_id, session['candidate_id'], session)
                     
                     conn.commit()
                     return report
@@ -717,8 +722,8 @@ class VideoInterviewEngine:
                     # Verify user has access to this session
                     cur.execute("""
                         SELECT * FROM video_interview_sessions 
-                        WHERE id = %s AND (interviewer_id = %s OR candidate_id = %s)
-                    """, (session_id, user_id, user_id))
+                        WHERE (id = %s OR room_id = %s) AND (interviewer_id = %s OR candidate_id = %s)
+                    """, (session_id, session_id, user_id, user_id))
                     
                     session = cur.fetchone()
                     if not session:
@@ -730,8 +735,8 @@ class VideoInterviewEngine:
                                 candidate_id,
                                 NULL as recording_id
                             FROM interview_schedules 
-                            WHERE interview_id = %s AND (recruiter_id = %s OR candidate_id = %s)
-                        """, (session_id, user_id, user_id))
+                            WHERE (interview_id = %s OR meeting_link LIKE %s) AND (recruiter_id = %s OR candidate_id = %s)
+                        """, (session_id, f"%{session_id}%", user_id, user_id))
                         session = cur.fetchone()
                         
                     if not session:
