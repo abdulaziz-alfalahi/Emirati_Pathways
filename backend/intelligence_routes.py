@@ -618,8 +618,80 @@ def recommended_jobs():
                 columns = [d[0] for d in cur.description]
                 rows = [dict(zip(columns, r)) for r in cur.fetchall()]
 
+                # Use EnhancedMatchingEngine for consistent scoring if candidate profile exists
+                matches_dict = {}
+                try:
+                    from backend.services.profile_v2_service import ProfileV2Service
+                    from backend.services.enhanced_matching_service import enhanced_matching_engine, JobRequirements
+                    
+                    candidate_profile = ProfileV2Service.get_matching_profile_data(user_id)
+                    if candidate_profile:
+                        job_requirements_list = []
+                        for job in rows:
+                            req_list = job.get('requirements') or []
+                            req_skills = []
+                            if isinstance(req_list, list):
+                                req_skills = [str(r) for r in req_list]
+                            elif isinstance(req_list, str):
+                                req_skills = [r.strip() for r in req_list.split(',')]
+                                
+                            # Parse salary
+                            sal_range = None
+                            sal_str = job.get('salary_range') or ''
+                            if sal_str and '-' in str(sal_str):
+                                try:
+                                    parts = str(sal_str).replace('AED', '').replace(',', '').split('-')
+                                    sal_range = {'min_salary': int(parts[0]), 'max_salary': int(parts[1])}
+                                except:
+                                    pass
+                            
+                            # Parse experience requirement
+                            min_exp_parsed = 0
+                            for r in req_skills:
+                                 import re
+                                 m = re.search(r'(\d+)(\+|\s*-\s*\d+)?\s*years?', str(r).lower())
+                                 if m:
+                                     try:
+                                         val = int(m.group(1))
+                                         if val > min_exp_parsed and val < 30:
+                                             min_exp_parsed = val
+                                     except: pass
+                            
+                            title_lower = job['title'].lower()
+                            if min_exp_parsed == 0:
+                                 if 'senior' in title_lower or 'lead' in title_lower or 'manager' in title_lower or 'head' in title_lower:
+                                     min_exp_parsed = 5
+                                 elif 'executive' in title_lower or 'chief' in title_lower or 'director' in title_lower:
+                                     min_exp_parsed = 10
+                            
+                            # Create JobRequirements object
+                            job_req = JobRequirements(
+                                id=str(job['id']),
+                                required_skills=req_skills,
+                                preferred_skills=[], 
+                                min_experience=min_exp_parsed,
+                                max_experience=min_exp_parsed + 15 if min_exp_parsed > 0 else None,
+                                education_requirements=[],
+                                location={'emirate': job.get('location', '')},
+                                salary_range=sal_range,
+                                languages=['English'],
+                                industry='',
+                                company_size='',
+                                career_level='Mid_Level',
+                                emiratization_priority=False,
+                                visa_sponsorship=True
+                            )
+                            job_requirements_list.append(job_req)
+                        
+                        if job_requirements_list:
+                            matches = enhanced_matching_engine.find_best_matches(candidate_profile, job_requirements_list, limit=50)
+                            matches_dict = {job_req.id: score_obj.overall_score for job_req, score_obj in matches}
+                except Exception as match_eng_err:
+                    logger.warning(f"Could not compute consistent match scores via EnhancedMatchingEngine: {match_eng_err}")
+
                 for job in rows:
-                    # Score based on skill overlap with requirements
+                    job_id = str(job.get('id'))
+                    
                     req_list = job.get('requirements') or []
                     req_strings = []
                     if isinstance(req_list, list):
@@ -633,11 +705,13 @@ def recommended_jobs():
                     req_text = ' '.join(req_strings).lower() + ' ' + (job.get('description') or '').lower()
 
                     skill_hits = sum(1 for sk in user_skill_names if sk and sk in req_text)
-                    match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
+                    
+                    if job_id in matches_dict:
+                        match_score = int(matches_dict[job_id])
+                    else:
+                        match_score = min(98, max(60, int(60 + (skill_hits / max(len(user_skill_names), 1)) * 38)))
 
-                    job_id = str(job.get('id'))
-
-                    if skill_hits > 0 or len(user_skill_names) == 0:
+                    if skill_hits > 0 or len(user_skill_names) == 0 or job_id in matches_dict:
                         company = job.get('company_id') or 'UAE Employer'
                         if company.lower() in ('unknown', 'null', ''):
                             company = 'UAE Employer'
