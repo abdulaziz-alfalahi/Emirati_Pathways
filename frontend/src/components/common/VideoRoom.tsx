@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNotifications } from '@/components/notifications/NotificationSystem';
 
 interface VideoRoomProps {
     sessionId: string;
@@ -40,6 +41,11 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     livekitUrl,
     token
 }) => {
+    const { socket } = useNotifications();
+    const [connectionFailed, setConnectionFailed] = useState(false);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOn, setIsCameraOn] = useState(true);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -48,12 +54,24 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     // Detection logic for Mock/Simulation mode
     const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
     const isLocalhostUrl = livekitUrl?.includes('localhost') || livekitUrl?.includes('127.0.0.1');
-    const shouldMock = !livekitUrl || !token || (isHttps && livekitUrl.startsWith('ws://')) || isLocalhostUrl;
+    const shouldMock = connectionFailed || !livekitUrl || !token || (isHttps && livekitUrl.startsWith('ws://')) || isLocalhostUrl;
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 
-    // Setup Local Camera Stream for Simulated Mode
+    // Auto-fallback to direct call if LiveKit takes > 10 seconds to connect
+    useEffect(() => {
+        if (livekitUrl && token && !connectionFailed) {
+            const timer = setTimeout(() => {
+                console.warn("LiveKit connection timed out after 10s. Falling back to Direct Connection.");
+                setConnectionFailed(true);
+                toast.info("Switching to backup Direct Connection mode...");
+            }, 10000);
+            return () => clearTimeout(timer);
+        }
+    }, [livekitUrl, token, connectionFailed]);
+
+    // Setup Local Camera Stream
     useEffect(() => {
         if (shouldMock && isCameraOn && !isObserver) {
             let activeStream: MediaStream | null = null;
@@ -85,6 +103,129 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
         }
     }, [shouldMock, isCameraOn, isObserver]);
 
+    // Handle Local Audio track mute toggle
+    useEffect(() => {
+        if (localStream) {
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !isMuted;
+            });
+        }
+    }, [isMuted, localStream]);
+
+    // Setup Direct WebRTC Peer-to-Peer connection when falling back
+    useEffect(() => {
+        if (!shouldMock || !socket) return;
+
+        const roomName = `interview_session_${sessionId}`;
+        console.log(`[P2P Video] Joining Socket.io signaling room: ${roomName}`);
+
+        const createPeerConnection = () => {
+            console.log(`[P2P Video] Creating RTCPeerConnection`);
+            if (peerConnectionRef.current) {
+                peerConnectionRef.current.close();
+            }
+
+            const pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            });
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, localStream);
+                });
+            }
+
+            pc.ontrack = (event) => {
+                console.log('[P2P Video] Remote track received:', event.streams[0]);
+                if (event.streams && event.streams[0]) {
+                    setRemoteStream(event.streams[0]);
+                }
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('ice-candidate', {
+                        room: roomName,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            peerConnectionRef.current = pc;
+            return pc;
+        };
+
+        const handlePeerJoined = async () => {
+            console.log('[P2P Video] Peer joined signaling room. Initiating offer.');
+            const pc = createPeerConnection();
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                socket.emit('offer', { room: roomName, offer });
+            } catch (err) {
+                console.error('[P2P Video] Failed to create or send offer:', err);
+            }
+        };
+
+        const handleOffer = async (data: any) => {
+            console.log('[P2P Video] Offer received from peer. Creating answer.');
+            const pc = createPeerConnection();
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                socket.emit('answer', { room: roomName, answer });
+            } catch (err) {
+                console.error('[P2P Video] Failed to process offer or create answer:', err);
+            }
+        };
+
+        const handleAnswer = async (data: any) => {
+            console.log('[P2P Video] Answer received from peer. Setting remote description.');
+            if (peerConnectionRef.current) {
+                try {
+                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+                } catch (err) {
+                    console.error('[P2P Video] Failed to set remote description:', err);
+                }
+            }
+        };
+
+        const handleIceCandidate = async (data: any) => {
+            if (peerConnectionRef.current && data.candidate) {
+                try {
+                    await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch (err) {
+                    console.error('[P2P Video] Failed to add remote ICE candidate:', err);
+                }
+            }
+        };
+
+        socket.on('peer-joined', handlePeerJoined);
+        socket.on('offer', handleOffer);
+        socket.on('answer', handleAnswer);
+        socket.on('ice-candidate', handleIceCandidate);
+
+        socket.emit('join', { room: roomName });
+
+        return () => {
+            console.log('[P2P Video] Cleaning up signaling listeners and connection');
+            socket.emit('leave', { room: roomName });
+            socket.off('peer-joined', handlePeerJoined);
+            socket.off('offer', handleOffer);
+            socket.off('answer', handleAnswer);
+            socket.off('ice-candidate', handleIceCandidate);
+            if (peerConnectionRef.current) {
+                peerConnectionRef.current.close();
+                peerConnectionRef.current = null;
+            }
+            setRemoteStream(null);
+        };
+    }, [shouldMock, socket, localStream, sessionId]);
+
     // Periodically update signal quality indicator
     useEffect(() => {
         const interval = setInterval(() => {
@@ -100,19 +241,39 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     // If we have a valid, secure connection and shouldn't mock, use LiveKitRoom
     if (!shouldMock && livekitUrl && token) {
         return (
-            <LiveKitRoom
-                serverUrl={livekitUrl}
-                token={token}
-                connect={true}
-                video={!isObserver}
-                audio={!isObserver}
-                onDisconnected={onEndCall}
-                data-lk-theme="default"
-                style={{ height: '100%', minHeight: '500px', borderRadius: '0.5rem', overflow: 'hidden' }}
-            >
-                <VideoConference />
-                <RoomAudioRenderer />
-            </LiveKitRoom>
+            <div className="h-full w-full min-h-[500px] flex flex-col relative">
+                {/* Connection Status & Manual Fallback Button */}
+                <div className="absolute top-4 right-4 z-10">
+                    <button 
+                        onClick={() => {
+                            console.log("User manually initiated Direct Connection fallback.");
+                            setConnectionFailed(true);
+                            toast.info("Switching to backup Direct Connection...");
+                        }}
+                        className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-white rounded-lg border border-slate-700 text-xs font-semibold shadow-lg transition-all"
+                    >
+                        Switch to Direct Call (P2P)
+                    </button>
+                </div>
+                <LiveKitRoom
+                    serverUrl={livekitUrl}
+                    token={token}
+                    connect={true}
+                    video={!isObserver}
+                    audio={!isObserver}
+                    onDisconnected={onEndCall}
+                    onError={(err) => {
+                        console.error("LiveKit connection error:", err);
+                        setConnectionFailed(true);
+                        toast.error("LiveKit connection failed. Switching to Direct Call.");
+                    }}
+                    data-lk-theme="default"
+                    style={{ height: '100%', minHeight: '500px', borderRadius: '0.5rem', overflow: 'hidden' }}
+                >
+                    <VideoConference />
+                    <RoomAudioRenderer />
+                </LiveKitRoom>
+            </div>
         );
     }
 
@@ -125,8 +286,10 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
             {/* Header Status Bar */}
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
                 <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-800 text-xs font-medium">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-slate-300">Simulated Interview Session</span>
+                    <span className={`h-2 w-2 rounded-full ${remoteStream ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></span>
+                    <span className="text-slate-300">
+                        {remoteStream ? 'Direct Call (P2P Active)' : connectionFailed ? 'Direct Call (Connecting...)' : 'Simulated Interview Session'}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-800 text-xs text-slate-300">
@@ -139,36 +302,47 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 pt-16">
                 {/* Left/Top: Remote Participant */}
                 <div className="relative rounded-xl overflow-hidden bg-slate-900 border border-slate-850 flex flex-col items-center justify-center min-h-[220px]">
-                    {/* Remote Simulated Avatar & Active Speaker wave */}
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="h-24 w-24 rounded-full bg-gradient-to-tr from-teal-500 to-indigo-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-teal-500/20 ring-4 ring-slate-800 animate-pulse">
-                            {remoteName.charAt(0)}
+                    {remoteStream ? (
+                        <video 
+                            ref={(el) => {
+                                if (el) el.srcObject = remoteStream;
+                            }}
+                            autoPlay 
+                            playsInline 
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        /* Remote Simulated Avatar & Active Speaker wave */
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="h-24 w-24 rounded-full bg-gradient-to-tr from-teal-500 to-indigo-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-teal-500/20 ring-4 ring-slate-800 animate-pulse">
+                                {remoteName.charAt(0)}
+                            </div>
+                            <div className="text-center">
+                                <h4 className="font-bold text-lg text-slate-200">{remoteName}</h4>
+                                <p className="text-xs text-teal-400 font-medium tracking-wide mt-1">{remoteRoleLabel}</p>
+                            </div>
+                            
+                            {/* Audio Wave Simulator */}
+                            <div className="flex items-center gap-1 h-6">
+                                {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((h, i) => (
+                                    <div 
+                                        key={i} 
+                                        className="w-1 bg-teal-400/80 rounded-full transition-all duration-300"
+                                        style={{ 
+                                            height: `${h * (Math.random() * 3 + 2)}px`,
+                                            animation: `pulse 1.2s infinite ease-in-out`,
+                                            animationDelay: `${i * 0.1}s`
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                        <div className="text-center">
-                            <h4 className="font-bold text-lg text-slate-200">{remoteName}</h4>
-                            <p className="text-xs text-teal-400 font-medium tracking-wide mt-1">{remoteRoleLabel}</p>
-                        </div>
-                        
-                        {/* Audio Wave Simulator */}
-                        <div className="flex items-center gap-1 h-6">
-                            {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((h, i) => (
-                                <div 
-                                    key={i} 
-                                    className="w-1 bg-teal-400/80 rounded-full transition-all duration-300"
-                                    style={{ 
-                                        height: `${h * (Math.random() * 3 + 2)}px`,
-                                        animation: `pulse 1.2s infinite ease-in-out`,
-                                        animationDelay: `${i * 0.1}s`
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                    )}
 
                     {/* Participant Tag */}
                     <div className="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-semibold flex items-center gap-2">
                         <User className="h-3 w-3 text-teal-400" />
-                        <span>{remoteName}</span>
+                        <span>{remoteStream ? remoteName : `${remoteName} (Connecting...)`}</span>
                     </div>
                 </div>
 
