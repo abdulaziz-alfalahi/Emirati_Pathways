@@ -45,6 +45,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
     const [connectionFailed, setConnectionFailed] = useState(false);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+    const makingOfferRef = useRef(false);
 
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOn, setIsCameraOn] = useState(true);
@@ -58,6 +59,9 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    // Ref keeps the P2P effect in sync with localStream without being a dependency
+    const localStreamRef = useRef<MediaStream | null>(null);
+    localStreamRef.current = localStream;
 
     // Auto-fallback to direct call if LiveKit takes > 10 seconds to connect
     useEffect(() => {
@@ -112,12 +116,17 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
         }
     }, [isMuted, localStream]);
 
-    // Setup Direct WebRTC Peer-to-Peer connection when falling back
+    // Setup Direct WebRTC Peer-to-Peer connection when falling back.
+    // IMPORTANT: localStream is accessed via ref to avoid effect re-runs that
+    // would destroy the peer connection when the camera stream initializes.
     useEffect(() => {
         if (!shouldMock || !socket) return;
 
         const roomName = `interview_session_${sessionId}`;
-        console.log(`[P2P Video] Joining Socket.io signaling room: ${roomName}`);
+        // Use isRecruiter as a stable "polite" flag to resolve offer glare.
+        // The recruiter is "impolite" (always sends offers); the guest is "polite".
+        const isPolite = !isRecruiter;
+        console.log(`[P2P Video] Joining Socket.io signaling room: ${roomName} (polite=${isPolite})`);
 
         const createPeerConnection = () => {
             console.log(`[P2P Video] Creating RTCPeerConnection`);
@@ -128,13 +137,16 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
             const pc = new RTCPeerConnection({
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
                 ]
             });
 
-            if (localStream) {
-                localStream.getTracks().forEach(track => {
-                    pc.addTrack(track, localStream);
+            // Add tracks from the current stream (may be null; tracks added dynamically below)
+            const stream = localStreamRef.current;
+            if (stream) {
+                stream.getTracks().forEach(track => {
+                    pc.addTrack(track, stream);
                 });
             }
 
@@ -154,51 +166,102 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
                 }
             };
 
+            pc.oniceconnectionstatechange = () => {
+                console.log(`[P2P Video] ICE state: ${pc.iceConnectionState}`);
+            };
+
+            // "Perfect negotiation" — handle onnegotiationneeded for dynamic track adds
+            pc.onnegotiationneeded = async () => {
+                try {
+                    makingOfferRef.current = true;
+                    const offer = await pc.createOffer();
+                    if (pc.signalingState !== 'stable') return;
+                    await pc.setLocalDescription(offer);
+                    socket.emit('offer', { room: roomName, offer: pc.localDescription });
+                } catch (err) {
+                    console.error('[P2P Video] negotiationneeded error:', err);
+                } finally {
+                    makingOfferRef.current = false;
+                }
+            };
+
             peerConnectionRef.current = pc;
             return pc;
         };
 
+        // Create the peer connection immediately (before tracks may be available)
+        createPeerConnection();
+
         const handlePeerJoined = async () => {
             console.log('[P2P Video] Peer joined signaling room. Initiating offer.');
-            const pc = createPeerConnection();
+            const pc = peerConnectionRef.current;
+            if (!pc) return;
             try {
+                makingOfferRef.current = true;
                 const offer = await pc.createOffer();
+                if (pc.signalingState !== 'stable') return;
                 await pc.setLocalDescription(offer);
-                socket.emit('offer', { room: roomName, offer });
+                socket.emit('offer', { room: roomName, offer: pc.localDescription });
             } catch (err) {
                 console.error('[P2P Video] Failed to create or send offer:', err);
+            } finally {
+                makingOfferRef.current = false;
             }
         };
 
         const handleOffer = async (data: any) => {
-            console.log('[P2P Video] Offer received from peer. Creating answer.');
-            const pc = createPeerConnection();
+            console.log('[P2P Video] Offer received from peer.');
+            const pc = peerConnectionRef.current;
+            if (!pc) return;
+
+            // Perfect negotiation: polite peer rolls back if there's a collision
+            const offerCollision = makingOfferRef.current || pc.signalingState !== 'stable';
+            if (offerCollision && !isPolite) {
+                console.log('[P2P Video] Ignoring offer (impolite peer, collision)');
+                return;
+            }
+
             try {
-                await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                if (offerCollision) {
+                    // Polite peer rolls back its own offer
+                    await Promise.all([
+                        pc.setLocalDescription({ type: 'rollback' }),
+                        pc.setRemoteDescription(new RTCSessionDescription(data.offer))
+                    ]);
+                } else {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                }
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
-                socket.emit('answer', { room: roomName, answer });
+                socket.emit('answer', { room: roomName, answer: pc.localDescription });
             } catch (err) {
                 console.error('[P2P Video] Failed to process offer or create answer:', err);
             }
         };
 
         const handleAnswer = async (data: any) => {
-            console.log('[P2P Video] Answer received from peer. Setting remote description.');
-            if (peerConnectionRef.current) {
-                try {
-                    await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
-                } catch (err) {
-                    console.error('[P2P Video] Failed to set remote description:', err);
+            console.log('[P2P Video] Answer received from peer.');
+            const pc = peerConnectionRef.current;
+            if (!pc) return;
+            try {
+                if (pc.signalingState === 'have-local-offer') {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                } else {
+                    console.warn('[P2P Video] Ignoring answer in state:', pc.signalingState);
                 }
+            } catch (err) {
+                console.error('[P2P Video] Failed to set remote description:', err);
             }
         };
 
         const handleIceCandidate = async (data: any) => {
-            if (peerConnectionRef.current && data.candidate) {
+            const pc = peerConnectionRef.current;
+            if (pc && data.candidate) {
                 try {
-                    await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
                 } catch (err) {
+                    // ICE candidates arriving before remote description is set — safe to ignore
+                    if (!pc.remoteDescription) return;
                     console.error('[P2P Video] Failed to add remote ICE candidate:', err);
                 }
             }
@@ -209,6 +272,7 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
         socket.on('answer', handleAnswer);
         socket.on('ice-candidate', handleIceCandidate);
 
+        // Join the signaling room (triggers 'peer-joined' for anyone already in it)
         socket.emit('join', { room: roomName });
 
         return () => {
@@ -224,7 +288,28 @@ export const VideoRoom: React.FC<VideoRoomProps> = ({
             }
             setRemoteStream(null);
         };
-    }, [shouldMock, socket, localStream, sessionId]);
+    }, [shouldMock, socket, sessionId, isRecruiter]);
+
+    // Dynamically add/replace tracks on the existing peer connection when localStream changes.
+    // This handles the case where the camera initializes after the peer connection is created.
+    useEffect(() => {
+        const pc = peerConnectionRef.current;
+        if (!pc || !localStream) return;
+
+        const senders = pc.getSenders();
+        localStream.getTracks().forEach(track => {
+            const existingSender = senders.find(s => s.track?.kind === track.kind);
+            if (existingSender) {
+                // Replace existing track (e.g. camera toggle)
+                existingSender.replaceTrack(track).catch(err =>
+                    console.warn('[P2P Video] replaceTrack failed:', err)
+                );
+            } else {
+                // First-time add — triggers onnegotiationneeded for renegotiation
+                pc.addTrack(track, localStream);
+            }
+        });
+    }, [localStream]);
 
     // Periodically update signal quality indicator
     useEffect(() => {
