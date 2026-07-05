@@ -609,7 +609,7 @@ def recommended_jobs():
 
                 cur = db.cursor()
                 cur.execute("""
-                    SELECT id, title, company_id, location, description, requirements, status, salary_range, employment_type
+                    SELECT id, title, company_id, location, description, requirements, status, salary_range, employment_type, experience_level
                     FROM job_postings 
                     WHERE status IN ('published', 'active', 'open', 'Active', 'Open', 'Published')
                     ORDER BY created_at DESC
@@ -677,7 +677,7 @@ def recommended_jobs():
                                 languages=['English'],
                                 industry='',
                                 company_size='',
-                                career_level='Mid_Level',
+                                career_level=job.get('experience_level', 'Mid_Level'),
                                 emiratization_priority=False,
                                 visa_sponsorship=True
                             )
