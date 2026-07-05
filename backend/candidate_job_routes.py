@@ -975,12 +975,59 @@ def get_dashboard_stats():
                logger.error(f"Profile photo lookup failed with IDs {user_ids_to_try}: {e}")
                if conn: conn.rollback()
 
+        # Fetch recent activities dynamically
+        recent_activity = []
+        if user_id:
+            try:
+                # 1. Fetch applications
+                cur.execute("""
+                    SELECT ja.applied_at as timestamp, jp.title as job_title, jp.company_id 
+                    FROM job_applications ja 
+                    LEFT JOIN job_postings jp ON ja.job_id::text = jp.id::text 
+                    WHERE ja.candidate_id = %s 
+                    ORDER BY ja.applied_at DESC LIMIT 5
+                """, (search_id,))
+                for row in cur.fetchall():
+                    company = row['company_id'] or 'UAE Employer'
+                    if company.lower() in ('unknown', 'null', ''):
+                        company = 'UAE Employer'
+                    recent_activity.append({
+                        'id': f"app_{row['timestamp'].isoformat() if hasattr(row['timestamp'], 'isoformat') else row['timestamp']}",
+                        'type': 'application',
+                        'title': 'Applied to Job',
+                        'description': f"Submitted application for {row['job_title']} at {company}",
+                        'timestamp': row['timestamp'].strftime('%Y-%m-%d') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp'])
+                    })
+                
+                # 2. Fetch interviews
+                cur.execute("""
+                    SELECT iv.created_at as timestamp, iv.title, iv.status, jp.title as job_title 
+                    FROM interview_sessions iv 
+                    LEFT JOIN job_postings jp ON iv.job_id::text = jp.id::text 
+                    WHERE iv.candidate_id = %s 
+                    ORDER BY iv.created_at DESC LIMIT 5
+                """, (search_id,))
+                for row in cur.fetchall():
+                    recent_activity.append({
+                        'id': f"int_{row['timestamp'].isoformat() if hasattr(row['timestamp'], 'isoformat') else row['timestamp']}",
+                        'type': 'interview',
+                        'title': row['title'] or 'Interview Scheduled',
+                        'description': f"Interview for {row['job_title']} (Status: {row['status']})",
+                        'timestamp': row['timestamp'].strftime('%Y-%m-%d') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp'])
+                    })
+                    
+                # Sort all activity by timestamp desc
+                recent_activity.sort(key=lambda x: x['timestamp'], reverse=True)
+            except Exception as e:
+                logger.error(f"Error fetching recent activity for stats: {e}")
+                if conn: conn.rollback()
+
         return jsonify({
             'success': True,
             'data': {
                 'stats': {
                     'profileViews': 12,  # Mock for now
-                    'jobMatches': max(job_count, 8),  # At least show fallback count
+                    'jobMatches': job_count,
                     'applications': app_count,
                     'interviews': 0
                 },
@@ -990,7 +1037,8 @@ def get_dashboard_stats():
                     'cvUploaded': cv_uploaded,
                     'experienceLevel': candidate_level,
                     'profile_photo_url': profile_photo_url
-                }
+                },
+                'recentActivity': recent_activity
             }
         }), 200
         

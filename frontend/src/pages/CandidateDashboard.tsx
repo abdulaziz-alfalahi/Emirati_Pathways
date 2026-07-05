@@ -167,7 +167,8 @@ const CandidateDashboard: React.FC = () => {
           setDashboardData(prev => ({
             ...prev,
             profile: { ...prev.profile, ...result.data.profile },
-            stats: { ...prev.stats, ...result.data.stats }
+            stats: { ...prev.stats, ...result.data.stats },
+            recentActivity: result.data.recentActivity || []
           }));
         }
 
@@ -249,12 +250,7 @@ const CandidateDashboard: React.FC = () => {
 
   const firstName = dashboardData.profile.name.split(' ')[0];
 
-  // Mock recent activity if none from API
-  const recentActivity = dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity : [
-    { id: '1', type: 'interview' as const, title: t('Interview Scheduled', 'تمت جدولة مقابلة'), description: t('with Dubai Municipality • 3:00 PM Tomorrow', 'مع بلدية دبي • 3:00 مساءً غداً'), timestamp: t('1h ago', 'منذ ساعة') },
-    { id: '2', type: 'application' as const, title: t('Application Viewed', 'تم عرض الطلب'), description: t('by ADNOC for Senior Analyst role', 'من أدنوك لوظيفة محلل أول'), timestamp: t('3h ago', 'منذ 3 ساعات') },
-    { id: '3', type: 'job_match' as const, title: t('New AI Matches', 'مطابقات ذكاء اصطناعي جديدة'), description: t('12 new jobs matching your skill profile', '12 وظيفة جديدة تتطابق مع ملفك المهني'), timestamp: t('Yesterday', 'أمس') },
-  ];
+  const recentActivity = dashboardData.recentActivity;
 
   // Stat card config
   const statCards = [
@@ -545,18 +541,24 @@ const CandidateDashboard: React.FC = () => {
                     </CardHeader>
                     <CardContent className="pt-3">
                       <div className="space-y-1">
-                        {recentActivity.map((activity) => (
-                          <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer group">
-                            <div className={`p-2 rounded-lg border ${getActivityColor(activity.type)} flex-shrink-0 mt-0.5`}>
-                              {getActivityIcon(activity.type)}
+                        {recentActivity.length > 0 ? (
+                          recentActivity.map((activity) => (
+                            <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50/80 transition-colors cursor-pointer group">
+                              <div className={`p-2 rounded-lg border ${getActivityColor(activity.type)} flex-shrink-0 mt-0.5`}>
+                                {getActivityIcon(activity.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
+                              </div>
+                              <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-800 group-hover:text-teal-700 transition-colors">{activity.title}</p>
-                              <p className="text-xs text-slate-500 mt-0.5">{activity.description}</p>
-                            </div>
-                            <span className="text-xs text-slate-400 flex-shrink-0 mt-1">{activity.timestamp}</span>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-slate-400">
+                            <p className="text-sm">{t('No recent activity yet. Start applying to jobs!', 'لا توجد نشاطات أخيرة بعد. ابدأ بالتقدم للوظائف!')}</p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </CardContent>
                   </Card>
