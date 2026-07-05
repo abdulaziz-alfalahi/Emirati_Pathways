@@ -107,9 +107,12 @@ export default function CandidateInterviews() {
                 user_name: userData.name,
                 role: 'candidate'
             });
-            if (res.data.livekit_url && res.data.token) {
-                setLivekitUrl(res.data.livekit_url);
-                setLivekitToken(res.data.token);
+            const data = res.data;
+            const token = data?.token || data?.session_config?.token;
+            const livekit_url = data?.livekit_url || data?.session_config?.livekit_url;
+            if (token && livekit_url) {
+                setLivekitUrl(livekit_url);
+                setLivekitToken(token);
             }
         } catch (err) {
             console.warn('LiveKit token acquisition failed (session may still work):', err);

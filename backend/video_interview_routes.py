@@ -39,6 +39,8 @@ def start_interview_session(session_id):
         return jsonify({
             'success': True,
             'session_config': session_config,
+            'livekit_url': session_config.get('livekit_url'),
+            'token': session_config.get('token'),
             'message': 'Interview session started'
         }), 200
         

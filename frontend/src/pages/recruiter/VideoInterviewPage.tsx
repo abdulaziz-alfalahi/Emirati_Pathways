@@ -466,10 +466,13 @@ const VideoInterviewPage = () => {
             try {
                 // The start API now returns livekit_url and token
                 const response = await restClient.post(`/api/video-interview/sessions/${sessionId}/start`);
-                if (response.data && response.data.token) {
+                const data = response.data;
+                const token = data?.token || data?.session_config?.token;
+                const livekit_url = data?.livekit_url || data?.session_config?.livekit_url;
+                if (token && livekit_url) {
                     setLivekitDetails({
-                        url: response.data.livekit_url,
-                        token: response.data.token
+                        url: livekit_url,
+                        token: token
                     });
                 }
             } catch (err) {
