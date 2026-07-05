@@ -63,7 +63,7 @@ class CandidateSearchEngine:
             LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
         """
         
-        where_conditions = ["u.role = 'candidate'"]
+        where_conditions = ["u.role IN ('candidate', 'job_seeker')"]
         params = []
         joins = []
         
@@ -609,7 +609,7 @@ def get_candidate_details(candidate_id):
                     MAX(u.last_login) as last_activity
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.id::text = %s AND u.role = 'candidate'
+                WHERE u.id::text = %s AND u.role IN ('candidate', 'job_seeker')
                 GROUP BY u.id
             """, (candidate_id,))
             
@@ -758,7 +758,7 @@ def match_candidates_to_job(job_id):
                     COUNT(DISTINCT ja.id) as total_applications
                 FROM users u
                 LEFT JOIN job_applications ja ON (ja.candidate_id ~ '^[0-9]+$' AND u.id = ja.candidate_id::integer)
-                WHERE u.role = 'candidate' AND u.is_active = true
+                WHERE u.role IN ('candidate', 'job_seeker') AND u.is_active = true
                 GROUP BY u.id
                 ORDER BY u.last_login DESC NULLS LAST
                 LIMIT 100
@@ -858,19 +858,19 @@ def get_filter_options():
             filter_options = {}
             
             # Emirates
-            cursor.execute("SELECT DISTINCT emirate FROM users WHERE role = 'candidate' AND emirate IS NOT NULL ORDER BY emirate")
+            cursor.execute("SELECT DISTINCT emirate FROM users WHERE role IN ('candidate', 'job_seeker') AND emirate IS NOT NULL ORDER BY emirate")
             filter_options['emirates'] = [row['emirate'] for row in cursor.fetchall()]
             
             # Nationalities
-            cursor.execute("SELECT DISTINCT nationality FROM users WHERE role = 'candidate' AND nationality IS NOT NULL ORDER BY nationality")
+            cursor.execute("SELECT DISTINCT nationality FROM users WHERE role IN ('candidate', 'job_seeker') AND nationality IS NOT NULL ORDER BY nationality")
             filter_options['nationalities'] = [row['nationality'] for row in cursor.fetchall()]
             
             # Education levels
-            cursor.execute("SELECT DISTINCT education_level FROM users WHERE role = 'candidate' AND education_level IS NOT NULL ORDER BY education_level")
+            cursor.execute("SELECT DISTINCT education_level FROM users WHERE role IN ('candidate', 'job_seeker') AND education_level IS NOT NULL ORDER BY education_level")
             filter_options['education_levels'] = [row['education_level'] for row in cursor.fetchall()]
             
             # Experience ranges
-            cursor.execute("SELECT MIN(experience_years) as min_exp, MAX(experience_years) as max_exp FROM users WHERE role = 'candidate'")
+            cursor.execute("SELECT MIN(experience_years) as min_exp, MAX(experience_years) as max_exp FROM users WHERE role IN ('candidate', 'job_seeker')")
             exp_range = cursor.fetchone()
             filter_options['experience_range'] = {
                 'min': exp_range['min_exp'] or 0,
@@ -881,7 +881,7 @@ def get_filter_options():
             cursor.execute("""
                 SELECT unnest(skills) as skill, COUNT(*) as skill_count
                 FROM users 
-                WHERE role = 'candidate' AND skills IS NOT NULL
+                WHERE role IN ('candidate', 'job_seeker') AND skills IS NOT NULL
                 GROUP BY skill
                 ORDER BY skill_count DESC
                 LIMIT 20
@@ -896,7 +896,7 @@ def get_filter_options():
                     AVG(preferred_salary_min) as avg_min_salary,
                     AVG(preferred_salary_max) as avg_max_salary
                 FROM users 
-                WHERE role = 'candidate' AND preferred_salary_min IS NOT NULL
+                WHERE role IN ('candidate', 'job_seeker') AND preferred_salary_min IS NOT NULL
             """)
             salary_stats = cursor.fetchone()
             filter_options['salary_ranges'] = {

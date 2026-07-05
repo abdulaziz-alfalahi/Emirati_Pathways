@@ -720,7 +720,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   const handleShortlistCandidate = async (candidateId: string, matchScore: number, matchDetails: any) => {
     try {
-      const response = await restClient.post(`/api/recruiter/shortlist/add`, {
+      const response = await restClient.post(`/api/recruiter/jd/shortlist/add`, {
         jd_id: jdData.jd_id,
         candidate_id: candidateId,
         recruiter_id: recruiterId,
@@ -749,6 +749,31 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
     setMatchingLoading(true);
     try {
+      // Auto-save prior to matching to ensure JD is up-to-date in database
+      const jdDataToSave = {
+        ...jdData,
+        metadata: {
+          ...jdData.metadata,
+          jd_id: jdData.jd_id,
+          recruiter_id: recruiterId || 'unknown',
+          company_id: companyId || 'unknown',
+          status: 'draft',
+          completion_score: completionScore,
+          current_step: steps[currentStep].id,
+          last_modified: new Date().toISOString()
+        }
+      };
+
+      try {
+        await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/save`, {
+          jd_data: jdDataToSave,
+          recruiter_id: recruiterId || 'unknown',
+          company_id: companyId || 'unknown'
+        });
+      } catch (saveError) {
+        console.warn("Auto-save prior to matching failed", saveError);
+      }
+
       // Call match candidates API
       const response = await restClient.post(`/api/recruiter/jd/${jdData.jd_id}/match-candidates`, {
         employment_status_filter: employmentStatusFilter === 'all' ? null : employmentStatusFilter,
@@ -758,7 +783,7 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       const result = response.data;
       setMatchedCandidates(result.top_matches || []);
 
-      toast.success(`Found ${result.match_count} matching candidates`);
+      toast.success("Successfully matched candidates");
     } catch (error) {
       toast.error("Failed to match candidates");
     } finally {
@@ -1671,9 +1696,19 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-4 flex gap-2">
-                    <Button size="sm" variant="outline">
-                      View Profile
+                   <div className="mt-4 flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      asChild
+                    >
+                      <a 
+                        href={`/candidate-profile/${match.candidate.candidate_id || match.candidate.user_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View Profile
+                      </a>
                     </Button>
                     <Button
                       size="sm"

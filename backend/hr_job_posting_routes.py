@@ -1275,7 +1275,7 @@ def publish_and_match(job_id):
                     u.experience_years, u.preferred_salary_min, u.preferred_salary_max,
                     u.preferred_location, u.is_uae_national, u.skills, u.last_login
                 FROM users u
-                WHERE u.role = 'candidate' AND u.is_active = true
+                WHERE u.role IN ('candidate', 'job_seeker') AND u.is_active = true
                 LIMIT 500
             """)
             candidates = [dict(r) for r in cursor.fetchall()]
@@ -1403,7 +1403,7 @@ def add_to_shortlist(job_id):
             resolved_job_id = job['id']
 
             # Ensure candidate exists and is a candidate
-            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role = 'candidate'", (candidate_id,))
+            cursor.execute("SELECT 1 FROM users WHERE id = %s AND role IN ('candidate', 'job_seeker')", (candidate_id,))
             if not cursor.fetchone():
                 return jsonify({'success': False, 'message': 'Candidate not found'}), 404
 

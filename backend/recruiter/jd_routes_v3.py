@@ -133,15 +133,15 @@ def match_candidates(jd_id):
                 u.last_name,
                 u.email,
                 u.phone,
-                u.emirate,
+                COALESCE(NULLIF(u.emirate, ''), CASE WHEN strpos(LOWER(cp.target_roles::text), 'dubai') > 0 THEN 'Dubai' WHEN strpos(LOWER(cp.target_roles::text), 'abu dhabi') > 0 THEN 'Abu Dhabi' WHEN strpos(LOWER(cp.target_roles::text), 'sharjah') > 0 THEN 'Sharjah' ELSE '' END) as emirate,
                 u.nationality,
-                u.is_uae_national,
-                u.education_level,
-                u.experience_years,
+                (u.is_uae_national = true OR u.nationality IN ('ARE', 'UAE', 'emirati', 'Emirati') OR cp.nationality IN ('ARE', 'UAE', 'emirati', 'Emirati')) as is_uae_national,
+                COALESCE(u.education_level, (SELECT CASE WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'phd') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'doctor') > 0 THEN 'PhD' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'master') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'emba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'mba') > 0 THEN 'Master' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'bachelor') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'bsc') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'ba') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'degree') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'eng') > 0 OR strpos(LOWER(STRING_AGG(degree, ' ')), 'hnd') > 0 THEN 'Bachelor' WHEN strpos(LOWER(STRING_AGG(degree, ' ')), 'diploma') > 0 THEN 'Diploma' ELSE 'Bachelor' END FROM candidate_education_entries WHERE user_id = u.id::varchar)) as education_level,
+                COALESCE(u.experience_years, (SELECT COALESCE(SUM(EXTRACT(YEAR FROM AGE(COALESCE(end_date, CURRENT_DATE), start_date))), 0) FROM candidate_experience_entries WHERE user_id = u.id::varchar), 0) as experience_years,
                 u.job_title as current_position,
                 u.company as current_company,
                 'open_to_opportunities' as employment_status,
-                u.skills,
+                COALESCE((SELECT array_agg(name) FROM candidate_skills WHERE user_id = u.id::varchar), ARRAY[]::text[]) as skills,
                 u.preferred_salary_min,
                 u.preferred_salary_max,
                 NULL as cv_url,
@@ -154,8 +154,9 @@ def match_candidates(jd_id):
                 cp.english_proficiency
             FROM users u
             LEFT JOIN candidate_profiles cp ON u.id::varchar = cp.user_id
-            WHERE u.role = 'candidate'
+            WHERE u.role IN ('candidate', 'job_seeker')
                 AND u.is_active = true
+            ORDER BY (CASE WHEN EXISTS (SELECT 1 FROM candidate_skills WHERE user_id = u.id::varchar) THEN 1 ELSE 0 END) DESC, u.id DESC
             LIMIT 100
         """
         cur.execute(query)
