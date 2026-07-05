@@ -314,7 +314,10 @@ class VideoInterviewEngine:
                 "Candidate demonstrates strong technical knowledge",
                 "Clear communication style",
                 "Shows enthusiasm for the role"
-            ]    def generate_interview_report(self, session_id: str) -> Dict[str, Any]:
+            ]
+        )
+
+    def generate_interview_report(self, session_id: str) -> Dict[str, Any]:
         """Generate comprehensive AI-powered interview report"""
         try:
             with self.get_db_connection() as conn:
