@@ -468,7 +468,7 @@ def profile_snapshot():
                     try: db.rollback()
                     except: pass
 
-        top_skills = sorted(all_skills, key=lambda s: s.get('demand_score', 0), reverse=True)[:8]
+        top_skills = sorted(all_skills, key=lambda s: s.get('demand_score') or 0, reverse=True)[:8]
         skill_sources = {}
         for s in all_skills:
             src = s.get('source', 'self_reported')

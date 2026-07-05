@@ -163,7 +163,7 @@ def analyze_transcript(session_id):
         from backend.services.qwen_client import chat_completion, QwenParsingError, QwenClientError
         import os
         
-        api_key = DASHSCOPE_API_KEY
+        api_key = os.getenv('DASHSCOPE_API_KEY')
         if not api_key:
             return jsonify({
                 'success': False,
