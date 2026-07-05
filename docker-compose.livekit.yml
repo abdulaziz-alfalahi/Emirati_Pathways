@@ -21,10 +21,10 @@ services:
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     environment:
-      - "LIVEKIT_KEYS=devkey: secret"
+      - "LIVEKIT_KEYS=devkey: devsecret32charslongsecurityvalue"
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
 
   # ─── LiveKit Egress (Recording) ─────────────────────────────────────
   livekit-egress:
@@ -33,7 +33,7 @@ services:
       # LiveKit connection
       - LIVEKIT_URL=ws://livekit-server:7880
       - LIVEKIT_API_KEY=devkey
-      - LIVEKIT_API_SECRET=secret
+      - LIVEKIT_API_SECRET=devsecret32charslongsecurityvalue
       # S3 upload (MinIO)
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin123
@@ -45,7 +45,7 @@ services:
       - minio
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
     cap_add:
       - SYS_ADMIN   # Required for headless Chrome
 
@@ -57,13 +57,13 @@ services:
     environment:
       - LIVEKIT_URL=ws://livekit-server:7880
       - LIVEKIT_API_KEY=devkey
-      - LIVEKIT_API_SECRET=secret
+      - LIVEKIT_API_SECRET=devsecret32charslongsecurityvalue
       - GRANITE_SPEECH_URL=http://10.228.145.194:8001/v1
     depends_on:
       - livekit-server
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
 
   # ─── MinIO (S3-Compatible Object Storage) ───────────────────────────
   minio:
@@ -87,7 +87,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - lk-net
+      - emirati_net
 
   # ─── MinIO Bucket Init ──────────────────────────────────────────────
   minio-init:
@@ -104,7 +104,7 @@ services:
       echo 'Bucket ready with SSE-S3 encryption';
       "
     networks:
-      - lk-net
+      - emirati_net
 
 volumes:
   minio-data:
@@ -113,5 +113,5 @@ volumes:
     driver: local
 
 networks:
-  lk-net:
-    driver: bridge
+  emirati_net:
+    external: true
