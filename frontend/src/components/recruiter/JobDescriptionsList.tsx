@@ -456,7 +456,7 @@ const JobDescriptionsList = () => {
 
                       {/* Applicant & Shortlist Count Badges */}
                       <div className="flex items-center gap-3">
-                        {(job.status === 'published' || job.status === 'active') && (
+                        {(job.status === 'published' || job.status === 'active' || job.status === 'draft') && (
                           <>
                             {/* Applicants Badge */}
                             <div
@@ -504,7 +504,7 @@ const JobDescriptionsList = () => {
                           <Eye className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        {(job.status === 'published' || job.status === 'active') && (
+                        {(job.status === 'published' || job.status === 'active' || job.status === 'draft') && (
                           <>
                             <Button
                               size="sm"
