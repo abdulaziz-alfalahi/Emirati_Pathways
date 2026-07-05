@@ -1,21 +1,3 @@
-import React from 'react';
-import {
-  LiveKitRoom,
-  VideoConference,
-  RoomAudioRenderer,
-} from '@livekit/components-react';
-import '@livekit/components-styles';
-
-interface VideoRoomProps {
-    sessionId: string;
-    userId: string;
-    userName: string;
-    onEndCall: () => void;
-    isRecruiter?: boolean;
-    isObserver?: boolean;
-    livekitUrl?: string;
-    token?: string;
-}
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
