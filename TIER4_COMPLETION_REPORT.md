@@ -10,7 +10,7 @@
 - 21c55499bc2adc59571822cc7fd31d1d8bfbe69d security(T4.1): Implement UAE Pass OIDC nonce validation, JWKS signature verification, and httpOnly cookie delivery.
 
 ## Step 0 — Bundle validation (my code, tested on APPDEV)
-- pytest: 136 passed, 1 skipped, 5 warnings in 5.85s (136 passed)
+- pytest: 138 passed, 1 skipped, 5 warnings in 5.99s (138 passed)
 - frontend `npm run build`: compiled successfully
 - boot check `from backend.app import app`: OK
 - migrations 002 & 003 applied: Yes; append-only sanity (UPDATE must RAISE): raises `InsufficientPrivilege: admin_audit_log is append-only: UPDATE is not permitted`
@@ -49,12 +49,14 @@ $ PYTHONPATH=backend .venv/bin/pytest backend/tests/ -v --capture=no
 ...
 backend/tests/test_tier4_audit.py::test_audit_log_append_only_trigger PASSED
 backend/tests/test_tier4_audit.py::test_log_admin_action_db_write PASSED
+backend/tests/test_tier4_audit.py::test_retention_purge_fail_closed_on_missing_env PASSED
+backend/tests/test_tier4_audit.py::test_retention_purge_e2e PASSED
 backend/tests/test_tier4_consents.py::test_registration_requires_consents PASSED
 backend/tests/test_tier4_consents.py::test_registration_records_consents PASSED
 backend/tests/test_tier4_dsr.py::test_dsr_export_and_erase PASSED
 backend/tests/test_tier4_dsr.py::test_dsr_erase_atomicity PASSED
 backend/tests/test_uaepass_routes.py::TestFindOrCreateUser::test_find_or_create_user_synthetic_eid PASSED
-================== 136 passed, 1 skipped, 5 warnings in 5.85s ==================
+================== 138 passed, 1 skipped, 5 warnings in 5.99s ==================
 ```
 
 ## Round 2 Fixes (TIER4_REVIEW_ROUND2)
@@ -86,3 +88,22 @@ The following security, compliance, and documentation fixes were implemented and
   - Database schema: [DATABASE_SCHEMA.md](file:///home/aalfalahi.d/Emirati_Pathways/backend/DATABASE_SCHEMA.md)
   - Remaining work list: [HANDOVER_REMAINING_WORK.md](file:///home/aalfalahi.d/Emirati_Pathways/HANDOVER_REMAINING_WORK.md)
   - Corrected SQL schema file: [create_school_programs_correct.sql](file:///home/aalfalahi.d/Emirati_Pathways/backend/create_school_programs_correct.sql)
+
+## Retention Purge Hardening (TIER4_F3_HARDENING)
+
+The following retention purge security and testing upgrades were implemented in response to the F3 Hardening requirements:
+
+### H1: Fail Closed on Credentials & Dedicated Signing Key
+- **Implementation:** Updated [retention_purge.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/scripts/retention_purge.py) to explicitly check and require `DB_MAINT_USER`, `DB_MAINT_PASSWORD`, and a dedicated `AUDIT_ARCHIVE_SIGNING_KEY` environment variables. Removed all fallbacks to regular application DB roles, default hardcoded passwords, or default/shared signing secrets. If any of these are missing, the script immediately aborts with a non-zero exit code and raises `KeyError`.
+- **Tests Added:** Added `test_retention_purge_fail_closed_on_missing_env` in [test_tier4_audit.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/tests/test_tier4_audit.py) to assert that missing environment variables raise `KeyError` before any database connection attempt.
+
+### H2: Documented Maintenance DB User Table Ownership
+- **Implementation:** Documented inside [retention_purge.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/scripts/retention_purge.py) and this report that the `DB_MAINT_USER` role must own the `admin_audit_log` table (or have superuser access) to perform the trigger-bypass operation `ALTER TABLE admin_audit_log DISABLE TRIGGER ...`, restricting the script to controlled automation (such as cron tasks) and keeping the `finally:` block to guarantee triggers are always re-enabled even in the event of partial execution failure.
+
+### H3: End-to-End Retention Purge Integration Test
+- **Implementation:** Added `test_retention_purge_e2e` in [test_tier4_audit.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/tests/test_tier4_audit.py) that performs the following steps:
+  1. Creates a temporary test user and seeds an expired row in `admin_audit_log` (older than 2555 days).
+  2. Runs `run_purge` under mocked maintenance credentials and custom signing keys.
+  3. Asserts the expired row is deleted, and that signed NDJSON files (`.jsonl` and `.sig`) are written to `backend/archives/` and verify correctly using the signing key.
+  4. Asserts that the triggers are re-enabled afterwards by verifying that subsequent `DELETE` or `UPDATE` queries on remaining rows are rejected by the append-only database triggers.
+  5. Cleans up all generated files and seeded records upon test completion.

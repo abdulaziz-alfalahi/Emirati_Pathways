@@ -102,17 +102,20 @@ All committed on branch `remediation/tier0-tier1`, pushed to GitHub.
 - ✅ `UAEPASS_EID_KEY` mandatory in production (raises RuntimeError if missing)
 - ✅ AES-256-GCM authenticated encryption implemented
 - ✅ Base64 fallback removed
+- ✅ OIDC nonce + `id_token` signature/issuer/audience validation via JWKS
+- ✅ Move token delivery from URL fragment/localStorage to httpOnly cookies
+- ✅ Shorten access token TTL to ≤1h
 
 **TODO:**
-- [ ] Add OIDC nonce + `id_token` signature/issuer/audience validation via JWKS
-- [ ] Move token delivery from URL fragment/localStorage to httpOnly cookies
-- [ ] Shorten access token TTL to ≤1h
+(None)
 
 #### T4.2 — PDPL (Personal Data Protection Law)
+**DONE:**
+- ✅ Create `consents` table captured at registration/UAE-Pass onboarding
+- ✅ Data-subject-rights workflow: export + cascading erasure across `user_cvs`, `candidate_*`, `nafis_job_seekers`, AI outputs
+- ✅ Scheduled retention purge honoring `AUDIT_RETENTION_DAYS` (Note: DB_MAINT_USER must own `admin_audit_log` to bypass triggers during purge)
+
 **TODO:**
-- [ ] Create `consents` table captured at registration/UAE-Pass onboarding
-- [ ] Data-subject-rights workflow: export + cascading erasure across `user_cvs`, `candidate_*`, `nafis_job_seekers`, AI outputs
-- [ ] Scheduled retention purge honoring `AUDIT_RETENTION_DAYS`
 - [ ] Replace EID-as-PK with opaque surrogate (or stop emitting EID in JWTs/URLs/logs)
 
 #### T4.3 — Audit Integrity (Remaining Sub-items)
@@ -120,11 +123,11 @@ All committed on branch `remediation/tier0-tier1`, pushed to GitHub.
 
 **DONE:**
 - ✅ `log_admin_action` in `inline_routes.py` now writes to `admin_audit_log` DB table
+- ✅ `REVOKE UPDATE/DELETE` on audit table from app DB role
+- ✅ Append-only export capability
 
 **TODO:**
 - [ ] Audit `admin_api_endpoints.py` and `admin_api_server.py` — these are near-identical duplicates that may also have in-memory audit logging; consolidate and fix
-- [ ] `REVOKE UPDATE/DELETE` on audit table from app DB role
-- [ ] Append-only export capability
 
 #### T4.4 — Observability
 **Files:** `backend/security_config.py` (declares controls but is **never imported**)
