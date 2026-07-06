@@ -413,7 +413,7 @@ const EducationOperatorDashboard: React.FC = () => {
                 { title: t('Auto-Approve Institutions', 'الموافقة التلقائية على المؤسسات'), desc: t('Automatically approve institutions from accredited bodies', 'الموافقة التلقائية على المؤسسات من الجهات المعتمدة'), value: t('Disabled', 'معطّل') },
                 { title: t('Program Review SLA', 'مدة مراجعة البرامج'), desc: t('Maximum days to review a submitted program', 'الحد الأقصى لأيام مراجعة البرنامج المقدم'), value: t('3 Days', '3 أيام') },
                 { title: t('Enrollment Cap', 'سقف التسجيل'), desc: t('Maximum students per program before requiring approval', 'الحد الأقصى للطلاب لكل برنامج قبل طلب الموافقة'), value: '500' },
-                { title: t('KHDA Integration', 'تكامل هيئة المعرفة'), desc: t('Sync with KHDA for school accreditation data', 'المزامنة مع هيئة المعرفة لبيانات الاعتماد'), value: t('Enabled', 'مفعّل') },
+                { title: t('KHDA Integration', 'تكامل هيئة المعرفة'), desc: t('Not yet integrated — accreditation data is entered manually, not synced with KHDA', 'غير مُدمج بعد — تُدخَل بيانات الاعتماد يدويًا ولا تُزامَن مع هيئة المعرفة'), value: t('Not connected', 'غير متصل') },
             ].map((s, i) => (
                 <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>

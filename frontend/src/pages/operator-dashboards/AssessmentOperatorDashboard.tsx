@@ -195,7 +195,7 @@ const AssessmentOperatorDashboard: React.FC = () => {
                 { title: t('Auto-Schedule Retakes', 'إعادة الجدولة التلقائية'), desc: t('Automatically schedule retake slots for failed candidates', 'جدولة تلقائية لإعادة الاختبار للمرشحين الراسبين'), value: t('Enabled', 'مفعّل') },
                 { title: t('Result Processing SLA', 'مدة معالجة النتائج'), desc: t('Maximum days to publish assessment results', 'الحد الأقصى لأيام نشر نتائج التقييم'), value: t('5 Days', '5 أيام') },
                 { title: t('Minimum Pass Score', 'الحد الأدنى للنجاح'), desc: t('Default minimum score required to pass assessments', 'الحد الأدنى الافتراضي للنجاح في التقييمات'), value: '60%' },
-                { title: t('MOHRE Integration', 'تكامل وزارة الموارد البشرية'), desc: t('Sync certification results with MOHRE records', 'مزامنة نتائج الشهادات مع سجلات الوزارة'), value: t('Enabled', 'مفعّل') },
+                { title: t('MOHRE Integration', 'تكامل وزارة الموارد البشرية'), desc: t('Not yet integrated — certification results are recorded manually, not synced with MOHRE', 'غير مُدمج بعد — تُسجَّل نتائج الشهادات يدويًا ولا تُزامَن مع الوزارة'), value: t('Not connected', 'غير متصل') },
             ].map((s, i) => (
                 <div key={i} style={{ background: brand.cardBg, borderRadius: 12, padding: 20, border: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
