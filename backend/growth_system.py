@@ -36,6 +36,18 @@ class GrowthSystem:
             logger.error(f"Failed to connect to DB: {e}")
             raise
 
+    def _generate_synthetic_eid(self, cur):
+        """Generate a unique 15-character synthetic EID for users without one."""
+        cur.execute("SELECT pg_advisory_xact_lock(784000)")  # Lock ID for EID generation
+        cur.execute("""
+            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER)) AS max_seq
+            FROM users WHERE id LIKE '7840000%'
+        """)
+        row = cur.fetchone()
+        max_seq = row['max_seq'] if row and row.get('max_seq') is not None else 0
+        return f"784{'0000'}{max_seq + 1:07d}{'0'}"
+
+
     def import_vacancies_from_csv(self, csv_file_content):
         """
         Parses Nafis CSV and creates Pending Jobs + Shadow Companies.
@@ -301,15 +313,16 @@ class GrowthSystem:
                     import bcrypt
                     hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
+                    user_id = self._generate_synthetic_eid(cur)
                     cur.execute("""
                         INSERT INTO users (
-                            email, password_hash, first_name, last_name, 
+                            id, email, password_hash, first_name, last_name, 
                             user_type, phone, is_active, created_at
                         ) VALUES (
-                            %s, %s, %s, 'Recruiter', 
+                            %s, %s, %s, %s, 'Recruiter', 
                             'recruiter', '00000000', TRUE, NOW()
                         ) RETURNING id
-                    """, (email, hashed_pw, token_record['company_name_snapshot']))
+                    """, (user_id, email, hashed_pw, token_record['company_name_snapshot']))
                     user_id = cur.fetchone()['id']
                     
                     # Create HR Profile
@@ -592,17 +605,18 @@ class GrowthSystem:
                     """, (role, user_id))
                 else:
                     # Create new user — no password (OTP-only login)
+                    user_id = self._generate_synthetic_eid(cur)
                     cur.execute("""
                         INSERT INTO users (
-                            email, first_name, last_name,
+                            id, email, first_name, last_name,
                             user_type, phone, is_active,
                             password_hash, created_at
                         ) VALUES (
-                            %s, %s, %s,
+                            %s, %s, %s, %s,
                             %s, %s, TRUE,
                             'otp_only', NOW()
                         ) RETURNING id
-                    """, (email, first_name, last_name, role, phone))
+                    """, (user_id, email, first_name, last_name, role, phone))
                     user_id = cur.fetchone()['id']
 
                 # 3. Find or create company link
@@ -748,7 +762,17 @@ class GrowthSystem:
 
                 # ── 3. Map each company to a funnel stage ──
                 companies = []
-                funnel = {'lead': 0, 'invited': 0, 'link_opened': 0, 'signing_up': 0, 'active': 0, 'expired': 0}
+                funnel = {
+                    'lead': 0, 
+                    'invited': 0, 
+                    'link_opened': 0, 
+                    'signing_up': 0, 
+                    'active': 0, 
+                    'expired': 0,
+                    'contacted': 0,
+                    'documentation': 0,
+                    'verification': 0
+                }
 
                 for c in companies_raw:
                     name = c['company_name']
