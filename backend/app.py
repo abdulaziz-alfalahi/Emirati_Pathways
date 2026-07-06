@@ -60,6 +60,61 @@ if not os.environ.get('DATABASE_URL'):
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# =====================================================
+# OBSERVABILITY (T4.4): request-id correlation, JSON logs, Sentry
+# =====================================================
+class _RequestIdFilter(logging.Filter):
+    """Inject the current request id into every log record (best-effort)."""
+    def filter(self, record):
+        try:
+            from flask import g, has_request_context
+            record.request_id = getattr(g, 'request_id', '-') if has_request_context() else '-'
+        except Exception:
+            record.request_id = '-'
+        return True
+
+
+class _JsonLogFormatter(logging.Formatter):
+    """Structured JSON log lines for centralized aggregation."""
+    def format(self, record):
+        payload = {
+            'ts': datetime.utcnow().isoformat() + 'Z',
+            'level': record.levelname,
+            'logger': record.name,
+            'request_id': getattr(record, 'request_id', '-'),
+            'message': record.getMessage(),
+        }
+        if record.exc_info:
+            payload['exc'] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+# Opt-in JSON logging (set LOG_FORMAT=json in production); plain text otherwise.
+if os.getenv('LOG_FORMAT', '').lower() == 'json':
+    _json_handler = logging.StreamHandler()
+    _json_handler.setFormatter(_JsonLogFormatter())
+    _json_handler.addFilter(_RequestIdFilter())
+    _root_logger = logging.getLogger()
+    _root_logger.handlers = [_json_handler]
+    _root_logger.setLevel(getattr(logging, os.getenv('LOG_LEVEL', 'INFO').upper(), logging.INFO))
+
+# Initialize Sentry only when a DSN is configured (inert otherwise).
+_sentry_dsn = os.getenv('SENTRY_DSN')
+if _sentry_dsn:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            integrations=[FlaskIntegration()],
+            environment=os.getenv('FLASK_ENV', 'production'),
+            traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.0')),
+            send_default_pii=False,  # never ship citizen PII to Sentry
+        )
+        logger.info("Sentry initialized")
+    except Exception as _sentry_err:
+        logger.warning(f"Sentry init failed: {_sentry_err}")
+
 # Debug: Print AI API Key status
 dashscope_key = os.getenv('DASHSCOPE_API_KEY')
 if dashscope_key:
@@ -143,10 +198,21 @@ _jwt_secret = os.getenv('JWT_SECRET_KEY')
 if not _jwt_secret:
     raise RuntimeError("FATAL: JWT_SECRET_KEY environment variable is required.")
 app.config['JWT_SECRET_KEY'] = _jwt_secret
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # T4.1: short-lived access token
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 jwt = JWTManager(app)
+
+# T4.4: apply hardened session/cookie settings from SecurityConfig (wires the
+# previously-unused security_config.py into the running app).
+try:
+    from backend.security_config import SecurityConfig
+    app.config['SESSION_COOKIE_SECURE'] = SecurityConfig.SESSION_COOKIE_SECURE
+    app.config['SESSION_COOKIE_HTTPONLY'] = SecurityConfig.SESSION_COOKIE_HTTPONLY
+    app.config['SESSION_COOKIE_SAMESITE'] = SecurityConfig.SESSION_COOKIE_SAMESITE
+    app.config['PERMANENT_SESSION_LIFETIME'] = SecurityConfig.PERMANENT_SESSION_LIFETIME
+except Exception as _sc_err:
+    logger.warning(f"Could not apply SecurityConfig session settings: {_sc_err}")
 
 # UAE Pass EID Encryption Key Configuration
 _uaepass_eid_key = os.getenv('UAEPASS_EID_KEY')
@@ -223,6 +289,12 @@ def rate_limit_auth():
     """Apply strict rate limits to sensitive endpoints."""
     pass  # flask-limiter decorators are applied on the individual routes
 
+
+@app.before_request
+def _assign_request_id():
+    """T4.4: give every request a correlation id (honor inbound X-Request-ID)."""
+    g.request_id = request.headers.get('X-Request-ID') or secrets.token_hex(8)
+
 # =====================================================
 # SECURITY HEADERS (OWASP: Security Misconfiguration)
 # =====================================================
@@ -255,6 +327,11 @@ def add_security_headers(response):
             "connect-src 'self' https://emirati.ehrdc.gov.ae wss://emirati.ehrdc.gov.ae; "
             "frame-ancestors 'none'"
         )
+
+    # T4.4: expose the request correlation id to clients/log aggregators
+    _rid = getattr(g, 'request_id', None)
+    if _rid:
+        response.headers['X-Request-ID'] = _rid
     return response
 
 # =====================================================
