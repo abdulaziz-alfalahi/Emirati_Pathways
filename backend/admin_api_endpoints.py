@@ -28,8 +28,12 @@ CORS(app, origins="*")
 # Mock database - in production, use proper database
 admin_providers = {}
 admin_configurations = {}
-admin_audit_logs = []
 admin_health_metrics = {}
+
+from flask import g
+@app.before_request
+def assign_request_id():
+    g.request_id = request.headers.get('X-Request-ID') or secrets.token_hex(8)
 
 # Admin roles that can access this system
 ADMIN_ROLES = ['platform_administrator', 'super_user']
@@ -163,26 +167,52 @@ def require_admin_auth(f):
     return decorated_function
 
 def log_admin_action(action: str, provider_id: str, details: str, status: str = 'success'):
-    """Log administrative actions for audit trail."""
-    log_entry = {
-        'id': f"log_{int(time.time())}_{secrets.token_hex(4)}",
-        'timestamp': datetime.now().isoformat(),
-        'user': getattr(request, 'admin_user', {}).get('email', 'unknown'),
-        'action': action,
-        'provider_id': provider_id,
-        'details': details,
-        'status': status,
-        'ip_address': request.remote_addr,
-        'user_agent': request.headers.get('User-Agent', 'unknown')
-    }
-    
-    admin_audit_logs.append(log_entry)
-    
-    # Keep only last 1000 logs in memory
-    if len(admin_audit_logs) > 1000:
-        admin_audit_logs.pop(0)
-    
-    logger.info(f"Admin action logged: {action} on {provider_id} by {log_entry['user']}")
+    """Log administrative actions for audit trail using the database."""
+    try:
+        from flask import g
+        from backend.db import get_db_connection
+        
+        user_email = getattr(request, 'admin_user', {}).get('email', 'unknown')
+        user_id = None
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                if user_email and user_email != 'unknown':
+                    cur.execute("SELECT id FROM users WHERE email = %s;", (user_email,))
+                    row = cur.fetchone()
+                    if row:
+                        user_id = row[0]
+                
+                details_dict = {
+                    'email': user_email,
+                    'provider_id': provider_id,
+                    'status': status,
+                    'details_message': details,
+                    'request_id': getattr(g, 'request_id', '-')
+                }
+                
+                cur.execute("""
+                    INSERT INTO admin_audit_log 
+                    (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+                    VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s)
+                """, (
+                    user_id,
+                    action,
+                    'provider',
+                    provider_id,
+                    json.dumps(details_dict),
+                    request.remote_addr,
+                    request.headers.get('User-Agent', 'unknown')
+                ))
+            conn.commit()
+            logger.info(f"Logged admin action to database: {action} on {provider_id}")
+        except Exception as db_err:
+            conn.rollback()
+            logger.error(f"Database error logging admin action: {str(db_err)}")
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Failed to log admin action: {str(e)}")
 
 def encrypt_sensitive_data(data: str) -> str:
     """Simple encryption for sensitive data (use proper encryption in production)."""
@@ -608,45 +638,71 @@ def get_health_metrics():
 @app.route('/api/admin/audit-logs', methods=['GET'])
 @require_admin_auth
 def get_audit_logs():
-    """Get audit logs with optional filtering."""
+    """Get audit logs with optional filtering from the database."""
     try:
-        # Get query parameters
         limit = min(int(request.args.get('limit', 50)), 500)  # Max 500 logs
         offset = int(request.args.get('offset', 0))
         action_filter = request.args.get('action')
         provider_filter = request.args.get('provider')
         user_filter = request.args.get('user')
         
-        # Filter logs
-        filtered_logs = admin_audit_logs
+        from backend.db import get_db_connection
+        import psycopg2.extras
         
-        if action_filter:
-            filtered_logs = [log for log in filtered_logs if action_filter.lower() in log['action'].lower()]
-        
-        if provider_filter:
-            filtered_logs = [log for log in filtered_logs if provider_filter.lower() in log['provider_id'].lower()]
-        
-        if user_filter:
-            filtered_logs = [log for log in filtered_logs if user_filter.lower() in log['user'].lower()]
-        
-        # Sort by timestamp (newest first)
-        filtered_logs.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Apply pagination
-        total_count = len(filtered_logs)
-        paginated_logs = filtered_logs[offset:offset + limit]
-        
-        return jsonify({
-            'success': True,
-            'logs': paginated_logs,
-            'pagination': {
-                'total_count': total_count,
-                'limit': limit,
-                'offset': offset,
-                'has_more': offset + limit < total_count
-            },
-            'timestamp': datetime.now().isoformat()
-        })
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                query = "SELECT a.id, a.user_id, a.action, a.resource_type, a.resource_id, a.details, a.ip_address, a.user_agent, a.created_at, u.email FROM admin_audit_log a LEFT JOIN users u ON a.user_id = u.id WHERE 1=1"
+                params = []
+                if action_filter:
+                    query += " AND a.action ILIKE %s"
+                    params.append(f"%{action_filter}%")
+                if provider_filter:
+                    query += " AND a.resource_id ILIKE %s"
+                    params.append(f"%{provider_filter}%")
+                if user_filter:
+                    query += " AND (u.email ILIKE %s OR a.details->>'email' ILIKE %s)"
+                    params.extend([f"%{user_filter}%", f"%{user_filter}%"])
+                
+                # First get total count
+                count_query = f"SELECT COUNT(*) FROM ({query}) AS temp"
+                cur.execute(count_query, params)
+                total_count = cur.fetchone()[0]
+                
+                # Get paginated results
+                query += " ORDER BY a.created_at DESC LIMIT %s OFFSET %s"
+                params.extend([limit, offset])
+                cur.execute(query, params)
+                rows = cur.fetchall()
+                
+                logs = []
+                for row in rows:
+                    details_data = row['details'] or {}
+                    logs.append({
+                        'id': str(row['id']),
+                        'timestamp': row['created_at'].isoformat() if row['created_at'] else datetime.now().isoformat(),
+                        'user': details_data.get('email') or row['email'] or str(row['user_id'] or 'unknown'),
+                        'action': row['action'],
+                        'provider_id': row['resource_id'] or details_data.get('provider_id') or 'all',
+                        'details': details_data.get('details_message') or '',
+                        'status': details_data.get('status') or 'success',
+                        'ip_address': row['ip_address'] or '',
+                        'user_agent': row['user_agent'] or ''
+                    })
+                    
+                return jsonify({
+                    'success': True,
+                    'logs': logs,
+                    'pagination': {
+                        'total_count': total_count,
+                        'limit': limit,
+                        'offset': offset,
+                        'has_more': offset + limit < total_count
+                    },
+                    'timestamp': datetime.now().isoformat()
+                })
+        finally:
+            conn.close()
         
     except Exception as e:
         logger.error(f"Error getting audit logs: {str(e)}")
@@ -654,6 +710,56 @@ def get_audit_logs():
             'success': False,
             'error': f'Failed to get audit logs: {str(e)}'
         }), 500
+
+@app.route('/api/admin/audit/export', methods=['GET'])
+@require_admin_auth
+def export_audit_logs():
+    """Export all audit logs as streaming newline-delimited JSON."""
+    try:
+        limit = min(int(request.args.get('limit', 1000)), 10000)
+        offset = int(request.args.get('offset', 0))
+        
+        from backend.db import get_db_connection
+        from flask import Response, stream_with_context
+        import psycopg2.extras
+        
+        def generate():
+            conn = get_db_connection()
+            try:
+                with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("""
+                        SELECT a.id, a.user_id, a.action, a.resource_type, a.resource_id, a.details, a.ip_address, a.user_agent, a.created_at, u.email 
+                        FROM admin_audit_log a 
+                        LEFT JOIN users u ON a.user_id = u.id 
+                        ORDER BY a.created_at DESC 
+                        LIMIT %s OFFSET %s
+                    """, (limit, offset))
+                    
+                    for row in cur:
+                        details_data = row['details'] or {}
+                        log_entry = {
+                            'id': str(row['id']),
+                            'timestamp': row['created_at'].isoformat() if row['created_at'] else None,
+                            'user_id': str(row['user_id']) if row['user_id'] else None,
+                            'email': details_data.get('email') or row['email'] or 'unknown',
+                            'action': row['action'],
+                            'resource_type': row['resource_type'],
+                            'resource_id': row['resource_id'],
+                            'details': details_data.get('details_message') or '',
+                            'status': details_data.get('status') or 'success',
+                            'ip_address': row['ip_address'],
+                            'user_agent': row['user_agent']
+                        }
+                        yield json.dumps(log_entry) + "\n"
+            finally:
+                conn.close()
+                
+        return Response(stream_with_context(generate()), mimetype='application/x-jsonlines', headers={
+            'Content-Disposition': 'attachment; filename=audit_export.jsonl'
+        })
+    except Exception as e:
+        logger.error(f"Error exporting audit logs: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/statistics', methods=['GET'])
 @require_admin_auth
@@ -677,8 +783,33 @@ def get_admin_statistics():
             if provider.get('is_default'):
                 categories[category]['default'] = provider['name']
         
-        # Recent activity
-        recent_logs = sorted(admin_audit_logs, key=lambda x: x['timestamp'], reverse=True)[:10]
+        # Recent activity from database
+        recent_logs = []
+        from backend.db import get_db_connection
+        import psycopg2.extras
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                cur.execute("""
+                    SELECT a.id, a.action, a.resource_id, a.details, a.created_at, u.email 
+                    FROM admin_audit_log a 
+                    LEFT JOIN users u ON a.user_id = u.id 
+                    ORDER BY a.created_at DESC 
+                    LIMIT 10
+                """)
+                for row in cur.fetchall():
+                    details_data = row['details'] or {}
+                    recent_logs.append({
+                        'id': str(row['id']),
+                        'timestamp': row['created_at'].isoformat() if row['created_at'] else datetime.now().isoformat(),
+                        'user': details_data.get('email') or row['email'] or 'unknown',
+                        'action': row['action'],
+                        'provider_id': row['resource_id'] or 'all',
+                        'details': details_data.get('details_message') or '',
+                        'status': details_data.get('status') or 'success'
+                    })
+        finally:
+            conn.close()
         
         # Health summary
         health_scores = [m.get('health_score', 0) for m in admin_health_metrics.values()]
