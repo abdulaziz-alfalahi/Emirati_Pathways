@@ -32,25 +32,57 @@ load_dotenv('backend/.env')
 
 AUDIT_RETENTION_DAYS = 2555
 
+# ==============================================================================
+# H2 SECURITY NOTE & OPERATIONAL REQUIREMENT:
+# This script uses the DELETE path to remove expired rows from the append-only
+# table 'admin_audit_log'.
+# To bypass the append-only triggers, it temporarily disables them via:
+#   ALTER TABLE admin_audit_log DISABLE TRIGGER ...
+#
+# Because disabling triggers requires table ownership or superuser privileges
+# in PostgreSQL, the configured DB_MAINT_USER MUST be granted ownership of the
+# 'admin_audit_log' table:
+#   ALTER TABLE admin_audit_log OWNER TO <DB_MAINT_USER>;
+#
+# RESTRICTION: This script must ONLY be executed as a controlled automation
+# task (e.g. system cron job) running under this dedicated maintenance role,
+# and NOT by the regular web application connection pool (emirati_app).
+# ==============================================================================
+
 def get_maint_connection():
     """Establish connection using dedicated maintenance DB credentials."""
-    # Use DB_MAINT_USER if provided, else fall back to DB_USER
+    # Explicitly require maintenance environment variables; no default app fallbacks.
+    maint_user = os.environ.get('DB_MAINT_USER')
+    maint_password = os.environ.get('DB_MAINT_PASSWORD')
+    
+    if not maint_user or not maint_password:
+        logger.error("Database maintenance credentials (DB_MAINT_USER / DB_MAINT_PASSWORD) are not set in the environment.")
+        raise KeyError("Missing required DB_MAINT_USER or DB_MAINT_PASSWORD environment variables.")
+        
     db_config = {
         'host': os.getenv('DB_HOST', 'localhost'),
         'port': os.getenv('DB_PORT', '5432'),
         'database': os.getenv('DB_NAME', 'emirati_journey'),
-        'user': os.getenv('DB_MAINT_USER') or os.getenv('DB_USER', 'emirati_user'),
-        'password': os.getenv('DB_MAINT_PASSWORD') or os.getenv('DB_PASSWORD', 'emirati_secure_password')
+        'user': maint_user,
+        'password': maint_password
     }
     logger.info(f"Connecting to database as maintenance role: {db_config['user']}")
     return psycopg2.connect(**db_config)
 
 def sign_data(data_str: str) -> str:
-    """Compute HMAC-SHA256 signature for the archived data string."""
-    secret_key = os.getenv('ENCRYPTION_KEY') or os.getenv('JWT_SECRET_KEY', 'default-maint-secret')
+    """Compute HMAC-SHA256 signature for the archived data string using dedicated signing key."""
+    secret_key = os.environ.get('AUDIT_ARCHIVE_SIGNING_KEY')
+    if not secret_key:
+        logger.error("Audit archive signing key (AUDIT_ARCHIVE_SIGNING_KEY) is not set in the environment.")
+        raise KeyError("Missing required AUDIT_ARCHIVE_SIGNING_KEY environment variable.")
     return hmac.new(secret_key.encode('utf-8'), data_str.encode('utf-8'), hashlib.sha256).hexdigest()
 
 def run_purge(dry_run=False):
+    # Validate environment variables first to fail closed immediately (H1)
+    if not os.environ.get('AUDIT_ARCHIVE_SIGNING_KEY'):
+        logger.error("Audit archive signing key (AUDIT_ARCHIVE_SIGNING_KEY) is not set in the environment.")
+        raise KeyError("Missing required AUDIT_ARCHIVE_SIGNING_KEY environment variable.")
+
     logger.info(f"Starting retention purge process (dry_run={dry_run})...")
     cutoff_date = datetime.utcnow() - timedelta(days=AUDIT_RETENTION_DAYS)
     logger.info(f"Retention threshold date (7 years): {cutoff_date.isoformat()}")
