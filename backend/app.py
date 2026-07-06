@@ -202,8 +202,9 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # T4.1: short-lived
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
 app.config['JWT_COOKIE_SECURE'] = True
-app.config['JWT_COOKIE_SAMESITE'] = 'Lax'
-app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+app.config['JWT_REFRESH_COOKIE_SAMESITE'] = 'Strict'
+app.config['JWT_ACCESS_COOKIE_SAMESITE'] = 'Lax'
 
 jwt = JWTManager(app)
 
@@ -264,7 +265,7 @@ CORS(app, resources={
     r"/api/*": {
         "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-CSRF-Token", "X-CSRF-TOKEN"],
         "supports_credentials": True,
         "expose_headers": ["Authorization"]
     },

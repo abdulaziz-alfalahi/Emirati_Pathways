@@ -1,7 +1,7 @@
 // src/utils/api.ts
 import axios, { type AxiosInstance } from 'axios'
 import type { CV } from '@/types/cv'
-import { getAuthToken, clearAuthTokens } from '@/utils/tokenUtils'
+import { getAuthToken, clearAuthTokens, getCookie } from '@/utils/tokenUtils'
 
 /**
  * Base URLs (configure via Vite env):
@@ -25,11 +25,23 @@ export const restClient: AxiosInstance = axios.create({
   withCredentials: true,
 })
 
-// Add request interceptor to inject token
+// Add request interceptor to inject token and CSRF token
 restClient.interceptors.request.use((config) => {
   const token = getAuthToken();
   if (token && token !== 'cookie_authenticated') {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Ensure no legacy/inline headers send the placeholder or null/undefined values
+  if (config.headers.Authorization) {
+    const authHeader = String(config.headers.Authorization);
+    if (authHeader.includes('cookie_authenticated') || authHeader.includes('null') || authHeader.includes('undefined')) {
+      delete config.headers.Authorization;
+    }
+  }
+  // Add CSRF Token if present in cookies
+  const csrfToken = getCookie('csrf_access_token');
+  if (csrfToken) {
+    config.headers['X-CSRF-TOKEN'] = csrfToken;
   }
   return config;
 }, (error) => {

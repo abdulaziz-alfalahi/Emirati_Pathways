@@ -3,13 +3,13 @@
  * ================================
  * This component handles the redirect from the backend after UAE Pass authentication.
  * 
- * The backend redirects to:
- *   /auth/uaepass/callback#access_token=...&refresh_token=...&is_new_user=...&user_id=...&role=...
+ * Under Secure Cookie Delivery (T4.1), the backend delivers JWT tokens via Secure, 
+ * HttpOnly cookies and redirects to the frontend callback URL with search parameters.
  *
  * This component:
- *   1. Extracts tokens from the URL fragment (hash)
- *   2. Stores them in localStorage
- *   3. Fetches the full user profile from the backend
+ *   1. Extracts parameters (is_new_user, role, return_url) from window.location.search
+ *   2. Sets a placeholder token 'cookie_authenticated' in localStorage to satisfy existing guards
+ *   3. Fetches the full user profile from the backend (which automatically uses the secure cookies)
  *   4. Updates AuthContext
  *   5. Redirects to the appropriate dashboard (or /welcome for new users)
  */

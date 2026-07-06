@@ -274,3 +274,64 @@ class TestFindOrCreateUser:
         # Verify connection committed
         mock_conn.commit.assert_called_once()
 
+
+# ── Unit: UAE Pass OIDC Validation ──────────────────────────────────
+
+@pytest.mark.unit
+class TestUAEPassOIDCValidation:
+    """Verify OIDC signature, nonce, and JWKS validation behavior."""
+
+    @patch("jwt.PyJWKClient")
+    def test_verify_id_token_fails_on_jwt_error(self, mock_jwk_client_class):
+        """Should raise UAEPassError if token format is completely invalid."""
+        from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassError
+        oauth = UAEPassOAuth()
+        
+        with pytest.raises(UAEPassError) as exc:
+            oauth.verify_id_token("completely-invalid-token", "some-nonce")
+        assert "validation failed" in str(exc.value).lower()
+
+    @patch("jwt.PyJWKClient")
+    @patch("jwt.decode")
+    def test_verify_id_token_checks_signature_and_nonce(self, mock_jwt_decode, mock_jwk_client_class):
+        """Should call PyJWKClient and verify signature and nonce, succeeding only if nonce matches."""
+        from backend.auth.uaepass_oauth import UAEPassOAuth, UAEPassError
+        oauth = UAEPassOAuth()
+        
+        # Setup mocks
+        mock_jwk_client = MagicMock()
+        mock_signing_key = MagicMock()
+        mock_signing_key.key = "mock-pub-key"
+        mock_jwk_client.get_signing_key_from_jwt.return_value = mock_signing_key
+        mock_jwk_client_class.return_value = mock_jwk_client
+        
+        # Mock decode returns expected claims but with wrong nonce
+        mock_jwt_decode.return_value = {
+            "iss": "https://stg-id.uaepass.ae",
+            "aud": oauth.config.client_id,
+            "nonce": "wrong-nonce"
+        }
+        
+        # 1. Nonce mismatch should raise UAEPassError
+        with pytest.raises(UAEPassError) as exc:
+            oauth.verify_id_token("mock-token", "expected-nonce")
+        assert "nonce mismatch" in str(exc.value).lower()
+        
+        # 2. Nonce match should succeed
+        mock_jwt_decode.return_value = {
+            "iss": "https://stg-id.uaepass.ae",
+            "aud": oauth.config.client_id,
+            "nonce": "expected-nonce"
+        }
+        claims = oauth.verify_id_token("mock-token", "expected-nonce")
+        assert claims["nonce"] == "expected-nonce"
+        mock_jwt_decode.assert_called_with(
+            "mock-token",
+            "mock-pub-key",
+            algorithms=["RS256"],
+            audience=oauth.config.client_id,
+            issuer="https://stg-id.uaepass.ae",
+            options={"verify_signature": True}
+        )
+
+

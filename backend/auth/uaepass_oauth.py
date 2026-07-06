@@ -280,27 +280,17 @@ class UAEPassOAuth:
         jwks_uri = f"{self.config.base_url}/idshub/keys" if env != 'production' else f"{self.config.base_url}/idp/keys"
         
         try:
-            is_testing = os.getenv('FLASK_ENV', 'production') != 'production'
+            jwk_client = PyJWKClient(jwks_uri)
+            signing_key = jwk_client.get_signing_key_from_jwt(id_token)
             
-            try:
-                jwk_client = PyJWKClient(jwks_uri)
-                signing_key = jwk_client.get_signing_key_from_jwt(id_token)
-                
-                decoded_claims = jwt.decode(
-                    id_token,
-                    signing_key.key,
-                    algorithms=["RS256"],
-                    audience=self.config.client_id,
-                    issuer=expected_iss,
-                    options={"verify_signature": True}
-                )
-            except Exception as jwks_err:
-                if is_testing:
-                    verify_opts = {}
-                    verify_opts["verify_" + "signature"] = False
-                    decoded_claims = jwt.decode(id_token, options=verify_opts)
-                else:
-                    raise UAEPassError(f"OIDC ID Token signature validation failed: {jwks_err}")
+            decoded_claims = jwt.decode(
+                id_token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=self.config.client_id,
+                issuer=expected_iss,
+                options={"verify_signature": True}
+            )
             
             nonce_in_token = decoded_claims.get('nonce')
             if not nonce_in_token or nonce_in_token != expected_nonce:

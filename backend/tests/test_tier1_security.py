@@ -165,16 +165,25 @@ class TestJWTSignatureVerification:
             f"Forged token accepted! Status {resp.status_code}"
 
     def test_no_verify_signature_false_in_source(self):
-        """T1.3: No verify_signature=False should remain in backend source."""
+        """T1.3: No verify_signature=False or obfuscated bypasses should remain in backend source."""
         import subprocess
         result = subprocess.run(
-            ['git', 'grep', '-n', 'verify_signature.*False', '--', 'backend'],
+            ['git', 'grep', '-nE', 'verify_.?.?signature|verify_opts', '--', 'backend'],
             capture_output=True, text=True,
             cwd=os.path.join(os.path.dirname(__file__), '..', '..')
         )
-        lines = [l for l in result.stdout.strip().split('\n') if l and 'tests/' not in l]
+        # Exclude this test itself and lookups that are secure assertions or comments
+        lines = []
+        for l in result.stdout.strip().split('\n'):
+            if not l or 'tests/' in l:
+                continue
+            # We want to match options={"verify_signature": True} but raise on anything setting it to False/obfuscating
+            if 'options={"verify_signature": True}' in l or 'options={"verify_signature": True}' in l:
+                continue
+            lines.append(l)
+            
         assert len(lines) == 0, \
-            f"verify_signature=False still found:\n" + "\n".join(lines)
+            f"verify_signature bypass / obfuscation still found:\n" + "\n".join(lines)
 
 
 # =====================================================
@@ -319,3 +328,33 @@ class TestSecurityHeaders:
         )
         count = int(result.stdout.strip()) if result.stdout.strip() else 0
         assert count > 0, "HSTS not found in nginx.conf"
+
+
+# =====================================================
+# T4.1 — JWT CSRF protection
+# =====================================================
+
+class TestJWTCSRFProtection:
+    """Verify that cookie-based JWT requests require CSRF token headers."""
+
+    def test_cookie_mutating_request_without_csrf_is_rejected(self, app, client):
+        """Mutating request (POST/PUT/DELETE) using cookie auth without X-CSRF-TOKEN header should fail (401)."""
+        from flask_jwt_extended import create_access_token, get_csrf_token
+        
+        # Set access cookie in the test client using a valid JWT
+        with app.app_context():
+            token = create_access_token(identity="784000000000001")
+            csrf_token = get_csrf_token(token)
+            
+        client.set_cookie(key='access_token_cookie', value=token, domain='localhost')
+        
+        # 1. POST request without CSRF header -> should be rejected with 401
+        resp = client.post('/api/auth/consents', json={"consent_type": "terms", "granted": True}, base_url="https://localhost")
+        assert resp.status_code == 401
+        
+        # 2. POST request with correct CSRF header -> should pass authentication (not 401)
+        headers = {"X-CSRF-TOKEN": csrf_token}
+        resp_with_csrf = client.post('/api/auth/consents', json={"consent_type": "terms", "granted": True}, headers=headers, base_url="https://localhost")
+        # Since it is authenticated, it should either be 200 (success) or database error / other code, but NOT 401!
+        assert resp_with_csrf.status_code != 401
+
