@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { CollaborativeAssessment, AssessmentCollaborator, CollaboratorRole, CollaboratorPermissions, CollaborativeAssessmentStatus } from '@/types/collaborativeAssessments';
 
 export const createCollaborativeAssessment = async (assessment: Omit<CollaborativeAssessment, 'id' | 'created_at' | 'updated_at'>) => {

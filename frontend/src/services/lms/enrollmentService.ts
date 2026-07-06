@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { BaseLMSService } from './baseLMSService';
 import type { CourseEnrollment, LessonProgress } from '@/types/lms';
 
@@ -26,7 +24,7 @@ export class EnrollmentService extends BaseLMSService {
 
   async getUserEnrollments(): Promise<CourseEnrollment[]> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
 
       const { data, error } = await supabase
@@ -75,7 +73,7 @@ export class EnrollmentService extends BaseLMSService {
 
   async getUserLessonProgress(enrollmentId: string): Promise<LessonProgress[]> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
 
       const { data, error } = await supabase

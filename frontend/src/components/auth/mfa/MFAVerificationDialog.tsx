@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Shield, Smartphone, KeyRound, AlertTriangle } from 'lucide-react';
 import { MFAFactor, MFAChallenge } from '@/types/mfa';
 
@@ -67,7 +66,7 @@ export const MFAVerificationDialog: React.FC<MFAVerificationDialogProps> = ({
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.mfa.verify({
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.verify({
         factorId: selectedFactor.id,
         challengeId: challenge.id,
         code: verificationCode
@@ -113,7 +112,7 @@ export const MFAVerificationDialog: React.FC<MFAVerificationDialogProps> = ({
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.mfa.challenge({
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.challenge({
         factorId: selectedFactor.id
       });
 

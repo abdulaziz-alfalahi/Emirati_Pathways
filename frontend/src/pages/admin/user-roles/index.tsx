@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types/auth';
 import Layout from '@/components/layout/Layout';
@@ -73,7 +72,7 @@ const UserRolesAdminPage: React.FC = React.memo(() => {
       setLoading(true);
       
       // Fetch all users from the edge function
-      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-all-users');
+      // TODO: Connect to Flask API - const { data: usersData, error: usersError } = await supabase.functions.invoke('get-all-users');
       
       if (usersError) {
         throw usersError;
@@ -140,7 +139,7 @@ const UserRolesAdminPage: React.FC = React.memo(() => {
     try {
       setProcessingUserId(userId);
 
-      const { error } = await supabase.functions.invoke('assign-user-role', {
+      // TODO: Connect to Flask API - const { error } = await supabase.functions.invoke('assign-user-role', {
         body: { userId, role }
       });
 

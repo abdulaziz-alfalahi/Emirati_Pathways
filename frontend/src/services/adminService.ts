@@ -2,7 +2,7 @@
 // Handles all admin-related API calls to the backend
 import { getAuthToken } from '@/utils/tokenUtils';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface PlatformOverview {
   total_users: number;

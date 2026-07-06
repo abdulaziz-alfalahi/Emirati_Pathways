@@ -1,6 +1,3 @@
-
-import { Json } from '@/integrations/supabase/types';
-
 export type CollaboratorRole = 'owner' | 'trainer' | 'mentor' | 'employer_admin' | 'evaluator' | 'viewer';
 
 export type AssessmentTemplateStatus = 'draft' | 'published' | 'archived';
@@ -15,7 +12,7 @@ export interface AssessmentTemplate {
   status: AssessmentTemplateStatus;
   category: string;
   sections: AssessmentSection[];
-  scoring_criteria: Json;
+  scoring_criteria: any;
   estimated_duration_minutes?: number;
   is_public: boolean;
   tags?: string[];
@@ -57,7 +54,7 @@ export interface CollaborativeAssessment {
   status: CollaborativeAssessmentStatus;
   due_date?: string;
   instructions?: string;
-  metadata?: Json;
+  metadata?: any;
   created_at: string;
   updated_at: string;
   template?: AssessmentTemplate;

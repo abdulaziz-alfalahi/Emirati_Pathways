@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 /**
  * Optimized assessment service to resolve N+1 query problems
  * Uses RPC functions and optimized queries for efficient data fetching

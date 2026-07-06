@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 export interface CareerPath {
   id: string;
   title: string;

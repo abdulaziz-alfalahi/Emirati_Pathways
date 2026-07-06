@@ -1,5 +1,3 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { auditLogger } from "./auditLogger";
 import { smartContractService } from "./smartContractService";
 

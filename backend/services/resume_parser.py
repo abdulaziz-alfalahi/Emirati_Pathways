@@ -203,8 +203,7 @@ OUTPUT (return ONLY valid JSON)
         "nationality": "",
         "location": "",
         "address": "",
-        "linkedin": "",
-        "emirates_id": ""
+        "linkedin": ""
     }},
     "professional_summary": "",
     "highest_nqf_level": null,

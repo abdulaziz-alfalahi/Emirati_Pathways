@@ -8,8 +8,6 @@ import { Linkedin } from 'lucide-react';
 import { ResumeData } from '../types';
 import { toast } from 'sonner';
 import { processLinkedInProfile, mergeResumeData } from './importUtils';
-import { supabase } from '@/integrations/supabase/client';
-
 interface LinkedInImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -67,7 +65,7 @@ const LinkedInImportDialog: React.FC<LinkedInImportDialogProps> = ({
 
   const handleLinkedInAuth = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'linkedin_oidc',
         options: {
           redirectTo: `${window.location.origin}/resume-builder?linkedin_auth=true`,

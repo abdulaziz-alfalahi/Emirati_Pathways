@@ -1,0 +1,1517 @@
+{
+  "registered": {
+    "total": 3054,
+    "gender": [
+      {
+        "name": "Female",
+        "value": 1956
+      },
+      {
+        "name": "Male",
+        "value": 1098
+      }
+    ],
+    "age_group": [
+      {
+        "name": "18-23",
+        "value": 1552
+      },
+      {
+        "name": "24-35",
+        "value": 811
+      },
+      {
+        "name": "36-45",
+        "value": 412
+      },
+      {
+        "name": "46-60",
+        "value": 279
+      }
+    ],
+    "education": [
+      {
+        "name": "HighSchool",
+        "value": 1537
+      },
+      {
+        "name": "University",
+        "value": 923
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 507
+      },
+      {
+        "name": "Diploma",
+        "value": 87
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 2427
+      },
+      {
+        "name": "No work experience",
+        "value": 279
+      },
+      {
+        "name": "1-2 Years",
+        "value": 100
+      },
+      {
+        "name": "3-5 Years",
+        "value": 76
+      },
+      {
+        "name": "6-10 Years",
+        "value": 72
+      },
+      {
+        "name": "11-15 Years",
+        "value": 55
+      },
+      {
+        "name": "16+ Years",
+        "value": 45
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 2665
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 189
+      },
+      {
+        "name": "Sharjah",
+        "value": 80
+      },
+      {
+        "name": "Ajman",
+        "value": 49
+      },
+      {
+        "name": "Ras Al Khaimah",
+        "value": 41
+      },
+      {
+        "name": "Fujairah",
+        "value": 19
+      },
+      {
+        "name": "Umm Al Quwain",
+        "value": 11
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 1242
+      },
+      {
+        "name": "Completed",
+        "value": 350
+      },
+      {
+        "name": "Exempted",
+        "value": 152
+      },
+      {
+        "name": "Not Yet Joined",
+        "value": 47
+      },
+      {
+        "name": "In Service",
+        "value": 27
+      }
+    ],
+    "marital": [
+      {
+        "name": "Single",
+        "value": 2002
+      },
+      {
+        "name": "Married",
+        "value": 923
+      },
+      {
+        "name": "Divorced",
+        "value": 119
+      },
+      {
+        "name": "Widowed",
+        "value": 8
+      },
+      {
+        "name": "Not defined",
+        "value": 2
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 1848
+      },
+      {
+        "name": "Working",
+        "value": 457
+      },
+      {
+        "name": "Retired",
+        "value": 29
+      }
+    ]
+  },
+  "active": {
+    "total": 1514,
+    "gender": [
+      {
+        "name": "Female",
+        "value": 1067
+      },
+      {
+        "name": "Male",
+        "value": 447
+      }
+    ],
+    "age_group": [
+      {
+        "name": "18-23",
+        "value": 638
+      },
+      {
+        "name": "24-35",
+        "value": 417
+      },
+      {
+        "name": "36-45",
+        "value": 287
+      },
+      {
+        "name": "46-60",
+        "value": 172
+      }
+    ],
+    "education": [
+      {
+        "name": "HighSchool",
+        "value": 715
+      },
+      {
+        "name": "University",
+        "value": 512
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 243
+      },
+      {
+        "name": "Diploma",
+        "value": 44
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 1178
+      },
+      {
+        "name": "No work experience",
+        "value": 135
+      },
+      {
+        "name": "1-2 Years",
+        "value": 46
+      },
+      {
+        "name": "3-5 Years",
+        "value": 46
+      },
+      {
+        "name": "6-10 Years",
+        "value": 41
+      },
+      {
+        "name": "11-15 Years",
+        "value": 39
+      },
+      {
+        "name": "16+ Years",
+        "value": 29
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 1277
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 121
+      },
+      {
+        "name": "Sharjah",
+        "value": 47
+      },
+      {
+        "name": "Ras Al Khaimah",
+        "value": 25
+      },
+      {
+        "name": "Ajman",
+        "value": 24
+      },
+      {
+        "name": "Fujairah",
+        "value": 14
+      },
+      {
+        "name": "Umm Al Quwain",
+        "value": 6
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 1059
+      },
+      {
+        "name": "Completed",
+        "value": 257
+      },
+      {
+        "name": "Exempted",
+        "value": 121
+      },
+      {
+        "name": "Not Yet Joined",
+        "value": 35
+      },
+      {
+        "name": "In Service",
+        "value": 20
+      }
+    ],
+    "marital": [
+      {
+        "name": "Single",
+        "value": 863
+      },
+      {
+        "name": "Married",
+        "value": 568
+      },
+      {
+        "name": "Divorced",
+        "value": 77
+      },
+      {
+        "name": "Widowed",
+        "value": 4
+      },
+      {
+        "name": "Not defined",
+        "value": 2
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 1514
+      }
+    ]
+  },
+  "age_distribution": [
+    {
+      "group": "24-35",
+      "male": 321,
+      "female": 490
+    },
+    {
+      "group": "36-45",
+      "male": 140,
+      "female": 272
+    },
+    {
+      "group": "46-60",
+      "male": 69,
+      "female": 210
+    },
+    {
+      "group": "18-23",
+      "male": 568,
+      "female": 984
+    }
+  ],
+  "regional_spread": [
+    {
+      "emirate": "Dubai",
+      "candidates": 2665
+    },
+    {
+      "emirate": "Ajman",
+      "candidates": 49
+    },
+    {
+      "emirate": "Abu Dhabi",
+      "candidates": 189
+    },
+    {
+      "emirate": "Fujairah",
+      "candidates": 19
+    },
+    {
+      "emirate": "Ras Al Khaimah",
+      "candidates": 41
+    },
+    {
+      "emirate": "Sharjah",
+      "candidates": 80
+    },
+    {
+      "emirate": "Umm Al Quwain",
+      "candidates": 11
+    }
+  ],
+  "education_levels": [
+    {
+      "level": "University",
+      "employed": 137,
+      "seeking": 621
+    },
+    {
+      "level": "HighSchool",
+      "employed": 251,
+      "seeking": 889
+    },
+    {
+      "level": "BelowHighSchool",
+      "employed": 59,
+      "seeking": 282
+    },
+    {
+      "level": "Diploma",
+      "employed": 10,
+      "seeking": 56
+    }
+  ],
+  "priority_1st": {
+    "total": 337,
+    "gender": [
+      {
+        "name": "Female",
+        "value": 187
+      },
+      {
+        "name": "Male",
+        "value": 150
+      }
+    ],
+    "age_group": [
+      {
+        "name": "24-35",
+        "value": 237
+      },
+      {
+        "name": "36-45",
+        "value": 54
+      },
+      {
+        "name": "18-23",
+        "value": 46
+      }
+    ],
+    "education": [
+      {
+        "name": "University",
+        "value": 180
+      },
+      {
+        "name": "HighSchool",
+        "value": 111
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 38
+      },
+      {
+        "name": "Diploma",
+        "value": 8
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 199
+      },
+      {
+        "name": "No work experience",
+        "value": 55
+      },
+      {
+        "name": "3-5 Years",
+        "value": 27
+      },
+      {
+        "name": "1-2 Years",
+        "value": 26
+      },
+      {
+        "name": "6-10 Years",
+        "value": 21
+      },
+      {
+        "name": "11-15 Years",
+        "value": 8
+      },
+      {
+        "name": "16+ Years",
+        "value": 1
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 289
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 33
+      },
+      {
+        "name": "Sharjah",
+        "value": 9
+      },
+      {
+        "name": "Ajman",
+        "value": 2
+      },
+      {
+        "name": "Ras Al Khaimah",
+        "value": 2
+      },
+      {
+        "name": "Umm Al Quwain",
+        "value": 1
+      },
+      {
+        "name": "Fujairah",
+        "value": 1
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 186
+      },
+      {
+        "name": "Completed",
+        "value": 91
+      },
+      {
+        "name": "Exempted",
+        "value": 37
+      },
+      {
+        "name": "Not Yet Joined",
+        "value": 8
+      },
+      {
+        "name": "In Service",
+        "value": 6
+      }
+    ],
+    "marital": [
+      {
+        "name": "Single",
+        "value": 185
+      },
+      {
+        "name": "Married",
+        "value": 128
+      },
+      {
+        "name": "Divorced",
+        "value": 22
+      },
+      {
+        "name": "Widowed",
+        "value": 2
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 337
+      }
+    ]
+  },
+  "priority_2nd": {
+    "total": 122,
+    "gender": [
+      {
+        "name": "Male",
+        "value": 62
+      },
+      {
+        "name": "Female",
+        "value": 60
+      }
+    ],
+    "age_group": [
+      {
+        "name": "36-45",
+        "value": 69
+      },
+      {
+        "name": "46-60",
+        "value": 53
+      }
+    ],
+    "education": [
+      {
+        "name": "University",
+        "value": 47
+      },
+      {
+        "name": "HighSchool",
+        "value": 38
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 31
+      },
+      {
+        "name": "Diploma",
+        "value": 6
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 67
+      },
+      {
+        "name": "16+ Years",
+        "value": 19
+      },
+      {
+        "name": "11-15 Years",
+        "value": 18
+      },
+      {
+        "name": "6-10 Years",
+        "value": 9
+      },
+      {
+        "name": "3-5 Years",
+        "value": 5
+      },
+      {
+        "name": "No work experience",
+        "value": 2
+      },
+      {
+        "name": "1-2 Years",
+        "value": 2
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 107
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 10
+      },
+      {
+        "name": "Ras Al Khaimah",
+        "value": 2
+      },
+      {
+        "name": "Ajman",
+        "value": 2
+      },
+      {
+        "name": "Sharjah",
+        "value": 1
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 60
+      },
+      {
+        "name": "Exempted",
+        "value": 35
+      },
+      {
+        "name": "Completed",
+        "value": 24
+      }
+    ],
+    "marital": [
+      {
+        "name": "Married",
+        "value": 78
+      },
+      {
+        "name": "Single",
+        "value": 27
+      },
+      {
+        "name": "Divorced",
+        "value": 17
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 122
+      }
+    ]
+  },
+  "priority_3rd": {
+    "total": 91,
+    "gender": [
+      {
+        "name": "Female",
+        "value": 52
+      },
+      {
+        "name": "Male",
+        "value": 39
+      }
+    ],
+    "age_group": [
+      {
+        "name": "18-23",
+        "value": 91
+      }
+    ],
+    "education": [
+      {
+        "name": "HighSchool",
+        "value": 60
+      },
+      {
+        "name": "University",
+        "value": 18
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 11
+      },
+      {
+        "name": "Diploma",
+        "value": 2
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 85
+      },
+      {
+        "name": "No work experience",
+        "value": 6
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 81
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 4
+      },
+      {
+        "name": "Sharjah",
+        "value": 3
+      },
+      {
+        "name": "Fujairah",
+        "value": 1
+      },
+      {
+        "name": "Umm Al Quwain",
+        "value": 1
+      },
+      {
+        "name": "Ras Al Khaimah",
+        "value": 1
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 53
+      },
+      {
+        "name": "Completed",
+        "value": 26
+      },
+      {
+        "name": "Exempted",
+        "value": 7
+      },
+      {
+        "name": "Not Yet Joined",
+        "value": 3
+      },
+      {
+        "name": "In Service",
+        "value": 2
+      }
+    ],
+    "marital": [
+      {
+        "name": "Single",
+        "value": 87
+      },
+      {
+        "name": "Married",
+        "value": 4
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 91
+      }
+    ]
+  },
+  "hatta": {
+    "total": 62,
+    "gender": [
+      {
+        "name": "Female",
+        "value": 52
+      },
+      {
+        "name": "Male",
+        "value": 10
+      }
+    ],
+    "age_group": [
+      {
+        "name": "18-23",
+        "value": 29
+      },
+      {
+        "name": "24-35",
+        "value": 21
+      },
+      {
+        "name": "36-45",
+        "value": 12
+      }
+    ],
+    "education": [
+      {
+        "name": "HighSchool",
+        "value": 28
+      },
+      {
+        "name": "University",
+        "value": 24
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 6
+      },
+      {
+        "name": "Diploma",
+        "value": 4
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 50
+      },
+      {
+        "name": "No work experience",
+        "value": 10
+      },
+      {
+        "name": "11-15 Years",
+        "value": 1
+      },
+      {
+        "name": "3-5 Years",
+        "value": 1
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 62
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 52
+      },
+      {
+        "name": "Completed",
+        "value": 7
+      },
+      {
+        "name": "Exempted",
+        "value": 2
+      }
+    ],
+    "marital": [
+      {
+        "name": "Single",
+        "value": 39
+      },
+      {
+        "name": "Married",
+        "value": 21
+      },
+      {
+        "name": "Divorced",
+        "value": 2
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 62
+      }
+    ]
+  },
+  "cda": {
+    "total": 62,
+    "gender": [
+      {
+        "name": "Male",
+        "value": 45
+      },
+      {
+        "name": "Female",
+        "value": 17
+      }
+    ],
+    "age_group": [
+      {
+        "name": "24-35",
+        "value": 28
+      },
+      {
+        "name": "36-45",
+        "value": 19
+      },
+      {
+        "name": "46-60",
+        "value": 3
+      },
+      {
+        "name": "18-23",
+        "value": 3
+      }
+    ],
+    "education": [
+      {
+        "name": "HighSchool",
+        "value": 34
+      },
+      {
+        "name": "University",
+        "value": 12
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 10
+      },
+      {
+        "name": "Diploma",
+        "value": 2
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 23
+      },
+      {
+        "name": "Not Specified",
+        "value": 15
+      },
+      {
+        "name": "No work experience",
+        "value": 7
+      },
+      {
+        "name": "6-10 Years",
+        "value": 4
+      },
+      {
+        "name": "11-15 Years",
+        "value": 4
+      },
+      {
+        "name": "3-5 Years",
+        "value": 3
+      },
+      {
+        "name": "1",
+        "value": 2
+      },
+      {
+        "name": "1-2 Years",
+        "value": 1
+      },
+      {
+        "name": "2",
+        "value": 1
+      },
+      {
+        "name": "18",
+        "value": 1
+      },
+      {
+        "name": "5",
+        "value": 1
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 48
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 2
+      },
+      {
+        "name": "Umm Al Quwain",
+        "value": 1
+      },
+      {
+        "name": "Sharjah",
+        "value": 1
+      }
+    ],
+    "military": [
+      {
+        "name": "Completed",
+        "value": 21
+      },
+      {
+        "name": "Not Required \"Female\"",
+        "value": 16
+      },
+      {
+        "name": "Exempted",
+        "value": 12
+      },
+      {
+        "name": "In Service",
+        "value": 2
+      },
+      {
+        "name": "Not Yet Joined",
+        "value": 1
+      }
+    ],
+    "marital": [
+      {
+        "name": "Married",
+        "value": 24
+      },
+      {
+        "name": "Single",
+        "value": 15
+      },
+      {
+        "name": "Divorced",
+        "value": 13
+      },
+      {
+        "name": "Not defined",
+        "value": 10
+      }
+    ],
+    "employment": [
+      {
+        "name": "Not Working",
+        "value": 38
+      },
+      {
+        "name": "Working",
+        "value": 20
+      },
+      {
+        "name": "Retired",
+        "value": 1
+      }
+    ]
+  },
+  "gdo": {
+    "total": 12,
+    "gender": [
+      {
+        "name": "Male",
+        "value": 10
+      },
+      {
+        "name": "Female",
+        "value": 2
+      }
+    ],
+    "age_group": [
+      {
+        "name": "24-35",
+        "value": 4
+      },
+      {
+        "name": "36-45",
+        "value": 4
+      },
+      {
+        "name": "18-23",
+        "value": 1
+      },
+      {
+        "name": "46-60",
+        "value": 1
+      }
+    ],
+    "education": [
+      {
+        "name": "University",
+        "value": 4
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 1
+      },
+      {
+        "name": "HighSchool",
+        "value": 1
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not Specified",
+        "value": 3
+      },
+      {
+        "name": "6-10 Years",
+        "value": 2
+      },
+      {
+        "name": "Not defined",
+        "value": 2
+      },
+      {
+        "name": "No work experience",
+        "value": 1
+      },
+      {
+        "name": "16+ Years",
+        "value": 1
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 10
+      },
+      {
+        "name": "Dubai ",
+        "value": 1
+      },
+      {
+        "name": "DUBAI",
+        "value": 1
+      }
+    ],
+    "military": [
+      {
+        "name": "Exempted",
+        "value": 6
+      },
+      {
+        "name": "Completed",
+        "value": 4
+      },
+      {
+        "name": "Not Required \"Female\"",
+        "value": 2
+      }
+    ],
+    "marital": [
+      {
+        "name": "Married",
+        "value": 7
+      },
+      {
+        "name": "Single",
+        "value": 5
+      }
+    ],
+    "employment": [
+      {
+        "name": "Working",
+        "value": 8
+      },
+      {
+        "name": "Not Working",
+        "value": 4
+      }
+    ]
+  },
+  "no_answer": {
+    "total": 720,
+    "gender": [
+      {
+        "name": "Female",
+        "value": 451
+      },
+      {
+        "name": "Male",
+        "value": 269
+      }
+    ],
+    "age_group": [
+      {
+        "name": "18-23",
+        "value": 453
+      },
+      {
+        "name": "24-35",
+        "value": 171
+      },
+      {
+        "name": "36-45",
+        "value": 58
+      },
+      {
+        "name": "46-60",
+        "value": 38
+      }
+    ],
+    "education": [
+      {
+        "name": "HighSchool",
+        "value": 385
+      },
+      {
+        "name": "University",
+        "value": 157
+      },
+      {
+        "name": "BelowHighSchool",
+        "value": 157
+      },
+      {
+        "name": "Diploma",
+        "value": 21
+      }
+    ],
+    "experience": [
+      {
+        "name": "Not defined",
+        "value": 618
+      },
+      {
+        "name": "No work experience",
+        "value": 54
+      },
+      {
+        "name": "1-2 Years",
+        "value": 23
+      },
+      {
+        "name": "3-5 Years",
+        "value": 11
+      },
+      {
+        "name": "6-10 Years",
+        "value": 8
+      },
+      {
+        "name": "11-15 Years",
+        "value": 4
+      },
+      {
+        "name": "16+ Years",
+        "value": 2
+      }
+    ],
+    "location": [
+      {
+        "name": "Dubai",
+        "value": 649
+      },
+      {
+        "name": "Abu Dhabi",
+        "value": 32
+      },
+      {
+        "name": "Sharjah",
+        "value": 15
+      },
+      {
+        "name": "Ajman",
+        "value": 11
+      },
+      {
+        "name": "Ras Al Khaimah",
+        "value": 9
+      },
+      {
+        "name": "Umm Al Quwain",
+        "value": 2
+      },
+      {
+        "name": "Fujairah",
+        "value": 2
+      }
+    ],
+    "military": [
+      {
+        "name": "Not Required \"Female\"",
+        "value": 1
+      },
+      {
+        "name": "In Service",
+        "value": 1
+      }
+    ],
+    "marital": [
+      {
+        "name": "Single",
+        "value": 563
+      },
+      {
+        "name": "Married",
+        "value": 141
+      },
+      {
+        "name": "Divorced",
+        "value": 16
+      }
+    ],
+    "employment": []
+  },
+  "growth": {
+    "total_added": 10603,
+    "total_removed": 1520,
+    "weekly": [
+      {
+        "date": "",
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "date": "",
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "date": "",
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "date": "",
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "date": "",
+        "added": 0,
+        "removed": 0
+      },
+      {
+        "date": "",
+        "added": 0,
+        "removed": 0
+      }
+    ],
+    "historical_js_trends": [
+      {
+        "month": "Jul'24",
+        "total_js": 0,
+        "active_js": 2582
+      },
+      {
+        "month": "Aug'24",
+        "total_js": 0,
+        "active_js": 3026
+      },
+      {
+        "month": "Sep'24",
+        "total_js": 0,
+        "active_js": 3233
+      },
+      {
+        "month": "Oct'24",
+        "total_js": 0,
+        "active_js": 3266
+      },
+      {
+        "month": "Nov'24",
+        "total_js": 0,
+        "active_js": 3003
+      },
+      {
+        "month": "Dec'24",
+        "total_js": 0,
+        "active_js": 2372
+      },
+      {
+        "month": "Jan'25",
+        "total_js": 0,
+        "active_js": 2487
+      },
+      {
+        "month": "Feb'25",
+        "total_js": 0,
+        "active_js": 2631
+      },
+      {
+        "month": "Mar'25",
+        "total_js": 0,
+        "active_js": 2561
+      },
+      {
+        "month": "Apr'25",
+        "total_js": 0,
+        "active_js": 2783
+      },
+      {
+        "month": "May'25",
+        "total_js": 0,
+        "active_js": 2792
+      },
+      {
+        "month": "Jun'25",
+        "total_js": 0,
+        "active_js": 2455
+      },
+      {
+        "month": "Jul'25",
+        "total_js": 0,
+        "active_js": 2527
+      },
+      {
+        "month": "Aug'25",
+        "total_js": 0,
+        "active_js": 3336
+      },
+      {
+        "month": "Sep'25",
+        "total_js": 0,
+        "active_js": 3514
+      },
+      {
+        "month": "Oct'25",
+        "total_js": 0,
+        "active_js": 3473
+      },
+      {
+        "month": "Nov'25",
+        "total_js": 0,
+        "active_js": 3133
+      }
+    ]
+  },
+  "rapid_nomination": [
+    {
+      "month": "Sep'24",
+      "companies": 21,
+      "vacancies": 180,
+      "nominated": 759,
+      "interested": 379
+    },
+    {
+      "month": "Oct'24",
+      "companies": 28,
+      "vacancies": 200,
+      "nominated": 657,
+      "interested": 328
+    },
+    {
+      "month": "Nov'24",
+      "companies": 9,
+      "vacancies": 62,
+      "nominated": 326,
+      "interested": 108
+    },
+    {
+      "month": "Dec'24",
+      "companies": 12,
+      "vacancies": 87,
+      "nominated": 439,
+      "interested": 152
+    },
+    {
+      "month": "Jan'25",
+      "companies": 10,
+      "vacancies": 74,
+      "nominated": 422,
+      "interested": 183
+    },
+    {
+      "month": "Feb'25",
+      "companies": 7,
+      "vacancies": 101,
+      "nominated": 330,
+      "interested": 120
+    },
+    {
+      "month": "Mar'25",
+      "companies": 11,
+      "vacancies": 83,
+      "nominated": 250,
+      "interested": 76
+    },
+    {
+      "month": "Apr'25",
+      "companies": 8,
+      "vacancies": 38,
+      "nominated": 314,
+      "interested": 132
+    },
+    {
+      "month": "May'25",
+      "companies": 7,
+      "vacancies": 59,
+      "nominated": 174,
+      "interested": 111
+    },
+    {
+      "month": "Jun'25",
+      "companies": 10,
+      "vacancies": 46,
+      "nominated": 511,
+      "interested": 316
+    },
+    {
+      "month": "Jul'25",
+      "companies": 13,
+      "vacancies": 90,
+      "nominated": 426,
+      "interested": 194
+    }
+  ],
+  "initiatives_totals": {
+    "hatta": 62,
+    "cda": 62,
+    "gdo": 12
+  }
+}

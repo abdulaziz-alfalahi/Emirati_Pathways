@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import type {
   VirtualEvent,
   VirtualBooth,
@@ -65,7 +63,7 @@ export class VirtualEventsService {
   }
 
   static async createEvent(eventData: CreateEventData): Promise<VirtualEvent> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -104,7 +102,7 @@ export class VirtualEventsService {
 
   // Registration Management
   static async registerForEvent(eventId: string, registrationData?: Record<string, any>): Promise<EventRegistration> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -136,7 +134,7 @@ export class VirtualEventsService {
   }
 
   static async getUserRegistration(eventId: string): Promise<EventRegistration | null> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
 
     const { data, error } = await supabase
@@ -151,7 +149,7 @@ export class VirtualEventsService {
   }
 
   static async checkInToEvent(eventId: string): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { error } = await supabase
@@ -194,7 +192,7 @@ export class VirtualEventsService {
   }
 
   static async visitBooth(boothId: string): Promise<BoothVisit> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Get user's event registration
@@ -275,7 +273,7 @@ export class VirtualEventsService {
   }
 
   static async registerForSession(sessionId: string): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Get session and event registration
@@ -325,7 +323,7 @@ export class VirtualEventsService {
     recipientId: string,
     message?: string
   ): Promise<NetworkingConnection> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -344,7 +342,7 @@ export class VirtualEventsService {
   }
 
   static async getNetworkingConnections(eventId: string): Promise<NetworkingConnection[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase

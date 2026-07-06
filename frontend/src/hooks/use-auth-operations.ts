@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { UserRole } from '@/types/auth';
 
@@ -11,7 +9,7 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
       setIsLoading(true);
       console.log('Attempting to sign in with:', email);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -60,7 +58,7 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
       
       const redirectUrl = `${window.location.origin}/`;
       
-      const { data: userData, error: signUpError } = await supabase.auth.signUp({
+      // TODO: Connect to Flask API - const { data: userData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -94,7 +92,7 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
 
       // Assign roles using the edge function
       const roleAssignmentPromises = roles.map(role => 
-        supabase.functions.invoke('assign-user-role', {
+        // TODO: Connect to Flask API - supabase.functions.invoke('assign-user-role', {
           body: { 
             userId: userData.user.id,
             role: role
@@ -135,7 +133,7 @@ export const useAuthOperations = (setIsLoading: (loading: boolean) => void) => {
   const signOut = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
+      // TODO: Connect to Flask API - const { error } = await supabase.auth.signOut();
       
       if (error) {
         toast({

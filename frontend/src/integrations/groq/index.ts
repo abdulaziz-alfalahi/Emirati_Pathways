@@ -9,7 +9,7 @@ export interface Project { id?: string; name?: string; description?: string; url
 export interface CVData { personalInfo: PersonalInfo; experience: Experience[]; education: Education[]; skills: Skills; languages: Language[]; certifications: Certification[]; projects: Project[]; }
 
 // --- API CLIENT FOR YOUR CURRENT FLASK SERVER ---
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function parseCV(file: File): Promise<CVData> {
     const formData = new FormData();

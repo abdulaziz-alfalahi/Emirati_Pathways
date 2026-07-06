@@ -1,5 +1,12 @@
 # Database Schema Documentation
 
+> [!IMPORTANT]
+> **`users.id` is INTEGER (SERIAL)** in the live production database.
+> Some SQL files (e.g., `database/setup_database.sql`, `create_job_application_tables.sql`) reference
+> `users.id` as UUID — these are STALE and do NOT match production.
+> The authoritative type is `integer NOT NULL DEFAULT nextval('users_id_seq'::regclass)`.
+> Do not run any migration that changes this type without coordinated planning.
+
 **Total Tables:** 130
 
 ## Table of Contents

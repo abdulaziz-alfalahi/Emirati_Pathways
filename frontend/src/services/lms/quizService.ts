@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { BaseLMSService } from './baseLMSService';
 import type { Quiz, CreateQuizData, QuizQuestion, QuizQuestionData, QuizAttempt } from '@/types/lms';
 

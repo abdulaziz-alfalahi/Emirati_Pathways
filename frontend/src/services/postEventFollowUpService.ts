@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { VirtualEventsService } from './virtualEventsService';
 import { EngagementTrackingService } from './engagementTrackingService';
 
@@ -66,7 +64,7 @@ export class PostEventFollowUpService {
       future_interests?: string[];
     }
   ): Promise<EventFeedback> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Create clean insert data without any extra properties

@@ -7,8 +7,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Users } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-
 interface ChatMessage {
   id: string;
   user_id: string;
@@ -81,17 +79,17 @@ const SessionChat: React.FC<SessionChatProps> = ({ sessionId, eventId }) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      // TODO: Connect to Flask API - supabase.removeChannel(channel);
     };
   };
 
   const trackAttendance = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
       // Track user presence in the session
-      const channel = supabase.channel(`session-chat-${sessionId}`);
+      // TODO: Connect to Flask API - const channel = supabase.channel(`session-chat-${sessionId}`);
       await channel.track({
         user_id: user.user.id,
         online_at: new Date().toISOString(),
@@ -106,7 +104,7 @@ const SessionChat: React.FC<SessionChatProps> = ({ sessionId, eventId }) => {
 
     try {
       setIsLoading(true);
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
         toast({
           title: "Error",

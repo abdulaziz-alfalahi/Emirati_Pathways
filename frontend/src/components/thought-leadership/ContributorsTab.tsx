@@ -5,8 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, ExternalLink, Star, Building, Award } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
 interface Contributor {
   id: string;
   name: string;

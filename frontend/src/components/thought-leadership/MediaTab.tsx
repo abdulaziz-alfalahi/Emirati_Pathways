@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, ExternalLink, Eye, Video, Mic, Star } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { ThoughtLeadershipContent } from './types';
 
 interface MediaTabProps {

@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { BaseLMSService } from './baseLMSService';
 import type { Certificate } from '@/types/lms';
 
@@ -37,7 +35,7 @@ export class CertificateService extends BaseLMSService {
 
   async getUserCertificates(): Promise<Certificate[]> {
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
 
       const { data, error } = await supabase

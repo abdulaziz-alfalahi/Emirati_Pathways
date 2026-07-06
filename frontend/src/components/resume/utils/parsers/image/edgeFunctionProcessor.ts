@@ -1,5 +1,4 @@
 import { ResumeData, Personal } from '../../../types';
-import { supabase } from '@/integrations/supabase/client';
 import { isEmptyResumeData, sanitizeResumeData } from '../../helpers/validation';
 import { toast } from 'sonner';
 
@@ -31,7 +30,7 @@ export const processWithEdgeFunction = async (
       imageDataPrefix: imageData.substring(0, 50) + '...'
     });
     
-    const apiPromise = supabase.functions.invoke<EdgeFunctionResponse>('extract-resume-from-image', {
+    // TODO: Connect to Flask API - const apiPromise = supabase.functions.invoke<EdgeFunctionResponse>('extract-resume-from-image', {
       body: { 
         imageData,
         fileName: file.name,

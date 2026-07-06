@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { getAuthToken } from '@/utils/tokenUtils';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface ScholarshipData {
     title: string;

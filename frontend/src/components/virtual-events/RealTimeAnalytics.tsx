@@ -14,8 +14,6 @@ import {
   BarChart3
 } from 'lucide-react';
 import { EngagementTrackingService } from '@/services/engagementTrackingService';
-import { supabase } from '@/integrations/supabase/client';
-
 interface RealTimeAnalyticsProps {
   eventId: string;
 }
@@ -144,7 +142,7 @@ const RealTimeAnalytics: React.FC<RealTimeAnalyticsProps> = ({ eventId }) => {
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      // TODO: Connect to Flask API - supabase.removeChannel(channel);
     };
   };
 

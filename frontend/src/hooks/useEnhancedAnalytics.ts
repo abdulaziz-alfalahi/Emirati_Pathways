@@ -381,7 +381,7 @@ export const useWebSocketAnalytics = (options: UseWebSocketAnalyticsOptions = {}
     }
 
     try {
-      const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5001'}/ws/analytics`;
+      const wsUrl = `${import.meta.env.VITE_WS_URL || ''}/ws/analytics`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {

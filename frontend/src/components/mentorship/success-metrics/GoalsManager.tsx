@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Target, Calendar, CheckCircle, Clock, Pause, X } from 'lucide-react';
 import { successMetricsService } from '@/services/mentorship/successMetricsService';
-import { supabase } from '@/integrations/supabase/client';
 import type { MentorshipGoal } from '@/types/mentorship';
 import { useToast } from '@/hooks/use-toast';
 
@@ -48,7 +47,7 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
 
     setLoading(true);
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
       await successMetricsService.createGoal({

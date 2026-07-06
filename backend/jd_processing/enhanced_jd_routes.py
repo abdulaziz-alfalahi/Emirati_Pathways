@@ -173,17 +173,16 @@ class IntegratedEnhancedJDProcessor:
         title = self._extract_title(jd_text)
         skills = self._extract_skills(jd_text)
         location = self._extract_location(jd_text)
-        
-        # Simulate market analysis
-        demand_score = random.randint(60, 95)
-        growth_trend = random.choice(["Growing", "Stable", "Declining"])
-        
+
+        # TODO: Connect to real market data sources
         return {
-            "demand_score": demand_score,
-            "growth_trend": growth_trend,
-            "key_skills_demand": {skill: random.randint(70, 100) for skill in skills[:5]},
-            "location_demand": {location: demand_score} if location else {},
-            "sector_outlook": "Positive",
+            "demand_score": None,
+            "growth_trend": None,
+            "key_skills_demand": {},
+            "location_demand": {},
+            "sector_outlook": None,
+            "source": "not_implemented",
+            "message": "Market demand analysis not yet connected to real data",
             "analyzed_at": datetime.now().isoformat()
         }
     
@@ -237,7 +236,7 @@ class IntegratedEnhancedJDProcessor:
             elif 'tourism' in title.lower() and emirate in ['Dubai', 'Ras Al Khaimah']:
                 base_score += 10
             
-            emirate_scores[emirate] = min(100, base_score + random.randint(-5, 5))
+            emirate_scores[emirate] = min(100, base_score)
         
         return {
             "emirate_scores": emirate_scores,

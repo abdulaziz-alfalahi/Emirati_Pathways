@@ -24,7 +24,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrainingMaterialType } from '@/types/training-materials';
@@ -96,7 +95,7 @@ export const TrainingMaterialUpload: React.FC = () => {
         const fileExt = materialFile.name.split('.').pop();
         const filePath = `training-materials/${material.id}/${Date.now()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
+        // TODO: Connect to Flask API - const { error: uploadError } = await supabase.storage
           .from('training-materials')
           .upload(filePath, materialFile);
           

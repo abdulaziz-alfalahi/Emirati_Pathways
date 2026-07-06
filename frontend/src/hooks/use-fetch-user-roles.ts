@@ -1,7 +1,5 @@
 
 import { useState } from 'react';
-import { User } from '@/integrations/supabase/auth-types';
-import { supabase } from '@/integrations/supabase/client';
 import { UserRole } from '@/types/auth';
 
 export const useFetchUserRoles = () => {
@@ -80,7 +78,7 @@ export const useFetchUserRoles = () => {
       // Only try the edge function if we haven't assigned roles based on email
       try {
         // Use the edge function to fetch roles instead of direct query
-        const { data, error } = await supabase.functions.invoke('get-user-roles', {
+        // TODO: Connect to Flask API - const { data, error } = await supabase.functions.invoke('get-user-roles', {
           body: { userId }
         });
   

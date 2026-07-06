@@ -58,7 +58,7 @@ const EmployerDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+      const API_BASE = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${API_BASE}/api/education/employer/dashboard`);
 
       if (response.ok) {

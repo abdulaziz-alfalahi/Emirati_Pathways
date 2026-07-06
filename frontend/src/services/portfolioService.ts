@@ -1,5 +1,3 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { Certificate, Portfolio, PortfolioHighlight, Training } from "@/types/portfolio";
 import { fetchUserAssessmentSessions } from "./assessments/sessionService";
 import { fetchAdvisorySessions } from "./careerAdvisory/advisorySessionService";

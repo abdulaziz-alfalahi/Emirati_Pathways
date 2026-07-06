@@ -1,4 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
 import { ExternalDatabaseConfig } from "@/types/credentialVerification";
 import { VerificationResult } from "../types";
 import { retryMechanism } from "./retryMechanism";

@@ -1,5 +1,3 @@
-
-import { User } from '@/integrations/supabase/auth-types';
 import { UserRole } from '@/types/auth';
 import React from 'react';
 

@@ -261,7 +261,7 @@ class CVBuilderEngine:
             if personal_info.get('emirates_id'):
                 emirates_id = personal_info['emirates_id']
                 if not self._validate_emirates_id(emirates_id):
-                    logger.warning(f"Invalid Emirates ID format: {emirates_id}")
+                    logger.warning("Invalid Emirates ID format provided")
             
             # Update the personal info
             cv_data['data']['personal_info'].update(personal_info)

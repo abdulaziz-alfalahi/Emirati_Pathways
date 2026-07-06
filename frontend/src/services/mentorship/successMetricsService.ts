@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import type { 
   MentorshipSuccessMetric, 
   MentorshipGoal, 
@@ -274,7 +272,7 @@ export class SuccessMetricsService {
     progressValue: number, 
     details: Record<string, any>
   ): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     await this.recordSuccessMetric({

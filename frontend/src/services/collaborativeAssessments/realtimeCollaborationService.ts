@@ -1,7 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@/integrations/supabase/auth-types';
-
 export interface CollaborationSession {
   id: string;
   assessment_id: string;
@@ -213,7 +209,7 @@ class RealtimeCollaborationService {
     const channel = this.channels.get(channelName);
     
     if (channel) {
-      supabase.removeChannel(channel);
+      // TODO: Connect to Flask API - supabase.removeChannel(channel);
       this.channels.delete(channelName);
     }
   }
@@ -230,7 +226,7 @@ class RealtimeCollaborationService {
     if (this.channels.has(channelName)) {
       const existingChannel = this.channels.get(channelName);
       if (existingChannel) {
-        supabase.removeChannel(existingChannel);
+        // TODO: Connect to Flask API - supabase.removeChannel(existingChannel);
       }
     }
 
@@ -262,7 +258,7 @@ class RealtimeCollaborationService {
 
   cleanup(): void {
     this.channels.forEach(channel => {
-      supabase.removeChannel(channel);
+      // TODO: Connect to Flask API - supabase.removeChannel(channel);
     });
     this.channels.clear();
   }

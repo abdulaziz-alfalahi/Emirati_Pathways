@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 // Simplified service using basic types to avoid complex type conflicts
 type JourneyPhase = 'education' | 'career' | 'professional' | 'lifelong';
 type RecommendationType = 'skill_development' | 'career_opportunity' | 'education' | 'mentorship';

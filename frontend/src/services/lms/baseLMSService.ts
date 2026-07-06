@@ -1,9 +1,6 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 export class BaseLMSService {
   protected async getCurrentUser() {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
     return user.user;
   }

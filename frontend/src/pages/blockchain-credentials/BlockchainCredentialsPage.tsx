@@ -67,7 +67,7 @@ const BlockchainCredentialsPage: React.FC<{ embedded?: boolean }> = ({ embedded 
     useEffect(() => {
         const fetchBlockchain = async () => {
             try {
-                const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+                const API_BASE = import.meta.env.VITE_API_URL || '';
                 const [credsRes, issuersRes] = await Promise.all([
                     fetch(`${API_BASE}/api/education/blockchain/credentials`),
                     fetch(`${API_BASE}/api/education/blockchain/issuers`),

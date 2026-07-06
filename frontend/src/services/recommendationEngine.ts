@@ -1,7 +1,3 @@
-
-import { User } from '@/integrations/supabase/auth-types';
-import { supabase } from '@/integrations/supabase/client';
-
 interface UserProfile {
   id: string;
   skills: string[];

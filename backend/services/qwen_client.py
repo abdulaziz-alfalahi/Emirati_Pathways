@@ -151,6 +151,7 @@ def chat_completion(
     response_format: Optional[Dict[str, str]] = None,
     max_retries: int = MAX_RETRIES,
     temperature: Optional[float] = None,
+    max_tokens: int = 4096,
 ) -> Dict[str, Any]:
     """Send a chat completion request to Qwen via DashScope.
 
@@ -193,6 +194,7 @@ def chat_completion(
                 messages=messages,
                 temperature=temp,
                 response_format=response_format,
+                max_tokens=max_tokens,
             )
             latency = round(time.time() - start, 3)
             raw_text = response.choices[0].message.content or ""

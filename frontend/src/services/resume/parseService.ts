@@ -1,5 +1,4 @@
 import { ResumeData } from "@/components/resume/types";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { createAffindaClient } from "./affindaClient";
 import { getAffindaApiKey } from "./apiKeyService";

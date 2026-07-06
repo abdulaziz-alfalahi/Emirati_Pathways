@@ -507,17 +507,13 @@ Provide analysis in JSON format:
         # 3. Location/Cultural/Language (Heuristic)
         loc_score = 90 if cv_info.get('location', '').lower() == jd_info.get('location', '').lower() else 60
         
-        # Randomize slightly to prevent identical scores for identical profiles
-        import random
-        variance = random.randint(-3, 3)
-        
         return {
-            "skills_match_score": min(100, max(0, skills_score + variance)),
-            "experience_match_score": min(100, max(0, exp_score + variance)),
-            "cultural_fit_score": 75 + variance,
+            "skills_match_score": min(100, max(0, skills_score)),
+            "experience_match_score": min(100, max(0, exp_score)),
+            "cultural_fit_score": 75,
             "location_preference_score": loc_score,
-            "language_compatibility_score": 80 + variance, # Assume good for now
-            "education_match_score": 80 + variance,
+            "language_compatibility_score": 80, # Assume good for now
+            "education_match_score": 80,
             "overall_compatibility": 0, # Will be calculated by weighted sum
             "strengths": ["Skills alignment", "Experience"] if skills_score > 70 else ["Potential for growth"],
             "gaps": ["Specific tool experience"] if skills_score < 70 else [],

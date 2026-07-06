@@ -128,7 +128,7 @@ const AssessorDashboard: React.FC = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5005';
+        const API_BASE = import.meta.env.VITE_API_URL || '';
         const response = await fetch(`${API_BASE}/api/assessor/dashboard`);
         if (response.ok) {
           const data = await response.json();

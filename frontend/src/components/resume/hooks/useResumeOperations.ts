@@ -3,8 +3,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from "@/context/AuthContext";
 import { ResumeData, ResumeTemplate } from '../types';
-import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -88,7 +86,7 @@ export const useResumeOperations = ({
         }
       };
 
-      const resumeDataAsJson = resumeDataWithMetadata as unknown as Json;
+      const resumeDataAsJson = resumeDataWithMetadata as unknown as any;
 
       if (existingData) {
         const { error: dataUpdateError } = await supabase

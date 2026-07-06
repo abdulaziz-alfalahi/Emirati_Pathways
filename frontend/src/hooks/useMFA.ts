@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MFAFactor, MFAChallenge, MFAStatus, MFARequirement } from '@/types/mfa';
 
@@ -39,7 +38,7 @@ export const useMFA = () => {
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.listFactors();
       
       if (error) throw error;
 
@@ -78,7 +77,7 @@ export const useMFA = () => {
     if (!targetFactor) return null;
     
     try {
-      const { data, error } = await supabase.auth.mfa.challenge({ factorId: targetFactor.id });
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.challenge({ factorId: targetFactor.id });
       
       if (error) throw error;
 
@@ -107,7 +106,7 @@ export const useMFA = () => {
     factorId: string
   ): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.mfa.verify({
+      // TODO: Connect to Flask API - const { data, error } = await supabase.auth.mfa.verify({
         factorId,
         challengeId,
         code

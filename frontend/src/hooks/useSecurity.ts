@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { SecurityUtils, authRateLimiter, sensitiveRateLimiter } from '@/lib/security';
 
@@ -53,7 +52,7 @@ export const useSecurity = () => {
     // Store in database if user is authenticated and has permissions
     if (user && canAccessSecurityData) {
       try {
-        await supabase.from('audit_logs').insert({
+        // TODO: Connect to Flask API - await supabase.from('audit_logs').insert({
           user_id: user.id,
           action: 'security_event',
           resource: 'security_monitoring',

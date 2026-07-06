@@ -238,25 +238,18 @@ def validate_provider_config(provider_id: str, config: Dict[str, Any]) -> tuple[
     return len(errors) == 0, errors
 
 def simulate_provider_health_check(provider_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
-    """Simulate health check for a provider."""
-    # Mock health check - implement actual provider testing in production
-    import random
+    """Return health check placeholder for a provider.
     
-    base_health = 95
-    base_response_time = 150
-    base_error_rate = 0.1
-    
-    # Simulate some variation
-    health_score = max(80, min(100, base_health + random.randint(-5, 5)))
-    response_time = max(50, base_response_time + random.randint(-50, 100))
-    error_rate = max(0, base_error_rate + random.uniform(-0.05, 0.1))
-    
+    TODO: Implement actual provider API health checks in production.
+    """
     return {
-        'health_score': health_score,
-        'response_time': response_time,
-        'error_rate': round(error_rate, 2),
+        'health_score': None,
+        'response_time': None,
+        'error_rate': None,
         'last_checked': datetime.now().isoformat(),
-        'status': 'healthy' if health_score > 90 else 'degraded' if health_score > 70 else 'unhealthy'
+        'status': 'unknown',
+        'source': 'not_implemented',
+        'message': 'Real provider health checks not yet connected'
     }
 
 # Initialize default providers

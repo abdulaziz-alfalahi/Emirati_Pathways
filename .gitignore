@@ -220,3 +220,10 @@ users_list.txt
 test_venv/
 # Deploy/scratch scripts (may contain credentials)
 scratch/
+
+# Build artifacts and debris
+*.pyc
+__pycache__/
+*.log
+*.patch
+=

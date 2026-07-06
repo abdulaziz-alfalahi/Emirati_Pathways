@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { BaseLMSService } from './baseLMSService';
 import type { Course, CreateCourseData, CourseStatus } from '@/types/lms';
 
@@ -26,7 +24,7 @@ export class CourseService extends BaseLMSService {
 
   async getCourses(filters?: { status?: CourseStatus; category?: string; featured?: boolean }): Promise<Course[]> {
     try {
-      let query = supabase.from('courses').select('*');
+      // TODO: Connect to Flask API - let query = supabase.from('courses').select('*');
 
       if (filters?.status) {
         query = query.eq('status', filters.status);

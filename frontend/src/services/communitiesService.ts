@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import type {
   ProfessionalGroup,
   GroupMember,
@@ -68,7 +66,7 @@ export class CommunitiesService {
   }
 
   static async createGroup(groupData: CreateGroupData): Promise<ProfessionalGroup> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -89,7 +87,7 @@ export class CommunitiesService {
   }
 
   static async getUserGroups(): Promise<ProfessionalGroup[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase
@@ -125,7 +123,7 @@ export class CommunitiesService {
   }
 
   static async joinGroup(groupId: string, role: GroupMember['role'] = 'member'): Promise<GroupMember> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -146,7 +144,7 @@ export class CommunitiesService {
   }
 
   static async leaveGroup(groupId: string): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { error } = await supabase
@@ -189,7 +187,7 @@ export class CommunitiesService {
   }
 
   static async createPost(groupId: string, postData: CreatePostData): Promise<GroupPost> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -210,7 +208,7 @@ export class CommunitiesService {
   }
 
   static async togglePostLike(postId: string): Promise<boolean> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Check if already liked
@@ -260,7 +258,7 @@ export class CommunitiesService {
   }
 
   static async addComment(postId: string, content: string): Promise<PostComment> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -299,7 +297,7 @@ export class CommunitiesService {
   }
 
   static async createResource(groupId: string, resourceData: CreateResourceData): Promise<GroupResource> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -336,7 +334,7 @@ export class CommunitiesService {
   }
 
   static async createEvent(groupId: string, eventData: CreateEventData): Promise<NetworkingEvent> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -380,20 +378,20 @@ export class CommunitiesService {
     action: ModerationLog['action_type'],
     reason?: string
   ): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Perform the action
     if (action === 'delete_post') {
-      await supabase.from('group_posts').delete().eq('id', postId);
+      // TODO: Connect to Flask API - await supabase.from('group_posts').delete().eq('id', postId);
     } else if (action === 'pin_post') {
-      await supabase.from('group_posts').update({ is_pinned: true }).eq('id', postId);
+      // TODO: Connect to Flask API - await supabase.from('group_posts').update({ is_pinned: true }).eq('id', postId);
     } else if (action === 'unpin_post') {
-      await supabase.from('group_posts').update({ is_pinned: false }).eq('id', postId);
+      // TODO: Connect to Flask API - await supabase.from('group_posts').update({ is_pinned: false }).eq('id', postId);
     }
 
     // Log the action
-    await supabase.from('moderation_logs').insert({
+    // TODO: Connect to Flask API - await supabase.from('moderation_logs').insert({
       group_id: groupId,
       moderator_id: user.user.id,
       target_post_id: postId,
@@ -403,7 +401,7 @@ export class CommunitiesService {
   }
 
   static async getUserMembershipStatus(groupId: string): Promise<GroupMember | null> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
 
     const { data, error } = await supabase
@@ -440,7 +438,7 @@ export class CommunitiesService {
   }
 
   static async createPoll(groupId: string, pollData: CreatePollData): Promise<GroupPoll> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const options = pollData.options.map((text, index) => ({
@@ -471,7 +469,7 @@ export class CommunitiesService {
   }
 
   static async votePoll(pollId: string, selectedOptions: number[]): Promise<PollVote> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Check if user already voted
@@ -539,7 +537,7 @@ export class CommunitiesService {
   }
 
   static async createGroupEvent(groupId: string, eventData: CreateGroupEventData): Promise<GroupEvent> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -557,7 +555,7 @@ export class CommunitiesService {
   }
 
   static async rsvpEvent(eventId: string, status: EventRsvp['status']): Promise<EventRsvp> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Check if user already has an RSVP
@@ -618,7 +616,7 @@ export class CommunitiesService {
 
   // Enhanced Discovery Methods
   static async getRecommendedGroups(): Promise<GroupRecommendation[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase
@@ -799,7 +797,7 @@ export class CommunitiesService {
   }
 
   static async updateUserInterests(interests: Omit<UserInterest, 'id' | 'user_id' | 'created_at' | 'updated_at'>[]): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
     // Delete existing interests
@@ -824,7 +822,7 @@ export class CommunitiesService {
   }
 
   static async getUserInterests(): Promise<UserInterest[]> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     if (!user.user) return [];
 
     const { data, error } = await supabase
@@ -861,7 +859,7 @@ export class CommunitiesService {
     filters: Record<string, any> = {},
     clickedGroupId?: string
   ): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
+    // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
     
     const { error } = await supabase
       .from('group_search_analytics')

@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required
 from datetime import datetime
-import random
 import logging
 
 logger = logging.getLogger(__name__)
@@ -54,6 +53,8 @@ def get_demographics_metrics():
 
     # Legacy Mock fallback if parsing fails
     data = {
+        'source': 'placeholder',
+        'message': 'Demographics data not yet connected to real source',
         'age_distribution': [
             {'group': '18-25', 'male': 4500, 'female': 5200},
             {'group': '26-35', 'male': 8200, 'female': 7800},
@@ -109,12 +110,12 @@ def get_executive_impact_metrics():
                 })
         else:
             strategic_impact = [
-                {'month': 'Jan', 'placements': 1200, 'target': 1000},
-                {'month': 'Feb', 'placements': 1450, 'target': 1100},
-                {'month': 'Mar', 'placements': 1600, 'target': 1200},
-                {'month': 'Apr', 'placements': 1350, 'target': 1300},
-                {'month': 'May', 'placements': 1800, 'target': 1400},
-                {'month': 'Jun', 'placements': 2100, 'target': 1500}
+                {'month': 'Jan', 'placements': 1200, 'target': 1000, 'source': 'placeholder'},
+                {'month': 'Feb', 'placements': 1450, 'target': 1100, 'source': 'placeholder'},
+                {'month': 'Mar', 'placements': 1600, 'target': 1200, 'source': 'placeholder'},
+                {'month': 'Apr', 'placements': 1350, 'target': 1300, 'source': 'placeholder'},
+                {'month': 'May', 'placements': 1800, 'target': 1400, 'source': 'placeholder'},
+                {'month': 'Jun', 'placements': 2100, 'target': 1500, 'source': 'placeholder'}
             ]
             
         data = {
@@ -122,7 +123,9 @@ def get_executive_impact_metrics():
                 'total_placed': total_placed,
                 'active_partners': active_partners,
                 'emiratization_target_progress': 82.5,
-                'economic_value_aed': "2.4B"
+                'economic_value_aed': "2.4B",
+                'source': 'placeholder',
+                'message': 'KPI values are illustrative — not yet connected to real aggregation'
             },
             'strategic_impact': strategic_impact,
             'sector_distribution': [
@@ -131,7 +134,8 @@ def get_executive_impact_metrics():
                 {'name': 'Healthcare', 'value': 20},
                 {'name': 'Retail', 'value': 10},
                 {'name': 'Manufacturing', 'value': 10}
-            ]
+            ],
+            'sector_distribution_source': 'placeholder'
         }
     else:
         total_placed = 24500 + db_offers
@@ -142,15 +146,17 @@ def get_executive_impact_metrics():
                 'total_placed': total_placed,
                 'active_partners': active_partners,
                 'emiratization_target_progress': 82.5,
-                'economic_value_aed': "2.4B"
+                'economic_value_aed': "2.4B",
+                'source': 'placeholder',
+                'message': 'KPI values are illustrative — not yet connected to real aggregation'
             },
             'strategic_impact': [
-                {'month': 'Jan', 'placements': 1200, 'target': 1000},
-                {'month': 'Feb', 'placements': 1450, 'target': 1100},
-                {'month': 'Mar', 'placements': 1600, 'target': 1200},
-                {'month': 'Apr', 'placements': 1350, 'target': 1300},
-                {'month': 'May', 'placements': 1800, 'target': 1400},
-                {'month': 'Jun', 'placements': 2100, 'target': 1500}
+                {'month': 'Jan', 'placements': 1200, 'target': 1000, 'source': 'placeholder'},
+                {'month': 'Feb', 'placements': 1450, 'target': 1100, 'source': 'placeholder'},
+                {'month': 'Mar', 'placements': 1600, 'target': 1200, 'source': 'placeholder'},
+                {'month': 'Apr', 'placements': 1350, 'target': 1300, 'source': 'placeholder'},
+                {'month': 'May', 'placements': 1800, 'target': 1400, 'source': 'placeholder'},
+                {'month': 'Jun', 'placements': 2100, 'target': 1500, 'source': 'placeholder'}
             ],
             'sector_distribution': [
                 {'name': 'Banking & Finance', 'value': 35},
@@ -158,7 +164,8 @@ def get_executive_impact_metrics():
                 {'name': 'Healthcare', 'value': 20},
                 {'name': 'Retail', 'value': 10},
                 {'name': 'Manufacturing', 'value': 10}
-            ]
+            ],
+            'sector_distribution_source': 'placeholder'
         }
         
     return jsonify({'success': True, 'data': data})
@@ -169,14 +176,12 @@ def get_operations_live_metrics():
     """
     Serves real-time system health, NAFIS sync status, and active user metrics.
     """
-    base_latency = 45
-    
     data = {
         'system_health': {
             'nafis_sync_status': 'Operational',
             'last_sync': datetime.utcnow().isoformat(),
-            'db_latency_ms': base_latency + random.randint(-10, 20),
-            'active_sessions': 1240 + random.randint(-50, 50),
+            'db_latency_ms': {'value': None, 'source': 'not_implemented', 'message': 'Real latency probe not yet connected'},
+            'active_sessions': {'value': None, 'source': 'not_implemented', 'message': 'Real session count not yet connected'},
             'uptime_percent': 99.98
         },
         'live_activity': [
@@ -187,13 +192,15 @@ def get_operations_live_metrics():
             {'time': '11:00', 'logins': 160, 'applications': 75},
             {'time': '11:15', 'logins': 180, 'applications': 82}
         ],
+        'live_activity_source': 'placeholder',
         'funnel_analytics': {
             'signup': 5000,
             'profile_completion': 3800,
             'assessment_taken': 2900,
             'job_applied': 2100,
             'interviewed': 850,
-            'hired': 320
+            'hired': 320,
+            'source': 'placeholder'
         }
     }
     return jsonify({'success': True, 'data': data})

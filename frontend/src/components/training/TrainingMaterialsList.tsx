@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -92,7 +91,7 @@ export const TrainingMaterialsList: React.FC<TrainingMaterialsListProps> = ({ is
   
   const handleDownload = async (material: TrainingMaterial) => {
     try {
-      const { data, error } = await supabase.storage
+      // TODO: Connect to Flask API - const { data, error } = await supabase.storage
         .from('training-materials')
         .download(material.file_path);
         

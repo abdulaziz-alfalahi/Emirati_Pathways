@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { User } from '@/integrations/supabase/auth-types';
 import { UserRole } from '@/types/auth';
 import MobileTouchOptimizedDashboard from '@/components/mobile/MobileTouchOptimizedDashboard';
 import MobileNotifications from '@/components/mobile/MobileNotifications';

@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Send, MessageSquare } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
 interface Message {
   id: string;
   senderId: string;
@@ -117,7 +115,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ conversationId }) => {
       .subscribe();
       
     return () => {
-      supabase.removeChannel(channel);
+      // TODO: Connect to Flask API - supabase.removeChannel(channel);
     };
   }, [conversationId, user]);
   

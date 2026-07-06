@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { Internship, InternshipApplication, InternshipWithApplications } from '@/types/internships';
 
 export interface InternshipFilters {

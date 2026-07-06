@@ -161,7 +161,7 @@ const HRDashboard: React.FC = () => {
     const fetchTeamMembers = async () => {
       try {
         const token = getAuthToken();
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const response = await restClient.get(`/api/company/team/members?company_id=${COMPANY_ID}`);
         if (response.data.success) {
           setTeamMembers(response.data.members);
@@ -185,7 +185,7 @@ const HRDashboard: React.FC = () => {
     const fetchJobs = async () => {
       try {
         const token = getAuthToken();
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const response = await restClient.get(`/api/hr/jobs?limit=5`);
         if (response.data.success) {
           setActiveJobs(response.data.jobs || []);
@@ -218,7 +218,7 @@ const HRDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to remove this candidate from the shortlist?')) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       await restClient.delete(`/api/hr/jobs/${jobId}/shortlist/${candidateId}`);
       // Refresh list
       setShortlistedCandidates(prev => prev.filter(c => c.candidate_id !== candidateId));
@@ -233,7 +233,7 @@ const HRDashboard: React.FC = () => {
     if (!confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const response = await restClient.delete(`/api/recruiter/jd/${jobId}`);
 
       if (response.data.success) {
@@ -251,7 +251,7 @@ const HRDashboard: React.FC = () => {
     if (!selectedCandidate || !messageContent) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       await restClient.post(`/api/communication/messages`, {
         recipient_id: selectedCandidate.candidate_id,
         content: messageContent,
@@ -270,7 +270,7 @@ const HRDashboard: React.FC = () => {
     if (!selectedCandidate || !interviewDate || !interviewTitle) return;
     try {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
 
       // Look up application_id if available, otherwise might fail if strict
       // For now we assume we have enough context or backend handles it loosely
@@ -318,7 +318,7 @@ const HRDashboard: React.FC = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       const token = getAuthToken();
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const headers = { Authorization: `Bearer ${token}` };
 
       // 1. Fetch Metrics

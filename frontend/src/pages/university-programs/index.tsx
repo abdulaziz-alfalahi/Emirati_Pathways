@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EducationPathwayLayout } from '@/components/layouts/EducationPathwayLayout';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, Users, Building, Calendar, Globe, BookOpen, University, Trophy, Target, TrendingUp } from 'lucide-react';
 import UniversityProgramsFilter from '@/components/university-programs/UniversityProgramsFilter';
 import ProgramsList from '@/components/university-programs/ProgramsList';

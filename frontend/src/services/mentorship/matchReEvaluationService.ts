@@ -1,5 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { mentorshipService } from '../mentorshipService';
 import type { MenteePreferences, MatchSuggestion } from '@/types/mentorship';
 

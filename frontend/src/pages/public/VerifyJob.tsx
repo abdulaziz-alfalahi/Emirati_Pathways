@@ -20,7 +20,7 @@ import {
 
 // We can't use restClient because it might look for auth tokens. 
 // We use direct axios for this public public endpoint.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export const VerifyJob: React.FC = () => {
     const { token } = useParams<{ token: string }>();

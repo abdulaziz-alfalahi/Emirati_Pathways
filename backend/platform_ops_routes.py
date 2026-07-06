@@ -276,9 +276,9 @@ def simulate_policy():
         "emiratization_rate": min(100, baseline["emiratization_rate"] + emiratization_target * 0.3),
         "training_completion_rate": min(100, baseline["training_completion_rate"] + training_budget_change * 0.25),
     }
-    # Add slight randomness for realism
+    # Round projected values (no artificial randomness)
     for k in projected:
-        projected[k] = round(projected[k] + random.uniform(-1.5, 1.5), 1)
+        projected[k] = round(projected[k], 1)
 
     return jsonify({
         "baseline": baseline,

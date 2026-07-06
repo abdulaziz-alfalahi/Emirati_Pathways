@@ -6,8 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bell, Briefcase, Calendar, FileText, Award } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
 interface Notification {
   id: string;
   title: string;

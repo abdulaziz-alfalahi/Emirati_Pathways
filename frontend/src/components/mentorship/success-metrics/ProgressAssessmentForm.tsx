@@ -9,7 +9,6 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Star, Award, TrendingUp, MessageSquare, Target } from 'lucide-react';
 import { successMetricsService } from '@/services/mentorship/successMetricsService';
-import { supabase } from '@/integrations/supabase/client';
 import type { MentorshipProgressAssessment } from '@/types/mentorship';
 import { useToast } from '@/hooks/use-toast';
 
@@ -46,7 +45,7 @@ export const ProgressAssessmentForm: React.FC<ProgressAssessmentFormProps> = ({
   const handleSubmitAssessment = async () => {
     setLoading(true);
     try {
-      const { data: user } = await supabase.auth.getUser();
+      // TODO: Connect to Flask API - const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
       const assessmentData: Omit<MentorshipProgressAssessment, 'id' | 'created_at'> = {

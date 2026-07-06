@@ -306,7 +306,7 @@ const getEnvVar = (key: string, defaultValue: string): string => {
   return defaultValue;
 };
 
-const FLASK_API_URL = getEnvVar('FLASK_API_URL', 'http://localhost:5001');
+const FLASK_API_URL = getEnvVar('FLASK_API_URL', '');
 
 // Generic API client for non-Flask endpoints
 class ApiClient {

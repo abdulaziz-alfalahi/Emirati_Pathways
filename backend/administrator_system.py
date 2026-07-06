@@ -1231,7 +1231,7 @@ class AdministratorSystem:
                 day_name = days[day_index]
                 # Try to match real data, else random
                 match = next((r for r in growth_results if r['day_name'].strip()[:3] == day_name), None)
-                count = match['count'] if match else random.randint(100, 500)
+                count = match['count'] if match else 0
                 trend_data.append({'name': day_name, 'count': count})
                 
             analytics['visitorTrends'] = trend_data

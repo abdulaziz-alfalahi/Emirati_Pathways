@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { SummerCamp, CampEnrollment, CampFilters } from '@/types/summerCamps';
 import { toast } from '@/hooks/use-toast';
 

@@ -1,5 +1,3 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { BlockchainCredential, CredentialIssueRequest } from "@/types/blockchainCredentials";
 import { auditLogger } from "./auditLogger";
 import { credentialHashingService } from "./credentialHashingService";

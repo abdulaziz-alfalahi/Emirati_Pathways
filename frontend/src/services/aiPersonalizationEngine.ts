@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-
 export interface PersonalizationProfile {
   userId: string;
   preferences: {
