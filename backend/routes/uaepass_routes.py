@@ -107,26 +107,38 @@ def _get_db():
 
 def _encrypt_eid(plaintext: str) -> str:
     """
-    Encrypt Emirates ID for storage.
-
-    For now, uses a simple reversible encoding.
-    TODO: Replace with AES-256-GCM using UAEPASS_EID_KEY when available.
+    Encrypt Emirates ID for storage using AES-256-GCM.
+    Requires UAEPASS_EID_KEY to be configured in environment.
     """
     import base64
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    import os
+
     key = os.getenv('UAEPASS_EID_KEY', '')
     if not key:
-        # Fallback: base64 encode (NOT production-safe — placeholder)
-        logger.warning("UAEPASS_EID_KEY not set — using base64 encoding (NOT SECURE)")
-        return base64.b64encode(plaintext.encode('utf-8')).decode('utf-8')
+        logger.error("UAEPASS_EID_KEY not set. Encryption failed.")
+        raise ValueError("UAEPASS_EID_KEY environment variable is mandatory but not configured.")
 
-    # When key is available: AES-256-GCM
     try:
-        from cryptography.fernet import Fernet
-        f = Fernet(key.encode('utf-8') if isinstance(key, str) else key)
-        return f.encrypt(plaintext.encode('utf-8')).decode('utf-8')
+        try:
+            key_bytes = base64.b64decode(key)
+            if len(key_bytes) != 32:
+                key_bytes = key.encode('utf-8')
+        except Exception:
+            key_bytes = key.encode('utf-8')
+
+        if len(key_bytes) < 32:
+            key_bytes = key_bytes.ljust(32, b'\x00')
+        elif len(key_bytes) > 32:
+            key_bytes = key_bytes[:32]
+
+        aesgcm = AESGCM(key_bytes)
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode('utf-8'), None)
+        return base64.b64encode(nonce + ciphertext).decode('utf-8')
     except Exception as e:
         logger.error(f"EID encryption failed: {e}")
-        return base64.b64encode(plaintext.encode('utf-8')).decode('utf-8')
+        raise
 
 
 @uaepass_bp.route('/login', methods=['GET'])

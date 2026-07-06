@@ -15,6 +15,7 @@ import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
+from flask_jwt_extended import jwt_required
 
 from backend.db import get_db_connection
 
@@ -889,7 +890,7 @@ def get_team_members():
 # =====================================================
 
 @hr_dashboard_api_bp.route('/candidates/search', methods=['GET', 'POST'])
-@optional_auth
+@jwt_required()
 def search_candidates():
     """
     Search for candidates with various filters
@@ -915,8 +916,20 @@ def search_candidates():
         if isinstance(skills, str):
             skills = [s.strip() for s in skills.split(',') if s.strip()]
         
-        experience_min = data.get('experience_min', type=int) if request.method == 'GET' else data.get('experience_min')
-        experience_max = data.get('experience_max', type=int) if request.method == 'GET' else data.get('experience_max')
+        experience_min = None
+        experience_max = None
+        if request.method == 'GET':
+            experience_min_val = request.args.get('experience_min')
+            experience_max_val = request.args.get('experience_max')
+        else:
+            experience_min_val = data.get('experience_min')
+            experience_max_val = data.get('experience_max')
+
+        if experience_min_val is not None and str(experience_min_val).isdigit():
+            experience_min = int(experience_min_val)
+        if experience_max_val is not None and str(experience_max_val).isdigit():
+            experience_max = int(experience_max_val)
+
         location = data.get('location', '')
         education = data.get('education', '')
         page = int(data.get('page', 1))

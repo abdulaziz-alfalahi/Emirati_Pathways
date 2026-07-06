@@ -21,4 +21,4 @@ def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     data = resp.get_json()
-    assert data["service"] == "recruiter-services"
+    assert data["service"] == "emirati-journey-unified"

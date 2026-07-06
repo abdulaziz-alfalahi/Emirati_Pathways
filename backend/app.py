@@ -148,6 +148,16 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 jwt = JWTManager(app)
 
+# UAE Pass EID Encryption Key Configuration
+_uaepass_eid_key = os.getenv('UAEPASS_EID_KEY')
+if not _uaepass_eid_key:
+    if os.getenv('FLASK_ENV', 'production') == 'production':
+        raise RuntimeError("FATAL: UAEPASS_EID_KEY environment variable is required in production.")
+    else:
+        logger.warning("⚠️  UAEPASS_EID_KEY not set. Using dev default key (non-production).")
+        import base64
+        os.environ['UAEPASS_EID_KEY'] = base64.b64encode(b'dev_uaepass_eid_key_32bytes_long').decode('utf-8')
+
 # CORS Configuration
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '').strip()
 allowed_origin_list = [o for o in (x.strip() for x in allowed_origins_env.split(',')) if o]

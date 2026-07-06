@@ -382,26 +382,36 @@ def register_inline_routes(_app, execute_query, safe_json_load, require_admin_au
         return decorated_function
 
     def log_admin_action(action: str, provider_id: str, details: str, status: str = 'success'):
-        """Log administrative actions for audit trail."""
-        log_entry = {
-            'id': f"log_{int(time.time())}_{secrets.token_hex(4)}",
-            'timestamp': datetime.now().isoformat(),
-            'user': getattr(request, 'admin_user', {}).get('email', 'unknown'),
-            'action': action,
-            'provider_id': provider_id,
-            'details': details,
-            'status': status,
-            'ip_address': request.remote_addr,
-            'user_agent': request.headers.get('User-Agent', 'unknown')
-        }
-
-        admin_audit_logs.append(log_entry)
-
-        # Keep only last 1000 logs in memory
-        if len(admin_audit_logs) > 1000:
-            admin_audit_logs.pop(0)
-
-        logger.info(f"Admin action logged: {action} on {provider_id}")
+        """Log administrative actions for audit trail using the database."""
+        try:
+            user_id = getattr(request, 'admin_user', {}).get('user_id')
+            user_email = getattr(request, 'admin_user', {}).get('email', 'unknown')
+            
+            # Combine details and status for rich DB audit details
+            import json
+            details_dict = {
+                'email': user_email,
+                'provider_id': provider_id,
+                'status': status,
+                'details_message': details
+            }
+            
+            execute_query("""
+                INSERT INTO admin_audit_log 
+                (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+                VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s)
+            """, (
+                str(user_id) if user_id else None,
+                action,
+                'provider',
+                provider_id,
+                json.dumps(details_dict),
+                request.remote_addr,
+                request.headers.get('User-Agent', 'unknown')
+            ))
+            logger.info(f"Logged admin action to database: {action} on {provider_id}")
+        except Exception as e:
+            logger.error(f"Failed to log admin action to DB: {str(e)}")
 
     def ensure_fallback_schools_exist():
         """Ensure fallback schools exist in database for form functionality"""

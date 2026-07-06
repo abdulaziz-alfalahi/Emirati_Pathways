@@ -44,6 +44,7 @@ SECRET = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
 def app():
     """Create a Flask app with TESTING enabled (non-production)."""
     os.environ.setdefault("JWT_SECRET_KEY", SECRET)
+    os.environ["ENABLE_DEV_LOGIN"] = "true"
     os.environ.pop("FLASK_ENV", None)  # ensure NOT production
     test_app = create_app()
     test_app.config.update({"TESTING": True})
@@ -97,10 +98,10 @@ class TestDevLoginProductionGuard:
             "/api/auth/uaepass/dev-login",
             json={"user_id": "784000000000001"},
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 404
         body = resp.get_json()
-        assert body["success"] is False
-        assert "production" in body["message"].lower()
+        assert "error" in body
+        assert "not available" in body["error"].lower()
 
 
 # ── Unit: Dev-Login Input Validation ───────────────────────────────

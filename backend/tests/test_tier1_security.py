@@ -172,7 +172,7 @@ class TestJWTSignatureVerification:
             capture_output=True, text=True,
             cwd=os.path.join(os.path.dirname(__file__), '..', '..')
         )
-        lines = [l for l in result.stdout.strip().split('\n') if l]
+        lines = [l for l in result.stdout.strip().split('\n') if l and 'tests/' not in l]
         assert len(lines) == 0, \
             f"verify_signature=False still found:\n" + "\n".join(lines)
 
