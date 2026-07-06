@@ -17,10 +17,11 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
-from flask import Blueprint, request, jsonify, redirect, session
+from flask import Blueprint, request, jsonify, redirect, session, make_response
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
-    jwt_required, get_jwt_identity
+    jwt_required, get_jwt_identity,
+    set_access_cookies, set_refresh_cookies
 )
 import psycopg2
 import psycopg2.extras
@@ -105,6 +106,16 @@ def _get_db():
     )
 
 
+def mask_eid(eid: str) -> str:
+    """Mask Emirates ID for privacy (e.g. 784-XXXX-XXXXXXX-X)"""
+    if not eid:
+        return ""
+    eid_str = str(eid).strip()
+    if len(eid_str) == 15 and eid_str.isdigit():
+        return f"{eid_str[:3]}-****-{eid_str[7:14]}-{eid_str[14]}"
+    return eid_str
+
+
 def _encrypt_eid(plaintext: str) -> str:
     """
     Encrypt Emirates ID for storage using AES-256-GCM.
@@ -155,11 +166,14 @@ def uaepass_login():
     """
     try:
         oauth = UAEPassOAuth()
-        auth_url, state = oauth.get_authorization_url()
+        auth_url, state, nonce = oauth.get_authorization_url()
 
         # Store state for CSRF validation on callback
         return_url = request.args.get('return_url', '')
-        _store_state(state, {'return_url': return_url})
+        _store_state(state, {
+            'return_url': return_url,
+            'nonce': nonce
+        })
 
         # Clean up old states (> 10 minutes)
         _cleanup_stale_states()
@@ -233,9 +247,18 @@ def uaepass_callback():
         # Step 1: Exchange code for tokens
         token_data = oauth.exchange_code_for_tokens(code)
         uaepass_access_token = token_data.get('access_token')
+        id_token = token_data.get('id_token')
 
         if not uaepass_access_token:
             raise UAEPassError("No access_token in token response")
+
+        # Step 1b: Verify OIDC id_token and nonce (T4.1)
+        expected_nonce = state_data.get('nonce', '')
+        if not id_token:
+            raise UAEPassError("No id_token in token response — OIDC validation failed")
+            
+        # Verify JWKS + signature + audience + issuer + nonce
+        oauth.verify_id_token(id_token, expected_nonce)
 
         # Step 2: Fetch user profile
         raw_profile = oauth.fetch_user_profile(uaepass_access_token)
@@ -269,29 +292,29 @@ def uaepass_callback():
             expires_delta=timedelta(days=30)
         )
 
-        # Step 6: Redirect to frontend with tokens
-        # Using URL fragment (#) so tokens are NOT sent to the server in logs
+        # Step 6: Redirect to frontend and set HttpOnly cookies (T4.1)
         return_url = state_data.get('return_url', '')
         redirect_path = '/auth/uaepass/callback'
 
-        redirect_params = (
-            f"access_token={access_token}"
-            f"&refresh_token={refresh_token}"
-            f"&is_new_user={str(is_new_user).lower()}"
-            f"&user_id={user_id}"
+        query_params = (
+            f"is_new_user={str(is_new_user).lower()}"
             f"&role={user_data.get('role', 'candidate')}"
         )
         if return_url:
-            redirect_params += f"&return_url={return_url}"
+            import urllib.parse
+            query_params += f"&return_url={urllib.parse.quote(return_url)}"
 
-        redirect_url = f"{frontend_url}{redirect_path}#{redirect_params}"
+        redirect_url = f"{frontend_url}{redirect_path}?{query_params}"
 
         logger.info(
-            f"UAE Pass auth successful for user {user_id} "
-            f"(new={is_new_user}), redirecting to frontend"
+            f"UAE Pass auth successful for user {mask_eid(user_id)} "
+            f"(new={is_new_user}), redirecting to frontend with cookie delivery"
         )
 
-        return redirect(redirect_url)
+        response = make_response(redirect(redirect_url))
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
+        return response
 
     except UAEPassError as e:
         logger.error(f"UAE Pass auth error: {e}")
@@ -525,7 +548,7 @@ def _find_or_create_user(profile: dict) -> tuple:
             cursor.close()
             conn.close()
 
-            logger.info(f"Existing user found and updated: {user_id_to_update}")
+            logger.info(f"Existing user found and updated: {mask_eid(user_id_to_update)}")
             return dict(updated), False
 
         # 2. Try to find by email (link existing account)
@@ -587,7 +610,7 @@ def _find_or_create_user(profile: dict) -> tuple:
 
                 logger.info(
                     f"Linked UAE Pass to existing user: "
-                    f"{user_id_to_update} (email match)"
+                    f"{mask_eid(user_id_to_update)} (email match)"
                 )
                 return dict(linked), False
 
@@ -650,7 +673,7 @@ def _find_or_create_user(profile: dict) -> tuple:
 
                 logger.info(
                     f"Linked UAE Pass to existing user: "
-                    f"{user_id_to_update} (phone match)"
+                    f"{mask_eid(user_id_to_update)} (phone match)"
                 )
                 return dict(linked), False
 
@@ -712,11 +735,28 @@ def _find_or_create_user(profile: dict) -> tuple:
         ))
 
         new_user = cursor.fetchone()
+        
+        # Record consents for the new UAE Pass user
+        from flask import has_request_context
+        req_ip = request.remote_addr if has_request_context() else '127.0.0.1'
+        req_ua = request.headers.get('User-Agent', 'unknown') if has_request_context() else 'unknown'
+        
+        for consent_type in ['terms', 'privacy', 'data_processing']:
+            cursor.execute("""
+                INSERT INTO consents (user_id, consent_type, granted, policy_version, source, ip_address, user_agent)
+                VALUES (%s, %s, True, '1.0', 'uaepass', %s, %s);
+            """, (
+                new_user['id'],
+                consent_type,
+                req_ip,
+                req_ua
+            ))
+            
         conn.commit()
         cursor.close()
         conn.close()
 
-        logger.info(f"New user created via UAE Pass: {new_user['id']}")
+        logger.info(f"New user created via UAE Pass: {mask_eid(new_user['id'])}")
         return dict(new_user), True
 
     except Exception as e:

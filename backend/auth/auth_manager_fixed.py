@@ -102,11 +102,11 @@ class AuthenticationManager:
         Scans existing users to find the max sequence and increments.
         """
         cursor.execute("""
-            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER))
+            SELECT MAX(CAST(SUBSTRING(id FROM 8 FOR 7) AS INTEGER)) AS max_seq
             FROM users WHERE id LIKE '7840000%'
         """)
         row = cursor.fetchone()
-        max_seq = row[0] if row and row[0] else 0
+        max_seq = row['max_seq'] if row and row.get('max_seq') else 0
         next_seq = max_seq + 1
         return f"784{'0000'}{next_seq:07d}{'0'}"
     
@@ -254,7 +254,7 @@ class AuthenticationManager:
                             user_row['company_id'] = str(hr_info['company_id']) if hr_info['company_id'] else None
                             user_row['company_name'] = hr_info.get('company_name')
                     except Exception as e:
-                        self.logger.warning(f"Failed to fetch company info for user {user_id}: {e}")
+                        self.logger.warning(f"Failed to fetch company info for HR user: {e}")
 
             cursor.close()
             conn.close()

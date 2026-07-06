@@ -26,10 +26,9 @@ export const restClient: AxiosInstance = axios.create({
 })
 
 // Add request interceptor to inject token
-// Request interceptor to inject token
 restClient.interceptors.request.use((config) => {
   const token = getAuthToken();
-  if (token) {
+  if (token && token !== 'cookie_authenticated') {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

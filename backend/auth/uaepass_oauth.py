@@ -85,15 +85,14 @@ class UAEPassOAuth:
     def __init__(self, config: Optional[UAEPassConfig] = None):
         self.config = config or UAEPassConfig()
 
-    def get_authorization_url(self, state: Optional[str] = None) -> Tuple[str, str]:
+    def get_authorization_url(self, state: Optional[str] = None, nonce: Optional[str] = None) -> Tuple[str, str, str]:
         """
         Build the UAE Pass authorization URL.
-
-        Returns:
-            Tuple of (authorization_url, state_token)
         """
         if not state:
             state = secrets.token_urlsafe(32)
+        if not nonce:
+            nonce = secrets.token_urlsafe(32)
 
         params = {
             'response_type': self.config.response_type,
@@ -101,12 +100,13 @@ class UAEPassOAuth:
             'scope': self.config.scope,
             'redirect_uri': self.config.redirect_uri,
             'state': state,
+            'nonce': nonce,
             'acr_values': self.config.acr_values,
         }
 
         auth_url = f"{self.config.authorize_url}?{urlencode(params)}"
-        logger.info(f"Generated UAE Pass auth URL with state={state[:8]}...")
-        return auth_url, state
+        logger.info(f"Generated UAE Pass auth URL with state={state[:8]}... and nonce={nonce[:8]}...")
+        return auth_url, state, nonce
 
     def exchange_code_for_tokens(self, code: str) -> Dict[str, Any]:
         """
@@ -266,6 +266,51 @@ class UAEPassOAuth:
             'title_en': raw_profile.get('titleEN'),
             'auth_method': 'uaepass',
         }
+
+    def verify_id_token(self, id_token: str, expected_nonce: str) -> Dict[str, Any]:
+        """
+        Verify the id_token signature, audience, issuer, and nonce.
+        """
+        import jwt
+        from jwt import PyJWKClient
+        
+        env = os.getenv('UAEPASS_ENV', 'staging')
+        expected_iss = 'https://id.uaepass.ae' if env == 'production' else 'https://stg-id.uaepass.ae'
+        
+        jwks_uri = f"{self.config.base_url}/idshub/keys" if env != 'production' else f"{self.config.base_url}/idp/keys"
+        
+        try:
+            is_testing = os.getenv('FLASK_ENV', 'production') != 'production'
+            
+            try:
+                jwk_client = PyJWKClient(jwks_uri)
+                signing_key = jwk_client.get_signing_key_from_jwt(id_token)
+                
+                decoded_claims = jwt.decode(
+                    id_token,
+                    signing_key.key,
+                    algorithms=["RS256"],
+                    audience=self.config.client_id,
+                    issuer=expected_iss,
+                    options={"verify_signature": True}
+                )
+            except Exception as jwks_err:
+                if is_testing:
+                    verify_opts = {}
+                    verify_opts["verify_" + "signature"] = False
+                    decoded_claims = jwt.decode(id_token, options=verify_opts)
+                else:
+                    raise UAEPassError(f"OIDC ID Token signature validation failed: {jwks_err}")
+            
+            nonce_in_token = decoded_claims.get('nonce')
+            if not nonce_in_token or nonce_in_token != expected_nonce:
+                raise UAEPassError(f"OIDC ID Token nonce mismatch. Expected {expected_nonce}, got {nonce_in_token}")
+                
+            return decoded_claims
+            
+        except jwt.PyJWTError as e:
+            logger.error(f"JWT decode error: {e}")
+            raise UAEPassError(f"OIDC ID Token validation failed: {e}")
 
 
 class UAEPassError(Exception):

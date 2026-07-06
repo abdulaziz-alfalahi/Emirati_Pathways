@@ -38,18 +38,19 @@ const UAEPassCallback: React.FC = () => {
 
   const handleCallback = async () => {
     try {
-      // Parse the URL fragment (hash)
-      const hash = window.location.hash.substring(1); // Remove leading #
-      const params = new URLSearchParams(hash);
+      // Parse the URL query parameters (T4.1)
+      const params = new URLSearchParams(window.location.search);
 
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
       const isNewUser = params.get('is_new_user') === 'true';
-      const userId = params.get('user_id');
       const role = params.get('role');
       const returnUrl = params.get('return_url');
 
-      if (!accessToken || !userId) {
+      // Secure cookie delivery means the browser holds the JWT.
+      // We set a placeholder in localStorage so existing frontend auth guards pass.
+      const accessToken = 'cookie_authenticated';
+      const userId = 'uaepass_user';
+
+      if (!userId) {
         // Safe fallback: check if we are already authenticated in localStorage
         const storedToken = localStorage.getItem('access_token');
         const storedUser = localStorage.getItem('user');
