@@ -11,6 +11,8 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import './i18n/config';
 import './styles/enhanced-rtl.css';
 import './styles/content-pages.css';
+import './styles/accessibility.css';
+import { SkipNavigation } from '@/components/accessibility/SkipNavigation';
 
 // Development components
 
@@ -221,6 +223,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="App min-h-screen bg-background">
+      <SkipNavigation />
       {isAuthenticated && user && user.id && (
         <NotificationProvider
           userId={user.id.toString()}
