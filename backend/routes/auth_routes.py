@@ -11,6 +11,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_tok
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dataclasses import fields
+from datetime import datetime
 
 from backend.auth.auth_manager_fixed import AuthenticationManager
 from backend.models.user_profile import UserProfile, PersonalInfo, ProfessionalInfo, ContactInfo, Skill, EducationRecord, VisaStatus, ExperienceLevel, EmploymentStatus
@@ -60,6 +61,16 @@ def register():
                     'message': f'Missing required field: {field}'
                 }), 400
         
+        # Validate required consents (PDPL T4.2)
+        consents = data.get('consents', {})
+        required_consents = ['terms', 'privacy', 'data_processing']
+        for rc in required_consents:
+            if not consents.get(rc):
+                return jsonify({
+                    'success': False,
+                    'message': f'Required consent missing or not granted: {rc}'
+                }), 400
+        
         # Strip role fields — new users are always candidates (T1.4)
         for field in ['role', 'primary_role', 'roles', 'secondary_roles']:
             data.pop(field, None)
@@ -76,11 +87,35 @@ def register():
         success, message, result_data = auth_manager.register_user(data)
         
         if success:
+            user_id = result_data.get('user_id') if result_data else None
+            if user_id:
+                # Record consents to DB
+                from backend.db import get_db_connection
+                conn = get_db_connection()
+                try:
+                    with conn.cursor() as cur:
+                        for consent_type in required_consents:
+                            cur.execute("""
+                                INSERT INTO consents (user_id, consent_type, granted, policy_version, source, ip_address, user_agent)
+                                VALUES (%s, %s, True, '1.0', 'registration', %s, %s);
+                            """, (
+                                user_id,
+                                consent_type,
+                                request.remote_addr,
+                                request.headers.get('User-Agent', 'unknown')
+                            ))
+                    conn.commit()
+                except Exception as db_err:
+                    conn.rollback()
+                    logger.error(f"Error inserting consents during registration: {db_err}")
+                finally:
+                    conn.close()
+
             return jsonify({
                 'success': True,
                 'message': message,
                 'data': {
-                    'user_id': result_data['user_data']['id'] if 'user_data' in result_data else None,
+                    'user_id': user_id,
                     'email_verification_required': True,
                     'phone_verification_required': True
                 }
@@ -902,7 +937,337 @@ def get_role_permissions(role: str) -> list:
     
     return role_permissions.get(role, role_permissions['candidate'])
 
-# Error handlers
+@auth_bp.route('/consents', methods=['POST'])
+@jwt_required()
+def update_consents():
+    """
+    Grant or withdraw consents.
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        consent_type = data.get('consent_type')
+        granted = data.get('granted')
+        policy_version = data.get('policy_version', '1.0')
+        
+        if not consent_type or granted is None:
+            return jsonify({
+                'success': False,
+                'message': 'consent_type and granted fields are required'
+            }), 400
+            
+        from backend.db import get_db_connection
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                if granted:
+                    cur.execute("""
+                        INSERT INTO consents (user_id, consent_type, granted, policy_version, source, ip_address, user_agent)
+                        VALUES (%s, %s, True, %s, 'settings', %s, %s);
+                    """, (
+                        user_id,
+                        consent_type,
+                        policy_version,
+                        request.remote_addr,
+                        request.headers.get('User-Agent', 'unknown')
+                    ))
+                else:
+                    cur.execute("""
+                        UPDATE consents 
+                        SET withdrawn_at = NOW(), granted = False
+                        WHERE user_id = %s AND consent_type = %s AND withdrawn_at IS NULL;
+                    """, (user_id, consent_type))
+            conn.commit()
+            return jsonify({
+                'success': True,
+                'message': f"Consent '{consent_type}' updated successfully"
+            }), 200
+        except Exception as db_err:
+            conn.rollback()
+            logger.error(f"Database error updating consent: {db_err}")
+            return jsonify({
+                'success': False,
+                'message': 'Database error occurred'
+            }), 500
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Consent update failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@auth_bp.route('/consents/me', methods=['GET'])
+@jwt_required()
+def get_my_consents():
+    """
+    Get all consents given by the current user.
+    """
+    try:
+        user_id = get_jwt_identity()
+        from backend.db import get_db_connection
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                cur.execute("""
+                    SELECT consent_type, granted, policy_version, created_at, withdrawn_at 
+                    FROM consents 
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC;
+                """, (user_id,))
+                rows = cur.fetchall()
+                
+                latest_consents = {}
+                for row in rows:
+                    ct = row['consent_type']
+                    if ct not in latest_consents:
+                        latest_consents[ct] = {
+                            'consent_type': ct,
+                            'granted': row['granted'] and (row['withdrawn_at'] is None),
+                            'policy_version': row['policy_version'],
+                            'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                            'withdrawn_at': row['withdrawn_at'].isoformat() if row['withdrawn_at'] else None
+                        }
+                return jsonify({
+                    'success': True,
+                    'consents': list(latest_consents.values())
+                }), 200
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"Get consents failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@auth_bp.route('/dsr/export', methods=['GET'])
+@jwt_required()
+def dsr_export():
+    """
+    Get a machine-readable bundle of all data held about the current user.
+    """
+    try:
+        user_id = get_jwt_identity()
+        from backend.db import get_db_connection
+        conn = get_db_connection()
+        data_bundle = {}
+        
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                cur.execute("SELECT id, email, first_name, last_name, phone, role, emirate, nationality, is_active, is_verified, created_at FROM users WHERE id = %s;", (user_id,))
+                user_row = cur.fetchone()
+                if user_row:
+                    data_bundle['user'] = dict(user_row)
+                    if data_bundle['user'].get('created_at'):
+                        data_bundle['user']['created_at'] = data_bundle['user']['created_at'].isoformat()
+                
+                user_linked_tables = [
+                    ('consents', 'user_id', 'consents'),
+                    ('user_cvs', 'user_id', 'cvs'),
+                    ('cv_profiles', 'user_id', 'cv_profiles'),
+                    ('candidate_profiles', 'user_id', 'candidate_profiles'),
+                    ('nafis_job_seekers', 'user_id', 'nafis_data'),
+                    ('notifications', 'user_id', 'notifications'),
+                    ('messages', 'sender_id', 'messages_sent'),
+                    ('user_activity_log', 'user_id', 'activity_logs'),
+                    ('user_sessions', 'user_id', 'sessions'),
+                    ('user_journey_analytics', 'user_id', 'journey_analytics')
+                ]
+                
+                for table, col, label in user_linked_tables:
+                    try:
+                        cur.execute(f"SELECT * FROM {table} WHERE {col} = %s;", (user_id,))
+                        rows = cur.fetchall()
+                        data_bundle[label] = [dict(r) for r in rows]
+                        for r in data_bundle[label]:
+                            for k, v in r.items():
+                                if isinstance(v, datetime):
+                                    r[k] = v.isoformat()
+                    except Exception as tbl_err:
+                        conn.rollback()
+                        logger.warning(f"DSR export skipped table {table}: {tbl_err}")
+                        
+        finally:
+            conn.close()
+            
+        return jsonify({
+            'success': True,
+            'data_subject': user_id,
+            'exported_at': datetime.utcnow().isoformat(),
+            'data': data_bundle
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"DSR export failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@auth_bp.route('/dsr/erase', methods=['POST'])
+@jwt_required()
+def dsr_erase():
+    """
+    Cascading erasure/anonymization of all user PII data.
+    """
+    try:
+        user_id = get_jwt_identity()
+        from backend.db import get_db_connection
+        conn = get_db_connection()
+        conn.autocommit = False
+        
+        try:
+            with conn.cursor() as cur:
+                import secrets
+                file_paths = []
+                try:
+                    cur.execute("SELECT filename FROM user_cvs WHERE user_id = %s;", (user_id,))
+                    filenames = [row[0] for row in cur.fetchall() if row[0]]
+                    for fn in filenames:
+                        file_paths.append(os.path.join('uploads', 'cv_uploads', fn))
+                        file_paths.append(os.path.join('/tmp', 'cv_uploads', fn))
+                        import tempfile
+                        file_paths.append(os.path.join(tempfile.gettempdir(), 'cv_uploads', fn))
+                except Exception as fe:
+                    conn.rollback()
+                    logger.warning(f"Error fetching CV filenames: {fe}")
+                
+                try:
+                    cur.execute("DELETE FROM consents WHERE user_id = %s;", (user_id,))
+                except Exception:
+                    conn.rollback()
+                
+                cv_profile_ids = []
+                try:
+                    cur.execute("SELECT id FROM cv_profiles WHERE user_id = %s;", (user_id,))
+                    cv_profile_ids = [row[0] for row in cur.fetchall()]
+                except Exception:
+                    conn.rollback()
+                
+                for cv_pid in cv_profile_ids:
+                    for child_tbl in ['cv_versions', 'cv_usage_logs', 'cv_analytics']:
+                        try:
+                            cur.execute(f"DELETE FROM {child_tbl} WHERE profile_id = %s;", (cv_pid,))
+                        except Exception:
+                            conn.rollback()
+                try:
+                    cur.execute("DELETE FROM cv_profiles WHERE user_id = %s;", (user_id,))
+                except Exception:
+                    conn.rollback()
+                try:
+                    cur.execute("DELETE FROM user_cvs WHERE user_id = %s;", (user_id,))
+                except Exception:
+                    conn.rollback()
+                    
+                candidate_profile_ids = []
+                try:
+                    cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s;", (user_id,))
+                    candidate_profile_ids = [row[0] for row in cur.fetchall()]
+                except Exception:
+                    conn.rollback()
+                
+                candidate_child_tables = [
+                    'candidate_assessments', 'candidate_certifications', 
+                    'candidate_education_entries', 'candidate_experience_entries', 
+                    'candidate_skills', 'candidate_shortlist'
+                ]
+                for cp_id in candidate_profile_ids:
+                    for tbl in candidate_child_tables:
+                        try:
+                            cur.execute(f"DELETE FROM {tbl} WHERE profile_id = %s;", (cp_id,))
+                        except Exception:
+                            conn.rollback()
+                
+                try:
+                    cur.execute("DELETE FROM candidate_profiles WHERE user_id = %s;", (user_id,))
+                except Exception:
+                    conn.rollback()
+                    
+                other_user_tables = [
+                    ('notifications', 'user_id'),
+                    ('messages', 'sender_id'),
+                    ('user_activity_log', 'user_id'),
+                    ('user_sessions', 'user_id'),
+                    ('user_journey_analytics', 'user_id'),
+                    ('nafis_job_seekers', 'user_id')
+                ]
+                for tbl, col in other_user_tables:
+                    try:
+                        cur.execute(f"DELETE FROM {tbl} WHERE {col} = %s;", (user_id,))
+                    except Exception:
+                        conn.rollback()
+                
+                anon_suffix = secrets.token_hex(4)
+                cur.execute("""
+                    UPDATE users SET
+                        first_name = 'Anonymized',
+                        last_name = 'User',
+                        full_name = 'Anonymized User',
+                        email = %s,
+                        phone = NULL,
+                        emirates_id_enc = NULL,
+                        fullname_ar = NULL,
+                        nationality = 'Anonymized',
+                        nationality_ar = NULL,
+                        password_hash = '',
+                        uaepass_uuid = NULL,
+                        is_active = False,
+                        is_verified = False,
+                        updated_at = NOW()
+                    WHERE id = %s;
+                """, (f"deleted_user_{user_id}_{anon_suffix}@anonymized.local", user_id))
+                
+                cur.execute("""
+                    INSERT INTO admin_audit_log 
+                    (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+                    VALUES (%s, 'DSR Erase', 'user', %s, %s::jsonb, %s, %s);
+                """, (
+                    None,
+                    user_id,
+                    json.dumps({
+                        'action_detail': 'Data Subject Right (DSR) Erasure executed',
+                        'anonymized_user_id': user_id,
+                        'timestamp': datetime.utcnow().isoformat()
+                    }),
+                    request.remote_addr,
+                    request.headers.get('User-Agent', 'unknown')
+                ))
+                
+            conn.commit()
+            
+            for fp in file_paths:
+                if fp and os.path.exists(fp):
+                    try:
+                        os.remove(fp)
+                        logger.info(f"DSR erased physical file: {fp}")
+                    except Exception as file_err:
+                        logger.warning(f"DSR failed to delete file {fp}: {file_err}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Your personal data has been completely erased and anonymized.'
+            }), 200
+            
+        except Exception as db_err:
+            conn.rollback()
+            logger.error(f"DSR erase database error: {db_err}")
+            return jsonify({
+                'success': False,
+                'message': 'Database error occurred during erasure'
+            }), 500
+        finally:
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"DSR erase failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @auth_bp.errorhandler(400)
 def bad_request(error):
     return jsonify({
