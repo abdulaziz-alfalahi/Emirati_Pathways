@@ -35,13 +35,17 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onProfileUpdate }) => {
       setIsSaving(true);
       
       // Update user metadata via Supabase Auth
-      // TODO: Connect to Flask API - const { error } = await supabase.auth.updateUser({
+      // TODO: Connect to Flask API
+      const error: any = null;
+      /*
+      const { error: supabaseError } = await supabase.auth.updateUser({
         data: { 
           full_name: fullName,
           bio,
           contact
         }
       });
+      */
       
       if (error) {
         toast({

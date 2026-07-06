@@ -10,7 +10,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS consents (
     id              SERIAL PRIMARY KEY,
-    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id         character(15) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     consent_type    VARCHAR(64)  NOT NULL,   -- 'terms' | 'privacy' | 'data_processing' | 'marketing'
     granted         BOOLEAN      NOT NULL,
     policy_version  VARCHAR(32)  NOT NULL,   -- version of the policy the user agreed to
