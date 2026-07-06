@@ -43,24 +43,11 @@ def _verify_job_ownership(cursor, user_id: int, job_posting_id: str) -> bool:
 def list_offers():
     """List offers for recruiter's company, with optional filters."""
     try:
-            
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            user_role = 'recruiter'
-            current_user_id = user_id
-            claims = {'role': 'recruiter'}
-        else:
-            from flask_jwt_extended import verify_jwt_in_request
-            verify_jwt_in_request()
-            current_user_id = get_jwt_identity()
-            claims = get_jwt()
-            user_role = claims.get('role', '') if claims else ''
+        from flask_jwt_extended import verify_jwt_in_request
+        verify_jwt_in_request()
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role', '') if claims else ''
 
         allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
@@ -170,23 +157,11 @@ def list_offers():
 def create_offer():
     """Create a new offer. Optionally send immediately."""
     try:
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            user_role = 'recruiter'
-            current_user_id = user_id
-            claims = {'role': 'recruiter'}
-        else:
-            from flask_jwt_extended import verify_jwt_in_request
-            verify_jwt_in_request()
-            current_user_id = get_jwt_identity()
-            claims = get_jwt()
-            user_role = claims.get('role', '') if claims else ''
+        from flask_jwt_extended import verify_jwt_in_request
+        verify_jwt_in_request()
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role', '') if claims else ''
 
         allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
@@ -267,23 +242,11 @@ def create_offer():
 def get_offer(offer_id):
     """Get offer details if recruiter has access."""
     try:
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            user_role = 'recruiter'
-            current_user_id = user_id
-            claims = {'role': 'recruiter'}
-        else:
-            from flask_jwt_extended import verify_jwt_in_request
-            verify_jwt_in_request()
-            current_user_id = get_jwt_identity()
-            claims = get_jwt()
-            user_role = claims.get('role', '') if claims else ''
+        from flask_jwt_extended import verify_jwt_in_request
+        verify_jwt_in_request()
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role', '') if claims else ''
 
         allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:
@@ -329,23 +292,11 @@ def get_offer(offer_id):
 def send_offer(offer_id):
     """Generate a signature token and mark offer as sent."""
     try:
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            user_role = 'recruiter'
-            current_user_id = user_id
-            claims = {'role': 'recruiter'}
-        else:
-            from flask_jwt_extended import verify_jwt_in_request
-            verify_jwt_in_request()
-            current_user_id = get_jwt_identity()
-            claims = get_jwt()
-            user_role = claims.get('role', '') if claims else ''
+        from flask_jwt_extended import verify_jwt_in_request
+        verify_jwt_in_request()
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        user_role = claims.get('role', '') if claims else ''
 
         allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:

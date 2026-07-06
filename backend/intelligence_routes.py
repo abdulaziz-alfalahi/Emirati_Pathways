@@ -59,16 +59,17 @@ def require_auth(f):
             g.user_id = user_data.get('user_id') or user_data.get('id')
             g.user_role = user_data.get('role', 'candidate')
         except Exception as e:
-            logger.warning(f"Auth error: {e}")
-            # Fallback: try to extract user_id from token payload
+            logger.warning(f"Auth error (AuthManager): {e}")
+            # Fallback: verify token using app's JWT secret
             try:
-                import jwt
-                payload = jwt.decode(token, options={"verify_signature": False})
-                from flask import g
-                g.user_id = payload.get('user_id') or payload.get('sub')
+                import jwt as pyjwt
+                from flask import g, current_app
+                payload = pyjwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                g.user_id = payload.get('sub') or payload.get('user_id')
                 g.user_role = payload.get('role', 'candidate')
-            except:
-                return jsonify({"error": "Authentication required"}), 401
+            except Exception as jwt_err:
+                logger.warning(f"JWT verification failed: {jwt_err}")
+                return jsonify({"error": "Invalid token"}), 401
         return f(*args, **kwargs)
     return decorated
 

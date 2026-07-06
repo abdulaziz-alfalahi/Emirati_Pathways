@@ -71,7 +71,7 @@ def parse_remarks_to_fields(remark):
 def migrate():
     print("Connecting to DB...")
     # Use the DB config from environment (or default to .env values if running via docker compose)
-    db_url = os.environ.get('DATABASE_URL', 'postgresql://dghr_prod:AZS%23%24167%402026@10.228.145.66:5454/dghr_prod')
+    db_url = os.environ['DATABASE_URL']
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
 

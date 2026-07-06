@@ -1450,66 +1450,9 @@ Return only the JSON object, no additional text."""
                 'message': 'Authentication failed due to system error'
             }), 500
 
-    @_app.route('/api/auth/dev-login', methods=['POST'])
-    def dev_login():
-        """
-        Development Login Endpoint
-        Creates a valid JWT token for testing purposes without requiring password.
-        This endpoint should be disabled in production.
-        """
-        try:
-            data = request.get_json()
-
-            user_id = data.get('user_id')
-            email = data.get('email')
-            role = data.get('role', 'candidate')
-
-            if not user_id:
-                return jsonify({
-                    'success': False,
-                    'message': 'user_id is required'
-                }), 400
-
-            # Create access token with additional claims
-            from flask_jwt_extended import create_access_token, create_refresh_token
-
-            additional_claims = {
-                'role': role,
-                'email': email or f'user_{user_id}@dev.local'
-            }
-
-            access_token = create_access_token(
-                identity=str(user_id),
-                additional_claims=additional_claims
-            )
-            refresh_token = create_refresh_token(
-                identity=str(user_id),
-                additional_claims=additional_claims
-            )
-
-            logger.info(f"Dev login successful for user_id={user_id}, role={role}")
-
-            return jsonify({
-                'success': True,
-                'message': 'Development login successful',
-                'data': {
-                    'access_token': access_token,
-                    'refresh_token': refresh_token,
-                    'user': {
-                        'id': user_id,
-                        'email': email,
-                        'role': role,
-                        'user_type': role
-                    }
-                }
-            }), 200
-
-        except Exception as e:
-            logger.error(f"Dev login error: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': f'Dev login failed: {str(e)}'
-            }), 500
+    # DEV-LOGIN ENDPOINT REMOVED — Security remediation T1.2
+    # The ungated /api/auth/dev-login endpoint has been permanently deleted.
+    # Use UAEPass or standard email/password login instead.
 
     @_app.route('/api/auth/register', methods=['POST'])
     def register():
@@ -1615,20 +1558,16 @@ Return only the JSON object, no additional text."""
             if request.method == 'OPTIONS':
                 return ('', 204)
 
-            # For development: accept mock tokens or use fallback user_id
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_eid = '784000000000010'
-                user_id = 'mock_user_candidate'
-            else:
-                try:
-                    verify_jwt_in_request(optional=True)
-                    user_id = get_jwt_identity() or 'anonymous_user'
-                    # Post-EID migration: identity is CHAR(15) EID, use as-is
-                    user_eid = str(user_id).strip()
-                except Exception:
-                    user_eid = '784000000000010'
-                    user_id = 'anonymous_user'
+            # Authenticate via JWT
+            try:
+                verify_jwt_in_request()
+                user_id = get_jwt_identity()
+                if not user_id:
+                    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+                # Post-EID migration: identity is CHAR(15) EID, use as-is
+                user_eid = str(user_id).strip()
+            except Exception:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
             logger.debug(f"CV upload request from user_eid: {user_eid}")
 
             # Check if file is present (handle both 'file' and 'cv_file')
@@ -1874,19 +1813,14 @@ Return only the JSON object, no additional text."""
         """List user's saved CVs (Fixed Implementation)"""
         try:
             # Auth check
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_eid = '784000000000010'
-            else:
-                try:
-                    verify_jwt_in_request(optional=True)
-                    user_id = get_jwt_identity()
-                    if not user_id:
-                         user_eid = '784000000000010'
-                    else:
-                        user_eid = str(user_id).strip()
-                except Exception:
-                    user_eid = '784000000000010'
+            try:
+                verify_jwt_in_request()
+                user_id = get_jwt_identity()
+                if not user_id:
+                    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+                user_eid = str(user_id).strip()
+            except Exception:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
 
             query = """
                 SELECT
@@ -1915,19 +1849,14 @@ Return only the JSON object, no additional text."""
         """Save/Create CV (Fixed Implementation)"""
         try:
             # Auth check
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_eid = '784000000000010'
-            else:
-                try:
-                    verify_jwt_in_request(optional=True)
-                    user_id = get_jwt_identity()
-                    if not user_id:
-                         user_eid = '784000000000010'
-                    else:
-                        user_eid = str(user_id).strip()
-                except Exception:
-                    user_eid = '784000000000010'
+            try:
+                verify_jwt_in_request()
+                user_id = get_jwt_identity()
+                if not user_id:
+                    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+                user_eid = str(user_id).strip()
+            except Exception:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
 
             data = request.get_json()
             cv_data = data.get('cvData', {})
@@ -1981,20 +1910,15 @@ Return only the JSON object, no additional text."""
             return jsonify({'success': False, 'message': str(e)}), 500
 
     def get_current_user_eid_inline():
-        """Helper to get user EID from JWT. Returns CHAR(15) EID string."""
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            return '784000000000010'
-
+        """Helper to get user EID from JWT. Returns CHAR(15) EID string or None if unauthenticated."""
         try:
-            verify_jwt_in_request(optional=True)
+            verify_jwt_in_request()
             user_id = get_jwt_identity()
             if not user_id:
-                 return '784000000000010'
+                return None
             return str(user_id).strip()
-
         except Exception:
-            return '784000000000010'
+            return None
 
     # @_app.route('/api/cv/<cv_id>', methods=['GET'])
     def get_cv_fixed_deprecated(cv_id):
@@ -2592,24 +2516,17 @@ Return only the JSON object, no additional text."""
     def match_visible_cv_top_vacancies():
         """Return top-N matches for the user's visible CV, or use candidate_skills as fallback."""
         try:
-            auth_header = request.headers.get('Authorization', '')
-            if 'mock_token' in auth_header:
-                user_id = 'mock_user_candidate'
-            else:
-                try:
-                    user_id = get_jwt_identity()
-                except Exception:
-                    user_id = None
-                if not user_id:
-                    user_id = 'anonymous_user'
+            try:
+                user_id = get_jwt_identity()
+            except Exception:
+                user_id = None
+            if not user_id:
+                user_id = 'anonymous_user'
 
             logger.info(f"Job matching request from user_id={user_id}")
 
-            if user_id == 'mock_user_candidate':
-                user_eid = '784000000000010'
-            else:
-                # Post-EID migration: identity is CHAR(15) EID, use as-is
-                user_eid = str(user_id).strip()
+            # Post-EID migration: identity is CHAR(15) EID, use as-is
+            user_eid = str(user_id).strip()
 
             limit = int(request.args.get('limit', 20))
             search = request.args.get('search', '').strip()

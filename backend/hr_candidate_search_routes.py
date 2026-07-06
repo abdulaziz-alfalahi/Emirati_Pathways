@@ -194,7 +194,12 @@ class CandidateSearchEngine:
             'last_application': 'last_application_date'
         }
         
-        order_by = f"ORDER BY {sort_mapping.get(sort_by, 'u.created_at')} {sort_order}"
+        # Whitelist sort direction to prevent SQL injection
+        ALLOWED_SORT_ORDERS = {'ASC', 'DESC'}
+        safe_sort_column = sort_mapping.get(sort_by, 'u.created_at')
+        safe_sort_order = sort_order if sort_order in ALLOWED_SORT_ORDERS else 'DESC'
+        
+        order_by = f"ORDER BY {safe_sort_column} {safe_sort_order}"
         
         # Pagination
         limit = min(int(filters.get('limit', 20)), 100)  # Max 100 results per page
@@ -428,35 +433,19 @@ if os.getenv('FLASK_ENV', 'production') != 'production':
 def search_candidates():
     """Advanced candidate search with multiple filters"""
     try:
-        # Check for mock token (development mode) - check before JWT validation
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
-        if is_mock_token:
-            # Extract user ID from mock token (format: "Bearer mock_token_3")
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            
-            # Get mock user data from request or use default recruiter role
-            # For mock tokens, we'll allow access and use a default recruiter role
-            logger.info(f"Mock token detected - User ID: {user_id}, Allowing access for development")
-            user_role = 'recruiter'  # Default to recruiter for mock users
-            user_type = 'recruiter'
-            current_user_id = user_id
-        else:
-            # Normal JWT authentication - try to get JWT claims
-            try:
-                from flask_jwt_extended import verify_jwt_in_request
-                verify_jwt_in_request()
-                current_user_id = get_jwt_identity()
-                claims = get_jwt()
-                user_role = claims.get('role', '') if claims else ''
-                user_type = claims.get('user_type', '') if claims else ''
-                logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, User Type: {user_type}, Claims: {claims}")
-            except Exception as jwt_error:
-                logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
+        # JWT authentication
+        try:
+            from flask_jwt_extended import verify_jwt_in_request
+            verify_jwt_in_request()
+            current_user_id = get_jwt_identity()
+            claims = get_jwt()
+            user_role = claims.get('role', '') if claims else ''
+            user_type = claims.get('user_type', '') if claims else ''
+            logger.info(f"JWT Debug - User ID: {current_user_id}, Role: {user_role}, User Type: {user_type}, Claims: {claims}")
+        except Exception as jwt_error:
+            logger.error(f"JWT Error in search_candidates: {str(jwt_error)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
         
         allowed_roles = ['employer_admin', 'recruiter', 'recruiter', 'admin', 'employer_admin']
         if user_role not in allowed_roles:

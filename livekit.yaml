@@ -9,8 +9,9 @@ rtc:
   node_ip: 10.228.145.5
   use_external_ip: false
 
-keys:
-  devkey: devsecret32charslongsecurityvalue
+# Keys are injected via LIVEKIT_KEYS env var in docker-compose.livekit.yml
+# Do NOT hardcode secrets here. Set LIVEKIT_API_KEY and LIVEKIT_API_SECRET in .env
+keys: {}
 
 room:
   auto_create: true
@@ -20,7 +21,8 @@ room:
 webhook:
   urls:
     - "http://egress-webhook:8003/webhook/egress"
-  api_key: devkey
+  # api_key is resolved from LIVEKIT_KEYS env var at runtime
+  api_key: ""
 
 logging:
   level: info

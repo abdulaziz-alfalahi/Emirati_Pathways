@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 # Create blueprint
 job_application_bp = Blueprint('job_application', __name__, url_prefix='/api/jobs')
 
-# Mock user ID for development (synthetic EID — post-migration)
-MOCK_USER_ID = '784000000000010'
+
 
 
 def _migrate_job_applications_table():
@@ -84,19 +83,11 @@ _migrate_job_applications_table()
 
 
 def get_user_id_from_request():
-    """Get user ID from JWT or mock token"""
+    """Get user ID from JWT token"""
     auth_header = request.headers.get('Authorization', '')
     logger.info(f"Auth header: {auth_header[:50]}..." if len(auth_header) > 50 else f"Auth header: {auth_header}")
     
-    # Check for mock token first
-    if 'mock_token' in auth_header:
-        # Extract actual user ID from mock token (format: "Bearer mock_token_<user_id>")
-        mock_token = auth_header.replace('Bearer ', '').strip()
-        user_id = mock_token.replace('mock_token_', '')
-        logger.info(f"Mock authentication detected, extracted user ID: {user_id}")
-        return str(user_id)
-    
-    # Try to get from JWT
+    # Get from JWT
     try:
         verify_jwt_in_request()
         user_id = get_jwt_identity()

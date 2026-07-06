@@ -375,11 +375,11 @@ class AuthenticationManager:
                     user_data['first_name'].strip(),
                     user_data['last_name'].strip(),
                     user_data.get('phone', ''),
-                    user_data.get('role', 'candidate'),
+                    'candidate',  # Always candidate on registration — admin promotes later (T1.4)
                     user_data.get('emirate', ''),
                     user_data.get('nationality', 'UAE'),
-                    True,  # is_active
-                    True   # is_verified
+                    True,   # is_active — users can log in
+                    False   # is_verified — needs email/admin verification (T1.4)
                 ))
                 
                 user_id = cursor.fetchone()['id']

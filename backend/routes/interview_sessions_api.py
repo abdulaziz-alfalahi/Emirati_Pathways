@@ -192,7 +192,7 @@ def list_sessions():
         # 1. Resolve user_id: JWT first, then query params
         user_id = None
         auth_header = request.headers.get('Authorization', '')
-        if auth_header.startswith('Bearer ') and 'mock_token' not in auth_header:
+        if auth_header.startswith('Bearer '):
             try:
                 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
                 verify_jwt_in_request()

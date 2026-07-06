@@ -60,6 +60,12 @@ def register():
                     'message': f'Missing required field: {field}'
                 }), 400
         
+        # Strip role fields — new users are always candidates (T1.4)
+        for field in ['role', 'primary_role', 'roles', 'secondary_roles']:
+            data.pop(field, None)
+        data['role'] = 'candidate'
+        data['primary_role'] = 'candidate'
+        
         # Initialize authentication manager
         auth_manager = AuthenticationManager()
         
@@ -677,9 +683,15 @@ def get_user_roles():
 @jwt_required()
 def update_user_roles():
     """
-    Update user's primary role and metadata
+    Update user's primary role and metadata (admin-only — T1.4)
     """
     try:
+        from flask_jwt_extended import get_jwt
+        claims = get_jwt()
+        current_role = claims.get('role', '')
+        if current_role not in ['admin', 'platform_administrator', 'super_admin']:
+            return jsonify({'error': 'Admin access required'}), 403
+        
         user_id = get_jwt_identity()
         data = request.get_json()
         
@@ -689,6 +701,11 @@ def update_user_roles():
         
         if not primary_role:
              return jsonify({'success': False, 'message': 'primary_role is required'}), 400
+        
+        # Role allow-list validation (T1.4)
+        ALLOWED_ROLES = ['candidate', 'recruiter', 'assessor', 'educator', 'job_seeker', 'employer', 'training_center', 'advisor']
+        if primary_role not in ALLOWED_ROLES:
+            return jsonify({'error': f'Invalid role. Allowed: {ALLOWED_ROLES}'}), 400
              
         auth_manager = AuthenticationManager()
         

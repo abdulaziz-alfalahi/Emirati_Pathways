@@ -1,3 +1,12 @@
+# PII and sensitive data
+user_21_complete_info.txt
+user_*_complete_info.txt
+backend/migrations/archive/users_backup_pre_eid.json
+backend/migrations/archive/candidate_profiles_backup.json
+backend/migrations/archive/*.dump
+backend/migrations/archive/*.json
+backend/migrations/archive/*.bat
+
 # Dependencies
 node_modules/
 */node_modules/
@@ -209,3 +218,5 @@ users_list.txt
 !.env.example
 !.env.production
 test_venv/
+# Deploy/scratch scripts (may contain credentials)
+scratch/

@@ -743,8 +743,8 @@ def dev_login():
 
     ⚠️ MUST be removed or disabled before production deployment.
     """
-    if os.getenv('FLASK_ENV') == 'production':
-        return jsonify({'success': False, 'message': 'Dev login is disabled in production'}), 403
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true' and os.getenv('FLASK_ENV') != 'production'):
+        return jsonify({'error': 'Not available'}), 404
 
     data = request.get_json() or {}
     user_id = str(data.get('user_id', '')).strip()
@@ -819,8 +819,8 @@ def dev_login_users():
     DEV-ONLY: List all test users available for dev login.
     GET /api/auth/uaepass/dev-login/users
     """
-    if os.getenv('FLASK_ENV') == 'production':
-        return jsonify({'success': False, 'message': 'Disabled in production'}), 403
+    if not (os.getenv('ENABLE_DEV_LOGIN') == 'true' and os.getenv('FLASK_ENV') != 'production'):
+        return jsonify({'error': 'Not available'}), 404
 
     try:
         conn = _get_db()

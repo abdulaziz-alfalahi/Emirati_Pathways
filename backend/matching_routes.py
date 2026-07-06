@@ -7,12 +7,12 @@
 def get_top_vacancies():
     """Get top vacancy matches for the visible CV (Mock implementation for D33)"""
     try:
-        # Check authentication locally since this is a new route
-        auth_header = request.headers.get('Authorization', '')
-        if 'mock_token' in auth_header:
-            user_id = 'mock_user_candidate'
-        else:
-            user_id = get_jwt_identity() if auth_header else 'anonymous_user'
+        # Authenticate via JWT
+        try:
+            verify_jwt_in_request()
+            user_id = get_jwt_identity()
+        except Exception:
+            return jsonify({'success': False, 'message': 'Authentication required'}), 401
             
         limit = int(request.args.get('limit', 10))
         

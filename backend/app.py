@@ -25,7 +25,7 @@ from functools import wraps
 
 from flask import Flask, request, jsonify, g, send_file, send_from_directory
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, verify_jwt_in_request, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request, create_access_token
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import psycopg2
 import psycopg2.extras
@@ -125,7 +125,10 @@ from backend.db_utils import DATABASE_CONFIG, get_db, close_db, execute_query
 # Initialize SocketIO (lazy — will attach to app below)
 # IMPORTANT: cors_allowed_origins MUST be in the constructor.
 # Setting it as a property after init_app() is silently ignored.
-socketio = SocketIO(async_mode='gevent', logger=True, engineio_logger=True, cors_allowed_origins='*')
+_socketio_allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'https://emirati.ehrdc.gov.ae').split(',')
+if os.getenv('FLASK_ENV', 'production') != 'production':
+    _socketio_allowed_origins.extend(['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5005'])
+socketio = SocketIO(async_mode='gevent', logger=True, engineio_logger=True, cors_allowed_origins=_socketio_allowed_origins)
 
 # In-memory presence tracking
 online_users: dict[str, str] = {}
@@ -174,7 +177,7 @@ else:
     cors_origins.extend(allowed_origin_list)
     logger.info("CORS: Development mode — localhost + ngrok origins ENABLED")
 
-# Note: socketio cors_allowed_origins is set to '*' in the constructor above.
+# Note: socketio cors_allowed_origins is now restricted (see constructor above).
 # The Flask CORS below handles API route CORS separately.
 
 CORS(app, resources={
@@ -230,17 +233,17 @@ def add_security_headers(response):
     response.headers.pop('Server', None)
 
     if _is_production:
-        # HSTS — force HTTPS (only enable after SSL is configured)
-        # response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        # Content Security Policy
+        # HSTS — force HTTPS
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        # Content Security Policy — tightened (no unsafe-eval)
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com data:; "
-            "img-src 'self' data: https:; "
-            "connect-src 'self' wss: ws:; "
-            "frame-ancestors 'none';"
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https://emirati.ehrdc.gov.ae wss://emirati.ehrdc.gov.ae; "
+            "frame-ancestors 'none'"
         )
     return response
 
@@ -305,7 +308,7 @@ def on_connect(auth=None):
             return
 
         import jwt as pyjwt
-        payload = pyjwt.decode(token, options={"verify_signature": False})
+        payload = pyjwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
         user_id = payload.get('sub') or payload.get('user_id')
         if user_id:
             user_id = str(user_id)
@@ -363,11 +366,22 @@ def on_get_online_users():
 # G12: Real-time notification push infrastructure
 @socketio.on('join_notification_room')
 def on_join_notification_room(data):
-    """User joins their personal notification room for real-time push."""
-    user_id = data.get('user_id')
+    """Join notification room — uses verified token identity, not client data."""
+    # Get user_id from the authenticated connection, not client data
+    token = request.args.get('token') or (data or {}).get('token', '')
+    if not token:
+        return
+    try:
+        import jwt as pyjwt
+        payload = pyjwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        user_id = str(payload.get('sub') or payload.get('user_id', ''))
+    except Exception:
+        return  # Reject invalid tokens silently
+
     if user_id:
         room = f"notifications:{user_id}"
         join_room(room)
+        emit('notification_room_joined', {'room': room, 'user_id': user_id})
         logger.info(f"[G12] User {user_id} joined notification room {room}")
 
 def push_notification_to_user(user_id, event_type, payload):
@@ -401,16 +415,29 @@ app.push_notification_to_user = push_notification_to_user
 # =====================================================
 
 @app.route('/uploads/<path:filename>')
+@jwt_required()
 def serve_uploads(filename):
-    """Serve uploaded files via the StorageService abstraction."""
+    """Serve uploaded files - requires authentication."""
+    # Path traversal protection
+    if '..' in filename or filename.startswith('/'):
+        return jsonify({'error': 'Invalid path'}), 400
+
+    upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    # Resolve and verify path stays within upload directory
+    requested_path = os.path.realpath(os.path.join(upload_dir, filename))
+    if not requested_path.startswith(os.path.realpath(upload_dir)):
+        return jsonify({'error': 'Access denied'}), 403
+
+    if not os.path.exists(requested_path):
+        return jsonify({'error': 'File not found'}), 404
+
     try:
         from backend.services.storage import storage
         return storage.serve(filename)
     except Exception as e:
         logger.error(f"File serve error: {e}")
         # Fallback to direct filesystem serve
-        uploads_dir = os.path.join(script_dir, 'uploads')
-        return send_from_directory(uploads_dir, filename)
+        return send_from_directory(upload_dir, filename)
 
 
 # =====================================================
@@ -630,8 +657,11 @@ def _log_security_warnings():
     if flask_env != 'production':
         logger.warning("=" * 72)
         logger.warning("⚠️  SECURITY WARNING: FLASK_ENV='%s' (non-production)", flask_env)
-        logger.warning("⚠️  Dev-login bypass is ACTIVE — /api/auth/uaepass/dev-login accepts any EID")
-        logger.warning("⚠️  Set FLASK_ENV=production to disable dev-login.")
+        if os.getenv('ENABLE_DEV_LOGIN') == 'true':
+            logger.warning("⚠️  Dev-login bypass is ACTIVE — ENABLE_DEV_LOGIN=true")
+            logger.warning("⚠️  Unset ENABLE_DEV_LOGIN to disable dev-login.")
+        else:
+            logger.info("🔒 Dev-login is disabled (ENABLE_DEV_LOGIN not set)")
         logger.warning("=" * 72)
     else:
         logger.info("🔒 Production mode — dev-login is DISABLED")

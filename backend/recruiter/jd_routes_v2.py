@@ -1276,23 +1276,13 @@ def save_jd(jd_id):
         if not jd_data:
             return jsonify({'error': 'jd_data is required'}), 400
         
-        # Check for mock token (development mode)
-        auth_header = request.headers.get('Authorization', '')
-        is_mock_token = auth_header and 'mock_token' in auth_header
-        
         current_user_id = None
-        if is_mock_token:
-            mock_token = auth_header.replace('Bearer ', '').strip()
-            user_id = mock_token.replace('mock_token_', '')
-            current_user_id = user_id
-        else:
-            # Fallback to real JWT if configured and valid
-            try:
-                from flask_jwt_extended import verify_jwt_in_request
-                verify_jwt_in_request()
-                current_user_id = get_jwt_identity()
-            except Exception as e:
-                logger.warning(f"JWT verification failed: {e}")
+        try:
+            from flask_jwt_extended import verify_jwt_in_request
+            verify_jwt_in_request()
+            current_user_id = get_jwt_identity()
+        except Exception as e:
+            logger.warning(f"JWT verification failed: {e}")
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

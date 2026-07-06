@@ -16,7 +16,7 @@ def migrate_crm_data():
 
     # Connect to local docker postgres
     # Use standard DB_NAME=emirati_journey
-    conn = psycopg2.connect("postgresql://dghr_prod:AZS%23%24167%402026@db:5432/emirati_journey")
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
 
     print("Adding columns to candidate_profiles if they do not exist...")

@@ -1,13 +1,8 @@
+import os
 import psycopg2
 
 def create_dev_user():
-    conn = psycopg2.connect(
-        host="10.228.145.66",
-        port=5454,
-        dbname="dghr_prod",
-        user="dghr_prod",
-        password="AZS#$167@2026"
-    )
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
     
     # 784000000000250

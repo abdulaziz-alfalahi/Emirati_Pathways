@@ -4,34 +4,34 @@
 # =====================================================
 
 def get_current_user_eid_inline():
-    """Helper to get user EID from JWT. Returns CHAR(15) EID string."""
-    auth_header = request.headers.get('Authorization', '')
-    if 'mock_token' in auth_header:
-        return '784000000000010'
-    
+    """Helper to get user EID from JWT. Returns CHAR(15) EID string or None if unauthenticated."""
     try:
-        verify_jwt_in_request(optional=True)
+        verify_jwt_in_request()
         user_id = get_jwt_identity()
         if not user_id:
-             return '784000000000010'
+            return None
         return str(user_id).strip()
-            
     except Exception:
-        return '784000000000010'
+        return None
 
 @app.route('/api/cv/<cv_id>', methods=['GET'])
+@jwt_required()
 def get_cv_fixed(cv_id):
     try:
-        user_eid = get_current_user_eid_inline()
+        user_id = get_jwt_identity()
         
         query = "SELECT * FROM user_cvs WHERE id = %s::uuid"
-        # Ideally: AND user_id = %s::uuid but for debugging we trust ID lookup first
-        # query = "SELECT * FROM user_cvs WHERE id = %s::uuid AND user_id = %s::uuid"
-        
         cv = execute_query(query, (cv_id,), fetch_one=True)
         
         if not cv:
             return jsonify({'success': False, 'message': 'CV not found'}), 404
+
+        # Ownership check — allow admin/recruiter to view any CV
+        if cv['user_id'] != str(user_id):
+            claims = get_jwt()
+            role = claims.get('role', '')
+            if role not in ['admin', 'recruiter', 'platform_administrator', 'hr_manager']:
+                return jsonify({'error': 'Unauthorized - you do not own this CV'}), 403
             
         cv_data = {
             'personalInfo': cv['personal_info'],

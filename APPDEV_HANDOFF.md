@@ -5,7 +5,7 @@ I'm continuing work on the Emirati Human Development Platform (Dubai HR / DGHR p
 ## ARCHITECTURE
 - Backend: Python 3.10 / Flask with raw SQL (psycopg2), no ORM. Gunicorn + gevent workers. Deployed via Docker.
 - Frontend: React (Vite), bilingual (EN/AR with RTL support), uses t() helper for translations.
-- Database: PostgreSQL 18.3 at 10.228.145.66:5454, database dghr_prod, user dghr_prod, password 'AZS#$167@2026' (single quotes in shell to avoid $ expansion).
+- Database: PostgreSQL 18.3 at 10.228.145.66:5454, database dghr_prod, user dghr_prod, password '<REDACTED — stored in Moro secret store>' (single quotes in shell to avoid $ expansion).
 - Schema source of truth: backend/DATABASE_SCHEMA.md (130 tables, fully documented).
 - AI Service: Qwen via OpenAI-compatible SDK, proxied through Moro egress. Config in backend/config/qwen_config.py (120s timeout). Client in backend/services/qwen_client.py (retries disabled).
 - Data models: Python dataclasses (NOT SQLAlchemy ORM), all DB access is raw SQL via psycopg2.
@@ -48,6 +48,6 @@ I'm continuing work on the Emirati Human Development Platform (Dubai HR / DGHR p
 - Do NOT use SQLAlchemy ORM — this project uses raw SQL with psycopg2 exclusively
 - Always use single quotes around the DB password in shell commands
 - The proxy (10.61.192.2:8080) is required for any internet access including pip, npm, curl, docker pulls
-- For sudo operations, the password contains special chars: #$Protect@2026
+- For sudo operations, the password contains special chars: <REDACTED — stored in Moro secret store>
 
 Please confirm you understand this context by summarizing the key points, then let's continue development.

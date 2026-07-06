@@ -191,11 +191,11 @@ class RealTimeNotificationSystem:
                 
                 # Decode JWT token (simplified - in production, use proper JWT verification)
                 try:
-                    # For demo purposes, we'll extract user_id from token
-                    # In production, properly verify the JWT signature
-                    payload = jwt.decode(token, options={"verify_signature": False})
-                    user_id = payload.get('user_id')
-                    user_type = payload.get('user_type', 'candidate')
+                    import os as _os
+                    _jwt_secret = _os.environ.get('JWT_SECRET_KEY', '')
+                    payload = jwt.decode(token, _jwt_secret, algorithms=['HS256'])
+                    user_id = payload.get('sub') or payload.get('user_id')
+                    user_type = payload.get('role') or payload.get('user_type', 'candidate')
                     
                     if not user_id:
                         disconnect()
