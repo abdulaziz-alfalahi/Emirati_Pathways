@@ -1,11 +1,10 @@
 # Database Schema Documentation
 
 > [!IMPORTANT]
-> **`users.id` is INTEGER (SERIAL)** in the live production database.
+> **`users.id` is character(15) (Emirates ID)** in the live production database.
 > Some SQL files (e.g., `database/setup_database.sql`, `create_job_application_tables.sql`) reference
-> `users.id` as UUID — these are STALE and do NOT match production.
-> The authoritative type is `integer NOT NULL DEFAULT nextval('users_id_seq'::regclass)`.
-> Do not run any migration that changes this type without coordinated planning.
+> `users.id` as UUID or INTEGER — these are STALE and do NOT match production.
+> The authoritative type is `character(15)`.
 
 **Total Tables:** 130
 

@@ -2,7 +2,7 @@
 -- T4.3 — Make admin_audit_log tamper-evident (append-only)
 -- =============================================================================
 -- Columns/keys verified against backend/DATABASE_SCHEMA.md (admin_audit_log).
--- users.id is INTEGER (SERIAL). Idempotent. Apply on APPDEV, then run the
+-- users.id is character(15) (Emirates ID). Idempotent. Apply on APPDEV, then run the
 -- 127-test suite before pushing.
 -- =============================================================================
 

@@ -10,7 +10,7 @@
 - 21c55499bc2adc59571822cc7fd31d1d8bfbe69d security(T4.1): Implement UAE Pass OIDC nonce validation, JWKS signature verification, and httpOnly cookie delivery.
 
 ## Step 0 — Bundle validation (my code, tested on APPDEV)
-- pytest: 132 passed, 1 skipped, 5 warnings in 5.29s (132 passed)
+- pytest: 136 passed, 1 skipped, 5 warnings in 5.85s (136 passed)
 - frontend `npm run build`: compiled successfully
 - boot check `from backend.app import app`: OK
 - migrations 002 & 003 applied: Yes; append-only sanity (UPDATE must RAISE): raises `InsufficientPrivilege: admin_audit_log is append-only: UPDATE is not permitted`
@@ -52,6 +52,37 @@ backend/tests/test_tier4_audit.py::test_log_admin_action_db_write PASSED
 backend/tests/test_tier4_consents.py::test_registration_requires_consents PASSED
 backend/tests/test_tier4_consents.py::test_registration_records_consents PASSED
 backend/tests/test_tier4_dsr.py::test_dsr_export_and_erase PASSED
+backend/tests/test_tier4_dsr.py::test_dsr_erase_atomicity PASSED
 backend/tests/test_uaepass_routes.py::TestFindOrCreateUser::test_find_or_create_user_synthetic_eid PASSED
-================== 132 passed, 1 skipped, 5 warnings in 5.29s ==================
+================== 136 passed, 1 skipped, 5 warnings in 5.85s ==================
 ```
+
+## Round 2 Fixes (TIER4_REVIEW_ROUND2)
+
+The following security, compliance, and documentation fixes were implemented and verified during the Round 2 review cycle:
+
+### F1: Removed Obfuscated Signature-Verification Bypass
+- **Implementation:** Completely deleted the signature verification bypass/fallback in `verify_id_token` in [uaepass_oauth.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/auth/uaepass_oauth.py). Nonce and signature validation via JWKS are now strictly enforced across all environments.
+- **Tests Added:** Added `TestUAEPassOIDCValidation` inside [test_uaepass_routes.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/tests/test_uaepass_routes.py) to check OIDC token signature forgery and nonce matching.
+
+### F2: Enabled CSRF Protection for Cookie-Based JWT
+- **Implementation:** Enabled `JWT_COOKIE_CSRF_PROTECT = True` in [app.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/app.py). Whitelisted `X-CSRF-Token` and `X-CSRF-TOKEN` in CORS headers. Updated frontend Axios interceptors in [apiClient.ts](file:///home/aalfalahi.d/Emirati_Pathways/frontend/src/services/apiClient.ts) and [api.ts](file:///home/aalfalahi.d/Emirati_Pathways/frontend/src/utils/api.ts) to read the `csrf_access_token` and append it as `X-CSRF-TOKEN` on all state-mutating requests.
+- **Tests Added:** Added integration tests in `TestJWTCSRFProtection` inside [test_tier1_security.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/tests/test_tier1_security.py) asserting that POST/PUT/DELETE requests without a valid CSRF token are strictly rejected.
+
+### F3: Retention Purge Database Role & Archive
+- **Implementation:** Updated [retention_purge.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/scripts/retention_purge.py) to read `DB_MAINT_USER` credentials for executing the purge. Cleaned up expired records and archived them to a signed JSONL file in `backend/archives/`. Added support for the `--dry-run` flag which logs per-table purge estimates without executing database modifications.
+
+### F4: Atomic DSR Erasure (All-or-Nothing)
+- **Implementation:** Restructured the `/dsr/erase` route in [auth_routes.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/routes/auth_routes.py) to execute in a single unified database transaction block. Commit only runs at the very end; any error at any stage causes a full transaction rollback.
+- **Tests Added:** Added `test_dsr_erase_atomicity` in [test_tier4_dsr.py](file:///home/aalfalahi.d/Emirati_Pathways/backend/tests/test_tier4_dsr.py) using a Python-level connection wrapper mock to simulate a middle-query execution failure and assert that the user details/consents were completely rolled back and untouched.
+
+### F5: Frontend Cookie Migration Completion
+- **Implementation:** Added request headers cleanup in Axios clients [apiClient.ts](file:///home/aalfalahi.d/Emirati_Pathways/frontend/src/services/apiClient.ts) and [api.ts](file:///home/aalfalahi.d/Emirati_Pathways/frontend/src/utils/api.ts) to strip any placeholder/null `Authorization` header values (like `'cookie_authenticated'`), ensuring only cookies handle auth. Updated the stale docstring in [UAEPassCallback.tsx](file:///home/aalfalahi.d/Emirati_Pathways/frontend/src/pages/auth/UAEPassCallback.tsx).
+
+### F6: Documentation Updates for users.id
+- **Implementation:** Corrected documentation stating `users.id` type is `INTEGER (SERIAL)` to `character(15)` (Emirates ID) in:
+  - Consents migration: [003_consents_table.sql](file:///home/aalfalahi.d/Emirati_Pathways/backend/migrations/003_consents_table.sql)
+  - Audit log migration: [002_audit_log_append_only.sql](file:///home/aalfalahi.d/Emirati_Pathways/backend/migrations/002_audit_log_append_only.sql)
+  - Database schema: [DATABASE_SCHEMA.md](file:///home/aalfalahi.d/Emirati_Pathways/backend/DATABASE_SCHEMA.md)
+  - Remaining work list: [HANDOVER_REMAINING_WORK.md](file:///home/aalfalahi.d/Emirati_Pathways/HANDOVER_REMAINING_WORK.md)
+  - Corrected SQL schema file: [create_school_programs_correct.sql](file:///home/aalfalahi.d/Emirati_Pathways/backend/create_school_programs_correct.sql)

@@ -17,7 +17,7 @@ Emirati Pathways is a Flask + React career platform for UAE nationals. Monolithi
 - **Frontend:** React 18 + TypeScript + Vite, i18next for EN/AR
 - **AI:** Qwen/DashScope via OpenAI-compatible API (`backend/services/qwen_client.py`)
 - **Infra:** Gunicorn, MinIO for storage, LiveKit for video, optional Redis
-- **DB key type:** `users.id` is `INTEGER (SERIAL)`, NOT UUID — documented at top of `backend/DATABASE_SCHEMA.md`
+- **DB key type:** `users.id` is `character(15)` (Emirates ID), NOT UUID or INTEGER — documented at top of `backend/DATABASE_SCHEMA.md`
 
 ### Key Files
 | File | Purpose |
@@ -63,7 +63,7 @@ All committed on branch `remediation/tier0-tier1`, pushed to GitHub.
 - `@jwt_required()` added to candidate search endpoint
 
 #### Tier 2 — AI Correctness & Deployment ✅ (code tasks)
-- T2.2: Documented `users.id` as INTEGER in `DATABASE_SCHEMA.md`
+- T2.2: Documented `users.id` as `character(15)` (Emirates ID) in `DATABASE_SCHEMA.md`
 - T2.4: Fixed AI double-parse bug in `video_interview_routes.py`
 - T2.5: Stubbed 9 files with fabricated `random.*` data → `source: 'not_implemented'`
 - T2.5b: Removed `emirates_id` from AI prompt schemas, stopped PII logging
@@ -182,7 +182,7 @@ These tests should be built as you go:
 
 ## 4. Critical Knowledge & Warnings
 
-> **CAUTION: Do NOT change `users.id` type.** It is INTEGER (SERIAL) in production. Some SQL files reference it as UUID — those are stale. See note at top of `backend/DATABASE_SCHEMA.md`.
+> **CAUTION: Do NOT change `users.id` type.** It is `character(15)` (Emirates ID) in production. Some SQL files reference it as UUID or INTEGER — those are stale. See note at top of `backend/DATABASE_SCHEMA.md`.
 
 > **WARNING: `CREATE TABLE IF NOT EXISTS` is widespread** (~450+ occurrences in backend Python files). These execute DDL at import time. Do NOT remove them until Alembic migrations (T2.1) are set up.
 
@@ -191,7 +191,7 @@ These tests should be built as you go:
 > **IMPORTANT: The Supabase excision left `// TODO: Connect to Flask API` comments** in 135 frontend files. These mark places where the frontend previously called the mock Supabase client. They now call nothing — the data will be empty. Each needs to be connected to the real Flask backend API over time.
 
 ### Technical Gotchas Discovered During This Session
-- **EID as String:** User IDs are `INTEGER` columns but Emirates IDs in JWT tokens must be 15-digit strings (e.g., `'784000000000001'`). Mocking with integer `1` causes PostgreSQL type-operator mismatches.
+- **EID as String:** User IDs are `character(15)` strings representing the Emirates ID. Mocking with integer `1` causes PostgreSQL type-operator mismatches.
 - **Flask Trailing Slashes:** Requesting `/api/hr/jobs/` (with trailing slash) triggers a `405 Method Not Allowed` because Flask routes it to the POST endpoint. The GET endpoint is at the blueprint root (`''`).
 - **Mock Patching Namespaces:** `resume_parser.py` and `matching_engine.py` import `chat_completion` directly. You must patch `backend.services.resume_parser.chat_completion` and `backend.services.matching_engine.chat_completion`, NOT `backend.services.qwen_client.chat_completion`.
 - **Dev-Login returns 404 in production** (not 403) to prevent route fingerprinting.

@@ -2,7 +2,7 @@
 -- T4.2 (PDPL) — Consent capture table
 -- =============================================================================
 -- Records data-processing consent granted at registration / UAE Pass onboarding
--- and any later withdrawal. users.id is INTEGER (SERIAL). Idempotent.
+-- and any later withdrawal. users.id is character(15) (Emirates ID). Idempotent.
 -- Apply on APPDEV, then run the 127-test suite before pushing.
 -- =============================================================================
 
