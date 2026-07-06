@@ -1,6 +1,8 @@
 import os
 import json
 import pytest
+import psycopg2
+from unittest.mock import patch
 from dotenv import load_dotenv
 load_dotenv('backend/.env')
 
@@ -89,5 +91,112 @@ def test_dsr_export_and_erase(client):
     
     # Clean up the anonymized user only (do NOT delete from admin_audit_log as it is append-only)
     cur.execute("DELETE FROM users WHERE id = %s;", (anonymized_user_id,))
+    conn.commit()
+    conn.close()
+
+def test_dsr_erase_atomicity(client):
+    """Test that DSR erasure is fully atomic and rolls back on failure."""
+    # 1. Create a dummy user
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM consents WHERE user_id IN (SELECT id FROM users WHERE email = 'dsr_atom_test@emirati.gov.ae');")
+    cur.execute("DELETE FROM users WHERE email = 'dsr_atom_test@emirati.gov.ae';")
+    conn.commit()
+    
+    reg_payload = {
+        "email": "dsr_atom_test@emirati.gov.ae",
+        "first_name": "DSRAtom",
+        "last_name": "Test",
+        "phone": "971501112224",
+        "emirate": "Fujairah",
+        "password": "StrongPassword123!",
+        "consents": {
+            "terms": True,
+            "privacy": True,
+            "data_processing": True
+        }
+    }
+    resp = client.post("/api/auth/register", json=reg_payload)
+    assert resp.status_code == 201
+    
+    # 2. Log in to get access token
+    login_payload = {
+        "email": "dsr_atom_test@emirati.gov.ae",
+        "password": "StrongPassword123!"
+    }
+    resp = client.post("/api/auth/login", json=login_payload)
+    assert resp.status_code == 200
+    login_data = resp.get_json()
+    token = login_data["data"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Get user's ID
+    cur.execute("SELECT id FROM users WHERE email = 'dsr_atom_test@emirati.gov.ae';")
+    user_id = cur.fetchone()[0]
+    
+    # 3. Trigger DSR erase but mock get_db_connection to return a wrapper connection
+    # whose cursor execute raises error on a middle query (e.g. notifications delete)
+    original_get_db = get_db_connection
+    
+    def mock_get_db():
+        real_conn = original_get_db()
+        class MockConnection:
+            def __init__(self, real):
+                self.real = real
+            @property
+            def autocommit(self):
+                return self.real.autocommit
+            @autocommit.setter
+            def autocommit(self, val):
+                self.real.autocommit = val
+            def cursor(self, *args, **kwargs):
+                real_cursor = self.real.cursor(*args, **kwargs)
+                class MockCursor:
+                    def __init__(self, c):
+                        self.c = c
+                    def execute(self, query, vars=None):
+                        if isinstance(query, str) and "notifications" in query:
+                            raise psycopg2.DatabaseError("Simulated database failure during DSR Erase")
+                        return self.c.execute(query, vars)
+                    def fetchall(self):
+                        return self.c.fetchall()
+                    def fetchone(self):
+                        return self.c.fetchone()
+                    def close(self):
+                        return self.c.close()
+                    def __enter__(self):
+                        return self
+                    def __exit__(self, exc_type, exc_val, exc_tb):
+                        self.close()
+                return MockCursor(real_cursor)
+            def commit(self):
+                return self.real.commit()
+            def rollback(self):
+                return self.real.rollback()
+            def close(self):
+                return self.real.close()
+        return MockConnection(real_conn)
+        
+    with patch("backend.db.get_db_connection", mock_get_db):
+        resp = client.post("/api/auth/dsr/erase", headers=headers)
+        
+    # Erasure must fail (500)
+    assert resp.status_code == 500
+    
+    # 4. Verify that NOTHING was deleted or anonymized (full rollback)
+    cur.execute("SELECT first_name, email, is_active FROM users WHERE id = %s;", (user_id,))
+    user_row = cur.fetchone()
+    assert user_row is not None
+    assert user_row[0] == "DSRAtom"
+    assert user_row[1] == "dsr_atom_test@emirati.gov.ae"
+    assert user_row[2] is True
+    
+    # Verify consents still exist
+    cur.execute("SELECT COUNT(*) FROM consents WHERE user_id = %s;", (user_id,))
+    assert cur.fetchone()[0] == 3
+    
+    # Clean up
+    cur.execute("DELETE FROM consents WHERE user_id = %s;", (user_id,))
+    cur.execute("DELETE FROM users WHERE id = %s;", (user_id,))
     conn.commit()
     conn.close()

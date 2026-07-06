@@ -1119,55 +1119,37 @@ def dsr_erase():
         conn = get_db_connection()
         conn.autocommit = False
         
+        file_paths = []
         try:
             with conn.cursor() as cur:
                 import secrets
-                file_paths = []
-                try:
-                    cur.execute("SELECT filename FROM user_cvs WHERE user_id = %s;", (user_id,))
-                    filenames = [row[0] for row in cur.fetchall() if row[0]]
-                    for fn in filenames:
-                        file_paths.append(os.path.join('uploads', 'cv_uploads', fn))
-                        file_paths.append(os.path.join('/tmp', 'cv_uploads', fn))
-                        import tempfile
-                        file_paths.append(os.path.join(tempfile.gettempdir(), 'cv_uploads', fn))
-                except Exception as fe:
-                    conn.rollback()
-                    logger.warning(f"Error fetching CV filenames: {fe}")
                 
-                try:
-                    cur.execute("DELETE FROM consents WHERE user_id = %s;", (user_id,))
-                except Exception:
-                    conn.rollback()
+                # Fetch CV filenames for physical file deletion
+                cur.execute("SELECT filename FROM user_cvs WHERE user_id = %s;", (user_id,))
+                filenames = [row[0] for row in cur.fetchall() if row[0]]
+                for fn in filenames:
+                    file_paths.append(os.path.join('uploads', 'cv_uploads', fn))
+                    file_paths.append(os.path.join('/tmp', 'cv_uploads', fn))
+                    import tempfile
+                    file_paths.append(os.path.join(tempfile.gettempdir(), 'cv_uploads', fn))
                 
-                cv_profile_ids = []
-                try:
-                    cur.execute("SELECT id FROM cv_profiles WHERE user_id = %s;", (user_id,))
-                    cv_profile_ids = [row[0] for row in cur.fetchall()]
-                except Exception:
-                    conn.rollback()
+                # 1. Delete consents
+                cur.execute("DELETE FROM consents WHERE user_id = %s;", (user_id,))
+                
+                # 2. CV Profiles and related tables
+                cur.execute("SELECT id FROM cv_profiles WHERE user_id = %s;", (user_id,))
+                cv_profile_ids = [row[0] for row in cur.fetchall()]
                 
                 for cv_pid in cv_profile_ids:
                     for child_tbl in ['cv_versions', 'cv_usage_logs', 'cv_analytics']:
-                        try:
-                            cur.execute(f"DELETE FROM {child_tbl} WHERE profile_id = %s;", (cv_pid,))
-                        except Exception:
-                            conn.rollback()
-                try:
-                    cur.execute("DELETE FROM cv_profiles WHERE user_id = %s;", (user_id,))
-                except Exception:
-                    conn.rollback()
-                try:
-                    cur.execute("DELETE FROM user_cvs WHERE user_id = %s;", (user_id,))
-                except Exception:
-                    conn.rollback()
-                    
-                candidate_profile_ids = []
-                try:
-                    cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s;", (user_id,))
-                    candidate_profile_ids = [row[0] for row in cur.fetchall()]
-                except Exception:
-                    conn.rollback()
+                        cur.execute(f"DELETE FROM {child_tbl} WHERE profile_id = %s;", (cv_pid,))
+                        
+                cur.execute("DELETE FROM cv_profiles WHERE user_id = %s;", (user_id,))
+                cur.execute("DELETE FROM user_cvs WHERE user_id = %s;", (user_id,))
+                
+                # 3. Candidate Profiles and related tables
+                cur.execute("SELECT id FROM candidate_profiles WHERE user_id = %s;", (user_id,))
+                candidate_profile_ids = [row[0] for row in cur.fetchall()]
                 
                 candidate_child_tables = [
                     'candidate_assessments', 'candidate_certifications', 
@@ -1176,16 +1158,11 @@ def dsr_erase():
                 ]
                 for cp_id in candidate_profile_ids:
                     for tbl in candidate_child_tables:
-                        try:
-                            cur.execute(f"DELETE FROM {tbl} WHERE profile_id = %s;", (cp_id,))
-                        except Exception:
-                            conn.rollback()
+                        cur.execute(f"DELETE FROM {tbl} WHERE profile_id = %s;", (cp_id,))
                 
-                try:
-                    cur.execute("DELETE FROM candidate_profiles WHERE user_id = %s;", (user_id,))
-                except Exception:
-                    conn.rollback()
-                    
+                cur.execute("DELETE FROM candidate_profiles WHERE user_id = %s;", (user_id,))
+                
+                # 4. Other user-specific tables
                 other_user_tables = [
                     ('notifications', 'user_id'),
                     ('messages', 'sender_id'),
@@ -1195,11 +1172,9 @@ def dsr_erase():
                     ('nafis_job_seekers', 'user_id')
                 ]
                 for tbl, col in other_user_tables:
-                    try:
-                        cur.execute(f"DELETE FROM {tbl} WHERE {col} = %s;", (user_id,))
-                    except Exception:
-                        conn.rollback()
+                    cur.execute(f"DELETE FROM {tbl} WHERE {col} = %s;", (user_id,))
                 
+                # 5. Anonymize user record
                 anon_suffix = secrets.token_hex(4)
                 cur.execute("""
                     UPDATE users SET
@@ -1220,6 +1195,7 @@ def dsr_erase():
                     WHERE id = %s;
                 """, (f"deleted_user_{user_id}_{anon_suffix}@anonymized.local", user_id))
                 
+                # 6. Insert audit log
                 cur.execute("""
                     INSERT INTO admin_audit_log 
                     (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
@@ -1238,6 +1214,7 @@ def dsr_erase():
                 
             conn.commit()
             
+            # Physically delete files after successful commit
             for fp in file_paths:
                 if fp and os.path.exists(fp):
                     try:
@@ -1245,27 +1222,27 @@ def dsr_erase():
                         logger.info(f"DSR erased physical file: {fp}")
                     except Exception as file_err:
                         logger.warning(f"DSR failed to delete file {fp}: {file_err}")
-            
+                        
             return jsonify({
                 'success': True,
-                'message': 'Your personal data has been completely erased and anonymized.'
+                'message': 'All PII data has been successfully anonymized or erased.'
             }), 200
             
         except Exception as db_err:
             conn.rollback()
-            logger.error(f"DSR erase database error: {db_err}")
+            logger.error(f"DSR Erase database operation failed, rolled back: {db_err}")
             return jsonify({
                 'success': False,
-                'message': 'Database error occurred during erasure'
+                'message': f"Erasure failed: {str(db_err)}"
             }), 500
         finally:
             conn.close()
             
     except Exception as e:
-        logger.error(f"DSR erase failed: {e}")
+        logger.error(f"DSR Erase request failed: {e}")
         return jsonify({
             'success': False,
-            'message': str(e)
+            'message': f"Internal server error: {str(e)}"
         }), 500
 
 @auth_bp.errorhandler(400)
