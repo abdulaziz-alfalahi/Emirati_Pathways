@@ -60,8 +60,12 @@ restClient.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refresh_token');
+        // Cookie-based sessions (UAE Pass) have no refresh token. A single 401
+        // (often a stray call still using the 'cookie_authenticated' placeholder)
+        // must NOT clear auth and bounce to /auth — the httpOnly cookie stays the
+        // source of truth. Fail just this request and let the caller handle it.
         if (!refreshToken) {
-          throw new Error('No refresh token available');
+          return Promise.reject(error);
         }
 
         // Perform refresh using a fresh axios instance to avoid interceptors

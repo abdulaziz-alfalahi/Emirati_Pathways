@@ -38,21 +38,23 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         try:
             # Get authorization header
+            resolved_user_id = None
             auth_header = request.headers.get('Authorization')
-            logger.debug(f"Admin Route {request.path} - Auth Header present: {bool(auth_header)}")
-
-            if not auth_header or not auth_header.startswith('Bearer '):
-                logger.debug(f"Missing Authorization header")
+            if auth_header and auth_header.startswith('Bearer '):
+                _vi = auth_manager.verify_token(auth_header.split(' ')[1])
+                if _vi:
+                    resolved_user_id = _vi.get('user_id')
+            if not resolved_user_id:
+                # Cookie-based session (UAE Pass): verify the JWT cookie
+                try:
+                    from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+                    verify_jwt_in_request(locations=['cookies'])
+                    resolved_user_id = get_jwt_identity()
+                except Exception:
+                    resolved_user_id = None
+            if not resolved_user_id:
                 return jsonify({'error': 'Authentication required'}), 401
-            
-            token = auth_header.split(' ')[1]
-            logger.debug(f"Token received: {token[:10]}...")
-            
-            # Verify token and get user info
-            user_info = auth_manager.verify_token(token)
-            if not user_info:
-                logger.debug("auth_manager.verify_token returned None")
-                return jsonify({'error': 'Invalid token'}), 401
+            user_info = {'user_id': resolved_user_id}
             
             # Check if user has admin role
             user_details = admin_system.get_user_details(user_info['user_id'])

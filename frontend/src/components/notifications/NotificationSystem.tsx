@@ -150,7 +150,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         auth: {
           token: authToken
         },
-        transports: ['websocket', 'polling'],
+        // Polling ONLY. The staging/prod WAF terminates TLS but does not carry
+        // WebSocket frames (the upgrade returns 101 then the socket dies:
+        // "WebSocket is closed before the connection is established" / "Invalid
+        // empty packet received"). Any config that touches 'websocket' — including
+        // ['polling','websocket'] where the upgrade attempt breaks the session —
+        // fails through the WAF. HTTP long-polling is the only transport that works,
+        // and the P2P video-interview signaling relies on this same socket.
+        transports: ['polling'],
+        upgrade: false,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
         timeout: 10000,

@@ -183,7 +183,24 @@ from backend.db_utils import DATABASE_CONFIG, get_db, close_db, execute_query
 _socketio_allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'https://emirati.ehrdc.gov.ae').split(',')
 if os.getenv('FLASK_ENV', 'production') != 'production':
     _socketio_allowed_origins.extend(['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5005'])
-socketio = SocketIO(async_mode='gevent', logger=True, engineio_logger=True, cors_allowed_origins=_socketio_allowed_origins)
+# Cross-worker message queue: gunicorn runs multiple GeventWebSocket workers, so a
+# `join`/`offer`/`answer`/`ice-candidate` handled by one worker must be relayed to a
+# participant connected to another worker. Without a shared message_queue, room emits
+# stay worker-local and WebRTC signaling never reaches the peer — each side sees only
+# its own camera. Reuse the app-wide REDIS_URL (compose points it at the `redis`
+# service, sometimes password-protected) so the queue matches the notification system
+# and rate limiter; SOCKETIO_MESSAGE_QUEUE can override it independently.
+_socketio_message_queue = os.environ.get(
+    'SOCKETIO_MESSAGE_QUEUE',
+    os.environ.get('REDIS_URL', 'redis://localhost:6379/0'),
+)
+socketio = SocketIO(
+    async_mode='gevent',
+    logger=True,
+    engineio_logger=True,
+    cors_allowed_origins=_socketio_allowed_origins,
+    message_queue=_socketio_message_queue,
+)
 
 # In-memory presence tracking
 online_users: dict[str, str] = {}

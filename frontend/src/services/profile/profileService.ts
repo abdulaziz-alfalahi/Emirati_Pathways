@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { restClient } from '@/utils/api';
 import { getAuthToken } from '@/utils/tokenUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api/v2/profile` : '/api/v2/profile';
@@ -82,7 +83,9 @@ const getHeaders = () => {
 export const profileService = {
     getProfile: async () => {
         try {
-            const response = await axios.get(`${API_URL}/`, { headers: getHeaders() });
+            // restClient sends the httpOnly cookie (withCredentials) and never the
+            // 'cookie_authenticated' placeholder Bearer, so cookie auth succeeds.
+            const response = await restClient.get(`${API_URL}/`);
             return response.data;
         } catch (error) {
             console.error('Error fetching profile:', error);

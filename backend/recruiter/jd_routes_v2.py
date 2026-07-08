@@ -678,6 +678,29 @@ def update_compensation(jd_id):
         return jsonify({'error': str(e)}), 500
 
 
+@jd_bp.route('/<jd_id>/smart-fill', methods=['POST'])
+def smart_fill_jd(jd_id):
+    """AI-generate a complete JD from a job title (description + requirements + responsibilities + benefits)."""
+    try:
+        data = request.get_json(silent=True) or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'success': False, 'message': 'title is required'}), 400
+        result = jd_engine.generate_full_jd_ai(
+            title=title,
+            department=data.get('department'),
+            level=data.get('job_level') or 'mid',
+            industry=data.get('industry') or 'General',
+            emirate=data.get('emirate') or 'UAE',
+        )
+        if not result or not result.get('description'):
+            return jsonify({'success': False, 'message': 'AI generation unavailable'}), 200
+        return jsonify({'success': True, 'data': result}), 200
+    except Exception as e:
+        logger.error(f"smart_fill error for {jd_id}: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @jd_bp.route('/<jd_id>/generate-description', methods=['POST'])
 def generate_description(jd_id):
     """Generate AI-powered job description"""

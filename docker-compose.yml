@@ -66,7 +66,13 @@ services:
         - https_proxy
         - HTTP_PROXY
         - HTTPS_PROXY
-    command: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 4 --bind 0.0.0.0:5005 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile - wsgi:app
+    # NOTE: gevent-websocket + Socket.IO requires a SINGLE worker. With >1 worker,
+    # gunicorn spreads a client's polling handshake across workers that don't share
+    # session state (HTTP 400 "session unknown"), so the socket never connects and
+    # the WebRTC signaling relay (offer/answer/ice) never reaches the peer — each
+    # video-interview participant then sees only their own camera. To scale, run
+    # multiple single-worker backends behind an nginx sticky-session load balancer.
+    command: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 1 --bind 0.0.0.0:5005 --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile - wsgi:app
     restart: unless-stopped
     env_file: ./backend/.env
     environment:

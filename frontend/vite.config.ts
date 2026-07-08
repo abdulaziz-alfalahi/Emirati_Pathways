@@ -48,6 +48,17 @@ export default defineConfig({
         secure: false,
         ws: true,
       },
+      '/rtc': {
+        target: 'http://127.0.0.1:7880',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/twirp': {
+        target: 'http://127.0.0.1:7880',
+        changeOrigin: true,
+        secure: false,
+      },
       '/uploads': {
         target: 'http://127.0.0.1:5005',
         changeOrigin: true,

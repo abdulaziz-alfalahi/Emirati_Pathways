@@ -7,7 +7,12 @@ import os
 bind = "0.0.0.0:" + os.getenv("PORT", "5005")
 
 # --- Worker Processes ---
-workers = int(os.getenv("WORKERS", "4"))
+# MUST default to 1: the gevent-websocket worker + Flask-SocketIO does not support
+# multiple workers behind a single bind (a client's polling handshake lands on a
+# random worker that doesn't hold its session -> HTTP 400 "session unknown" -> the
+# socket never connects and WebRTC signaling never reaches the peer). To scale,
+# run multiple single-worker instances behind an nginx sticky-session load balancer.
+workers = int(os.getenv("WORKERS", "1"))
 worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"
 worker_connections = 1000
 timeout = 120

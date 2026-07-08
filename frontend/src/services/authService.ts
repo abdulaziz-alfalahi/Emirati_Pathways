@@ -292,12 +292,18 @@ class AuthService {
         throw new Error('No access token found');
       }
 
+      // Cookie-based UAE Pass session: the real JWT lives in an httpOnly cookie.
+      // Never send the 'cookie_authenticated' placeholder as a Bearer token — the
+      // backend 401s on it instead of falling back to the cookie. Omit the header
+      // for the placeholder and authenticate via the cookie (credentials:'include').
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token && token !== 'cookie_authenticated') {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       const response = await fetch(`${this.API_BASE_URL}/auth/profile`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
+        headers,
       });
 
       if (!response.ok) {

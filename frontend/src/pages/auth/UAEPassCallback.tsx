@@ -69,11 +69,11 @@ const UAEPassCallback: React.FC = () => {
 
       setMessage('Securing your session...');
 
-      // Store tokens
+      // Store token placeholder. Auth is cookie-based (the browser holds the JWT
+      // via a secure cookie), so there is no refresh token to persist here — the
+      // previous `if (refreshToken)` referenced an undeclared variable and threw
+      // a ReferenceError that aborted the callback after backend auth succeeded.
       localStorage.setItem('access_token', accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refresh_token', refreshToken);
-      }
 
       // Fetch full user profile from our backend
       setMessage('Loading your profile...');

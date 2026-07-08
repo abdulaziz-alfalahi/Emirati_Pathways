@@ -106,6 +106,25 @@ const SMART_DEFAULTS: Record<string, any> = {
       { category: 'compensation', description: 'Performance Bonuses' },
       { category: 'time_off', description: 'Flexible Hours' }
     ]
+  },
+  'analyst': {
+    description: 'We are seeking a detail-oriented Analyst to turn data into actionable insights. You will gather, clean, and analyze data, build reports and dashboards, and support data-driven decision-making across the business.',
+    requirements: [
+      { category: 'skills', description: 'SQL', is_required: true },
+      { category: 'skills', description: 'Excel / Google Sheets', is_required: true },
+      { category: 'skills', description: 'Data visualization (Power BI / Tableau)', is_required: true },
+      { category: 'experience', description: '2+ years in a data/analytics role', is_required: true }
+    ],
+    responsibilities: [
+      { category: 'core', description: 'Collect, clean, and validate data from multiple sources' },
+      { category: 'core', description: 'Build dashboards and reports to track key metrics' },
+      { category: 'core', description: 'Identify trends and present actionable insights to stakeholders' }
+    ],
+    benefits: [
+      { category: 'compensation', description: 'Competitive Salary' },
+      { category: 'health', description: 'Health Insurance' },
+      { category: 'time_off', description: 'Annual Leave & Flexible Hours' }
+    ]
   }
 };
 
@@ -137,6 +156,29 @@ const JOB_LEVELS = [
   { value: 'executive', label: 'Executive' },
   { value: 'manager', label: 'Manager' },
   { value: 'director', label: 'Director' }
+];
+
+// Comprehensive industry list (UAE market) for the JD builder + AI Smart Fill
+const INDUSTRIES = [
+  'Technology & IT', 'Software & Internet', 'Telecommunications',
+  'Banking & Financial Services', 'Insurance', 'Fintech',
+  'Oil & Gas', 'Energy & Utilities', 'Renewable Energy & Sustainability',
+  'Construction & Contracting', 'Real Estate & Property', 'Architecture & Engineering',
+  'Healthcare & Medical', 'Pharmaceuticals & Life Sciences',
+  'Education & Training', 'Higher Education & Research',
+  'Government & Public Sector', 'Defense & Security',
+  'Retail & E-commerce', 'Consumer Goods (FMCG)',
+  'Hospitality & Tourism', 'Food & Beverage',
+  'Aviation & Aerospace', 'Logistics & Supply Chain', 'Automotive',
+  'Manufacturing & Industrial', 'Chemicals',
+  'Media, Advertising & Entertainment', 'Marketing & PR',
+  'Legal Services', 'Consulting & Professional Services', 'Accounting & Audit',
+  'Human Resources & Recruitment',
+  'Agriculture & Environment', 'Mining & Metals',
+  'Non-Profit & NGO', 'Sports & Recreation',
+  'Fashion & Luxury', 'Arts & Culture',
+  'Maritime & Shipping', 'Transportation',
+  'Other'
 ];
 
 // Requirement categories
@@ -174,6 +216,7 @@ interface JDData {
     title: string;
     title_arabic?: string;
     department: string;
+    industry?: string;
     job_type: string;
     job_level: string;
     emirate: string;
@@ -793,11 +836,42 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
 
   // --- Smart Features ---
 
-  const handleSmartFill = () => {
+  const handleSmartFill = async () => {
     if (!jdData.basic_info.title) {
       toast.error('Enter a job title first');
       return;
     }
+    const title = jdData.basic_info.title.trim();
+
+    // AI-powered full auto-fill — works for ANY job title (DashScope). Falls back
+    // to the built-in templates / generic fill below if the AI call fails.
+    const toastId = toast.loading('Generating job description with AI…');
+    try {
+      const resp = await restClient.post(`/api/recruiter/jd/${jdData.jd_id || 'new'}/smart-fill`, {
+        title,
+        department: jdData.basic_info.department,
+        job_level: jdData.basic_info.job_level,
+        emirate: jdData.basic_info.emirate,
+        industry: jdData.basic_info.industry || 'General',
+      });
+      const d = resp.data;
+      if (d?.success && d.data?.description) {
+        setJDData(prev => ({
+          ...prev,
+          description: d.data.description,
+          requirements: (Array.isArray(d.data.requirements) && d.data.requirements.length) ? d.data.requirements : prev.requirements,
+          responsibilities: (Array.isArray(d.data.responsibilities) && d.data.responsibilities.length) ? d.data.responsibilities : prev.responsibilities,
+          benefits: (Array.isArray(d.data.benefits) && d.data.benefits.length) ? d.data.benefits : prev.benefits,
+        }));
+        toast.success('Smart Fill: AI-generated fields applied.', { id: toastId });
+        return;
+      }
+      toast.dismiss(toastId);
+    } catch (err) {
+      toast.dismiss(toastId);
+      console.warn('AI Smart Fill failed; using template fallback', err);
+    }
+
     const lowerTitle = jdData.basic_info.title.toLowerCase();
     let match = null;
 
@@ -818,7 +892,30 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
       }));
       toast.success('Smart Fill Applied: Fields populated based on job title.');
     } else {
-      toast.error('No match found. Try "Python", "Manager", or "Marketing".');
+      // Generic fallback so Smart Fill works for ANY job title, not just the
+      // few hardcoded ones. Produces a reasonable starter template from the title.
+      const t = jdData.basic_info.title.trim();
+      setJDData(prev => ({
+        ...prev,
+        description: `We are seeking a skilled ${t} to join our team. The ideal candidate will contribute to key initiatives, collaborate across functions, and deliver high-quality outcomes in the ${t} role.`,
+        requirements: [
+          { category: 'experience', description: `Proven experience as a ${t} or in a closely related role`, is_required: true },
+          { category: 'skills', description: 'Strong analytical and problem-solving skills', is_required: true },
+          { category: 'skills', description: 'Excellent communication and collaboration skills', is_required: true },
+          { category: 'education', description: "Bachelor's degree in a relevant field", is_required: false }
+        ],
+        responsibilities: [
+          { category: 'core', description: `Perform the core duties associated with the ${t} role` },
+          { category: 'core', description: 'Collaborate with cross-functional teams to achieve objectives' },
+          { category: 'core', description: 'Contribute to continuous improvement and best practices' }
+        ],
+        benefits: [
+          { category: 'compensation', description: 'Competitive Salary' },
+          { category: 'health', description: 'Health Insurance' },
+          { category: 'time_off', description: 'Annual Leave & Flexible Hours' }
+        ]
+      }));
+      toast.success('Smart Fill applied a general template. Refine the fields as needed.');
     }
   };
 
@@ -941,6 +1038,26 @@ const JobDescriptionWizard: React.FC<JDWizardProps> = ({
           })}
           placeholder="e.g., Engineering"
         />
+      </div>
+
+      <div>
+        <Label htmlFor="industry">Industry</Label>
+        <Select
+          value={jdData.basic_info.industry || ''}
+          onValueChange={(value) => setJDData({
+            ...jdData,
+            basic_info: { ...jdData.basic_info, industry: value }
+          })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select industry (improves AI Smart Fill)" />
+          </SelectTrigger>
+          <SelectContent className="z-[1000] max-h-72">
+            {INDUSTRIES.map(ind => (
+              <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
