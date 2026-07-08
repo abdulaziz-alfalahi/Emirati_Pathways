@@ -65,7 +65,20 @@ restClient.interceptors.response.use(
         // must NOT clear auth and bounce to /auth — the httpOnly cookie stays the
         // source of truth. Fail just this request and let the caller handle it.
         if (!refreshToken) {
-          return Promise.reject(error);
+          // Cookie session (UAE Pass): the refresh token lives in an httpOnly
+          // cookie. Refresh via cookie + CSRF header, then retry the request.
+          // Never force-logout on failure (the request just fails).
+          try {
+            const csrf = getCookie('csrf_refresh_token');
+            await axios.post(
+              `${API_BASE_URL}/api/auth/refresh`,
+              {},
+              { withCredentials: true, headers: csrf ? { 'X-CSRF-TOKEN': csrf } : {} }
+            );
+            return restClient(originalRequest);
+          } catch (cookieRefreshError) {
+            return Promise.reject(error);
+          }
         }
 
         // Perform refresh using a fresh axios instance to avoid interceptors

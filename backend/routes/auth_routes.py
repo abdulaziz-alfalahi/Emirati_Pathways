@@ -306,13 +306,21 @@ def refresh():
             additional_claims['role'] = role
         access_token = create_access_token(identity=user_id, additional_claims=additional_claims)
         
-        return jsonify({
+        resp = jsonify({
             'success': True,
             'message': 'Token refreshed successfully',
             'data': {
                 'access_token': access_token
             }
-        }), 200
+        })
+        # Also refresh the httpOnly access cookie so cookie-based (UAE Pass)
+        # sessions get a new access token without reading it in JS.
+        try:
+            from flask_jwt_extended import set_access_cookies
+            set_access_cookies(resp, access_token)
+        except Exception as _e:
+            logger.warning(f"Could not set access cookie on refresh: {_e}")
+        return resp, 200
         
     except Exception as e:
         logger.error(f"Token refresh error: {str(e)}")

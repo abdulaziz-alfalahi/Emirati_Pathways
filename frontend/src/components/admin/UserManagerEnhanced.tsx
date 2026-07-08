@@ -701,7 +701,9 @@ const UserManagerEnhanced: React.FC = () => {
       }
     }
 
-    if (!formData.full_name || formData.full_name.length < 2) {
+    // Only require full_name when CREATING a user. Editing an existing user
+    // (e.g. to assign or change roles) must not be blocked by a missing legacy name.
+    if (!showEditModal && (!formData.full_name || formData.full_name.length < 2)) {
       errors.full_name = 'Please enter a full name';
     }
 
@@ -915,12 +917,12 @@ const UserManagerEnhanced: React.FC = () => {
   const openEditModal = (user: User) => {
     setSelectedUser(user);
     setFormData({
-      username: user.username,
-      email: user.email,
-      full_name: user.full_name,
+      username: user.username || '',
+      email: user.email || '',
+      full_name: user.full_name || '',
       password: '',
       confirmPassword: '',
-      roles: user.roles,
+      roles: user.roles || [],
       is_active: user.is_active,
       profile_data: {
         phone: user.profile_data?.phone || '',
